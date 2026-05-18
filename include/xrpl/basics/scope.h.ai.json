@@ -1,0 +1,46 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "EFP&& f",
+        "std::enable_if_t<!std::is_same_v<std::remove_cv_t<EFP>, scope_exit> && std::is_constructible_v<EF, EFP>>* = 0"
+      ],
+      "lineno": 22,
+      "name": "scope_exit"
+    },
+    {
+      "args": [
+        "EFP&& f",
+        "std::enable_if_t<!std::is_same_v<std::remove_cv_t<EFP>, scope_fail> && std::is_constructible_v<EF, EFP>>* = 0"
+      ],
+      "lineno": 61,
+      "name": "scope_fail"
+    },
+    {
+      "args": [
+        "EFP&& f",
+        "std::enable_if_t<!std::is_same_v<std::remove_cv_t<EFP>, scope_success> && std::is_constructible_v<EF, EFP>>* = 0"
+      ],
+      "lineno": 100,
+      "name": "scope_success"
+    },
+    {
+      "args": [
+        "std::unique_lock<Mutex>& lock"
+      ],
+      "lineno": 139,
+      "name": "scope_unlock"
+    }
+  ],
+  "description": "This file provides RAII (Resource Acquisition Is Initialization) scope guard helpers for C++ such as scope_exit, scope_fail, scope_success, and scope_unlock, which execute user-provided functions on scope exit, failure, or success, and manage mutex unlocking/locking automatically.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/scope.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

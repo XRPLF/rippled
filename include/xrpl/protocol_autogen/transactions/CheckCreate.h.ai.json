@@ -1,0 +1,151 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 132,
+      "name": "account"
+    },
+    {
+      "lineno": 133,
+      "name": "destination"
+    },
+    {
+      "lineno": 134,
+      "name": "sendMax"
+    },
+    {
+      "lineno": 135,
+      "name": "sequence"
+    },
+    {
+      "lineno": 136,
+      "name": "fee"
+    },
+    {
+      "lineno": 192,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 192,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 147,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "CheckCreate"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 126,
+      "name": "CheckCreateBuilder"
+    }
+  ],
+  "description": "Provides an immutable wrapper and builder for the XRPL CheckCreate transaction, enabling type-safe field access and fluent transaction construction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/CheckCreate.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getSendMax"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "getInvoiceID"
+    },
+    {
+      "args": [],
+      "lineno": 114,
+      "name": "hasInvoiceID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 146,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 155,
+      "name": "setSendMax"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 164,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 173,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 182,
+      "name": "setInvoiceID"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 191,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

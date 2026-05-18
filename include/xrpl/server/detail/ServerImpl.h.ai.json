@@ -1,0 +1,159 @@
+{
+  "args": [
+    {
+      "lineno": 56,
+      "name": "handler"
+    },
+    {
+      "lineno": 56,
+      "name": "io_context"
+    },
+    {
+      "lineno": 56,
+      "name": "journal"
+    },
+    {
+      "lineno": 31,
+      "name": "v"
+    },
+    {
+      "lineno": 65,
+      "name": "ports"
+    },
+    {
+      "lineno": 83,
+      "name": "x"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Server"
+    },
+    {
+      "args": [
+        "Handler"
+      ],
+      "lineno": 44,
+      "name": "ServerImpl"
+    }
+  ],
+  "description": "Defines a multi-protocol server for XRPL that manages multiple listening ports and protocols (HTTP, HTTPS, WebSocket, Secure WebSocket, Peer protocol), including an abstract Server interface and a ServerImpl template implementation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/ServerImpl.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "~Server"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "journal"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 31,
+      "name": "ports"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "close"
+    },
+    {
+      "args": [
+        "handler",
+        "io_context",
+        "journal"
+      ],
+      "lineno": 56,
+      "name": "ServerImpl"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "~ServerImpl"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "journal"
+    },
+    {
+      "args": [
+        "ports"
+      ],
+      "lineno": 65,
+      "name": "ports"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "ios"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "get_io_context"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "closed"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 83,
+      "name": "ceil_log2"
+    },
+    {
+      "args": [
+        "handler",
+        "io_context",
+        "journal"
+      ],
+      "lineno": 87,
+      "name": "ServerImpl"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "~ServerImpl"
+    },
+    {
+      "args": [
+        "ports"
+      ],
+      "lineno": 101,
+      "name": "ports"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "closed"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

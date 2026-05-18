@@ -1,0 +1,597 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "fillJson"
+      ],
+      "entry_point": "fillJson",
+      "purpose": "Fills a Json::Value with ledger header information, including validation of closeTime and apiVersion.",
+      "validation_points": [
+        "apiVersion > 1 (ledger_index formatting)",
+        "info.closeTime != NetClock::time_point{} (close_time_human, close_time_iso, close_time_estimated)"
+      ]
+    },
+    {
+      "call_chain": [
+        "fillJsonBinary"
+      ],
+      "entry_point": "fillJsonBinary",
+      "purpose": "Fills a Json::Value with binary ledger header data if ledger is closed.",
+      "validation_points": [
+        "closed (if/else check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "fillJsonTx"
+      ],
+      "entry_point": "fillJsonTx",
+      "purpose": "Serializes a transaction and its metadata to JSON or binary, with validation on expansion, binary, apiVersion, and pointer checks.",
+      "validation_points": [
+        "!bExpanded (early return)",
+        "bBinary (branch for binary serialization)",
+        "fill.context->apiVersion > 1 (hash/meta_blob fields)",
+        "stMeta (pointer null check before use)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFull",
+        "isExpanded",
+        "isBinary"
+      ],
+      "entry_point": "isFull / isExpanded / isBinary",
+      "purpose": "Bitmask checks on fill.options to determine output verbosity and format.",
+      "validation_points": [
+        "fill.options & LedgerFill::full/expand/binary (bitmask validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "fill.options",
+      "flow": [
+        "LedgerFill.options",
+        "isFull/isExpanded/isBinary",
+        "controls branching in fillJson/fillJsonTx"
+      ],
+      "origin": "LedgerFill struct, typically constructed by caller (e.g., RPC handler)",
+      "transformations": [
+        "Bitmask checked for full/expand/binary options"
+      ],
+      "validated_at": "isFull/isExpanded/isBinary"
+    },
+    {
+      "field": "info.closeTime",
+      "flow": [
+        "LedgerHeader.closeTime",
+        "fillJson",
+        "if (info.closeTime != NetClock::time_point{})",
+        "json fields: close_time_human, close_time_iso, close_time_estimated"
+      ],
+      "origin": "LedgerHeader struct, populated from ledger data",
+      "transformations": [
+        "Compared to NetClock::time_point{} to check for validity",
+        "Converted to string/ISO format"
+      ],
+      "validated_at": "fillJson (if (info.closeTime != NetClock::time_point{}))"
+    },
+    {
+      "field": "stMeta",
+      "flow": [
+        "fillJsonTx parameter",
+        "if (stMeta)",
+        "serializeHex(*stMeta) or stMeta->getJson()"
+      ],
+      "origin": "std::shared_ptr<STObject const>, passed to fillJsonTx",
+      "transformations": [
+        "Pointer null check before dereference",
+        "Serialized to hex or JSON"
+      ],
+      "validated_at": "fillJsonTx (if (stMeta))"
+    },
+    {
+      "field": "txn",
+      "flow": [
+        "fillJsonTx parameter",
+        "txn->getTransactionID(), txn->getTxnType(), txn->getJson()"
+      ],
+      "origin": "std::shared_ptr<STTx const>, passed to fillJsonTx",
+      "transformations": [
+        "Assumed non-null (no explicit check in snippet)",
+        "Used for serialization and field extraction"
+      ],
+      "validated_at": "Implied by usage, not explicitly checked"
+    },
+    {
+      "field": "fill.context->apiVersion",
+      "flow": [
+        "fill.context->apiVersion",
+        "fillJson (ledger_index formatting)",
+        "fillJsonTx (hash/meta_blob fields, disables legacy JSON)"
+      ],
+      "origin": "RPC Context, set by API handler",
+      "transformations": [
+        "Compared to 1 to select output format/fields"
+      ],
+      "validated_at": "fillJson, fillJsonTx (if (apiVersion > 1))"
+    }
+  ],
+  "description": "This file provides functions to serialize ledger data, transactions, and state into JSON format for RPC responses in the XRPL (XRP Ledger) server. It handles various options for binary, expanded, and full output, and supports different API versions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LedgerFill.options (bitmask flags)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field LedgerFill.options (bitmask flags) validated by jss:: (JSON field name mapping), C++ type system, bitmask flag checks",
+      "issue_pattern": "Missing validation for LedgerFill.options (bitmask flags)",
+      "why_false_positive": "jss:: (JSON field name mapping), C++ type system, bitmask flag checks validates LedgerFill.options (bitmask flags) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LedgerHeader fields (type-checked by C++ struct)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field LedgerHeader fields (type-checked by C++ struct) validated by jss:: (JSON field name mapping), C++ type system, bitmask flag checks",
+      "issue_pattern": "Missing validation for LedgerHeader fields (type-checked by C++ struct)",
+      "why_false_positive": "jss:: (JSON field name mapping), C++ type system, bitmask flag checks validates LedgerHeader fields (type-checked by C++ struct) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "apiVersion (unsigned int, range checked in logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field apiVersion (unsigned int, range checked in logic) validated by jss:: (JSON field name mapping), C++ type system, bitmask flag checks",
+      "issue_pattern": "Missing validation for apiVersion (unsigned int, range checked in logic)",
+      "why_false_positive": "jss:: (JSON field name mapping), C++ type system, bitmask flag checks validates apiVersion (unsigned int, range checked in logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fill.options",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask checks (isFull, isExpanded, isBinary) at isFull, isExpanded, isBinary",
+      "issue_pattern": "Missing empty string validation for fill.options",
+      "why_false_positive": "bitmask checks (isFull, isExpanded, isBinary) validates fill.options for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "info.closeTime",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison to NetClock::time_point{} at fillJson",
+      "issue_pattern": "Missing empty string validation for info.closeTime",
+      "why_false_positive": "comparison to NetClock::time_point{} validates info.closeTime for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "stMeta",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer null check at fillJsonTx",
+      "issue_pattern": "Missing empty string validation for stMeta",
+      "why_false_positive": "pointer null check validates stMeta for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "stMeta",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "pointer null check at fillJsonTx",
+      "issue_pattern": "Missing type validation for stMeta",
+      "why_false_positive": "pointer null check validates stMeta type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "txn",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer null check (implied, not explicit in snippet) at fillJsonTx",
+      "issue_pattern": "Missing empty string validation for txn",
+      "why_false_positive": "pointer null check (implied, not explicit in snippet) validates txn for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "txn",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "pointer null check (implied, not explicit in snippet) at fillJsonTx",
+      "issue_pattern": "Missing type validation for txn",
+      "why_false_positive": "pointer null check (implied, not explicit in snippet) validates txn type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fill.context->apiVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison (apiVersion > 1) at fillJson, fillJsonTx",
+      "issue_pattern": "Missing empty string validation for fill.context->apiVersion",
+      "why_false_positive": "comparison (apiVersion > 1) validates fill.context->apiVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fill.context->apiVersion",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "comparison (apiVersion > 1) at fillJson, fillJsonTx",
+      "issue_pattern": "Missing range validation for fill.context->apiVersion",
+      "why_false_positive": "comparison (apiVersion > 1) validates fill.context->apiVersion range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerToJson.cpp",
+  "functions": [
+    {
+      "args": [
+        "fill"
+      ],
+      "lineno": 13,
+      "name": "isFull"
+    },
+    {
+      "args": [
+        "fill"
+      ],
+      "lineno": 18,
+      "name": "isExpanded"
+    },
+    {
+      "args": [
+        "fill"
+      ],
+      "lineno": 23,
+      "name": "isBinary"
+    },
+    {
+      "args": [
+        "json",
+        "closed",
+        "info",
+        "bFull",
+        "apiVersion"
+      ],
+      "lineno": 28,
+      "name": "fillJson"
+    },
+    {
+      "args": [
+        "json",
+        "closed",
+        "info"
+      ],
+      "lineno": 52,
+      "name": "fillJsonBinary"
+    },
+    {
+      "args": [
+        "fill",
+        "bBinary",
+        "bExpanded",
+        "txn",
+        "stMeta"
+      ],
+      "lineno": 67,
+      "name": "fillJsonTx"
+    },
+    {
+      "args": [
+        "json",
+        "fill"
+      ],
+      "lineno": 143,
+      "name": "fillJsonTx"
+    },
+    {
+      "args": [
+        "json",
+        "fill"
+      ],
+      "lineno": 170,
+      "name": "fillJsonState"
+    },
+    {
+      "args": [
+        "json",
+        "fill"
+      ],
+      "lineno": 194,
+      "name": "fillJsonQueue"
+    },
+    {
+      "args": [
+        "json",
+        "fill"
+      ],
+      "lineno": 224,
+      "name": "fillJson"
+    },
+    {
+      "args": [
+        "json",
+        "fill"
+      ],
+      "lineno": 244,
+      "name": "addJson"
+    },
+    {
+      "args": [
+        "fill"
+      ],
+      "lineno": 252,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "to",
+        "from"
+      ],
+      "lineno": 258,
+      "name": "copyFrom"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests in the XRPLF/rippled repository, especially in test files under src/test/app/ledger, src/test/rpc, and src/test/ledger. Tests would exercise ledger serialization via RPC calls (ledger, ledger_data, tx, etc.), covering different fill.options, apiVersion, and ledger states. However, pointer null checks (stMeta, txn) may not be explicitly tested for null pointer dereference, and edge cases for malformed or missing fields may not be fully covered. There is no evidence of explicit negative tests for all validation branches (e.g., apiVersion boundary, empty closeTime, null stMeta).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "LedgerFill.options (bitmask flags)",
+      "LedgerHeader fields (type-checked by C++ struct)",
+      "apiVersion (unsigned int, range checked in logic)"
+    ],
+    "framework": "jss:: (JSON field name mapping), C++ type system, bitmask flag checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "fill.options",
+      "location": "isFull, isExpanded, isBinary",
+      "validated_by": "bitmask checks (isFull, isExpanded, isBinary)",
+      "validates": [
+        "checks if options bitmask contains required flags (full, expand, binary)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic)",
+      "field": "info.closeTime",
+      "location": "fillJson",
+      "validated_by": "comparison to NetClock::time_point{}",
+      "validates": [
+        "checks if closeTime is set (not default/zero)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic)",
+      "field": "stMeta",
+      "location": "fillJsonTx",
+      "validated_by": "pointer null check",
+      "validates": [
+        "checks if stMeta pointer is not null before accessing"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (assumed, but dereferenced without explicit check)",
+      "field": "txn",
+      "location": "fillJsonTx",
+      "validated_by": "pointer null check (implied, not explicit in snippet)",
+      "validates": [
+        "assumes txn is valid shared_ptr before dereferencing"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic)",
+      "field": "fill.context->apiVersion",
+      "location": "fillJson, fillJsonTx",
+      "validated_by": "comparison (apiVersion > 1)",
+      "validates": [
+        "checks API version to determine output format/fields"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::runtime_error::runtime_error"
+      ],
+      "lineno": 6,
+      "name": "error"
+    }
+  ],
+  "description": "Defines a custom error struct for JSON-related exceptions, inheriting from std::runtime_error.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/json_errors.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "Json"
+    }
+  ]
+}

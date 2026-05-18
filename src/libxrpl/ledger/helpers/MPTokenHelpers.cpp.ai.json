@@ -1,0 +1,654 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "canAddHolding"
+      ],
+      "entry_point": "canAddHolding",
+      "purpose": "Validates if a holding can be added for a given MPTIssue.",
+      "validation_points": [
+        "view.read(keylet::mptIssuance(mptID)) - Validates MPTIssuance SLE existence",
+        "issuance->isFlag(lsfMPTCanTransfer) - Validates lsfMPTCanTransfer flag"
+      ]
+    },
+    {
+      "call_chain": [
+        "addEmptyHolding",
+        "authorizeMPToken"
+      ],
+      "entry_point": "addEmptyHolding",
+      "purpose": "Attempts to add an empty holding for an account and MPTIssue, authorizing if needed.",
+      "validation_points": [
+        "view.peek(keylet::mptIssuance(mptID)) - Validates MPTIssuance SLE existence",
+        "mpt->isFlag(lsfMPTLocked) - Validates lsfMPTLocked flag",
+        "view.peek(keylet::mptoken(mptID, accountID)) - Checks for duplicate holding"
+      ]
+    },
+    {
+      "call_chain": [
+        "isGlobalFrozen"
+      ],
+      "entry_point": "isGlobalFrozen",
+      "purpose": "Checks if the MPTIssue is globally frozen.",
+      "validation_points": [
+        "view.read(keylet::mptIssuance(mptIssue.getMptID())) - Validates MPTIssuance SLE existence",
+        "sle->isFlag(lsfMPTLocked) - Validates lsfMPTLocked flag"
+      ]
+    },
+    {
+      "call_chain": [
+        "isIndividualFrozen"
+      ],
+      "entry_point": "isIndividualFrozen",
+      "purpose": "Checks if a specific account's holding of an MPTIssue is frozen.",
+      "validation_points": [
+        "view.read(keylet::mptoken(mptIssue.getMptID(), account)) - Validates MPToken SLE existence",
+        "sle->isFlag(lsfMPTLocked) - Validates lsfMPTLocked flag"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFrozen",
+        "isGlobalFrozen",
+        "isIndividualFrozen",
+        "isVaultPseudoAccountFrozen"
+      ],
+      "entry_point": "isFrozen",
+      "purpose": "Checks if an MPTIssue is frozen for an account, globally, individually, or via vault pseudo-account.",
+      "validation_points": [
+        "isGlobalFrozen: view.read(keylet::mptIssuance(mptIssue.getMptID()))",
+        "isIndividualFrozen: view.read(keylet::mptoken(mptIssue.getMptID(), account))"
+      ]
+    },
+    {
+      "call_chain": [
+        "isAnyFrozen",
+        "isGlobalFrozen",
+        "isIndividualFrozen",
+        "isVaultPseudoAccountFrozen"
+      ],
+      "entry_point": "isAnyFrozen",
+      "purpose": "Checks if any of a set of accounts are frozen for an MPTIssue.",
+      "validation_points": [
+        "isGlobalFrozen: view.read(keylet::mptIssuance(mptIssue.getMptID()))",
+        "isIndividualFrozen: view.read(keylet::mptoken(mptIssue.getMptID(), account))"
+      ]
+    },
+    {
+      "call_chain": [
+        "authorizeMPToken"
+      ],
+      "entry_point": "authorizeMPToken",
+      "purpose": "Authorizes an account to hold an MPT, with optional unauthorization logic.",
+      "validation_points": [
+        "view.peek(keylet::account(account)) - Validates Account SLE existence"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mptID",
+      "flow": [
+        "MPTIssue.getMptID()",
+        "keylet::mptIssuance(mptID) or keylet::mptoken(mptID, account)",
+        "view.read/peek(keylet)",
+        "SLE pointer"
+      ],
+      "origin": "MPTIssue.getMptID()",
+      "transformations": [
+        "Used to construct keylet for SLE lookup"
+      ],
+      "validated_at": "view.read/peek(keylet::mptIssuance(mptID))"
+    },
+    {
+      "field": "lsfMPTCanTransfer",
+      "flow": [
+        "view.read(keylet::mptIssuance(mptID))",
+        "issuance->isFlag(lsfMPTCanTransfer)"
+      ],
+      "origin": "MPTIssuance SLE",
+      "transformations": [
+        "Boolean flag check"
+      ],
+      "validated_at": "issuance->isFlag(lsfMPTCanTransfer)"
+    },
+    {
+      "field": "lsfMPTLocked",
+      "flow": [
+        "view.read/peek(keylet::mptIssuance(mptID)) or view.read(keylet::mptoken(mptID, account))",
+        "sle->isFlag(lsfMPTLocked)"
+      ],
+      "origin": "MPTIssuance or MPToken SLE",
+      "transformations": [
+        "Boolean flag check"
+      ],
+      "validated_at": "sle->isFlag(lsfMPTLocked)"
+    },
+    {
+      "field": "sfTransferFee",
+      "flow": [
+        "view.read(keylet::mptIssuance(issuanceID))",
+        "sle->getFieldU16(sfTransferFee)",
+        "Rate calculation"
+      ],
+      "origin": "MPTIssuance SLE",
+      "transformations": [
+        "U16 field read, multiplied by 10,000 and added to 1,000,000,000"
+      ],
+      "validated_at": "sle && sle->isFieldPresent(sfTransferFee)"
+    },
+    {
+      "field": "accountID",
+      "flow": [
+        "addEmptyHolding(accountID, ...)",
+        "keylet::mptoken(mptID, accountID)",
+        "view.peek(keylet::mptoken(mptID, accountID))"
+      ],
+      "origin": "Function argument",
+      "transformations": [
+        "Used to construct keylet for SLE lookup"
+      ],
+      "validated_at": "view.peek(keylet::mptoken(mptID, accountID))"
+    }
+  ],
+  "description": "This file provides helper functions for managing Multi-Purpose Tokens (MPTokens) in the XRPL ledger, including authorization, freezing, transfer, escrow, creation, and validation logic for MPTokens and their associated ledger entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTIssuance SLE existence (by mptID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::mptIssuance(mptID)) at canAddHolding",
+      "issue_pattern": "Missing empty string validation for MPTIssuance SLE existence (by mptID)",
+      "why_false_positive": "view.read(keylet::mptIssuance(mptID)) validates MPTIssuance SLE existence (by mptID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfMPTCanTransfer flag on MPTIssuance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "issuance->isFlag(lsfMPTCanTransfer) at canAddHolding",
+      "issue_pattern": "Missing empty string validation for lsfMPTCanTransfer flag on MPTIssuance",
+      "why_false_positive": "issuance->isFlag(lsfMPTCanTransfer) validates lsfMPTCanTransfer flag on MPTIssuance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTIssuance SLE existence (by mptID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::mptIssuance(mptID)) at addEmptyHolding",
+      "issue_pattern": "Missing empty string validation for MPTIssuance SLE existence (by mptID)",
+      "why_false_positive": "view.peek(keylet::mptIssuance(mptID)) validates MPTIssuance SLE existence (by mptID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfMPTLocked flag on MPTIssuance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "mpt->isFlag(lsfMPTLocked) at addEmptyHolding",
+      "issue_pattern": "Missing empty string validation for lsfMPTLocked flag on MPTIssuance",
+      "why_false_positive": "mpt->isFlag(lsfMPTLocked) validates lsfMPTLocked flag on MPTIssuance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfMPTLocked flag on MPTIssuance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sle->isFlag(lsfMPTLocked) at isGlobalFrozen",
+      "issue_pattern": "Missing empty string validation for lsfMPTLocked flag on MPTIssuance",
+      "why_false_positive": "sle->isFlag(lsfMPTLocked) validates lsfMPTLocked flag on MPTIssuance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfMPTLocked flag on MPTToken",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sle->isFlag(lsfMPTLocked) at isIndividualFrozen",
+      "issue_pattern": "Missing empty string validation for lsfMPTLocked flag on MPTToken",
+      "why_false_positive": "sle->isFlag(lsfMPTLocked) validates lsfMPTLocked flag on MPTToken for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee field on MPTIssuance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sle->isFieldPresent(sfTransferFee) at transferRate",
+      "issue_pattern": "Missing empty string validation for sfTransferFee field on MPTIssuance",
+      "why_false_positive": "sle->isFieldPresent(sfTransferFee) validates sfTransferFee field on MPTIssuance for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/MPTokenHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 9,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 16,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue",
+        "int depth"
+      ],
+      "lineno": 23,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "std::initializer_list<AccountID> const& accounts",
+        "MPTIssue const& mptIssue",
+        "int depth"
+      ],
+      "lineno": 29,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTID const& issuanceID"
+      ],
+      "lineno": 48,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 59,
+      "name": "canAddHolding"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& accountID",
+        "XRPAmount priorBalance",
+        "MPTIssue const& mptIssue",
+        "beast::Journal journal"
+      ],
+      "lineno": 70,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "XRPAmount const& priorBalance",
+        "MPTID const& mptIssuanceID",
+        "AccountID const& account",
+        "beast::Journal journal",
+        "std::uint32_t flags",
+        "std::optional<AccountID> holderID"
+      ],
+      "lineno": 87,
+      "name": "authorizeMPToken"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& accountID",
+        "MPTIssue const& mptIssue",
+        "beast::Journal journal"
+      ],
+      "lineno": 176,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTIssue const& mptIssue",
+        "AccountID const& account",
+        "AuthType authType",
+        "int depth"
+      ],
+      "lineno": 200,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "MPTID const& mptIssuanceID",
+        "AccountID const& account",
+        "XRPAmount const& priorBalance",
+        "beast::Journal j"
+      ],
+      "lineno": 266,
+      "name": "enforceMPTokenAuthorization"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTIssue const& mptIssue",
+        "AccountID const& from",
+        "AccountID const& to"
+      ],
+      "lineno": 323,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset"
+      ],
+      "lineno": 338,
+      "name": "canTrade"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& sender",
+        "STAmount const& amount",
+        "beast::Journal j"
+      ],
+      "lineno": 352,
+      "name": "lockEscrowMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& sender",
+        "AccountID const& receiver",
+        "STAmount const& netAmount",
+        "STAmount const& grossAmount",
+        "beast::Journal j"
+      ],
+      "lineno": 406,
+      "name": "unlockEscrowMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "MPTID const& mptIssuanceID",
+        "AccountID const& account",
+        "std::uint32_t const flags"
+      ],
+      "lineno": 497,
+      "name": "createMPToken"
+    },
+    {
+      "args": [
+        "xrpl::ApplyView& view",
+        "xrpl::MPTIssue const& mptIssue",
+        "xrpl::AccountID const& holder",
+        "beast::Journal j"
+      ],
+      "lineno": 513,
+      "name": "checkCreateMPT"
+    },
+    {
+      "args": [
+        "SLE const& sleIssuance"
+      ],
+      "lineno": 534,
+      "name": "maxMPTAmount"
+    },
+    {
+      "args": [
+        "SLE const& sleIssuance"
+      ],
+      "lineno": 538,
+      "name": "availableMPTAmount"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTID const& mptID"
+      ],
+      "lineno": 544,
+      "name": "availableMPTAmount"
+    },
+    {
+      "args": [
+        "std::int64_t sendAmount",
+        "std::uint64_t outstandingAmount",
+        "std::int64_t maximumAmount",
+        "AllowMPTOverflow allowOverflow"
+      ],
+      "lineno": 551,
+      "name": "isMPTOverflow"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "MPTIssue const& issue"
+      ],
+      "lineno": 560,
+      "name": "issuerFundsToSelfIssue"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "MPTIssue const& issue",
+        "std::uint64_t amount"
+      ],
+      "lineno": 570,
+      "name": "issuerSelfDebitHookMPT"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "TxType txType",
+        "Asset const& asset",
+        "AccountID const& accountID"
+      ],
+      "lineno": 576,
+      "name": "checkMPTAllowed"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "TxType txType",
+        "Asset const& asset",
+        "AccountID const& accountID"
+      ],
+      "lineno": 613,
+      "name": "checkMPTTxAllowed"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for these helpers is likely found in integration/functional tests for MPT (Multi-Party Token) features, such as tests for freezing, transfer, and holding logic. Look for test files named like 'test_MPTokens.cpp', 'test_MPTIssuance.cpp', or similar in the test/ or src/test/ directories. Unit tests may not exist for all helpers, especially for internal validation logic (e.g., isGlobalFrozen, isIndividualFrozen), as these are often exercised indirectly via higher-level transaction tests. Gaps may exist in negative/error path coverage (e.g., missing SLEs, locked flags), and some error returns (tefINTERNAL, tecINTERNAL) are marked as LCOV_EXCL_LINE, indicating they may not be covered by tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "MPTIssuance SLE existence (by mptID)",
+      "location": "canAddHolding",
+      "validated_by": "view.read(keylet::mptIssuance(mptID))",
+      "validates": [
+        "Checks if the MPTIssuance ledger entry exists for the given mptID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_AUTH",
+      "field": "lsfMPTCanTransfer flag on MPTIssuance",
+      "location": "canAddHolding",
+      "validated_by": "issuance->isFlag(lsfMPTCanTransfer)",
+      "validates": [
+        "Checks if the MPTIssuance entry has the lsfMPTCanTransfer flag set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "MPTIssuance SLE existence (by mptID)",
+      "location": "addEmptyHolding",
+      "validated_by": "view.peek(keylet::mptIssuance(mptID))",
+      "validates": [
+        "Checks if the MPTIssuance ledger entry exists for the given mptID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "lsfMPTLocked flag on MPTIssuance",
+      "location": "addEmptyHolding",
+      "validated_by": "mpt->isFlag(lsfMPTLocked)",
+      "validates": [
+        "Checks if the MPTIssuance entry is locked (frozen)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "lsfMPTLocked flag on MPTIssuance",
+      "location": "isGlobalFrozen",
+      "validated_by": "sle->isFlag(lsfMPTLocked)",
+      "validates": [
+        "Checks if the global freeze flag is set on the MPTIssuance entry"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "lsfMPTLocked flag on MPTToken",
+      "location": "isIndividualFrozen",
+      "validated_by": "sle->isFlag(lsfMPTLocked)",
+      "validates": [
+        "Checks if the individual freeze flag is set on the MPTToken entry for the account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns default rate)",
+      "field": "sfTransferFee field on MPTIssuance",
+      "location": "transferRate",
+      "validated_by": "sle->isFieldPresent(sfTransferFee)",
+      "validates": [
+        "Checks if the transfer fee field is present before using it"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

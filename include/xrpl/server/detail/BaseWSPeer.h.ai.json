@@ -1,0 +1,197 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "Handler"
+    },
+    {
+      "lineno": 16,
+      "name": "Impl"
+    },
+    {
+      "lineno": 47,
+      "name": "Body"
+    },
+    {
+      "lineno": 47,
+      "name": "Headers"
+    },
+    {
+      "lineno": 138,
+      "name": "String"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "executor",
+        "timer",
+        "remote_address",
+        "request",
+        "journal"
+      ],
+      "lineno": 18,
+      "name": "BaseWSPeer"
+    }
+  ],
+  "description": "Defines the BaseWSPeer template class, which implements the core logic for an active WebSocket peer/session in the XRPL server, handling WebSocket handshake, reading, writing, ping/pong, timers, and closure.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/BaseWSPeer.h",
+  "functions": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "executor",
+        "timer",
+        "remote_address",
+        "request",
+        "journal"
+      ],
+      "lineno": 49,
+      "name": "BaseWSPeer"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "port"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "request"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "remote_endpoint"
+    },
+    {
+      "args": [
+        "w"
+      ],
+      "lineno": 88,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "close"
+    },
+    {
+      "args": [
+        "reason"
+      ],
+      "lineno": 98,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "complete"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "impl"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 114,
+      "name": "on_ws_handshake"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "do_write"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 118,
+      "name": "on_write"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 120,
+      "name": "on_write_fin"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "do_read"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 124,
+      "name": "on_read"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 126,
+      "name": "on_close"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "start_timer"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "cancel_timer"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 132,
+      "name": "on_ping"
+    },
+    {
+      "args": [
+        "kind",
+        "payload"
+      ],
+      "lineno": 134,
+      "name": "on_ping_pong"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 136,
+      "name": "on_timer"
+    },
+    {
+      "args": [
+        "ec",
+        "what"
+      ],
+      "lineno": 139,
+      "name": "fail"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

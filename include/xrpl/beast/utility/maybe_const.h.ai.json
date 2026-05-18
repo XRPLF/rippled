@@ -1,0 +1,20 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "maybe_const"
+    }
+  ],
+  "description": "Provides a template utility to conditionally make a type const or non-const based on a boolean value.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/maybe_const.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    }
+  ]
+}

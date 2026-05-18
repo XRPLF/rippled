@@ -1,0 +1,1292 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "app"
+    },
+    {
+      "lineno": 19,
+      "name": "id"
+    },
+    {
+      "lineno": 19,
+      "name": "slot"
+    },
+    {
+      "lineno": 19,
+      "name": "request"
+    },
+    {
+      "lineno": 19,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 19,
+      "name": "protocol"
+    },
+    {
+      "lineno": 19,
+      "name": "consumer"
+    },
+    {
+      "lineno": 19,
+      "name": "stream_ptr"
+    },
+    {
+      "lineno": 19,
+      "name": "overlay"
+    },
+    {
+      "lineno": 69,
+      "name": "pBuffStr"
+    },
+    {
+      "lineno": 730,
+      "name": "m"
+    },
+    {
+      "lineno": 730,
+      "name": "size"
+    },
+    {
+      "lineno": 730,
+      "name": "uncompressed_size"
+    },
+    {
+      "lineno": 730,
+      "name": "isCompressed"
+    },
+    {
+      "lineno": 730,
+      "name": "type"
+    },
+    {
+      "lineno": 379,
+      "name": "name"
+    },
+    {
+      "lineno": 379,
+      "name": "ec"
+    },
+    {
+      "lineno": 389,
+      "name": "reason"
+    },
+    {
+      "lineno": 478,
+      "name": "interval"
+    },
+    {
+      "lineno": 491,
+      "name": "fingerprint"
+    },
+    {
+      "lineno": 2362,
+      "name": "bytes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type&& request",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "Resource::Consumer consumer",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 19,
+      "name": "PeerImp"
+    },
+    {
+      "args": [],
+      "lineno": 2361,
+      "name": "Metrics"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PeerImp::PeerImp",
+        "getFingerprint",
+        "peerFeatureEnabled"
+      ],
+      "entry_point": "PeerImp::PeerImp",
+      "purpose": "Constructs a PeerImp object, validates and initializes peer identity, protocol, and features.",
+      "validation_points": [
+        "getFingerprint(slot->remote_endpoint(), publicKey, to_string(id))",
+        "peerFeatureEnabled(headers_, FEATURE_COMPR, ...)",
+        "peerFeatureEnabled(headers_, FEATURE_TXRR, ...)",
+        "peerFeatureEnabled(headers_, FEATURE_LEDGER_REPLAY, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerImp::run",
+        "PeerImp::send",
+        "PeerImp::charge"
+      ],
+      "entry_point": "PeerImp::run",
+      "purpose": "Starts peer session, manages message sending and resource charging.",
+      "validation_points": [
+        "Indirect: send/charge may validate message structure or resource usage, but not direct input validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerImp::addTxQueue",
+        "PeerImp::sendTxQueue"
+      ],
+      "entry_point": "PeerImp::addTxQueue",
+      "purpose": "Adds a transaction to the peer's queue and sends it.",
+      "validation_points": [
+        "Indirect: Transaction data may be validated before queuing, but not shown in this snippet."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "publicKey",
+      "flow": [
+        "PeerImp::PeerImp argument",
+        "getFingerprint(slot->remote_endpoint(), publicKey, to_string(id))",
+        "fingerprint_",
+        "prefix_ = makePrefix(fingerprint_)"
+      ],
+      "origin": "Constructor argument (from handshake/connection setup)",
+      "transformations": [
+        "Used as input to getFingerprint to generate a unique peer fingerprint"
+      ],
+      "validated_at": "getFingerprint"
+    },
+    {
+      "field": "slot->remote_endpoint()",
+      "flow": [
+        "slot->remote_endpoint()",
+        "getFingerprint(slot->remote_endpoint(), ...)",
+        "fingerprint_"
+      ],
+      "origin": "slot (shared_ptr<PeerFinder::Slot>)",
+      "transformations": [
+        "Used as input to getFingerprint"
+      ],
+      "validated_at": "getFingerprint"
+    },
+    {
+      "field": "protocol",
+      "flow": [
+        "PeerImp::PeerImp argument",
+        "protocol_ (member variable)"
+      ],
+      "origin": "Constructor argument (from handshake/connection setup)",
+      "transformations": [
+        "Type-enforced as ProtocolVersion"
+      ],
+      "validated_at": "Constructor (type enforcement)"
+    },
+    {
+      "field": "stream_ptr",
+      "flow": [
+        "PeerImp::PeerImp argument",
+        "std::move(stream_ptr)",
+        "stream_ptr_ (member variable)",
+        "stream_(*stream_ptr_)"
+      ],
+      "origin": "Constructor argument (unique_ptr<stream_type>)",
+      "transformations": [
+        "Ownership transferred via std::move, dereferenced for stream_"
+      ],
+      "validated_at": "Constructor (move semantics and dereference)"
+    },
+    {
+      "field": "headers_",
+      "flow": [
+        "PeerImp::PeerImp argument",
+        "request_ (moved)",
+        "headers_(request_)",
+        "peerFeatureEnabled(headers_, ...)"
+      ],
+      "origin": "request_ (http_request_type&& request)",
+      "transformations": [
+        "Parsed from HTTP request, checked for feature flags"
+      ],
+      "validated_at": "peerFeatureEnabled"
+    }
+  ],
+  "description": "Implements the PeerImp class, which manages peer connections, message handling, resource charging, and protocol logic for XRPL's overlay network. Handles peer lifecycle, message parsing, relay, validation, and resource management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "protocol (by type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field protocol (by type) validated by C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet)",
+      "issue_pattern": "Missing validation for protocol (by type)",
+      "why_false_positive": "C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet) validates protocol (by type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stream_ptr (by dereference)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field stream_ptr (by dereference) validated by C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet)",
+      "issue_pattern": "Missing validation for stream_ptr (by dereference)",
+      "why_false_positive": "C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet) validates stream_ptr (by dereference) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "publicKey (by fingerprint utility)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field publicKey (by fingerprint utility) validated by C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet)",
+      "issue_pattern": "Missing validation for publicKey (by fingerprint utility)",
+      "why_false_positive": "C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet) validates publicKey (by fingerprint utility) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "headers_ (by feature negotiation utility)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field headers_ (by feature negotiation utility) validated by C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet)",
+      "issue_pattern": "Missing validation for headers_ (by feature negotiation utility)",
+      "why_false_positive": "C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet) validates headers_ (by feature negotiation utility) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "publicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)) at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing empty string validation for publicKey",
+      "why_false_positive": "getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)) validates publicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "slot->remote_endpoint()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFingerprint(slot->remote_endpoint(), ...) at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing empty string validation for slot->remote_endpoint()",
+      "why_false_positive": "getFingerprint(slot->remote_endpoint(), ...) validates slot->remote_endpoint() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "protocol",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ProtocolVersion (type enforcement) at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing empty string validation for protocol",
+      "why_false_positive": "ProtocolVersion (type enforcement) validates protocol for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "protocol",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "ProtocolVersion (type enforcement) at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing type validation for protocol",
+      "why_false_positive": "ProtocolVersion (type enforcement) validates protocol type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stream_ptr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::move(stream_ptr) and dereference at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing empty string validation for stream_ptr",
+      "why_false_positive": "std::move(stream_ptr) and dereference validates stream_ptr for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "headers_ (from request_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peerFeatureEnabled(headers_, FEATURE_COMPR, \"lz4\", app_.config().COMPRESSIO...) at PeerImp::PeerImp (constructor)",
+      "issue_pattern": "Missing empty string validation for headers_ (from request_)",
+      "why_false_positive": "peerFeatureEnabled(headers_, FEATURE_COMPR, \"lz4\", app_.config().COMPRESSIO...) validates headers_ (from request_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/PeerImp.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type&& request",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "Resource::Consumer consumer",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 19,
+      "name": "PeerImp"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "~PeerImp"
+    },
+    {
+      "args": [
+        "std::string const& pBuffStr"
+      ],
+      "lineno": 69,
+      "name": "stringIsUint256Sized"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Message> const& m"
+      ],
+      "lineno": 143,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "sendTxQueue"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 208,
+      "name": "addTxQueue"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 225,
+      "name": "removeTxQueue"
+    },
+    {
+      "args": [
+        "Resource::Charge const& fee",
+        "std::string const& context"
+      ],
+      "lineno": 242,
+      "name": "charge"
+    },
+    {
+      "args": [],
+      "lineno": 253,
+      "name": "crawl"
+    },
+    {
+      "args": [],
+      "lineno": 261,
+      "name": "cluster"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "getVersion"
+    },
+    {
+      "args": [],
+      "lineno": 271,
+      "name": "json"
+    },
+    {
+      "args": [
+        "ProtocolFeature f"
+      ],
+      "lineno": 323,
+      "name": "supportsFeature"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq"
+      ],
+      "lineno": 335,
+      "name": "hasLedger"
+    },
+    {
+      "args": [
+        "std::uint32_t& minSeq",
+        "std::uint32_t& maxSeq"
+      ],
+      "lineno": 349,
+      "name": "ledgerRange"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 355,
+      "name": "hasTxSet"
+    },
+    {
+      "args": [],
+      "lineno": 361,
+      "name": "cycleStatus"
+    },
+    {
+      "args": [
+        "std::uint32_t uMin",
+        "std::uint32_t uMax"
+      ],
+      "lineno": 370,
+      "name": "hasRange"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "error_code ec"
+      ],
+      "lineno": 379,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 389,
+      "name": "fail"
+    },
+    {
+      "args": [],
+      "lineno": 410,
+      "name": "tryAsyncShutdown"
+    },
+    {
+      "args": [],
+      "lineno": 426,
+      "name": "shutdown"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 438,
+      "name": "onShutdown"
+    },
+    {
+      "args": [],
+      "lineno": 459,
+      "name": "close"
+    },
+    {
+      "args": [
+        "std::chrono::seconds interval"
+      ],
+      "lineno": 478,
+      "name": "setTimer"
+    },
+    {
+      "args": [
+        "std::string const& fingerprint"
+      ],
+      "lineno": 491,
+      "name": "makePrefix"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 497,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 540,
+      "name": "cancelTimer"
+    },
+    {
+      "args": [],
+      "lineno": 550,
+      "name": "doAccept"
+    },
+    {
+      "args": [],
+      "lineno": 594,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 599,
+      "name": "domain"
+    },
+    {
+      "args": [],
+      "lineno": 606,
+      "name": "doProtocolStart"
+    },
+    {
+      "args": [
+        "error_code ec",
+        "std::size_t bytes_transferred"
+      ],
+      "lineno": 629,
+      "name": "onReadMessage"
+    },
+    {
+      "args": [
+        "error_code ec",
+        "std::size_t bytes_transferred"
+      ],
+      "lineno": 687,
+      "name": "onWriteMessage"
+    },
+    {
+      "args": [
+        "std::uint16_t type"
+      ],
+      "lineno": 726,
+      "name": "onMessageUnknown"
+    },
+    {
+      "args": [
+        "std::uint16_t type",
+        "std::shared_ptr<::google::protobuf::Message> const& m",
+        "std::size_t size",
+        "std::size_t uncompressed_size",
+        "bool isCompressed"
+      ],
+      "lineno": 730,
+      "name": "onMessageBegin"
+    },
+    {
+      "args": [
+        "std::uint16_t",
+        "std::shared_ptr<::google::protobuf::Message> const&"
+      ],
+      "lineno": 755,
+      "name": "onMessageEnd"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMManifests> const& m"
+      ],
+      "lineno": 760,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMPing> const& m"
+      ],
+      "lineno": 771,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMCluster> const& m"
+      ],
+      "lineno": 792,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMEndpoints> const& m"
+      ],
+      "lineno": 841,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransaction> const& m"
+      ],
+      "lineno": 882,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransaction> const& m",
+        "bool eraseTxQueue",
+        "bool batch"
+      ],
+      "lineno": 887,
+      "name": "handleTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 963,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathRequest> const& m"
+      ],
+      "lineno": 1042,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathResponse> const& m"
+      ],
+      "lineno": 1062,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaRequest> const& m"
+      ],
+      "lineno": 1072,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaResponse> const& m"
+      ],
+      "lineno": 1092,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMLedgerData> const& m"
+      ],
+      "lineno": 1102,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProposeSet> const& m"
+      ],
+      "lineno": 1177,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMStatusChange> const& m"
+      ],
+      "lineno": 1242,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::uint32_t validationSeq"
+      ],
+      "lineno": 1347,
+      "name": "checkTracking"
+    },
+    {
+      "args": [
+        "std::uint32_t seq1",
+        "std::uint32_t seq2"
+      ],
+      "lineno": 1359,
+      "name": "checkTracking"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactionSet> const& m"
+      ],
+      "lineno": 1375,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::string const& messageType",
+        "std::string const& manifest",
+        "std::uint32_t version",
+        "std::vector<ValidatorBlobInfo> const& blobs"
+      ],
+      "lineno": 1392,
+      "name": "onValidatorListMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidatorList> const& m"
+      ],
+      "lineno": 1537,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidatorListCollection> const& m"
+      ],
+      "lineno": 1562,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidation> const& m"
+      ],
+      "lineno": 1592,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& m"
+      ],
+      "lineno": 1657,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactions> const& m"
+      ],
+      "lineno": 1777,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactions> const& m"
+      ],
+      "lineno": 1788,
+      "name": "handleHaveTransactions"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransactions> const& m"
+      ],
+      "lineno": 1822,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMSquelch> const& m"
+      ],
+      "lineno": 1842,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::lock_guard<std::mutex> const& lockedRecentLock"
+      ],
+      "lineno": 1877,
+      "name": "addLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& packet"
+      ],
+      "lineno": 1887,
+      "name": "doFetchPack"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& packet"
+      ],
+      "lineno": 1912,
+      "name": "doTransactions"
+    },
+    {
+      "args": [
+        "HashRouterFlags flags",
+        "bool checkSignature",
+        "std::shared_ptr<STTx const> const& stx",
+        "bool batch"
+      ],
+      "lineno": 1947,
+      "name": "checkTransaction"
+    },
+    {
+      "args": [
+        "bool isTrusted",
+        "std::shared_ptr<protocol::TMProposeSet> const& packet",
+        "RCLCxPeerPos peerPos"
+      ],
+      "lineno": 2037,
+      "name": "checkPropose"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STValidation> const& val",
+        "uint256 const& key",
+        "std::shared_ptr<protocol::TMValidation> const& packet"
+      ],
+      "lineno": 2072,
+      "name": "checkValidation"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "protocol::TMLedgerData& ledgerData"
+      ],
+      "lineno": 2107,
+      "name": "sendLedgerBase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 2132,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 2187,
+      "name": "getTxSet"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 2207,
+      "name": "processLedgerRequest"
+    },
+    {
+      "args": [
+        "bool haveItem"
+      ],
+      "lineno": 2327,
+      "name": "getScore"
+    },
+    {
+      "args": [],
+      "lineno": 2357,
+      "name": "isHighLatency"
+    },
+    {
+      "args": [
+        "std::uint64_t bytes"
+      ],
+      "lineno": 2362,
+      "name": "add_message"
+    },
+    {
+      "args": [],
+      "lineno": 2377,
+      "name": "average_bytes"
+    },
+    {
+      "args": [],
+      "lineno": 2383,
+      "name": "total_bytes"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code snippet does not show direct unit tests. The comment indicates that unit tests are missing for PeerImp due to a recent hotfix. Validation logic (getFingerprint, peerFeatureEnabled) may be tested elsewhere, but PeerImp construction and its validation paths are likely not directly covered. Integration tests may exercise these paths indirectly via overlay/peer connection tests, but explicit validation and error handling for malformed input or feature negotiation is likely under-tested. Test files to look for: test_overlay.cpp, test_peer.cpp, test_feature_flags.cpp, but these may not exist or may not cover all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "protocol (by type)",
+      "stream_ptr (by dereference)",
+      "publicKey (by fingerprint utility)",
+      "headers_ (by feature negotiation utility)"
+    ],
+    "framework": "C++ type system, custom utility functions (e.g., getFingerprint, peerFeatureEnabled), possible jss:: JSON validation (not shown in snippet)",
+    "validation_layer": "constructor (entry_point for PeerImp objects)"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "likely std::exception or custom error (not shown in snippet)",
+      "field": "publicKey",
+      "location": "PeerImp::PeerImp (constructor)",
+      "validated_by": "getFingerprint(slot->remote_endpoint(), publicKey, to_string(id))",
+      "validates": [
+        "publicKey is used to generate a fingerprint; likely checks for valid key format and uniqueness"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "likely std::exception or custom error (not shown in snippet)",
+      "field": "slot->remote_endpoint()",
+      "location": "PeerImp::PeerImp (constructor)",
+      "validated_by": "getFingerprint(slot->remote_endpoint(), ...)",
+      "validates": [
+        "remote_endpoint is used in fingerprint; likely checks for valid endpoint format"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time type error",
+      "field": "protocol",
+      "location": "PeerImp::PeerImp (constructor)",
+      "validated_by": "ProtocolVersion (type enforcement)",
+      "validates": [
+        "protocol must be of type ProtocolVersion"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::bad_alloc or std::exception if null",
+      "field": "stream_ptr",
+      "location": "PeerImp::PeerImp (constructor)",
+      "validated_by": "std::move(stream_ptr) and dereference",
+      "validates": [
+        "stream_ptr must not be null (dereferenced immediately)"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely throws if headers_ is malformed or missing required fields",
+      "field": "headers_ (from request_)",
+      "location": "PeerImp::PeerImp (constructor)",
+      "validated_by": "peerFeatureEnabled(headers_, FEATURE_COMPR, \"lz4\", app_.config().COMPRESSIO...)",
+      "validates": [
+        "headers_ must contain valid feature negotiation fields"
+      ],
+      "validation_type": "business_logic|format"
+    }
+  ]
+}

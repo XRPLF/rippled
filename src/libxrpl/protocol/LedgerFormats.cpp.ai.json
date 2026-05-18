@@ -1,0 +1,370 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerFormats::getInstance",
+        "LedgerFormats::LedgerFormats",
+        "LedgerFormats::add (via LEDGER_ENTRY macro)",
+        "SOTemplate::SOTemplate",
+        "SOElement (constructor)"
+      ],
+      "entry_point": "LedgerFormats::getInstance",
+      "purpose": "Initializes the singleton LedgerFormats instance, registering all ledger entry formats and their validation templates.",
+      "validation_points": [
+        "SOElement (constructor): Validates field type and requirements",
+        "SOTemplate: Aggregates SOElements for template-based validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "STObject::deserialize (or similar)",
+        "LedgerFormats::getInstance",
+        "LedgerFormats::findByType / findByName",
+        "SOTemplate::validate",
+        "SOElement (field validation)"
+      ],
+      "entry_point": "Deserialization of a ledger entry (e.g., STObject::setField, STObject::deserialize)",
+      "purpose": "When a ledger entry is deserialized, the code looks up the format and validates fields against the SOTemplate.",
+      "validation_points": [
+        "SOTemplate::validate: Checks required/optional fields, types, and constraints",
+        "SOElement: Per-field validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLedgerIndex",
+      "flow": [
+        "SField definition",
+        "getCommonFields() returns SOElement{sfLedgerIndex, soeOPTIONAL}",
+        "Passed to LEDGER_ENTRY macro via add()",
+        "Stored in SOTemplate for each ledger entry type",
+        "Used in SOTemplate::validate during deserialization"
+      ],
+      "origin": "Defined in SField.cpp/h, included in getCommonFields()",
+      "transformations": [
+        "Wrapped as SOElement with validation requirement",
+        "Aggregated into SOTemplate"
+      ],
+      "validated_at": "SOTemplate::validate (template-based validation on deserialization)"
+    },
+    {
+      "field": "sfLedgerEntryType",
+      "flow": [
+        "SField definition",
+        "getCommonFields() returns SOElement{sfLedgerEntryType, soeREQUIRED}",
+        "Passed to LEDGER_ENTRY macro via add()",
+        "Stored in SOTemplate for each ledger entry type",
+        "Used in SOTemplate::validate during deserialization"
+      ],
+      "origin": "Defined in SField.cpp/h, included in getCommonFields()",
+      "transformations": [
+        "Wrapped as SOElement with validation requirement",
+        "Aggregated into SOTemplate"
+      ],
+      "validated_at": "SOTemplate::validate (template-based validation on deserialization)"
+    },
+    {
+      "field": "sfFlags",
+      "flow": [
+        "SField definition",
+        "getCommonFields() returns SOElement{sfFlags, soeREQUIRED}",
+        "Passed to LEDGER_ENTRY macro via add()",
+        "Stored in SOTemplate for each ledger entry type",
+        "Used in SOTemplate::validate during deserialization"
+      ],
+      "origin": "Defined in SField.cpp/h, included in getCommonFields()",
+      "transformations": [
+        "Wrapped as SOElement with validation requirement",
+        "Aggregated into SOTemplate"
+      ],
+      "validated_at": "SOTemplate::validate (template-based validation on deserialization)"
+    },
+    {
+      "field": "fields from ledger_entries.macro",
+      "flow": [
+        "ledger_entries.macro",
+        "Expanded by LEDGER_ENTRY macro in LedgerFormats::LedgerFormats",
+        "Passed to add() as SOTemplate",
+        "Stored in LedgerFormats registry",
+        "Used in SOTemplate::validate during deserialization"
+      ],
+      "origin": "Defined in ledger_entries.macro, expanded via LEDGER_ENTRY macro",
+      "transformations": [
+        "Macro expansion to SOElement list",
+        "Aggregated into SOTemplate"
+      ],
+      "validated_at": "SOTemplate::validate (template-based validation on deserialization)"
+    }
+  ],
+  "description": "Defines and implements the LedgerFormats class, which manages the formats and common fields for ledger entries in the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerIndex",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerIndex validated by SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming",
+      "issue_pattern": "Missing validation for sfLedgerIndex",
+      "why_false_positive": "SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming validates sfLedgerIndex automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerEntryType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerEntryType validated by SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming",
+      "issue_pattern": "Missing validation for sfLedgerEntryType",
+      "why_false_positive": "SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming validates sfLedgerEntryType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFlags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfFlags validated by SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming",
+      "issue_pattern": "Missing validation for sfFlags",
+      "why_false_positive": "SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming validates sfFlags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "All fields defined in ledger_entries.macro",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field All fields defined in ledger_entries.macro validated by SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming",
+      "issue_pattern": "Missing validation for All fields defined in ledger_entries.macro",
+      "why_false_positive": "SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming validates All fields defined in ledger_entries.macro automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLedgerIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOElement/SOTemplate (template-based validation) at LedgerFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfLedgerIndex",
+      "why_false_positive": "SOElement/SOTemplate (template-based validation) validates sfLedgerIndex for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLedgerEntryType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOElement/SOTemplate (template-based validation) at LedgerFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfLedgerEntryType",
+      "why_false_positive": "SOElement/SOTemplate (template-based validation) validates sfLedgerEntryType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOElement/SOTemplate (template-based validation) at LedgerFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfFlags",
+      "why_false_positive": "SOElement/SOTemplate (template-based validation) validates sfFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "All fields defined in ledger_entries.macro",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add() via LEDGER_ENTRY macro at LedgerFormats::LedgerFormats (constructor)",
+      "issue_pattern": "Missing empty string validation for All fields defined in ledger_entries.macro",
+      "why_false_positive": "SOTemplate/add() via LEDGER_ENTRY macro validates All fields defined in ledger_entries.macro for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/LedgerFormats.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "LedgerFormats::getCommonFields"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "LedgerFormats::LedgerFormats"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "LedgerFormats::getInstance"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Validation logic is indirectly tested via tests that deserialize or construct ledger entries. Likely test files: STObject_test.cpp, LedgerFormats_test.cpp, and various transaction/ledger entry tests in the rippled/test/ directory. Direct unit tests for LedgerFormats or SOTemplate are rare; most coverage is via integration tests that exercise ledger entry parsing and validation. Gaps: No explicit unit tests for getCommonFields or the macro expansion logic; edge cases in field validation (e.g., missing required fields, wrong types) may not be exhaustively tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfLedgerIndex",
+      "sfLedgerEntryType",
+      "sfFlags",
+      "All fields defined in ledger_entries.macro"
+    ],
+    "framework": "SOTemplate/SOElement/SField (xrpl protocol templates), jss:: for field naming",
+    "validation_layer": "business_logic (template-based validation at object construction/deserialization)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (field is optional)",
+      "field": "sfLedgerIndex",
+      "location": "LedgerFormats::getCommonFields",
+      "validated_by": "SOElement/SOTemplate (template-based validation)",
+      "validates": [
+        "Field may be present or absent in the ledger entry"
+      ],
+      "validation_type": "presence (optional field)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "FieldNotPresent or similar (if missing, at deserialization/construction)",
+      "field": "sfLedgerEntryType",
+      "location": "LedgerFormats::getCommonFields",
+      "validated_by": "SOElement/SOTemplate (template-based validation)",
+      "validates": [
+        "Field must be present in the ledger entry"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "FieldNotPresent or similar (if missing, at deserialization/construction)",
+      "field": "sfFlags",
+      "location": "LedgerFormats::getCommonFields",
+      "validated_by": "SOElement/SOTemplate (template-based validation)",
+      "validates": [
+        "Field must be present in the ledger entry"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "FieldNotPresent, FieldWrongType, or similar (at deserialization/construction)",
+      "field": "All fields defined in ledger_entries.macro",
+      "location": "LedgerFormats::LedgerFormats (constructor)",
+      "validated_by": "SOTemplate/add() via LEDGER_ENTRY macro",
+      "validates": [
+        "Each field's presence (required/optional)",
+        "Each field's type (as defined in SField)",
+        "Business logic constraints as encoded in SOTemplate"
+      ],
+      "validation_type": "presence (required/optional), type (via SField), business logic (via template)"
+    }
+  ]
+}

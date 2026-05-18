@@ -1,0 +1,130 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doFee",
+        "context.app.getTxQ()",
+        "TxQ::doRPC(context.app)"
+      ],
+      "entry_point": "doFee",
+      "purpose": "Handles the 'fee' RPC request, retrieves fee-related info from the transaction queue, and returns it as JSON.",
+      "validation_points": [
+        "doFee: result.type() == Json::objectValue"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "result",
+      "flow": [
+        "TxQ::doRPC(context.app) returns Json::Value result",
+        "doFee receives result",
+        "doFee checks result.type()",
+        "doFee returns result if valid"
+      ],
+      "origin": "TxQ::doRPC(context.app)",
+      "transformations": [
+        "No transformation; result is passed through if valid"
+      ],
+      "validated_at": "doFee: result.type() == Json::objectValue"
+    },
+    {
+      "field": "context.params",
+      "flow": [
+        "context.params provided to doFee",
+        "If result.type() is invalid, RPC::inject_error(rpcINTERNAL, context.params) is called",
+        "context.params returned as error response"
+      ],
+      "origin": "RPC::JsonContext (input to doFee)",
+      "transformations": [
+        "Error injected into context.params if validation fails"
+      ],
+      "validated_at": "doFee: result.type() == Json::objectValue (failure path)"
+    }
+  ],
+  "description": "Implements the doFee RPC handler, which retrieves current fee information from the transaction queue in the XRPL application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result from getTxQ().doRPC(context.app)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type check (result.type() == Json::objectValue) at doFee",
+      "issue_pattern": "Missing empty string validation for result from getTxQ().doRPC(context.app)",
+      "why_false_positive": "type check (result.type() == Json::objectValue) validates result from getTxQ().doRPC(context.app) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result from getTxQ().doRPC(context.app)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type check (result.type() == Json::objectValue) at doFee",
+      "issue_pattern": "Missing type validation for result from getTxQ().doRPC(context.app)",
+      "why_false_positive": "type check (result.type() == Json::objectValue) validates result from getTxQ().doRPC(context.app) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/Fee.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doFee"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation (result.type() == Json::objectValue) is likely always true in normal operation, as the failure path is marked LCOV_EXCL_START/STOP (excluded from coverage). This suggests the error path is not tested. Tests for the normal path would be in RPC handler or integration tests for the 'fee' RPC, possibly in files like 'server_info_test.cpp', 'rpc_fee_test.cpp', or similar. There is no evidence of direct unit tests for the error path, and coverage tools will not report on it.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (xrpld/rpc, Json::Value type system)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE (likely assertion or abort), RPC::inject_error(rpcINTERNAL, context.params)",
+      "field": "result from getTxQ().doRPC(context.app)",
+      "location": "doFee",
+      "validated_by": "type check (result.type() == Json::objectValue)",
+      "validates": [
+        "Ensures that the result returned from getTxQ().doRPC(context.app) is a JSON object"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This header file declares a function to generate a JSON object containing counts of various objects or resources in the XRPL application, likely for administrative or monitoring purposes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/GetCounts.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "int minObjectCount"
+      ],
+      "lineno": 7,
+      "name": "getCountsJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

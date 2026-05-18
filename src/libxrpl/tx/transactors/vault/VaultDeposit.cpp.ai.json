@@ -1,0 +1,513 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultDeposit::preflight"
+      ],
+      "entry_point": "VaultDeposit::preflight",
+      "purpose": "Initial stateless validation of transaction fields before any ledger access.",
+      "validation_points": [
+        "ctx.tx[sfVaultID] == beast::zero (rejects empty vault ID)",
+        "ctx.tx[sfAmount] <= beast::zero (rejects zero or negative amount)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultDeposit::preclaim"
+      ],
+      "entry_point": "VaultDeposit::preclaim",
+      "purpose": "Stateful validation using ledger data, ensuring vault and asset correctness, transferability, and authorization.",
+      "validation_points": [
+        "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) (vault must exist)",
+        "assets.asset() != vaultAsset (asset must match vault's asset)",
+        "canTransfer(ctx.view, vaultAsset, account, vaultAccount) (asset must be transferable)",
+        "vaultShare == assets.asset() (vault shares and assets must differ)",
+        "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) (issuance must exist)",
+        "sleIssuance->isFlag(lsfMPTLocked) (issuance must not be locked)",
+        "isFrozen(ctx.view, account, vaultAsset) (asset must not be frozen for depositor)",
+        "isFrozen(ctx.view, account, vaultShare) (vault shares must not be frozen)",
+        "credentials::validDomain(ctx.view, *maybeDomainID, account) (authorization for private vaults)",
+        "requireAuth(ctx.view, vaultAsset, account) (source MPToken must exist if asset is MPT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultDeposit::doApply"
+      ],
+      "entry_point": "VaultDeposit::doApply",
+      "purpose": "Executes the actual deposit after all validations pass. Not shown in provided code, but would use validated data.",
+      "validation_points": [
+        "Assumes all validations in preflight and preclaim have passed"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "ctx.tx[sfVaultID]",
+        "preflight: checked for zero",
+        "preclaim: used to read vault from ledger (ctx.view.read(keylet::vault(...)))"
+      ],
+      "origin": "ctx.tx[sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key to fetch vault ledger entry"
+      ],
+      "validated_at": "preflight (zero check), preclaim (vault existence check)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "preflight: checked for <= 0",
+        "preclaim: extracted as 'assets', asset() compared to vaultAsset"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for non-positive value",
+        "asset() extracted for comparison"
+      ],
+      "validated_at": "preflight (<= 0 check), preclaim (asset match check)"
+    },
+    {
+      "field": "sfAsset (from vault)",
+      "flow": [
+        "vault->at(sfAsset)",
+        "preclaim: compared to assets.asset()",
+        "used in canTransfer, isFrozen, requireAuth"
+      ],
+      "origin": "vault->at(sfAsset) (ledger entry)",
+      "transformations": [
+        "Compared for equality",
+        "Passed to helper functions for further validation"
+      ],
+      "validated_at": "preclaim (asset match, transferability, frozen, auth checks)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "preclaim: used as 'account', compared to vault->at(sfOwner), passed to canTransfer, isFrozen, requireAuth"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared for ownership",
+        "Passed to helper functions"
+      ],
+      "validated_at": "preclaim (ownership, transferability, frozen, auth checks)"
+    },
+    {
+      "field": "sfShareMPTID",
+      "flow": [
+        "vault->at(sfShareMPTID)",
+        "preclaim: used to construct vaultShare (MPTIssue)",
+        "used to read sleIssuance"
+      ],
+      "origin": "vault->at(sfShareMPTID) (ledger entry)",
+      "transformations": [
+        "Used to construct MPTIssue",
+        "Used as key to fetch issuance ledger entry"
+      ],
+      "validated_at": "preclaim (vault shares vs asset, issuance existence, locked check)"
+    },
+    {
+      "field": "sfDomainID (optional)",
+      "flow": [
+        "sleIssuance->at(~sfDomainID)",
+        "preclaim: if present, used for credentials::validDomain"
+      ],
+      "origin": "sleIssuance->at(~sfDomainID) (ledger entry, optional)",
+      "transformations": [
+        "Optional presence check",
+        "Passed to domain validation"
+      ],
+      "validated_at": "preclaim (authorization for private vaults)"
+    }
+  ],
+  "description": "Implements the VaultDeposit transaction logic for depositing assets into a vault on the XRPL, including preflight, preclaim, and application logic with authorization, asset checks, and share issuance.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfVaultID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultDeposit::preflight",
+      "issue_pattern": "Missing format validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfAmount] <= beast::zero) at VaultDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "explicit check (ctx.tx[sfAmount] <= beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfAmount] <= beast::zero) at VaultDeposit::preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "explicit check (ctx.tx[sfAmount] <= beast::zero) validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.asset() vs vault->at(sfAsset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (assets.asset() != vaultAsset) at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAmount.asset() vs vault->at(sfAsset)",
+      "why_false_positive": "explicit check (assets.asset() != vaultAsset) validates sfAmount.asset() vs vault->at(sfAsset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "canTransfer (vaultAsset, account, vaultAccount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canTransfer function at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for canTransfer (vaultAsset, account, vaultAccount)",
+      "why_false_positive": "canTransfer function validates canTransfer (vaultAsset, account, vaultAccount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vaultShare == assets.asset()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for vaultShare == assets.asset()",
+      "why_false_positive": "explicit check validates vaultShare == assets.asset() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleIssuance existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for sleIssuance existence",
+      "why_false_positive": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) validates sleIssuance existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleIssuance->isFlag(lsfMPTLocked)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for sleIssuance->isFlag(lsfMPTLocked)",
+      "why_false_positive": "explicit check validates sleIssuance->isFlag(lsfMPTLocked) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isFrozen(ctx.view, account, vaultAsset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFrozen function at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for isFrozen(ctx.view, account, vaultAsset)",
+      "why_false_positive": "isFrozen function validates isFrozen(ctx.view, account, vaultAsset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isFrozen(ctx.view, account, vaultShare)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFrozen function at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for isFrozen(ctx.view, account, vaultShare)",
+      "why_false_positive": "isFrozen function validates isFrozen(ctx.view, account, vaultShare) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check at VaultDeposit::preclaim",
+      "issue_pattern": "Missing empty string validation for vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner)",
+      "why_false_positive": "explicit check validates vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultDeposit.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "VaultDeposit::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "VaultDeposit::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "VaultDeposit::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is likely covered by unit/integration tests for VaultDeposit transactions. Look for test files such as 'VaultDeposit_test.cpp', 'VaultTransactor_test.cpp', or generic transaction validation suites in the test/ or src/test/ directories. Edge cases like zero/empty vault ID, negative/zero amount, non-existent vault, asset mismatch, non-transferable/frozen assets, locked issuance, and private vault authorization are explicitly checked and should be tested. However, some internal errors (e.g., vault shares == asset, missing/locked issuance) are marked with LCOV_EXCL_START/STOP, indicating they may not be covered by standard tests. Tests for expired credentials and domain authorization may also be limited. Gaps may exist for rare or internal error paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfVaultID",
+      "location": "VaultDeposit::preflight",
+      "validated_by": "explicit check (ctx.tx[sfVaultID] == beast::zero)",
+      "validates": [
+        "VaultID must not be zero/empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "VaultDeposit::preflight",
+      "validated_by": "explicit check (ctx.tx[sfAmount] <= beast::zero)",
+      "validates": [
+        "Amount must be greater than zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfVaultID",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID]))",
+      "validates": [
+        "Vault must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecWRONG_ASSET",
+      "field": "sfAmount.asset() vs vault->at(sfAsset)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "explicit check (assets.asset() != vaultAsset)",
+      "validates": [
+        "Asset being deposited must match vault asset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "various TER codes (if not isTesSuccess)",
+      "field": "canTransfer (vaultAsset, account, vaultAccount)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "canTransfer function",
+      "validates": [
+        "Vault asset must be transferable from depositor to vault"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "vaultShare == assets.asset()",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "explicit check",
+      "validates": [
+        "Vault shares and assets must not be the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sleIssuance existence",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "ctx.view.read(keylet::mptIssuance(mptIssuanceID))",
+      "validates": [
+        "Issuance of vault shares must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sleIssuance->isFlag(lsfMPTLocked)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "explicit check",
+      "validates": [
+        "Issuance of vault shares must not be locked"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecFROZEN or tecLOCKED (depending on asset type)",
+      "field": "isFrozen(ctx.view, account, vaultAsset)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "isFrozen function",
+      "validates": [
+        "Depositor's asset must not be frozen"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecLOCKED",
+      "field": "isFrozen(ctx.view, account, vaultShare)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "isFrozen function",
+      "validates": [
+        "Vault shares must not be frozen for depositor"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "not shown in snippet, but likely access control error",
+      "field": "vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner)",
+      "location": "VaultDeposit::preclaim",
+      "validated_by": "explicit check",
+      "validates": [
+        "If vault is private, only owner or authorized can deposit"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

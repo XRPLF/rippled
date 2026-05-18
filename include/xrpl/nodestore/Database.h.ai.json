@@ -1,0 +1,300 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 28,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 28,
+      "name": "config"
+    },
+    {
+      "lineno": 28,
+      "name": "j"
+    },
+    {
+      "lineno": 46,
+      "name": "source"
+    },
+    {
+      "lineno": 59,
+      "name": "type"
+    },
+    {
+      "lineno": 59,
+      "name": "data"
+    },
+    {
+      "lineno": 59,
+      "name": "hash"
+    },
+    {
+      "lineno": 59,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 75,
+      "name": "s1"
+    },
+    {
+      "lineno": 75,
+      "name": "s2"
+    },
+    {
+      "lineno": 92,
+      "name": "fetchType"
+    },
+    {
+      "lineno": 93,
+      "name": "duplicate"
+    },
+    {
+      "lineno": 112,
+      "name": "callback"
+    },
+    {
+      "lineno": 148,
+      "name": "obj"
+    },
+    {
+      "lineno": 182,
+      "name": "count"
+    },
+    {
+      "lineno": 182,
+      "name": "sz"
+    },
+    {
+      "lineno": 188,
+      "name": "dstBackend"
+    },
+    {
+      "lineno": 188,
+      "name": "srcDB"
+    },
+    {
+      "lineno": 191,
+      "name": "fetches"
+    },
+    {
+      "lineno": 191,
+      "name": "hits"
+    },
+    {
+      "lineno": 191,
+      "name": "duration"
+    },
+    {
+      "lineno": 202,
+      "name": "fetchReport"
+    },
+    {
+      "lineno": 211,
+      "name": "f"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 19,
+      "name": "Database"
+    }
+  ],
+  "description": "Defines the xrpl::NodeStore::Database class, which provides a persistency layer for NodeObject instances in the XRP Ledger, handling storage, retrieval, and management of ledger node objects with support for asynchronous operations, statistics, and backend abstraction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Database.h",
+  "functions": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 27,
+      "name": "Database"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "~Database"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "Database& source"
+      ],
+      "lineno": 46,
+      "name": "importDatabase"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq"
+      ],
+      "lineno": 58,
+      "name": "store"
+    },
+    {
+      "args": [
+        "std::uint32_t s1",
+        "std::uint32_t s2"
+      ],
+      "lineno": 74,
+      "name": "isSameDB"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq",
+        "FetchType fetchType",
+        "bool duplicate"
+      ],
+      "lineno": 89,
+      "name": "fetchNodeObject"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq",
+        "std::function<void(std::shared_ptr<NodeObject> const&)>&& callback"
+      ],
+      "lineno": 106,
+      "name": "asyncFetch"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "getStoreCount"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "getFetchTotalCount"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "getFetchHitCount"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "getStoreSize"
+    },
+    {
+      "args": [],
+      "lineno": 142,
+      "name": "getFetchSize"
+    },
+    {
+      "args": [
+        "Json::Value& obj"
+      ],
+      "lineno": 147,
+      "name": "getCountsJson"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "fdRequired"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "isStopping"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "earliestLedgerSeq"
+    },
+    {
+      "args": [
+        "std::uint64_t count",
+        "std::uint64_t sz"
+      ],
+      "lineno": 181,
+      "name": "storeStats"
+    },
+    {
+      "args": [
+        "Backend& dstBackend",
+        "Database& srcDB"
+      ],
+      "lineno": 187,
+      "name": "importInternal"
+    },
+    {
+      "args": [
+        "uint64_t fetches",
+        "uint64_t hits",
+        "uint64_t duration"
+      ],
+      "lineno": 190,
+      "name": "updateFetchMetrics"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq",
+        "FetchReport& fetchReport",
+        "bool duplicate"
+      ],
+      "lineno": 200,
+      "name": "fetchNodeObject"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 210,
+      "name": "for_each"
+    },
+    {
+      "args": [],
+      "lineno": 218,
+      "name": "threadEntry"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "NodeStore"
+    }
+  ]
+}

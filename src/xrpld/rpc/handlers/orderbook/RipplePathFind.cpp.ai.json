@@ -1,0 +1,344 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doRipplePathFind"
+      ],
+      "entry_point": "doRipplePathFind",
+      "purpose": "Handles the ripple_path_find RPC request, performing validation and dispatching to the pathfinding engine.",
+      "validation_points": [
+        "if (context.app.config().PATH_SEARCH_MAX == 0)",
+        "if (!context.params.isMember(jss::ledger) && !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))",
+        "if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "PATH_SEARCH_MAX",
+      "flow": [
+        "config file or command line",
+        "AppConfig object",
+        "context.app.config().PATH_SEARCH_MAX",
+        "doRipplePathFind"
+      ],
+      "origin": "context.app.config().PATH_SEARCH_MAX (server config)",
+      "transformations": [
+        "Read as integer from config",
+        "Accessed directly"
+      ],
+      "validated_at": "doRipplePathFind: if (context.app.config().PATH_SEARCH_MAX == 0)"
+    },
+    {
+      "field": "ledger / ledger_index / ledger_hash",
+      "flow": [
+        "Client JSON request",
+        "context.params",
+        "doRipplePathFind"
+      ],
+      "origin": "context.params (JSON RPC request parameters)",
+      "transformations": [
+        "Checked for presence via isMember"
+      ],
+      "validated_at": "doRipplePathFind: if (!context.params.isMember(jss::ledger) && ...)"
+    },
+    {
+      "field": "validated ledger age",
+      "flow": [
+        "LedgerMaster tracks validated ledger timestamps",
+        "getValidatedLedgerAge() returns age in seconds",
+        "doRipplePathFind"
+      ],
+      "origin": "context.app.getLedgerMaster().getValidatedLedgerAge()",
+      "transformations": [
+        "Compared to RPC::Tuning::maxValidatedLedgerAge"
+      ],
+      "validated_at": "doRipplePathFind: if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge)"
+    }
+  ],
+  "description": "Implements the deprecated doRipplePathFind RPC handler for pathfinding in the XRPL, handling both default and ledger-specified pathfinding requests, including coroutine/job queue management for asynchronous execution.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger validated by jss:: (JSON field tags), rpcError (error handling), config() (application config validation)",
+      "issue_pattern": "Missing validation for ledger",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), config() (application config validation) validates ledger automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by jss:: (JSON field tags), rpcError (error handling), config() (application config validation)",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), config() (application config validation) validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash (via jss::)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash (via jss::) validated by jss:: (JSON field tags), rpcError (error handling), config() (application config validation)",
+      "issue_pattern": "Missing validation for ledger_hash (via jss::)",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), config() (application config validation) validates ledger_hash (via jss::) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "PATH_SEARCH_MAX (via config)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field PATH_SEARCH_MAX (via config) validated by jss:: (JSON field tags), rpcError (error handling), config() (application config validation)",
+      "issue_pattern": "Missing validation for PATH_SEARCH_MAX (via config)",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), config() (application config validation) validates PATH_SEARCH_MAX (via config) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "PATH_SEARCH_MAX (config)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (context.app.config().PATH_SEARCH_MAX == 0) at doRipplePathFind",
+      "issue_pattern": "Missing empty string validation for PATH_SEARCH_MAX (config)",
+      "why_false_positive": "if (context.app.config().PATH_SEARCH_MAX == 0) validates PATH_SEARCH_MAX (config) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger, ledger_index, ledger_hash (request params)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!context.params.isMember(jss::ledger) && ...) at doRipplePathFind",
+      "issue_pattern": "Missing empty string validation for ledger, ledger_index, ledger_hash (request params)",
+      "why_false_positive": "if (!context.params.isMember(jss::ledger) && ...) validates ledger, ledger_index, ledger_hash (request params) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validated ledger age",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge) at doRipplePathFind",
+      "issue_pattern": "Missing empty string validation for validated ledger age",
+      "why_false_positive": "if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge) validates validated ledger age for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/RipplePathFind.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doRipplePathFind"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this handler is likely found in integration or functional test suites for the ripple_path_find RPC. Look for test files such as 'ripple_path_find_test.cpp', 'Path_find_test.cpp', or generic RPC handler tests in the 'test/rpc' or 'test/orderbook' directories. Unit tests may mock the Context and config to test validation branches (e.g., PATH_SEARCH_MAX == 0, missing ledger params, stale validated ledger). Gaps may exist in edge cases (e.g., simultaneous config and ledger errors, coroutine/job queue shutdown scenarios). Template-based validation may be tested elsewhere, but direct coverage of these specific validation branches should be confirmed.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger",
+      "ledger_index",
+      "ledger_hash (via jss::)",
+      "PATH_SEARCH_MAX (via config)"
+    ],
+    "framework": "jss:: (JSON field tags), rpcError (error handling), config() (application config validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNOT_SUPPORTED)",
+      "field": "PATH_SEARCH_MAX (config)",
+      "location": "doRipplePathFind",
+      "validated_by": "if (context.app.config().PATH_SEARCH_MAX == 0)",
+      "validates": [
+        "Ensures pathfinding is enabled in config"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (defaults to pathfinding defaults)",
+      "field": "ledger, ledger_index, ledger_hash (request params)",
+      "location": "doRipplePathFind",
+      "validated_by": "if (!context.params.isMember(jss::ledger) && ...)",
+      "validates": [
+        "Checks if any ledger specifier is present in params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_NETWORK) or rpcError(rpcNOT_SYNCED)",
+      "field": "validated ledger age",
+      "location": "doRipplePathFind",
+      "validated_by": "if (context.app.getLedgerMaster().getValidatedLedgerAge() > RPC::Tuning::maxValidatedLedgerAge)",
+      "validates": [
+        "Checks if the validated ledger is too old for pathfinding"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

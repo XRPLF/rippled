@@ -1,0 +1,383 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "f"
+    },
+    {
+      "lineno": 19,
+      "name": "c"
+    },
+    {
+      "lineno": 32,
+      "name": "ctx"
+    },
+    {
+      "lineno": 67,
+      "name": "view"
+    },
+    {
+      "lineno": 67,
+      "name": "tx"
+    },
+    {
+      "lineno": 81,
+      "name": "dest"
+    },
+    {
+      "lineno": 81,
+      "name": "amount"
+    },
+    {
+      "lineno": 81,
+      "name": "account"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "EscrowFinish::preflight"
+      ],
+      "entry_point": "EscrowFinish::preflight",
+      "purpose": "Initial transaction shape validation: checks that if sfCondition is present, sfFulfillment is also present (and vice versa).",
+      "validation_points": [
+        "EscrowFinish::preflight: Validates presence/absence of sfCondition and sfFulfillment."
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowFinish::preflightSigValidated",
+        "checkCondition (if both sfCondition and sfFulfillment present)",
+        "credentials::checkFields"
+      ],
+      "entry_point": "EscrowFinish::preflightSigValidated",
+      "purpose": "Performs deeper validation after signature checks: validates condition/fulfillment pair, and credential fields.",
+      "validation_points": [
+        "checkCondition: Validates that fulfillment matches condition (calls Condition::deserialize, Fulfillment::deserialize, validate).",
+        "credentials::checkFields: Validates credential fields."
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowFinish::doApply",
+        "escrowFinishPreclaimHelper<Issue> or escrowFinishPreclaimHelper<MPTIssue>"
+      ],
+      "entry_point": "EscrowFinish::doApply",
+      "purpose": "Applies the transaction to the ledger, after all preflight/preclaim checks.",
+      "validation_points": [
+        "escrowFinishPreclaimHelper: Validates destination authorization and frozen status (not directly related to sfCondition/sfFulfillment, but part of overall validation)."
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowFinish::checkExtraFeatures"
+      ],
+      "entry_point": "EscrowFinish::checkExtraFeatures",
+      "purpose": "Checks if credential features are enabled if sfCredentialIDs is present.",
+      "validation_points": [
+        "EscrowFinish::checkExtraFeatures: Validates feature flag for credentials."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfCondition",
+      "flow": [
+        "Transaction input",
+        "EscrowFinish::preflight (checked for presence)",
+        "EscrowFinish::preflightSigValidated (passed to checkCondition)",
+        "checkCondition (deserialized and validated)"
+      ],
+      "origin": "ctx.tx[~sfCondition] (transaction input)",
+      "transformations": [
+        "Deserialized to Condition object in checkCondition"
+      ],
+      "validated_at": "EscrowFinish::preflight (presence), checkCondition (validity)"
+    },
+    {
+      "field": "sfFulfillment",
+      "flow": [
+        "Transaction input",
+        "EscrowFinish::preflight (checked for presence)",
+        "EscrowFinish::preflightSigValidated (passed to checkCondition)",
+        "checkCondition (deserialized and validated)"
+      ],
+      "origin": "ctx.tx[~sfFulfillment] (transaction input)",
+      "transformations": [
+        "Deserialized to Fulfillment object in checkCondition"
+      ],
+      "validated_at": "EscrowFinish::preflight (presence), checkCondition (validity)"
+    },
+    {
+      "field": "sfCredentialIDs",
+      "flow": [
+        "Transaction input",
+        "EscrowFinish::checkExtraFeatures (checked for presence and feature flag)",
+        "EscrowFinish::preflightSigValidated (passed to credentials::checkFields)"
+      ],
+      "origin": "ctx.tx[~sfCredentialIDs] (transaction input)",
+      "transformations": [
+        "Checked for presence, then validated by credentials::checkFields"
+      ],
+      "validated_at": "EscrowFinish::checkExtraFeatures, credentials::checkFields"
+    }
+  ],
+  "description": "Implements the EscrowFinish transaction logic for the XRPL, including preflight checks, condition/fulfillment validation, fee calculation, and ledger application for both XRP and token escrows.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCondition",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCondition validated by Custom validation logic, cryptographic condition/fulfillment library, credentials helper",
+      "issue_pattern": "Missing validation for sfCondition",
+      "why_false_positive": "Custom validation logic, cryptographic condition/fulfillment library, credentials helper validates sfCondition automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFulfillment",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfFulfillment validated by Custom validation logic, cryptographic condition/fulfillment library, credentials helper",
+      "issue_pattern": "Missing validation for sfFulfillment",
+      "why_false_positive": "Custom validation logic, cryptographic condition/fulfillment library, credentials helper validates sfFulfillment automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCredentialIDs validated by Custom validation logic, cryptographic condition/fulfillment library, credentials helper",
+      "issue_pattern": "Missing validation for sfCredentialIDs",
+      "why_false_positive": "Custom validation logic, cryptographic condition/fulfillment library, credentials helper validates sfCredentialIDs automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCondition and sfFulfillment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic at EscrowFinish::preflight",
+      "issue_pattern": "Missing empty string validation for sfCondition and sfFulfillment",
+      "why_false_positive": "explicit logic validates sfCondition and sfFulfillment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCondition and sfFulfillment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkCondition (calls Condition::deserialize, Fulfillment::deserialize, validate) at EscrowFinish::preflightSigValidated (via checkCondition)",
+      "issue_pattern": "Missing empty string validation for sfCondition and sfFulfillment",
+      "why_false_positive": "checkCondition (calls Condition::deserialize, Fulfillment::deserialize, validate) validates sfCondition and sfFulfillment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Credential fields (e.g., sfCredentialIDs)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::checkFields at EscrowFinish::preflightSigValidated",
+      "issue_pattern": "Missing empty string validation for Credential fields (e.g., sfCredentialIDs)",
+      "why_false_positive": "credentials::checkFields validates Credential fields (e.g., sfCredentialIDs) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic at EscrowFinish::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfCredentialIDs",
+      "why_false_positive": "explicit logic validates sfCredentialIDs for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/escrow/EscrowFinish.cpp",
+  "functions": [
+    {
+      "args": [
+        "Slice f",
+        "Slice c"
+      ],
+      "lineno": 19,
+      "name": "checkCondition"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "EscrowFinish::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 36,
+      "name": "EscrowFinish::preflight"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 46,
+      "name": "EscrowFinish::preflightSigValidated"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 67,
+      "name": "EscrowFinish::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& dest",
+        "STAmount const& amount"
+      ],
+      "lineno": 81,
+      "name": "escrowFinishPreclaimHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& dest",
+        "STAmount const& amount"
+      ],
+      "lineno": 98,
+      "name": "escrowFinishPreclaimHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 117,
+      "name": "EscrowFinish::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "EscrowFinish::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "EscrowFinish transaction logic is typically tested in unit/integration tests under the transaction suite, e.g., 'test/tx/Escrow_test.cpp', 'test/tx/EscrowFinish_test.cpp', or similar. These tests usually cover: (1) presence/absence of sfCondition/sfFulfillment, (2) valid/invalid condition/fulfillment pairs, (3) credential field validation, (4) feature flag gating. Gaps may exist in edge cases for malformed credential fields, rare cryptographic condition types, or feature-flag transitions. Direct tests for credential feature gating may be limited if featureCredentials is new or experimental.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfCondition",
+      "sfFulfillment",
+      "sfCredentialIDs"
+    ],
+    "framework": "Custom validation logic, cryptographic condition/fulfillment library, credentials helper",
+    "validation_layer": "business_logic (preflight/preflightSigValidated functions)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfCondition and sfFulfillment",
+      "location": "EscrowFinish::preflight",
+      "validated_by": "explicit logic",
+      "validates": [
+        "If one of sfCondition or sfFulfillment is present, the other must also be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none in preflightSigValidated (just sets router flags); deserialization may fail internally",
+      "field": "sfCondition and sfFulfillment",
+      "location": "EscrowFinish::preflightSigValidated (via checkCondition)",
+      "validated_by": "checkCondition (calls Condition::deserialize, Fulfillment::deserialize, validate)",
+      "validates": [
+        "sfCondition is a valid serialized Condition",
+        "sfFulfillment is a valid serialized Fulfillment",
+        "Fulfillment matches Condition"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "error code returned (not tesSUCCESS)",
+      "field": "Credential fields (e.g., sfCredentialIDs)",
+      "location": "EscrowFinish::preflightSigValidated",
+      "validated_by": "credentials::checkFields",
+      "validates": [
+        "Credential fields are present and valid according to credential rules"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (returns bool)",
+      "field": "sfCredentialIDs",
+      "location": "EscrowFinish::checkExtraFeatures",
+      "validated_by": "explicit logic",
+      "validates": [
+        "If sfCredentialIDs is present, featureCredentials must be enabled"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

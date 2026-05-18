@@ -1,0 +1,35 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "Key"
+    },
+    {
+      "lineno": 12,
+      "name": "T"
+    },
+    {
+      "lineno": 13,
+      "name": "Clock"
+    },
+    {
+      "lineno": 14,
+      "name": "Compare"
+    },
+    {
+      "lineno": 15,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the aged_multimap template alias, a time-aware associative container allowing multiple values per key, based on aged_ordered_container.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_multimap.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "name"
+    },
+    {
+      "lineno": 23,
+      "name": "module"
+    },
+    {
+      "lineno": 24,
+      "name": "library"
+    },
+    {
+      "lineno": 25,
+      "name": "manual"
+    },
+    {
+      "lineno": 26,
+      "name": "priority"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "module",
+        "library",
+        "manual",
+        "priority"
+      ],
+      "lineno": 19,
+      "name": "insert_suite"
+    }
+  ],
+  "description": "Provides infrastructure for registering and managing unit test suites during static initialization in the beast::unit_test namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/global_suites.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "global_suites"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "global_suites"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "unit_test"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

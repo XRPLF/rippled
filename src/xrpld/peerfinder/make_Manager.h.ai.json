@@ -1,0 +1,51 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "io_context"
+    },
+    {
+      "lineno": 13,
+      "name": "clock"
+    },
+    {
+      "lineno": 14,
+      "name": "journal"
+    },
+    {
+      "lineno": 15,
+      "name": "config"
+    },
+    {
+      "lineno": 16,
+      "name": "collector"
+    }
+  ],
+  "classes": [],
+  "description": "This file declares a factory function to create a new PeerFinder Manager instance for the XRPL (Ripple) network, within the xrpl::PeerFinder namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/make_Manager.h",
+  "functions": [
+    {
+      "args": [
+        "io_context",
+        "clock",
+        "journal",
+        "config",
+        "collector"
+      ],
+      "lineno": 11,
+      "name": "make_Manager"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "PeerFinder"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# `beast/insight/Collector.cpp`
+
+This file provides the out-of-line definition of `Collector::~Collector()`, the pure-virtual destructor for the abstract `Collector` interface in the `beast::insight` metrics subsystem.
+
+The single line `Collector::~Destructor() = default;` exists for a non-obvious reason: in C++, a pure virtual destructor (declared `= 0` in the header) must still have an external definition because destructors always form a chain — when a derived class is destroyed, the compiler emits a call to every base class destructor in turn. Without this definition the linker would fail on any translation unit that destroys a `Collector`-derived object. Emitting it as `= default` in the `.cpp` rather than inline in the header keeps the vtable anchored to a single translation unit, avoiding duplicate-symbol and ODR issues that arise when a class with virtual functions is defined entirely in a header.
+
+The `Collector` class itself is the root abstraction for metrics collection in the XRPL node. Callers obtain a `std::shared_ptr<Collector>` and call its `make_counter`, `make_gauge`, `make_event`, `make_meter`, and `make_hook` factory methods to register named metrics. Two concrete implementations exist: `NullCollector`, which silently discards all metrics (useful in tests or when telemetry is disabled), and `StatsDCollector`, which streams metrics over UDP to a StatsD-compatible backend.

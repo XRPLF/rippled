@@ -1,0 +1,191 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Output const& output"
+      ],
+      "lineno": 73,
+      "name": "Writer"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "Impl"
+    }
+  ],
+  "description": "This file defines the Json::Writer class, an efficient, O(1)-space, O(1)-granular JSON writer for streaming JSON output with minimal memory usage. It provides methods to construct JSON objects and arrays incrementally, supporting both scalar and nested values, and ensures proper closure of all structures.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/Writer.h",
+  "functions": [
+    {
+      "args": [
+        "Output const& output"
+      ],
+      "lineno": 74,
+      "name": "Writer"
+    },
+    {
+      "args": [
+        "Writer&&"
+      ],
+      "lineno": 75,
+      "name": "Writer"
+    },
+    {
+      "args": [
+        "Writer&&"
+      ],
+      "lineno": 76,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "~Writer"
+    },
+    {
+      "args": [
+        "CollectionType"
+      ],
+      "lineno": 81,
+      "name": "startRoot"
+    },
+    {
+      "args": [
+        "CollectionType"
+      ],
+      "lineno": 84,
+      "name": "startAppend"
+    },
+    {
+      "args": [
+        "CollectionType",
+        "std::string const& key"
+      ],
+      "lineno": 87,
+      "name": "startSet"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "finish"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "finishAll"
+    },
+    {
+      "args": [
+        "Scalar t"
+      ],
+      "lineno": 101,
+      "name": "append"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "rawAppend"
+    },
+    {
+      "args": [
+        "std::string const& tag",
+        "Type t"
+      ],
+      "lineno": 117,
+      "name": "set"
+    },
+    {
+      "args": [
+        "std::string const& key"
+      ],
+      "lineno": 128,
+      "name": "rawSet"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 134,
+      "name": "output"
+    },
+    {
+      "args": [
+        "char const*"
+      ],
+      "lineno": 137,
+      "name": "output"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 140,
+      "name": "output"
+    },
+    {
+      "args": [
+        "std::nullptr_t"
+      ],
+      "lineno": 143,
+      "name": "output"
+    },
+    {
+      "args": [
+        "float"
+      ],
+      "lineno": 146,
+      "name": "output"
+    },
+    {
+      "args": [
+        "double"
+      ],
+      "lineno": 149,
+      "name": "output"
+    },
+    {
+      "args": [
+        "bool"
+      ],
+      "lineno": 152,
+      "name": "output"
+    },
+    {
+      "args": [
+        "Type t"
+      ],
+      "lineno": 155,
+      "name": "output"
+    },
+    {
+      "args": [
+        "Json::StaticString const& t"
+      ],
+      "lineno": 160,
+      "name": "output"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 165,
+      "name": "implOutput"
+    },
+    {
+      "args": [
+        "bool condition",
+        "std::string const& message"
+      ],
+      "lineno": 169,
+      "name": "check"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "Json"
+    }
+  ]
+}

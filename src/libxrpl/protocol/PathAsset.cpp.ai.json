@@ -1,0 +1,90 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "to_string(PathAsset)",
+        "std::visit([&](auto const& issue) { return to_string(issue); }, asset.value())",
+        "to_string(issue) (for each variant type in PathAsset)"
+      ],
+      "entry_point": "to_string(PathAsset const& asset)",
+      "purpose": "Converts a PathAsset to its string representation by dispatching to the appropriate to_string overload for the underlying variant type.",
+      "validation_points": [
+        "No explicit validation in this chain. Assumes asset.value() holds a valid variant."
+      ]
+    },
+    {
+      "call_chain": [
+        "operator<<(std::ostream&, PathAsset)",
+        "to_string(PathAsset)",
+        "std::visit([&](auto const& issue) { return to_string(issue); }, asset.value())",
+        "to_string(issue)"
+      ],
+      "entry_point": "operator<<(std::ostream& os, PathAsset const& x)",
+      "purpose": "Streams a PathAsset to an output stream by converting it to a string.",
+      "validation_points": [
+        "No explicit validation in this chain. Relies on to_string(PathAsset) and underlying variant."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "asset.value()",
+      "flow": [
+        "PathAsset constructed (source unknown)",
+        "Passed to to_string(PathAsset)",
+        "asset.value() extracted (variant)",
+        "std::visit dispatches to to_string(issue)",
+        "String returned"
+      ],
+      "origin": "PathAsset instance (likely constructed elsewhere, possibly from user input or deserialization)",
+      "transformations": [
+        "Variant visitation (type-dependent dispatch)",
+        "Conversion to string via to_string(issue)"
+      ],
+      "validated_at": "No validation in this file; assumes asset.value() is valid. Validation (if any) must occur at PathAsset construction or in to_string(issue)."
+    }
+  ],
+  "description": "Provides utility functions for converting PathAsset objects to string representations and for outputting them to streams within the xrpl namespace.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/PathAsset.cpp",
+  "functions": [
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 6,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 11,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains only formatting/serialization logic (to_string, operator<<) and does not perform validation. Test coverage would be indirect, via tests that check string output for PathAsset or its variant types. Tests likely exist in files covering PathAsset, Issue, or serialization (e.g., PathAsset_test.cpp, Issue_test.cpp, or protocol/Path_test.cpp). There is no evidence of direct validation or error handling in this code, so validation coverage depends on upstream construction and variant handling. Gaps: No explicit tests for malformed or invalid PathAsset variants in this code; relies on upstream validation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

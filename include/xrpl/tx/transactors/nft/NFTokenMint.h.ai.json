@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    },
+    {
+      "lineno": 24,
+      "name": "ctx"
+    },
+    {
+      "lineno": 27,
+      "name": "ctx"
+    },
+    {
+      "lineno": 33,
+      "name": "flags"
+    },
+    {
+      "lineno": 33,
+      "name": "fee"
+    },
+    {
+      "lineno": 33,
+      "name": "issuer"
+    },
+    {
+      "lineno": 33,
+      "name": "taxon"
+    },
+    {
+      "lineno": 33,
+      "name": "tokenSeq"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "NFTokenMint"
+    }
+  ],
+  "description": "Defines the NFTokenMint transactor class for minting NFTs on the XRPL, including methods for preflight checks, flag masking, and NFT ID creation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/nft/NFTokenMint.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 13,
+      "name": "NFTokenMint"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "std::uint16_t flags",
+        "std::uint16_t fee",
+        "AccountID const& issuer",
+        "nft::Taxon taxon",
+        "std::uint32_t tokenSeq"
+      ],
+      "lineno": 33,
+      "name": "createNFTokenID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

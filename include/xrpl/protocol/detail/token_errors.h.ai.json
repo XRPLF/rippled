@@ -1,0 +1,50 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "c"
+    },
+    {
+      "lineno": 55,
+      "name": "e"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "TokenCodecErrcCategory"
+    }
+  ],
+  "description": "Defines the TokenCodecErrc error code enum and its integration with std::error_code for XRPL token codec errors, including a custom error category and error code creation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/detail/token_errors.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "TokenCodecErrcCategory"
+    },
+    {
+      "args": [
+        "e"
+      ],
+      "lineno": 55,
+      "name": "make_error_code"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 18,
+      "name": "std"
+    },
+    {
+      "lineno": 22,
+      "name": "xrpl::detail"
+    }
+  ]
+}

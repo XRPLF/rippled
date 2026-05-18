@@ -1,0 +1,176 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "sle"
+    },
+    {
+      "lineno": 29,
+      "name": "viewAccount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sle",
+        "AccountID const& viewAccount"
+      ],
+      "lineno": 27,
+      "name": "TrustLineBase"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "PathFindTrustLine"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sle",
+        "AccountID const& viewAccount"
+      ],
+      "lineno": 140,
+      "name": "RPCTrustLine"
+    }
+  ],
+  "description": "Defines classes and enums for representing and interacting with trust lines in the XRPL ledger, including wrappers for pathfinding and RPC use cases.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/TrustLine.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "key"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getAccountID"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getAccountIDPeer"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getAuth"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAuthPeer"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getNoRipple"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getNoRipplePeer"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "getDirection"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getDirectionPeer"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "getFreeze"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getDeepFreeze"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "getFreezePeer"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getDeepFreezePeer"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "getBalance"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "getLimit"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "getLimitPeer"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 118,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "std::shared_ptr<SLE const> const& sle"
+      ],
+      "lineno": 132,
+      "name": "makeItem"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "ReadView const& view",
+        "LineDirection direction"
+      ],
+      "lineno": 135,
+      "name": "getItems"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "getQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 152,
+      "name": "getQualityOut"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "std::shared_ptr<SLE const> const& sle"
+      ],
+      "lineno": 157,
+      "name": "makeItem"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "ReadView const& view"
+      ],
+      "lineno": 160,
+      "name": "getItems"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

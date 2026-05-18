@@ -1,0 +1,440 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "s"
+    },
+    {
+      "lineno": 36,
+      "name": "s"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "Endpoint"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Endpoint::from_string_checked",
+        "std::stringstream is >> endpoint",
+        "operator>>(std::istream&, Endpoint&)"
+      ],
+      "entry_point": "Endpoint::from_string_checked",
+      "purpose": "Parses and validates an endpoint string, returning std::optional<Endpoint> if valid.",
+      "validation_points": [
+        "Manual length check (s.size() <= 64) in from_string_checked",
+        "Parsing and character validation in operator>>",
+        "Address validation via boost::asio::ip::make_address in operator>>"
+      ]
+    },
+    {
+      "call_chain": [
+        "Endpoint::from_string",
+        "Endpoint::from_string_checked",
+        "std::stringstream is >> endpoint",
+        "operator>>(std::istream&, Endpoint&)"
+      ],
+      "entry_point": "Endpoint::from_string",
+      "purpose": "Parses an endpoint string, returns Endpoint (default if invalid).",
+      "validation_points": [
+        "All validations in from_string_checked and operator>>"
+      ]
+    },
+    {
+      "call_chain": [
+        "operator>>(std::istream&, Endpoint&)"
+      ],
+      "entry_point": "operator>>(std::istream&, Endpoint&)",
+      "purpose": "Parses an endpoint from a stream, performing all validation.",
+      "validation_points": [
+        "Manual character checks for address",
+        "Bracket checks for IPv6",
+        "Length checks for address string",
+        "Address validation via boost::asio::ip::make_address"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "endpoint string (input)",
+      "flow": [
+        "Input string",
+        "Manual length check (<=64)",
+        "Trimmed and streamed into stringstream",
+        "operator>> parses and validates",
+        "Endpoint object constructed if valid"
+      ],
+      "origin": "User or caller input to Endpoint::from_string or Endpoint::from_string_checked",
+      "transformations": [
+        "Trimmed (boost::trim_copy)",
+        "Streamed into stringstream",
+        "Parsed into address and port"
+      ],
+      "validated_at": "from_string_checked (length), operator>> (syntax, address, port)"
+    },
+    {
+      "field": "address string (part of endpoint)",
+      "flow": [
+        "Extracted from input stream",
+        "Manual character and bracket checks",
+        "Passed to boost::asio::ip::make_address"
+      ],
+      "origin": "Parsed from input string in operator>>",
+      "transformations": [
+        "Manual character filtering",
+        "Bracket handling for IPv6",
+        "Converted to boost::asio::ip::address"
+      ],
+      "validated_at": "operator>> (character checks, bracket checks, make_address)"
+    },
+    {
+      "field": "port",
+      "flow": [
+        "Parsed from stream after address",
+        "Converted to integer"
+      ],
+      "origin": "Parsed from input string after address in operator>>",
+      "transformations": [
+        "String to integer conversion"
+      ],
+      "validated_at": "operator>> (implicit, but not shown in provided code fragment)"
+    }
+  ],
+  "description": "This file implements the Endpoint class and related functions for parsing, formatting, and comparing IP endpoints (address and port), including string conversion and stream extraction, within the beast::IP namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "input string (endpoint string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual length check at Endpoint::from_string_checked",
+      "issue_pattern": "Missing empty string validation for input string (endpoint string)",
+      "why_false_positive": "manual length check validates input string (endpoint string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "input string (endpoint string)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual length check at Endpoint::from_string_checked",
+      "issue_pattern": "Missing range validation for input string (endpoint string)",
+      "why_false_positive": "manual length check validates input string (endpoint string) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "input string (endpoint string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::stringstream + operator>> at Endpoint::from_string_checked",
+      "issue_pattern": "Missing empty string validation for input string (endpoint string)",
+      "why_false_positive": "std::stringstream + operator>> validates input string (endpoint string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "input string (endpoint string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::stringstream + operator>> at Endpoint::from_string_checked",
+      "issue_pattern": "Missing format validation for input string (endpoint string)",
+      "why_false_positive": "std::stringstream + operator>> validates input string (endpoint string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "address string (part of endpoint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual character checks at operator>>(std::istream&, Endpoint&)",
+      "issue_pattern": "Missing empty string validation for address string (part of endpoint)",
+      "why_false_positive": "manual character checks validates address string (part of endpoint) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "address string (part of endpoint)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual character checks at operator>>(std::istream&, Endpoint&)",
+      "issue_pattern": "Missing format validation for address string (part of endpoint)",
+      "why_false_positive": "manual character checks validates address string (part of endpoint) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "address string (IPv6)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual bracket check at operator>>(std::istream&, Endpoint&)",
+      "issue_pattern": "Missing empty string validation for address string (IPv6)",
+      "why_false_positive": "manual bracket check validates address string (IPv6) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "address string (IPv6)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual bracket check at operator>>(std::istream&, Endpoint&)",
+      "issue_pattern": "Missing format validation for address string (IPv6)",
+      "why_false_positive": "manual bracket check validates address string (IPv6) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "address string",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::asio::ip::address::from_string (implied, likely in Address::from_string) at likely in Address::from_string (not shown, but implied usage)",
+      "issue_pattern": "Missing empty string validation for address string",
+      "why_false_positive": "boost::asio::ip::address::from_string (implied, likely in Address::from_string) validates address string for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "address string",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::asio::ip::address::from_string (implied, likely in Address::from_string) at likely in Address::from_string (not shown, but implied usage)",
+      "issue_pattern": "Missing format validation for address string",
+      "why_false_positive": "boost::asio::ip::address::from_string (implied, likely in Address::from_string) validates address string format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "port",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::stoi or manual parsing (implied, not shown in snippet) at operator>>(std::istream&, Endpoint&)",
+      "issue_pattern": "Missing empty string validation for port",
+      "why_false_positive": "std::stoi or manual parsing (implied, not shown in snippet) validates port for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/net/IPEndpoint.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Endpoint::Endpoint"
+    },
+    {
+      "args": [
+        "Address const& addr",
+        "Port port"
+      ],
+      "lineno": 19,
+      "name": "Endpoint::Endpoint"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 23,
+      "name": "Endpoint::from_string_checked"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 36,
+      "name": "Endpoint::from_string"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "Endpoint::to_string"
+    },
+    {
+      "args": [
+        "Endpoint const& lhs",
+        "Endpoint const& rhs"
+      ],
+      "lineno": 59,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Endpoint const& lhs",
+        "Endpoint const& rhs"
+      ],
+      "lineno": 64,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "std::istream& is",
+        "Endpoint& endpoint"
+      ],
+      "lineno": 73,
+      "name": "operator>>"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "IP"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by unit tests for Endpoint parsing, such as tests for valid/invalid endpoint strings, IPv4/IPv6 formats, and edge cases (length, invalid chars, missing port, etc). Typical test files would be in the beast/net or xrpl/beast/net test directories, possibly named IPEndpoint_test.cpp or similar. Gaps may include: incomplete coverage of legacy formats (space as separator), malformed IPv6 with/without brackets, maximum length edge cases, and error handling for boost::asio::ip::make_address failures. No explicit test references are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual validation, boost::asio for address parsing",
+    "validation_layer": "entry_point (string parsing and construction)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "input string (endpoint string)",
+      "location": "Endpoint::from_string_checked",
+      "validated_by": "manual length check",
+      "validates": [
+        "input string length <= 64"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "input string (endpoint string)",
+      "location": "Endpoint::from_string_checked",
+      "validated_by": "std::stringstream + operator>>",
+      "validates": [
+        "input string can be parsed into Endpoint using operator>>",
+        "no extra characters after endpoint"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "istream failbit set (no exception thrown)",
+      "field": "address string (part of endpoint)",
+      "location": "operator>>(std::istream&, Endpoint&)",
+      "validated_by": "manual character checks",
+      "validates": [
+        "address only contains valid IPv4/IPv6 characters ('.', '0'-':', 'a'-'f', 'A'-'F')",
+        "address does not exceed INET6_ADDRSTRLEN"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "istream failbit set (no exception thrown)",
+      "field": "address string (IPv6)",
+      "location": "operator>>(std::istream&, Endpoint&)",
+      "validated_by": "manual bracket check",
+      "validates": [
+        "IPv6 address must be enclosed in '[' and ']'"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "throws boost::system::system_error or sets error_code (not shown here)",
+      "field": "address string",
+      "location": "likely in Address::from_string (not shown, but implied usage)",
+      "validated_by": "boost::asio::ip::address::from_string (implied, likely in Address::from_string)",
+      "validates": [
+        "address string is a valid IPv4 or IPv6 address"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "istream failbit set (no exception thrown)",
+      "field": "port",
+      "location": "operator>>(std::istream&, Endpoint&)",
+      "validated_by": "std::stoi or manual parsing (implied, not shown in snippet)",
+      "validates": [
+        "port is a valid integer",
+        "port is non-negative"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

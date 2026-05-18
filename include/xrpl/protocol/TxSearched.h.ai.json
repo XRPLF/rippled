@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines the TxSearched enum class within the xrpl namespace to indicate the search status of transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/TxSearched.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ]
+}

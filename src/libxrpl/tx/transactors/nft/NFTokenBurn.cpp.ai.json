@@ -1,0 +1,361 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ctx"
+    },
+    {
+      "lineno": 13,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenBurn::preflight"
+      ],
+      "entry_point": "NFTokenBurn::preflight",
+      "purpose": "Initial lightweight validation of the transaction. In this implementation, it always returns success.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NFTokenBurn::preclaim"
+      ],
+      "entry_point": "NFTokenBurn::preclaim",
+      "purpose": "Performs main validation: checks token existence, ownership, permissions, and burnability.",
+      "validation_points": [
+        "ctx.tx.isFieldPresent(sfOwner)",
+        "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID])",
+        "nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable",
+        "nft::getIssuer(ctx.tx[sfNFTokenID])"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenBurn::doApply",
+        "nft::removeToken",
+        "nft::removeTokenOffersWithLimit"
+      ],
+      "entry_point": "NFTokenBurn::doApply",
+      "purpose": "Executes the burn: removes the token, updates issuer's burned count, deletes offers.",
+      "validation_points": [
+        "Relies on preclaim for validation; asserts token removal success."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfOwner",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.isFieldPresent(sfOwner) (preclaim)",
+        "ctx.tx.getAccountID(sfOwner) (preclaim)",
+        "used as 'owner' in findToken and removeToken"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Converted to AccountID"
+      ],
+      "validated_at": "ctx.tx.isFieldPresent(sfOwner) in preclaim"
+    },
+    {
+      "field": "sfNFTokenID",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[sfNFTokenID] (preclaim)",
+        "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID])",
+        "nft::getFlags(ctx.tx[sfNFTokenID])",
+        "nft::getIssuer(ctx.tx[sfNFTokenID])",
+        "nft::removeToken(view, owner, ctx.tx[sfNFTokenID])",
+        "keylet::nft_sells(ctx.tx[sfNFTokenID])",
+        "keylet::nft_buys(ctx.tx[sfNFTokenID])"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Used as lookup key",
+        "Flags extracted",
+        "Issuer extracted"
+      ],
+      "validated_at": "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]) in preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[sfAccount] (preclaim)",
+        "used as fallback for owner",
+        "used for permission checks"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Used as AccountID"
+      ],
+      "validated_at": "Implicitly validated by presence in transaction; used in permission logic in preclaim"
+    },
+    {
+      "field": "nft::getFlags(ctx.tx[sfNFTokenID])",
+      "flow": [
+        "ctx.tx[sfNFTokenID]",
+        "nft::getFlags(ctx.tx[sfNFTokenID])",
+        "checked for nft::flagBurnable"
+      ],
+      "origin": "Derived from sfNFTokenID",
+      "transformations": [
+        "Bitmask check for burnable flag"
+      ],
+      "validated_at": "if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable) == 0) in preclaim"
+    },
+    {
+      "field": "nft::getIssuer(ctx.tx[sfNFTokenID])",
+      "flow": [
+        "ctx.tx[sfNFTokenID]",
+        "nft::getIssuer(ctx.tx[sfNFTokenID])",
+        "used for permission checks and issuer account lookup"
+      ],
+      "origin": "Derived from sfNFTokenID",
+      "transformations": [
+        "Extracted as AccountID"
+      ],
+      "validated_at": "if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account) in preclaim"
+    }
+  ],
+  "description": "Implements the logic for burning (destroying) an NFT (NFToken) on the XRPL, including permission checks and cleanup of related offers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.isFieldPresent(sfOwner) at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "ctx.tx.isFieldPresent(sfOwner) validates sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]) at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]) validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[sfAccount] at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.tx[sfAccount] validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::getIssuer(ctx.tx[sfNFTokenID]) at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::getIssuer(ctx.tx[sfNFTokenID]) validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenMinter",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sle)[~sfNFTokenMinter] at NFTokenBurn::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenMinter",
+      "why_false_positive": "(*sle)[~sfNFTokenMinter] validates sfNFTokenMinter for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::removeToken at NFTokenBurn::doApply",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::removeToken validates sfNFTokenID for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenBurn.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 7,
+      "name": "NFTokenBurn::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 12,
+      "name": "NFTokenBurn::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "NFTokenBurn::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "NFTokenBurn is typically tested in integration and unit tests for NFT operations. Likely test files: 'test/tx/NFTokenBurn_test.cpp', 'test/tx/NFToken_test.cpp', or similar. Tests should cover: burning by owner, burning by issuer (with/without burnable flag), burning non-existent token, permission errors, and offer cleanup. Gaps may exist in edge cases: minter permissions, issuer account not found, or concurrent offer deletion limits. No explicit test references in this file; coverage depends on broader test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (xrpl, nft namespace)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (used to determine owner, not error)",
+      "field": "sfOwner",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "ctx.tx.isFieldPresent(sfOwner)",
+      "validates": [
+        "Checks if sfOwner field is present to determine owner of NFT"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfNFTokenID",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID])",
+      "validates": [
+        "Checks if the NFT with sfNFTokenID exists for the owner"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (used to determine acting account, not error)",
+      "field": "sfAccount",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "ctx.tx[sfAccount]",
+      "validates": [
+        "Used to determine if the transaction sender is the owner or issuer"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenID",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable",
+      "validates": [
+        "Checks if the NFT is burnable when issuer is burning"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenID",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "nft::getIssuer(ctx.tx[sfNFTokenID])",
+      "validates": [
+        "Checks if the issuer is the transaction sender or minter"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenMinter",
+      "location": "NFTokenBurn::preclaim",
+      "validated_by": "(*sle)[~sfNFTokenMinter]",
+      "validates": [
+        "Checks if the minter is the transaction sender"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ret (TER error code, e.g., tecNO_ENTRY)",
+      "field": "sfNFTokenID",
+      "location": "NFTokenBurn::doApply",
+      "validated_by": "nft::removeToken",
+      "validates": [
+        "Checks again that the NFT exists before burning (should not fail due to preclaim)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

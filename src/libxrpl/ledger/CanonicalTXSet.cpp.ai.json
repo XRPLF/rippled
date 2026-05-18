@@ -1,0 +1,204 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "CanonicalTXSet::insert",
+        "CanonicalTXSet::accountKey",
+        "txn->getAccountID(sfAccount)",
+        "txn->getSeqProxy()",
+        "txn->getTransactionID()"
+      ],
+      "entry_point": "CanonicalTXSet::insert",
+      "purpose": "Inserts a transaction into the canonical transaction set, using a composite key derived from account, sequence proxy, and transaction ID.",
+      "validation_points": [
+        "No explicit validation in this chain; assumes input transaction is already validated elsewhere."
+      ]
+    },
+    {
+      "call_chain": [
+        "CanonicalTXSet::popAcctTransaction",
+        "CanonicalTXSet::accountKey",
+        "tx->getAccountID(sfAccount)",
+        "tx->getSeqProxy()",
+        "map_.lower_bound(after)",
+        "itrNext->second->getSeqProxy()"
+      ],
+      "entry_point": "CanonicalTXSet::popAcctTransaction",
+      "purpose": "Finds and removes the next valid transaction for an account, prioritizing sequence-based transactions over ticket-based ones.",
+      "validation_points": [
+        "Checks if next transaction is for the same account and if sequence is consecutive or ticket is valid."
+      ]
+    },
+    {
+      "call_chain": [
+        "operator<"
+      ],
+      "entry_point": "operator< (CanonicalTXSet::Key)",
+      "purpose": "Defines ordering for transactions in the set, used for sorting and lookup.",
+      "validation_points": [
+        "No explicit validation; pure comparison logic."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AccountID",
+      "flow": [
+        "STTx (txn) object",
+        "CanonicalTXSet::insert or popAcctTransaction",
+        "CanonicalTXSet::accountKey",
+        "uint256 ret (accountKey)",
+        "Key (for map_)"
+      ],
+      "origin": "txn->getAccountID(sfAccount)",
+      "transformations": [
+        "Copied into uint256, XORed with salt_"
+      ],
+      "validated_at": "No explicit validation in this file; assumes AccountID is valid from STTx"
+    },
+    {
+      "field": "SeqProxy",
+      "flow": [
+        "STTx (txn) object",
+        "CanonicalTXSet::insert or popAcctTransaction",
+        "Key (for map_)"
+      ],
+      "origin": "txn->getSeqProxy()",
+      "transformations": [
+        "Used as part of composite key"
+      ],
+      "validated_at": "Checked in popAcctTransaction for isSeq() and consecutive value"
+    },
+    {
+      "field": "TransactionID",
+      "flow": [
+        "STTx (txn) object",
+        "CanonicalTXSet::insert",
+        "Key (for map_)"
+      ],
+      "origin": "txn->getTransactionID()",
+      "transformations": [
+        "Used as part of composite key"
+      ],
+      "validated_at": "No explicit validation in this file"
+    },
+    {
+      "field": "Key (CanonicalTXSet::Key)",
+      "flow": [
+        "CanonicalTXSet::insert",
+        "map_ (std::map<Key, txn>)",
+        "CanonicalTXSet::popAcctTransaction (lookup and erase)"
+      ],
+      "origin": "Constructed from accountKey, SeqProxy, TransactionID",
+      "transformations": [
+        "Ordering via operator<"
+      ],
+      "validated_at": "Checked in popAcctTransaction for account match and sequence/ticket logic"
+    }
+  ],
+  "description": "Implements logic for ordering and managing transactions in a canonical set for the XRPL ledger, including insertion, ordering, and popping of account transactions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/CanonicalTXSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 5,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 20,
+      "name": "CanonicalTXSet::accountKey"
+    },
+    {
+      "args": [
+        "txn"
+      ],
+      "lineno": 28,
+      "name": "CanonicalTXSet::insert"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 36,
+      "name": "CanonicalTXSet::popAcctTransaction"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code in CanonicalTXSet.cpp is typically tested via higher-level transaction processing and ledger tests, such as those in 'test/ledger/CanonicalTXSet_test.cpp', 'test/app/tx/TransactionQueue_test.cpp', or integration tests that exercise transaction ordering and queuing. Direct unit tests for insert, popAcctTransaction, and ordering logic may exist, but edge cases (e.g., malformed AccountID, invalid sequence proxies, or salt collisions) may not be fully covered. There is no explicit validation of input data in this file; it relies on upstream validation (e.g., STTx construction and transaction submission). Gaps may exist in testing for unusual or malicious input, especially around accountKey salt handling and sequence/ticket edge cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

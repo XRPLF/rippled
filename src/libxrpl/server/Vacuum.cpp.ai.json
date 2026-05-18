@@ -1,0 +1,188 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "setup"
+    },
+    {
+      "lineno": 9,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doVacuumDB"
+      ],
+      "entry_point": "doVacuumDB",
+      "purpose": "Performs a SQLite VACUUM operation on the transaction database, ensuring sufficient disk space and valid configuration before proceeding.",
+      "validation_points": [
+        "XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), ...)",
+        "if (available < dbSize) { ... return false; }",
+        "XRPL_ASSERT(setup.globalPragma, ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "dbSize",
+      "flow": [
+        "file_size(dbPath)",
+        "dbSize variable",
+        "XRPL_ASSERT(dbSize != -1)",
+        "used in disk space check (available < dbSize)",
+        "used in error message if insufficient space"
+      ],
+      "origin": "file_size(dbPath)",
+      "transformations": [
+        "Read from filesystem as uintmax_t"
+      ],
+      "validated_at": "XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1), ...)"
+    },
+    {
+      "field": "available",
+      "flow": [
+        "space(dbPath.parent_path()).available",
+        "compared to dbSize in if (available < dbSize)",
+        "used in error message if insufficient"
+      ],
+      "origin": "space(dbPath.parent_path()).available",
+      "transformations": [
+        "Read from filesystem as uintmax_t"
+      ],
+      "validated_at": "if (available < dbSize) { ... return false; }"
+    },
+    {
+      "field": "setup.globalPragma",
+      "flow": [
+        "setup.globalPragma",
+        "XRPL_ASSERT(setup.globalPragma, ...)",
+        "dereferenced and iterated: for (auto const& p : *setup.globalPragma) session << p"
+      ],
+      "origin": "setup parameter (DatabaseCon::Setup)",
+      "transformations": [
+        "Checked for non-null",
+        "Iterated and executed as SQL statements"
+      ],
+      "validated_at": "XRPL_ASSERT(setup.globalPragma, ...)"
+    }
+  ],
+  "description": "Provides a function to perform a VACUUM operation on the XRPL transaction database, ensuring sufficient disk space and reporting progress.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dbSize (database file size)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at doVacuumDB",
+      "issue_pattern": "Missing empty string validation for dbSize (database file size)",
+      "why_false_positive": "XRPL_ASSERT validates dbSize (database file size) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "available disk space",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if statement at doVacuumDB",
+      "issue_pattern": "Missing empty string validation for available disk space",
+      "why_false_positive": "explicit if statement validates available disk space for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "setup.globalPragma",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at doVacuumDB",
+      "issue_pattern": "Missing empty string validation for setup.globalPragma",
+      "why_false_positive": "XRPL_ASSERT validates setup.globalPragma for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/Vacuum.cpp",
+  "functions": [
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 7,
+      "name": "doVacuumDB"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage. Typically, doVacuumDB would be tested via integration or system tests that exercise database maintenance operations. Tests would need to cover: (1) insufficient disk space, (2) missing or invalid globalPragma, (3) file size errors, and (4) successful vacuum. Gaps likely exist in simulating disk space errors and file system failures, as these are hard to mock without specialized test harnesses. Test files might be found in workflow/XRPLF-rippled-develop/test or similar, but are not referenced here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), explicit C++ logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs error)",
+      "field": "dbSize (database file size)",
+      "location": "doVacuumDB",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that file_size(dbPath) does not return (uintmax_t)-1, which would indicate an error in retrieving the file size"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prints error to std::cerr)",
+      "field": "available disk space",
+      "location": "doVacuumDB",
+      "validated_by": "explicit if statement",
+      "validates": [
+        "Checks that available disk space in the database directory is at least as large as the database file size"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs error)",
+      "field": "setup.globalPragma",
+      "location": "doVacuumDB",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that setup.globalPragma is not null before dereferencing"
+      ],
+      "validation_type": "type/null check"
+    }
+  ]
+}

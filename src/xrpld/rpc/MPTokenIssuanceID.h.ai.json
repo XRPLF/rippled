@@ -1,0 +1,43 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides functions to add an 'mpt_issuance_id' field to the transaction metadata for successful MPTokenIssuanceCreate transactions in the XRPL, including logic to determine eligibility and extract the ID.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/MPTokenIssuanceID.h",
+  "functions": [
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 17,
+      "name": "canHaveMPTokenIssuanceID"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 21,
+      "name": "getIDFromCreatedIssuance"
+    },
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 24,
+      "name": "insertMPTokenIssuanceID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "RPC"
+    }
+  ]
+}

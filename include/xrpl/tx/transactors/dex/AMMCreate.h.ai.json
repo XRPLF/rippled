@@ -1,0 +1,57 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 28,
+      "name": "AMMCreate"
+    }
+  ],
+  "description": "Implements the AMMCreate transactor for creating Automatic Market Maker (AMM) instances on the XRPL, allowing users to create AMMs with two tokens, manage liquidity, fees, and related ledger objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMCreate.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 38,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 41,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 44,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 47,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

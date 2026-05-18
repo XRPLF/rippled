@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a type alias KeyCache as a TaggedCache specialized for uint256 keys and int values within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/KeyCache.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

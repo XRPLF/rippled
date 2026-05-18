@@ -1,0 +1,218 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "view"
+    },
+    {
+      "lineno": 32,
+      "name": "tx"
+    },
+    {
+      "lineno": 120,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Batch::preflight",
+        "Batch::calculateBaseFee",
+        "xrpl::calculateBaseFee (for inner txns)",
+        "Transactor::calculateBaseFee"
+      ],
+      "entry_point": "Batch::preflight",
+      "purpose": "Performs initial stateless validation of a Batch transaction, including structure, field presence, and fee calculation.",
+      "validation_points": [
+        "Batch::preflight (checks for required fields, structure, and calls calculateBaseFee for fee validation)",
+        "Batch::calculateBaseFee (validates batch structure, inner txns, signers, and fee overflows)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Batch::preflightSigValidated",
+        "Batch::checkSign"
+      ],
+      "entry_point": "Batch::preflightSigValidated",
+      "purpose": "Performs signature validation after stateless checks.",
+      "validation_points": [
+        "Batch::checkSign (validates signatures for batch and inner transactions)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Batch::doApply",
+        "xrpl::apply (for each inner transaction)"
+      ],
+      "entry_point": "Batch::doApply",
+      "purpose": "Applies the batch transaction and all inner transactions to the ledger.",
+      "validation_points": [
+        "Assumes previous validation; may re-check invariants before applying."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfRawTransactions",
+      "flow": [
+        "STTx (outer batch)",
+        "Batch::calculateBaseFee (tx.getFieldArray(sfRawTransactions))",
+        "Loop over inner txns: STTx{std::move(txn)}",
+        "xrpl::calculateBaseFee (for each inner STTx)"
+      ],
+      "origin": "STTx (outer batch transaction)",
+      "transformations": [
+        "Extracted as array",
+        "Each element converted to STTx",
+        "Each inner STTx validated for type and fee"
+      ],
+      "validated_at": "Batch::calculateBaseFee (checks for maxBatchTxCount, inner batch type, fee overflow)"
+    },
+    {
+      "field": "sfBatchSigners",
+      "flow": [
+        "STTx (outer batch)",
+        "Batch::calculateBaseFee (tx.getFieldArray(sfBatchSigners))",
+        "Loop over signers: count signatures"
+      ],
+      "origin": "STTx (outer batch transaction)",
+      "transformations": [
+        "Extracted as array",
+        "Each element checked for sfTxnSignature or sfSigners",
+        "Signer count incremented"
+      ],
+      "validated_at": "Batch::calculateBaseFee (checks for maxBatchTxCount, fee overflow for signers)"
+    },
+    {
+      "field": "sfTxnSignature / sfSigners (in BatchSigners)",
+      "flow": [
+        "STObject (signer)",
+        "Batch::calculateBaseFee (checks presence of sfTxnSignature or sfSigners)",
+        "Signer count incremented accordingly"
+      ],
+      "origin": "Each STObject in sfBatchSigners array",
+      "transformations": [
+        "Counted for fee calculation"
+      ],
+      "validated_at": "Batch::calculateBaseFee (signer count overflow check)"
+    },
+    {
+      "field": "fee",
+      "flow": [
+        "view.fees().base",
+        "Transactor::calculateBaseFee (for batch)",
+        "Batch::calculateBaseFee (for batch, inner txns, signers)",
+        "Summed to total batch fee"
+      ],
+      "origin": "Ledger fees (view.fees().base), STTx fee fields",
+      "transformations": [
+        "Summed for batch, inner txns, and signers",
+        "Overflow checked at each step"
+      ],
+      "validated_at": "Batch::calculateBaseFee (overflow checks, max limits)"
+    }
+  ],
+  "description": "Implements logic for batch transaction processing in the XRPL, including fee calculation, preflight validation, signature checks, and application of batch transactions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/system/Batch.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 32,
+      "name": "Batch::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 120,
+      "name": "Batch::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 134,
+      "name": "Batch::preflight"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 282,
+      "name": "Batch::preflightSigValidated"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 349,
+      "name": "Batch::checkSign"
+    },
+    {
+      "args": [],
+      "lineno": 372,
+      "name": "Batch::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Batch transaction logic is likely tested in integration and unit tests under the transaction and batch processing test suites. Look for files like 'Batch_test.cpp', 'Transactor_test.cpp', or 'ApplyTx_test.cpp' in the test directory. The code contains LCOV_EXCL_START/STOP blocks around error/overflow conditions, indicating these are not covered by standard tests (e.g., overflow, inner batch detection, excessive array sizes). Thus, edge cases such as fee overflows, inner batch transactions, and excessive signers/transactions may not be fully covered by automated tests.",
+  "validation_architecture": {},
+  "validations": []
+}

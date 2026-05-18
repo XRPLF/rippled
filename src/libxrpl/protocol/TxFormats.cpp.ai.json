@@ -1,0 +1,1011 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STObject::set",
+        "TxFormats::getInstance",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation"
+      ],
+      "entry_point": "Deserialization of Transaction (e.g., STObject::set)",
+      "purpose": "When a transaction is parsed from wire/JSON, the deserialization code uses the transaction type to look up the expected fields and their requirements (REQUIRED/OPTIONAL) via TxFormats. The SOTemplate validates presence, type, and constraints of each field.",
+      "validation_points": [
+        "SOTemplate/SOElement validation (template-based, checks required fields, types, etc.)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transaction::Transaction",
+        "TxFormats::getInstance",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation"
+      ],
+      "entry_point": "Transaction construction (e.g., Transaction::Transaction)",
+      "purpose": "When constructing a Transaction object, the code uses TxFormats to determine the required/optional fields and validates them using the SOTemplate.",
+      "validation_points": [
+        "SOTemplate/SOElement validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "doSubmit",
+        "Transaction::fromSerialized",
+        "TxFormats::getInstance",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation"
+      ],
+      "entry_point": "Transaction submission (e.g., doSubmit)",
+      "purpose": "When a transaction is submitted to the network, it is parsed and validated against the TxFormats templates before being accepted.",
+      "validation_points": [
+        "SOTemplate/SOElement validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfTransactionType",
+      "flow": [
+        "Input (JSON/binary)",
+        "Deserialization (STObject)",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation",
+        "Transaction object"
+      ],
+      "origin": "Incoming transaction JSON or binary",
+      "transformations": [
+        "Checked for presence (REQUIRED)",
+        "Type checked"
+      ],
+      "validated_at": "SOTemplate/SOElement validation (template-based, via getCommonFields)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Input (JSON/binary)",
+        "Deserialization (STObject)",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation",
+        "Transaction object"
+      ],
+      "origin": "Incoming transaction JSON or binary",
+      "transformations": [
+        "Checked for presence (REQUIRED)",
+        "Type checked"
+      ],
+      "validated_at": "SOTemplate/SOElement validation"
+    },
+    {
+      "field": "sfSequence",
+      "flow": [
+        "Input (JSON/binary)",
+        "Deserialization (STObject)",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation",
+        "Transaction object"
+      ],
+      "origin": "Incoming transaction JSON or binary",
+      "transformations": [
+        "Checked for presence (REQUIRED)",
+        "Type checked"
+      ],
+      "validated_at": "SOTemplate/SOElement validation"
+    },
+    {
+      "field": "sfFee",
+      "flow": [
+        "Input (JSON/binary)",
+        "Deserialization (STObject)",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation",
+        "Transaction object"
+      ],
+      "origin": "Incoming transaction JSON or binary",
+      "transformations": [
+        "Checked for presence (REQUIRED)",
+        "Type checked"
+      ],
+      "validated_at": "SOTemplate/SOElement validation"
+    },
+    {
+      "field": "sfSigningPubKey",
+      "flow": [
+        "Input (JSON/binary)",
+        "Deserialization (STObject)",
+        "TxFormats::getCommonFields",
+        "SOTemplate/SOElement validation",
+        "Transaction object"
+      ],
+      "origin": "Incoming transaction JSON or binary",
+      "transformations": [
+        "Checked for presence (REQUIRED)",
+        "Type checked"
+      ],
+      "validated_at": "SOTemplate/SOElement validation"
+    }
+  ],
+  "description": "Defines the TxFormats class for transaction format definitions in the XRPL protocol, including common transaction fields and initialization logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionType validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfTransactionType",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfTransactionType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFlags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfFlags validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfFlags",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfFlags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSourceTag",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSourceTag validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfSourceTag",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfSourceTag automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSequence validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPreviousTxnID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPreviousTxnID validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfPreviousTxnID",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfPreviousTxnID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLastLedgerSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLastLedgerSequence validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfLastLedgerSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfLastLedgerSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccountTxnID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccountTxnID validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfAccountTxnID",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfAccountTxnID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFee",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfFee validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfFee",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfFee automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOperationLimit",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfOperationLimit validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfOperationLimit",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfOperationLimit automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfMemos",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfMemos validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfMemos",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfMemos automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigningPubKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSigningPubKey validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfSigningPubKey",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfSigningPubKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTicketSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTicketSequence validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfTicketSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfTicketSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTxnSignature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTxnSignature validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfTxnSignature",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfTxnSignature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigners",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSigners validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfSigners",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfSigners automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNetworkID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfNetworkID validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfNetworkID",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfNetworkID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDelegate",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDelegate validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for sfDelegate",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates sfDelegate automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "all transaction-specific fields from transactions.macro",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field all transaction-specific fields from transactions.macro validated by SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+      "issue_pattern": "Missing validation for all transaction-specific fields from transactions.macro",
+      "why_false_positive": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping) validates all transaction-specific fields from transactions.macro automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfTransactionType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfTransactionType",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfTransactionType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfFee",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfSigningPubKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfSigningPubKey",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfSigningPubKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfFlags",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSourceTag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfSourceTag",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfSourceTag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPreviousTxnID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfPreviousTxnID",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfPreviousTxnID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLastLedgerSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfLastLedgerSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfLastLedgerSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccountTxnID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfAccountTxnID",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfAccountTxnID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOperationLimit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfOperationLimit",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfOperationLimit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfMemos",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfMemos",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfMemos for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTicketSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfTicketSequence",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfTicketSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTxnSignature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfTxnSignature",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfTxnSignature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigners",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfSigners",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfSigners for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNetworkID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfNetworkID",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfNetworkID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDelegate",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based) at TxFormats::getCommonFields",
+      "issue_pattern": "Missing empty string validation for sfDelegate",
+      "why_false_positive": "SOTemplate/SOElement (template-based) validates sfDelegate for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction-specific fields (from transactions.macro)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/SOElement (template-based), macro expansion at TxFormats constructor (macro expansion)",
+      "issue_pattern": "Missing empty string validation for transaction-specific fields (from transactions.macro)",
+      "why_false_positive": "SOTemplate/SOElement (template-based), macro expansion validates transaction-specific fields (from transactions.macro) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/TxFormats.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "getCommonFields"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "TxFormats"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "getInstance"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Validation of transaction fields via SOTemplate is typically covered by unit tests in files such as 'test/tx/Transaction_test.cpp', 'test/protocol/TxFormats_test.cpp', and integration tests that submit malformed or incomplete transactions. However, direct tests of TxFormats::getCommonFields may be limited, as most tests exercise the validation indirectly via transaction parsing and submission. Edge cases (e.g., missing required fields, wrong types) are usually tested, but coverage for all optional fields and new amendments may be incomplete. There may be gaps in testing for template changes or for fields added via amendments.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfTransactionType",
+      "sfFlags",
+      "sfSourceTag",
+      "sfAccount",
+      "sfSequence",
+      "sfPreviousTxnID",
+      "sfLastLedgerSequence",
+      "sfAccountTxnID",
+      "sfFee",
+      "sfOperationLimit",
+      "sfMemos",
+      "sfSigningPubKey",
+      "sfTicketSequence",
+      "sfTxnSignature",
+      "sfSigners",
+      "sfNetworkID",
+      "sfDelegate",
+      "all transaction-specific fields from transactions.macro"
+    ],
+    "framework": "SOTemplate/SOElement (template-based validation), jss:: (JSON field name mapping)",
+    "validation_layer": "business_logic (transaction construction/registration)"
+  },
+  "validations": [
+    {
+      "confidence": 0.95,
+      "error_thrown": "likely throws on missing required field (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "sfTransactionType",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field is present in transaction object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "likely throws on missing required field (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "sfAccount",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field is present in transaction object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "likely throws on missing required field (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "sfSequence",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field is present in transaction object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "likely throws on missing required field (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "sfFee",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field is present in transaction object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "likely throws on missing required field (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "sfSigningPubKey",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field is present in transaction object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfFlags",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfSourceTag",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfPreviousTxnID",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfLastLedgerSequence",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfAccountTxnID",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfOperationLimit",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfMemos",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfTicketSequence",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfTxnSignature",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfSigners",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfNetworkID",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (optional field)",
+      "field": "sfDelegate",
+      "location": "TxFormats::getCommonFields",
+      "validated_by": "SOTemplate/SOElement (template-based)",
+      "validates": [
+        "field may be present; if present, type/format checked elsewhere"
+      ],
+      "validation_type": "optional presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field or type mismatch (template enforcement, e.g., std::runtime_error or custom exception)",
+      "field": "transaction-specific fields (from transactions.macro)",
+      "location": "TxFormats constructor (macro expansion)",
+      "validated_by": "SOTemplate/SOElement (template-based), macro expansion",
+      "validates": [
+        "field is present if required",
+        "field type matches SField definition"
+      ],
+      "validation_type": "presence (required/optional as per macro), type (via SField/SOElement)"
+    }
+  ]
+}

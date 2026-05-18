@@ -1,0 +1,51 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "NodePtr node"
+      ],
+      "lineno": 9,
+      "name": "LockFreeStackIterator"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "LockFreeStack"
+    },
+    {
+      "args": [
+        "Node* next"
+      ],
+      "lineno": 92,
+      "name": "Node"
+    }
+  ],
+  "description": "Implements a lock-free, multiple-producer multiple-consumer (MPMC) intrusive stack with forward iterators, suitable for concurrent use. Provides push, pop, and iteration operations, with thread safety and ABA problem warnings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/core/LockFreeStack.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 61,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 70,
+      "name": "operator!="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    }
+  ]
+}

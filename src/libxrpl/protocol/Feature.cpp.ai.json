@@ -1,0 +1,530 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "feature"
+    },
+    {
+      "lineno": 66,
+      "name": "i"
+    },
+    {
+      "lineno": 72,
+      "name": "feature"
+    },
+    {
+      "lineno": 77,
+      "name": "feature"
+    },
+    {
+      "lineno": 82,
+      "name": "name"
+    },
+    {
+      "lineno": 97,
+      "name": "name"
+    },
+    {
+      "lineno": 110,
+      "name": "name"
+    },
+    {
+      "lineno": 110,
+      "name": "support"
+    },
+    {
+      "lineno": 110,
+      "name": "vote"
+    },
+    {
+      "lineno": 159,
+      "name": "f"
+    },
+    {
+      "lineno": 169,
+      "name": "i"
+    },
+    {
+      "lineno": 175,
+      "name": "f"
+    },
+    {
+      "lineno": 216,
+      "name": "name"
+    },
+    {
+      "lineno": 220,
+      "name": "name"
+    },
+    {
+      "lineno": 220,
+      "name": "support"
+    },
+    {
+      "lineno": 220,
+      "name": "vote"
+    },
+    {
+      "lineno": 225,
+      "name": "name"
+    },
+    {
+      "lineno": 235,
+      "name": "f"
+    },
+    {
+      "lineno": 239,
+      "name": "i"
+    },
+    {
+      "lineno": 243,
+      "name": "f"
+    },
+    {
+      "lineno": 252,
+      "name": "fn"
+    },
+    {
+      "lineno": 105,
+      "name": "condition"
+    },
+    {
+      "lineno": 105,
+      "name": "logicErrorMessage"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "FeatureCollections"
+    },
+    {
+      "args": [
+        "name",
+        "feature"
+      ],
+      "lineno": 41,
+      "name": "Feature"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "byIndex"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "byName"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "byFeature"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "FeatureCollections::registerFeature",
+        "FeatureCollections::features.emplace(Feature(name, feature))",
+        "Feature::Feature(name, feature)"
+      ],
+      "entry_point": "FeatureCollections::registerFeature",
+      "purpose": "Registers a new feature (amendment) by name and feature hash into the features collection.",
+      "validation_points": [
+        "Feature::Feature(name, feature) - C++ type system ensures correct types for name and feature.",
+        "Feature() = delete - Prevents default construction, ensuring all Feature objects are initialized with valid data."
+      ]
+    },
+    {
+      "call_chain": [
+        "FeatureCollections::getByName",
+        "features.get<byName>().find(name)"
+      ],
+      "entry_point": "FeatureCollections::getByName",
+      "purpose": "Retrieves a feature by its name from the features collection.",
+      "validation_points": [
+        "features.get<byName>().find(name) - Implicit validation: returns end() if not found, caller must check."
+      ]
+    },
+    {
+      "call_chain": [
+        "FeatureCollections::getByFeature",
+        "features.get<byFeature>().find(feature)"
+      ],
+      "entry_point": "FeatureCollections::getByFeature",
+      "purpose": "Retrieves a feature by its uint256 feature hash.",
+      "validation_points": [
+        "features.get<byFeature>().find(feature) - Implicit validation: returns end() if not found, caller must check."
+      ]
+    },
+    {
+      "call_chain": [
+        "FeatureCollections::getByIndex",
+        "features.get<byIndex>()[index]"
+      ],
+      "entry_point": "FeatureCollections::getByIndex",
+      "purpose": "Retrieves a feature by its index in the collection.",
+      "validation_points": [
+        "Index bounds checking is required by caller; no explicit validation in this function."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Feature::name",
+      "flow": [
+        "registerFeature(name, feature)",
+        "Feature(name, feature)",
+        "features.emplace(Feature(name, feature))",
+        "features.get<byName>()"
+      ],
+      "origin": "Passed as argument to Feature constructor in registerFeature",
+      "transformations": [
+        "Stored as std::string in Feature struct"
+      ],
+      "validated_at": "Feature constructor (type system); uniqueness enforced by multi_index"
+    },
+    {
+      "field": "Feature::feature",
+      "flow": [
+        "registerFeature(name, feature)",
+        "Feature(name, feature)",
+        "features.emplace(Feature(name, feature))",
+        "features.get<byFeature>()"
+      ],
+      "origin": "Passed as argument to Feature constructor in registerFeature",
+      "transformations": [
+        "Stored as uint256 in Feature struct"
+      ],
+      "validated_at": "Feature constructor (type system); uniqueness enforced by multi_index"
+    },
+    {
+      "field": "features (multi_index_container)",
+      "flow": [
+        "registerFeature",
+        "features.emplace(Feature(name, feature))",
+        "getByName / getByFeature / getByIndex"
+      ],
+      "origin": "Constructed in FeatureCollections",
+      "transformations": [
+        "Indexed by name, feature, and index for fast lookup"
+      ],
+      "validated_at": "Insertion: uniqueness constraints; Lookup: existence checked by caller"
+    },
+    {
+      "field": "Feature (struct)",
+      "flow": [
+        "registerFeature",
+        "features.emplace(Feature(name, feature))",
+        "Used in lookups and returned by getByName/getByFeature/getByIndex"
+      ],
+      "origin": "Constructed only via Feature(name, feature)",
+      "transformations": [
+        "No mutation after construction"
+      ],
+      "validated_at": "Constructor (type system); default construction forbidden"
+    }
+  ],
+  "description": "This file manages the registration, lookup, and metadata of protocol features (amendments) in the XRPL (XRP Ledger) server, including their support status, voting behavior, and mapping between names, bitset indices, and feature IDs. It uses a multi-index container for efficient access and provides macros for feature registration.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Feature.name",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Feature.name validated by C++ type system (no explicit validation framework detected)",
+      "issue_pattern": "Missing validation for Feature.name",
+      "why_false_positive": "C++ type system (no explicit validation framework detected) validates Feature.name automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Feature.feature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Feature.feature validated by C++ type system (no explicit validation framework detected)",
+      "issue_pattern": "Missing validation for Feature.feature",
+      "why_false_positive": "C++ type system (no explicit validation framework detected) validates Feature.feature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Feature (constructor arguments: name, feature)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system (constructor signature) at Feature::Feature(std::string const& name_, uint256 const& feature_)",
+      "issue_pattern": "Missing empty string validation for Feature (constructor arguments: name, feature)",
+      "why_false_positive": "C++ type system (constructor signature) validates Feature (constructor arguments: name, feature) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Feature (constructor arguments: name, feature)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system (constructor signature) at Feature::Feature(std::string const& name_, uint256 const& feature_)",
+      "issue_pattern": "Missing type validation for Feature (constructor arguments: name, feature)",
+      "why_false_positive": "C++ type system (constructor signature) validates Feature (constructor arguments: name, feature) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Feature (default construction)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Feature() = delete at Feature struct definition",
+      "issue_pattern": "Missing empty string validation for Feature (default construction)",
+      "why_false_positive": "Feature() = delete validates Feature (default construction) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Feature.cpp",
+  "functions": [
+    {
+      "args": [
+        "feature"
+      ],
+      "lineno": 13,
+      "name": "hash_value"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 65,
+      "name": "getByIndex"
+    },
+    {
+      "args": [
+        "feature"
+      ],
+      "lineno": 71,
+      "name": "getIndex"
+    },
+    {
+      "args": [
+        "feature"
+      ],
+      "lineno": 76,
+      "name": "getByFeature"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 81,
+      "name": "getByName"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "FeatureCollections"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 96,
+      "name": "getRegisteredFeature"
+    },
+    {
+      "args": [
+        "name",
+        "support",
+        "vote"
+      ],
+      "lineno": 109,
+      "name": "registerFeature"
+    },
+    {
+      "args": [],
+      "lineno": 153,
+      "name": "registrationIsDone"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 158,
+      "name": "featureToBitsetIndex"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 168,
+      "name": "bitsetIndexToFeature"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 174,
+      "name": "featureToName"
+    },
+    {
+      "args": [],
+      "lineno": 187,
+      "name": "allAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 195,
+      "name": "supportedAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "numDownVotedAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 209,
+      "name": "numUpVotedAmendments"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 215,
+      "name": "getRegisteredFeature"
+    },
+    {
+      "args": [
+        "name",
+        "support",
+        "vote"
+      ],
+      "lineno": 219,
+      "name": "registerFeature"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 224,
+      "name": "retireFeature"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "registrationIsDone"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 234,
+      "name": "featureToBitsetIndex"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 238,
+      "name": "bitsetIndexToFeature"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 242,
+      "name": "featureToName"
+    },
+    {
+      "args": [
+        "fn"
+      ],
+      "lineno": 251,
+      "name": "enforceValidFeatureName"
+    },
+    {
+      "args": [
+        "condition",
+        "logicErrorMessage"
+      ],
+      "lineno": 104,
+      "name": "check"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Feature registration and lookup are likely tested in protocol-level or amendment-related unit tests, e.g., in test files like Feature_test.cpp, AmendmentTable_test.cpp, or Application_test.cpp. However, the validation that Feature cannot be default-constructed is enforced by the C++ compiler and may not be directly tested. There may be limited or no explicit tests for multi_index uniqueness constraints or for error handling when lookups fail (e.g., not found cases). Edge cases such as duplicate registration or invalid input types are protected by the type system and container constraints, but explicit runtime tests for these scenarios may be lacking.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Feature.name",
+      "Feature.feature"
+    ],
+    "framework": "C++ type system (no explicit validation framework detected)",
+    "validation_layer": "constructor (business_logic/type)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "compile-time error (if types do not match)",
+      "field": "Feature (constructor arguments: name, feature)",
+      "location": "Feature::Feature(std::string const& name_, uint256 const& feature_)",
+      "validated_by": "C++ type system (constructor signature)",
+      "validates": [
+        "name must be std::string",
+        "feature must be uint256"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error (deleted constructor)",
+      "field": "Feature (default construction)",
+      "location": "Feature struct definition",
+      "validated_by": "Feature() = delete",
+      "validates": [
+        "Feature cannot be default-constructed"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "in"
+    },
+    {
+      "lineno": 18,
+      "name": "inSize"
+    },
+    {
+      "lineno": 18,
+      "name": "bf"
+    },
+    {
+      "lineno": 41,
+      "name": "in"
+    },
+    {
+      "lineno": 41,
+      "name": "inSizeUnchecked"
+    },
+    {
+      "lineno": 41,
+      "name": "decompressed"
+    },
+    {
+      "lineno": 41,
+      "name": "decompressedSizeUnchecked"
+    },
+    {
+      "lineno": 62,
+      "name": "in"
+    },
+    {
+      "lineno": 62,
+      "name": "inSize"
+    },
+    {
+      "lineno": 62,
+      "name": "decompressed"
+    },
+    {
+      "lineno": 62,
+      "name": "decompressedSize"
+    }
+  ],
+  "classes": [],
+  "description": "Provides LZ4 block compression and decompression utilities, including template and inline functions for compressing and decompressing data buffers and streams within the xrpl::compression_algorithms namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/CompressionAlgorithms.h",
+  "functions": [
+    {
+      "args": [
+        "in",
+        "inSize",
+        "bf"
+      ],
+      "lineno": 18,
+      "name": "lz4Compress"
+    },
+    {
+      "args": [
+        "in",
+        "inSizeUnchecked",
+        "decompressed",
+        "decompressedSizeUnchecked"
+      ],
+      "lineno": 41,
+      "name": "lz4Decompress"
+    },
+    {
+      "args": [
+        "in",
+        "inSize",
+        "decompressed",
+        "decompressedSize"
+      ],
+      "lineno": 62,
+      "name": "lz4Decompress"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "compression_algorithms"
+    }
+  ]
+}

@@ -1,0 +1,327 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RCLValidatedLedger::RCLValidatedLedger",
+        "ledger->read(keylet::skip())",
+        "XRPL_ASSERT(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1))"
+      ],
+      "entry_point": "RCLValidatedLedger::RCLValidatedLedger(std::shared_ptr<Ledger const> const&, beast::Journal)",
+      "purpose": "Constructs a validated ledger object from a Ledger, extracting ancestor hashes and validating last ledger sequence.",
+      "validation_points": [
+        "XRPL_ASSERT on sfLastLedgerSequence"
+      ]
+    },
+    {
+      "call_chain": [
+        "RCLValidatedLedger::operator[]",
+        "if (s >= minSeq() && s <= seq())",
+        "return ancestors_[...] or ledgerID_"
+      ],
+      "entry_point": "RCLValidatedLedger::operator[]",
+      "purpose": "Retrieves the hash for a given ancestor sequence, validating that the sequence is in range.",
+      "validation_points": [
+        "if (s >= minSeq() && s <= seq())"
+      ]
+    },
+    {
+      "call_chain": [
+        "RCLValidationsAdaptor::acquire",
+        "app_.getLedgerMaster().getLedgerByHash(hash)",
+        "XRPL_ASSERT(!ledger->open() && ledger->isImmutable())",
+        "XRPL_ASSERT(ledger->header().hash == hash)"
+      ],
+      "entry_point": "RCLValidationsAdaptor::acquire",
+      "purpose": "Acquires a validated ledger by hash, ensuring it is closed, immutable, and matches the requested hash.",
+      "validation_points": [
+        "XRPL_ASSERT on ledger state",
+        "XRPL_ASSERT on hash match"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLastLedgerSequence",
+      "flow": [
+        "Ledger::read(keylet::skip())",
+        "hashIndex->getFieldU32(sfLastLedgerSequence)",
+        "XRPL_ASSERT(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1))"
+      ],
+      "origin": "hashIndex->getFieldU32(sfLastLedgerSequence)",
+      "transformations": [
+        "Extracted from hashIndex",
+        "Compared to (seq() - 1)"
+      ],
+      "validated_at": "RCLValidatedLedger::RCLValidatedLedger (XRPL_ASSERT)"
+    },
+    {
+      "field": "ancestor sequence (s)",
+      "flow": [
+        "operator[] parameter",
+        "if (s >= minSeq() && s <= seq())",
+        "return ancestors_[...] or ledgerID_"
+      ],
+      "origin": "Input to RCLValidatedLedger::operator[]",
+      "transformations": [
+        "Checked for range validity",
+        "Used as index into ancestors_ or returns ledgerID_"
+      ],
+      "validated_at": "RCLValidatedLedger::operator[] (if condition)"
+    },
+    {
+      "field": "ledger",
+      "flow": [
+        "getLedgerByHash(hash)",
+        "XRPL_ASSERT(!ledger->open() && ledger->isImmutable())",
+        "XRPL_ASSERT(ledger->header().hash == hash)",
+        "return RCLValidatedLedger(ledger, j_)"
+      ],
+      "origin": "app_.getLedgerMaster().getLedgerByHash(hash)",
+      "transformations": [
+        "Checked for open/immutable state",
+        "Checked for hash match"
+      ],
+      "validated_at": "RCLValidationsAdaptor::acquire (XRPL_ASSERTs)"
+    },
+    {
+      "field": "ancestors_",
+      "flow": [
+        "Ledger::read(keylet::skip())",
+        "hashIndex->getFieldV256(sfHashes).value()",
+        "ancestors_ = ...",
+        "Used in operator[] and mismatch"
+      ],
+      "origin": "hashIndex->getFieldV256(sfHashes).value()",
+      "transformations": [
+        "Extracted from ledger",
+        "Stored in RCLValidatedLedger",
+        "Indexed for ancestor hash lookup"
+      ],
+      "validated_at": "Indirectly via sfLastLedgerSequence validation"
+    }
+  ],
+  "description": "Implements logic for handling validated ledgers and validations in the XRPL consensus process, including ledger ancestry tracking, validation acquisition, and validation handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLastLedgerSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at RCLValidatedLedger::RCLValidatedLedger(shared_ptr<Ledger const> const&, beast::Journal)",
+      "issue_pattern": "Missing empty string validation for sfLastLedgerSequence",
+      "why_false_positive": "XRPL_ASSERT macro validates sfLastLedgerSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ancestor sequence range",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (s >= minSeq() && s <= seq()) at RCLValidatedLedger::operator[](Seq const& s) const",
+      "issue_pattern": "Missing empty string validation for ancestor sequence range",
+      "why_false_positive": "if (s >= minSeq() && s <= seq()) validates ancestor sequence range for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ancestor sequence range",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (s >= minSeq() && s <= seq()) at RCLValidatedLedger::operator[](Seq const& s) const",
+      "issue_pattern": "Missing range validation for ancestor sequence range",
+      "why_false_positive": "if (s >= minSeq() && s <= seq()) validates ancestor sequence range range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLValidations.cpp",
+  "functions": [
+    {
+      "args": [
+        "MakeGenesis"
+      ],
+      "lineno": 10,
+      "name": "RCLValidatedLedger::RCLValidatedLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "beast::Journal j"
+      ],
+      "lineno": 15,
+      "name": "RCLValidatedLedger::RCLValidatedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "RCLValidatedLedger::minSeq"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "RCLValidatedLedger::seq"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "RCLValidatedLedger::id"
+    },
+    {
+      "args": [
+        "Seq const& s"
+      ],
+      "lineno": 45,
+      "name": "RCLValidatedLedger::operator[]"
+    },
+    {
+      "args": [
+        "RCLValidatedLedger const& a",
+        "RCLValidatedLedger const& b"
+      ],
+      "lineno": 61,
+      "name": "mismatch"
+    },
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal j"
+      ],
+      "lineno": 80,
+      "name": "RCLValidationsAdaptor::RCLValidationsAdaptor"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "RCLValidationsAdaptor::now"
+    },
+    {
+      "args": [
+        "LedgerHash const& hash"
+      ],
+      "lineno": 89,
+      "name": "RCLValidationsAdaptor::acquire"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::shared_ptr<STValidation> const& val",
+        "std::string const& source",
+        "BypassAccept const bypassAccept",
+        "std::optional<beast::Journal> j"
+      ],
+      "lineno": 117,
+      "name": "handleNewValidation"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is core consensus/validation logic. Direct unit tests for RCLValidatedLedger and RCLValidationsAdaptor are likely in test files such as 'test/consensus/Validations_test.cpp', 'test/ledger/Ledger_test.cpp', or similar. However, the XRPL_ASSERT on sfLastLedgerSequence and the ancestor sequence range check may not be directly tested for all edge cases (e.g., missing or malformed skip list, out-of-range ancestor queries). Integration tests may cover normal flows, but explicit negative/edge case coverage (e.g., missing ancestors, bad ledger state) should be reviewed. The async job path in acquire (when ledger is missing) is likely only covered in integration or network tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, manual range checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "sfLastLedgerSequence",
+      "location": "RCLValidatedLedger::RCLValidatedLedger(shared_ptr<Ledger const> const&, beast::Journal)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1)",
+        "Ensures the last ledger sequence in the skip list matches the expected previous sequence"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (logs warning, returns default ID{0})",
+      "field": "ancestor sequence range",
+      "location": "RCLValidatedLedger::operator[](Seq const& s) const",
+      "validated_by": "if (s >= minSeq() && s <= seq())",
+      "validates": [
+        "Checks that requested ancestor sequence is within available range"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

@@ -1,0 +1,300 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenModify::preflight"
+      ],
+      "entry_point": "NFTokenModify::preflight",
+      "purpose": "Initial stateless validation of the transaction fields before any ledger access.",
+      "validation_points": [
+        "sfOwner validated by explicit comparison (owner == sfAccount)",
+        "sfURI validated by explicit length and emptiness check"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenModify::preclaim"
+      ],
+      "entry_point": "NFTokenModify::preclaim",
+      "purpose": "Stateful validation: checks ledger for NFT existence, mutability, and permissions.",
+      "validation_points": [
+        "sfNFTokenID validated by nft::findToken",
+        "sfNFTokenID validated by nft::getFlags & nft::flagMutable",
+        "sfNFTokenID, sfAccount validated by nft::getIssuer, account comparison, sfNFTokenMinter"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenModify::doApply",
+        "nft::changeTokenURI"
+      ],
+      "entry_point": "NFTokenModify::doApply",
+      "purpose": "Applies the transaction to the ledger, updating the NFT's URI.",
+      "validation_points": [
+        "No new validation; assumes preflight and preclaim have succeeded"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfOwner",
+      "flow": [
+        "Transaction input",
+        "NFTokenModify::preflight (compared to sfAccount)",
+        "NFTokenModify::preclaim (used to determine owner)",
+        "NFTokenModify::doApply (used as owner argument)"
+      ],
+      "origin": "ctx.tx[~sfOwner] (optional field in transaction)",
+      "transformations": [
+        "Optional extraction (may default to sfAccount if not present)",
+        "Compared for equality to sfAccount"
+      ],
+      "validated_at": "NFTokenModify::preflight (owner != sfAccount)"
+    },
+    {
+      "field": "sfURI",
+      "flow": [
+        "Transaction input",
+        "NFTokenModify::preflight (checked for emptiness and length)",
+        "NFTokenModify::doApply (passed to nft::changeTokenURI)"
+      ],
+      "origin": "ctx.tx[~sfURI] (optional field in transaction)",
+      "transformations": [
+        "Optional extraction",
+        "Checked for empty or too long"
+      ],
+      "validated_at": "NFTokenModify::preflight"
+    },
+    {
+      "field": "sfNFTokenID",
+      "flow": [
+        "Transaction input",
+        "NFTokenModify::preclaim (used in nft::findToken, nft::getFlags, nft::getIssuer)",
+        "NFTokenModify::doApply (passed to nft::changeTokenURI)"
+      ],
+      "origin": "ctx.tx[sfNFTokenID] (required field in transaction)",
+      "transformations": [
+        "Used to look up NFT in ledger",
+        "Used to extract flags and issuer"
+      ],
+      "validated_at": "NFTokenModify::preclaim (existence, mutability, issuer/minter permissions)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "NFTokenModify::preflight (compared to sfOwner)",
+        "NFTokenModify::preclaim (used as account, compared to issuer/minter)",
+        "NFTokenModify::doApply (used as fallback owner)"
+      ],
+      "origin": "ctx.tx[sfAccount] (required field in transaction)",
+      "transformations": [
+        "Direct comparison",
+        "Used for permission checks"
+      ],
+      "validated_at": "NFTokenModify::preflight, NFTokenModify::preclaim"
+    },
+    {
+      "field": "sfNFTokenMinter",
+      "flow": [
+        "NFTokenModify::preclaim (read from issuer's account root if issuer != account)",
+        "Used to check if minter matches account"
+      ],
+      "origin": "Account root in ledger (optional field)",
+      "transformations": [
+        "Optional extraction from ledger",
+        "Compared to account"
+      ],
+      "validated_at": "NFTokenModify::preclaim"
+    }
+  ],
+  "description": "Implements the NFTokenModify transaction logic for modifying NFT metadata (such as URI) on the XRPL, including preflight, preclaim, and apply steps with permission and validity checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison at NFTokenModify::preflight",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "explicit comparison validates sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfURI",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit length and emptiness check at NFTokenModify::preflight",
+      "issue_pattern": "Missing empty string validation for sfURI",
+      "why_false_positive": "explicit length and emptiness check validates sfURI for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::findToken at NFTokenModify::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::findToken validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::getFlags & nft::flagMutable at NFTokenModify::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::getFlags & nft::flagMutable validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID, sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::getIssuer, account comparison, sfNFTokenMinter at NFTokenModify::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID, sfAccount",
+      "why_false_positive": "nft::getIssuer, account comparison, sfNFTokenMinter validates sfNFTokenID, sfAccount for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenModify.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 7,
+      "name": "NFTokenModify::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "NFTokenModify::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "NFTokenModify::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code would typically be found in unit/integration tests for NFT modification transactions, likely in files such as 'test/tx/NFTokenModify_test.cpp', 'test/tx/NFToken_test.cpp', or similar. Tests should cover: (1) owner/account mismatch, (2) URI length/emptiness, (3) non-existent NFT, (4) immutable NFT, (5) issuer/minter permissions, (6) successful modification. Gaps may exist if tests do not cover all combinations of optional fields (e.g., missing sfOwner, missing sfURI), or edge cases like issuer account missing in ledger. Coverage for error codes (temMALFORMED, tecNO_ENTRY, tecNO_PERMISSION, tecINTERNAL) should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (xrpl transaction processing)",
+    "validation_layer": "business_logic (preflight and preclaim phases of transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfOwner",
+      "location": "NFTokenModify::preflight",
+      "validated_by": "explicit comparison",
+      "validates": [
+        "Checks if sfOwner (if present) is the same as sfAccount",
+        "Disallows transaction if owner is the same as account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfURI",
+      "location": "NFTokenModify::preflight",
+      "validated_by": "explicit length and emptiness check",
+      "validates": [
+        "Checks if sfURI is present",
+        "Checks if sfURI is not empty",
+        "Checks if sfURI length does not exceed maxTokenURILength"
+      ],
+      "validation_type": "format|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfNFTokenID",
+      "location": "NFTokenModify::preclaim",
+      "validated_by": "nft::findToken",
+      "validates": [
+        "Checks if the NFT with sfNFTokenID exists for the owner"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenID",
+      "location": "NFTokenModify::preclaim",
+      "validated_by": "nft::getFlags & nft::flagMutable",
+      "validates": [
+        "Checks if the NFT is mutable (flagMutable set)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL or tecNO_PERMISSION",
+      "field": "sfNFTokenID, sfAccount",
+      "location": "NFTokenModify::preclaim",
+      "validated_by": "nft::getIssuer, account comparison, sfNFTokenMinter",
+      "validates": [
+        "Checks if the transaction sender is the issuer or minter of the NFT",
+        "If not, checks if the issuer's account exists",
+        "If not, checks if the minter matches the sender"
+      ],
+      "validation_type": "business_logic|authorization"
+    }
+  ]
+}

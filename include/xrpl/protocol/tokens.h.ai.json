@@ -1,0 +1,161 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "T"
+    },
+    {
+      "lineno": 22,
+      "name": "T"
+    },
+    {
+      "lineno": 27,
+      "name": "T"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides functions and types for encoding and decoding Base58Check tokens using the XRPL (XRP Ledger) alphabet, supporting both reference and fast implementations, and handling various XRPL token types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/tokens.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 23,
+      "name": "parseBase58"
+    },
+    {
+      "args": [
+        "type",
+        "s"
+      ],
+      "lineno": 28,
+      "name": "parseBase58"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 39,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 44,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 51,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 54,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "message",
+        "size",
+        "temp",
+        "temp_size"
+      ],
+      "lineno": 59,
+      "name": "encodeBase58"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 62,
+      "name": "decodeBase58"
+    },
+    {
+      "args": [
+        "token_type",
+        "input",
+        "out"
+      ],
+      "lineno": 71,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "type",
+        "s",
+        "outBuf"
+      ],
+      "lineno": 76,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 80,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 83,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "input",
+        "out"
+      ],
+      "lineno": 88,
+      "name": "b256_to_b58_be"
+    },
+    {
+      "args": [
+        "input",
+        "out"
+      ],
+      "lineno": 91,
+      "name": "b58_to_b256_be"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 48,
+      "name": "b58_ref"
+    },
+    {
+      "lineno": 57,
+      "name": "detail"
+    },
+    {
+      "lineno": 68,
+      "name": "b58_fast"
+    },
+    {
+      "lineno": 87,
+      "name": "detail"
+    }
+  ]
+}

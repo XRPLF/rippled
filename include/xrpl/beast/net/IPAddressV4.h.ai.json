@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "addr"
+    },
+    {
+      "lineno": 16,
+      "name": "addr"
+    },
+    {
+      "lineno": 20,
+      "name": "address"
+    }
+  ],
+  "classes": [],
+  "description": "This header file provides utility functions for working with IPv4 addresses, including checking if an address is private or public and determining its address class.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/net/IPAddressV4.h",
+  "functions": [
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 13,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 16,
+      "name": "is_public"
+    },
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 20,
+      "name": "get_class"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "IP"
+    }
+  ]
+}

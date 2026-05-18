@@ -1,0 +1,265 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "NodeCache& nodeCache"
+      ],
+      "lineno": 9,
+      "name": "ConsensusTransSetSF"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ConsensusTransSetSF::gotNode",
+        "std::make_shared<STTx const>(std::ref(sit))",
+        "stx->getTransactionID()",
+        "XRPL_ASSERT"
+      ],
+      "entry_point": "ConsensusTransSetSF::gotNode",
+      "purpose": "Handles a node received during consensus transaction set acquisition. If the node is a transaction, validates its hash and submits it for processing.",
+      "validation_points": [
+        "XRPL_ASSERT(stx->getTransactionID() == nodeHash.as_uint256(), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ConsensusTransSetSF::getNode",
+        "app_.getMasterTransaction().fetch_from_cache",
+        "txn->getSTransaction()->add(s)",
+        "sha512Half(s.slice())",
+        "XRPL_ASSERT"
+      ],
+      "entry_point": "ConsensusTransSetSF::getNode",
+      "purpose": "Retrieves a node (transaction) from cache or transaction master, serializes it, and validates its hash before returning the data.",
+      "validation_points": [
+        "XRPL_ASSERT(sha512Half(s.slice()) == nodeHash.as_uint256(), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "nodeData",
+      "flow": [
+        "gotNode parameter",
+        "m_nodeCache.insert(nodeHash, nodeData)",
+        "Serializer s(nodeData.data() + 4, nodeData.size() - 4)",
+        "SerialIter sit(s.slice())",
+        "STTx constructed from sit",
+        "stx->getTransactionID() validated"
+      ],
+      "origin": "Input parameter to ConsensusTransSetSF::gotNode",
+      "transformations": [
+        "Skipped first 4 bytes (prefix)",
+        "Deserialized into STTx"
+      ],
+      "validated_at": "XRPL_ASSERT(stx->getTransactionID() == nodeHash.as_uint256(), ...)"
+    },
+    {
+      "field": "nodeHash",
+      "flow": [
+        "gotNode/getNode parameter",
+        "Used as key for m_nodeCache",
+        "Used as hash to validate transaction"
+      ],
+      "origin": "Input parameter to gotNode/getNode",
+      "transformations": [
+        "Converted to uint256 for comparison"
+      ],
+      "validated_at": "XRPL_ASSERT in both gotNode and getNode"
+    },
+    {
+      "field": "txn (Transaction::pointer)",
+      "flow": [
+        "Fetched from cache",
+        "txn->getSTransaction()->add(s)",
+        "Serializer s",
+        "sha512Half(s.slice())",
+        "XRPL_ASSERT"
+      ],
+      "origin": "app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256())",
+      "transformations": [
+        "Serialized with prefix",
+        "Hashed with sha512Half"
+      ],
+      "validated_at": "XRPL_ASSERT(sha512Half(s.slice()) == nodeHash.as_uint256(), ...)"
+    },
+    {
+      "field": "nodeData.size()",
+      "flow": [
+        "gotNode parameter",
+        "if (nodeData.size() > 16)"
+      ],
+      "origin": "Input parameter to gotNode",
+      "transformations": [
+        "Checked for minimum size to be considered a transaction"
+      ],
+      "validated_at": "Explicit size check before deserialization"
+    }
+  ],
+  "description": "Implements the ConsensusTransSetSF class, which acts as a sync filter for transaction sets during consensus in the XRPL, handling node acquisition and transaction submission.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction hash (stx->getTransactionID())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ConsensusTransSetSF::gotNode",
+      "issue_pattern": "Missing empty string validation for transaction hash (stx->getTransactionID())",
+      "why_false_positive": "XRPL_ASSERT validates transaction hash (stx->getTransactionID()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction hash (sha512Half(s.slice()))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ConsensusTransSetSF::getNode",
+      "issue_pattern": "Missing empty string validation for transaction hash (sha512Half(s.slice()))",
+      "why_false_positive": "XRPL_ASSERT validates transaction hash (sha512Half(s.slice())) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "nodeData size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit size check (nodeData.size() > 16) at ConsensusTransSetSF::gotNode",
+      "issue_pattern": "Missing empty string validation for nodeData size",
+      "why_false_positive": "explicit size check (nodeData.size() > 16) validates nodeData size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "nodeData size",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit size check (nodeData.size() > 16) at ConsensusTransSetSF::gotNode",
+      "issue_pattern": "Missing range validation for nodeData size",
+      "why_false_positive": "explicit size check (nodeData.size() > 16) validates nodeData size range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/ConsensusTransSetSF.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "NodeCache& nodeCache"
+      ],
+      "lineno": 10,
+      "name": "ConsensusTransSetSF::ConsensusTransSetSF"
+    },
+    {
+      "args": [
+        "bool fromFilter",
+        "SHAMapHash const& nodeHash",
+        "std::uint32_t",
+        "Blob&& nodeData",
+        "SHAMapNodeType type"
+      ],
+      "lineno": 14,
+      "name": "ConsensusTransSetSF::gotNode"
+    },
+    {
+      "args": [
+        "SHAMapHash const& nodeHash"
+      ],
+      "lineno": 48,
+      "name": "ConsensusTransSetSF::getNode"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "ConsensusTransSetSF is a core consensus utility. Typical test coverage would be in integration/consensus tests, possibly in files like test/ledger/SHAMap_test.cpp, test/app/ledger/ConsensusTransSetSF_test.cpp, or test/app/consensus/Consensus_test.cpp. Direct unit tests for validation (hash checks, size checks) may be limited; most coverage likely comes from higher-level consensus and transaction set acquisition tests. Gaps: Exception handling for invalid transactions may not be directly tested; edge cases for malformed nodeData or hash mismatches may lack explicit unit tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), explicit C++ checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::runtime_error or abort, depending on XRPL_ASSERT implementation)",
+      "field": "transaction hash (stx->getTransactionID())",
+      "location": "ConsensusTransSetSF::gotNode",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the transaction ID of the deserialized transaction matches the nodeHash provided"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::runtime_error or abort, depending on XRPL_ASSERT implementation)",
+      "field": "transaction hash (sha512Half(s.slice()))",
+      "location": "ConsensusTransSetSF::getNode",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the hash of the serialized transaction matches the nodeHash provided"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic, not an exception)",
+      "field": "nodeData size",
+      "location": "ConsensusTransSetSF::gotNode",
+      "validated_by": "explicit size check (nodeData.size() > 16)",
+      "validates": [
+        "Ensures nodeData is large enough to be a transaction (greater than 16 bytes) before attempting to deserialize"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

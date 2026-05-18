@@ -1,0 +1,583 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "type"
+    },
+    {
+      "lineno": 28,
+      "name": "s"
+    },
+    {
+      "lineno": 28,
+      "name": "ec"
+    },
+    {
+      "lineno": 91,
+      "name": "s"
+    },
+    {
+      "lineno": 91,
+      "name": "ec"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Condition::deserialize",
+        "parsePreamble",
+        "isConstructed / isContextSpecific",
+        "detail::loadSimpleSha256 (for simple types)",
+        "parsePreamble",
+        "isPrimitive / isContextSpecific",
+        "parseOctetString",
+        "parsePreamble",
+        "isPrimitive / isContextSpecific",
+        "parseInteger"
+      ],
+      "entry_point": "Condition::deserialize",
+      "purpose": "Deserializes a binary-encoded Condition, validates structure, type, fingerprint, and cost, and constructs a Condition object.",
+      "validation_points": [
+        "Condition::deserialize: checks for empty buffer, malformed encoding, buffer underfull, max size",
+        "parsePreamble: validates DER preamble",
+        "isConstructed / isContextSpecific: validates type encoding",
+        "detail::loadSimpleSha256: validates fingerprint preamble, tag, length, octet string, cost preamble, tag, integer, trailing garbage, and type-specific cost"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "DER preamble",
+      "flow": [
+        "Slice s",
+        "parsePreamble(s, ec)",
+        "p (preamble struct)"
+      ],
+      "origin": "Slice s (input buffer)",
+      "transformations": [
+        "Parsed from buffer",
+        "Checked for primitive/constructed, context-specific, tag, length"
+      ],
+      "validated_at": "parsePreamble, isPrimitive, isConstructed, isContextSpecific"
+    },
+    {
+      "field": "preamble.tag",
+      "flow": [
+        "p (from parsePreamble)",
+        "if (p.tag != expected)"
+      ],
+      "origin": "parsePreamble result",
+      "transformations": [
+        "Compared to expected tag (0 for fingerprint, 1 for cost)"
+      ],
+      "validated_at": "if (p.tag != 0) / if (p.tag != 1)"
+    },
+    {
+      "field": "preamble.length (fingerprint length)",
+      "flow": [
+        "p.length",
+        "if (p.length != fingerprintSize)"
+      ],
+      "origin": "parsePreamble result",
+      "transformations": [
+        "Compared to constant fingerprintSize (32)"
+      ],
+      "validated_at": "if (p.length != fingerprintSize)"
+    },
+    {
+      "field": "fingerprint (octet string)",
+      "flow": [
+        "Slice s",
+        "parseOctetString(s, p.length, ec)",
+        "Buffer b"
+      ],
+      "origin": "Slice s (after preamble)",
+      "transformations": [
+        "Extracted as octet string of length p.length"
+      ],
+      "validated_at": "parseOctetString"
+    },
+    {
+      "field": "cost (INTEGER)",
+      "flow": [
+        "Slice s",
+        "parsePreamble(s, ec)",
+        "parseInteger<std::uint32_t>(s, p.length, ec)",
+        "cost"
+      ],
+      "origin": "Slice s (after fingerprint)",
+      "transformations": [
+        "Parsed as integer of length p.length"
+      ],
+      "validated_at": "parsePreamble (for cost), isPrimitive, isContextSpecific, p.tag == 1, parseInteger"
+    },
+    {
+      "field": "type-specific cost check",
+      "flow": [
+        "cost",
+        "if (type == preimageSha256 && cost > PreimageSha256::maxPreimageLength)"
+      ],
+      "origin": "cost (parsed integer)",
+      "transformations": [
+        "Compared to maxPreimageLength for preimageSha256"
+      ],
+      "validated_at": "if (cost > PreimageSha256::maxPreimageLength)"
+    }
+  ],
+  "description": "Implements deserialization and parsing logic for cryptographic conditions (such as PreimageSha256) in the XRPL (XRP Ledger) using DER encoding, including error handling and type dispatch.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "preamble (DER preamble)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parsePreamble, isPrimitive, isContextSpecific at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for preamble (DER preamble)",
+      "why_false_positive": "parsePreamble, isPrimitive, isContextSpecific validates preamble (DER preamble) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "preamble (DER preamble)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parsePreamble, isPrimitive, isContextSpecific at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for preamble (DER preamble)",
+      "why_false_positive": "parsePreamble, isPrimitive, isContextSpecific validates preamble (DER preamble) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "preamble.tag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "p.tag != 0 at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for preamble.tag",
+      "why_false_positive": "p.tag != 0 validates preamble.tag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "preamble.tag",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "p.tag != 0 at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for preamble.tag",
+      "why_false_positive": "p.tag != 0 validates preamble.tag format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "preamble.length (fingerprint length)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "p.length != fingerprintSize at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for preamble.length (fingerprint length)",
+      "why_false_positive": "p.length != fingerprintSize validates preamble.length (fingerprint length) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "preamble.length (fingerprint length)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "p.length != fingerprintSize at detail::loadSimpleSha256",
+      "issue_pattern": "Missing range validation for preamble.length (fingerprint length)",
+      "why_false_positive": "p.length != fingerprintSize validates preamble.length (fingerprint length) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "octet string (fingerprint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseOctetString at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for octet string (fingerprint)",
+      "why_false_positive": "parseOctetString validates octet string (fingerprint) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "octet string (fingerprint)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseOctetString at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for octet string (fingerprint)",
+      "why_false_positive": "parseOctetString validates octet string (fingerprint) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "preamble (cost field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parsePreamble, isPrimitive, isContextSpecific at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for preamble (cost field)",
+      "why_false_positive": "parsePreamble, isPrimitive, isContextSpecific validates preamble (cost field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "preamble (cost field)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parsePreamble, isPrimitive, isContextSpecific at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for preamble (cost field)",
+      "why_false_positive": "parsePreamble, isPrimitive, isContextSpecific validates preamble (cost field) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "preamble.tag (cost field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "p.tag != 1 at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for preamble.tag (cost field)",
+      "why_false_positive": "p.tag != 1 validates preamble.tag (cost field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "preamble.tag (cost field)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "p.tag != 1 at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for preamble.tag (cost field)",
+      "why_false_positive": "p.tag != 1 validates preamble.tag (cost field) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cost (integer field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseInteger<std::uint32_t> at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for cost (integer field)",
+      "why_false_positive": "parseInteger<std::uint32_t> validates cost (integer field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "trailing data",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!s.empty() at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for trailing data",
+      "why_false_positive": "!s.empty() validates trailing data for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "trailing data",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "!s.empty() at detail::loadSimpleSha256",
+      "issue_pattern": "Missing format validation for trailing data",
+      "why_false_positive": "!s.empty() validates trailing data format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cost (preimageSha256 type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "cost > PreimageSha256::maxPreimageLength at detail::loadSimpleSha256",
+      "issue_pattern": "Missing empty string validation for cost (preimageSha256 type)",
+      "why_false_positive": "cost > PreimageSha256::maxPreimageLength validates cost (preimageSha256 type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/conditions/Condition.cpp",
+  "functions": [
+    {
+      "args": [
+        "type",
+        "s",
+        "ec"
+      ],
+      "lineno": 28,
+      "name": "loadSimpleSha256"
+    },
+    {
+      "args": [
+        "s",
+        "ec"
+      ],
+      "lineno": 91,
+      "name": "Condition::deserialize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "cryptoconditions"
+    },
+    {
+      "lineno": 7,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for Condition deserialization and error handling, typically found in files like 'test/conditions/Condition_test.cpp', 'test/conditions/PreimageSha256_test.cpp', or similar. These tests should cover valid and invalid encodings, boundary conditions (e.g., fingerprint size, cost limits), and error codes. However, gaps may exist for malformed DER encodings, rare error paths (e.g., trailing garbage), and compound condition types, as only simple SHA256 conditions are handled in this code. Full coverage would require tests for all error codes and edge cases in the validation logic.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation using DER parsing utilities (parsePreamble, parseOctetString, parseInteger)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::incorrect_encoding",
+      "field": "preamble (DER preamble)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "parsePreamble, isPrimitive, isContextSpecific",
+      "validates": [
+        "Checks that the DER preamble is primitive and context-specific"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::unexpected_tag",
+      "field": "preamble.tag",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "p.tag != 0",
+      "validates": [
+        "Checks that the tag for the fingerprint field is 0"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::fingerprint_size",
+      "field": "preamble.length (fingerprint length)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "p.length != fingerprintSize",
+      "validates": [
+        "Checks that the fingerprint is exactly 32 bytes"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "parseOctetString sets error code",
+      "field": "octet string (fingerprint)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "parseOctetString",
+      "validates": [
+        "Checks that the fingerprint field is a valid octet string of the correct length"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::malformed_encoding",
+      "field": "preamble (cost field)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "parsePreamble, isPrimitive, isContextSpecific",
+      "validates": [
+        "Checks that the DER preamble for the cost field is primitive and context-specific"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::unexpected_tag",
+      "field": "preamble.tag (cost field)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "p.tag != 1",
+      "validates": [
+        "Checks that the tag for the cost field is 1"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "parseInteger sets error code",
+      "field": "cost (integer field)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "parseInteger<std::uint32_t>",
+      "validates": [
+        "Checks that the cost field is a valid unsigned 32-bit integer"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::trailing_garbage",
+      "field": "trailing data",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "!s.empty()",
+      "validates": [
+        "Checks that there is no extra data after expected fields"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error::preimage_too_long",
+      "field": "cost (preimageSha256 type)",
+      "location": "detail::loadSimpleSha256",
+      "validated_by": "cost > PreimageSha256::maxPreimageLength",
+      "validates": [
+        "Checks that the cost does not exceed the maximum allowed preimage length for preimageSha256 type"
+      ],
+      "validation_type": "business_logic|range"
+    }
+  ]
+}

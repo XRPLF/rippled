@@ -1,0 +1,613 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMDeposit::doApply",
+        "AMMDeposit::preflight",
+        "AMMDeposit::preclaim",
+        "AMMDeposit::applyGuts",
+        "AMMDeposit::deposit"
+      ],
+      "entry_point": "AMMDeposit::doApply",
+      "purpose": "Processes an AMMDeposit transaction, validating input and applying changes to the ledger.",
+      "validation_points": [
+        "AMMDeposit::preflight",
+        "AMMDeposit::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMDeposit::preflight"
+      ],
+      "entry_point": "AMMDeposit::preflight",
+      "purpose": "Performs stateless validation of the AMMDeposit transaction fields and flags.",
+      "validation_points": [
+        "AMMDeposit::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMDeposit::checkExtraFeatures"
+      ],
+      "entry_point": "AMMDeposit::checkExtraFeatures",
+      "purpose": "Checks if extra features (like MPTokens) are enabled and if the transaction is compatible.",
+      "validation_points": [
+        "AMMDeposit::checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "flags",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (flags = ctx.tx.getFlags())",
+        "Bitmask checks for tfDepositSubTx and specific flag types",
+        "Determines which validation branch to take"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Bitmasking with tfDepositSubTx and other flag constants",
+        "std::popcount to ensure only one sub-transaction flag is set"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "amount",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (amount = ctx.tx[~sfAmount])",
+        "Branch-specific validation (presence, type, asset match)",
+        "Passed to invalidAMMAmount for further validation"
+      ],
+      "origin": "ctx.tx[~sfAmount]",
+      "transformations": [
+        "Optional extraction",
+        "Type/asset checks",
+        "Passed to invalidAMMAmount"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "amount2",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (amount2 = ctx.tx[~sfAmount2])",
+        "Branch-specific validation (presence, type, asset match)",
+        "Passed to invalidAMMAmount for further validation"
+      ],
+      "origin": "ctx.tx[~sfAmount2]",
+      "transformations": [
+        "Optional extraction",
+        "Type/asset checks",
+        "Passed to invalidAMMAmount"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "lpTokens",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (lpTokens = ctx.tx[~sfLPTokenOut])",
+        "Branch-specific validation (presence, value > 0)",
+        "Used in deposit logic"
+      ],
+      "origin": "ctx.tx[~sfLPTokenOut]",
+      "transformations": [
+        "Optional extraction",
+        "Value check (*lpTokens <= beast::zero)"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "ePrice",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (ePrice = ctx.tx[~sfEPrice])",
+        "Branch-specific validation (presence/absence depending on flags)",
+        "Used in deposit logic"
+      ],
+      "origin": "ctx.tx[~sfEPrice]",
+      "transformations": [
+        "Optional extraction"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "tradingFee",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (tradingFee = ctx.tx[~sfTradingFee])",
+        "Branch-specific validation (should not be present except for tfTwoAssetIfEmpty)",
+        "Used in deposit logic"
+      ],
+      "origin": "ctx.tx[~sfTradingFee]",
+      "transformations": [
+        "Optional extraction"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    },
+    {
+      "field": "asset / asset2",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMDeposit::preflight (asset = ctx.tx[sfAsset], asset2 = ctx.tx[sfAsset2])",
+        "invalidAMMAssetPair(asset, asset2) validation",
+        "Used for further amount validation"
+      ],
+      "origin": "ctx.tx[sfAsset], ctx.tx[sfAsset2]",
+      "transformations": [
+        "Type checks",
+        "invalidAMMAssetPair"
+      ],
+      "validated_at": "AMMDeposit::preflight"
+    }
+  ],
+  "description": "Implements the AMMDeposit transaction logic for the XRPL decentralized exchange, including preflight checks, preclaim checks, and the application of various deposit strategies into an Automated Market Maker (AMM) pool.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "flags (tfDepositSubTx)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::popcount(flags & tfDepositSubTx) != 1 at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for flags (tfDepositSubTx)",
+      "why_false_positive": "std::popcount(flags & tfDepositSubTx) != 1 validates flags (tfDepositSubTx) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfLPToken, lpTokens, ePrice, amount, amount2, tradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if ((flags & tfLPToken) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfLPToken, lpTokens, ePrice, amount, amount2, tradingFee",
+      "why_false_positive": "if ((flags & tfLPToken) != 0u) { ... } validates tfLPToken, lpTokens, ePrice, amount, amount2, tradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfSingleAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else if ((flags & tfSingleAsset) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfSingleAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+      "why_false_positive": "else if ((flags & tfSingleAsset) != 0u) { ... } validates tfSingleAsset, amount, amount2, lpTokens, ePrice, tradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfTwoAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else if ((flags & tfTwoAsset) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfTwoAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+      "why_false_positive": "else if ((flags & tfTwoAsset) != 0u) { ... } validates tfTwoAsset, amount, amount2, lpTokens, ePrice, tradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfOneAssetLPToken, amount, lpTokens, amount2, ePrice, tradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else if ((flags & tfOneAssetLPToken) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfOneAssetLPToken, amount, lpTokens, amount2, ePrice, tradingFee",
+      "why_false_positive": "else if ((flags & tfOneAssetLPToken) != 0u) { ... } validates tfOneAssetLPToken, amount, lpTokens, amount2, ePrice, tradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfLimitLPToken, amount, ePrice, lpTokens, amount2, tradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else if ((flags & tfLimitLPToken) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfLimitLPToken, amount, ePrice, lpTokens, amount2, tradingFee",
+      "why_false_positive": "else if ((flags & tfLimitLPToken) != 0u) { ... } validates tfLimitLPToken, amount, ePrice, lpTokens, amount2, tradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfTwoAssetIfEmpty, amount, amount2, ePrice, lpTokens",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else if ((flags & tfTwoAssetIfEmpty) != 0u) { ... } at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for tfTwoAssetIfEmpty, amount, amount2, ePrice, lpTokens",
+      "why_false_positive": "else if ((flags & tfTwoAssetIfEmpty) != 0u) { ... } validates tfTwoAssetIfEmpty, amount, amount2, ePrice, lpTokens for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "asset, asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAssetPair(asset, asset2) at AMMDeposit::preflight",
+      "issue_pattern": "Missing empty string validation for asset, asset2",
+      "why_false_positive": "invalidAMMAssetPair(asset, asset2) validates asset, asset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AMM feature enabled",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMDeposit::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for AMM feature enabled",
+      "why_false_positive": "ammEnabled(ctx.rules) validates AMM feature enabled for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "MPTokens V2 feature and asset/amount types",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) || ... at AMMDeposit::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for MPTokens V2 feature and asset/amount types",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) || ... validates MPTokens V2 feature and asset/amount types for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMDeposit.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "AMMDeposit::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "AMMDeposit::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 26,
+      "name": "AMMDeposit::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 99,
+      "name": "AMMDeposit::preclaim"
+    },
+    {
+      "args": [
+        "Sandbox& sb"
+      ],
+      "lineno": 210,
+      "name": "AMMDeposit::applyGuts"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "AMMDeposit::doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amountDeposit",
+        "std::optional<STAmount> const& amount2Deposit",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::optional<STAmount> const& depositMin",
+        "std::optional<STAmount> const& deposit2Min",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 292,
+      "name": "AMMDeposit::deposit"
+    },
+    {
+      "args": [
+        "Rules const& rules",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit"
+      ],
+      "lineno": 347,
+      "name": "adjustLPTokensOut"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::optional<STAmount> const& depositMin",
+        "std::optional<STAmount> const& deposit2Min",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 359,
+      "name": "AMMDeposit::equalDepositTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 399,
+      "name": "AMMDeposit::equalDepositLimit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 453,
+      "name": "AMMDeposit::singleDeposit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 484,
+      "name": "AMMDeposit::singleDepositTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& ePrice",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 510,
+      "name": "AMMDeposit::singleDepositEPrice"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "Asset const& lptIssue",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 589,
+      "name": "AMMDeposit::equalDepositInEmptyState"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMDeposit validation is typically covered in unit/integration tests under the transaction processing suite. Look for files like 'AMMDeposit_test.cpp', 'AMM_test.cpp', or 'Transactor_test.cpp' in the rippled or xrpl repo. These should test flag combinations, malformed transactions, and edge cases (e.g., missing/extra fields, invalid asset pairs, negative/zero amounts). Gaps may exist for rare flag combinations, feature toggles (e.g., MPTokens), or error propagation paths. Ensure tests cover all branches in the flag validation logic and all error returns in preflight.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "flags (tfDepositSubTx)",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "std::popcount(flags & tfDepositSubTx) != 1",
+      "validates": [
+        "Exactly one tfDepositSubTx flag must be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfLPToken, lpTokens, ePrice, amount, amount2, tradingFee",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "if ((flags & tfLPToken) != 0u) { ... }",
+      "validates": [
+        "If tfLPToken is set, lpTokens must be present",
+        "ePrice must not be present",
+        "If amount is present, amount2 must also be present (and vice versa)",
+        "tradingFee must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfSingleAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "else if ((flags & tfSingleAsset) != 0u) { ... }",
+      "validates": [
+        "If tfSingleAsset is set, amount must be present",
+        "amount2, ePrice, tradingFee must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfTwoAsset, amount, amount2, lpTokens, ePrice, tradingFee",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "else if ((flags & tfTwoAsset) != 0u) { ... }",
+      "validates": [
+        "If tfTwoAsset is set, amount and amount2 must be present",
+        "ePrice, tradingFee must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfOneAssetLPToken, amount, lpTokens, amount2, ePrice, tradingFee",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "else if ((flags & tfOneAssetLPToken) != 0u) { ... }",
+      "validates": [
+        "If tfOneAssetLPToken is set, amount and lpTokens must be present",
+        "amount2, ePrice, tradingFee must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfLimitLPToken, amount, ePrice, lpTokens, amount2, tradingFee",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "else if ((flags & tfLimitLPToken) != 0u) { ... }",
+      "validates": [
+        "If tfLimitLPToken is set, amount and ePrice must be present",
+        "lpTokens, amount2, tradingFee must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "tfTwoAssetIfEmpty, amount, amount2, ePrice, lpTokens",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "else if ((flags & tfTwoAssetIfEmpty) != 0u) { ... }",
+      "validates": [
+        "If tfTwoAssetIfEmpty is set, amount and amount2 must be present",
+        "ePrice, lpTokens must not be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result of invalidAMMAssetPair (likely temMALFORMED or similar)",
+      "field": "asset, asset2",
+      "location": "AMMDeposit::preflight",
+      "validated_by": "invalidAMMAssetPair(asset, asset2)",
+      "validates": [
+        "Asset pair must be valid for AMM"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns false (caller may throw or reject)",
+      "field": "AMM feature enabled",
+      "location": "AMMDeposit::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "AMM feature must be enabled in rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns false (caller may throw or reject)",
+      "field": "MPTokens V2 feature and asset/amount types",
+      "location": "AMMDeposit::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) || ...",
+      "validates": [
+        "If MPTokensV2 is not enabled, asset, asset2, amount, amount2 must not hold MPTIssue"
+      ],
+      "validation_type": "business_logic|type"
+    }
+  ]
+}

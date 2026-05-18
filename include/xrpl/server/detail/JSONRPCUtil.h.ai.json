@@ -1,0 +1,25 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Declares the HTTPReply function for sending HTTP replies with a status code, message, JSON output, and logging journal within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/JSONRPCUtil.h",
+  "functions": [
+    {
+      "args": [
+        "nStatus",
+        "strMsg",
+        "Output",
+        "j"
+      ],
+      "lineno": 8,
+      "name": "HTTPReply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

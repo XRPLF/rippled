@@ -1,0 +1,203 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 28,
+      "name": "RippleState"
+    },
+    {
+      "args": [
+        "balance",
+        "lowLimit",
+        "highLimit",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 217,
+      "name": "RippleStateBuilder"
+    }
+  ],
+  "description": "Defines the RippleState ledger entry wrapper and builder for XRPL, providing type-safe field access and construction for RippleState ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/RippleState.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getBalance"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getLowLimit"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getHighLimit"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getLowNode"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "hasLowNode"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "getLowQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "hasLowQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "getLowQualityOut"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "hasLowQualityOut"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "getHighNode"
+    },
+    {
+      "args": [],
+      "lineno": 162,
+      "name": "hasHighNode"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "getHighQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 183,
+      "name": "hasHighQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "getHighQualityOut"
+    },
+    {
+      "args": [],
+      "lineno": 204,
+      "name": "hasHighQualityOut"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 241,
+      "name": "setBalance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 251,
+      "name": "setLowLimit"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 261,
+      "name": "setHighLimit"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 271,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 281,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 291,
+      "name": "setLowNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 301,
+      "name": "setLowQualityIn"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 311,
+      "name": "setLowQualityOut"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 321,
+      "name": "setHighNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 331,
+      "name": "setHighQualityIn"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 341,
+      "name": "setHighQualityOut"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 351,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

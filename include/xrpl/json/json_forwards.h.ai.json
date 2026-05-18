@@ -1,0 +1,40 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "StaticString"
+    },
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "Value"
+    },
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "ValueIteratorBase"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "ValueIterator"
+    },
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "ValueConstIterator"
+    }
+  ],
+  "description": "Defines basic type aliases and forward declarations for JSON value handling within the Json namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/json_forwards.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "Json"
+    }
+  ]
+}

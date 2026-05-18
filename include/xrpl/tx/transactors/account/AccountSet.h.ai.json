@@ -1,0 +1,76 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 8,
+      "name": "AccountSet"
+    }
+  ],
+  "description": "Defines the AccountSet transaction transactor class for handling AccountSet operations in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/account/AccountSet.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "AccountSet"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 24,
+      "name": "checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

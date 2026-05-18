@@ -1,0 +1,322 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "sle"
+    },
+    {
+      "lineno": 259,
+      "name": "issuer"
+    },
+    {
+      "lineno": 259,
+      "name": "sequence"
+    },
+    {
+      "lineno": 259,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 259,
+      "name": "outstandingAmount"
+    },
+    {
+      "lineno": 259,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 259,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 271,
+      "name": "sle"
+    },
+    {
+      "lineno": 283,
+      "name": "value"
+    },
+    {
+      "lineno": 293,
+      "name": "value"
+    },
+    {
+      "lineno": 303,
+      "name": "value"
+    },
+    {
+      "lineno": 313,
+      "name": "value"
+    },
+    {
+      "lineno": 323,
+      "name": "value"
+    },
+    {
+      "lineno": 333,
+      "name": "value"
+    },
+    {
+      "lineno": 343,
+      "name": "value"
+    },
+    {
+      "lineno": 353,
+      "name": "value"
+    },
+    {
+      "lineno": 363,
+      "name": "value"
+    },
+    {
+      "lineno": 373,
+      "name": "value"
+    },
+    {
+      "lineno": 383,
+      "name": "value"
+    },
+    {
+      "lineno": 393,
+      "name": "value"
+    },
+    {
+      "lineno": 403,
+      "name": "value"
+    },
+    {
+      "lineno": 414,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "MPTokenIssuance"
+    },
+    {
+      "args": [
+        "issuer",
+        "sequence",
+        "ownerNode",
+        "outstandingAmount",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 256,
+      "name": "MPTokenIssuanceBuilder"
+    }
+  ],
+  "description": "Defines the MPTokenIssuance ledger entry type for XRPL, providing a type-safe wrapper for accessing fields and a builder class for constructing new entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/MPTokenIssuance.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "hasTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "getAssetScale"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "hasAssetScale"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "getMaximumAmount"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "hasMaximumAmount"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "getOutstandingAmount"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "getLockedAmount"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "hasLockedAmount"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "getMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 178,
+      "name": "hasMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 188,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 198,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 220,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "getMutableFlags"
+    },
+    {
+      "args": [],
+      "lineno": 242,
+      "name": "hasMutableFlags"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 282,
+      "name": "setIssuer"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 292,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 302,
+      "name": "setTransferFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 312,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 322,
+      "name": "setAssetScale"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 332,
+      "name": "setMaximumAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 342,
+      "name": "setOutstandingAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 352,
+      "name": "setLockedAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 362,
+      "name": "setMPTokenMetadata"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 372,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 382,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 392,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 402,
+      "name": "setMutableFlags"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 412,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

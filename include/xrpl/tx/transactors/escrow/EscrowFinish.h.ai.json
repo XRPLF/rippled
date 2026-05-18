@@ -1,0 +1,71 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "EscrowFinish"
+    }
+  ],
+  "description": "Defines the EscrowFinish transaction transactor class for the XRPL, including its interface for preflight checks, fee calculation, and application logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/escrow/EscrowFinish.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "EscrowFinish"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflightSigValidated"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 24,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

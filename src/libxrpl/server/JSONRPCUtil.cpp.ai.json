@@ -1,0 +1,185 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "nStatus"
+    },
+    {
+      "lineno": 22,
+      "name": "content"
+    },
+    {
+      "lineno": 22,
+      "name": "output"
+    },
+    {
+      "lineno": 22,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "HTTPReply"
+      ],
+      "entry_point": "HTTPReply",
+      "purpose": "Formats and outputs an HTTP response based on status and content, including validation of content and status.",
+      "validation_points": [
+        "if (content.empty() && nStatus == 401) { ... } // Validates content and status for special 401 handling",
+        "switch (nStatus) { ... } // Validates nStatus against allowed HTTP codes"
+      ]
+    },
+    {
+      "call_chain": [
+        "getHTTPHeaderTimestamp"
+      ],
+      "entry_point": "getHTTPHeaderTimestamp",
+      "purpose": "Generates a formatted HTTP date header string.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "content",
+      "flow": [
+        "HTTPReply argument",
+        "Validation: content.empty() check",
+        "Used in output (either as part of special 401 HTML or as JSON body)"
+      ],
+      "origin": "Passed as argument to HTTPReply (likely from upstream HTTP request handler or RPC handler)",
+      "transformations": [
+        "Checked for emptiness",
+        "Size used for Content-Length calculation",
+        "Output directly as HTTP body"
+      ],
+      "validated_at": "if (content.empty() && nStatus == 401)"
+    },
+    {
+      "field": "nStatus",
+      "flow": [
+        "HTTPReply argument",
+        "Validation: content.empty() && nStatus == 401",
+        "switch (nStatus) for HTTP status line selection"
+      ],
+      "origin": "Passed as argument to HTTPReply (set by upstream logic based on request outcome)",
+      "transformations": [
+        "Checked for specific value (401) in if statement",
+        "Matched in switch statement to select HTTP status line"
+      ],
+      "validated_at": [
+        "if (content.empty() && nStatus == 401)",
+        "switch (nStatus)"
+      ]
+    },
+    {
+      "field": "output",
+      "flow": [
+        "HTTPReply argument",
+        "Used to emit all HTTP headers and body"
+      ],
+      "origin": "Passed as argument to HTTPReply (Json::Output, likely a functor or callback for writing response)",
+      "transformations": [
+        "Receives formatted strings for output"
+      ],
+      "validated_at": "Not validated (assumed to be a valid callable)"
+    }
+  ],
+  "description": "Provides utility functions for generating HTTP headers and replies for the XRPL JSON-RPC server, including timestamped headers and error handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "content",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (content.empty()) at HTTPReply",
+      "issue_pattern": "Missing empty string validation for content",
+      "why_false_positive": "explicit check (content.empty()) validates content for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "nStatus",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch statement at HTTPReply",
+      "issue_pattern": "Missing empty string validation for nStatus",
+      "why_false_positive": "switch statement validates nStatus for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/JSONRPCUtil.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "getHTTPHeaderTimestamp"
+    },
+    {
+      "args": [
+        "nStatus",
+        "content",
+        "output",
+        "j"
+      ],
+      "lineno": 22,
+      "name": "HTTPReply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is utility code for HTTP response formatting and is likely tested indirectly via higher-level server or RPC tests. Direct unit tests for HTTPReply and getHTTPHeaderTimestamp may not exist, but integration tests for HTTP endpoints (e.g., in test/server or test/rpc) would exercise these paths. Gaps: No explicit tests for malformed or edge-case content/status combinations, and no tests for header formatting edge cases. No validation of output functor/callback.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (conditional logic, not exception)",
+      "field": "content",
+      "location": "HTTPReply",
+      "validated_by": "explicit check (content.empty())",
+      "validates": [
+        "Checks if content is empty when nStatus == 401 to determine special unauthorized response"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (default case not handled, falls through)",
+      "field": "nStatus",
+      "location": "HTTPReply",
+      "validated_by": "switch statement",
+      "validates": [
+        "Checks if nStatus is one of the allowed HTTP status codes (200, 202, 400, 401, 403, 404, 405)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

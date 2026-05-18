@@ -1,0 +1,314 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "buffer"
+    },
+    {
+      "lineno": 23,
+      "name": "count"
+    },
+    {
+      "lineno": 43,
+      "name": "ptr"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "crypto_prng()",
+        "csprng_engine::csprng_engine()"
+      ],
+      "entry_point": "crypto_prng()",
+      "purpose": "Initializes the global cryptographically secure PRNG engine singleton.",
+      "validation_points": [
+        "csprng_engine::csprng_engine() - Validates OpenSSL entropy pool initialization via RAND_poll()"
+      ]
+    },
+    {
+      "call_chain": [
+        "csprng_engine::operator()(void* ptr, std::size_t count)",
+        "RAND_bytes()"
+      ],
+      "entry_point": "csprng_engine::operator()(void* ptr, std::size_t count)",
+      "purpose": "Fills a buffer with cryptographically secure random bytes.",
+      "validation_points": [
+        "csprng_engine::operator()(void* ptr, std::size_t count) - Validates entropy availability via RAND_bytes() result"
+      ]
+    },
+    {
+      "call_chain": [
+        "csprng_engine::mix_entropy(void* buffer, std::size_t count)",
+        "RAND_add(entropy.data(), ...)",
+        "if (buffer != nullptr && count != 0) RAND_add(buffer, count, 0)"
+      ],
+      "entry_point": "csprng_engine::mix_entropy(void* buffer, std::size_t count)",
+      "purpose": "Mixes additional entropy into the OpenSSL PRNG pool.",
+      "validation_points": [
+        "csprng_engine::mix_entropy(void* buffer, std::size_t count) - Validates buffer pointer and count before using RAND_add"
+      ]
+    },
+    {
+      "call_chain": [
+        "csprng_engine::operator()()",
+        "csprng_engine::operator()(void* ptr, std::size_t count)",
+        "RAND_bytes()"
+      ],
+      "entry_point": "csprng_engine::operator()()",
+      "purpose": "Returns a single random value of result_type.",
+      "validation_points": [
+        "csprng_engine::operator()(void* ptr, std::size_t count) - Validates entropy availability via RAND_bytes() result"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "buffer (void* buffer, std::size_t count)",
+      "flow": [
+        "Input to csprng_engine::mix_entropy",
+        "Explicit check: if (buffer != nullptr && count != 0)",
+        "RAND_add(buffer, count, 0)"
+      ],
+      "origin": "Input parameter to csprng_engine::mix_entropy",
+      "transformations": [
+        "Checked for null and nonzero size",
+        "Passed directly to RAND_add (no transformation)"
+      ],
+      "validated_at": "csprng_engine::mix_entropy - explicit check before RAND_add"
+    },
+    {
+      "field": "ptr (void* ptr, std::size_t count)",
+      "flow": [
+        "Input to csprng_engine::operator()(void* ptr, std::size_t count)",
+        "Passed to RAND_bytes",
+        "RAND_bytes fills ptr with random data"
+      ],
+      "origin": "Input parameter to csprng_engine::operator()(void* ptr, std::size_t count)",
+      "transformations": [
+        "Casted to unsigned char* for RAND_bytes",
+        "Filled with random bytes"
+      ],
+      "validated_at": "csprng_engine::operator()(void* ptr, std::size_t count) - RAND_bytes return value checked"
+    },
+    {
+      "field": "entropy (std::array<std::random_device::result_type, 128> entropy)",
+      "flow": [
+        "Filled by std::random_device in csprng_engine::mix_entropy",
+        "Passed to RAND_add"
+      ],
+      "origin": "Local variable in csprng_engine::mix_entropy",
+      "transformations": [
+        "Filled with random_device output",
+        "Added to OpenSSL entropy pool (RAND_add)"
+      ],
+      "validated_at": "No explicit validation; assumed good entropy from std::random_device"
+    },
+    {
+      "field": "OpenSSL entropy pool",
+      "flow": [
+        "RAND_poll called in csprng_engine::csprng_engine",
+        "RAND_add called in csprng_engine::mix_entropy",
+        "RAND_bytes called in csprng_engine::operator()"
+      ],
+      "origin": "Initialized in csprng_engine::csprng_engine via RAND_poll",
+      "transformations": [
+        "Initialized, mixed with entropy, used to generate random bytes"
+      ],
+      "validated_at": "RAND_poll result checked in constructor; RAND_bytes result checked in operator()"
+    }
+  ],
+  "description": "Implements a cryptographically secure pseudorandom number generator (CSPRNG) engine using OpenSSL, providing entropy mixing and random byte generation for the XRPL project.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "OpenSSL entropy pool initialization",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RAND_poll() at csprng_engine constructor",
+      "issue_pattern": "Missing empty string validation for OpenSSL entropy pool initialization",
+      "why_false_positive": "RAND_poll() validates OpenSSL entropy pool initialization for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "RAND_bytes result (entropy availability)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RAND_bytes() at csprng_engine::operator()(void*, std::size_t)",
+      "issue_pattern": "Missing empty string validation for RAND_bytes result (entropy availability)",
+      "why_false_positive": "RAND_bytes() validates RAND_bytes result (entropy availability) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "buffer pointer and count",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (buffer != nullptr && count != 0)) at csprng_engine::mix_entropy",
+      "issue_pattern": "Missing empty string validation for buffer pointer and count",
+      "why_false_positive": "explicit check (if (buffer != nullptr && count != 0)) validates buffer pointer and count for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "buffer pointer and count",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit check (if (buffer != nullptr && count != 0)) at csprng_engine::mix_entropy",
+      "issue_pattern": "Missing type validation for buffer pointer and count",
+      "why_false_positive": "explicit check (if (buffer != nullptr && count != 0)) validates buffer pointer and count type"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/crypto/csprng.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "csprng_engine::csprng_engine"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "csprng_engine::~csprng_engine"
+    },
+    {
+      "args": [
+        "buffer",
+        "count"
+      ],
+      "lineno": 23,
+      "name": "csprng_engine::mix_entropy"
+    },
+    {
+      "args": [
+        "ptr",
+        "count"
+      ],
+      "lineno": 43,
+      "name": "csprng_engine::operator()"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "csprng_engine::operator()"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "crypto_prng"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). Typical test coverage would be in separate test files, likely under a test/ or unit_test/ directory, possibly named csprng_test.cpp or similar. Tests should cover: (1) successful random byte generation, (2) error handling when entropy is insufficient (hard to simulate), (3) mix_entropy with valid and invalid buffers. Gaps: Error paths (RAND_poll or RAND_bytes failure) are difficult to trigger in normal environments and may not be covered by standard tests. No explicit fuzzing or boundary tests are shown here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, OpenSSL C API)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "OpenSSL entropy pool initialization",
+      "location": "csprng_engine constructor",
+      "validated_by": "RAND_poll()",
+      "validates": [
+        "Checks if OpenSSL's entropy pool is successfully initialized",
+        "RAND_poll() must return 1 for success"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "RAND_bytes result (entropy availability)",
+      "location": "csprng_engine::operator()(void*, std::size_t)",
+      "validated_by": "RAND_bytes()",
+      "validates": [
+        "Checks if OpenSSL's CSPRNG can provide the requested random bytes",
+        "RAND_bytes() must return 1 for success"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "buffer pointer and count",
+      "location": "csprng_engine::mix_entropy",
+      "validated_by": "explicit check (if (buffer != nullptr && count != 0))",
+      "validates": [
+        "Ensures buffer is not null and count is not zero before passing to RAND_add"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

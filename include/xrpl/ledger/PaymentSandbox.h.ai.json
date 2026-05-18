@@ -1,0 +1,304 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "main"
+    },
+    {
+      "lineno": 54,
+      "name": "other"
+    },
+    {
+      "lineno": 54,
+      "name": "currency"
+    },
+    {
+      "lineno": 57,
+      "name": "mptID"
+    },
+    {
+      "lineno": 60,
+      "name": "sender"
+    },
+    {
+      "lineno": 60,
+      "name": "receiver"
+    },
+    {
+      "lineno": 60,
+      "name": "amount"
+    },
+    {
+      "lineno": 60,
+      "name": "preCreditSenderBalance"
+    },
+    {
+      "lineno": 65,
+      "name": "preCreditBalanceHolder"
+    },
+    {
+      "lineno": 65,
+      "name": "preCreditBalanceIssuer"
+    },
+    {
+      "lineno": 70,
+      "name": "issue"
+    },
+    {
+      "lineno": 70,
+      "name": "origBalance"
+    },
+    {
+      "lineno": 73,
+      "name": "id"
+    },
+    {
+      "lineno": 73,
+      "name": "cur"
+    },
+    {
+      "lineno": 73,
+      "name": "next"
+    },
+    {
+      "lineno": 83,
+      "name": "to"
+    },
+    {
+      "lineno": 88,
+      "name": "a1"
+    },
+    {
+      "lineno": 88,
+      "name": "a2"
+    },
+    {
+      "lineno": 120,
+      "name": "account"
+    },
+    {
+      "lineno": 120,
+      "name": "issuer"
+    },
+    {
+      "lineno": 132,
+      "name": "from"
+    },
+    {
+      "lineno": 132,
+      "name": "preCreditBalance"
+    },
+    {
+      "lineno": 148,
+      "name": "count"
+    },
+    {
+      "lineno": 162,
+      "name": "view"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "DeferredCredits"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "PaymentSandbox"
+    }
+  ],
+  "description": "Defines the PaymentSandbox class and supporting DeferredCredits logic for managing deferred credit adjustments during payment and pathfinding operations in the XRPL ledger, ensuring credits are not immediately available to balances and supporting complex payment flows.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/PaymentSandbox.h",
+  "functions": [
+    {
+      "args": [
+        "main",
+        "other",
+        "currency"
+      ],
+      "lineno": 54,
+      "name": "adjustmentsIOU"
+    },
+    {
+      "args": [
+        "mptID"
+      ],
+      "lineno": 57,
+      "name": "adjustmentsMPT"
+    },
+    {
+      "args": [
+        "sender",
+        "receiver",
+        "amount",
+        "preCreditSenderBalance"
+      ],
+      "lineno": 60,
+      "name": "creditIOU"
+    },
+    {
+      "args": [
+        "sender",
+        "receiver",
+        "amount",
+        "preCreditBalanceHolder",
+        "preCreditBalanceIssuer"
+      ],
+      "lineno": 65,
+      "name": "creditMPT"
+    },
+    {
+      "args": [
+        "issue",
+        "amount",
+        "origBalance"
+      ],
+      "lineno": 70,
+      "name": "issuerSelfDebitMPT"
+    },
+    {
+      "args": [
+        "id",
+        "cur",
+        "next"
+      ],
+      "lineno": 73,
+      "name": "ownerCount"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 78,
+      "name": "ownerCount"
+    },
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 83,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "a1",
+        "a2",
+        "currency"
+      ],
+      "lineno": 88,
+      "name": "makeKeyIOU"
+    },
+    {
+      "args": [
+        "account",
+        "issuer",
+        "amount"
+      ],
+      "lineno": 120,
+      "name": "balanceHookIOU"
+    },
+    {
+      "args": [
+        "account",
+        "issue",
+        "amount"
+      ],
+      "lineno": 124,
+      "name": "balanceHookMPT"
+    },
+    {
+      "args": [
+        "issue",
+        "amount"
+      ],
+      "lineno": 128,
+      "name": "balanceHookSelfIssueMPT"
+    },
+    {
+      "args": [
+        "from",
+        "to",
+        "amount",
+        "preCreditBalance"
+      ],
+      "lineno": 132,
+      "name": "creditHookIOU"
+    },
+    {
+      "args": [
+        "from",
+        "to",
+        "amount",
+        "preCreditBalanceHolder",
+        "preCreditBalanceIssuer"
+      ],
+      "lineno": 137,
+      "name": "creditHookMPT"
+    },
+    {
+      "args": [
+        "issue",
+        "amount",
+        "origBalance"
+      ],
+      "lineno": 142,
+      "name": "issuerSelfDebitHookMPT"
+    },
+    {
+      "args": [
+        "account",
+        "cur",
+        "next"
+      ],
+      "lineno": 145,
+      "name": "adjustOwnerCountHook"
+    },
+    {
+      "args": [
+        "account",
+        "count"
+      ],
+      "lineno": 148,
+      "name": "ownerCountHook"
+    },
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 154,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 157,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 162,
+      "name": "balanceChanges"
+    },
+    {
+      "args": [],
+      "lineno": 165,
+      "name": "xrpDestroyed"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ]
+}

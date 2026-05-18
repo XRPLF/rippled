@@ -1,0 +1,192 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 19,
+      "name": "Bridge"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID, std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount, std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 142,
+      "name": "BridgeBuilder"
+    }
+  ],
+  "description": "Defines the Bridge ledger entry and its builder for the XRPL protocol, providing type-safe accessors and a fluent builder interface for constructing Bridge ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Bridge.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 25,
+      "name": "Bridge::Bridge"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "Bridge::getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "Bridge::getSignatureReward"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "Bridge::getMinAccountCreateAmount"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "Bridge::hasMinAccountCreateAmount"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "Bridge::getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "Bridge::getXChainClaimID"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "Bridge::getXChainAccountCreateCount"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "Bridge::getXChainAccountClaimCount"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "Bridge::getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "Bridge::getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "Bridge::getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account",
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward",
+        "std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountClaimCount",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq"
+      ],
+      "lineno": 146,
+      "name": "BridgeBuilder::BridgeBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 162,
+      "name": "BridgeBuilder::BridgeBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 174,
+      "name": "BridgeBuilder::setAccount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 183,
+      "name": "BridgeBuilder::setSignatureReward"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 192,
+      "name": "BridgeBuilder::setMinAccountCreateAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& value"
+      ],
+      "lineno": 201,
+      "name": "BridgeBuilder::setXChainBridge"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 210,
+      "name": "BridgeBuilder::setXChainClaimID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 219,
+      "name": "BridgeBuilder::setXChainAccountCreateCount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 228,
+      "name": "BridgeBuilder::setXChainAccountClaimCount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 237,
+      "name": "BridgeBuilder::setOwnerNode"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 246,
+      "name": "BridgeBuilder::setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 255,
+      "name": "BridgeBuilder::setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "uint256 const& index"
+      ],
+      "lineno": 264,
+      "name": "BridgeBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

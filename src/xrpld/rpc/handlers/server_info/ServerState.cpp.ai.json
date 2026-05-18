@@ -1,0 +1,249 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doServerState",
+        "context.netOps.getServerInfo"
+      ],
+      "entry_point": "doServerState",
+      "purpose": "Handles the 'server_state' RPC request, gathers server state info, and returns it as JSON.",
+      "validation_points": [
+        "doServerState: context.role == Role::ADMIN (role validation)",
+        "doServerState: context.params.isMember(jss::counters) && context.params[jss::counters].asBool() (counters validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "role",
+      "flow": [
+        "context.role",
+        "doServerState: compared to Role::ADMIN",
+        "passed as 2nd argument to getServerInfo"
+      ],
+      "origin": "context.role (set by RPC framework based on authentication/authorization)",
+      "transformations": [
+        "Boolean comparison (context.role == Role::ADMIN)"
+      ],
+      "validated_at": "doServerState"
+    },
+    {
+      "field": "counters",
+      "flow": [
+        "context.params",
+        "doServerState: isMember(jss::counters)",
+        "doServerState: asBool()",
+        "passed as 3rd argument to getServerInfo"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Converted to boolean (asBool)"
+      ],
+      "validated_at": "doServerState"
+    }
+  ],
+  "description": "Implements the doServerState RPC handler, which returns the current server state information as a JSON object.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "counters",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field counters validated by xrpl::jss (JSON field tags), Json::Value (jsoncpp), Role enum",
+      "issue_pattern": "Missing validation for counters",
+      "why_false_positive": "xrpl::jss (JSON field tags), Json::Value (jsoncpp), Role enum validates counters automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "counters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember at doServerState",
+      "issue_pattern": "Missing empty string validation for counters",
+      "why_false_positive": "Json::Value::isMember validates counters for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "counters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::asBool at doServerState",
+      "issue_pattern": "Missing empty string validation for counters",
+      "why_false_positive": "Json::Value::asBool validates counters for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "counters",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::Value::asBool at doServerState",
+      "issue_pattern": "Missing type validation for counters",
+      "why_false_positive": "Json::Value::asBool validates counters type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "role",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison (context.role == Role::ADMIN) at doServerState",
+      "issue_pattern": "Missing empty string validation for role",
+      "why_false_positive": "comparison (context.role == Role::ADMIN) validates role for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/ServerState.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doServerState"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in RPC handler tests, e.g., server_info or server_state tests. Tests should cover: (1) role-based access (admin vs non-admin), (2) presence/absence and boolean value of 'counters' parameter, (3) correct propagation of parameters to getServerInfo. Gaps may exist if tests do not check all combinations of role and counters, or do not verify that invalid/malformed 'counters' values are handled gracefully. No direct evidence of test files is present in this snippet; likely candidates are tests in 'test/rpc/ServerInfo_test.cpp', 'test/rpc/ServerState_test.cpp', or similar.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "counters"
+    ],
+    "framework": "xrpl::jss (JSON field tags), Json::Value (jsoncpp), Role enum",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not present)",
+      "field": "counters",
+      "location": "doServerState",
+      "validated_by": "Json::Value::isMember",
+      "validates": [
+        "checks if 'counters' field exists in input JSON"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Json::LogicError (if not convertible to bool)",
+      "field": "counters",
+      "location": "doServerState",
+      "validated_by": "Json::Value::asBool",
+      "validates": [
+        "checks if 'counters' field is boolean or convertible to boolean"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (used as boolean flag)",
+      "field": "role",
+      "location": "doServerState",
+      "validated_by": "comparison (context.role == Role::ADMIN)",
+      "validates": [
+        "checks if user role is ADMIN"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

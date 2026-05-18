@@ -1,0 +1,435 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "std::unique_ptr<PeerSetBuilder> peerSetBuilder"
+      ],
+      "lineno": 6,
+      "name": "LedgerReplayer"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerReplayer::replay",
+        "LedgerReplayTask::TaskParameter ctor",
+        "LedgerReplayTask ctor",
+        "LedgerReplayTask::init",
+        "LedgerReplayer::createDeltas (indirect, via task->init)"
+      ],
+      "entry_point": "LedgerReplayer::replay",
+      "purpose": "Initiates a ledger replay task, validates input, manages task and skip list creation, and starts the replay process.",
+      "validation_points": [
+        "LedgerReplayer::replay: XRPL_ASSERT on finishLedgerHash and totalNumLedgers",
+        "LedgerReplayer::replay: if (app_.isStopping())",
+        "LedgerReplayer::replay: if (tasks_.size() >= MAX_TASKS)",
+        "LedgerReplayer::replay: if (parameter.canMergeInto(t->getTaskParameter()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerReplayer::~LedgerReplayer",
+        "tasks_.clear()"
+      ],
+      "entry_point": "LedgerReplayer::~LedgerReplayer",
+      "purpose": "Destructor cleans up all replay tasks.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "LedgerReplayer::createDeltas"
+      ],
+      "entry_point": "LedgerReplayer::createDeltas",
+      "purpose": "Creates ledger deltas for a replay task, checks skip list consistency.",
+      "validation_points": [
+        "LedgerReplayer::createDeltas: checks on skip list items and parameter consistency"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "finishLedgerHash",
+      "flow": [
+        "LedgerReplayer::replay parameter",
+        "XRPL_ASSERT validation",
+        "LedgerReplayTask::TaskParameter ctor",
+        "Used as key in skipLists_",
+        "Passed to SkipListAcquire",
+        "Used in logging and task creation"
+      ],
+      "origin": "Parameter to LedgerReplayer::replay",
+      "transformations": [
+        "Checked for non-zero",
+        "Used as map key",
+        "Passed to constructors"
+      ],
+      "validated_at": "LedgerReplayer::replay (XRPL_ASSERT)"
+    },
+    {
+      "field": "totalNumLedgers",
+      "flow": [
+        "LedgerReplayer::replay parameter",
+        "XRPL_ASSERT validation",
+        "LedgerReplayTask::TaskParameter ctor",
+        "Used in logging and task creation"
+      ],
+      "origin": "Parameter to LedgerReplayer::replay",
+      "transformations": [
+        "Checked for >0 and <= MAX_TASK_SIZE"
+      ],
+      "validated_at": "LedgerReplayer::replay (XRPL_ASSERT)"
+    },
+    {
+      "field": "tasks_",
+      "flow": [
+        "LedgerReplayer::replay",
+        "Checked for size >= MAX_TASKS",
+        "Used to check for mergeable tasks",
+        "New task pushed if validations pass"
+      ],
+      "origin": "LedgerReplayer member",
+      "transformations": [
+        "Checked for size",
+        "Iterated for merge check",
+        "Appended to"
+      ],
+      "validated_at": "LedgerReplayer::replay (if (tasks_.size() >= MAX_TASKS))"
+    },
+    {
+      "field": "app_.isStopping()",
+      "flow": [
+        "LedgerReplayer::replay",
+        "Checked before proceeding with task creation"
+      ],
+      "origin": "Application member function",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "LedgerReplayer::replay (if (app_.isStopping()))"
+    },
+    {
+      "field": "parameter.canMergeInto(t->getTaskParameter())",
+      "flow": [
+        "LedgerReplayer::replay",
+        "Iterates over tasks_ to check if new task can be merged"
+      ],
+      "origin": "LedgerReplayTask::TaskParameter method",
+      "transformations": [
+        "Comparison logic"
+      ],
+      "validated_at": "LedgerReplayer::replay (if (parameter.canMergeInto(...)))"
+    }
+  ],
+  "description": "Implements the LedgerReplayer class, which manages replaying ledgers by coordinating tasks, skip lists, and deltas for ledger synchronization and replay in the XRPL system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "finishLedgerHash, totalNumLedgers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at LedgerReplayer::replay",
+      "issue_pattern": "Missing empty string validation for finishLedgerHash, totalNumLedgers",
+      "why_false_positive": "XRPL_ASSERT macro validates finishLedgerHash, totalNumLedgers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "app_.isStopping()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement at LedgerReplayer::replay",
+      "issue_pattern": "Missing empty string validation for app_.isStopping()",
+      "why_false_positive": "if statement validates app_.isStopping() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tasks_.size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement at LedgerReplayer::replay",
+      "issue_pattern": "Missing empty string validation for tasks_.size()",
+      "why_false_positive": "if statement validates tasks_.size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "parameter.canMergeInto(t->getTaskParameter())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement at LedgerReplayer::replay",
+      "issue_pattern": "Missing empty string validation for parameter.canMergeInto(t->getTaskParameter())",
+      "why_false_positive": "if statement validates parameter.canMergeInto(t->getTaskParameter()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerReplayer.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "std::unique_ptr<PeerSetBuilder> peerSetBuilder"
+      ],
+      "lineno": 6,
+      "name": "LedgerReplayer"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "~LedgerReplayer"
+    },
+    {
+      "args": [
+        "InboundLedger::Reason r",
+        "uint256 const& finishLedgerHash",
+        "std::uint32_t totalNumLedgers"
+      ],
+      "lineno": 20,
+      "name": "replay"
+    },
+    {
+      "args": [
+        "std::shared_ptr<LedgerReplayTask> task"
+      ],
+      "lineno": 70,
+      "name": "createDeltas"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info",
+        "boost::intrusive_ptr<SHAMapItem const> const& item"
+      ],
+      "lineno": 110,
+      "name": "gotSkipList"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info",
+        "std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns"
+      ],
+      "lineno": 128,
+      "name": "gotReplayDelta"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "stop"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in LedgerReplayer::replay is critical for input safety and resource management. Typical test coverage would be in unit tests for LedgerReplayer, possibly in files like LedgerReplayer_test.cpp or LedgerReplayTask_test.cpp. Tests should cover: (1) invalid finishLedgerHash/totalNumLedgers (assertion failure), (2) app_.isStopping() returns true (task not created), (3) tasks_ at capacity (task not created), (4) mergeable task exists (task not created), (5) normal task creation. Gaps may exist if there are no tests for assertion failures (as these may terminate the process), or for concurrency/race conditions in task management. Integration tests may also be needed to cover full replay flows.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, manual C++ checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "finishLedgerHash, totalNumLedgers",
+      "location": "LedgerReplayer::replay",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "finishLedgerHash.isNonZero()",
+        "totalNumLedgers > 0",
+        "totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE"
+      ],
+      "validation_type": "format, range, business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception)",
+      "field": "app_.isStopping()",
+      "location": "LedgerReplayer::replay",
+      "validated_by": "if statement",
+      "validates": [
+        "prevents replay if application is stopping"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception), logs info",
+      "field": "tasks_.size()",
+      "location": "LedgerReplayer::replay",
+      "validated_by": "if statement",
+      "validates": [
+        "tasks_.size() < LedgerReplayParameters::MAX_TASKS"
+      ],
+      "validation_type": "range, business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception), logs info",
+      "field": "parameter.canMergeInto(t->getTaskParameter())",
+      "location": "LedgerReplayer::replay",
+      "validated_by": "if statement",
+      "validates": [
+        "prevents duplicate/mergeable replay tasks"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

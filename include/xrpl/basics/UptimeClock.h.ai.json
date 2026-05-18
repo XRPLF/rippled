@@ -1,0 +1,36 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "UptimeClock"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "update_thread"
+    }
+  ],
+  "description": "Defines the UptimeClock class, which tracks program uptime with seconds precision and provides a cached, performant way to query elapsed time since program start.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/UptimeClock.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "start_clock"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

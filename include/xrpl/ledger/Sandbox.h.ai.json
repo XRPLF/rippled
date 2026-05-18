@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "base"
+    },
+    {
+      "lineno": 22,
+      "name": "flags"
+    },
+    {
+      "lineno": 26,
+      "name": "base"
+    },
+    {
+      "lineno": 32,
+      "name": "to"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Sandbox() = delete",
+        "Sandbox(Sandbox const&) = delete",
+        "Sandbox& operator=(Sandbox&&) = delete",
+        "Sandbox& operator=(Sandbox const&) = delete",
+        "Sandbox(Sandbox&&) = default",
+        "Sandbox(ReadView const* base, ApplyFlags flags)",
+        "Sandbox(ApplyView const* base)"
+      ],
+      "lineno": 11,
+      "name": "Sandbox"
+    }
+  ],
+  "description": "Defines the xrpl::Sandbox class, a discardable, editable view to a ledger, inheriting from ApplyViewBase and used for temporary modifications before applying to a ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/Sandbox.h",
+  "functions": [
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 32,
+      "name": "apply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

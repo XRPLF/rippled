@@ -1,0 +1,132 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 89,
+      "name": "account"
+    },
+    {
+      "lineno": 90,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 91,
+      "name": "destination"
+    },
+    {
+      "lineno": 92,
+      "name": "amount"
+    },
+    {
+      "lineno": 93,
+      "name": "signatureReward"
+    },
+    {
+      "lineno": 94,
+      "name": "sequence"
+    },
+    {
+      "lineno": 95,
+      "name": "fee"
+    },
+    {
+      "lineno": 146,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 146,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 106,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 23,
+      "name": "XChainAccountCreateCommit"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 83,
+      "name": "XChainAccountCreateCommitBuilder"
+    }
+  ],
+  "description": "Defines the XChainAccountCreateCommit transaction type for XRPL, including its immutable wrapper, builder class, and type-safe field accessors and mutators.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/XChainAccountCreateCommit.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getSignatureReward"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 104,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 114,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 124,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 134,
+      "name": "setSignatureReward"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 144,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

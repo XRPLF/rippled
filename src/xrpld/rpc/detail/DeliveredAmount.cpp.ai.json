@@ -1,0 +1,538 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "insertDeliveredAmount",
+        "canHaveDeliveredAmount",
+        "getDeliveredAmount (template)",
+        "transactionMeta.getDeliveredAmount",
+        "serializedTx->isFieldPresent(sfAmount)",
+        "serializedTx->getFieldAmount(sfAmount)"
+      ],
+      "entry_point": "insertDeliveredAmount",
+      "purpose": "Inserts the delivered amount into a JSON meta object for a transaction, if available and valid.",
+      "validation_points": [
+        "insertDeliveredAmount: calls canHaveDeliveredAmount to check if delivered amount is possible",
+        "canHaveDeliveredAmount: validates serializedTx is not null, checks transaction type and result",
+        "getDeliveredAmount: validates serializedTx is not null, checks transactionMeta.getDeliveredAmount().has_value(), checks serializedTx->isFieldPresent(sfAmount), validates ledger index and close time"
+      ]
+    },
+    {
+      "call_chain": [
+        "getDeliveredAmount (template)",
+        "transactionMeta.getDeliveredAmount",
+        "serializedTx->isFieldPresent(sfAmount)",
+        "serializedTx->getFieldAmount(sfAmount)"
+      ],
+      "entry_point": "getDeliveredAmount (template)",
+      "purpose": "Determines the delivered amount for a transaction, considering ledger version and transaction metadata.",
+      "validation_points": [
+        "getDeliveredAmount: serializedTx null check",
+        "getDeliveredAmount: transactionMeta.getDeliveredAmount().has_value()",
+        "getDeliveredAmount: serializedTx->isFieldPresent(sfAmount)",
+        "getDeliveredAmount: ledger index and close time validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "canHaveDeliveredAmount"
+      ],
+      "entry_point": "canHaveDeliveredAmount",
+      "purpose": "Checks if a transaction could possibly have a delivered amount, based on type and result.",
+      "validation_points": [
+        "canHaveDeliveredAmount: serializedTx null check",
+        "canHaveDeliveredAmount: transaction type and result validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "serializedTx",
+      "flow": [
+        "insertDeliveredAmount argument",
+        "canHaveDeliveredAmount argument",
+        "getDeliveredAmount argument",
+        "used for field presence and type checks"
+      ],
+      "origin": "Passed as argument to insertDeliveredAmount/getDeliveredAmount/canHaveDeliveredAmount",
+      "transformations": [
+        "Checked for null",
+        "Used to get transaction type",
+        "Used to check for sfAmount field",
+        "Used to extract sfAmount value"
+      ],
+      "validated_at": "canHaveDeliveredAmount (null check), getDeliveredAmount (null check), isFieldPresent(sfAmount)"
+    },
+    {
+      "field": "transactionMeta.getDeliveredAmount()",
+      "flow": [
+        "insertDeliveredAmount argument",
+        "getDeliveredAmount argument",
+        "transactionMeta.getDeliveredAmount()"
+      ],
+      "origin": "transactionMeta object (argument)",
+      "transformations": [
+        "Checked for has_value()",
+        "If present, returned as delivered amount"
+      ],
+      "validated_at": "getDeliveredAmount (has_value() check)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "serializedTx->isFieldPresent(sfAmount)",
+        "serializedTx->getFieldAmount(sfAmount)"
+      ],
+      "origin": "serializedTx object",
+      "transformations": [
+        "Presence checked",
+        "Value extracted if present"
+      ],
+      "validated_at": "getDeliveredAmount (isFieldPresent(sfAmount))"
+    },
+    {
+      "field": "ledger index and close time",
+      "flow": [
+        "ledger.header()",
+        "getLedgerIndex lambda",
+        "getCloseTime lambda",
+        "used in getDeliveredAmount"
+      ],
+      "origin": "ledger.header() via ReadView",
+      "transformations": [
+        "Compared to hardcoded thresholds (4594095, 446000000s)"
+      ],
+      "validated_at": "getDeliveredAmount (ledger index and close time check)"
+    },
+    {
+      "field": "meta[jss::delivered_amount]",
+      "flow": [
+        "insertDeliveredAmount",
+        "set to delivered amount or 'unavailable'"
+      ],
+      "origin": "Json::Value meta object",
+      "transformations": [
+        "Set to delivered amount JSON if available",
+        "Set to string 'unavailable' if not"
+      ],
+      "validated_at": "insertDeliveredAmount (after getDeliveredAmount result)"
+    }
+  ],
+  "description": "Implements logic to determine and insert the delivered amount for a transaction, considering ledger version and transaction metadata, for use in XRPL RPC responses.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at getDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for serializedTx",
+      "why_false_positive": "explicit null check validates serializedTx for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "serializedTx",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at getDeliveredAmount",
+      "issue_pattern": "Missing type validation for serializedTx",
+      "why_false_positive": "explicit null check validates serializedTx type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "deliveredAmount (from transactionMeta)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "transactionMeta.getDeliveredAmount().has_value() at getDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for deliveredAmount (from transactionMeta)",
+      "why_false_positive": "transactionMeta.getDeliveredAmount().has_value() validates deliveredAmount (from transactionMeta) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (field presence in serializedTx)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "serializedTx->isFieldPresent(sfAmount) at getDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for sfAmount (field presence in serializedTx)",
+      "why_false_positive": "serializedTx->isFieldPresent(sfAmount) validates sfAmount (field presence in serializedTx) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger index and close time",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s} at getDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for ledger index and close time",
+      "why_false_positive": "getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s} validates ledger index and close time for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at canHaveDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for serializedTx",
+      "why_false_positive": "explicit null check validates serializedTx for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "serializedTx",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at canHaveDeliveredAmount",
+      "issue_pattern": "Missing type validation for serializedTx",
+      "why_false_positive": "explicit null check validates serializedTx type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction type (tt)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "serializedTx->getTxnType() == ttPAYMENT || ttCHECK_CASH || ttACCOUNT_DELETE at canHaveDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for transaction type (tt)",
+      "why_false_positive": "serializedTx->getTxnType() == ttPAYMENT || ttCHECK_CASH || ttACCOUNT_DELETE validates transaction type (tt) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction result (transactionMeta.getResultTER())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "transactionMeta.getResultTER() == tesSUCCESS at canHaveDeliveredAmount",
+      "issue_pattern": "Missing empty string validation for transaction result (transactionMeta.getResultTER())",
+      "why_false_positive": "transactionMeta.getResultTER() == tesSUCCESS validates transaction result (transactionMeta.getResultTER()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/DeliveredAmount.cpp",
+  "functions": [
+    {
+      "args": [
+        "getLedgerIndex",
+        "getCloseTime",
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 18,
+      "name": "getDeliveredAmount"
+    },
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 56,
+      "name": "canHaveDeliveredAmount"
+    },
+    {
+      "args": [
+        "meta",
+        "ledger",
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 70,
+      "name": "insertDeliveredAmount"
+    },
+    {
+      "args": [
+        "context",
+        "serializedTx",
+        "transactionMeta",
+        "getLedgerIndex"
+      ],
+      "lineno": 92,
+      "name": "getDeliveredAmount"
+    },
+    {
+      "args": [
+        "context",
+        "serializedTx",
+        "transactionMeta",
+        "ledgerIndex"
+      ],
+      "lineno": 109,
+      "name": "getDeliveredAmount"
+    },
+    {
+      "args": [
+        "meta",
+        "context",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 117,
+      "name": "insertDeliveredAmount"
+    },
+    {
+      "args": [
+        "meta",
+        "context",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 124,
+      "name": "insertDeliveredAmount"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests for transaction RPCs, especially those that check the 'delivered_amount' field in transaction metadata. Tests would be found in files like 'test/rpc/DeliveredAmount_test.cpp', 'test/rpc/Transaction_test.cpp', or similar. Edge cases such as missing fields, old ledgers, and failed transactions should be tested, but coverage gaps may exist for rare ledger boundary conditions (e.g., ledgers just before/after 4594095 or close times near 446000000s), and for malformed or null serializedTx inputs. Template-based code may have limited direct unit tests unless specifically instantiated in test code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None explicit in this file; uses explicit C++ checks and protocol enums",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns empty optional)",
+      "field": "serializedTx",
+      "location": "getDeliveredAmount",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if serializedTx is not null before proceeding"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns deliveredAmount if present)",
+      "field": "deliveredAmount (from transactionMeta)",
+      "location": "getDeliveredAmount",
+      "validated_by": "transactionMeta.getDeliveredAmount().has_value()",
+      "validates": [
+        "Checks if deliveredAmount is present in transactionMeta"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (skips logic if not present)",
+      "field": "sfAmount (field presence in serializedTx)",
+      "location": "getDeliveredAmount",
+      "validated_by": "serializedTx->isFieldPresent(sfAmount)",
+      "validates": [
+        "Checks if sfAmount field is present in serializedTx"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns empty optional if not satisfied)",
+      "field": "ledger index and close time",
+      "location": "getDeliveredAmount",
+      "validated_by": "getLedgerIndex() >= 4594095 || getCloseTime() > NetClock::time_point{446000000s}",
+      "validates": [
+        "Checks if ledger index is after DeliveredAmount feature activation",
+        "Checks if close time is after DeliveredAmount feature activation"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "serializedTx",
+      "location": "canHaveDeliveredAmount",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if serializedTx is not null before proceeding"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not valid type)",
+      "field": "transaction type (tt)",
+      "location": "canHaveDeliveredAmount",
+      "validated_by": "serializedTx->getTxnType() == ttPAYMENT || ttCHECK_CASH || ttACCOUNT_DELETE",
+      "validates": [
+        "Checks if transaction type is one of ttPAYMENT, ttCHECK_CASH, ttACCOUNT_DELETE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not tesSUCCESS)",
+      "field": "transaction result (transactionMeta.getResultTER())",
+      "location": "canHaveDeliveredAmount",
+      "validated_by": "transactionMeta.getResultTER() == tesSUCCESS",
+      "validates": [
+        "Checks if transaction result is tesSUCCESS"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

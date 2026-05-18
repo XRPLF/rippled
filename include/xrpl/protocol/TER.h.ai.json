@@ -1,0 +1,271 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Trait"
+      ],
+      "lineno": 349,
+      "name": "TERSubset"
+    },
+    {
+      "args": [
+        "FROM"
+      ],
+      "lineno": 419,
+      "name": "CanCvtToNotTEC"
+    },
+    {
+      "args": [],
+      "lineno": 423,
+      "name": "CanCvtToNotTEC<TELcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 426,
+      "name": "CanCvtToNotTEC<TEMcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 429,
+      "name": "CanCvtToNotTEC<TEFcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 432,
+      "name": "CanCvtToNotTEC<TERcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 435,
+      "name": "CanCvtToNotTEC<TEScodes>"
+    },
+    {
+      "args": [
+        "FROM"
+      ],
+      "lineno": 447,
+      "name": "CanCvtToTER"
+    },
+    {
+      "args": [],
+      "lineno": 451,
+      "name": "CanCvtToTER<TELcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 454,
+      "name": "CanCvtToTER<TEMcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 457,
+      "name": "CanCvtToTER<TEFcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 460,
+      "name": "CanCvtToTER<TERcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 463,
+      "name": "CanCvtToTER<TEScodes>"
+    },
+    {
+      "args": [],
+      "lineno": 466,
+      "name": "CanCvtToTER<TECcodes>"
+    },
+    {
+      "args": [],
+      "lineno": 469,
+      "name": "CanCvtToTER<NotTEC>"
+    }
+  ],
+  "description": "Defines transaction engine result (TER) codes and related enums, traits, and utility functions for handling transaction results in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/TER.h",
+  "functions": [
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 312,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 317,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 322,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 327,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 332,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 337,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 342,
+      "name": "TERtoInt"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 429,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 438,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 447,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 456,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 465,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 474,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 527,
+      "name": "isTelLocal"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 533,
+      "name": "isTemMalformed"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 539,
+      "name": "isTefFailure"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 545,
+      "name": "isTerRetry"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 551,
+      "name": "isTesSuccess"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 557,
+      "name": "isTecClaim"
+    },
+    {
+      "args": [],
+      "lineno": 561,
+      "name": "transResults"
+    },
+    {
+      "args": [
+        "code",
+        "token",
+        "text"
+      ],
+      "lineno": 565,
+      "name": "transResultInfo"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 569,
+      "name": "transToken"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 573,
+      "name": "transHuman"
+    },
+    {
+      "args": [
+        "token"
+      ],
+      "lineno": 577,
+      "name": "transCode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

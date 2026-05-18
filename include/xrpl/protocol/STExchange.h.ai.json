@@ -1,0 +1,98 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "U"
+    },
+    {
+      "lineno": 15,
+      "name": "T"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "STExchange"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "STExchange<STInteger<U>, T>"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "STExchange<STBlob, Slice>"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "STExchange<STBlob, Buffer>"
+    }
+  ],
+  "description": "Provides utilities for converting between serialized XRPL protocol types and C++ types, and for getting, setting, and erasing fields in STObject instances.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STExchange.h",
+  "functions": [
+    {
+      "args": [
+        "st",
+        "f"
+      ],
+      "lineno": 61,
+      "name": "get"
+    },
+    {
+      "args": [
+        "st",
+        "f"
+      ],
+      "lineno": 77,
+      "name": "get"
+    },
+    {
+      "args": [
+        "st",
+        "f",
+        "t"
+      ],
+      "lineno": 84,
+      "name": "set"
+    },
+    {
+      "args": [
+        "st",
+        "f",
+        "size",
+        "init"
+      ],
+      "lineno": 91,
+      "name": "set"
+    },
+    {
+      "args": [
+        "st",
+        "f",
+        "data",
+        "size"
+      ],
+      "lineno": 98,
+      "name": "set"
+    },
+    {
+      "args": [
+        "st",
+        "f"
+      ],
+      "lineno": 105,
+      "name": "erase"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

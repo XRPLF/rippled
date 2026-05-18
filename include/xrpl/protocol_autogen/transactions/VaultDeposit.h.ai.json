@@ -1,0 +1,104 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 72,
+      "name": "account"
+    },
+    {
+      "lineno": 73,
+      "name": "vaultID"
+    },
+    {
+      "lineno": 73,
+      "name": "amount"
+    },
+    {
+      "lineno": 74,
+      "name": "sequence"
+    },
+    {
+      "lineno": 75,
+      "name": "fee"
+    },
+    {
+      "lineno": 109,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 109,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 89,
+      "name": "value"
+    },
+    {
+      "lineno": 99,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "VaultDeposit"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& vaultID, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 62,
+      "name": "VaultDepositBuilder"
+    }
+  ],
+  "description": "Defines the VaultDeposit transaction type and its builder for the XRPL protocol, providing type-safe field access and a fluent interface for constructing VaultDeposit transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/VaultDeposit.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "VaultDeposit::getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "VaultDeposit::getAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 87,
+      "name": "VaultDepositBuilder::setVaultID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 97,
+      "name": "VaultDepositBuilder::setAmount"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 107,
+      "name": "VaultDepositBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

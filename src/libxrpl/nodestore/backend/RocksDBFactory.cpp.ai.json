@@ -1,0 +1,778 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "f_"
+    },
+    {
+      "lineno": 19,
+      "name": "a_"
+    },
+    {
+      "lineno": 21,
+      "name": "f"
+    },
+    {
+      "lineno": 22,
+      "name": "a"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "RocksDBEnv"
+    },
+    {
+      "args": [
+        "f_",
+        "a_"
+      ],
+      "lineno": 18,
+      "name": "RocksDBEnv::ThreadParams"
+    },
+    {
+      "args": [
+        "keyBytes",
+        "keyValues",
+        "scheduler",
+        "journal",
+        "env"
+      ],
+      "lineno": 52,
+      "name": "RocksDBBackend"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 292,
+      "name": "RocksDBFactory"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RocksDBBackend::RocksDBBackend",
+        "get_if_exists / get<T>",
+        "Throw<std::runtime_error> (on validation failure)"
+      ],
+      "entry_point": "RocksDBBackend::RocksDBBackend",
+      "purpose": "Constructs a RocksDBBackend, validates and extracts configuration from keyValues Section, sets up RocksDB options.",
+      "validation_points": [
+        "get_if_exists(keyValues, \"path\", m_name) - validates 'path' exists",
+        "get<int>(keyValues, \"cache_mb\") - validates and extracts 'cache_mb'",
+        "get<bool>(keyValues, \"hard_set\") - validates and extracts 'hard_set'",
+        "get<int>(keyValues, \"filter_bits\") - validates and extracts 'filter_bits'",
+        "get<int>(keyValues, \"filter_full\") - validates and extracts 'filter_full'",
+        "get_if_exists(keyValues, \"open_files\", m_options.max_open_files) - validates 'open_files' if present",
+        "get<int>(keyValues, \"file_size_mb\") - validates and extracts 'file_size_mb'",
+        "get_if_exists(keyValues, \"file_size_mult\", m_options.target_file_size_multiplier) - validates 'file_size_mult' if present",
+        "get<int>(keyValues, \"bg_threads\") - validates and extracts 'bg_threads'",
+        "get<int>(keyValues, \"high_threads\") - validates and extracts 'high_threads'"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_name (path)",
+      "flow": [
+        "keyValues['path']",
+        "get_if_exists(keyValues, 'path', m_name)",
+        "m_name"
+      ],
+      "origin": "keyValues Section (configuration input)",
+      "transformations": [
+        "Direct assignment if exists, else throws"
+      ],
+      "validated_at": "get_if_exists(keyValues, 'path', m_name)"
+    },
+    {
+      "field": "cache_mb",
+      "flow": [
+        "keyValues['cache_mb']",
+        "get<int>(keyValues, 'cache_mb')",
+        "size",
+        "table_options.block_cache = rocksdb::NewLRUCache(megabytes(size))"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int, defaulted to 1024 if not hard_set and value is 256"
+      ],
+      "validated_at": "get<int>(keyValues, 'cache_mb')"
+    },
+    {
+      "field": "hard_set",
+      "flow": [
+        "keyValues['hard_set']",
+        "get<bool>(keyValues, 'hard_set')",
+        "hard_set"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to bool"
+      ],
+      "validated_at": "get<bool>(keyValues, 'hard_set')"
+    },
+    {
+      "field": "filter_bits",
+      "flow": [
+        "keyValues['filter_bits']",
+        "get<int>(keyValues, 'filter_bits')",
+        "v",
+        "table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(v, filter_blocks))"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int"
+      ],
+      "validated_at": "get<int>(keyValues, 'filter_bits')"
+    },
+    {
+      "field": "filter_full",
+      "flow": [
+        "keyValues['filter_full']",
+        "get<int>(keyValues, 'filter_full')",
+        "used to determine filter_blocks"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int, used in boolean logic"
+      ],
+      "validated_at": "get<int>(keyValues, 'filter_full')"
+    },
+    {
+      "field": "open_files",
+      "flow": [
+        "keyValues['open_files']",
+        "get_if_exists(keyValues, 'open_files', m_options.max_open_files)",
+        "m_options.max_open_files"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Direct assignment, defaulted to 8000 if not hard_set and value is 2000"
+      ],
+      "validated_at": "get_if_exists(keyValues, 'open_files', m_options.max_open_files)"
+    },
+    {
+      "field": "file_size_mb",
+      "flow": [
+        "keyValues['file_size_mb']",
+        "get<int>(keyValues, 'file_size_mb')",
+        "file_size_mb",
+        "m_options.target_file_size_base = megabytes(file_size_mb)",
+        "m_options.max_bytes_for_level_base = 5 * m_options.target_file_size_base",
+        "m_options.write_buffer_size = 2 * m_options.target_file_size_base"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int, defaulted to 256 if not hard_set and value is 8"
+      ],
+      "validated_at": "get<int>(keyValues, 'file_size_mb')"
+    },
+    {
+      "field": "file_size_mult",
+      "flow": [
+        "keyValues['file_size_mult']",
+        "get_if_exists(keyValues, 'file_size_mult', m_options.target_file_size_multiplier)",
+        "m_options.target_file_size_multiplier"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Direct assignment if exists"
+      ],
+      "validated_at": "get_if_exists(keyValues, 'file_size_mult', m_options.target_file_size_multiplier)"
+    },
+    {
+      "field": "bg_threads",
+      "flow": [
+        "keyValues['bg_threads']",
+        "get<int>(keyValues, 'bg_threads')",
+        "m_options.env->SetBackgroundThreads(get<int>(keyValues, 'bg_threads'), rocksdb::Env::LOW)"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int, used as argument"
+      ],
+      "validated_at": "get<int>(keyValues, 'bg_threads')"
+    },
+    {
+      "field": "high_threads",
+      "flow": [
+        "keyValues['high_threads']",
+        "get<int>(keyValues, 'high_threads')",
+        "m_options.env->SetBackgroundThreads(get<int>(keyValues, 'high_threads'), rocksdb::Env::HIGH)"
+      ],
+      "origin": "keyValues Section",
+      "transformations": [
+        "Casted to int, used as argument"
+      ],
+      "validated_at": "get<int>(keyValues, 'high_threads')"
+    }
+  ],
+  "description": "This file implements a RocksDB backend for the XRPL NodeStore, providing classes and logic to manage RocksDB environments, backend storage, and factory registration for use within the XRPL node database system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cache_mb",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field cache_mb validated by xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+      "issue_pattern": "Missing validation for cache_mb",
+      "why_false_positive": "xrpl::get, xrpl::get_if_exists, xrpl::Throw validates cache_mb automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hard_set",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field hard_set validated by xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+      "issue_pattern": "Missing validation for hard_set",
+      "why_false_positive": "xrpl::get, xrpl::get_if_exists, xrpl::Throw validates hard_set automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "filter_bits",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field filter_bits validated by xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+      "issue_pattern": "Missing validation for filter_bits",
+      "why_false_positive": "xrpl::get, xrpl::get_if_exists, xrpl::Throw validates filter_bits automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "filter_full",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field filter_full validated by xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+      "issue_pattern": "Missing validation for filter_full",
+      "why_false_positive": "xrpl::get, xrpl::get_if_exists, xrpl::Throw validates filter_full automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "open_files",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field open_files validated by xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+      "issue_pattern": "Missing validation for open_files",
+      "why_false_positive": "xrpl::get, xrpl::get_if_exists, xrpl::Throw validates open_files automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "path",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_if_exists at RocksDBBackend constructor",
+      "issue_pattern": "Missing empty string validation for path",
+      "why_false_positive": "get_if_exists validates path for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cache_mb",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing empty string validation for cache_mb",
+      "why_false_positive": "get<int> validates cache_mb for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "cache_mb",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing type validation for cache_mb",
+      "why_false_positive": "get<int> validates cache_mb type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hard_set",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<bool> at RocksDBBackend constructor",
+      "issue_pattern": "Missing empty string validation for hard_set",
+      "why_false_positive": "get<bool> validates hard_set for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "hard_set",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<bool> at RocksDBBackend constructor",
+      "issue_pattern": "Missing type validation for hard_set",
+      "why_false_positive": "get<bool> validates hard_set type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "filter_bits",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing empty string validation for filter_bits",
+      "why_false_positive": "get<int> validates filter_bits for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "filter_bits",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing type validation for filter_bits",
+      "why_false_positive": "get<int> validates filter_bits type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "filter_full",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing empty string validation for filter_full",
+      "why_false_positive": "get<int> validates filter_full for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "filter_full",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<int> at RocksDBBackend constructor",
+      "issue_pattern": "Missing type validation for filter_full",
+      "why_false_positive": "get<int> validates filter_full type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "open_files",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_if_exists at RocksDBBackend constructor (truncated in code)",
+      "issue_pattern": "Missing empty string validation for open_files",
+      "why_false_positive": "get_if_exists validates open_files for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/backend/RocksDBFactory.cpp",
+  "functions": [
+    {
+      "args": [
+        "ptr"
+      ],
+      "lineno": 27,
+      "name": "thread_entry"
+    },
+    {
+      "args": [
+        "f",
+        "a"
+      ],
+      "lineno": 41,
+      "name": "StartThread"
+    },
+    {
+      "args": [
+        "createIfMissing"
+      ],
+      "lineno": 110,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "isOpen"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "hash",
+        "pObject"
+      ],
+      "lineno": 153,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "hashes"
+      ],
+      "lineno": 186,
+      "name": "fetchBatch"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 208,
+      "name": "store"
+    },
+    {
+      "args": [
+        "batch"
+      ],
+      "lineno": 212,
+      "name": "storeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 237,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 240,
+      "name": "for_each"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 274,
+      "name": "setDeletePath"
+    },
+    {
+      "args": [
+        "batch"
+      ],
+      "lineno": 279,
+      "name": "writeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 285,
+      "name": "fdRequired"
+    },
+    {
+      "args": [],
+      "lineno": 304,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "keyBytes",
+        "keyValues",
+        "",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 308,
+      "name": "createInstance"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 316,
+      "name": "registerRocksDBFactory"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is likely found in integration or backend tests for NodeStore, such as 'nodestore/RocksDBBackend_test.cpp', 'nodestore/Database_test.cpp', or higher-level tests that configure the NodeStore with various Section parameters. Unit tests would need to cover: missing/invalid 'path', invalid types for 'cache_mb', 'filter_bits', etc., and boundary values for all validated fields. Gaps: There may be insufficient negative tests for missing/invalid config fields, and not all edge cases (e.g., extremely large/small values, type mismatches) may be covered. Exception paths (Throw<std::runtime_error>) should be explicitly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "cache_mb",
+      "hard_set",
+      "filter_bits",
+      "filter_full",
+      "open_files"
+    ],
+    "framework": "xrpl::get, xrpl::get_if_exists, xrpl::Throw",
+    "validation_layer": "business_logic (constructor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<T>)",
+      "field": "path",
+      "location": "RocksDBBackend constructor",
+      "validated_by": "get_if_exists",
+      "validates": [
+        "checks if 'path' exists in keyValues Section"
+      ],
+      "validation_type": "business_logic|presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (if type mismatch in get<int>)",
+      "field": "cache_mb",
+      "location": "RocksDBBackend constructor",
+      "validated_by": "get<int>",
+      "validates": [
+        "checks if 'cache_mb' exists and is convertible to int"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (if type mismatch in get<bool>)",
+      "field": "hard_set",
+      "location": "RocksDBBackend constructor",
+      "validated_by": "get<bool>",
+      "validates": [
+        "checks if 'hard_set' exists and is convertible to bool"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (if type mismatch in get<int>)",
+      "field": "filter_bits",
+      "location": "RocksDBBackend constructor",
+      "validated_by": "get<int>",
+      "validates": [
+        "checks if 'filter_bits' exists and is convertible to int"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (if type mismatch in get<int>)",
+      "field": "filter_full",
+      "location": "RocksDBBackend constructor",
+      "validated_by": "get<int>",
+      "validates": [
+        "checks if 'filter_full' exists and is convertible to int"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (code truncated, likely std::exception or similar)",
+      "field": "open_files",
+      "location": "RocksDBBackend constructor (truncated in code)",
+      "validated_by": "get_if_exists",
+      "validates": [
+        "checks if 'open_files' exists and is convertible to expected type"
+      ],
+      "validation_type": "type|presence"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "args": [
+    {
+      "lineno": 34,
+      "name": "tx"
+    },
+    {
+      "lineno": 85,
+      "name": "account"
+    },
+    {
+      "lineno": 86,
+      "name": "amount"
+    },
+    {
+      "lineno": 87,
+      "name": "sequence"
+    },
+    {
+      "lineno": 88,
+      "name": "fee"
+    },
+    {
+      "lineno": 116,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 116,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 99,
+      "name": "value"
+    },
+    {
+      "lineno": 108,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "Clawback"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 77,
+      "name": "ClawbackBuilder"
+    }
+  ],
+  "description": "Defines the Clawback transaction type for XRPL, including an immutable wrapper for type-safe field access and a builder class for constructing Clawback transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/Clawback.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "getHolder"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "hasHolder"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 97,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 106,
+      "name": "setHolder"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 114,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

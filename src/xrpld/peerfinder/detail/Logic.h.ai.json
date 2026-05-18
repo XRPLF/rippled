@@ -1,0 +1,281 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "clock_type& clock",
+        "Store& store",
+        "Checker& checker",
+        "beast::Journal journal"
+      ],
+      "lineno": 36,
+      "name": "Logic"
+    }
+  ],
+  "description": "Implements the core logic for maintaining and managing peer slots, connections, and address caches in the XRPL PeerFinder subsystem, including connection strategies, slot state transitions, endpoint message handling, and statistics reporting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Logic.h",
+  "functions": [
+    {
+      "args": [
+        "clock_type& clock",
+        "Store& store",
+        "Checker& checker",
+        "beast::Journal journal"
+      ],
+      "lineno": 54,
+      "name": "Logic"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "load"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "Config const& c"
+      ],
+      "lineno": 104,
+      "name": "config"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "config"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "beast::IP::Endpoint const& ep"
+      ],
+      "lineno": 115,
+      "name": "addFixedPeer"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "std::vector<beast::IP::Endpoint> const& addresses"
+      ],
+      "lineno": 119,
+      "name": "addFixedPeer"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& remoteAddress",
+        "beast::IP::Endpoint const& checkedAddress",
+        "boost::system::error_code ec"
+      ],
+      "lineno": 143,
+      "name": "checkComplete"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& local_endpoint",
+        "beast::IP::Endpoint const& remote_endpoint"
+      ],
+      "lineno": 186,
+      "name": "new_inbound_slot"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& remote_endpoint"
+      ],
+      "lineno": 227,
+      "name": "new_outbound_slot"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot",
+        "beast::IP::Endpoint const& local_endpoint"
+      ],
+      "lineno": 255,
+      "name": "onConnected"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot",
+        "PublicKey const& key",
+        "bool reserved"
+      ],
+      "lineno": 282,
+      "name": "activate"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 334,
+      "name": "redirect"
+    },
+    {
+      "args": [],
+      "lineno": 347,
+      "name": "autoconnect"
+    },
+    {
+      "args": [],
+      "lineno": 429,
+      "name": "buildEndpointsForPeers"
+    },
+    {
+      "args": [],
+      "lineno": 489,
+      "name": "once_per_second"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot",
+        "Endpoints& list"
+      ],
+      "lineno": 504,
+      "name": "preprocess"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot",
+        "Endpoints list"
+      ],
+      "lineno": 547,
+      "name": "on_endpoints"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 601,
+      "name": "remove"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 634,
+      "name": "on_closed"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 678,
+      "name": "on_failure"
+    },
+    {
+      "args": [
+        "FwdIter first",
+        "FwdIter last",
+        "boost::asio::ip::tcp::endpoint const& remote_address"
+      ],
+      "lineno": 684,
+      "name": "onRedirects"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 697,
+      "name": "fixed"
+    },
+    {
+      "args": [
+        "beast::IP::Address const& address"
+      ],
+      "lineno": 705,
+      "name": "fixed"
+    },
+    {
+      "args": [
+        "std::size_t needed",
+        "Container& c",
+        "typename ConnectHandouts::Squelches& squelches"
+      ],
+      "lineno": 713,
+      "name": "get_fixed"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Source> const& source"
+      ],
+      "lineno": 728,
+      "name": "addStaticSource"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Source> const& source"
+      ],
+      "lineno": 732,
+      "name": "addSource"
+    },
+    {
+      "args": [
+        "IPAddresses const& list"
+      ],
+      "lineno": 742,
+      "name": "addBootcacheAddresses"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Source> const& source"
+      ],
+      "lineno": 754,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& address"
+      ],
+      "lineno": 803,
+      "name": "is_valid_address"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Set& set",
+        "Slots const& slots"
+      ],
+      "lineno": 813,
+      "name": "writeSlots"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& map"
+      ],
+      "lineno": 826,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 868,
+      "name": "counts"
+    },
+    {
+      "args": [
+        "Slot::State state"
+      ],
+      "lineno": 872,
+      "name": "stateString"
+    },
+    {
+      "args": [
+        "FwdIter first",
+        "FwdIter last",
+        "boost::asio::ip::tcp::endpoint const& remote_address"
+      ],
+      "lineno": 889,
+      "name": "Logic<Checker>::onRedirects"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 20,
+      "name": "PeerFinder"
+    }
+  ]
+}

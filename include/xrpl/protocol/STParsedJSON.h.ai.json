@@ -1,0 +1,31 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "name"
+    },
+    {
+      "lineno": 17,
+      "name": "json"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& name, Json::Value const& json"
+      ],
+      "lineno": 10,
+      "name": "STParsedJSONObject"
+    }
+  ],
+  "description": "Defines the STParsedJSONObject class, which parses and validates a JSON object into an optional STObject, storing errors if parsing fails.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STParsedJSON.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

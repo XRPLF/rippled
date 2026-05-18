@@ -1,0 +1,64 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "inAccount"
+    },
+    {
+      "lineno": 27,
+      "name": "inWeight"
+    },
+    {
+      "lineno": 27,
+      "name": "inTag"
+    },
+    {
+      "lineno": 44,
+      "name": "obj"
+    },
+    {
+      "lineno": 44,
+      "name": "journal"
+    },
+    {
+      "lineno": 44,
+      "name": "annotation"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "SignerEntries"
+    },
+    {
+      "args": [
+        "inAccount",
+        "inWeight",
+        "inTag"
+      ],
+      "lineno": 22,
+      "name": "SignerEntry"
+    }
+  ],
+  "description": "Defines the SignerEntries class used to represent and deserialize signer entries (multi-signature signers) from ledger or transaction objects in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/SignerEntries.h",
+  "functions": [
+    {
+      "args": [
+        "obj",
+        "journal",
+        "annotation"
+      ],
+      "lineno": 44,
+      "name": "deserialize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

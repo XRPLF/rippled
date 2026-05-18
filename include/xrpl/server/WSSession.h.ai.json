@@ -1,0 +1,49 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "bytes"
+    },
+    {
+      "lineno": 38,
+      "name": "resume"
+    },
+    {
+      "lineno": 57,
+      "name": "bytes"
+    },
+    {
+      "lineno": 57,
+      "name": ""
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "WSMsg"
+    },
+    {
+      "args": [
+        "Streambuf&& sb"
+      ],
+      "lineno": 49,
+      "name": "StreambufWSMsg"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "WSSession"
+    }
+  ],
+  "description": "Defines interfaces and classes for handling WebSocket messages and sessions in the XRPL server, including message preparation and session management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/WSSession.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

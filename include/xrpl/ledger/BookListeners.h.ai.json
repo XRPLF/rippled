@@ -1,0 +1,48 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "BookListeners"
+    }
+  ],
+  "description": "Defines the BookListeners class, which manages subscriptions and publishes messages to clients interested in updates from a specific order book.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/BookListeners.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "BookListeners"
+    },
+    {
+      "args": [
+        "sub"
+      ],
+      "lineno": 19,
+      "name": "addSubscriber"
+    },
+    {
+      "args": [
+        "sub"
+      ],
+      "lineno": 24,
+      "name": "removeSubscriber"
+    },
+    {
+      "args": [
+        "jvObj",
+        "havePublished"
+      ],
+      "lineno": 34,
+      "name": "publish"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

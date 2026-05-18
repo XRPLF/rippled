@@ -1,0 +1,316 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doTxHistory"
+      ],
+      "entry_point": "doTxHistory",
+      "purpose": "Handles the 'tx_history' RPC request, validates input, fetches transaction history, and returns it as JSON.",
+      "validation_points": [
+        "if (!context.app.config().useTxTables()) return rpcError(rpcNOT_ENABLED);",
+        "if (!context.params.isMember(jss::start)) return rpcError(rpcINVALID_PARAMS);",
+        "unsigned int const startIndex = context.params[jss::start].asUInt();",
+        "if ((startIndex > 10000) && (!isUnlimited(context.role))) return rpcError(rpcNO_PERMISSION);"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "useTxTables (feature flag)",
+      "flow": [
+        "context.app.config().useTxTables()",
+        "if (!...) validation",
+        "early return if not enabled"
+      ],
+      "origin": "context.app.config().useTxTables()",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "First line of doTxHistory"
+    },
+    {
+      "field": "start (request parameter)",
+      "flow": [
+        "context.params (JSON input)",
+        "context.params.isMember(jss::start) validation",
+        "context.params[jss::start].asUInt() conversion",
+        "startIndex variable",
+        "if ((startIndex > 10000) && (!isUnlimited(context.role))) validation",
+        "used as argument to getTxHistory(startIndex)",
+        "returned as obj[jss::index]"
+      ],
+      "origin": "context.params[jss::start]",
+      "transformations": [
+        "Presence check (isMember)",
+        "Type conversion (asUInt)",
+        "Range/permission check (startIndex > 10000 && !isUnlimited)",
+        "Used as DB query parameter"
+      ],
+      "validated_at": [
+        "isMember(jss::start) check",
+        "asUInt() conversion",
+        "startIndex > 10000 && !isUnlimited(context.role)"
+      ]
+    },
+    {
+      "field": "role (user permission)",
+      "flow": [
+        "context.role",
+        "isUnlimited(context.role) check"
+      ],
+      "origin": "context.role",
+      "transformations": [
+        "Permission check"
+      ],
+      "validated_at": "startIndex > 10000 && !isUnlimited(context.role)"
+    }
+  ],
+  "description": "Implements the doTxHistory RPC handler, which retrieves a paginated list of transaction history entries from the relational database, starting from a specified index.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "start (presence via isMember)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field start (presence via isMember) validated by jss:: (JSON field tags), Json::Value (JSON parsing), rpcError (error reporting)",
+      "issue_pattern": "Missing validation for start (presence via isMember)",
+      "why_false_positive": "jss:: (JSON field tags), Json::Value (JSON parsing), rpcError (error reporting) validates start (presence via isMember) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "start (type via asUInt, but not strictly enforced)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field start (type via asUInt, but not strictly enforced) validated by jss:: (JSON field tags), Json::Value (JSON parsing), rpcError (error reporting)",
+      "issue_pattern": "Missing validation for start (type via asUInt, but not strictly enforced)",
+      "why_false_positive": "jss:: (JSON field tags), Json::Value (JSON parsing), rpcError (error reporting) validates start (type via asUInt, but not strictly enforced) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "useTxTables (feature flag)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.config().useTxTables() at doTxHistory (first if statement)",
+      "issue_pattern": "Missing empty string validation for useTxTables (feature flag)",
+      "why_false_positive": "context.app.config().useTxTables() validates useTxTables (feature flag) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "start (request parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::start) at doTxHistory (second if statement)",
+      "issue_pattern": "Missing empty string validation for start (request parameter)",
+      "why_false_positive": "context.params.isMember(jss::start) validates start (request parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "start (request parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params[jss::start].asUInt() at doTxHistory (assignment to startIndex)",
+      "issue_pattern": "Missing empty string validation for start (request parameter)",
+      "why_false_positive": "context.params[jss::start].asUInt() validates start (request parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "start (request parameter)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "context.params[jss::start].asUInt() at doTxHistory (assignment to startIndex)",
+      "issue_pattern": "Missing type validation for start (request parameter)",
+      "why_false_positive": "context.params[jss::start].asUInt() validates start (request parameter) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "start (request parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(startIndex > 10000) && (!isUnlimited(context.role)) at doTxHistory (third if statement)",
+      "issue_pattern": "Missing empty string validation for start (request parameter)",
+      "why_false_positive": "(startIndex > 10000) && (!isUnlimited(context.role)) validates start (request parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/transaction/TxHistory.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 13,
+      "name": "doTxHistory"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function is likely tested via RPC integration tests that exercise the 'tx_history' endpoint. Tests should cover: (1) feature flag off (rpcNOT_ENABLED), (2) missing 'start' param (rpcINVALID_PARAMS), (3) 'start' param > 10000 for non-admin (rpcNO_PERMISSION), (4) valid requests. Gaps may include: (a) edge cases for 'start' param (e.g., negative, non-integer, very large values), (b) malformed JSON input, (c) permission escalation attempts. Test files may include: 'rpc_tx_history_test.cpp', 'TxHistory_test.cpp', or generic RPC handler test suites. Template-based validation is not explicitly shown in this handler, so coverage of template validation may be indirect.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "start (presence via isMember)",
+      "start (type via asUInt, but not strictly enforced)"
+    ],
+    "framework": "jss:: (JSON field tags), Json::Value (JSON parsing), rpcError (error reporting)",
+    "validation_layer": "entry_point (RPC handler)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNOT_ENABLED)",
+      "field": "useTxTables (feature flag)",
+      "location": "doTxHistory (first if statement)",
+      "validated_by": "context.app.config().useTxTables()",
+      "validates": [
+        "Checks if transaction history tables are enabled in config"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "start (request parameter)",
+      "location": "doTxHistory (second if statement)",
+      "validated_by": "context.params.isMember(jss::start)",
+      "validates": [
+        "Checks if 'start' field is present in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "implicit: if not convertible, throws Json::Value exception or returns 0",
+      "field": "start (request parameter)",
+      "location": "doTxHistory (assignment to startIndex)",
+      "validated_by": "context.params[jss::start].asUInt()",
+      "validates": [
+        "Checks if 'start' can be interpreted as unsigned int"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_PERMISSION)",
+      "field": "start (request parameter)",
+      "location": "doTxHistory (third if statement)",
+      "validated_by": "(startIndex > 10000) && (!isUnlimited(context.role))",
+      "validates": [
+        "Checks if 'start' is greater than 10000",
+        "If so, checks if user has unlimited role"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

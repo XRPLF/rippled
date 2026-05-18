@@ -1,0 +1,24 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a template function to create an HTTP server using a specified handler, returning a unique pointer to a Server implementation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Server.h",
+  "functions": [
+    {
+      "args": [
+        "handler",
+        "io_context",
+        "journal"
+      ],
+      "lineno": 11,
+      "name": "make_Server"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

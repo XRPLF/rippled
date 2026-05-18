@@ -1,0 +1,92 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides deterministic, thread-local, non-cryptographically secure pseudo-random number generation utilities, including functions for generating random integers, bytes, and booleans, using a default PRNG engine.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/random.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "default_prng"
+    },
+    {
+      "args": [
+        "engine",
+        "min",
+        "max"
+      ],
+      "lineno": 65,
+      "name": "rand_int"
+    },
+    {
+      "args": [
+        "min",
+        "max"
+      ],
+      "lineno": 74,
+      "name": "rand_int"
+    },
+    {
+      "args": [
+        "engine",
+        "max"
+      ],
+      "lineno": 79,
+      "name": "rand_int"
+    },
+    {
+      "args": [
+        "max"
+      ],
+      "lineno": 84,
+      "name": "rand_int"
+    },
+    {
+      "args": [
+        "engine"
+      ],
+      "lineno": 89,
+      "name": "rand_int"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "rand_int"
+    },
+    {
+      "args": [
+        "engine"
+      ],
+      "lineno": 104,
+      "name": "rand_byte"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "rand_byte"
+    },
+    {
+      "args": [
+        "engine"
+      ],
+      "lineno": 121,
+      "name": "rand_bool"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "rand_bool"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 19,
+      "name": "detail"
+    }
+  ]
+}

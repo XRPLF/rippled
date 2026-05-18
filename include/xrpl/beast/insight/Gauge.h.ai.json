@@ -1,0 +1,124 @@
+{
+  "args": [
+    {
+      "lineno": 39,
+      "name": "value"
+    },
+    {
+      "lineno": 45,
+      "name": "value"
+    },
+    {
+      "lineno": 53,
+      "name": "amount"
+    },
+    {
+      "lineno": 58,
+      "name": "amount"
+    },
+    {
+      "lineno": 63,
+      "name": "amount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<GaugeImpl> const& impl"
+      ],
+      "lineno": 15,
+      "name": "Gauge"
+    }
+  ],
+  "description": "Defines the Gauge class, a lightweight reference wrapper for an integral metric that allows instantaneous measurement and adjustment of a value, typically used for metrics collection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Gauge.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "Gauge"
+    },
+    {
+      "args": [
+        "std::shared_ptr<GaugeImpl> const& impl"
+      ],
+      "lineno": 29,
+      "name": "Gauge"
+    },
+    {
+      "args": [
+        "value_type value"
+      ],
+      "lineno": 39,
+      "name": "set"
+    },
+    {
+      "args": [
+        "value_type value"
+      ],
+      "lineno": 45,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "difference_type amount"
+      ],
+      "lineno": 53,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "difference_type amount"
+      ],
+      "lineno": 58,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "difference_type amount"
+      ],
+      "lineno": 63,
+      "name": "operator-="
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 73,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "operator--"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 83,
+      "name": "operator--"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "impl"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "insight"
+    }
+  ]
+}

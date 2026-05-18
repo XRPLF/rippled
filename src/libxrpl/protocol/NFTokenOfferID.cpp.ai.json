@@ -1,0 +1,490 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "insertNFTokenOfferID",
+        "canHaveNFTokenOfferID",
+        "getOfferIDFromCreatedOffer"
+      ],
+      "entry_point": "insertNFTokenOfferID",
+      "purpose": "Determines if an NFToken offer ID should be inserted into a JSON response for a transaction, and if so, extracts and inserts it.",
+      "validation_points": [
+        "canHaveNFTokenOfferID: Validates transaction pointer is not null",
+        "canHaveNFTokenOfferID: Validates transaction type is correct (ttNFTOKEN_MINT with sfAmount or ttNFTOKEN_CREATE_OFFER)",
+        "canHaveNFTokenOfferID: Validates transaction result is tesSUCCESS",
+        "getOfferIDFromCreatedOffer: Validates node type is ltNFTOKEN_OFFER and node is a CreatedNode",
+        "getOfferIDFromCreatedOffer: Validates presence and format of sfLedgerIndex"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "serializedTx (transaction)",
+      "flow": [
+        "insertNFTokenOfferID argument",
+        "canHaveNFTokenOfferID argument",
+        "serializedTx->getTxnType() and isFieldPresent(sfAmount)"
+      ],
+      "origin": "Passed as argument to insertNFTokenOfferID (likely from transaction processing code)",
+      "transformations": [
+        "Checked for null",
+        "Transaction type extracted",
+        "Field presence checked"
+      ],
+      "validated_at": "canHaveNFTokenOfferID"
+    },
+    {
+      "field": "transactionMeta",
+      "flow": [
+        "insertNFTokenOfferID argument",
+        "canHaveNFTokenOfferID argument",
+        "transactionMeta.getResultTER()",
+        "getOfferIDFromCreatedOffer argument",
+        "transactionMeta.getNodes()"
+      ],
+      "origin": "Passed as argument to insertNFTokenOfferID (from transaction processing code)",
+      "transformations": [
+        "Result code extracted and checked for tesSUCCESS",
+        "Nodes iterated for CreatedNode of type ltNFTOKEN_OFFER"
+      ],
+      "validated_at": "canHaveNFTokenOfferID (result code), getOfferIDFromCreatedOffer (node type and field checks)"
+    },
+    {
+      "field": "sfLedgerIndex",
+      "flow": [
+        "getOfferIDFromCreatedOffer",
+        "node.getFieldH256(sfLedgerIndex)",
+        "returned as offer ID"
+      ],
+      "origin": "Field in STObject node from transactionMeta.getNodes()",
+      "transformations": [
+        "Type/format checked by getFieldH256",
+        "Converted to string for JSON output"
+      ],
+      "validated_at": "getOfferIDFromCreatedOffer"
+    },
+    {
+      "field": "response[jss::offer_id]",
+      "flow": [
+        "insertNFTokenOfferID",
+        "set to to_string(result.value()) if offer ID found"
+      ],
+      "origin": "Json::Value response object passed to insertNFTokenOfferID",
+      "transformations": [
+        "Offer ID converted to string and inserted into JSON"
+      ],
+      "validated_at": "insertNFTokenOfferID (only set if all prior validations pass)"
+    }
+  ],
+  "description": "Provides utility functions for handling NFTokenOfferID in XRPL transactions, including checking if a transaction can have an NFTokenOfferID, extracting the offer ID from transaction metadata, and inserting the offer ID into a JSON response.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerEntryType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerEntryType validated by xrpl/protocol (STObject, STTx, SField, jss::)",
+      "issue_pattern": "Missing validation for sfLedgerEntryType",
+      "why_false_positive": "xrpl/protocol (STObject, STTx, SField, jss::) validates sfLedgerEntryType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCreatedNode",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCreatedNode validated by xrpl/protocol (STObject, STTx, SField, jss::)",
+      "issue_pattern": "Missing validation for sfCreatedNode",
+      "why_false_positive": "xrpl/protocol (STObject, STTx, SField, jss::) validates sfCreatedNode automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerIndex",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerIndex validated by xrpl/protocol (STObject, STTx, SField, jss::)",
+      "issue_pattern": "Missing validation for sfLedgerIndex",
+      "why_false_positive": "xrpl/protocol (STObject, STTx, SField, jss::) validates sfLedgerIndex automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmount validated by xrpl/protocol (STObject, STTx, SField, jss::)",
+      "issue_pattern": "Missing validation for sfAmount",
+      "why_false_positive": "xrpl/protocol (STObject, STTx, SField, jss::) validates sfAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx (transaction)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at canHaveNFTokenOfferID",
+      "issue_pattern": "Missing empty string validation for serializedTx (transaction)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "serializedTx (transaction)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at canHaveNFTokenOfferID",
+      "issue_pattern": "Missing type validation for serializedTx (transaction)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx->getTxnType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit value check at canHaveNFTokenOfferID",
+      "issue_pattern": "Missing empty string validation for serializedTx->getTxnType()",
+      "why_false_positive": "explicit value check validates serializedTx->getTxnType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transactionMeta.getResultTER()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess function at canHaveNFTokenOfferID",
+      "issue_pattern": "Missing empty string validation for transactionMeta.getResultTER()",
+      "why_false_positive": "isTesSuccess function validates transactionMeta.getResultTER() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transactionMeta.getNodes()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "iteration and field checks at getOfferIDFromCreatedOffer",
+      "issue_pattern": "Missing empty string validation for transactionMeta.getNodes()",
+      "why_false_positive": "iteration and field checks validates transactionMeta.getNodes() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "node.getFieldH256(sfLedgerIndex)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type/format check via method at getOfferIDFromCreatedOffer",
+      "issue_pattern": "Missing empty string validation for node.getFieldH256(sfLedgerIndex)",
+      "why_false_positive": "type/format check via method validates node.getFieldH256(sfLedgerIndex) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.has_value()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional check at insertNFTokenOfferID",
+      "issue_pattern": "Missing empty string validation for result.has_value()",
+      "why_false_positive": "std::optional check validates result.has_value() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result.has_value()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::optional check at insertNFTokenOfferID",
+      "issue_pattern": "Missing type validation for result.has_value()",
+      "why_false_positive": "std::optional check validates result.has_value() type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/NFTokenOfferID.cpp",
+  "functions": [
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 11,
+      "name": "canHaveNFTokenOfferID"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 27,
+      "name": "getOfferIDFromCreatedOffer"
+    },
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 43,
+      "name": "insertNFTokenOfferID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests for NFT offer creation and minting in the rippled codebase, especially those that check transaction metadata and JSON response fields. Tests would be found in files like 'test/tx/NFTokenCreateOffer_test.cpp', 'test/tx/NFTokenMint_test.cpp', or similar. However, direct unit tests for these specific utility functions (canHaveNFTokenOfferID, getOfferIDFromCreatedOffer, insertNFTokenOfferID) may not exist unless explicitly written. Edge cases such as null transactions, failed transactions, or malformed nodes may not be fully covered unless negative tests are present. Template-based validation is not directly tested here but would be exercised via higher-level transaction tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfLedgerEntryType",
+      "sfCreatedNode",
+      "sfLedgerIndex",
+      "sfAmount"
+    ],
+    "framework": "xrpl/protocol (STObject, STTx, SField, jss::)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx (transaction)",
+      "location": "canHaveNFTokenOfferID",
+      "validated_by": "explicit null check",
+      "validates": [
+        "checks if transaction pointer is not null"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx->getTxnType()",
+      "location": "canHaveNFTokenOfferID",
+      "validated_by": "explicit value check",
+      "validates": [
+        "checks if transaction type is ttNFTOKEN_MINT and has sfAmount field, or is ttNFTOKEN_CREATE_OFFER"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "transactionMeta.getResultTER()",
+      "location": "canHaveNFTokenOfferID",
+      "validated_by": "isTesSuccess function",
+      "validates": [
+        "checks if transaction result code is a success code"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "transactionMeta.getNodes()",
+      "location": "getOfferIDFromCreatedOffer",
+      "validated_by": "iteration and field checks",
+      "validates": [
+        "checks each node for sfLedgerEntryType == ltNFTOKEN_OFFER",
+        "checks node FName == sfCreatedNode"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "node.getFieldH256(sfLedgerIndex)",
+      "location": "getOfferIDFromCreatedOffer",
+      "validated_by": "type/format check via method",
+      "validates": [
+        "retrieves 256-bit hash field, expects correct type/format"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "does not insert field if not present (no exception)",
+      "field": "result.has_value()",
+      "location": "insertNFTokenOfferID",
+      "validated_by": "std::optional check",
+      "validates": [
+        "checks if offer ID was found before inserting"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

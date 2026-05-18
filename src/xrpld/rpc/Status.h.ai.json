@@ -1,0 +1,121 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "code"
+    },
+    {
+      "lineno": 27,
+      "name": "d"
+    },
+    {
+      "lineno": 31,
+      "name": "ter"
+    },
+    {
+      "lineno": 31,
+      "name": "d"
+    },
+    {
+      "lineno": 35,
+      "name": "e"
+    },
+    {
+      "lineno": 35,
+      "name": "d"
+    },
+    {
+      "lineno": 39,
+      "name": "e"
+    },
+    {
+      "lineno": 39,
+      "name": "s"
+    },
+    {
+      "lineno": 71,
+      "name": "object"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "Status"
+    }
+  ],
+  "description": "Defines the xrpl::RPC::Status struct, which represents the result of an operation that might fail, wrapping legacy codes and providing a uniform interface for error handling in the XRPL RPC system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/Status.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "codeString"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "operator bool"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "operator!"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "toTER"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "toErrorCode"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 71,
+      "name": "inject"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "messages"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "message"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "type"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "toString"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 99,
+      "name": "fillJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "RPC"
+    }
+  ]
+}

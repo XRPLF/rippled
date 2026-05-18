@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "registry"
+    },
+    {
+      "lineno": 13,
+      "name": "base"
+    },
+    {
+      "lineno": 13,
+      "name": "parentBatchId"
+    },
+    {
+      "lineno": 13,
+      "name": "tx"
+    },
+    {
+      "lineno": 13,
+      "name": "preclaimResult"
+    },
+    {
+      "lineno": 13,
+      "name": "baseFee"
+    },
+    {
+      "lineno": 13,
+      "name": "flags"
+    },
+    {
+      "lineno": 13,
+      "name": "journal"
+    },
+    {
+      "lineno": 71,
+      "name": "func"
+    },
+    {
+      "lineno": 56,
+      "name": "amount"
+    },
+    {
+      "lineno": 78,
+      "name": "fee"
+    },
+    {
+      "lineno": 86,
+      "name": "result"
+    },
+    {
+      "lineno": 86,
+      "name": "fee"
+    },
+    {
+      "lineno": 94,
+      "name": "result"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "OpenView& base",
+        "std::optional<uint256 const> const& parentBatchId",
+        "STTx const& tx",
+        "TER preclaimResult",
+        "XRPAmount baseFee",
+        "ApplyFlags flags",
+        "beast::Journal journal"
+      ],
+      "lineno": 12,
+      "name": "ApplyContext"
+    }
+  ],
+  "description": "Defines the ApplyContext class, which manages state and operations when applying a transaction in the XRPL ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/ApplyContext.h",
+  "functions": [
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "OpenView& base",
+        "std::optional<uint256 const> const& parentBatchId",
+        "STTx const& tx",
+        "TER preclaimResult",
+        "XRPAmount baseFee",
+        "ApplyFlags flags",
+        "beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "ApplyContext"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "OpenView& base",
+        "STTx const& tx",
+        "TER preclaimResult",
+        "XRPAmount baseFee",
+        "ApplyFlags flags",
+        "beast::Journal journal"
+      ],
+      "lineno": 22,
+      "name": "ApplyContext"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "view"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "view"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "rawView"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "flags"
+    },
+    {
+      "args": [
+        "STAmount const& amount"
+      ],
+      "lineno": 56,
+      "name": "deliver"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "discard"
+    },
+    {
+      "args": [
+        "TER"
+      ],
+      "lineno": 65,
+      "name": "apply"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "size"
+    },
+    {
+      "args": [
+        "std::function<void(uint256 const& key, bool isDelete, std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after)> const& func"
+      ],
+      "lineno": 71,
+      "name": "visit"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 78,
+      "name": "destroyXRP"
+    },
+    {
+      "args": [
+        "TER const result",
+        "XRPAmount const fee"
+      ],
+      "lineno": 86,
+      "name": "checkInvariants"
+    },
+    {
+      "args": [
+        "TER const result"
+      ],
+      "lineno": 94,
+      "name": "failInvariantCheck"
+    },
+    {
+      "args": [
+        "TER const result",
+        "XRPAmount const fee",
+        "std::index_sequence<Is...>"
+      ],
+      "lineno": 97,
+      "name": "checkInvariantsHelper"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

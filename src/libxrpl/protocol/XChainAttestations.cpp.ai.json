@@ -1,0 +1,1137 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "attestationSignerAccount_"
+    },
+    {
+      "lineno": 19,
+      "name": "publicKey_"
+    },
+    {
+      "lineno": 20,
+      "name": "signature_"
+    },
+    {
+      "lineno": 21,
+      "name": "sendingAccount_"
+    },
+    {
+      "lineno": 22,
+      "name": "sendingAmount_"
+    },
+    {
+      "lineno": 23,
+      "name": "rewardAccount_"
+    },
+    {
+      "lineno": 24,
+      "name": "wasLockingChainSend_"
+    },
+    {
+      "lineno": 78,
+      "name": "claimID_"
+    },
+    {
+      "lineno": 79,
+      "name": "dst_"
+    },
+    {
+      "lineno": 90,
+      "name": "secretKey_"
+    },
+    {
+      "lineno": 182,
+      "name": "createCount_"
+    },
+    {
+      "lineno": 183,
+      "name": "toCreate_"
+    },
+    {
+      "lineno": 180,
+      "name": "rewardAmount_"
+    },
+    {
+      "lineno": 283,
+      "name": "keyAccount_"
+    },
+    {
+      "lineno": 284,
+      "name": "amount_"
+    },
+    {
+      "lineno": 356,
+      "name": "rewardAmount_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "attestationSignerAccount_",
+        "publicKey_",
+        "signature_",
+        "sendingAccount_",
+        "sendingAmount_",
+        "rewardAccount_",
+        "wasLockingChainSend_"
+      ],
+      "lineno": 17,
+      "name": "AttestationBase"
+    },
+    {
+      "args": [
+        "attestationSignerAccount_",
+        "publicKey_",
+        "signature_",
+        "sendingAccount_",
+        "sendingAmount_",
+        "rewardAccount_",
+        "wasLockingChainSend_",
+        "claimID_",
+        "dst_"
+      ],
+      "lineno": 77,
+      "name": "AttestationClaim"
+    },
+    {
+      "args": [
+        "attestationSignerAccount_",
+        "publicKey_",
+        "signature_",
+        "sendingAccount_",
+        "sendingAmount_",
+        "rewardAmount_",
+        "rewardAccount_",
+        "wasLockingChainSend_",
+        "createCount_",
+        "toCreate_"
+      ],
+      "lineno": 181,
+      "name": "AttestationCreateAccount"
+    },
+    {
+      "args": [
+        "keyAccount_",
+        "publicKey_",
+        "amount_",
+        "rewardAccount_",
+        "wasLockingChainSend_",
+        "dst_"
+      ],
+      "lineno": 282,
+      "name": "XChainClaimAttestation"
+    },
+    {
+      "args": [
+        "keyAccount_",
+        "publicKey_",
+        "amount_",
+        "rewardAmount_",
+        "rewardAccount_",
+        "wasLockingChainSend_",
+        "dst_"
+      ],
+      "lineno": 355,
+      "name": "XChainCreateAccountAttestation"
+    },
+    {
+      "args": [
+        "AttCollection&& atts"
+      ],
+      "lineno": 414,
+      "name": "XChainAttestationsBase<TAttestation>"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AttestationBase::AttestationBase(Json::Value const& v)",
+        "Json::getOrThrow<T>(v, field)"
+      ],
+      "entry_point": "AttestationBase::AttestationBase(Json::Value const& v)",
+      "purpose": "Constructs an AttestationBase from JSON input, validating and extracting all required fields.",
+      "validation_points": [
+        "Json::getOrThrow<AccountID>(v, sfAttestationSignerAccount)",
+        "Json::getOrThrow<PublicKey>(v, sfPublicKey)",
+        "Json::getOrThrow<Buffer>(v, sfSignature)",
+        "Json::getOrThrow<AccountID>(v, sfAccount)",
+        "Json::getOrThrow<STAmount>(v, sfAmount)",
+        "Json::getOrThrow<AccountID>(v, sfAttestationRewardAccount)",
+        "Json::getOrThrow<bool>(v, sfWasLockingChainSend)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AttestationBase::AttestationBase(STObject const& o)",
+        "o[sfField]"
+      ],
+      "entry_point": "AttestationBase::AttestationBase(STObject const& o)",
+      "purpose": "Constructs an AttestationBase from a serialized object (STObject), extracting fields directly (assumes prior validation).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "AttestationBase::verify",
+        "AttestationBase::message",
+        "xrpl::verify(publicKey, makeSlice(msg), signature)"
+      ],
+      "entry_point": "AttestationBase::verify(STXChainBridge const& bridge) const",
+      "purpose": "Verifies the attestation's signature using the public key and message.",
+      "validation_points": [
+        "publicKey, signature validated at construction (see above)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "attestationSignerAccount",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->attestationSignerAccount",
+        "used in equalHelper, sameEventHelper, addHelper, verify"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<AccountID> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "publicKey",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->publicKey",
+        "used in verify, equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<PublicKey> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "signature",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->signature",
+        "used in verify, equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<Buffer> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "sendingAccount",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->sendingAccount",
+        "used in sameEventHelper, equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<AccountID> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "sendingAmount",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->sendingAmount",
+        "used in sameEventHelper, equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<STAmount> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "rewardAccount",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->rewardAccount",
+        "used in equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<AccountID> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    },
+    {
+      "field": "wasLockingChainSend",
+      "flow": [
+        "Json::Value v or STObject o",
+        "AttestationBase::AttestationBase",
+        "this->wasLockingChainSend",
+        "used in sameEventHelper, equalHelper, addHelper"
+      ],
+      "origin": "Json::Value input or STObject input",
+      "transformations": [
+        "Parsed and validated via Json::getOrThrow<bool> if from JSON"
+      ],
+      "validated_at": "AttestationBase::AttestationBase(Json::Value const& v)"
+    }
+  ],
+  "description": "Implements classes and logic for XRPL cross-chain attestations, including claim and account creation attestations, their serialization/deserialization, equality, and matching logic, as well as container classes for collections of attestations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "attestationSignerAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field attestationSignerAccount validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for attestationSignerAccount",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates attestationSignerAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "publicKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field publicKey validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for publicKey",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates publicKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "signature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field signature validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for signature",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates signature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sendingAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sendingAccount validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for sendingAccount",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates sendingAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sendingAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sendingAmount validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for sendingAmount",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates sendingAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rewardAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field rewardAccount validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for rewardAccount",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates rewardAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "wasLockingChainSend",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field wasLockingChainSend validated by xrpl::Json::getOrThrow, STObject field accessors",
+      "issue_pattern": "Missing validation for wasLockingChainSend",
+      "why_false_positive": "xrpl::Json::getOrThrow, STObject field accessors validates wasLockingChainSend automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "attestationSignerAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<AccountID> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for attestationSignerAccount",
+      "why_false_positive": "Json::getOrThrow<AccountID> validates attestationSignerAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "publicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<PublicKey> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for publicKey",
+      "why_false_positive": "Json::getOrThrow<PublicKey> validates publicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<Buffer> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for signature",
+      "why_false_positive": "Json::getOrThrow<Buffer> validates signature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sendingAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<AccountID> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for sendingAccount",
+      "why_false_positive": "Json::getOrThrow<AccountID> validates sendingAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sendingAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<STAmount> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for sendingAmount",
+      "why_false_positive": "Json::getOrThrow<STAmount> validates sendingAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rewardAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<AccountID> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for rewardAccount",
+      "why_false_positive": "Json::getOrThrow<AccountID> validates rewardAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "wasLockingChainSend",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::getOrThrow<bool> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing empty string validation for wasLockingChainSend",
+      "why_false_positive": "Json::getOrThrow<bool> validates wasLockingChainSend for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "wasLockingChainSend",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::getOrThrow<bool> at AttestationBase(Json::Value const& v) constructor",
+      "issue_pattern": "Missing type validation for wasLockingChainSend",
+      "why_false_positive": "Json::getOrThrow<bool> validates wasLockingChainSend type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "attestationSignerAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfAttestationSignerAccount]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for attestationSignerAccount",
+      "why_false_positive": "STObject field accessor (o[sfAttestationSignerAccount]) validates attestationSignerAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "publicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfPublicKey]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for publicKey",
+      "why_false_positive": "STObject field accessor (o[sfPublicKey]) validates publicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "signature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfSignature]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for signature",
+      "why_false_positive": "STObject field accessor (o[sfSignature]) validates signature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sendingAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfAccount]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for sendingAccount",
+      "why_false_positive": "STObject field accessor (o[sfAccount]) validates sendingAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sendingAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfAmount]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for sendingAmount",
+      "why_false_positive": "STObject field accessor (o[sfAmount]) validates sendingAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rewardAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (o[sfAttestationRewardAccount]) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for rewardAccount",
+      "why_false_positive": "STObject field accessor (o[sfAttestationRewardAccount]) validates rewardAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "wasLockingChainSend",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject field accessor (bool(o[sfWasLockingChainSend])) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing empty string validation for wasLockingChainSend",
+      "why_false_positive": "STObject field accessor (bool(o[sfWasLockingChainSend])) validates wasLockingChainSend for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "wasLockingChainSend",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "STObject field accessor (bool(o[sfWasLockingChainSend])) at AttestationBase(STObject const& o) constructor",
+      "issue_pattern": "Missing type validation for wasLockingChainSend",
+      "why_false_positive": "STObject field accessor (bool(o[sfWasLockingChainSend])) validates wasLockingChainSend type"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/XChainAttestations.cpp",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 27,
+      "name": "AttestationBase::equalHelper"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 37,
+      "name": "AttestationBase::sameEventHelper"
+    },
+    {
+      "args": [
+        "bridge"
+      ],
+      "lineno": 43,
+      "name": "AttestationBase::verify"
+    },
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 67,
+      "name": "AttestationBase::addHelper"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "AttestationClaim::toSTObject"
+    },
+    {
+      "args": [
+        "bridge",
+        "sendingAccount",
+        "sendingAmount",
+        "rewardAccount",
+        "wasLockingChainSend",
+        "claimID",
+        "dst"
+      ],
+      "lineno": 132,
+      "name": "AttestationClaim::message"
+    },
+    {
+      "args": [
+        "bridge"
+      ],
+      "lineno": 148,
+      "name": "AttestationClaim::message"
+    },
+    {
+      "args": [],
+      "lineno": 152,
+      "name": "AttestationClaim::validAmounts"
+    },
+    {
+      "args": [
+        "rhs"
+      ],
+      "lineno": 156,
+      "name": "AttestationClaim::sameEvent"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 161,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "AttestationCreateAccount::toSTObject"
+    },
+    {
+      "args": [
+        "bridge",
+        "sendingAccount",
+        "sendingAmount",
+        "rewardAmount",
+        "rewardAccount",
+        "wasLockingChainSend",
+        "createCount",
+        "dst"
+      ],
+      "lineno": 223,
+      "name": "AttestationCreateAccount::message"
+    },
+    {
+      "args": [
+        "bridge"
+      ],
+      "lineno": 239,
+      "name": "AttestationCreateAccount::message"
+    },
+    {
+      "args": [],
+      "lineno": 243,
+      "name": "AttestationCreateAccount::validAmounts"
+    },
+    {
+      "args": [
+        "rhs"
+      ],
+      "lineno": 247,
+      "name": "AttestationCreateAccount::sameEvent"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 252,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "XChainClaimAttestation::toSTObject"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 324,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "rhs"
+      ],
+      "lineno": 337,
+      "name": "XChainClaimAttestation::match"
+    },
+    {
+      "args": [],
+      "lineno": 374,
+      "name": "XChainCreateAccountAttestation::toSTObject"
+    },
+    {
+      "args": [
+        "rhs"
+      ],
+      "lineno": 397,
+      "name": "XChainCreateAccountAttestation::match"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 404,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 423,
+      "name": "XChainAttestationsBase<TAttestation>::begin"
+    },
+    {
+      "args": [],
+      "lineno": 428,
+      "name": "XChainAttestationsBase<TAttestation>::end"
+    },
+    {
+      "args": [],
+      "lineno": 433,
+      "name": "XChainAttestationsBase<TAttestation>::begin"
+    },
+    {
+      "args": [],
+      "lineno": 438,
+      "name": "XChainAttestationsBase<TAttestation>::end"
+    },
+    {
+      "args": [],
+      "lineno": 463,
+      "name": "XChainAttestationsBase<TAttestation>::toSTArray"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 16,
+      "name": "Attestations"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for this code is likely found in test files related to cross-chain attestations, such as 'test_xchain_attestations.cpp', 'test_xchain_claim.cpp', or similar files in the 'test' or 'unittest' directories. These tests should cover construction from JSON (including invalid/missing fields), signature verification, and equality/event comparison. Gaps may exist if tests do not cover all possible invalid JSON inputs, malformed signatures, or edge cases in field values. There is no evidence in this file of explicit test hooks or coverage annotations.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "attestationSignerAccount",
+      "publicKey",
+      "signature",
+      "sendingAccount",
+      "sendingAmount",
+      "rewardAccount",
+      "wasLockingChainSend"
+    ],
+    "framework": "xrpl::Json::getOrThrow, STObject field accessors",
+    "validation_layer": "entry_point (constructor input validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "attestationSignerAccount",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<AccountID>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid AccountID (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "publicKey",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<PublicKey>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid PublicKey (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "signature",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<Buffer>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid Buffer (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "sendingAccount",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<AccountID>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid AccountID (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "sendingAmount",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<STAmount>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid STAmount (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "rewardAccount",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<AccountID>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a valid AccountID (correct type/format)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via getOrThrow)",
+      "field": "wasLockingChainSend",
+      "location": "AttestationBase(Json::Value const& v) constructor",
+      "validated_by": "Json::getOrThrow<bool>",
+      "validates": [
+        "Checks that the JSON field exists",
+        "Checks that the field is a boolean"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "attestationSignerAccount",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfAttestationSignerAccount])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid AccountID"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "publicKey",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfPublicKey])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid PublicKey"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "signature",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfSignature])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid Buffer"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "sendingAccount",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfAccount])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid AccountID"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "sendingAmount",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfAmount])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid STAmount"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "rewardAccount",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (o[sfAttestationRewardAccount])",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is a valid AccountID"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (STObject accessor)",
+      "field": "wasLockingChainSend",
+      "location": "AttestationBase(STObject const& o) constructor",
+      "validated_by": "STObject field accessor (bool(o[sfWasLockingChainSend]))",
+      "validates": [
+        "Checks that the STObject field exists",
+        "Checks that the field is convertible to bool"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

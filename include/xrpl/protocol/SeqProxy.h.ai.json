@@ -1,0 +1,131 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Type t",
+        "std::uint32_t v"
+      ],
+      "lineno": 34,
+      "name": "SeqProxy"
+    }
+  ],
+  "description": "Defines the SeqProxy class in the xrpl namespace, representing a value that can be either a sequence or a ticket, with logic for comparison, advancement, and type checking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/SeqProxy.h",
+  "functions": [
+    {
+      "args": [
+        "Type t",
+        "std::uint32_t v"
+      ],
+      "lineno": 38,
+      "name": "SeqProxy"
+    },
+    {
+      "args": [
+        "SeqProxy const& other"
+      ],
+      "lineno": 41,
+      "name": "SeqProxy"
+    },
+    {
+      "args": [
+        "SeqProxy const& other"
+      ],
+      "lineno": 44,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::uint32_t v"
+      ],
+      "lineno": 49,
+      "name": "sequence"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "value"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "isSeq"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "isTicket"
+    },
+    {
+      "args": [
+        "std::uint32_t amount"
+      ],
+      "lineno": 71,
+      "name": "advanceBy"
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 84,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 91,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 96,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 103,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 108,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "SeqProxy lhs",
+        "SeqProxy rhs"
+      ],
+      "lineno": 113,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "SeqProxy seqProx"
+      ],
+      "lineno": 118,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

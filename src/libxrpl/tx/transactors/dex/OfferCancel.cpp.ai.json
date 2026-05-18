@@ -1,0 +1,237 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OfferCancel::preflight"
+      ],
+      "entry_point": "OfferCancel::preflight",
+      "purpose": "Initial stateless validation of the OfferCancel transaction. Checks for required fields and basic constraints.",
+      "validation_points": [
+        "ctx.tx[sfOfferSequence] == 0u (rejects if missing or zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OfferCancel::preclaim"
+      ],
+      "entry_point": "OfferCancel::preclaim",
+      "purpose": "Stateful validation: checks that the account exists and that the offer sequence is valid relative to the account's sequence.",
+      "validation_points": [
+        "ctx.view.read(keylet::account(id)) (validates sfAccount exists)",
+        "(*sle)[sfSequence] <= offerSequence (validates sfOfferSequence is less than account's sequence)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OfferCancel::doApply",
+        "view().read(keylet::account(account_))",
+        "view().peek(keylet::offer(account_, offerSequence))",
+        "offerDelete(view(), sleOffer, ...)"
+      ],
+      "entry_point": "OfferCancel::doApply",
+      "purpose": "Applies the transaction: attempts to find and delete the offer if it exists.",
+      "validation_points": [
+        "view().read(keylet::account(account_)) (checks account exists, but should always pass if preclaim succeeded)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfOfferSequence",
+      "flow": [
+        "ctx.tx[sfOfferSequence] in preflight",
+        "ctx.tx[sfOfferSequence] in preclaim",
+        "ctx_.tx[sfOfferSequence] in doApply"
+      ],
+      "origin": "ctx.tx[sfOfferSequence] (transaction input)",
+      "transformations": [
+        "Checked for zero in preflight",
+        "Compared to account's sfSequence in preclaim",
+        "Used as offer key in doApply"
+      ],
+      "validated_at": "preflight (nonzero), preclaim (must be less than account's sfSequence)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount] in preclaim",
+        "keylet::account(id) in preclaim",
+        "view().read(keylet::account(account_)) in doApply"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Used to look up account in ledger"
+      ],
+      "validated_at": "preclaim (account must exist), doApply (should always exist if preclaim passed)"
+    },
+    {
+      "field": "AccountRoot::sfSequence",
+      "flow": [
+        "read from ledger in preclaim",
+        "compared to offerSequence"
+      ],
+      "origin": "(*sle)[sfSequence] (from ledger account object)",
+      "transformations": [
+        "Compared to sfOfferSequence to ensure offerSequence is less than account's sequence"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the OfferCancel transaction logic for the XRPL DEX, including preflight, preclaim, and apply steps to cancel an offer based on a given sequence.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOfferSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfOfferSequence] == 0u) at OfferCancel::preflight",
+      "issue_pattern": "Missing empty string validation for sfOfferSequence",
+      "why_false_positive": "explicit check (ctx.tx[sfOfferSequence] == 0u) validates sfOfferSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger lookup (ctx.view.read(keylet::account(id))) at OfferCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ledger lookup (ctx.view.read(keylet::account(id))) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOfferSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison ((*sle)[sfSequence] <= offerSequence) at OfferCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOfferSequence",
+      "why_false_positive": "comparison ((*sle)[sfSequence] <= offerSequence) validates sfOfferSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger lookup (view().read(keylet::account(account_))) at OfferCancel::doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ledger lookup (view().read(keylet::account(account_))) validates sfAccount for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/OfferCancel.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 6,
+      "name": "OfferCancel::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "OfferCancel::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "OfferCancel::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for OfferCancel would be in transaction-level integration tests, likely in files such as 'OfferCancel_test.cpp', 'Transactor_test.cpp', or broader transaction suite files. Tests should cover: missing sfOfferSequence, non-existent account, invalid offer sequence (too high), successful cancel, and cancel of non-existent offer. Gaps may exist if there are no explicit tests for malformed transactions (e.g., sfOfferSequence == 0), or for edge cases where the account is deleted between preclaim and doApply (should be unreachable). Code coverage tools (e.g., LCOV) indicate the tefINTERNAL branch is not covered, suggesting this error path is not tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in transaction processing (xrpl transaction engine)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SEQUENCE",
+      "field": "sfOfferSequence",
+      "location": "OfferCancel::preflight",
+      "validated_by": "explicit check (ctx.tx[sfOfferSequence] == 0u)",
+      "validates": [
+        "Checks that sfOfferSequence is not zero (must be a valid sequence number)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "OfferCancel::preclaim",
+      "validated_by": "ledger lookup (ctx.view.read(keylet::account(id)))",
+      "validates": [
+        "Checks that the account exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SEQUENCE",
+      "field": "sfOfferSequence",
+      "location": "OfferCancel::preclaim",
+      "validated_by": "comparison ((*sle)[sfSequence] <= offerSequence)",
+      "validates": [
+        "Checks that the account's current sequence is greater than the offer sequence being cancelled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfAccount",
+      "location": "OfferCancel::doApply",
+      "validated_by": "ledger lookup (view().read(keylet::account(account_)))",
+      "validates": [
+        "Checks that the account exists in the ledger before applying the transaction"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

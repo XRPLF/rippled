@@ -1,0 +1,181 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "Integer v"
+    },
+    {
+      "lineno": 14,
+      "name": "SField const& n"
+    },
+    {
+      "lineno": 14,
+      "name": "Integer v"
+    },
+    {
+      "lineno": 15,
+      "name": "SerialIter& sit"
+    },
+    {
+      "lineno": 15,
+      "name": "SField const& name"
+    },
+    {
+      "lineno": 19,
+      "name": "JsonOptions"
+    },
+    {
+      "lineno": 23,
+      "name": "Serializer& s"
+    },
+    {
+      "lineno": 27,
+      "name": "STBase const& t"
+    },
+    {
+      "lineno": 29,
+      "name": "value_type const& v"
+    },
+    {
+      "lineno": 33,
+      "name": "Integer v"
+    },
+    {
+      "lineno": 38,
+      "name": "std::size_t n"
+    },
+    {
+      "lineno": 38,
+      "name": "void* buf"
+    },
+    {
+      "lineno": 40,
+      "name": "std::size_t n"
+    },
+    {
+      "lineno": 40,
+      "name": "void* buf"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Integer v",
+        "SField const& n, Integer v",
+        "SerialIter& sit, SField const& name"
+      ],
+      "lineno": 8,
+      "name": "STInteger"
+    }
+  ],
+  "description": "Defines the STInteger template class for representing serialized integer types in the XRPL protocol, along with type aliases for common integer types. Provides serialization, deserialization, and utility methods for integer fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STInteger.h",
+  "functions": [
+    {
+      "args": [
+        "Integer v"
+      ],
+      "lineno": 13,
+      "name": "STInteger"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "Integer v"
+      ],
+      "lineno": 14,
+      "name": "STInteger"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 15,
+      "name": "STInteger"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 19,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 23,
+      "name": "add"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 27,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [
+        "value_type const& v"
+      ],
+      "lineno": 29,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "value"
+    },
+    {
+      "args": [
+        "Integer v"
+      ],
+      "lineno": 33,
+      "name": "setValue"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "operator Integer"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 38,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 40,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

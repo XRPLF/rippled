@@ -1,0 +1,255 @@
+{
+  "args": [
+    {
+      "lineno": 37,
+      "name": "tx"
+    },
+    {
+      "lineno": 219,
+      "name": "account"
+    },
+    {
+      "lineno": 220,
+      "name": "destination"
+    },
+    {
+      "lineno": 221,
+      "name": "amount"
+    },
+    {
+      "lineno": 222,
+      "name": "sequence"
+    },
+    {
+      "lineno": 223,
+      "name": "fee"
+    },
+    {
+      "lineno": 229,
+      "name": "tx"
+    },
+    {
+      "lineno": 233,
+      "name": "value"
+    },
+    {
+      "lineno": 243,
+      "name": "value"
+    },
+    {
+      "lineno": 253,
+      "name": "value"
+    },
+    {
+      "lineno": 263,
+      "name": "value"
+    },
+    {
+      "lineno": 273,
+      "name": "value"
+    },
+    {
+      "lineno": 283,
+      "name": "value"
+    },
+    {
+      "lineno": 293,
+      "name": "value"
+    },
+    {
+      "lineno": 303,
+      "name": "value"
+    },
+    {
+      "lineno": 313,
+      "name": "value"
+    },
+    {
+      "lineno": 323,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 323,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 33,
+      "name": "Payment"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 210,
+      "name": "PaymentBuilder"
+    }
+  ],
+  "description": "Defines the Payment transaction type for XRPL, providing a type-safe wrapper and a builder class for constructing and accessing Payment transactions with specific fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/Payment.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getSendMax"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "hasSendMax"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getPaths"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "hasPaths"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "getInvoiceID"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "hasInvoiceID"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "getDeliverMin"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "hasDeliverMin"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "getCredentialIDs"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "hasCredentialIDs"
+    },
+    {
+      "args": [],
+      "lineno": 190,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 232,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 242,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 252,
+      "name": "setSendMax"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 262,
+      "name": "setPaths"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 272,
+      "name": "setInvoiceID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 282,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 292,
+      "name": "setDeliverMin"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 302,
+      "name": "setCredentialIDs"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 312,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 322,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

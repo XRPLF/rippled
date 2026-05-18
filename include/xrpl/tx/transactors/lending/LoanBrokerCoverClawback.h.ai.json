@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanBrokerCoverClawback"
+    }
+  ],
+  "description": "Defines the LoanBrokerCoverClawback transactor class for handling a specific lending protocol transaction in the XRPL codebase, including preflight, preclaim, and apply logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "LoanBrokerCoverClawback"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

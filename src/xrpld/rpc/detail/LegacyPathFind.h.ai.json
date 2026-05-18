@@ -1,0 +1,45 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "bool isAdmin, Application& app"
+      ],
+      "lineno": 9,
+      "name": "LegacyPathFind"
+    }
+  ],
+  "description": "Defines the LegacyPathFind class used in the XRPL RPC subsystem to manage legacy pathfinding requests, including tracking in-progress operations and admin status.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/LegacyPathFind.h",
+  "functions": [
+    {
+      "args": [
+        "bool isAdmin",
+        "Application& app"
+      ],
+      "lineno": 11,
+      "name": "LegacyPathFind"
+    },
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "~LegacyPathFind"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "isOk"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "RPC"
+    }
+  ]
+}

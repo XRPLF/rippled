@@ -1,0 +1,26 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "holder"
+    }
+  ],
+  "description": "Provides a singleton accessor for a secp256k1 cryptographic context used for signing and verification in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/detail/secp256k1.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "secp256k1Context"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

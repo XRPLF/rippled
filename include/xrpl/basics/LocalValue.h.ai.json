@@ -1,0 +1,76 @@
+{
+  "args": [
+    {
+      "lineno": 34,
+      "name": "lvs"
+    },
+    {
+      "lineno": 53,
+      "name": "Args... args"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "LocalValues"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "BasicValue"
+    },
+    {
+      "args": [
+        "T",
+        "t"
+      ],
+      "lineno": 21,
+      "name": "Value"
+    },
+    {
+      "args": [
+        "Args... args"
+      ],
+      "lineno": 52,
+      "name": "LocalValue"
+    }
+  ],
+  "description": "Implements a thread- and coroutine-local storage utility for storing values specific to the calling thread or coroutine, using boost::thread_specific_ptr and custom value wrappers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/LocalValue.h",
+  "functions": [
+    {
+      "args": [
+        "lvs"
+      ],
+      "lineno": 34,
+      "name": "cleanup"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getLocalValues"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "operator->"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ]
+}

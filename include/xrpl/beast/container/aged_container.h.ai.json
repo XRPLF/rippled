@@ -1,0 +1,25 @@
+{
+  "args": [
+    {
+      "lineno": 5,
+      "name": "T"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "is_aged_container"
+    }
+  ],
+  "description": "Defines a type trait is_aged_container in the beast namespace to determine if a type is an aged container, defaulting to false.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_container.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    }
+  ]
+}

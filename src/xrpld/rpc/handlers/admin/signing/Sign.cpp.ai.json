@@ -1,0 +1,312 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doSign",
+        "RPC::transactionSign"
+      ],
+      "entry_point": "doSign",
+      "purpose": "Handles the /sign RPC command: validates permissions, parses and validates transaction parameters, and performs transaction signing.",
+      "validation_points": [
+        "doSign: role/canSign() check",
+        "doSign: fail_hard parameter check",
+        "RPC::transactionSign: tx_json, secret, and other parameter validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "role",
+      "flow": [
+        "context.role",
+        "doSign: if (context.role != Role::ADMIN && !context.app.config().canSign())",
+        "used to allow/deny signing"
+      ],
+      "origin": "context.role (set by RPC framework based on authentication)",
+      "transformations": [
+        "Compared against Role::ADMIN",
+        "Combined with config().canSign()"
+      ],
+      "validated_at": "doSign"
+    },
+    {
+      "field": "canSign",
+      "flow": [
+        "context.app.config().canSign()",
+        "doSign: if (context.role != Role::ADMIN && !context.app.config().canSign())",
+        "used to allow/deny signing"
+      ],
+      "origin": "context.app.config().canSign() (server config)",
+      "transformations": [
+        "Boolean config value"
+      ],
+      "validated_at": "doSign"
+    },
+    {
+      "field": "fail_hard",
+      "flow": [
+        "context.params",
+        "doSign: context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool()",
+        "NetworkOPs::doFailHard",
+        "passed as failType to RPC::transactionSign"
+      ],
+      "origin": "context.params[jss::fail_hard] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence and boolean value",
+        "Converted to NetworkOPs::FailHard enum"
+      ],
+      "validated_at": "doSign"
+    },
+    {
+      "field": "tx_json",
+      "flow": [
+        "context.params",
+        "passed to RPC::transactionSign",
+        "validated and parsed inside RPC::transactionSign"
+      ],
+      "origin": "context.params[\"tx_json\"] (JSON RPC input)",
+      "transformations": [
+        "Parsed as JSON object",
+        "Validated for required fields and structure"
+      ],
+      "validated_at": "RPC::transactionSign"
+    },
+    {
+      "field": "secret",
+      "flow": [
+        "context.params",
+        "passed to RPC::transactionSign",
+        "validated and used for signing inside RPC::transactionSign"
+      ],
+      "origin": "context.params[\"secret\"] (JSON RPC input)",
+      "transformations": [
+        "Parsed as string",
+        "Validated for format and presence"
+      ],
+      "validated_at": "RPC::transactionSign"
+    }
+  ],
+  "description": "Implements the doSign RPC handler, which signs a transaction using a provided secret. Intended for admin use and deprecated in favor of standalone signing tools.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "jss::fail_hard",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field jss::fail_hard validated by xrpld RPC framework (jss::, RPC::, JsonContext)",
+      "issue_pattern": "Missing validation for jss::fail_hard",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, JsonContext) validates jss::fail_hard automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx_json",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx_json validated by xrpld RPC framework (jss::, RPC::, JsonContext)",
+      "issue_pattern": "Missing validation for tx_json",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, JsonContext) validates tx_json automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "secret",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field secret validated by xrpld RPC framework (jss::, RPC::, JsonContext)",
+      "issue_pattern": "Missing validation for secret",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, JsonContext) validates secret automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role / canSign()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (context.role != Role::ADMIN && !context.app.config().canSign()) at doSign",
+      "issue_pattern": "Missing empty string validation for role / canSign()",
+      "why_false_positive": "if (context.role != Role::ADMIN && !context.app.config().canSign()) validates role / canSign() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "fail_hard",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool() at doSign",
+      "issue_pattern": "Missing empty string validation for fail_hard",
+      "why_false_positive": "context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool() validates fail_hard for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "params (tx_json, secret, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::transactionSign at doSign (delegated to transactionSign)",
+      "issue_pattern": "Missing empty string validation for params (tx_json, secret, etc.)",
+      "why_false_positive": "RPC::transactionSign validates params (tx_json, secret, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/signing/Sign.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 13,
+      "name": "doSign"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doSign handler is typically tested via RPC integration tests that exercise the /sign endpoint with various roles, parameters, and error conditions. Likely test files include rpc_sign_test.cpp, transaction_sign_test.cpp, or similar. Validation of role/canSign, fail_hard, and parameter presence/format should be covered. Gaps may exist in edge cases (e.g., malformed tx_json, missing secret, or config permutations). Direct unit tests for doSign may be limited if most validation is delegated to RPC::transactionSign.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "jss::fail_hard",
+      "tx_json",
+      "secret"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, JsonContext)",
+    "validation_layer": "entry_point (doSign), business_logic (transactionSign)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcNOT_SUPPORTED, ...)",
+      "field": "role / canSign()",
+      "location": "doSign",
+      "validated_by": "if (context.role != Role::ADMIN && !context.app.config().canSign())",
+      "validates": [
+        "Checks if the user is ADMIN or if the server is configured to allow signing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (used to set failType, not directly validated for error)",
+      "field": "fail_hard",
+      "location": "doSign",
+      "validated_by": "context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool()",
+      "validates": [
+        "Checks if fail_hard is present and is a boolean"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Delegated to transactionSign (likely returns JSON error object)",
+      "field": "params (tx_json, secret, etc.)",
+      "location": "doSign (delegated to transactionSign)",
+      "validated_by": "RPC::transactionSign",
+      "validates": [
+        "Validates presence and structure of tx_json",
+        "Validates presence and format of secret",
+        "Validates transaction fields inside tx_json"
+      ],
+      "validation_type": "format|type|business_logic"
+    }
+  ]
+}

@@ -1,0 +1,325 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "Setup const& setup",
+        "ServerHandler& serverHandler",
+        "Resource::Manager& resourceManager",
+        "Resolver& resolver",
+        "boost::asio::io_context& io_context",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 32,
+      "name": "OverlayImpl"
+    },
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 13,
+      "name": "Child"
+    },
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 27,
+      "name": "Timer"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 377,
+      "name": "TrafficGauges"
+    },
+    {
+      "args": [
+        "Handler const& handler",
+        "beast::insight::Collector::ptr const& collector",
+        "std::unordered_map<TrafficCount::category, TrafficGauges>&& trafficGauges_"
+      ],
+      "lineno": 383,
+      "name": "Stats"
+    }
+  ],
+  "description": "Defines the OverlayImpl class, which implements the Overlay interface for managing peer-to-peer connections, message relaying, traffic metrics, and related overlay network operations in the XRPL node.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/OverlayImpl.h",
+  "functions": [
+    {
+      "args": [
+        "UnaryFunc&& f"
+      ],
+      "lineno": 143,
+      "name": "for_each"
+    },
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 170,
+      "name": "isPeerUpgrade"
+    },
+    {
+      "args": [
+        "boost::beast::http::response<Body> const& response"
+      ],
+      "lineno": 172,
+      "name": "isPeerUpgrade"
+    },
+    {
+      "args": [
+        "boost::beast::http::header<true, Fields> const& req"
+      ],
+      "lineno": 180,
+      "name": "is_upgrade"
+    },
+    {
+      "args": [
+        "boost::beast::http::header<false, Fields> const& req"
+      ],
+      "lineno": 189,
+      "name": "is_upgrade"
+    },
+    {
+      "args": [
+        "std::uint32_t id"
+      ],
+      "lineno": 197,
+      "name": "makePrefix"
+    },
+    {
+      "args": [
+        "TrafficCount::category cat",
+        "int bytes"
+      ],
+      "lineno": 199,
+      "name": "reportInboundTraffic"
+    },
+    {
+      "args": [
+        "TrafficCount::category cat",
+        "int bytes"
+      ],
+      "lineno": 201,
+      "name": "reportOutboundTraffic"
+    },
+    {
+      "args": [],
+      "lineno": 203,
+      "name": "incJqTransOverflow"
+    },
+    {
+      "args": [],
+      "lineno": 207,
+      "name": "getJqTransOverflow"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "incPeerDisconnect"
+    },
+    {
+      "args": [],
+      "lineno": 215,
+      "name": "getPeerDisconnect"
+    },
+    {
+      "args": [],
+      "lineno": 219,
+      "name": "incPeerDisconnectCharges"
+    },
+    {
+      "args": [],
+      "lineno": 223,
+      "name": "getPeerDisconnectCharges"
+    },
+    {
+      "args": [],
+      "lineno": 227,
+      "name": "networkID"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "std::set<Peer::id_t>&& peers",
+        "protocol::MessageType type"
+      ],
+      "lineno": 238,
+      "name": "updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "Peer::id_t peer",
+        "protocol::MessageType type"
+      ],
+      "lineno": 246,
+      "name": "updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "Peer::id_t id"
+      ],
+      "lineno": 253,
+      "name": "deletePeer"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "txMetrics"
+    },
+    {
+      "args": [
+        "Args... args"
+      ],
+      "lineno": 262,
+      "name": "addTxMetrics"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "Peer::id_t const id",
+        "std::uint32_t squelchDuration"
+      ],
+      "lineno": 273,
+      "name": "squelch"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "Peer::id_t id"
+      ],
+      "lineno": 276,
+      "name": "unsquelch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type const& request",
+        "address_type remote_address"
+      ],
+      "lineno": 278,
+      "name": "makeRedirectResponse"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type const& request",
+        "address_type remote_address",
+        "std::string msg"
+      ],
+      "lineno": 283,
+      "name": "makeErrorResponse"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 292,
+      "name": "processCrawl"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 299,
+      "name": "processValidatorList"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 307,
+      "name": "processHealth"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 314,
+      "name": "processRequest"
+    },
+    {
+      "args": [],
+      "lineno": 322,
+      "name": "getOverlayInfo"
+    },
+    {
+      "args": [],
+      "lineno": 329,
+      "name": "getServerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 336,
+      "name": "getServerCounts"
+    },
+    {
+      "args": [],
+      "lineno": 343,
+      "name": "getUnlInfo"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& stream"
+      ],
+      "lineno": 355,
+      "name": "onWrite"
+    },
+    {
+      "args": [
+        "Child& child"
+      ],
+      "lineno": 362,
+      "name": "remove"
+    },
+    {
+      "args": [],
+      "lineno": 364,
+      "name": "stopChildren"
+    },
+    {
+      "args": [],
+      "lineno": 366,
+      "name": "autoConnect"
+    },
+    {
+      "args": [],
+      "lineno": 368,
+      "name": "sendEndpoints"
+    },
+    {
+      "args": [],
+      "lineno": 370,
+      "name": "sendTxQueue"
+    },
+    {
+      "args": [],
+      "lineno": 374,
+      "name": "deleteIdlePeers"
+    },
+    {
+      "args": [],
+      "lineno": 386,
+      "name": "collect_metrics"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

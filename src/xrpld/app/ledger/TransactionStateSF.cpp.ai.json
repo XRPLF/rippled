@@ -1,0 +1,151 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMap::visitNodes / SHAMap::fetchNode / SHAMap::addKnownNode (likely callers, not shown in this file)",
+        "TransactionStateSF::gotNode"
+      ],
+      "entry_point": "TransactionStateSF::gotNode",
+      "purpose": "Handles a node received from the SHAMap, validates its type, and stores it in the database.",
+      "validation_points": [
+        "TransactionStateSF::gotNode: XRPL_ASSERT(type != SHAMapNodeType::tnTRANSACTION_NM)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::getMissingNodes / SHAMap::getNodeFat / SHAMap::getFetchPack (likely callers, not shown in this file)",
+        "TransactionStateSF::getNode"
+      ],
+      "entry_point": "TransactionStateSF::getNode",
+      "purpose": "Fetches a node's data from the fetch pack using its hash.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type (SHAMapNodeType)",
+      "flow": [
+        "Caller provides type",
+        "TransactionStateSF::gotNode receives type",
+        "XRPL_ASSERT checks type != tnTRANSACTION_NM",
+        "If valid, proceeds to store node"
+      ],
+      "origin": "Caller of TransactionStateSF::gotNode (e.g., SHAMap traversal code)",
+      "transformations": [
+        "Validation: XRPL_ASSERT ensures type is not tnTRANSACTION_NM"
+      ],
+      "validated_at": "TransactionStateSF::gotNode"
+    },
+    {
+      "field": "nodeData (Blob)",
+      "flow": [
+        "Caller provides nodeData",
+        "TransactionStateSF::gotNode receives nodeData",
+        "nodeData is moved into db_.store"
+      ],
+      "origin": "Caller of TransactionStateSF::gotNode (node data from SHAMap)",
+      "transformations": [
+        "std::move to transfer ownership"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "nodeHash (SHAMapHash)",
+      "flow": [
+        "Caller provides nodeHash",
+        "TransactionStateSF::gotNode: nodeHash.as_uint256() used as key in db_.store",
+        "TransactionStateSF::getNode: nodeHash.as_uint256() used as key in fp_.getFetchPack"
+      ],
+      "origin": "Caller of TransactionStateSF::gotNode or getNode",
+      "transformations": [
+        "Conversion: nodeHash.as_uint256()"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "ledgerSeq (std::uint32_t)",
+      "flow": [
+        "Caller provides ledgerSeq",
+        "TransactionStateSF::gotNode passes ledgerSeq to db_.store"
+      ],
+      "origin": "Caller of TransactionStateSF::gotNode",
+      "transformations": [],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements the TransactionStateSF class methods for handling transaction state nodes during ledger synchronization, including storing and fetching node data.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (SHAMapNodeType type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at TransactionStateSF::gotNode",
+      "issue_pattern": "Missing empty string validation for type (SHAMapNodeType type)",
+      "why_false_positive": "XRPL_ASSERT macro validates type (SHAMapNodeType type) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/TransactionStateSF.cpp",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "SHAMapHash const& nodeHash",
+        "std::uint32_t ledgerSeq",
+        "Blob&& nodeData",
+        "SHAMapNodeType type"
+      ],
+      "lineno": 6,
+      "name": "TransactionStateSF::gotNode"
+    },
+    {
+      "args": [
+        "SHAMapHash const& nodeHash"
+      ],
+      "lineno": 18,
+      "name": "TransactionStateSF::getNode"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Direct unit tests for TransactionStateSF are not shown in this file. Likely, this code is tested indirectly via SHAMap or ledger synchronization tests, which exercise fetch pack and node storage logic. The validation (XRPL_ASSERT) for node type may not be directly tested unless there are tests that intentionally pass tnTRANSACTION_NM to gotNode. Gaps: No explicit tests for assertion failure paths or for invalid node types; no direct tests for data corruption or malformed input.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a general validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "type (SHAMapNodeType type)",
+      "location": "TransactionStateSF::gotNode",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures that the input 'type' is not equal to SHAMapNodeType::tnTRANSACTION_NM"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

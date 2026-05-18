@@ -1,0 +1,121 @@
+{
+  "args": [
+    {
+      "lineno": 80,
+      "name": "view"
+    },
+    {
+      "lineno": 80,
+      "name": "root"
+    },
+    {
+      "lineno": 80,
+      "name": "page"
+    },
+    {
+      "lineno": 41,
+      "name": "other"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ReadView const&, Keylet const&"
+      ],
+      "lineno": 15,
+      "name": "Dir"
+    },
+    {
+      "args": [
+        "ReadView const& view, Keylet const& root, Keylet const& page"
+      ],
+      "lineno": 36,
+      "name": "Dir::const_iterator"
+    }
+  ],
+  "description": "Provides the Dir class for iterating over ledger directory pages in the XRPL, with a forward iterator and accelerated page stepping, mainly used for NFTokenOffer directories and unit tests.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/Dir.h",
+  "functions": [
+    {
+      "args": [
+        "ReadView const&",
+        "Keylet const&"
+      ],
+      "lineno": 27,
+      "name": "Dir"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "end"
+    },
+    {
+      "args": [
+        "const_iterator const& other"
+      ],
+      "lineno": 41,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "const_iterator const& other"
+      ],
+      "lineno": 44,
+      "name": "operator!="
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 59,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "next_page"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "page_size"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "page"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "index"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

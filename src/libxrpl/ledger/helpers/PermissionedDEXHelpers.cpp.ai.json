@@ -1,0 +1,442 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "offerInDomain",
+        "accountInDomain"
+      ],
+      "entry_point": "offerInDomain",
+      "purpose": "Validates if an offer belongs to a given permissioned domain, including offer structure and account credential checks.",
+      "validation_points": [
+        "offerInDomain: sleOffer existence (view.read(keylet::offer(offerID)))",
+        "offerInDomain: sfDomainID presence and match",
+        "offerInDomain: lsfHybrid flag and sfAdditionalBooks presence",
+        "accountInDomain: sleDomain existence (view.read(keylet::permissionedDomain(domainID)))",
+        "accountInDomain: domain owner check (sleDomain->getAccountID(sfOwner) == account)",
+        "accountInDomain: credential existence (view.read(keylet::credential(...)))",
+        "accountInDomain: credential accepted flag (!sleCred->isFlag(lsfAccepted))",
+        "accountInDomain: credential expiration (!credentials::checkExpired(...))"
+      ]
+    },
+    {
+      "call_chain": [
+        "accountInDomain"
+      ],
+      "entry_point": "accountInDomain",
+      "purpose": "Checks if an account is part of a permissioned domain, either as owner or via accepted, non-expired credentials.",
+      "validation_points": [
+        "sleDomain existence",
+        "domain owner check",
+        "credential existence",
+        "credential accepted flag",
+        "credential expiration"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sleDomain",
+      "flow": [
+        "view.read(keylet::permissionedDomain(domainID))",
+        "used for owner check and to get sfAcceptedCredentials"
+      ],
+      "origin": "view.read(keylet::permissionedDomain(domainID))",
+      "transformations": [
+        "None (direct ledger read)"
+      ],
+      "validated_at": "Immediately after read (if (!sleDomain))"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "sleDomain->getAccountID(sfOwner)",
+        "compared to input account"
+      ],
+      "origin": "sleDomain->getAccountID(sfOwner)",
+      "transformations": [
+        "None (direct field access)"
+      ],
+      "validated_at": "Compared to input account"
+    },
+    {
+      "field": "sfAcceptedCredentials",
+      "flow": [
+        "sleDomain->getFieldArray(sfAcceptedCredentials)",
+        "iterated for credential checks"
+      ],
+      "origin": "sleDomain->getFieldArray(sfAcceptedCredentials)",
+      "transformations": [
+        "Iterated as array"
+      ],
+      "validated_at": "Each credential checked in loop"
+    },
+    {
+      "field": "credential",
+      "flow": [
+        "credential[sfIssuer], credential[sfCredentialType]",
+        "used to construct keylet::credential for ledger read"
+      ],
+      "origin": "Element of sfAcceptedCredentials array",
+      "transformations": [
+        "Used as parameters for keylet"
+      ],
+      "validated_at": "sleCred existence, accepted flag, expiration"
+    },
+    {
+      "field": "sleCred",
+      "flow": [
+        "ledger read",
+        "checked for existence, lsfAccepted flag, expiration"
+      ],
+      "origin": "view.read(keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]))",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Immediately after read and in subsequent checks"
+    },
+    {
+      "field": "sleOffer",
+      "flow": [
+        "ledger read",
+        "checked for existence, sfDomainID, lsfHybrid flag, sfAdditionalBooks",
+        "account extracted for accountInDomain"
+      ],
+      "origin": "view.read(keylet::offer(offerID))",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Multiple points in offerInDomain"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "checked for presence",
+        "compared to input domainID"
+      ],
+      "origin": "sleOffer->getFieldH256(sfDomainID)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "offerInDomain"
+    },
+    {
+      "field": "lsfHybrid",
+      "flow": [
+        "checked for flag",
+        "if set, checks sfAdditionalBooks"
+      ],
+      "origin": "sleOffer->isFlag(lsfHybrid)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "offerInDomain"
+    },
+    {
+      "field": "sfAdditionalBooks",
+      "flow": [
+        "checked if present when lsfHybrid is set"
+      ],
+      "origin": "sleOffer->isFieldPresent(sfAdditionalBooks)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "offerInDomain"
+    }
+  ],
+  "description": "Provides helper functions for checking if an account or offer is part of a permissioned DEX domain in the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleDomain existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::permissionedDomain(domainID)) at accountInDomain",
+      "issue_pattern": "Missing empty string validation for sleDomain existence",
+      "why_false_positive": "view.read(keylet::permissionedDomain(domainID)) validates sleDomain existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "domain owner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleDomain->getAccountID(sfOwner) == account at accountInDomain",
+      "issue_pattern": "Missing empty string validation for domain owner",
+      "why_false_positive": "sleDomain->getAccountID(sfOwner) == account validates domain owner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "credential existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::credential(account, credential[sfIssuer], credential[sfCredentialType])) at accountInDomain (inside std::any_of)",
+      "issue_pattern": "Missing empty string validation for credential existence",
+      "why_false_positive": "view.read(keylet::credential(account, credential[sfIssuer], credential[sfCredentialType])) validates credential existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "credential accepted flag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sleCred->isFlag(lsfAccepted) at accountInDomain (inside std::any_of)",
+      "issue_pattern": "Missing empty string validation for credential accepted flag",
+      "why_false_positive": "!sleCred->isFlag(lsfAccepted) validates credential accepted flag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "credential expiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!credentials::checkExpired(sleCred, view.header().parentCloseTime) at accountInDomain (inside std::any_of)",
+      "issue_pattern": "Missing empty string validation for credential expiration",
+      "why_false_positive": "!credentials::checkExpired(sleCred, view.header().parentCloseTime) validates credential expiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleOffer existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::offer(offerID)) at offerInDomain",
+      "issue_pattern": "Missing empty string validation for sleOffer existence",
+      "why_false_positive": "view.read(keylet::offer(offerID)) validates sleOffer existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID presence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sleOffer->isFieldPresent(sfDomainID) at offerInDomain",
+      "issue_pattern": "Missing empty string validation for sfDomainID presence",
+      "why_false_positive": "!sleOffer->isFieldPresent(sfDomainID) validates sfDomainID presence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID matches",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleOffer->getFieldH256(sfDomainID) != domainID at offerInDomain",
+      "issue_pattern": "Missing empty string validation for sfDomainID matches",
+      "why_false_positive": "sleOffer->getFieldH256(sfDomainID) != domainID validates sfDomainID matches for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Hybrid offer AdditionalBooks presence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks) at offerInDomain",
+      "issue_pattern": "Missing empty string validation for Hybrid offer AdditionalBooks presence",
+      "why_false_positive": "sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks) validates Hybrid offer AdditionalBooks presence for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/PermissionedDEXHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "account",
+        "domainID"
+      ],
+      "lineno": 6,
+      "name": "accountInDomain"
+    },
+    {
+      "args": [
+        "view",
+        "offerID",
+        "domainID",
+        "j"
+      ],
+      "lineno": 25,
+      "name": "offerInDomain"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "permissioned_dex"
+    }
+  ],
+  "test_coverage_notes": "The code contains defensive checks (with LCOV_EXCL_LINE) indicating some branches are not covered by tests (e.g., missing offer, missing domainID, hybrid offer missing AdditionalBooks). The main validation logic (domain/credential checks) is likely tested in integration or unit tests for permissioned DEX features, possibly in files like test/ledger/PermissionedDEX_test.cpp, test/ledger/CredentialHelpers_test.cpp, or similar. However, explicit test coverage for all error branches and edge cases (e.g., expired credentials, hybrid offers with missing fields) may be lacking. Review of test files is needed to confirm full coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic (ledger view, keylet, field presence, flags, and credential helpers)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false",
+      "field": "sleDomain existence",
+      "location": "accountInDomain",
+      "validated_by": "view.read(keylet::permissionedDomain(domainID))",
+      "validates": [
+        "Checks if the domain exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns true",
+      "field": "domain owner",
+      "location": "accountInDomain",
+      "validated_by": "sleDomain->getAccountID(sfOwner) == account",
+      "validates": [
+        "Checks if the account is the owner of the domain"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false for this credential",
+      "field": "credential existence",
+      "location": "accountInDomain (inside std::any_of)",
+      "validated_by": "view.read(keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]))",
+      "validates": [
+        "Checks if the credential exists for the account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false for this credential",
+      "field": "credential accepted flag",
+      "location": "accountInDomain (inside std::any_of)",
+      "validated_by": "!sleCred->isFlag(lsfAccepted)",
+      "validates": [
+        "Checks if the credential is marked as accepted"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false for this credential",
+      "field": "credential expiration",
+      "location": "accountInDomain (inside std::any_of)",
+      "validated_by": "!credentials::checkExpired(sleCred, view.header().parentCloseTime)",
+      "validates": [
+        "Checks if the credential is not expired"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false",
+      "field": "sleOffer existence",
+      "location": "offerInDomain",
+      "validated_by": "view.read(keylet::offer(offerID))",
+      "validates": [
+        "Checks if the offer exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false",
+      "field": "sfDomainID presence",
+      "location": "offerInDomain",
+      "validated_by": "!sleOffer->isFieldPresent(sfDomainID)",
+      "validates": [
+        "Checks if the offer has a domain ID field"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false",
+      "field": "sfDomainID matches",
+      "location": "offerInDomain",
+      "validated_by": "sleOffer->getFieldH256(sfDomainID) != domainID",
+      "validates": [
+        "Checks if the offer's domain ID matches the expected domain ID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (after logging error)",
+      "field": "Hybrid offer AdditionalBooks presence",
+      "location": "offerInDomain",
+      "validated_by": "sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks)",
+      "validates": [
+        "Checks if hybrid offers have the AdditionalBooks field"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "ledger"
+    },
+    {
+      "lineno": 34,
+      "name": "book"
+    },
+    {
+      "lineno": 41,
+      "name": "asset"
+    },
+    {
+      "lineno": 41,
+      "name": "domain"
+    },
+    {
+      "lineno": 70,
+      "name": "alTx"
+    },
+    {
+      "lineno": 70,
+      "name": "jvObj"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "OrderBookDB"
+    }
+  ],
+  "description": "Defines the OrderBookDB interface for tracking and querying order books in the XRPL ledger, including methods for updating, querying, and managing order book subscriptions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/OrderBookDB.h",
+  "functions": [
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 27,
+      "name": "setup"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 34,
+      "name": "addOrderBook"
+    },
+    {
+      "args": [
+        "asset",
+        "domain"
+      ],
+      "lineno": 41,
+      "name": "getBooksByTakerPays"
+    },
+    {
+      "args": [
+        "asset",
+        "domain"
+      ],
+      "lineno": 52,
+      "name": "getBookSize"
+    },
+    {
+      "args": [
+        "asset",
+        "domain"
+      ],
+      "lineno": 61,
+      "name": "isBookToXRP"
+    },
+    {
+      "args": [
+        "ledger",
+        "alTx",
+        "jvObj"
+      ],
+      "lineno": 70,
+      "name": "processTxn"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 80,
+      "name": "getBookListeners"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 87,
+      "name": "makeBookListeners"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

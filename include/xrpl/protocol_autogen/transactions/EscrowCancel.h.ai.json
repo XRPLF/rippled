@@ -1,0 +1,125 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 74,
+      "name": "account"
+    },
+    {
+      "lineno": 75,
+      "name": "owner"
+    },
+    {
+      "lineno": 76,
+      "name": "offerSequence"
+    },
+    {
+      "lineno": 77,
+      "name": "sequence"
+    },
+    {
+      "lineno": 78,
+      "name": "fee"
+    },
+    {
+      "lineno": 116,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 116,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 98,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "EscrowCancel"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner, std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 69,
+      "name": "EscrowCancelBuilder"
+    }
+  ],
+  "description": "Provides an immutable wrapper and builder for the EscrowCancel transaction type in the XRPL protocol, enabling type-safe field access and fluent transaction construction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/EscrowCancel.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "EscrowCancel"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getOfferSequence"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& offerSequence",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 74,
+      "name": "EscrowCancelBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 86,
+      "name": "EscrowCancelBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 97,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 106,
+      "name": "setOfferSequence"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 115,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

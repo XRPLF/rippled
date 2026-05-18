@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "src"
+    },
+    {
+      "lineno": 13,
+      "name": "dst"
+    }
+  ],
+  "classes": [],
+  "description": "Header file declaring a function to extract a tar archive compressed with lz4 using Boost Filesystem, within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Archive.h",
+  "functions": [
+    {
+      "args": [
+        "src",
+        "dst"
+      ],
+      "lineno": 13,
+      "name": "extractTarLz4"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

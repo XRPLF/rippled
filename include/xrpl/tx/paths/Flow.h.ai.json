@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 33,
+      "name": "view"
+    },
+    {
+      "lineno": 34,
+      "name": "deliver"
+    },
+    {
+      "lineno": 35,
+      "name": "src"
+    },
+    {
+      "lineno": 36,
+      "name": "dst"
+    },
+    {
+      "lineno": 37,
+      "name": "paths"
+    },
+    {
+      "lineno": 38,
+      "name": "defaultPaths"
+    },
+    {
+      "lineno": 39,
+      "name": "partialPayment"
+    },
+    {
+      "lineno": 40,
+      "name": "ownerPaysTransferFee"
+    },
+    {
+      "lineno": 41,
+      "name": "offerCrossing"
+    },
+    {
+      "lineno": 42,
+      "name": "limitQuality"
+    },
+    {
+      "lineno": 43,
+      "name": "sendMax"
+    },
+    {
+      "lineno": 44,
+      "name": "domainID"
+    },
+    {
+      "lineno": 45,
+      "name": "j"
+    },
+    {
+      "lineno": 46,
+      "name": "flowDebugInfo"
+    }
+  ],
+  "classes": [],
+  "description": "Provides the declaration for the 'flow' function, which executes a payment from a source account to a destination account using specified paths and options in the XRPL ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/Flow.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "deliver",
+        "src",
+        "dst",
+        "paths",
+        "defaultPaths",
+        "partialPayment",
+        "ownerPaysTransferFee",
+        "offerCrossing",
+        "limitQuality",
+        "sendMax",
+        "domainID",
+        "j",
+        "flowDebugInfo"
+      ],
+      "lineno": 32,
+      "name": "flow"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "xrpl::path"
+    },
+    {
+      "lineno": 8,
+      "name": "xrpl::path::detail"
+    }
+  ]
+}

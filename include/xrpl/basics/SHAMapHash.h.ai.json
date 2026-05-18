@@ -1,0 +1,144 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "hash"
+    },
+    {
+      "lineno": 47,
+      "name": "os"
+    },
+    {
+      "lineno": 37,
+      "name": "x"
+    },
+    {
+      "lineno": 37,
+      "name": "y"
+    },
+    {
+      "lineno": 57,
+      "name": "h"
+    },
+    {
+      "lineno": 68,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 10,
+      "name": "SHAMapHash"
+    }
+  ],
+  "description": "Defines the SHAMapHash class, which represents the hash of a node or the entire SHAMap in XRPL, providing utility methods and operators for hash manipulation and comparison.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/SHAMapHash.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "SHAMapHash"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 14,
+      "name": "SHAMapHash"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "as_uint256"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "as_uint256"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "isZero"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "isNonZero"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "signum"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "zero"
+    },
+    {
+      "args": [
+        "SHAMapHash const& x",
+        "SHAMapHash const& y"
+      ],
+      "lineno": 37,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "SHAMapHash const& x",
+        "SHAMapHash const& y"
+      ],
+      "lineno": 42,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "SHAMapHash const& x"
+      ],
+      "lineno": 47,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "SHAMapHash const& x"
+      ],
+      "lineno": 52,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "H& h",
+        "SHAMapHash const& x"
+      ],
+      "lineno": 57,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "SHAMapHash const& x",
+        "SHAMapHash const& y"
+      ],
+      "lineno": 63,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "SHAMapHash const& key"
+      ],
+      "lineno": 68,
+      "name": "extract"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

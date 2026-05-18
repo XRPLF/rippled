@@ -1,0 +1,9 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Header file defining a macro for JSON assertion with error throwing, and including necessary XRPL and JSON error headers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/detail/json_assert.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": []
+}

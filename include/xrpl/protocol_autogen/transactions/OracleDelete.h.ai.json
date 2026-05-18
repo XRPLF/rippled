@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 62,
+      "name": "account"
+    },
+    {
+      "lineno": 62,
+      "name": "oracleDocumentID"
+    },
+    {
+      "lineno": 62,
+      "name": "sequence"
+    },
+    {
+      "lineno": 62,
+      "name": "fee"
+    },
+    {
+      "lineno": 73,
+      "name": "tx"
+    },
+    {
+      "lineno": 84,
+      "name": "value"
+    },
+    {
+      "lineno": 92,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 92,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "OracleDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 57,
+      "name": "OracleDeleteBuilder"
+    }
+  ],
+  "description": "Defines the OracleDelete transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing OracleDelete transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/OracleDelete.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "OracleDelete"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getOracleDocumentID"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 62,
+      "name": "OracleDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 73,
+      "name": "OracleDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 84,
+      "name": "setOracleDocumentID"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 92,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

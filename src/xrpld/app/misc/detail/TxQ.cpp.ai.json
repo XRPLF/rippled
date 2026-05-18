@@ -1,0 +1,878 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TxQ::FeeMetrics::update",
+        "getFeeLevelPaid",
+        "calculateBaseFee",
+        "tx[sfFee].xrp()",
+        "mulDiv"
+      ],
+      "entry_point": "TxQ::FeeMetrics::update",
+      "purpose": "Updates fee metrics for the transaction queue by calculating fee levels for all transactions in the ledger view.",
+      "validation_points": [
+        "getFeeLevelPaid: baseFee.signum() > 0 (XRPL_ASSERT)",
+        "getFeeLevelPaid: effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0 (early return)",
+        "getFeeLevelPaid: mulDiv result checked with value_or"
+      ]
+    },
+    {
+      "call_chain": [
+        "getFeeLevelPaid",
+        "calculateBaseFee",
+        "tx[sfFee].xrp()",
+        "mulDiv"
+      ],
+      "entry_point": "getFeeLevelPaid",
+      "purpose": "Calculates the fee level paid for a transaction, normalizing the fee paid by the base fee.",
+      "validation_points": [
+        "baseFee.signum() > 0 (XRPL_ASSERT)",
+        "effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0 (early return)",
+        "mulDiv result checked with value_or"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxQ::FeeMetrics::scaleFeeLevel",
+        "increase"
+      ],
+      "entry_point": "TxQ::FeeMetrics::scaleFeeLevel",
+      "purpose": "Scales a fee level by a percentage increase.",
+      "validation_points": [
+        "increase: mulDiv result checked with value_or"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfFee",
+      "flow": [
+        "STTx (tx)",
+        "tx[sfFee].xrp()",
+        "feePaid (in getFeeLevelPaid)",
+        "effectiveFeePaid"
+      ],
+      "origin": "STTx (transaction object)",
+      "transformations": [
+        "Extracted as XRPAmount",
+        "Potentially incremented by mod (if baseFee is zero)"
+      ],
+      "validated_at": "getFeeLevelPaid: effectiveFeePaid.signum() <= 0"
+    },
+    {
+      "field": "baseFee",
+      "flow": [
+        "calculateBaseFee(view, tx)",
+        "baseFee (in getFeeLevelPaid)",
+        "baseFee + mod"
+      ],
+      "origin": "calculateBaseFee(view, tx)",
+      "transformations": [
+        "May be incremented by mod if baseFee is zero"
+      ],
+      "validated_at": "getFeeLevelPaid: baseFee.signum() > 0 (XRPL_ASSERT)"
+    },
+    {
+      "field": "effectiveFeePaid",
+      "flow": [
+        "feePaid + mod",
+        "effectiveFeePaid",
+        "mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee)"
+      ],
+      "origin": "feePaid + mod",
+      "transformations": [
+        "Sum of feePaid and mod"
+      ],
+      "validated_at": "getFeeLevelPaid: effectiveFeePaid.signum() <= 0"
+    },
+    {
+      "field": "mulDiv result",
+      "flow": [
+        "mulDiv(...)",
+        "FeeLevel64 (return value of getFeeLevelPaid)"
+      ],
+      "origin": "mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee)",
+      "transformations": [
+        "If mulDiv fails, value_or returns max uint64"
+      ],
+      "validated_at": "getFeeLevelPaid: .value_or(FeeLevel64(max))"
+    },
+    {
+      "field": "sfLastLedgerSequence",
+      "flow": [
+        "STTx (tx)",
+        "tx.isFieldPresent(sfLastLedgerSequence)",
+        "tx.getFieldU32(sfLastLedgerSequence)"
+      ],
+      "origin": "STTx (transaction object)",
+      "transformations": [
+        "Optional extraction"
+      ],
+      "validated_at": "getLastLedgerSequence: presence checked before extraction"
+    }
+  ],
+  "description": "Implements the transaction queue (TxQ) logic for the XRPL server, managing queuing, prioritization, and application of transactions based on fee levels, account state, and ledger conditions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "STTx field presence/type (via isFieldPresent/getFieldU32)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field STTx field presence/type (via isFieldPresent/getFieldU32) validated by XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors",
+      "issue_pattern": "Missing validation for STTx field presence/type (via isFieldPresent/getFieldU32)",
+      "why_false_positive": "XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors validates STTx field presence/type (via isFieldPresent/getFieldU32) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "XRPAmount signum (positive/zero/negative)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field XRPAmount signum (positive/zero/negative) validated by XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors",
+      "issue_pattern": "Missing validation for XRPAmount signum (positive/zero/negative)",
+      "why_false_positive": "XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors validates XRPAmount signum (positive/zero/negative) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mulDiv overflow checking",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mulDiv overflow checking validated by XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors",
+      "issue_pattern": "Missing validation for mulDiv overflow checking",
+      "why_false_positive": "XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors validates mulDiv overflow checking automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFee (transaction fee)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx[sfFee].xrp() at getFeeLevelPaid",
+      "issue_pattern": "Missing empty string validation for sfFee (transaction fee)",
+      "why_false_positive": "tx[sfFee].xrp() validates sfFee (transaction fee) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "baseFee (calculated base fee)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "calculateBaseFee(view, tx) at getFeeLevelPaid",
+      "issue_pattern": "Missing empty string validation for baseFee (calculated base fee)",
+      "why_false_positive": "calculateBaseFee(view, tx) validates baseFee (calculated base fee) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "baseFee.signum()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(baseFee.signum() > 0, ...) at getFeeLevelPaid",
+      "issue_pattern": "Missing empty string validation for baseFee.signum()",
+      "why_false_positive": "XRPL_ASSERT(baseFee.signum() > 0, ...) validates baseFee.signum() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "effectiveFeePaid.signum()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0) at getFeeLevelPaid",
+      "issue_pattern": "Missing empty string validation for effectiveFeePaid.signum()",
+      "why_false_positive": "if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0) validates effectiveFeePaid.signum() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mulDiv result",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee).value_or(...) at getFeeLevelPaid",
+      "issue_pattern": "Missing empty string validation for mulDiv result",
+      "why_false_positive": "mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee).value_or(...) validates mulDiv result for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLastLedgerSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx.isFieldPresent(sfLastLedgerSequence) at getLastLedgerSequence",
+      "issue_pattern": "Missing empty string validation for sfLastLedgerSequence",
+      "why_false_positive": "tx.isFieldPresent(sfLastLedgerSequence) validates sfLastLedgerSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLastLedgerSequence (type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx.getFieldU32(sfLastLedgerSequence) at getLastLedgerSequence",
+      "issue_pattern": "Missing empty string validation for sfLastLedgerSequence (type)",
+      "why_false_positive": "tx.getFieldU32(sfLastLedgerSequence) validates sfLastLedgerSequence (type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfLastLedgerSequence (type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "tx.getFieldU32(sfLastLedgerSequence) at getLastLedgerSequence",
+      "issue_pattern": "Missing type validation for sfLastLedgerSequence (type)",
+      "why_false_positive": "tx.getFieldU32(sfLastLedgerSequence) validates sfLastLedgerSequence (type) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mulDiv result (increase)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "mulDiv(level, 100 + increasePercent, 100).value_or(...) at increase",
+      "issue_pattern": "Missing empty string validation for mulDiv result (increase)",
+      "why_false_positive": "mulDiv(level, 100 + increasePercent, 100).value_or(...) validates mulDiv result (increase) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feeLevels.size() == size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(size == feeLevels.size(), ...) at TxQ::FeeMetrics::update",
+      "issue_pattern": "Missing empty string validation for feeLevels.size() == size",
+      "why_false_positive": "XRPL_ASSERT(size == feeLevels.size(), ...) validates feeLevels.size() == size for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/TxQ.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 8,
+      "name": "getFeeLevelPaid"
+    },
+    {
+      "args": [
+        "STTx const& tx"
+      ],
+      "lineno": 29,
+      "name": "getLastLedgerSequence"
+    },
+    {
+      "args": [
+        "FeeLevel64 level",
+        "std::uint32_t increasePercent"
+      ],
+      "lineno": 37,
+      "name": "increase"
+    },
+    {
+      "args": [
+        "Application& app",
+        "ReadView const& view",
+        "bool timeLeap",
+        "TxQ::Setup const& setup"
+      ],
+      "lineno": 44,
+      "name": "TxQ::FeeMetrics::update"
+    },
+    {
+      "args": [
+        "Snapshot const& snapshot",
+        "OpenView const& view"
+      ],
+      "lineno": 109,
+      "name": "TxQ::FeeMetrics::scaleFeeLevel"
+    },
+    {
+      "args": [
+        "std::size_t xIn"
+      ],
+      "lineno": 124,
+      "name": "sumOfFirstSquares"
+    },
+    {
+      "args": [
+        "Snapshot const& snapshot",
+        "OpenView const& view",
+        "std::size_t extraCount",
+        "std::size_t seriesSize"
+      ],
+      "lineno": 151,
+      "name": "TxQ::FeeMetrics::escalatedSeriesFeeLevel"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& txn_",
+        "TxID const& txID_",
+        "FeeLevel64 feeLevel_",
+        "ApplyFlags const flags_",
+        "PreflightResult const& pfResult_"
+      ],
+      "lineno": 185,
+      "name": "TxQ::MaybeTx::MaybeTx"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "beast::Journal j"
+      ],
+      "lineno": 194,
+      "name": "TxQ::MaybeTx::apply"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 210,
+      "name": "TxQ::TxQAccount::TxQAccount"
+    },
+    {
+      "args": [
+        "AccountID const& account_"
+      ],
+      "lineno": 213,
+      "name": "TxQ::TxQAccount::TxQAccount"
+    },
+    {
+      "args": [
+        "SeqProxy seqProx"
+      ],
+      "lineno": 216,
+      "name": "TxQ::TxQAccount::getPrevTx"
+    },
+    {
+      "args": [
+        "MaybeTx&& txn"
+      ],
+      "lineno": 225,
+      "name": "TxQ::TxQAccount::add"
+    },
+    {
+      "args": [
+        "SeqProxy seqProx"
+      ],
+      "lineno": 236,
+      "name": "TxQ::TxQAccount::remove"
+    },
+    {
+      "args": [
+        "Setup const& setup",
+        "beast::Journal j"
+      ],
+      "lineno": 243,
+      "name": "TxQ::TxQ"
+    },
+    {
+      "args": [],
+      "lineno": 247,
+      "name": "TxQ::~TxQ"
+    },
+    {
+      "args": [],
+      "lineno": 250,
+      "name": "TxQ::isFull"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "ApplyFlags const flags",
+        "OpenView const& view",
+        "std::shared_ptr<SLE const> const& sleAccount",
+        "AccountMap::iterator const& accountIter",
+        "std::optional<TxQAccount::TxMap::iterator> const& replacementIter",
+        "std::lock_guard<std::mutex> const& lock"
+      ],
+      "lineno": 258,
+      "name": "TxQ::canBeHeld"
+    },
+    {
+      "args": [
+        "TxQ::FeeMultiSet::const_iterator_type candidateIter"
+      ],
+      "lineno": 292,
+      "name": "TxQ::erase"
+    },
+    {
+      "args": [
+        "TxQ::FeeMultiSet::const_iterator_type candidateIter"
+      ],
+      "lineno": 303,
+      "name": "TxQ::eraseAndAdvance"
+    },
+    {
+      "args": [
+        "TxQ::TxQAccount& txQAccount",
+        "TxQ::TxQAccount::TxMap::const_iterator begin",
+        "TxQ::TxQAccount::TxMap::const_iterator end"
+      ],
+      "lineno": 324,
+      "name": "TxQ::erase"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "STTx const& tx",
+        "TxQ::AccountMap::iterator const& accountIter",
+        "TxQAccount::TxMap::iterator beginTxIter",
+        "FeeLevel64 feeLevelPaid",
+        "PreflightResult const& pfResult",
+        "std::size_t const txExtraCount",
+        "ApplyFlags flags",
+        "FeeMetrics::Snapshot const& metricsSnapshot",
+        "beast::Journal j"
+      ],
+      "lineno": 335,
+      "name": "TxQ::tryClearAccountQueueUpThruTx"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "std::shared_ptr<STTx const> const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 441,
+      "name": "TxQ::apply"
+    },
+    {
+      "args": [
+        "Application& app",
+        "ReadView const& view",
+        "bool timeLeap"
+      ],
+      "lineno": 803,
+      "name": "TxQ::processClosedLedger"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view"
+      ],
+      "lineno": 849,
+      "name": "TxQ::accept"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sleAccount"
+      ],
+      "lineno": 1012,
+      "name": "TxQ::nextQueuableSeq"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sleAccount",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 1020,
+      "name": "TxQ::nextQueuableSeqImpl"
+    },
+    {
+      "args": [
+        "OpenView& view",
+        "ApplyFlags flags",
+        "FeeMetrics::Snapshot const& metricsSnapshot",
+        "std::lock_guard<std::mutex> const& lock"
+      ],
+      "lineno": 1052,
+      "name": "TxQ::getRequiredFeeLevel"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "std::shared_ptr<STTx const> const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 1060,
+      "name": "TxQ::tryDirectApply"
+    },
+    {
+      "args": [
+        "std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter",
+        "std::shared_ptr<STTx const> const& tx"
+      ],
+      "lineno": 1107,
+      "name": "TxQ::removeFromByFee"
+    },
+    {
+      "args": [
+        "OpenView const& view"
+      ],
+      "lineno": 1126,
+      "name": "TxQ::getMetrics"
+    },
+    {
+      "args": [
+        "OpenView const& view",
+        "std::shared_ptr<STTx const> const& tx"
+      ],
+      "lineno": 1145,
+      "name": "TxQ::getTxRequiredFeeAndSeq"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 1162,
+      "name": "TxQ::getAccountTxs"
+    },
+    {
+      "args": [],
+      "lineno": 1177,
+      "name": "TxQ::getTxs"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 1190,
+      "name": "TxQ::doRPC"
+    },
+    {
+      "args": [
+        "Config const& config"
+      ],
+      "lineno": 1232,
+      "name": "setup_TxQ"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 122,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic (fee calculation, signum checks, mulDiv error handling) is likely covered by unit tests in the rippled codebase, especially in files like TxQ_test.cpp, FeeMetrics_test.cpp, and possibly STTx_test.cpp. However, edge cases such as zero or negative fees, baseFee calculation anomalies, and mulDiv overflow/underflow may not be exhaustively tested. There is no direct evidence in this file of test hooks or coverage annotations. Integration tests that exercise transaction submission and queueing (e.g., via RPC or ledger simulation) would also indirectly test these paths. Gaps may exist for rare error paths (e.g., mulDiv failure, baseFee == 0, or mod logic).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "STTx field presence/type (via isFieldPresent/getFieldU32)",
+      "XRPAmount signum (positive/zero/negative)",
+      "mulDiv overflow checking"
+    ],
+    "framework": "XRPL protocol (STTx, XRPAmount, XRPL_ASSERT, mulDiv), custom assertion and type-safe accessors",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "If feePaid is not present or not convertible, likely throws exception from STTx accessor",
+      "field": "sfFee (transaction fee)",
+      "location": "getFeeLevelPaid",
+      "validated_by": "tx[sfFee].xrp()",
+      "validates": [
+        "Ensures sfFee field is present and convertible to XRPAmount"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "If calculation fails, may throw exception from calculateBaseFee",
+      "field": "baseFee (calculated base fee)",
+      "location": "getFeeLevelPaid",
+      "validated_by": "calculateBaseFee(view, tx)",
+      "validates": [
+        "Ensures baseFee is calculated and is a valid XRPAmount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "baseFee.signum()",
+      "location": "getFeeLevelPaid",
+      "validated_by": "XRPL_ASSERT(baseFee.signum() > 0, ...)",
+      "validates": [
+        "baseFee must be positive"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns FeeLevel64(0) (not exception, but error value)",
+      "field": "effectiveFeePaid.signum()",
+      "location": "getFeeLevelPaid",
+      "validated_by": "if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0)",
+      "validates": [
+        "effectiveFeePaid must be positive"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "If mulDiv fails (overflow), returns max FeeLevel64",
+      "field": "mulDiv result",
+      "location": "getFeeLevelPaid",
+      "validated_by": "mulDiv(effectiveFeePaid, TxQ::baseLevel, baseFee).value_or(...)",
+      "validates": [
+        "Checks for overflow in fee calculation"
+      ],
+      "validation_type": "range|overflow"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns std::nullopt if not present",
+      "field": "sfLastLedgerSequence",
+      "location": "getLastLedgerSequence",
+      "validated_by": "tx.isFieldPresent(sfLastLedgerSequence)",
+      "validates": [
+        "Checks if sfLastLedgerSequence field is present"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "If field is present but not uint32, likely throws from STTx",
+      "field": "sfLastLedgerSequence (type)",
+      "location": "getLastLedgerSequence",
+      "validated_by": "tx.getFieldU32(sfLastLedgerSequence)",
+      "validates": [
+        "Ensures sfLastLedgerSequence is a uint32"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "If mulDiv fails (overflow), returns xrpl::muldiv_max",
+      "field": "mulDiv result (increase)",
+      "location": "increase",
+      "validated_by": "mulDiv(level, 100 + increasePercent, 100).value_or(...)",
+      "validates": [
+        "Checks for overflow in fee level increase calculation"
+      ],
+      "validation_type": "range|overflow"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "feeLevels.size() == size",
+      "location": "TxQ::FeeMetrics::update",
+      "validated_by": "XRPL_ASSERT(size == feeLevels.size(), ...)",
+      "validates": [
+        "Ensures number of fee levels matches number of transactions"
+      ],
+      "validation_type": "business_logic|consistency"
+    }
+  ]
+}

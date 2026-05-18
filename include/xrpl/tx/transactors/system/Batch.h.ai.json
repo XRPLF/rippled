@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ReadView const& view"
+    },
+    {
+      "lineno": 16,
+      "name": "STTx const& tx"
+    },
+    {
+      "lineno": 19,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 22,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 25,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 28,
+      "name": "PreclaimContext const& ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 8,
+      "name": "Batch"
+    }
+  ],
+  "description": "Defines the Batch transaction type for the XRPL, including its interface, fee calculation, flag masking, preflight checks, and disabled transaction types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/system/Batch.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 12,
+      "name": "Batch"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 16,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "preflightSigValidated"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "checkSign"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doBookChanges",
+        "RPC::lookupLedger",
+        "RPC::computeBookChanges"
+      ],
+      "entry_point": "doBookChanges",
+      "purpose": "Handles the 'book_changes' RPC request: validates the ledger context, then computes and returns book changes for the specified ledger.",
+      "validation_points": [
+        "RPC::lookupLedger"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger",
+      "flow": [
+        "context",
+        "RPC::lookupLedger (validates and assigns to ledger)",
+        "doBookChanges (checks ledger != nullptr)",
+        "RPC::computeBookChanges (uses ledger)"
+      ],
+      "origin": "context (RPC::JsonContext) - likely from user RPC request parameters",
+      "transformations": [
+        "Validated and resolved from context by RPC::lookupLedger",
+        "Checked for nullptr in doBookChanges"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "result",
+      "flow": [
+        "RPC::lookupLedger (returns result if ledger invalid)",
+        "doBookChanges (returns result if ledger == nullptr)"
+      ],
+      "origin": "RPC::lookupLedger",
+      "transformations": [
+        "May contain error information if ledger lookup fails"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    }
+  ],
+  "description": "Implements the doBookChanges RPC handler, which retrieves and returns book changes from a specified ledger in the XRPL system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger identifier (hash, index, etc.) in context",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger identifier (hash, index, etc.) in context validated by xrpld RPC framework (custom, not external)",
+      "issue_pattern": "Missing validation for ledger identifier (hash, index, etc.) in context",
+      "why_false_positive": "xrpld RPC framework (custom, not external) validates ledger identifier (hash, index, etc.) in context automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "ledger (from context)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doBookChanges",
+      "issue_pattern": "Missing empty string validation for ledger (from context)",
+      "why_false_positive": "RPC::lookupLedger validates ledger (from context) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/BookChanges.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doBookChanges"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this handler would typically be found in RPC integration or unit tests, possibly under files like 'BookChanges_test.cpp', 'OrderBook_test.cpp', or generic RPC handler test suites. The critical validation path (ledger lookup and validation) is covered if tests provide both valid and invalid ledger parameters. Gaps may exist if edge cases (e.g., malformed context, missing ledger fields, or computeBookChanges error handling) are not explicitly tested. No test files are referenced in the provided code, so coverage must be verified in the broader codebase.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger identifier (hash, index, etc.) in context"
+    ],
+    "framework": "xrpld RPC framework (custom, not external)",
+    "validation_layer": "entry_point (handler function doBookChanges)"
+  },
+  "validations": [
+    {
+      "confidence": 0.95,
+      "error_thrown": "Returns error JSON (not exception); ledger remains nullptr",
+      "field": "ledger (from context)",
+      "location": "doBookChanges",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "Checks if requested ledger exists and is accessible",
+        "Validates ledger identifier (hash, index, etc.) from context",
+        "Ensures ledger pointer is set if valid"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

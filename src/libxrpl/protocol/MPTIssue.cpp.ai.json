@@ -1,0 +1,492 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "issuanceID"
+    },
+    {
+      "lineno": 17,
+      "name": "sequence"
+    },
+    {
+      "lineno": 17,
+      "name": "account"
+    },
+    {
+      "lineno": 35,
+      "name": "jv"
+    },
+    {
+      "lineno": 40,
+      "name": "mptIssue"
+    },
+    {
+      "lineno": 51,
+      "name": "v"
+    },
+    {
+      "lineno": 74,
+      "name": "os"
+    },
+    {
+      "lineno": 74,
+      "name": "x"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "MPTID const& issuanceID",
+        "std::uint32_t sequence, AccountID const& account"
+      ],
+      "lineno": 13,
+      "name": "MPTIssue"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "mptIssueFromJson",
+        "MPTID::parseHex",
+        "MPTIssue::MPTIssue"
+      ],
+      "entry_point": "mptIssueFromJson",
+      "purpose": "Constructs an MPTIssue from a JSON object, validating input and parsing the mpt_issuance_id.",
+      "validation_points": [
+        "mptIssueFromJson: v.isObject() - checks input is a JSON object",
+        "mptIssueFromJson: v.isMember(jss::currency) || v.isMember(jss::issuer) - ensures forbidden fields are absent",
+        "mptIssueFromJson: idStr.isString() - checks mpt_issuance_id is a string",
+        "MPTID::parseHex - validates mpt_issuance_id string is a valid hex"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTIssue::getIssuer"
+      ],
+      "entry_point": "MPTIssue::getIssuer",
+      "purpose": "Extracts the issuer AccountID from the MPTID.",
+      "validation_points": [
+        "static_assert(sizeof(MPTID) == (sizeof(std::uint32_t) + sizeof(AccountID))) - compile-time layout validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_json",
+        "MPTIssue::setJson"
+      ],
+      "entry_point": "to_json",
+      "purpose": "Serializes an MPTIssue to JSON.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "to_string",
+        "MPTIssue::getMptID",
+        "to_string(MPTID)"
+      ],
+      "entry_point": "to_string",
+      "purpose": "Converts an MPTIssue to its string representation.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "v (input JSON)",
+      "flow": [
+        "External JSON input",
+        "mptIssueFromJson (validation: isObject, forbidden fields, mpt_issuance_id presence/type)",
+        "idStr (mpt_issuance_id field)",
+        "MPTID::parseHex (validation: hex format)",
+        "MPTIssue::MPTIssue (constructs object)"
+      ],
+      "origin": "External input to mptIssueFromJson",
+      "transformations": [
+        "Checked for object type",
+        "Checked for forbidden fields",
+        "Extracted as string",
+        "Parsed from hex to MPTID"
+      ],
+      "validated_at": "mptIssueFromJson (multiple points), MPTID::parseHex"
+    },
+    {
+      "field": "mpt_issuance_id",
+      "flow": [
+        "JSON input",
+        "Extracted as idStr",
+        "Validated as string",
+        "Parsed by MPTID::parseHex",
+        "Stored in MPTIssue::mptID_"
+      ],
+      "origin": "v[jss::mpt_issuance_id] in input JSON",
+      "transformations": [
+        "Type checked (isString)",
+        "Parsed from hex string to MPTID"
+      ],
+      "validated_at": "mptIssueFromJson (isString), MPTID::parseHex"
+    },
+    {
+      "field": "MPTID layout",
+      "flow": [
+        "Compile-time static_assert in MPTIssue::getIssuer"
+      ],
+      "origin": "Definition of MPTID type",
+      "transformations": [
+        "Ensures memory layout is as expected"
+      ],
+      "validated_at": "static_assert in MPTIssue::getIssuer"
+    },
+    {
+      "field": "AccountID",
+      "flow": [
+        "MPTIssue::mptID_",
+        "reinterpret_cast to AccountID*",
+        "Returned as issuer"
+      ],
+      "origin": "Extracted from MPTID in MPTIssue::getIssuer",
+      "transformations": [
+        "Pointer arithmetic and reinterpret_cast"
+      ],
+      "validated_at": "static_assert ensures safe reinterpret_cast"
+    }
+  ],
+  "description": "Implements the MPTIssue class for representing and handling Multi-Party Trust (MPT) issuance identifiers in the XRPL protocol, including construction, serialization, deserialization, and JSON conversion.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "v (input JSON)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual type check at mptIssueFromJson",
+      "issue_pattern": "Missing empty string validation for v (input JSON)",
+      "why_false_positive": "manual type check validates v (input JSON) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "v (input JSON)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual type check at mptIssueFromJson",
+      "issue_pattern": "Missing type validation for v (input JSON)",
+      "why_false_positive": "manual type check validates v (input JSON) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "v (input JSON)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual field presence check at mptIssueFromJson",
+      "issue_pattern": "Missing empty string validation for v (input JSON)",
+      "why_false_positive": "manual field presence check validates v (input JSON) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mpt_issuance_id (in v)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual type check at mptIssueFromJson",
+      "issue_pattern": "Missing empty string validation for mpt_issuance_id (in v)",
+      "why_false_positive": "manual type check validates mpt_issuance_id (in v) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mpt_issuance_id (in v)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual type check at mptIssueFromJson",
+      "issue_pattern": "Missing type validation for mpt_issuance_id (in v)",
+      "why_false_positive": "manual type check validates mpt_issuance_id (in v) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mpt_issuance_id (in v)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "MPTID::parseHex at mptIssueFromJson",
+      "issue_pattern": "Missing empty string validation for mpt_issuance_id (in v)",
+      "why_false_positive": "MPTID::parseHex validates mpt_issuance_id (in v) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mpt_issuance_id (in v)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "MPTID::parseHex at mptIssueFromJson",
+      "issue_pattern": "Missing format validation for mpt_issuance_id (in v)",
+      "why_false_positive": "MPTID::parseHex validates mpt_issuance_id (in v) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTID layout",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at MPTIssue::getIssuer",
+      "issue_pattern": "Missing empty string validation for MPTID layout",
+      "why_false_positive": "static_assert validates MPTID layout for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "MPTID layout",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert at MPTIssue::getIssuer",
+      "issue_pattern": "Missing type validation for MPTID layout",
+      "why_false_positive": "static_assert validates MPTID layout type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/MPTIssue.cpp",
+  "functions": [
+    {
+      "args": [
+        "MPTID const& issuanceID"
+      ],
+      "lineno": 13,
+      "name": "MPTIssue::MPTIssue"
+    },
+    {
+      "args": [
+        "std::uint32_t sequence",
+        "AccountID const& account"
+      ],
+      "lineno": 17,
+      "name": "MPTIssue::MPTIssue"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "MPTIssue::getIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "MPTIssue::getText"
+    },
+    {
+      "args": [
+        "Json::Value& jv"
+      ],
+      "lineno": 35,
+      "name": "MPTIssue::setJson"
+    },
+    {
+      "args": [
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 40,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 47,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Json::Value const& v"
+      ],
+      "lineno": 51,
+      "name": "mptIssueFromJson"
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "MPTIssue const& x"
+      ],
+      "lineno": 74,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code relies on exceptions for error handling, which suggests that negative test cases (invalid JSON, missing fields, bad hex) should be tested. Typical test files would be in the unit test suite for protocol or MPTIssue, e.g., test/protocol/MPTIssue_test.cpp or similar. However, from the code provided, there is no direct evidence of test coverage. Gaps may include: (1) No explicit tests for forbidden fields (currency/issuer), (2) No tests for malformed or non-string mpt_issuance_id, (3) No tests for invalid hex in mpt_issuance_id, (4) No tests for correct extraction of AccountID from MPTID. Test coverage should ensure all validation branches throw as expected and that valid input is accepted.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation, with jss:: for JSON field names, Throw<> for error handling",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw)",
+      "field": "v (input JSON)",
+      "location": "mptIssueFromJson",
+      "validated_by": "manual type check",
+      "validates": [
+        "Checks that v is a JSON object"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw)",
+      "field": "v (input JSON)",
+      "location": "mptIssueFromJson",
+      "validated_by": "manual field presence check",
+      "validates": [
+        "Checks that v does NOT have 'currency' or 'issuer' fields"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Json::error (via Throw)",
+      "field": "mpt_issuance_id (in v)",
+      "location": "mptIssueFromJson",
+      "validated_by": "manual type check",
+      "validates": [
+        "Checks that mpt_issuance_id is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Json::error (via Throw)",
+      "field": "mpt_issuance_id (in v)",
+      "location": "mptIssueFromJson",
+      "validated_by": "MPTID::parseHex",
+      "validates": [
+        "Checks that mpt_issuance_id string is a valid hex representation for MPTID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error",
+      "field": "MPTID layout",
+      "location": "MPTIssue::getIssuer",
+      "validated_by": "static_assert",
+      "validates": [
+        "Checks that MPTID is exactly sizeof(uint32_t) + sizeof(AccountID)"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

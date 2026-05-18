@@ -1,0 +1,34 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "ResolverAsio"
+    }
+  ],
+  "description": "Defines the ResolverAsio class, an implementation of the Resolver interface using Boost.Asio for asynchronous network resolution in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/ResolverAsio.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "ResolverAsio"
+    },
+    {
+      "args": [
+        "boost::asio::io_context&",
+        "beast::Journal"
+      ],
+      "lineno": 12,
+      "name": "New"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

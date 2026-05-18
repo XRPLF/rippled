@@ -1,0 +1,604 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "ctx"
+    },
+    {
+      "lineno": 28,
+      "name": "ctx"
+    },
+    {
+      "lineno": 210,
+      "name": "from"
+    },
+    {
+      "lineno": 210,
+      "name": "to"
+    },
+    {
+      "lineno": 210,
+      "name": "amount"
+    },
+    {
+      "lineno": 232,
+      "name": "buyer"
+    },
+    {
+      "lineno": 232,
+      "name": "seller"
+    },
+    {
+      "lineno": 232,
+      "name": "nftokenID"
+    },
+    {
+      "lineno": 273,
+      "name": "offer"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenAcceptOffer::doApply",
+        "NFTokenAcceptOffer::acceptOffer",
+        "NFTokenAcceptOffer::pay",
+        "NFTokenAcceptOffer::transferNFToken"
+      ],
+      "entry_point": "NFTokenAcceptOffer::doApply",
+      "purpose": "Executes the main logic for accepting an NFT offer, including payment and token transfer.",
+      "validation_points": [
+        "NFTokenAcceptOffer::preflight",
+        "NFTokenAcceptOffer::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenAcceptOffer::preflight"
+      ],
+      "entry_point": "NFTokenAcceptOffer::preflight",
+      "purpose": "Performs initial stateless validation of the transaction fields before any ledger access.",
+      "validation_points": [
+        "NFTokenAcceptOffer::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenAcceptOffer::preclaim"
+      ],
+      "entry_point": "NFTokenAcceptOffer::preclaim",
+      "purpose": "Performs stateful validation, checking existence and correctness of referenced offers.",
+      "validation_points": [
+        "NFTokenAcceptOffer::preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfNFTokenBuyOffer",
+      "flow": [
+        "Transaction input",
+        "NFTokenAcceptOffer::preflight (checked for presence)",
+        "NFTokenAcceptOffer::preclaim (passed to checkOffer lambda)",
+        "checkOffer: offer existence, zero check, expiration, amount sign",
+        "Used in doApply for offer processing"
+      ],
+      "origin": "ctx.tx[~sfNFTokenBuyOffer] (transaction input)",
+      "transformations": [
+        "Optional presence check",
+        "Offer SLE lookup",
+        "Validation of offer fields"
+      ],
+      "validated_at": "preflight, preclaim"
+    },
+    {
+      "field": "sfNFTokenSellOffer",
+      "flow": [
+        "Transaction input",
+        "NFTokenAcceptOffer::preflight (checked for presence)",
+        "NFTokenAcceptOffer::preclaim (passed to checkOffer lambda)",
+        "checkOffer: offer existence, zero check, expiration, amount sign",
+        "Used in doApply for offer processing"
+      ],
+      "origin": "ctx.tx[~sfNFTokenSellOffer] (transaction input)",
+      "transformations": [
+        "Optional presence check",
+        "Offer SLE lookup",
+        "Validation of offer fields"
+      ],
+      "validated_at": "preflight, preclaim"
+    },
+    {
+      "field": "sfNFTokenBrokerFee",
+      "flow": [
+        "Transaction input",
+        "NFTokenAcceptOffer::preflight (checked for presence, value > 0, only in brokered mode)",
+        "Used in doApply for broker fee calculation"
+      ],
+      "origin": "ctx.tx[~sfNFTokenBrokerFee] (transaction input)",
+      "transformations": [
+        "Optional presence check",
+        "Value comparison (must be > 0)",
+        "Checked only if both buy and sell offers are present"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfAmount (in offer SLE)",
+      "flow": [
+        "Offer SLE (ledger)",
+        "checkOffer: negative check",
+        "preclaim: asset match, payment sufficiency",
+        "doApply: payment logic"
+      ],
+      "origin": "Offer SLE (from ledger, via checkOffer)",
+      "transformations": [
+        "Negative value check",
+        "Asset comparison",
+        "Payment amount comparison"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfNFTokenID",
+      "flow": [
+        "Offer SLE (ledger)",
+        "preclaim: buy/sell offer token ID match"
+      ],
+      "origin": "Offer SLE (from ledger, via checkOffer)",
+      "transformations": [
+        "Equality check between buy and sell offers"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "Offer SLE (ledger)",
+        "preclaim: check for offer loop (owner equality)"
+      ],
+      "origin": "Offer SLE (from ledger, via checkOffer)",
+      "transformations": [
+        "Equality check between buy and sell offer owners"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "Offer SLE (ledger)",
+        "preclaim: if present, must match submitting account"
+      ],
+      "origin": "Offer SLE (from ledger, via checkOffer)",
+      "transformations": [
+        "Optional presence check",
+        "Equality check with submitting account"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "Offer SLE (ledger)",
+        "checkOffer: hasExpired check",
+        "preclaim: may return tecEXPIRED or allow to proceed to doApply"
+      ],
+      "origin": "Offer SLE (from ledger, via checkOffer)",
+      "transformations": [
+        "Expiration check (current time vs. expiration field)"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the logic for accepting NFT offers on the XRPL ledger, including preflight, preclaim, payment, NFT transfer, and offer acceptance, with checks for offer validity, permissions, trustlines, and reserve requirements.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (!bo && !so)) at NFTokenAcceptOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "why_false_positive": "explicit check (if (!bo && !so)) validates sfNFTokenBuyOffer, sfNFTokenSellOffer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenBrokerFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])) at NFTokenAcceptOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenBrokerFee",
+      "why_false_positive": "explicit check (if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])) validates sfNFTokenBrokerFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenBrokerFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (*bf <= beast::zero)) at NFTokenAcceptOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenBrokerFee",
+      "why_false_positive": "explicit check (if (*bf <= beast::zero)) validates sfNFTokenBrokerFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfNFTokenBrokerFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (if (*bf <= beast::zero)) at NFTokenAcceptOffer::preflight",
+      "issue_pattern": "Missing range validation for sfNFTokenBrokerFee",
+      "why_false_positive": "explicit check (if (*bf <= beast::zero)) validates sfNFTokenBrokerFee range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkOffer lambda (if (id->isZero())) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "why_false_positive": "checkOffer lambda (if (id->isZero())) validates sfNFTokenBuyOffer, sfNFTokenSellOffer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "checkOffer lambda (if (id->isZero())) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing format validation for sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "why_false_positive": "checkOffer lambda (if (id->isZero())) validates sfNFTokenBuyOffer, sfNFTokenSellOffer format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkOffer lambda (if (!offerSLE)) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "why_false_positive": "checkOffer lambda (if (!offerSLE)) validates sfNFTokenBuyOffer, sfNFTokenSellOffer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasExpired(ctx.view, (*offerSLE)[~sfExpiration]) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "hasExpired(ctx.view, (*offerSLE)[~sfExpiration]) validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*offerSLE)[sfAmount].negative() at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "(*offerSLE)[sfAmount].negative() validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "(*offerSLE)[sfAmount].negative() at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "(*offerSLE)[sfAmount].negative() validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID (of bo and so)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if ((*bo)[sfNFTokenID] != (*so)[sfNFTokenID]) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID (of bo and so)",
+      "why_false_positive": "if ((*bo)[sfNFTokenID] != (*so)[sfNFTokenID]) validates sfNFTokenID (of bo and so) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.asset() (of bo and so)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset()) at NFTokenAcceptOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAmount.asset() (of bo and so)",
+      "why_false_positive": "if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset()) validates sfAmount.asset() (of bo and so) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenAcceptOffer.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "NFTokenAcceptOffer::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "NFTokenAcceptOffer::preclaim"
+    },
+    {
+      "args": [
+        "AccountID const& from",
+        "AccountID const& to",
+        "STAmount const& amount"
+      ],
+      "lineno": 210,
+      "name": "NFTokenAcceptOffer::pay"
+    },
+    {
+      "args": [
+        "AccountID const& buyer",
+        "AccountID const& seller",
+        "uint256 const& nftokenID"
+      ],
+      "lineno": 232,
+      "name": "NFTokenAcceptOffer::transferNFToken"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& offer"
+      ],
+      "lineno": 273,
+      "name": "NFTokenAcceptOffer::acceptOffer"
+    },
+    {
+      "args": [],
+      "lineno": 299,
+      "name": "NFTokenAcceptOffer::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is typically covered by unit/integration tests in the rippled codebase, especially in files like 'test/tx/NFTokenAcceptOffer_test.cpp' or similar. These tests likely cover: missing/invalid buy/sell offer IDs, broker fee presence/amount, offer existence, expiration, negative amounts, asset/token ID mismatches, and permission checks. However, edge cases such as malformed broker fee values, expired offers with/without the fixExpiredNFTokenOfferRemoval amendment, and destination mismatches may not be exhaustively tested. Tests for all possible error codes (temMALFORMED, tecOBJECT_NOT_FOUND, tecEXPIRED, temBAD_OFFER, tecNFTOKEN_BUY_SELL_MISMATCH, tecCANT_ACCEPT_OWN_NFTOKEN_OFFER, tecINSUFFICIENT_PAYMENT, tecNO_PERMISSION) should be verified for coverage. Gaps may exist for amendment-specific behaviors and rare malformed input combinations.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "location": "NFTokenAcceptOffer::preflight",
+      "validated_by": "explicit check (if (!bo && !so))",
+      "validates": [
+        "At least one of sfNFTokenBuyOffer or sfNFTokenSellOffer must be specified"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfNFTokenBrokerFee",
+      "location": "NFTokenAcceptOffer::preflight",
+      "validated_by": "explicit check (if (auto const bf = ctx.tx[~sfNFTokenBrokerFee]))",
+      "validates": [
+        "BrokerFee must not be present in direct mode (must have both bo and so if present)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfNFTokenBrokerFee",
+      "location": "NFTokenAcceptOffer::preflight",
+      "validated_by": "explicit check (if (*bf <= beast::zero))",
+      "validates": [
+        "BrokerFee must be greater than zero if present"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "checkOffer lambda (if (id->isZero()))",
+      "validates": [
+        "Offer ID must not be zero"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfNFTokenBuyOffer, sfNFTokenSellOffer",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "checkOffer lambda (if (!offerSLE))",
+      "validates": [
+        "Offer must exist in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecEXPIRED (if amendment not enabled)",
+      "field": "sfExpiration",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "hasExpired(ctx.view, (*offerSLE)[~sfExpiration])",
+      "validates": [
+        "Offer must not be expired (unless fixExpiredNFTokenOfferRemoval is enabled)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_OFFER",
+      "field": "sfAmount",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "(*offerSLE)[sfAmount].negative()",
+      "validates": [
+        "Offer amount must not be negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNFTOKEN_BUY_SELL_MISMATCH",
+      "field": "sfNFTokenID (of bo and so)",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "if ((*bo)[sfNFTokenID] != (*so)[sfNFTokenID])",
+      "validates": [
+        "Buy and sell offers must be for the same NFToken"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNFTOKEN_BUY_SELL_MISMATCH",
+      "field": "sfAmount.asset() (of bo and so)",
+      "location": "NFTokenAcceptOffer::preclaim",
+      "validated_by": "if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset())",
+      "validates": [
+        "Buy and sell offers must be for the same asset"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

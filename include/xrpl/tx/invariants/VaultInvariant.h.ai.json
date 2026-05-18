@@ -1,0 +1,51 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "ValidVault"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "Vault"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "Shares"
+    }
+  ],
+  "description": "Defines the ValidVault invariant check for XRPL, ensuring the consistency and correctness of Vault objects and MPTokenIssuance for vault shares during ledger transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/VaultInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 54,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 57,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "view"
+    },
+    {
+      "lineno": 9,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 10,
+      "name": "tradingFee"
+    },
+    {
+      "lineno": 11,
+      "name": "in"
+    },
+    {
+      "lineno": 12,
+      "name": "out"
+    },
+    {
+      "lineno": 13,
+      "name": "ammContext"
+    },
+    {
+      "lineno": 14,
+      "name": "j"
+    },
+    {
+      "lineno": 35,
+      "name": "balances"
+    },
+    {
+      "lineno": 82,
+      "name": "out"
+    },
+    {
+      "lineno": 82,
+      "name": "asset"
+    },
+    {
+      "lineno": 89,
+      "name": "rules"
+    },
+    {
+      "lineno": 109,
+      "name": "clobQuality"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "tradingFee",
+        "in",
+        "out",
+        "ammContext",
+        "j"
+      ],
+      "lineno": 7,
+      "name": "AMMLiquidity"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMLiquidity::AMMLiquidity",
+        "AMMLiquidity::fetchBalances"
+      ],
+      "entry_point": "AMMLiquidity::AMMLiquidity (constructor)",
+      "purpose": "Initializes AMMLiquidity object and fetches/validates AMM account balances for assetIn and assetOut.",
+      "validation_points": [
+        "AMMLiquidity::fetchBalances: Validates amountIn and amountOut >= 0, throws std::runtime_error if invalid"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMLiquidity::generateFibSeqOffer"
+      ],
+      "entry_point": "AMMLiquidity::generateFibSeqOffer",
+      "purpose": "Generates an AMM offer using a Fibonacci sequence scaling, validates output amount and iteration limits.",
+      "validation_points": [
+        "AMMLiquidity::generateFibSeqOffer: XRPL_ASSERT on !ammContext_.maxItersReached()",
+        "AMMLiquidity::generateFibSeqOffer: Throws std::overflow_error if cur.out >= balances.out"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMLiquidity::maxOffer",
+        "maxOut",
+        "toAmount"
+      ],
+      "entry_point": "AMMLiquidity::maxOffer",
+      "purpose": "Calculates the maximum offer the AMM can provide, with validation on output amount.",
+      "validation_points": [
+        "AMMLiquidity::maxOffer: Checks out <= 0 or out >= balances.out, returns std::nullopt if invalid"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "amountIn",
+      "flow": [
+        "fetchBalances",
+        "TAmounts{get<TIn>(amountIn), ...}",
+        "initialBalances_ (constructor)",
+        "used in generateFibSeqOffer, maxOffer, etc."
+      ],
+      "origin": "ammAccountHolds(view, ammAccountID_, assetIn_) in fetchBalances",
+      "transformations": [
+        "Converted to TIn via get<TIn>()",
+        "Used in swapAssetIn, toAmount, etc."
+      ],
+      "validated_at": "fetchBalances: if (amountIn < beast::zero) Throw<std::runtime_error>"
+    },
+    {
+      "field": "amountOut",
+      "flow": [
+        "fetchBalances",
+        "TAmounts{..., get<TOut>(amountOut)}",
+        "initialBalances_ (constructor)",
+        "used in generateFibSeqOffer, maxOffer, etc."
+      ],
+      "origin": "ammAccountHolds(view, ammAccountID_, assetOut_) in fetchBalances",
+      "transformations": [
+        "Converted to TOut via get<TOut>()",
+        "Used in swapAssetOut, toAmount, etc."
+      ],
+      "validated_at": "fetchBalances: if (amountOut < beast::zero) Throw<std::runtime_error>"
+    },
+    {
+      "field": "cur.out",
+      "flow": [
+        "generateFibSeqOffer: cur.out assigned",
+        "cur.out scaled by Fibonacci factor",
+        "cur.out validated against balances.out"
+      ],
+      "origin": "swapAssetIn(initialBalances_, cur.in, tradingFee_) in generateFibSeqOffer",
+      "transformations": [
+        "Scaled by Fibonacci sequence",
+        "Converted to TOut via toAmount"
+      ],
+      "validated_at": "generateFibSeqOffer: if (cur.out >= balances.out) Throw<std::overflow_error>"
+    },
+    {
+      "field": "ammContext_.curIters()",
+      "flow": [
+        "generateFibSeqOffer: checked for 0",
+        "used as index into Fibonacci array",
+        "XRPL_ASSERT(!ammContext_.maxItersReached())"
+      ],
+      "origin": "AMMContext object passed to constructor",
+      "transformations": [
+        "Used as loop/iteration control"
+      ],
+      "validated_at": "generateFibSeqOffer: XRPL_ASSERT(!ammContext_.maxItersReached())"
+    }
+  ],
+  "description": "Implements the AMMLiquidity class template for XRPL, providing methods to fetch balances, generate offers, and interact with AMM pools for different asset types.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amountIn, amountOut (AMM account balances for assetIn and assetOut)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check and Throw<std::runtime_error> at fetchBalances",
+      "issue_pattern": "Missing empty string validation for amountIn, amountOut (AMM account balances for assetIn and assetOut)",
+      "why_false_positive": "explicit check and Throw<std::runtime_error> validates amountIn, amountOut (AMM account balances for assetIn and assetOut) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "amountIn, amountOut (AMM account balances for assetIn and assetOut)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check and Throw<std::runtime_error> at fetchBalances",
+      "issue_pattern": "Missing range validation for amountIn, amountOut (AMM account balances for assetIn and assetOut)",
+      "why_false_positive": "explicit check and Throw<std::runtime_error> validates amountIn, amountOut (AMM account balances for assetIn and assetOut) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cur.out (output amount for offer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check and Throw<std::overflow_error> at generateFibSeqOffer",
+      "issue_pattern": "Missing empty string validation for cur.out (output amount for offer)",
+      "why_false_positive": "explicit check and Throw<std::overflow_error> validates cur.out (output amount for offer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ammContext_.maxItersReached()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at generateFibSeqOffer",
+      "issue_pattern": "Missing empty string validation for ammContext_.maxItersReached()",
+      "why_false_positive": "XRPL_ASSERT macro validates ammContext_.maxItersReached() for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/AMMLiquidity.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "tradingFee",
+        "in",
+        "out",
+        "ammContext",
+        "j"
+      ],
+      "lineno": 7,
+      "name": "AMMLiquidity"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 20,
+      "name": "fetchBalances"
+    },
+    {
+      "args": [
+        "balances"
+      ],
+      "lineno": 34,
+      "name": "generateFibSeqOffer"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "maxAmount"
+    },
+    {
+      "args": [
+        "out",
+        "asset"
+      ],
+      "lineno": 81,
+      "name": "maxOut"
+    },
+    {
+      "args": [
+        "balances",
+        "rules"
+      ],
+      "lineno": 88,
+      "name": "maxOffer"
+    },
+    {
+      "args": [
+        "view",
+        "clobQuality"
+      ],
+      "lineno": 108,
+      "name": "getOffer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is likely found in unit/integration tests for AMM pathfinding and offer generation, such as 'test/tx/AMMOffer_test.cpp', 'test/tx/AMMLiquidity_test.cpp', or similar. These should cover normal and edge cases for balance validation, offer generation, and overflow/iteration errors. However, explicit negative tests for the Throw<std::runtime_error> and Throw<std::overflow_error> cases (e.g., negative balances, exceeding output) may be missing or incomplete. Tests for XRPL_ASSERT (maxItersReached) may be harder to trigger in normal test flows unless specifically targeted. Review of test files is needed to confirm coverage of all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (explicit checks, XRPL_ASSERT macro, Throw<T> utility)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"AMMLiquidity: invalid balances\")",
+      "field": "amountIn, amountOut (AMM account balances for assetIn and assetOut)",
+      "location": "fetchBalances",
+      "validated_by": "explicit check and Throw<std::runtime_error>",
+      "validates": [
+        "amountIn >= 0",
+        "amountOut >= 0"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::overflow_error (\"AMMLiquidity: generateFibSeqOffer exceeds the balance\")",
+      "field": "cur.out (output amount for offer)",
+      "location": "generateFibSeqOffer",
+      "validated_by": "explicit check and Throw<std::overflow_error>",
+      "validates": [
+        "cur.out < balances.out"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "ammContext_.maxItersReached()",
+      "location": "generateFibSeqOffer",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "maximum iterations not reached"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

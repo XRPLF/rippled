@@ -1,0 +1,975 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "STObject"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STObject(SerialIter&, SField const&, int)",
+        "set(sit, depth)",
+        "STObject(SerialIter&, SField const&, int) (recursive for nested objects)"
+      ],
+      "entry_point": "STObject(SerialIter& sit, SField const& name, int depth)",
+      "purpose": "Deserializes an STObject from a serialized stream, handling nested objects.",
+      "validation_points": [
+        "STObject(SerialIter&, SField const&, int): if (depth > 10) Throw<...> (nesting depth validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STObject(SOTemplate const&, SerialIter&, SField const&, int)",
+        "set(sit)",
+        "applyTemplate(type)"
+      ],
+      "entry_point": "STObject(SOTemplate const& type, SerialIter& sit, SField const& name)",
+      "purpose": "Constructs an STObject from a template and serialized data, ensuring template conformance.",
+      "validation_points": [
+        "applyTemplate(type): Validates that the object matches the template (throws on mismatch)"
+      ]
+    },
+    {
+      "call_chain": [
+        "makeInnerObject(name)",
+        "getCurrentTransactionRules()",
+        "InnerObjectFormats::getInstance().findSOTemplateBySField(name)",
+        "set(*elements)"
+      ],
+      "entry_point": "STObject::makeInnerObject(SField const& name)",
+      "purpose": "Creates an inner STObject, applying the correct template based on business rules and feature flags.",
+      "validation_points": [
+        "Business logic: Rules and feature flags determine if/which template is applied"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "depth",
+      "flow": [
+        "STObject(SerialIter&, SField const&, int)",
+        "if (depth > 10) Throw<...>",
+        "set(sit, depth)",
+        "Potential recursive call for nested objects"
+      ],
+      "origin": "Passed as argument to STObject(SerialIter&, SField const&, int)",
+      "transformations": [
+        "Incremented for each nested object"
+      ],
+      "validated_at": "STObject(SerialIter&, SField const&, int): if (depth > 10)"
+    },
+    {
+      "field": "type (SOTemplate)",
+      "flow": [
+        "STObject(SOTemplate const&, ...)",
+        "set(type)",
+        "applyTemplate(type)"
+      ],
+      "origin": "Passed to STObject(SOTemplate const&, ...)",
+      "transformations": [
+        "Used to initialize v_ with default/nonPresent objects",
+        "Used to validate conformance in applyTemplate"
+      ],
+      "validated_at": "applyTemplate(type)"
+    },
+    {
+      "field": "name (SField)",
+      "flow": [
+        "STObject or makeInnerObject",
+        "Used to look up SOTemplate via InnerObjectFormats",
+        "Used in Rules logic to determine template applicability"
+      ],
+      "origin": "Passed to STObject constructors and makeInnerObject",
+      "transformations": [
+        "Determines which template (if any) is applied"
+      ],
+      "validated_at": "makeInnerObject: Business logic with Rules and InnerObjectFormats"
+    },
+    {
+      "field": "v_ (vector of fields)",
+      "flow": [
+        "set(type): fills v_ with default/nonPresent objects",
+        "set(sit): fills v_ from serialized data",
+        "applyTemplate(type): checks v_ against template"
+      ],
+      "origin": "Initialized in set(type) or set(sit)",
+      "transformations": [
+        "Populated from template or serialized data",
+        "Validated for template conformance"
+      ],
+      "validated_at": "applyTemplate(type)"
+    }
+  ],
+  "description": "Implements the STObject class for the XRPL protocol, providing serialization, deserialization, field access, and manipulation for structured objects in the XRP Ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "nesting depth",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field nesting depth validated by Custom validation via SOTemplate, Rules, and explicit checks",
+      "issue_pattern": "Missing validation for nesting depth",
+      "why_false_positive": "Custom validation via SOTemplate, Rules, and explicit checks validates nesting depth automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inner object template applicability",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field inner object template applicability validated by Custom validation via SOTemplate, Rules, and explicit checks",
+      "issue_pattern": "Missing validation for inner object template applicability",
+      "why_false_positive": "Custom validation via SOTemplate, Rules, and explicit checks validates inner object template applicability automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "template conformance",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field template conformance validated by Custom validation via SOTemplate, Rules, and explicit checks",
+      "issue_pattern": "Missing validation for template conformance",
+      "why_false_positive": "Custom validation via SOTemplate, Rules, and explicit checks validates template conformance automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "nesting depth",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (depth > 10)) at STObject(SerialIter& sit, SField const& name, int depth) constructor",
+      "issue_pattern": "Missing empty string validation for nesting depth",
+      "why_false_positive": "explicit check (if (depth > 10)) validates nesting depth for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "nesting depth",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (if (depth > 10)) at STObject(SerialIter& sit, SField const& name, int depth) constructor",
+      "issue_pattern": "Missing range validation for nesting depth",
+      "why_false_positive": "explicit check (if (depth > 10)) validates nesting depth range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inner object template applicability",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (Rules, SOTemplate, InnerObjectFormats) at STObject::makeInnerObject",
+      "issue_pattern": "Missing empty string validation for inner object template applicability",
+      "why_false_positive": "business logic (Rules, SOTemplate, InnerObjectFormats) validates inner object template applicability for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "template conformance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "applyTemplate(type) at STObject(SOTemplate const& type, SerialIter& sit, SField const& name) constructor",
+      "issue_pattern": "Missing empty string validation for template conformance",
+      "why_false_positive": "applyTemplate(type) validates template conformance for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STObject.cpp",
+  "functions": [
+    {
+      "args": [
+        "STObject&& other"
+      ],
+      "lineno": 33,
+      "name": "STObject"
+    },
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 38,
+      "name": "STObject"
+    },
+    {
+      "args": [
+        "SOTemplate const& type",
+        "SField const& name"
+      ],
+      "lineno": 42,
+      "name": "STObject"
+    },
+    {
+      "args": [
+        "SOTemplate const& type",
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 46,
+      "name": "STObject"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name",
+        "int depth"
+      ],
+      "lineno": 51,
+      "name": "STObject"
+    },
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 58,
+      "name": "makeInnerObject"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 80,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 85,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 100,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STObject&& other"
+      ],
+      "lineno": 105,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "SOTemplate const& type"
+      ],
+      "lineno": 112,
+      "name": "set"
+    },
+    {
+      "args": [
+        "SOTemplate const& type"
+      ],
+      "lineno": 124,
+      "name": "applyTemplate"
+    },
+    {
+      "args": [
+        "SField const& sField"
+      ],
+      "lineno": 163,
+      "name": "applyTemplateFromSField"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "int depth"
+      ],
+      "lineno": 170,
+      "name": "set"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 217,
+      "name": "hasMatchingEntry"
+    },
+    {
+      "args": [],
+      "lineno": 225,
+      "name": "getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 247,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 262,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [
+        "HashPrefix prefix"
+      ],
+      "lineno": 285,
+      "name": "getHash"
+    },
+    {
+      "args": [
+        "HashPrefix prefix"
+      ],
+      "lineno": 292,
+      "name": "getSigningHash"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 299,
+      "name": "getFieldIndex"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 313,
+      "name": "peekAtField"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 321,
+      "name": "getField"
+    },
+    {
+      "args": [
+        "int index"
+      ],
+      "lineno": 329,
+      "name": "getFieldSType"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 334,
+      "name": "peekAtPField"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "bool createOkay"
+      ],
+      "lineno": 341,
+      "name": "getPField"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 353,
+      "name": "isFieldPresent"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 361,
+      "name": "peekFieldObject"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 366,
+      "name": "peekFieldArray"
+    },
+    {
+      "args": [
+        "std::uint32_t f"
+      ],
+      "lineno": 371,
+      "name": "setFlag"
+    },
+    {
+      "args": [
+        "std::uint32_t f"
+      ],
+      "lineno": 380,
+      "name": "clearFlag"
+    },
+    {
+      "args": [
+        "std::uint32_t f"
+      ],
+      "lineno": 389,
+      "name": "isFlag"
+    },
+    {
+      "args": [],
+      "lineno": 394,
+      "name": "getFlags"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 403,
+      "name": "makeFieldPresent"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 419,
+      "name": "makeFieldAbsent"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 429,
+      "name": "delField"
+    },
+    {
+      "args": [
+        "int index"
+      ],
+      "lineno": 436,
+      "name": "delField"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 440,
+      "name": "getStyle"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 445,
+      "name": "getFieldU8"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 450,
+      "name": "getFieldU16"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 455,
+      "name": "getFieldU32"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 460,
+      "name": "getFieldU64"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 465,
+      "name": "getFieldH128"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 470,
+      "name": "getFieldH160"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 475,
+      "name": "getFieldH192"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 480,
+      "name": "getFieldH256"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 485,
+      "name": "getFieldI32"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 490,
+      "name": "getAccountID"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 495,
+      "name": "getFieldVL"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 502,
+      "name": "getFieldAmount"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 507,
+      "name": "getFieldPathSet"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 512,
+      "name": "getFieldV256"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 517,
+      "name": "getFieldObject"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 525,
+      "name": "getFieldArray"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 530,
+      "name": "getFieldCurrency"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 535,
+      "name": "getFieldNumber"
+    },
+    {
+      "args": [
+        "std::unique_ptr<STBase> v"
+      ],
+      "lineno": 540,
+      "name": "set"
+    },
+    {
+      "args": [
+        "STBase&& v"
+      ],
+      "lineno": 545,
+      "name": "set"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "unsigned char v"
+      ],
+      "lineno": 555,
+      "name": "setFieldU8"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "std::uint16_t v"
+      ],
+      "lineno": 560,
+      "name": "setFieldU16"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "std::uint32_t v"
+      ],
+      "lineno": 565,
+      "name": "setFieldU32"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "std::uint64_t v"
+      ],
+      "lineno": 570,
+      "name": "setFieldU64"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "uint128 const& v"
+      ],
+      "lineno": 575,
+      "name": "setFieldH128"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "uint192 const& v"
+      ],
+      "lineno": 580,
+      "name": "setFieldH192"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "uint256 const& v"
+      ],
+      "lineno": 585,
+      "name": "setFieldH256"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "std::int32_t v"
+      ],
+      "lineno": 590,
+      "name": "setFieldI32"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STVector256 const& v"
+      ],
+      "lineno": 595,
+      "name": "setFieldV256"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "AccountID const& v"
+      ],
+      "lineno": 600,
+      "name": "setAccountID"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "Blob const& v"
+      ],
+      "lineno": 605,
+      "name": "setFieldVL"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "Slice const& s"
+      ],
+      "lineno": 610,
+      "name": "setFieldVL"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STAmount const& v"
+      ],
+      "lineno": 615,
+      "name": "setFieldAmount"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STCurrency const& v"
+      ],
+      "lineno": 620,
+      "name": "setFieldCurrency"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STIssue const& v"
+      ],
+      "lineno": 625,
+      "name": "setFieldIssue"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STNumber const& v"
+      ],
+      "lineno": 630,
+      "name": "setFieldNumber"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STPathSet const& v"
+      ],
+      "lineno": 635,
+      "name": "setFieldPathSet"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STArray const& v"
+      ],
+      "lineno": 640,
+      "name": "setFieldArray"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "STObject const& v"
+      ],
+      "lineno": 645,
+      "name": "setFieldObject"
+    },
+    {
+      "args": [
+        "JsonOptions options"
+      ],
+      "lineno": 650,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "STObject const& obj"
+      ],
+      "lineno": 659,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Serializer& s",
+        "WhichFields whichFields"
+      ],
+      "lineno": 687,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STObject const& objToSort",
+        "WhichFields whichFields"
+      ],
+      "lineno": 705,
+      "name": "getSortedFields"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 30,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STObject and its validation logic are typically tested in protocol-level and serialization/deserialization tests. Likely test files: 'test/protocol/STObject_test.cpp', 'test/protocol/InnerObjectFormats_test.cpp', 'test/protocol/Serializer_test.cpp', and possibly transaction or AMM-related tests for Rules/feature flag logic. Gaps: Edge cases for maximum nesting depth, business rule transitions (feature flag changes), and malformed input may not be exhaustively tested. Template conformance errors may not be fully covered for all InnerObject types.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "nesting depth",
+      "inner object template applicability",
+      "template conformance"
+    ],
+    "framework": "Custom validation via SOTemplate, Rules, and explicit checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>)",
+      "field": "nesting depth",
+      "location": "STObject(SerialIter& sit, SField const& name, int depth) constructor",
+      "validated_by": "explicit check (if (depth > 10))",
+      "validates": [
+        "Ensures that the nesting depth of STObject does not exceed 10"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (template not applied if not valid)",
+      "field": "inner object template applicability",
+      "location": "STObject::makeInnerObject",
+      "validated_by": "business logic (Rules, SOTemplate, InnerObjectFormats)",
+      "validates": [
+        "Checks if the correct SOTemplate should be applied to the inner object based on Rules and SField",
+        "Validates that only allowed templates are applied to specific inner objects"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "may throw (type not specified, but likely std::runtime_error or contract violation)",
+      "field": "template conformance",
+      "location": "STObject(SOTemplate const& type, SerialIter& sit, SField const& name) constructor",
+      "validated_by": "applyTemplate(type)",
+      "validates": [
+        "Ensures that the deserialized object conforms to the provided SOTemplate"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

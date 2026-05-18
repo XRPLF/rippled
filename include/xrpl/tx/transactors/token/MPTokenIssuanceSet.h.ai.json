@@ -1,0 +1,93 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 14,
+      "name": "ctx"
+    },
+    {
+      "lineno": 17,
+      "name": "ctx"
+    },
+    {
+      "lineno": 20,
+      "name": "ctx"
+    },
+    {
+      "lineno": 23,
+      "name": "view"
+    },
+    {
+      "lineno": 23,
+      "name": "tx"
+    },
+    {
+      "lineno": 26,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "MPTokenIssuanceSet"
+    }
+  ],
+  "description": "Defines the MPTokenIssuanceSet transactor class for handling token issuance set transactions in the XRPL system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/token/MPTokenIssuanceSet.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 17,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 23,
+      "name": "checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 26,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app, std::shared_ptr<InfoSub> const& subscriber, int id, PathRequestManager&, beast::Journal journal",
+        "Application& app, std::function<void(void)> const& completion, Resource::Consumer& consumer, int id, PathRequestManager&, beast::Journal journal"
+      ],
+      "lineno": 27,
+      "name": "PathRequest"
+    }
+  ],
+  "description": "Defines the PathRequest class, which represents a pathfinding request in the XRPL system, handling client requests for payment paths, managing request state, and interfacing with pathfinding logic and subscribers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/PathRequest.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "isNew"
+    },
+    {
+      "args": [
+        "newOnly",
+        "index"
+      ],
+      "lineno": 50,
+      "name": "needsUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "updateComplete"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const&",
+        "Json::Value const&"
+      ],
+      "lineno": 57,
+      "name": "doCreate"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "doClose"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 61,
+      "name": "doStatus"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "doAborting"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const&",
+        "bool",
+        "std::function<bool(void)> const&"
+      ],
+      "lineno": 66,
+      "name": "doUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "getSubscriber"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "hasCompletion"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const&"
+      ],
+      "lineno": 76,
+      "name": "isValid"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const&",
+        "hash_map<PathAsset, std::unique_ptr<Pathfinder>>&",
+        "PathAsset const&",
+        "STAmount const&",
+        "int const",
+        "std::function<bool(void)> const&"
+      ],
+      "lineno": 79,
+      "name": "getPathFinder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const&",
+        "int const",
+        "Json::Value&",
+        "std::function<bool(void)> const&"
+      ],
+      "lineno": 89,
+      "name": "findPaths"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 96,
+      "name": "parseJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "dest"
+    },
+    {
+      "lineno": 8,
+      "name": "bytes"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "xrpl::secure_erase",
+        "OPENSSL_cleanse"
+      ],
+      "entry_point": "xrpl::secure_erase",
+      "purpose": "Securely erases a memory region by overwriting it, typically used to clear sensitive data (e.g., cryptographic keys) from memory.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "dest (void*)",
+      "flow": [
+        "Caller provides pointer",
+        "xrpl::secure_erase receives pointer",
+        "OPENSSL_cleanse erases memory at pointer"
+      ],
+      "origin": "Caller of xrpl::secure_erase (external code, likely cryptographic routines or memory management code)",
+      "transformations": [
+        "No transformation; pointer is passed directly to OPENSSL_cleanse"
+      ],
+      "validated_at": "No explicit validation in this function"
+    },
+    {
+      "field": "bytes (std::size_t)",
+      "flow": [
+        "Caller provides size",
+        "xrpl::secure_erase receives size",
+        "OPENSSL_cleanse uses size to determine how many bytes to erase"
+      ],
+      "origin": "Caller of xrpl::secure_erase",
+      "transformations": [
+        "No transformation; size is passed directly to OPENSSL_cleanse"
+      ],
+      "validated_at": "No explicit validation in this function"
+    }
+  ],
+  "description": "Provides a secure memory erasure function using OpenSSL's OPENSSL_cleanse to securely erase sensitive data from memory.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/crypto/secure_erase.cpp",
+  "functions": [
+    {
+      "args": [
+        "dest",
+        "bytes"
+      ],
+      "lineno": 7,
+      "name": "secure_erase"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no validation logic in this function (no null checks, bounds checks, etc.), so there are no validation code paths to test. Test coverage would depend on higher-level code that calls secure_erase. Typical tests would be in cryptographic key management or memory handling modules, ensuring that sensitive data is erased, but this function itself is a thin wrapper and likely not directly unit tested. Gaps: No direct tests for invalid pointers or zero-length erasure; relies on callers to provide valid arguments.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

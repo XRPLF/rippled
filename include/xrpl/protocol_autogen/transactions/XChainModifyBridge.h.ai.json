@@ -1,0 +1,118 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 98,
+      "name": "account"
+    },
+    {
+      "lineno": 99,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 100,
+      "name": "sequence"
+    },
+    {
+      "lineno": 101,
+      "name": "fee"
+    },
+    {
+      "lineno": 139,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 139,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 112,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 23,
+      "name": "XChainModifyBridge"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 91,
+      "name": "XChainModifyBridgeBuilder"
+    }
+  ],
+  "description": "Defines the XChainModifyBridge transaction type for XRPL, including its immutable wrapper, builder class, and type-safe field accessors and setters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/XChainModifyBridge.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getSignatureReward"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "hasSignatureReward"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "getMinAccountCreateAmount"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "hasMinAccountCreateAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 110,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 119,
+      "name": "setSignatureReward"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 128,
+      "name": "setMinAccountCreateAmount"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 137,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

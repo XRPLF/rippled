@@ -1,0 +1,102 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "MessageHeader"
+    }
+  ],
+  "description": "This file provides utilities for parsing, handling, and invoking protocol messages in the XRPL overlay network, including support for compressed and uncompressed messages, message header parsing, and dispatching to appropriate protocol message handlers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ProtocolMessage.h",
+  "functions": [
+    {
+      "args": [
+        "protocol::TMGetLedger const&"
+      ],
+      "lineno": 13,
+      "name": "protocolMessageType"
+    },
+    {
+      "args": [
+        "protocol::TMReplayDeltaRequest const&"
+      ],
+      "lineno": 18,
+      "name": "protocolMessageType"
+    },
+    {
+      "args": [
+        "protocol::TMProofPathRequest const&"
+      ],
+      "lineno": 23,
+      "name": "protocolMessageType"
+    },
+    {
+      "args": [
+        "int type"
+      ],
+      "lineno": 28,
+      "name": "protocolMessageName"
+    },
+    {
+      "args": [
+        "BufferSequence const& bufs"
+      ],
+      "lineno": 74,
+      "name": "buffersBegin"
+    },
+    {
+      "args": [
+        "BufferSequence const& bufs"
+      ],
+      "lineno": 80,
+      "name": "buffersEnd"
+    },
+    {
+      "args": [
+        "boost::system::error_code& ec",
+        "BufferSequence const& bufs",
+        "std::size_t size"
+      ],
+      "lineno": 87,
+      "name": "parseMessageHeader"
+    },
+    {
+      "args": [
+        "MessageHeader const& header",
+        "Buffers const& buffers"
+      ],
+      "lineno": 154,
+      "name": "parseMessageContent"
+    },
+    {
+      "args": [
+        "MessageHeader const& header",
+        "Buffers const& buffers",
+        "Handler& handler"
+      ],
+      "lineno": 181,
+      "name": "invoke"
+    },
+    {
+      "args": [
+        "Buffers const& buffers",
+        "Handler& handler",
+        "std::size_t& hint"
+      ],
+      "lineno": 206,
+      "name": "invokeProtocolMessage"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 58,
+      "name": "detail"
+    }
+  ]
+}

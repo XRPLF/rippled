@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides generic algorithms for set intersection and conditional removal on ordered ranges, including a generalized set intersection function and a function to remove elements based on intersection or predicate matching.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/algorithm.h",
+  "functions": [
+    {
+      "args": [
+        "first1",
+        "last1",
+        "first2",
+        "last2",
+        "action",
+        "comp"
+      ],
+      "lineno": 13,
+      "name": "generalized_set_intersection"
+    },
+    {
+      "args": [
+        "first1",
+        "last1",
+        "first2",
+        "last2",
+        "pred",
+        "comp"
+      ],
+      "lineno": 49,
+      "name": "remove_if_intersect_or_match"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 22,
+      "name": "Check"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& sendMax, std::decay_t<typename SF_UINT32::type::value_type> const& sequence, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT64::type::value_type> const& destinationNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 120,
+      "name": "CheckBuilder"
+    }
+  ],
+  "description": "Defines the Check ledger entry type for the XRPL, providing type-safe field access and a builder for constructing Check ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Check.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

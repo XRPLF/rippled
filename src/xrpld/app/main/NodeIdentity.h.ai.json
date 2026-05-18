@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "app"
+    },
+    {
+      "lineno": 14,
+      "name": "cmdline"
+    }
+  ],
+  "classes": [],
+  "description": "Declares the getNodeIdentity function, which retrieves the cryptographic credentials (public and secret keys) identifying the server instance, based on the application object and command line parameters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/NodeIdentity.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "cmdline"
+      ],
+      "lineno": 14,
+      "name": "getNodeIdentity"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

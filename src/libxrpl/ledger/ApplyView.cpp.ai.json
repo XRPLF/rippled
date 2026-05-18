@@ -1,0 +1,274 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [],
+  "data_flows": [],
+  "description": "Implements directory management functions for the XRPL ledger, including adding, removing, and deleting directory entries and pages within the ledger's state tables.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "indexes (STVector256) - duplicate key insertion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::find + LogicError at insertKey (preserveOrder branch)",
+      "issue_pattern": "Missing empty string validation for indexes (STVector256) - duplicate key insertion",
+      "why_false_positive": "std::find + LogicError validates indexes (STVector256) - duplicate key insertion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "indexes (STVector256) - duplicate key insertion (sorted)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::lower_bound + LogicError at insertKey (preserveOrder == false branch)",
+      "issue_pattern": "Missing empty string validation for indexes (STVector256) - duplicate key insertion (sorted)",
+      "why_false_positive": "std::lower_bound + LogicError validates indexes (STVector256) - duplicate key insertion (sorted) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "page (std::uint64_t) - unsigned overflow",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at insertPage",
+      "issue_pattern": "Missing empty string validation for page (std::uint64_t) - unsigned overflow",
+      "why_false_positive": "static_assert validates page (std::uint64_t) - unsigned overflow for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node (SLE::pointer) - existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek + LogicError at findPreviousPage",
+      "issue_pattern": "Missing empty string validation for node (SLE::pointer) - existence",
+      "why_false_positive": "view.peek + LogicError validates node (SLE::pointer) - existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/ApplyView.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "directory",
+        "key",
+        "describe"
+      ],
+      "lineno": 9,
+      "name": "createRoot"
+    },
+    {
+      "args": [
+        "view",
+        "directory",
+        "start"
+      ],
+      "lineno": 22,
+      "name": "findPreviousPage"
+    },
+    {
+      "args": [
+        "view",
+        "node",
+        "page",
+        "preserveOrder",
+        "indexes",
+        "key"
+      ],
+      "lineno": 41,
+      "name": "insertKey"
+    },
+    {
+      "args": [
+        "view",
+        "page",
+        "node",
+        "nextPage",
+        "next",
+        "key",
+        "directory",
+        "describe"
+      ],
+      "lineno": 65,
+      "name": "insertPage"
+    },
+    {
+      "args": [
+        "preserveOrder",
+        "directory",
+        "key",
+        "describe"
+      ],
+      "lineno": 116,
+      "name": "ApplyView::dirAdd"
+    },
+    {
+      "args": [
+        "directory"
+      ],
+      "lineno": 137,
+      "name": "ApplyView::emptyDirDelete"
+    },
+    {
+      "args": [
+        "directory",
+        "page",
+        "key",
+        "keepRoot"
+      ],
+      "lineno": 176,
+      "name": "ApplyView::dirRemove"
+    },
+    {
+      "args": [
+        "directory",
+        "callback"
+      ],
+      "lineno": 266,
+      "name": "ApplyView::dirDelete"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "directory"
+    }
+  ],
+  "test_coverage_notes": "",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (LogicError, static_assert, std algorithms)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError(\"dirInsert: double insertion\")",
+      "field": "indexes (STVector256) - duplicate key insertion",
+      "location": "insertKey (preserveOrder branch)",
+      "validated_by": "std::find + LogicError",
+      "validates": [
+        "Checks if key already exists in indexes before insertion when preserveOrder is true"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError(\"dirInsert: double insertion\")",
+      "field": "indexes (STVector256) - duplicate key insertion (sorted)",
+      "location": "insertKey (preserveOrder == false branch)",
+      "validated_by": "std::lower_bound + LogicError",
+      "validates": [
+        "Sorts indexes, checks if key already exists before insertion when preserveOrder is false"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "static_assert failure (compile-time error)",
+      "field": "page (std::uint64_t) - unsigned overflow",
+      "location": "insertPage",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures page is unsigned type",
+        "Ensures unsigned overflow wraps to zero (modulo arithmetic)"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError(\"Directory chain: root back-pointer broken.\")",
+      "field": "node (SLE::pointer) - existence",
+      "location": "findPreviousPage",
+      "validated_by": "view.peek + LogicError",
+      "validates": [
+        "Checks that the previous page node exists in the ledger view"
+      ],
+      "validation_type": "business_logic|null-check"
+    }
+  ]
+}

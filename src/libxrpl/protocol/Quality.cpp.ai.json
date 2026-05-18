@@ -1,0 +1,538 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::uint64_t value",
+        "Amounts const& amount"
+      ],
+      "lineno": 8,
+      "name": "Quality"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Quality::operator++",
+        "XRPL_ASSERT(m_value > 0)",
+        "--m_value"
+      ],
+      "entry_point": "Quality::operator++",
+      "purpose": "Pre-decrement m_value, ensuring it does not underflow",
+      "validation_points": [
+        "XRPL_ASSERT(m_value > 0)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Quality::operator--",
+        "XRPL_ASSERT(m_value < max)",
+        "++m_value"
+      ],
+      "entry_point": "Quality::operator--",
+      "purpose": "Pre-increment m_value, ensuring it does not overflow",
+      "validation_points": [
+        "XRPL_ASSERT(m_value < std::numeric_limits<value_type>::max())"
+      ]
+    },
+    {
+      "call_chain": [
+        "Quality::ceil_in",
+        "ceil_in_impl<divRound>",
+        "if (amount.in > limit)",
+        "Amounts result(limit, DivRoundFunc(...))",
+        "if (result.out > amount.out) result.out = amount.out",
+        "XRPL_ASSERT(result.in == limit)",
+        "return result"
+      ],
+      "entry_point": "Quality::ceil_in",
+      "purpose": "Clamp input amount to a limit, adjusting output accordingly",
+      "validation_points": [
+        "XRPL_ASSERT(result.in == limit)",
+        "XRPL_ASSERT(amount.in <= limit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Quality::ceil_in_strict",
+        "ceil_in_impl<divRoundStrict>",
+        "if (amount.in > limit)",
+        "Amounts result(limit, DivRoundFunc(...))",
+        "if (result.out > amount.out) result.out = amount.out",
+        "XRPL_ASSERT(result.in == limit)",
+        "return result"
+      ],
+      "entry_point": "Quality::ceil_in_strict",
+      "purpose": "Strict version of ceil_in with custom rounding",
+      "validation_points": [
+        "XRPL_ASSERT(result.in == limit)",
+        "XRPL_ASSERT(amount.in <= limit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Quality::ceil_out",
+        "ceil_out_impl<mulRound>",
+        "if (amount.out > limit)",
+        "Amounts result(MulRoundFunc(...), limit)",
+        "if (result.in > amount.in) result.in = amount.in",
+        "XRPL_ASSERT(result.out == limit)",
+        "return result"
+      ],
+      "entry_point": "Quality::ceil_out",
+      "purpose": "Clamp output amount to a limit, adjusting input accordingly",
+      "validation_points": [
+        "XRPL_ASSERT(result.out == limit)",
+        "XRPL_ASSERT(amount.out <= limit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Quality::ceil_out_strict",
+        "ceil_out_impl<mulRoundStrict>",
+        "if (amount.out > limit)",
+        "Amounts result(MulRoundFunc(...), limit)",
+        "if (result.in > amount.in) result.in = amount.in",
+        "XRPL_ASSERT(result.out == limit)",
+        "return result"
+      ],
+      "entry_point": "Quality::ceil_out_strict",
+      "purpose": "Strict version of ceil_out with custom rounding",
+      "validation_points": [
+        "XRPL_ASSERT(result.out == limit)",
+        "XRPL_ASSERT(amount.out <= limit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "composed_quality",
+        "lhs.rate()",
+        "XRPL_ASSERT(lhs_rate != beast::zero)",
+        "rhs.rate()",
+        "XRPL_ASSERT(rhs_rate != beast::zero)",
+        "mulRound(lhs_rate, rhs_rate, ...)",
+        "XRPL_ASSERT((stored_exponent > 0) && (stored_exponent <= 255))",
+        "return Quality(...)"
+      ],
+      "entry_point": "composed_quality",
+      "purpose": "Compose two Quality objects, validating nonzero rates and exponent range",
+      "validation_points": [
+        "XRPL_ASSERT(lhs_rate != beast::zero)",
+        "XRPL_ASSERT(rhs_rate != beast::zero)",
+        "XRPL_ASSERT((stored_exponent > 0) && (stored_exponent <= 255))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_value",
+      "flow": [
+        "Quality::Quality(std::uint64_t value) or Quality::Quality(Amounts const& amount)",
+        "m_value set",
+        "Used in operator++/--, ceil_in_impl, ceil_out_impl, rate()"
+      ],
+      "origin": "Quality constructor (from uint64_t or from Amounts via getRate)",
+      "transformations": [
+        "Incremented/decremented in operator++/--",
+        "Used to compute rates in ceil_in_impl/ceil_out_impl"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(m_value > 0) in operator++",
+        "XRPL_ASSERT(m_value < max) in operator--"
+      ]
+    },
+    {
+      "field": "Amounts.in",
+      "flow": [
+        "Passed as argument to ceil_in_impl/ceil_out_impl",
+        "Compared to limit",
+        "Used to construct result Amounts"
+      ],
+      "origin": "Input to ceil_in_impl/ceil_out_impl",
+      "transformations": [
+        "Clamped to limit if amount.in > limit",
+        "Used in DivRoundFunc/MulRoundFunc"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(result.in == limit) or XRPL_ASSERT(amount.in <= limit)"
+      ]
+    },
+    {
+      "field": "Amounts.out",
+      "flow": [
+        "Passed as argument to ceil_in_impl/ceil_out_impl",
+        "Compared to limit",
+        "Used to construct result Amounts"
+      ],
+      "origin": "Input to ceil_in_impl/ceil_out_impl",
+      "transformations": [
+        "Clamped to limit if amount.out > limit",
+        "Used in DivRoundFunc/MulRoundFunc"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(result.out == limit) or XRPL_ASSERT(amount.out <= limit)"
+      ]
+    },
+    {
+      "field": "result.in",
+      "flow": [
+        "Constructed from limit or Mul/DivRoundFunc",
+        "Possibly clamped",
+        "Returned as part of Amounts"
+      ],
+      "origin": "Constructed in ceil_in_impl/ceil_out_impl",
+      "transformations": [
+        "Set to limit or result of rounding function",
+        "Clamped if necessary"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(result.in == limit)"
+      ]
+    },
+    {
+      "field": "result.out",
+      "flow": [
+        "Constructed from limit or Mul/DivRoundFunc",
+        "Possibly clamped",
+        "Returned as part of Amounts"
+      ],
+      "origin": "Constructed in ceil_in_impl/ceil_out_impl",
+      "transformations": [
+        "Set to limit or result of rounding function",
+        "Clamped if necessary"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(result.out == limit)"
+      ]
+    }
+  ],
+  "description": "Implements the Quality class and related functions for handling quality/rate calculations in the XRPL protocol, including rounding, increment/decrement, and composing qualities.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Quality::operator++()",
+      "issue_pattern": "Missing empty string validation for m_value",
+      "why_false_positive": "XRPL_ASSERT validates m_value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m_value",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Quality::operator++()",
+      "issue_pattern": "Missing range validation for m_value",
+      "why_false_positive": "XRPL_ASSERT validates m_value range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Quality::operator--()",
+      "issue_pattern": "Missing empty string validation for m_value",
+      "why_false_positive": "XRPL_ASSERT validates m_value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m_value",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Quality::operator--()",
+      "issue_pattern": "Missing range validation for m_value",
+      "why_false_positive": "XRPL_ASSERT validates m_value range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.in",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ceil_in_impl (template function)",
+      "issue_pattern": "Missing empty string validation for result.in",
+      "why_false_positive": "XRPL_ASSERT validates result.in for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.in",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ceil_in_impl (template function)",
+      "issue_pattern": "Missing empty string validation for amount.in",
+      "why_false_positive": "XRPL_ASSERT validates amount.in for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.out",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ceil_out_impl (template function)",
+      "issue_pattern": "Missing empty string validation for result.out",
+      "why_false_positive": "XRPL_ASSERT validates result.out for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.out",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ceil_out_impl (template function)",
+      "issue_pattern": "Missing empty string validation for amount.out",
+      "why_false_positive": "XRPL_ASSERT validates amount.out for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Quality.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::uint64_t value"
+      ],
+      "lineno": 8,
+      "name": "Quality::Quality"
+    },
+    {
+      "args": [
+        "Amounts const& amount"
+      ],
+      "lineno": 12,
+      "name": "Quality::Quality"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "Quality::operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 22,
+      "name": "Quality::operator++"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "Quality::operator--"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 37,
+      "name": "Quality::operator--"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit",
+        "bool roundUp",
+        "Quality const& quality"
+      ],
+      "lineno": 43,
+      "name": "ceil_in_impl"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit"
+      ],
+      "lineno": 57,
+      "name": "Quality::ceil_in"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit",
+        "bool roundUp"
+      ],
+      "lineno": 62,
+      "name": "Quality::ceil_in_strict"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit",
+        "bool roundUp",
+        "Quality const& quality"
+      ],
+      "lineno": 68,
+      "name": "ceil_out_impl"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit"
+      ],
+      "lineno": 82,
+      "name": "Quality::ceil_out"
+    },
+    {
+      "args": [
+        "Amounts const& amount",
+        "STAmount const& limit",
+        "bool roundUp"
+      ],
+      "lineno": 87,
+      "name": "Quality::ceil_out_strict"
+    },
+    {
+      "args": [
+        "Quality const& lhs",
+        "Quality const& rhs"
+      ],
+      "lineno": 93,
+      "name": "composed_quality"
+    },
+    {
+      "args": [
+        "int digits"
+      ],
+      "lineno": 111,
+      "name": "Quality::round"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic is likely tested in protocol/Quality_test.cpp or protocol/Amounts_test.cpp, which would cover edge cases for operator++/--, ceil_in, ceil_out, and composed_quality. However, coverage gaps may exist for extreme edge cases (e.g., m_value at 0 or max, exponent boundaries in composed_quality, and strict rounding behaviors). Tests should ensure all XRPL_ASSERTs are triggered under invalid input, but if asserts are compiled out in release builds, runtime validation may be missing. No explicit test references are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "m_value",
+      "location": "Quality::operator++()",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures m_value > 0 before decrementing (prevents underflow)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "m_value",
+      "location": "Quality::operator--()",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures m_value < std::numeric_limits<value_type>::max() before incrementing (prevents overflow)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "result.in",
+      "location": "ceil_in_impl (template function)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures result.in == limit when clamping input amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "amount.in",
+      "location": "ceil_in_impl (template function)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures amount.in <= limit when not clamping"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "result.out",
+      "location": "ceil_out_impl (template function)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures result.out == limit when clamping output amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "amount.out",
+      "location": "ceil_out_impl (template function)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures amount.out <= limit when not clamping"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

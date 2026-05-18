@@ -1,0 +1,714 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "id"
+    },
+    {
+      "lineno": 29,
+      "name": "key"
+    },
+    {
+      "lineno": 45,
+      "name": "ledger"
+    },
+    {
+      "lineno": 63,
+      "name": "b"
+    },
+    {
+      "lineno": 75,
+      "name": "id0"
+    },
+    {
+      "lineno": 75,
+      "name": "id1"
+    },
+    {
+      "lineno": 75,
+      "name": "currency"
+    },
+    {
+      "lineno": 79,
+      "name": "id"
+    },
+    {
+      "lineno": 79,
+      "name": "issue"
+    },
+    {
+      "lineno": 86,
+      "name": "seq"
+    },
+    {
+      "lineno": 94,
+      "name": "k"
+    },
+    {
+      "lineno": 94,
+      "name": "q"
+    },
+    {
+      "lineno": 107,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 110,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 118,
+      "name": "account"
+    },
+    {
+      "lineno": 128,
+      "name": "owner"
+    },
+    {
+      "lineno": 128,
+      "name": "preauthorized"
+    },
+    {
+      "lineno": 130,
+      "name": "authCreds"
+    },
+    {
+      "lineno": 146,
+      "name": "root"
+    },
+    {
+      "lineno": 146,
+      "name": "index"
+    },
+    {
+      "lineno": 154,
+      "name": "src"
+    },
+    {
+      "lineno": 157,
+      "name": "dst"
+    },
+    {
+      "lineno": 185,
+      "name": "issue1"
+    },
+    {
+      "lineno": 185,
+      "name": "issue2"
+    },
+    {
+      "lineno": 190,
+      "name": "authorizedAccount"
+    },
+    {
+      "lineno": 192,
+      "name": "bridge"
+    },
+    {
+      "lineno": 192,
+      "name": "chainType"
+    },
+    {
+      "lineno": 195,
+      "name": "seq"
+    },
+    {
+      "lineno": 202,
+      "name": "documentID"
+    },
+    {
+      "lineno": 204,
+      "name": "subject"
+    },
+    {
+      "lineno": 204,
+      "name": "issuer"
+    },
+    {
+      "lineno": 204,
+      "name": "credType"
+    },
+    {
+      "lineno": 213,
+      "name": "issuanceID"
+    },
+    {
+      "lineno": 216,
+      "name": "issuanceKey"
+    },
+    {
+      "lineno": 219,
+      "name": "holder"
+    },
+    {
+      "lineno": 222,
+      "name": "mptokenKey"
+    },
+    {
+      "lineno": 230,
+      "name": "vaultKey"
+    },
+    {
+      "lineno": 239,
+      "name": "loanBrokerID"
+    },
+    {
+      "lineno": 239,
+      "name": "loanSeq"
+    },
+    {
+      "lineno": 247,
+      "name": "domainID"
+    },
+    {
+      "lineno": 251,
+      "name": "book"
+    },
+    {
+      "lineno": 253,
+      "name": "uBase"
+    },
+    {
+      "lineno": 256,
+      "name": "uBase"
+    },
+    {
+      "lineno": 258,
+      "name": "uSequence"
+    },
+    {
+      "lineno": 260,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 277,
+      "name": "sequence"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "SeqProxy"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "book_t"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "next_t"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "ticket_t"
+    }
+  ],
+  "description": "This file provides keylet computation functions for the XRPL ledger, enabling type-safe and robust calculation of 256-bit locators (keylets) for various ledger entries such as accounts, offers, trust lines, NFTs, AMMs, and more. It also includes deprecated functions for direct index calculation and a descriptor for keylet functions used in tests.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Indexes.h",
+  "functions": [
+    {
+      "args": [
+        "AccountID const& id"
+      ],
+      "lineno": 23,
+      "name": "account"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "amendments"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 29,
+      "name": "child"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "skip"
+    },
+    {
+      "args": [
+        "LedgerIndex ledger"
+      ],
+      "lineno": 45,
+      "name": "skip"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "negativeUNL"
+    },
+    {
+      "args": [
+        "Book const& b"
+      ],
+      "lineno": 63,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AccountID const& id0",
+        "AccountID const& id1",
+        "Currency const& currency"
+      ],
+      "lineno": 75,
+      "name": "line"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "Issue const& issue"
+      ],
+      "lineno": 79,
+      "name": "line"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "std::uint32_t seq"
+      ],
+      "lineno": 86,
+      "name": "offer"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 89,
+      "name": "offer"
+    },
+    {
+      "args": [
+        "Keylet const& k",
+        "std::uint64_t q"
+      ],
+      "lineno": 94,
+      "name": "quality"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 100,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "std::uint32_t ticketSeq"
+      ],
+      "lineno": 107,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "SeqProxy ticketSeq"
+      ],
+      "lineno": 110,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 113,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 118,
+      "name": "signers"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "std::uint32_t seq"
+      ],
+      "lineno": 121,
+      "name": "check"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 124,
+      "name": "check"
+    },
+    {
+      "args": [
+        "AccountID const& owner",
+        "AccountID const& preauthorized"
+      ],
+      "lineno": 128,
+      "name": "depositPreauth"
+    },
+    {
+      "args": [
+        "AccountID const& owner",
+        "std::set<std::pair<AccountID, Slice>> const& authCreds"
+      ],
+      "lineno": 130,
+      "name": "depositPreauth"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 134,
+      "name": "depositPreauth"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 140,
+      "name": "unchecked"
+    },
+    {
+      "args": [
+        "AccountID const& id"
+      ],
+      "lineno": 143,
+      "name": "ownerDir"
+    },
+    {
+      "args": [
+        "uint256 const& root",
+        "std::uint64_t index"
+      ],
+      "lineno": 146,
+      "name": "page"
+    },
+    {
+      "args": [
+        "Keylet const& root",
+        "std::uint64_t index"
+      ],
+      "lineno": 149,
+      "name": "page"
+    },
+    {
+      "args": [
+        "AccountID const& src",
+        "std::uint32_t seq"
+      ],
+      "lineno": 154,
+      "name": "escrow"
+    },
+    {
+      "args": [
+        "AccountID const& src",
+        "AccountID const& dst",
+        "std::uint32_t seq"
+      ],
+      "lineno": 157,
+      "name": "payChan"
+    },
+    {
+      "args": [
+        "AccountID const& owner"
+      ],
+      "lineno": 164,
+      "name": "nftpage_min"
+    },
+    {
+      "args": [
+        "AccountID const& owner"
+      ],
+      "lineno": 167,
+      "name": "nftpage_max"
+    },
+    {
+      "args": [
+        "Keylet const& k",
+        "uint256 const& token"
+      ],
+      "lineno": 169,
+      "name": "nftpage"
+    },
+    {
+      "args": [
+        "AccountID const& owner",
+        "std::uint32_t seq"
+      ],
+      "lineno": 173,
+      "name": "nftoffer"
+    },
+    {
+      "args": [
+        "uint256 const& offer"
+      ],
+      "lineno": 176,
+      "name": "nftoffer"
+    },
+    {
+      "args": [
+        "uint256 const& id"
+      ],
+      "lineno": 179,
+      "name": "nft_buys"
+    },
+    {
+      "args": [
+        "uint256 const& id"
+      ],
+      "lineno": 182,
+      "name": "nft_sells"
+    },
+    {
+      "args": [
+        "Asset const& issue1",
+        "Asset const& issue2"
+      ],
+      "lineno": 185,
+      "name": "amm"
+    },
+    {
+      "args": [
+        "uint256 const& amm"
+      ],
+      "lineno": 187,
+      "name": "amm"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "AccountID const& authorizedAccount"
+      ],
+      "lineno": 190,
+      "name": "delegate"
+    },
+    {
+      "args": [
+        "STXChainBridge const& bridge",
+        "STXChainBridge::ChainType chainType"
+      ],
+      "lineno": 192,
+      "name": "bridge"
+    },
+    {
+      "args": [
+        "STXChainBridge const& bridge",
+        "std::uint64_t seq"
+      ],
+      "lineno": 195,
+      "name": "xChainClaimID"
+    },
+    {
+      "args": [
+        "STXChainBridge const& bridge",
+        "std::uint64_t seq"
+      ],
+      "lineno": 198,
+      "name": "xChainCreateAccountClaimID"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 200,
+      "name": "did"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "std::uint32_t const& documentID"
+      ],
+      "lineno": 202,
+      "name": "oracle"
+    },
+    {
+      "args": [
+        "AccountID const& subject",
+        "AccountID const& issuer",
+        "Slice const& credType"
+      ],
+      "lineno": 204,
+      "name": "credential"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 208,
+      "name": "credential"
+    },
+    {
+      "args": [
+        "std::uint32_t seq",
+        "AccountID const& issuer"
+      ],
+      "lineno": 211,
+      "name": "mptIssuance"
+    },
+    {
+      "args": [
+        "MPTID const& issuanceID"
+      ],
+      "lineno": 213,
+      "name": "mptIssuance"
+    },
+    {
+      "args": [
+        "uint256 const& issuanceKey"
+      ],
+      "lineno": 216,
+      "name": "mptIssuance"
+    },
+    {
+      "args": [
+        "MPTID const& issuanceID",
+        "AccountID const& holder"
+      ],
+      "lineno": 219,
+      "name": "mptoken"
+    },
+    {
+      "args": [
+        "uint256 const& mptokenKey"
+      ],
+      "lineno": 222,
+      "name": "mptoken"
+    },
+    {
+      "args": [
+        "uint256 const& issuanceKey",
+        "AccountID const& holder"
+      ],
+      "lineno": 225,
+      "name": "mptoken"
+    },
+    {
+      "args": [
+        "AccountID const& owner",
+        "std::uint32_t seq"
+      ],
+      "lineno": 227,
+      "name": "vault"
+    },
+    {
+      "args": [
+        "uint256 const& vaultKey"
+      ],
+      "lineno": 230,
+      "name": "vault"
+    },
+    {
+      "args": [
+        "AccountID const& owner",
+        "std::uint32_t seq"
+      ],
+      "lineno": 233,
+      "name": "loanbroker"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 236,
+      "name": "loanbroker"
+    },
+    {
+      "args": [
+        "uint256 const& loanBrokerID",
+        "std::uint32_t loanSeq"
+      ],
+      "lineno": 239,
+      "name": "loan"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 242,
+      "name": "loan"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "std::uint32_t seq"
+      ],
+      "lineno": 245,
+      "name": "permissionedDomain"
+    },
+    {
+      "args": [
+        "uint256 const& domainID"
+      ],
+      "lineno": 247,
+      "name": "permissionedDomain"
+    },
+    {
+      "args": [
+        "Book const& book"
+      ],
+      "lineno": 251,
+      "name": "getBookBase"
+    },
+    {
+      "args": [
+        "uint256 const& uBase"
+      ],
+      "lineno": 253,
+      "name": "getQualityNext"
+    },
+    {
+      "args": [
+        "uint256 const& uBase"
+      ],
+      "lineno": 256,
+      "name": "getQuality"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "std::uint32_t uSequence"
+      ],
+      "lineno": 258,
+      "name": "getTicketIndex"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "SeqProxy ticketSeq"
+      ],
+      "lineno": 260,
+      "name": "getTicketIndex"
+    },
+    {
+      "args": [
+        "std::uint32_t sequence",
+        "AccountID const& account"
+      ],
+      "lineno": 277,
+      "name": "makeMptID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 22,
+      "name": "keylet"
+    }
+  ]
+}

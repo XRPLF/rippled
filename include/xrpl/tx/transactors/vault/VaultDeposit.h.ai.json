@@ -1,0 +1,62 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "VaultDeposit"
+    }
+  ],
+  "description": "Defines the VaultDeposit transaction class for XRPL, including its constructor and transaction lifecycle methods (preflight, preclaim, doApply) within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/vault/VaultDeposit.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "VaultDeposit"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

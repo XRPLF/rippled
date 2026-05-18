@@ -1,0 +1,217 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 151,
+      "name": "account"
+    },
+    {
+      "lineno": 151,
+      "name": "asset"
+    },
+    {
+      "lineno": 151,
+      "name": "asset2"
+    },
+    {
+      "lineno": 151,
+      "name": "sequence"
+    },
+    {
+      "lineno": 151,
+      "name": "fee"
+    },
+    {
+      "lineno": 162,
+      "name": "tx"
+    },
+    {
+      "lineno": 174,
+      "name": "value"
+    },
+    {
+      "lineno": 184,
+      "name": "value"
+    },
+    {
+      "lineno": 194,
+      "name": "value"
+    },
+    {
+      "lineno": 204,
+      "name": "value"
+    },
+    {
+      "lineno": 214,
+      "name": "value"
+    },
+    {
+      "lineno": 224,
+      "name": "value"
+    },
+    {
+      "lineno": 234,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 234,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 22,
+      "name": "AMMWithdraw"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::decay_t<typename SF_ISSUE::type::value_type> const& asset2, std::optional<SF_UINT32::type::value_type> sequence, std::optional<SF_AMOUNT::type::value_type> fee",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 146,
+      "name": "AMMWithdrawBuilder"
+    }
+  ],
+  "description": "Defines the AMMWithdraw transaction type for the XRPL protocol, providing a type-safe wrapper and a builder class for constructing and signing AMMWithdraw transactions with required and optional fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMWithdraw.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "AMMWithdraw::AMMWithdraw"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "AMMWithdraw::getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "AMMWithdraw::getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "AMMWithdraw::getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "AMMWithdraw::hasAmount"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "AMMWithdraw::getAmount2"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "AMMWithdraw::hasAmount2"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "AMMWithdraw::getEPrice"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "AMMWithdraw::hasEPrice"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "AMMWithdraw::getLPTokenIn"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "AMMWithdraw::hasLPTokenIn"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset2",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 151,
+      "name": "AMMWithdrawBuilder::AMMWithdrawBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 162,
+      "name": "AMMWithdrawBuilder::AMMWithdrawBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 174,
+      "name": "AMMWithdrawBuilder::setAsset"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 184,
+      "name": "AMMWithdrawBuilder::setAsset2"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 194,
+      "name": "AMMWithdrawBuilder::setAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 204,
+      "name": "AMMWithdrawBuilder::setAmount2"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 214,
+      "name": "AMMWithdrawBuilder::setEPrice"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 224,
+      "name": "AMMWithdrawBuilder::setLPTokenIn"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 234,
+      "name": "AMMWithdrawBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

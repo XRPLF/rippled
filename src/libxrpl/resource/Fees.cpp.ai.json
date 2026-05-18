@@ -1,0 +1,94 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Resource::Logic::charge",
+        "Resource::Fees::<feeType>",
+        "Resource::Charge"
+      ],
+      "entry_point": "Resource::Logic::charge",
+      "purpose": "Applies a resource charge (fee) to a client or peer based on the type of request or behavior.",
+      "validation_points": [
+        "Resource::Logic::charge (validates request type, context, and applies appropriate fee)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RPC/Peer handler",
+        "Resource::Logic::charge",
+        "Resource::Fees::<feeType>",
+        "Resource::Charge"
+      ],
+      "entry_point": "RPC/Peer request handling (e.g., NetworkOps, RPC handlers)",
+      "purpose": "When a request is received, the system determines if it is malformed, invalid, or burdensome, and applies the corresponding fee.",
+      "validation_points": [
+        "RPC/Peer handler (validates request structure/signature)",
+        "Resource::Logic::charge (applies fee based on validation result)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "request",
+      "flow": [
+        "External input",
+        "RPC/Peer handler",
+        "Resource::Logic::charge",
+        "Resource::Fees::<feeType>",
+        "Resource::Charge"
+      ],
+      "origin": "External client/peer input",
+      "transformations": [
+        "Parsed and validated for structure and content",
+        "Classified as malformed, invalid, heavy, etc.",
+        "Mapped to a specific fee constant"
+      ],
+      "validated_at": "RPC/Peer handler and Resource::Logic::charge"
+    },
+    {
+      "field": "feeType (e.g., feeMalformedRequest, feeInvalidSignature)",
+      "flow": [
+        "Resource::Fees::<feeType>",
+        "Resource::Logic::charge",
+        "Resource::Consumer (or similar accounting object)"
+      ],
+      "origin": "Resource::Fees.cpp (constant definitions)",
+      "transformations": [
+        "Selected based on request validation/classification",
+        "Passed to charge logic for accounting"
+      ],
+      "validated_at": "Resource::Logic::charge (ensures correct fee for context)"
+    }
+  ],
+  "description": "Defines a set of constant Charge objects representing various resource usage fees for different types of requests and actions in the XRPL resource management system.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/resource/Fees.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "Resource"
+    }
+  ],
+  "test_coverage_notes": "This file only defines fee constants and does not contain logic or validation itself. Validation and fee application logic reside in Resource::Logic::charge and related request handling code. Tests likely exist in files covering Resource::Logic, RPC handlers, and peer request handling (e.g., test cases for malformed requests, invalid signatures, heavy requests). Direct unit tests for Fees.cpp are unlikely, but indirect coverage occurs via integration and functional tests. Gaps may exist if new fee types are added but not exercised in tests, or if edge cases (e.g., unknown request types) are not covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

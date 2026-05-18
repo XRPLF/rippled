@@ -1,0 +1,576 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OfferCreate::preflight"
+      ],
+      "entry_point": "OfferCreate::preflight",
+      "purpose": "Performs all stateless validation on an OfferCreate transaction before it is accepted for further processing.",
+      "validation_points": [
+        "OfferCreate::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::preflight",
+        "OfferCreate::preflight"
+      ],
+      "entry_point": "Transactor::preflight (base class, not shown here)",
+      "purpose": "The transaction engine calls the base Transactor::preflight, which then dispatches to the derived OfferCreate::preflight for OfferCreate transactions.",
+      "validation_points": [
+        "OfferCreate::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "OfferCreate::preclaim"
+      ],
+      "entry_point": "OfferCreate::preclaim",
+      "purpose": "Performs stateful validation (not shown in code snippet), but typically checks ledger state after stateless checks pass.",
+      "validation_points": [
+        "OfferCreate::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "OfferCreate::checkExtraFeatures"
+      ],
+      "entry_point": "OfferCreate::checkExtraFeatures",
+      "purpose": "Checks for feature flags and field compatibility (e.g., sfDomainID with featurePermissionedDEX).",
+      "validation_points": [
+        "OfferCreate::checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfHybrid (tfHybrid flag)",
+      "flow": [
+        "ctx.tx",
+        "tx.isFlag(tfHybrid)",
+        "if-check in preflight"
+      ],
+      "origin": "ctx.tx (STTx) input transaction",
+      "transformations": [
+        "Checked for presence",
+        "Validated that sfDomainID is present if tfHybrid is set"
+      ],
+      "validated_at": "OfferCreate::preflight"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "ctx.tx",
+        "tx.isFieldPresent(sfDomainID)",
+        "if-check in preflight and checkExtraFeatures"
+      ],
+      "origin": "ctx.tx (STTx) input transaction",
+      "transformations": [
+        "Checked for presence",
+        "Validated only allowed if featurePermissionedDEX is enabled"
+      ],
+      "validated_at": "OfferCreate::preflight, OfferCreate::checkExtraFeatures"
+    },
+    {
+      "field": "tfImmediateOrCancel, tfFillOrKill",
+      "flow": [
+        "ctx.tx",
+        "tx.getFlags()",
+        "bitmask checks in preflight"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Bitmask extraction",
+        "Checked for mutual exclusivity"
+      ],
+      "validated_at": "OfferCreate::preflight"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "ctx.tx",
+        "tx.isFieldPresent(sfExpiration)",
+        "tx.getFieldU32(sfExpiration)",
+        "if-check in preflight"
+      ],
+      "origin": "ctx.tx (STTx) input transaction",
+      "transformations": [
+        "Checked for presence",
+        "Checked for nonzero value"
+      ],
+      "validated_at": "OfferCreate::preflight"
+    },
+    {
+      "field": "sfOfferSequence",
+      "flow": [
+        "ctx.tx",
+        "tx[~sfOfferSequence]",
+        "if-check in preflight"
+      ],
+      "origin": "ctx.tx (STTx) input transaction",
+      "transformations": [
+        "Checked for presence",
+        "Checked for nonzero value"
+      ],
+      "validated_at": "OfferCreate::preflight"
+    },
+    {
+      "field": "sfTakerPays, sfTakerGets",
+      "flow": [
+        "ctx.tx",
+        "tx[sfTakerPays], tx[sfTakerGets]",
+        "isLegalNet(saTakerPays), isLegalNet(saTakerGets)",
+        "further checks for native/IOU, amount > 0, issuer, asset"
+      ],
+      "origin": "ctx.tx (STTx) input transaction",
+      "transformations": [
+        "Type-checked (native/IOU)",
+        "Amount checked (positive, nonzero)",
+        "Issuer and asset checked for validity",
+        "Redundancy checks (XRP for XRP, IOU for IOU)"
+      ],
+      "validated_at": "OfferCreate::preflight"
+    }
+  ],
+  "description": "Implements the OfferCreate transaction logic for the XRPL decentralized exchange, including preflight checks, offer crossing, hybrid/domain offers, and ledger state updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfHybrid flag and sfDomainID field",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for tfHybrid flag and sfDomainID field",
+      "why_false_positive": "explicit if-check validates tfHybrid flag and sfDomainID field for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfImmediateOrCancel and tfFillOrKill flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for tfImmediateOrCancel and tfFillOrKill flags",
+      "why_false_positive": "explicit if-check validates tfImmediateOrCancel and tfFillOrKill flags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "explicit if-check validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfExpiration",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing range validation for sfExpiration",
+      "why_false_positive": "explicit if-check validates sfExpiration range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOfferSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfOfferSequence",
+      "why_false_positive": "explicit if-check validates sfOfferSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfOfferSequence",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing range validation for sfOfferSequence",
+      "why_false_positive": "explicit if-check validates sfOfferSequence range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTakerPays and sfTakerGets",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet function at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfTakerPays and sfTakerGets",
+      "why_false_positive": "isLegalNet function validates sfTakerPays and sfTakerGets for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfTakerPays and sfTakerGets (both native)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfTakerPays and sfTakerGets (both native)",
+      "why_false_positive": "explicit if-check validates sfTakerPays and sfTakerGets (both native) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID and featurePermissionedDEX",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at OfferCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID and featurePermissionedDEX",
+      "why_false_positive": "explicit if-check validates sfDomainID and featurePermissionedDEX for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTakerPays and sfTakerGets (MPTIssue type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "holds<MPTIssue>() type check at OfferCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfTakerPays and sfTakerGets (MPTIssue type)",
+      "why_false_positive": "holds<MPTIssue>() type check validates sfTakerPays and sfTakerGets (MPTIssue type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTakerPays and sfTakerGets (MPTIssue type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "holds<MPTIssue>() type check at OfferCreate::checkExtraFeatures",
+      "issue_pattern": "Missing type validation for sfTakerPays and sfTakerGets (MPTIssue type)",
+      "why_false_positive": "holds<MPTIssue>() type check validates sfTakerPays and sfTakerGets (MPTIssue type) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/OfferCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "OfferCreate::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "OfferCreate::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "OfferCreate::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 37,
+      "name": "OfferCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 97,
+      "name": "OfferCreate::preclaim"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "ApplyFlags const flags",
+        "AccountID const id",
+        "beast::Journal const j",
+        "Asset const& asset"
+      ],
+      "lineno": 154,
+      "name": "OfferCreate::checkAcceptAsset"
+    },
+    {
+      "args": [
+        "PaymentSandbox& psb",
+        "PaymentSandbox& psbCancel",
+        "Amounts const& takerAmount",
+        "std::optional<uint256> const& domainID"
+      ],
+      "lineno": 210,
+      "name": "OfferCreate::flowCross"
+    },
+    {
+      "args": [
+        "STAmount const& amount"
+      ],
+      "lineno": 340,
+      "name": "OfferCreate::format_amount"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "std::shared_ptr<STLedgerEntry> sleOffer",
+        "Keylet const& offerKey",
+        "STAmount const& saTakerPays",
+        "STAmount const& saTakerGets",
+        "std::function<void(SLE::ref, std::optional<uint256>)> const& setDir"
+      ],
+      "lineno": 349,
+      "name": "OfferCreate::applyHybrid"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "Sandbox& sbCancel"
+      ],
+      "lineno": 374,
+      "name": "OfferCreate::applyGuts"
+    },
+    {
+      "args": [],
+      "lineno": 590,
+      "name": "OfferCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "OfferCreate validation is typically covered by unit/integration tests in the rippled codebase, especially in files like test/tx/Offer_test.cpp, test/tx/OfferCreate_test.cpp, and possibly test/tx/HybridDEX_test.cpp or test/tx/PermissionedDEX_test.cpp. These tests cover flag combinations, malformed offers, bad amounts, and feature-flag interactions. However, new fields like sfDomainID and tfHybrid may not be fully covered if recently added; tests for featurePermissionedDEX and hybrid offers should be checked for completeness. Edge cases for issuer/asset validation and bad currency codes should also be verified in test coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in OfferCreate::preflight and OfferCreate::checkExtraFeatures",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfHybrid flag and sfDomainID field",
+      "location": "OfferCreate::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "If tfHybrid flag is set, sfDomainID must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfImmediateOrCancel and tfFillOrKill flags",
+      "location": "OfferCreate::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Both tfImmediateOrCancel and tfFillOrKill cannot be set at the same time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_EXPIRATION",
+      "field": "sfExpiration",
+      "location": "OfferCreate::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "If sfExpiration is present, it must not be zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SEQUENCE",
+      "field": "sfOfferSequence",
+      "location": "OfferCreate::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "If sfOfferSequence is present, it must not be zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfTakerPays and sfTakerGets",
+      "location": "OfferCreate::preflight",
+      "validated_by": "isLegalNet function",
+      "validates": [
+        "Both sfTakerPays and sfTakerGets must be legal network amounts"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "not shown in snippet, but likely temBAD_AMOUNT or similar",
+      "field": "sfTakerPays and sfTakerGets (both native)",
+      "location": "OfferCreate::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Both sfTakerPays and sfTakerGets cannot be native (XRP) at the same time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (likely leads to error elsewhere)",
+      "field": "sfDomainID and featurePermissionedDEX",
+      "location": "OfferCreate::checkExtraFeatures",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "If sfDomainID is present, featurePermissionedDEX must be enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (likely leads to error elsewhere)",
+      "field": "sfTakerPays and sfTakerGets (MPTIssue type)",
+      "location": "OfferCreate::checkExtraFeatures",
+      "validated_by": "holds<MPTIssue>() type check",
+      "validates": [
+        "If featureMPTokensV2 is not enabled, neither sfTakerPays nor sfTakerGets can hold MPTIssue"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

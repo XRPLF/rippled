@@ -1,0 +1,187 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "obj"
+    },
+    {
+      "lineno": 9,
+      "name": "journal"
+    },
+    {
+      "lineno": 9,
+      "name": "annotation"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SignerEntries::deserialize"
+      ],
+      "entry_point": "SignerEntries::deserialize",
+      "purpose": "Deserializes and validates the sfSignerEntries array from an STObject, extracting SignerEntry fields and returning a vector of SignerEntry objects or an error.",
+      "validation_points": [
+        "if (!obj.isFieldPresent(sfSignerEntries))",
+        "if (sEntry.getFName() != sfSignerEntry)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfSignerEntries",
+      "flow": [
+        "obj (STObject)",
+        "obj.isFieldPresent(sfSignerEntries) (validation)",
+        "obj.getFieldArray(sfSignerEntries) (extract STArray)",
+        "sEntries (STArray of STObject)",
+        "for each sEntry in sEntries"
+      ],
+      "origin": "Input STObject parameter 'obj'",
+      "transformations": [
+        "Checked for presence (validation)",
+        "Extracted as STArray"
+      ],
+      "validated_at": "if (!obj.isFieldPresent(sfSignerEntries))"
+    },
+    {
+      "field": "sfSignerEntry",
+      "flow": [
+        "sEntry (STObject in sEntries)",
+        "sEntry.getFName() (validation)"
+      ],
+      "origin": "Each STObject in sEntries (STArray)",
+      "transformations": [
+        "Checked that sEntry is of type sfSignerEntry"
+      ],
+      "validated_at": "if (sEntry.getFName() != sfSignerEntry)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "sEntry.getAccountID(sfAccount)",
+        "account (AccountID)"
+      ],
+      "origin": "Each sEntry (STObject in sEntries)",
+      "transformations": [
+        "Extracted as AccountID"
+      ],
+      "validated_at": "No explicit validation in this function"
+    },
+    {
+      "field": "sfSignerWeight",
+      "flow": [
+        "sEntry.getFieldU16(sfSignerWeight)",
+        "weight (uint16_t)"
+      ],
+      "origin": "Each sEntry (STObject in sEntries)",
+      "transformations": [
+        "Extracted as uint16_t"
+      ],
+      "validated_at": "No explicit validation in this function"
+    },
+    {
+      "field": "sfWalletLocator",
+      "flow": [
+        "sEntry.at(~sfWalletLocator)",
+        "tag (optional<uint256>)"
+      ],
+      "origin": "Each sEntry (STObject in sEntries)",
+      "transformations": [
+        "Extracted as optional<uint256>"
+      ],
+      "validated_at": "No explicit validation in this function"
+    }
+  ],
+  "description": "Implements deserialization and validation of SignerEntries from an STObject for XRPL transactions, ensuring correct structure and extracting relevant fields.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignerEntries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "obj.isFieldPresent(sfSignerEntries) at SignerEntries::deserialize",
+      "issue_pattern": "Missing empty string validation for sfSignerEntries",
+      "why_false_positive": "obj.isFieldPresent(sfSignerEntries) validates sfSignerEntries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignerEntry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sEntry.getFName() != sfSignerEntry at SignerEntries::deserialize (inside for loop over sEntries)",
+      "issue_pattern": "Missing empty string validation for sfSignerEntry",
+      "why_false_positive": "sEntry.getFName() != sfSignerEntry validates sfSignerEntry for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/SignerEntries.cpp",
+  "functions": [
+    {
+      "args": [
+        "STObject const& obj",
+        "beast::Journal journal",
+        "std::string_view annotation"
+      ],
+      "lineno": 9,
+      "name": "SignerEntries::deserialize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This function is likely tested indirectly via transaction processing and multi-signature transaction tests. Look for tests in files such as 'test/tx/SignerEntries_test.cpp', 'test/tx/SetSignerList_test.cpp', or integration tests involving multi-signing. Direct unit tests for malformed or missing sfSignerEntries, or for malformed SignerEntry objects, should exist. Gaps may include: missing tests for edge cases (e.g., empty arrays, invalid field types, duplicate entries), and lack of explicit tests for the optional sfWalletLocator field. No evidence in this file of test hooks or test-specific code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation using xrpl protocol classes (STObject, STArray)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Unexpected(temMALFORMED)",
+      "field": "sfSignerEntries",
+      "location": "SignerEntries::deserialize",
+      "validated_by": "obj.isFieldPresent(sfSignerEntries)",
+      "validates": [
+        "Checks if the SignerEntries array field is present in the input STObject"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Unexpected(temMALFORMED)",
+      "field": "sfSignerEntry",
+      "location": "SignerEntries::deserialize (inside for loop over sEntries)",
+      "validated_by": "sEntry.getFName() != sfSignerEntry",
+      "validates": [
+        "Checks that each entry in the SignerEntries array is of type SignerEntry"
+      ],
+      "validation_type": "type|format"
+    }
+  ]
+}

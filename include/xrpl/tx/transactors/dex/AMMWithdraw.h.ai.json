@@ -1,0 +1,210 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 36,
+      "name": "AMMWithdraw"
+    }
+  ],
+  "description": "Implements the AMMWithdraw transactor for the XRPL, enabling users to withdraw liquidity from an AMM pool in various ways, updating balances and pool composition accordingly.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMWithdraw.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 44,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 47,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 50,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 53,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const account",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokens",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "WithdrawAll withdrawAll",
+        "XRPAmount const& priorBalance",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 75,
+      "name": "equalWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "AccountID const& account",
+        "STAmount const& amountBalance",
+        "STAmount const& amountWithdraw",
+        "std::optional<STAmount> const& amount2Withdraw",
+        "STAmount const& lpTokensAMMBalance",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "WithdrawAll withdrawAll",
+        "XRPAmount const& priorBalance",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 101,
+      "name": "withdraw"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "std::shared_ptr<SLE> const ammSle",
+        "STAmount const& lpTokenBalance",
+        "Asset const& asset1",
+        "Asset const& asset2",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 123,
+      "name": "deleteAMMAccountIfEmpty"
+    },
+    {
+      "args": [
+        "Sandbox& view"
+      ],
+      "lineno": 130,
+      "name": "applyGuts"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amountWithdraw",
+        "std::optional<STAmount> const& amount2Withdraw",
+        "STAmount const& lpTokensAMMBalance",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 143,
+      "name": "withdraw"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokens",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 164,
+      "name": "equalWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 185,
+      "name": "equalWithdrawLimit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 205,
+      "name": "singleWithdraw"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 222,
+      "name": "singleWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& ePrice",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 241,
+      "name": "singleWithdrawEPrice"
+    },
+    {
+      "args": [
+        "STTx const& tx"
+      ],
+      "lineno": 259,
+      "name": "isWithdrawAll"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

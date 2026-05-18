@@ -1,0 +1,304 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "STArray"
+    }
+  ],
+  "description": "Defines the STArray class, a container for a sequence of STObject instances, providing array-like operations and serialization support for the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STArray.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "STArray const&"
+      ],
+      "lineno": 13,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "Iter first",
+        "Iter last"
+      ],
+      "lineno": 18,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SField const& f",
+        "Iter first",
+        "Iter last"
+      ],
+      "lineno": 23,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "STArray const&"
+      ],
+      "lineno": 28,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "STArray&&"
+      ],
+      "lineno": 29,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "STArray&&"
+      ],
+      "lineno": 30,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "SField const& f",
+        "std::size_t n"
+      ],
+      "lineno": 32,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& f",
+        "int depth"
+      ],
+      "lineno": 33,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "int n"
+      ],
+      "lineno": 34,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SField const& f"
+      ],
+      "lineno": 35,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "std::size_t j"
+      ],
+      "lineno": 37,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "std::size_t j"
+      ],
+      "lineno": 40,
+      "name": "operator[]"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "back"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "back"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 49,
+      "name": "emplace_back"
+    },
+    {
+      "args": [
+        "STObject const& object"
+      ],
+      "lineno": 53,
+      "name": "push_back"
+    },
+    {
+      "args": [
+        "STObject&& object"
+      ],
+      "lineno": 56,
+      "name": "push_back"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "clear"
+    },
+    {
+      "args": [
+        "std::size_t n"
+      ],
+      "lineno": 80,
+      "name": "reserve"
+    },
+    {
+      "args": [
+        "STArray& a"
+      ],
+      "lineno": 83,
+      "name": "swap"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions index"
+      ],
+      "lineno": 92,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 95,
+      "name": "add"
+    },
+    {
+      "args": [
+        "bool (*compare)(STObject const& o1, STObject const& o2)"
+      ],
+      "lineno": 98,
+      "name": "sort"
+    },
+    {
+      "args": [
+        "STArray const& s"
+      ],
+      "lineno": 101,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STArray const& s"
+      ],
+      "lineno": 104,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "iterator pos"
+      ],
+      "lineno": 107,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "const_iterator pos"
+      ],
+      "lineno": 110,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "iterator first",
+        "iterator last"
+      ],
+      "lineno": 113,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "const_iterator first",
+        "const_iterator last"
+      ],
+      "lineno": 116,
+      "name": "erase"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 122,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 129,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 130,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "mantissa"
+    },
+    {
+      "lineno": 61,
+      "name": "exponent"
+    },
+    {
+      "lineno": 58,
+      "name": "other"
+    },
+    {
+      "lineno": 93,
+      "name": "os"
+    },
+    {
+      "lineno": 93,
+      "name": "x"
+    },
+    {
+      "lineno": 97,
+      "name": "amount"
+    },
+    {
+      "lineno": 104,
+      "name": "amt"
+    },
+    {
+      "lineno": 104,
+      "name": "num"
+    },
+    {
+      "lineno": 104,
+      "name": "den"
+    },
+    {
+      "lineno": 104,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 113,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "IOUAmount"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 122,
+      "name": "NumberSO"
+    }
+  ],
+  "description": "Defines the IOUAmount class for representing high dynamic range floating point amounts in the XRPL protocol, along with related utility functions and a RAII helper for managing a global switchover flag.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/IOUAmount.h",
+  "functions": [
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 97,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "amt",
+        "num",
+        "den",
+        "roundUp"
+      ],
+      "lineno": 104,
+      "name": "mulRatio"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "getSTNumberSwitchover"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 113,
+      "name": "setSTNumberSwitchover"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

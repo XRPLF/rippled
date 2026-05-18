@@ -1,0 +1,260 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "JobQueue& jobQueue"
+      ],
+      "lineno": 5,
+      "name": "NodeStoreScheduler"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NodeStoreScheduler::scheduleTask",
+        "jobQueue_.isStopped()",
+        "jobQueue_.addJob()",
+        "task.performScheduledTask()"
+      ],
+      "entry_point": "NodeStoreScheduler::scheduleTask",
+      "purpose": "Schedules a NodeStore task for execution, either via the job queue or synchronously if the queue is stopped or rejects the job.",
+      "validation_points": [
+        "jobQueue_.isStopped() (early exit if stopped)",
+        "if (!jobQueue_.addJob(...)) (fallback to synchronous execution if job not added)"
+      ]
+    },
+    {
+      "call_chain": [
+        "NodeStoreScheduler::onFetch",
+        "jobQueue_.isStopped()",
+        "jobQueue_.addLoadEvents()"
+      ],
+      "entry_point": "NodeStoreScheduler::onFetch",
+      "purpose": "Records a fetch event in the job queue, unless the queue is stopped.",
+      "validation_points": [
+        "jobQueue_.isStopped() (early exit if stopped)"
+      ]
+    },
+    {
+      "call_chain": [
+        "NodeStoreScheduler::onBatchWrite",
+        "jobQueue_.isStopped()",
+        "jobQueue_.addLoadEvents()"
+      ],
+      "entry_point": "NodeStoreScheduler::onBatchWrite",
+      "purpose": "Records a batch write event in the job queue, unless the queue is stopped.",
+      "validation_points": [
+        "jobQueue_.isStopped() (early exit if stopped)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "jobQueue_",
+      "flow": [
+        "NodeStoreScheduler::NodeStoreScheduler (constructor)",
+        "NodeStoreScheduler::scheduleTask / onFetch / onBatchWrite",
+        "jobQueue_.isStopped()",
+        "jobQueue_.addJob() / jobQueue_.addLoadEvents()"
+      ],
+      "origin": "Injected via NodeStoreScheduler constructor (JobQueue& jobQueue)",
+      "transformations": [
+        "Checked for stopped state",
+        "Used to schedule jobs or record load events"
+      ],
+      "validated_at": "jobQueue_.isStopped() in all public methods"
+    },
+    {
+      "field": "task (NodeStore::Task&)",
+      "flow": [
+        "scheduleTask argument",
+        "Lambda passed to jobQueue_.addJob",
+        "task.performScheduledTask()"
+      ],
+      "origin": "Passed as argument to scheduleTask",
+      "transformations": [
+        "Wrapped in lambda for deferred execution",
+        "Executed synchronously if jobQueue_.addJob fails"
+      ],
+      "validated_at": "Indirectly validated by jobQueue_.isStopped() and jobQueue_.addJob()"
+    },
+    {
+      "field": "report (NodeStore::FetchReport or BatchWriteReport)",
+      "flow": [
+        "onFetch/onBatchWrite argument",
+        "jobQueue_.addLoadEvents()"
+      ],
+      "origin": "Passed as argument to onFetch/onBatchWrite",
+      "transformations": [
+        "FetchType checked to select job type (jtNS_ASYNC_READ or jtNS_SYNC_READ)",
+        "Elapsed time and count extracted"
+      ],
+      "validated_at": "jobQueue_.isStopped() in onFetch/onBatchWrite"
+    }
+  ],
+  "description": "Implements the NodeStoreScheduler class, which schedules and manages NodeStore-related tasks and load events using a JobQueue.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jobQueue_ (JobQueue state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jobQueue_.isStopped() at NodeStoreScheduler::scheduleTask",
+      "issue_pattern": "Missing empty string validation for jobQueue_ (JobQueue state)",
+      "why_false_positive": "jobQueue_.isStopped() validates jobQueue_ (JobQueue state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jobQueue_ (JobQueue state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jobQueue_.isStopped() at NodeStoreScheduler::onFetch",
+      "issue_pattern": "Missing empty string validation for jobQueue_ (JobQueue state)",
+      "why_false_positive": "jobQueue_.isStopped() validates jobQueue_ (JobQueue state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jobQueue_ (JobQueue state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jobQueue_.isStopped() at NodeStoreScheduler::onBatchWrite",
+      "issue_pattern": "Missing empty string validation for jobQueue_ (JobQueue state)",
+      "why_false_positive": "jobQueue_.isStopped() validates jobQueue_ (JobQueue state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jobQueue_.addJob return value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!jobQueue_.addJob(...)) at NodeStoreScheduler::scheduleTask",
+      "issue_pattern": "Missing empty string validation for jobQueue_.addJob return value",
+      "why_false_positive": "if (!jobQueue_.addJob(...)) validates jobQueue_.addJob return value for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/NodeStoreScheduler.cpp",
+  "functions": [
+    {
+      "args": [
+        "JobQueue& jobQueue"
+      ],
+      "lineno": 5,
+      "name": "NodeStoreScheduler"
+    },
+    {
+      "args": [
+        "NodeStore::Task& task"
+      ],
+      "lineno": 9,
+      "name": "scheduleTask"
+    },
+    {
+      "args": [
+        "NodeStore::FetchReport const& report"
+      ],
+      "lineno": 22,
+      "name": "onFetch"
+    },
+    {
+      "args": [
+        "NodeStore::BatchWriteReport const& report"
+      ],
+      "lineno": 32,
+      "name": "onBatchWrite"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Direct unit tests for NodeStoreScheduler are not shown in this file. Likely test files would be in the test/app/main or test/nodestore directories, possibly named NodeStoreScheduler_test.cpp or similar. Tests should cover: (1) scheduleTask with jobQueue stopped and not stopped, (2) addJob failing, (3) onFetch/onBatchWrite with jobQueue stopped and not stopped. Gaps: No evidence of tests for synchronous fallback path (when addJob fails), or for correct event recording in addLoadEvents. Integration tests may cover these paths indirectly.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (custom logic, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (early return)",
+      "field": "jobQueue_ (JobQueue state)",
+      "location": "NodeStoreScheduler::scheduleTask",
+      "validated_by": "jobQueue_.isStopped()",
+      "validates": [
+        "Checks if the JobQueue is stopped before scheduling a task"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (early return)",
+      "field": "jobQueue_ (JobQueue state)",
+      "location": "NodeStoreScheduler::onFetch",
+      "validated_by": "jobQueue_.isStopped()",
+      "validates": [
+        "Checks if the JobQueue is stopped before adding load events for fetch"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (early return)",
+      "field": "jobQueue_ (JobQueue state)",
+      "location": "NodeStoreScheduler::onBatchWrite",
+      "validated_by": "jobQueue_.isStopped()",
+      "validates": [
+        "Checks if the JobQueue is stopped before adding load events for batch write"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (fallback to synchronous execution)",
+      "field": "jobQueue_.addJob return value",
+      "location": "NodeStoreScheduler::scheduleTask",
+      "validated_by": "if (!jobQueue_.addJob(...))",
+      "validates": [
+        "Checks if the job was successfully added to the queue; if not, runs the task synchronously"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

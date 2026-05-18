@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines database initialization pragmas, constants, and SQL schema definitions for ledger, transaction, and wallet databases in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/rdb/DBInit.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

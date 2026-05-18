@@ -1,0 +1,289 @@
+{
+  "args": [
+    {
+      "lineno": 26,
+      "name": "r"
+    },
+    {
+      "lineno": 44,
+      "name": "presets"
+    },
+    {
+      "lineno": 48,
+      "name": "presets"
+    },
+    {
+      "lineno": 49,
+      "name": "digest"
+    },
+    {
+      "lineno": 50,
+      "name": "amendments"
+    },
+    {
+      "lineno": 60,
+      "name": "feature"
+    },
+    {
+      "lineno": 65,
+      "name": "other"
+    },
+    {
+      "lineno": 68,
+      "name": "presets"
+    },
+    {
+      "lineno": 73,
+      "name": "presets"
+    },
+    {
+      "lineno": 74,
+      "name": "digest"
+    },
+    {
+      "lineno": 75,
+      "name": "amendments"
+    },
+    {
+      "lineno": 80,
+      "name": "feature"
+    },
+    {
+      "lineno": 86,
+      "name": "feature"
+    },
+    {
+      "lineno": 90,
+      "name": "other"
+    },
+    {
+      "lineno": 94,
+      "name": "other"
+    },
+    {
+      "lineno": 98,
+      "name": "feature"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "presets",
+        "digest",
+        "amendments"
+      ],
+      "lineno": 36,
+      "name": "Rules::Impl"
+    },
+    {
+      "args": [
+        "presets",
+        "digest",
+        "amendments"
+      ],
+      "lineno": 67,
+      "name": "Rules"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "setCurrentTransactionRules",
+        "Number::setMantissaScale",
+        "getCurrentTransactionRulesRef"
+      ],
+      "entry_point": "setCurrentTransactionRules",
+      "purpose": "Sets the global transaction rules, updates mantissa scale based on enabled features, and stores the new Rules object.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Rules::enabled",
+        "XRPL_ASSERT(impl_, ...)",
+        "Rules::Impl::enabled"
+      ],
+      "entry_point": "Rules::enabled",
+      "purpose": "Checks if a feature is enabled in the current Rules object.",
+      "validation_points": [
+        "XRPL_ASSERT(impl_, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Rules::operator==",
+        "XRPL_ASSERT(impl_ && other.impl_, ...)",
+        "Rules::Impl::operator==",
+        "XRPL_ASSERT(presets_ == other.presets_, ...)"
+      ],
+      "entry_point": "Rules::operator==",
+      "purpose": "Compares two Rules objects for equality, ensuring both are initialized and have matching presets if digests are present.",
+      "validation_points": [
+        "XRPL_ASSERT(impl_ && other.impl_, ...)",
+        "XRPL_ASSERT(presets_ == other.presets_, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFeatureEnabled",
+        "getCurrentTransactionRules",
+        "Rules::enabled"
+      ],
+      "entry_point": "isFeatureEnabled",
+      "purpose": "Checks if a feature is enabled in the globally set Rules.",
+      "validation_points": [
+        "Rules::enabled: XRPL_ASSERT(impl_, ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "presets_",
+      "flow": [
+        "Rules::Rules(presets)",
+        "Rules::Impl(presets)",
+        "Impl::presets_"
+      ],
+      "origin": "Passed as parameter to Rules::Rules and Rules::Impl constructors",
+      "transformations": [
+        "Stored as const reference in Impl"
+      ],
+      "validated_at": "XRPL_ASSERT(presets_ == other.presets_, ...) in Rules::Impl::operator=="
+    },
+    {
+      "field": "impl_ (Rules::impl_)",
+      "flow": [
+        "Rules::Rules",
+        "Rules::impl_",
+        "Used in Rules::enabled, Rules::operator==, etc."
+      ],
+      "origin": "Constructed in Rules::Rules (via std::make_shared<Impl>)",
+      "transformations": [
+        "Shared pointer assignment"
+      ],
+      "validated_at": "XRPL_ASSERT(impl_, ...) in Rules::enabled; XRPL_ASSERT(impl_ && other.impl_, ...) in Rules::operator=="
+    },
+    {
+      "field": "digest_",
+      "flow": [
+        "Rules::Rules(presets, digest, amendments)",
+        "Rules::Impl(presets, digest, amendments)",
+        "Impl::digest_"
+      ],
+      "origin": "Passed as parameter to Rules::Rules and Rules::Impl constructors",
+      "transformations": [
+        "Optional assignment"
+      ],
+      "validated_at": "Checked for presence in Rules::Impl::operator=="
+    },
+    {
+      "field": "feature",
+      "flow": [
+        "isFeatureEnabled(feature)",
+        "Rules::enabled(feature)",
+        "Impl::enabled(feature)"
+      ],
+      "origin": "Parameter to Rules::enabled and isFeatureEnabled",
+      "transformations": [
+        "Checked for presence in presets_ and set_"
+      ],
+      "validated_at": "Indirectly validated by XRPL_ASSERT(impl_, ...) in Rules::enabled"
+    }
+  ],
+  "description": "Implements the Rules class and related functions for managing protocol feature flags and amendments in the XRPL system, including global transaction rules and feature enablement checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Type safety for all parameters and members via C++ type system",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Type safety for all parameters and members via C++ type system validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for Type safety for all parameters and members via C++ type system",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates Type safety for all parameters and members via C++ type system automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "presets_ (presets parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Rules::Impl::operator==",
+      "issue_pattern": "Missing empty string validation for presets_ (presets parameter)",
+      "why_false_positive": "XRPL_ASSERT validates presets_ (presets parameter) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Rules.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "getCurrentTransactionRulesRef"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "getCurrentTransactionRules"
+    },
+    {
+      "args": [
+        "r"
+      ],
+      "lineno": 25,
+      "name": "setCurrentTransactionRules"
+    },
+    {
+      "args": [
+        "feature"
+      ],
+      "lineno": 97,
+      "name": "isFeatureEnabled"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains core logic for feature flag validation and rule management. Typical test coverage would be in unit tests for Rules, likely in files such as 'Rules_test.cpp', 'Feature_test.cpp', or protocol/amendment-related tests. The XRPL_ASSERT validations are runtime checks and may not be directly tested unless assertions are specifically checked in tests. There is no evidence in this file of explicit test hooks or test-only code. Gaps: No direct validation of presets_ on construction (only checked for equality in operator==), and no explicit error handling for invalid presets or null impl_ beyond assertions. Test coverage may miss assertion failures unless assertions are enabled and tested for.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Type safety for all parameters and members via C++ type system"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "presets_ (presets parameter)",
+      "location": "Rules::Impl::operator==",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the presets_ set in both compared Impl objects are equal before comparing digests"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

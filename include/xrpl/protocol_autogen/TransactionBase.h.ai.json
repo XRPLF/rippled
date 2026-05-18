@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "tx"
+    },
+    {
+      "lineno": 29,
+      "name": "reason"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 18,
+      "name": "TransactionBase"
+    }
+  ],
+  "description": "Defines TransactionBase, a base class providing type-safe, read-only accessors for common XRPL transaction fields, wrapping an immutable STTx object and offering validation and field access methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/TransactionBase.h",
+  "functions": [
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 22,
+      "name": "TransactionBase"
+    },
+    {
+      "args": [
+        "reason"
+      ],
+      "lineno": 29,
+      "name": "validate"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getTransactionType"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "getFee"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "getSigningPubKey"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "getFlags"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "hasFlags"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "getSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "hasSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "getLastLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 183,
+      "name": "hasLastLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 194,
+      "name": "getAccountTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 205,
+      "name": "hasAccountTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 216,
+      "name": "getOperationLimit"
+    },
+    {
+      "args": [],
+      "lineno": 227,
+      "name": "hasOperationLimit"
+    },
+    {
+      "args": [],
+      "lineno": 238,
+      "name": "getMemos"
+    },
+    {
+      "args": [],
+      "lineno": 249,
+      "name": "hasMemos"
+    },
+    {
+      "args": [],
+      "lineno": 260,
+      "name": "getTicketSequence"
+    },
+    {
+      "args": [],
+      "lineno": 271,
+      "name": "hasTicketSequence"
+    },
+    {
+      "args": [],
+      "lineno": 282,
+      "name": "getTxnSignature"
+    },
+    {
+      "args": [],
+      "lineno": 293,
+      "name": "hasTxnSignature"
+    },
+    {
+      "args": [],
+      "lineno": 304,
+      "name": "getSigners"
+    },
+    {
+      "args": [],
+      "lineno": 315,
+      "name": "hasSigners"
+    },
+    {
+      "args": [],
+      "lineno": 326,
+      "name": "getNetworkID"
+    },
+    {
+      "args": [],
+      "lineno": 337,
+      "name": "hasNetworkID"
+    },
+    {
+      "args": [],
+      "lineno": 348,
+      "name": "getDelegate"
+    },
+    {
+      "args": [],
+      "lineno": 359,
+      "name": "hasDelegate"
+    },
+    {
+      "args": [],
+      "lineno": 370,
+      "name": "getSTTx"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

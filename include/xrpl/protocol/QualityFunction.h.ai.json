@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 35,
+      "name": "quality"
+    },
+    {
+      "lineno": 38,
+      "name": "qf"
+    },
+    {
+      "lineno": 44,
+      "name": "quality"
+    },
+    {
+      "lineno": 63,
+      "name": "amounts"
+    },
+    {
+      "lineno": 63,
+      "name": "tfee"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Quality const& quality, CLOBLikeTag",
+        "TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag"
+      ],
+      "lineno": 16,
+      "name": "QualityFunction"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "AMMTag"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "CLOBLikeTag"
+    }
+  ],
+  "description": "Defines the QualityFunction class, which models the average quality of a path in the XRPL protocol as a function of output, supporting both AMM and CLOB offer types. Provides methods to combine quality functions, compute output for a given average quality, and check if the function is constant.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/QualityFunction.h",
+  "functions": [
+    {
+      "args": [
+        "qf"
+      ],
+      "lineno": 38,
+      "name": "combine"
+    },
+    {
+      "args": [
+        "quality"
+      ],
+      "lineno": 44,
+      "name": "outFromAvgQ"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "isConst"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "quality"
+    },
+    {
+      "args": [
+        "amounts",
+        "tfee",
+        "AMMTag"
+      ],
+      "lineno": 63,
+      "name": "QualityFunction"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

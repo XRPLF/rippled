@@ -1,0 +1,343 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 31,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 55,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 80,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 102,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 125,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 140,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 165,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 22,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 34,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 37,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 40,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 62,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 65,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 77,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 81,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 84,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 104,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 107,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 127,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 130,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 142,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 145,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 170,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 173,
+      "name": "PreclaimContext const& ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 13,
+      "name": "XChainCreateBridge"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 28,
+      "name": "BridgeModify"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 52,
+      "name": "XChainClaim"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 72,
+      "name": "XChainCommit"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 99,
+      "name": "XChainCreateClaimID"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 122,
+      "name": "XChainAddClaimAttestation"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 137,
+      "name": "XChainAddAccountCreateAttestation"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 162,
+      "name": "XChainCreateAccountCommit"
+    }
+  ],
+  "description": "Defines classes for cross-chain transaction types and related logic in the XRPL (XRP Ledger) protocol, including bridge creation, modification, claims, commits, attestations, and account creation for cross-chain transfers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/bridge/XChainBridge.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 34,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 37,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 40,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 62,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 65,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 77,
+      "name": "makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 81,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 84,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 104,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 107,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 127,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 130,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 142,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 145,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 170,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 173,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 101,
+      "name": "account"
+    },
+    {
+      "lineno": 101,
+      "name": "holder"
+    },
+    {
+      "lineno": 101,
+      "name": "asset"
+    },
+    {
+      "lineno": 101,
+      "name": "asset2"
+    },
+    {
+      "lineno": 101,
+      "name": "sequence"
+    },
+    {
+      "lineno": 101,
+      "name": "fee"
+    },
+    {
+      "lineno": 164,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 164,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 22,
+      "name": "AMMClawback"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset2",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 93,
+      "name": "AMMClawbackBuilder"
+    }
+  ],
+  "description": "Defines the AMMClawback transaction type and its builder for the XRPL protocol, providing type-safe accessors, mutators, and construction/signing logic for AMMClawback transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMClawback.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "AMMClawback"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getHolder"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "hasAmount"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset2",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 101,
+      "name": "AMMClawbackBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 113,
+      "name": "AMMClawbackBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 124,
+      "name": "setHolder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 134,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 144,
+      "name": "setAsset2"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 154,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 164,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

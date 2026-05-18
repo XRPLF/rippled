@@ -1,0 +1,64 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "path"
+    },
+    {
+      "lineno": 27,
+      "name": "ios"
+    },
+    {
+      "lineno": 27,
+      "name": "cb"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& path, boost::asio::io_context& ios, callback_type cb"
+      ],
+      "lineno": 13,
+      "name": "WorkFile"
+    }
+  ],
+  "description": "Implements the WorkFile class for asynchronous file operations using Boost.Asio, allowing file contents to be read and returned via a callback.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/WorkFile.h",
+  "functions": [
+    {
+      "args": [
+        "path",
+        "ios",
+        "cb"
+      ],
+      "lineno": 27,
+      "name": "WorkFile"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "~WorkFile"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "cancel"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

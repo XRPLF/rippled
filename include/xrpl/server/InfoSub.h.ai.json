@@ -1,0 +1,386 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "InfoSubRequest"
+    },
+    {
+      "args": [
+        "Source& source"
+      ],
+      "lineno": 27,
+      "name": "InfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "Source"
+    }
+  ],
+  "description": "Defines classes and interfaces for managing client subscriptions to data feeds in the XRPL server, including subscription sources, account and ledger subscriptions, and request handling.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/InfoSub.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "doClose"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 20,
+      "name": "doStatus"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool realTime"
+      ],
+      "lineno": 34,
+      "name": "subAccount"
+    },
+    {
+      "args": [
+        "ref isplistener",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool realTime"
+      ],
+      "lineno": 39,
+      "name": "unsubAccount"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool realTime"
+      ],
+      "lineno": 44,
+      "name": "unsubAccountInternal"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "AccountID const& account"
+      ],
+      "lineno": 53,
+      "name": "subAccountHistory"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "AccountID const& account",
+        "bool historyOnly"
+      ],
+      "lineno": 62,
+      "name": "unsubAccountHistory"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener",
+        "AccountID const& account",
+        "bool historyOnly"
+      ],
+      "lineno": 70,
+      "name": "unsubAccountHistoryInternal"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "Json::Value& jvResult"
+      ],
+      "lineno": 75,
+      "name": "subLedger"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 76,
+      "name": "unsubLedger"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 78,
+      "name": "subBookChanges"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 79,
+      "name": "unsubBookChanges"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 81,
+      "name": "subManifests"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 82,
+      "name": "unsubManifests"
+    },
+    {
+      "args": [
+        "Manifest const&"
+      ],
+      "lineno": 83,
+      "name": "pubManifest"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "Json::Value& jvResult",
+        "bool admin"
+      ],
+      "lineno": 85,
+      "name": "subServer"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 86,
+      "name": "unsubServer"
+    },
+    {
+      "args": [
+        "ref ispListener",
+        "Book const&"
+      ],
+      "lineno": 88,
+      "name": "subBook"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener",
+        "Book const&"
+      ],
+      "lineno": 89,
+      "name": "unsubBook"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 91,
+      "name": "subTransactions"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 92,
+      "name": "unsubTransactions"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 94,
+      "name": "subRTTransactions"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 95,
+      "name": "unsubRTTransactions"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 97,
+      "name": "subValidations"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 98,
+      "name": "unsubValidations"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 100,
+      "name": "subPeerStatus"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 102,
+      "name": "unsubPeerStatus"
+    },
+    {
+      "args": [
+        "std::function<Json::Value(void)> const&"
+      ],
+      "lineno": 103,
+      "name": "pubPeerStatus"
+    },
+    {
+      "args": [
+        "ref ispListener"
+      ],
+      "lineno": 105,
+      "name": "subConsensus"
+    },
+    {
+      "args": [
+        "std::uint64_t uListener"
+      ],
+      "lineno": 106,
+      "name": "unsubConsensus"
+    },
+    {
+      "args": [
+        "std::string const& strUrl"
+      ],
+      "lineno": 112,
+      "name": "findRpcSub"
+    },
+    {
+      "args": [
+        "std::string const& strUrl",
+        "ref rspEntry"
+      ],
+      "lineno": 113,
+      "name": "addRpcSub"
+    },
+    {
+      "args": [
+        "std::string const& strUrl"
+      ],
+      "lineno": 114,
+      "name": "tryRemoveRpcSub"
+    },
+    {
+      "args": [
+        "Source& source"
+      ],
+      "lineno": 118,
+      "name": "InfoSub"
+    },
+    {
+      "args": [
+        "Source& source",
+        "Consumer consumer"
+      ],
+      "lineno": 119,
+      "name": "InfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "~InfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "getConsumer"
+    },
+    {
+      "args": [
+        "Json::Value const& jvObj",
+        "bool broadcast"
+      ],
+      "lineno": 126,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "getSeq"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "onSendEmpty"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "bool rt"
+      ],
+      "lineno": 132,
+      "name": "insertSubAccountInfo"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "bool rt"
+      ],
+      "lineno": 134,
+      "name": "deleteSubAccountInfo"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 137,
+      "name": "insertSubAccountHistory"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 139,
+      "name": "deleteSubAccountHistory"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "clearRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<InfoSubRequest> const& req"
+      ],
+      "lineno": 143,
+      "name": "setRequest"
+    },
+    {
+      "args": [],
+      "lineno": 145,
+      "name": "getRequest"
+    },
+    {
+      "args": [
+        "unsigned int apiVersion"
+      ],
+      "lineno": 147,
+      "name": "setApiVersion"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "getApiVersion"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "assign_id"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

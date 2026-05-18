@@ -1,0 +1,28 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "void"
+      ],
+      "lineno": 11,
+      "name": "basic_seconds_clock"
+    }
+  ],
+  "description": "Defines a basic_seconds_clock class in the beast namespace, providing a clock with at least one-second resolution, optimized for performance by sampling time in a dedicated thread.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/clock/basic_seconds_clock.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "now"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    }
+  ]
+}

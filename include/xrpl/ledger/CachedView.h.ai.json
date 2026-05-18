@@ -1,0 +1,188 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "base"
+    },
+    {
+      "lineno": 27,
+      "name": "cache"
+    },
+    {
+      "lineno": 34,
+      "name": "k"
+    },
+    {
+      "lineno": 37,
+      "name": "k"
+    },
+    {
+      "lineno": 60,
+      "name": "key"
+    },
+    {
+      "lineno": 60,
+      "name": "last"
+    },
+    {
+      "lineno": 75,
+      "name": "key"
+    },
+    {
+      "lineno": 90,
+      "name": "key"
+    },
+    {
+      "lineno": 95,
+      "name": "key"
+    },
+    {
+      "lineno": 102,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "DigestAwareReadView const* base",
+        "CachedSLEs& cache"
+      ],
+      "lineno": 13,
+      "name": "CachedViewImpl"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Base const> const& base",
+        "CachedSLEs& cache"
+      ],
+      "lineno": 109,
+      "name": "CachedView"
+    }
+  ],
+  "description": "Provides a CachedView wrapper around DigestAwareReadView to add caching of ledger entries using CachedSLEs, with thread safety and encapsulation features.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/CachedView.h",
+  "functions": [
+    {
+      "args": [
+        "DigestAwareReadView const* base",
+        "CachedSLEs& cache"
+      ],
+      "lineno": 27,
+      "name": "CachedViewImpl"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 34,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 37,
+      "name": "read"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "header"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "rules"
+    },
+    {
+      "args": [
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 60,
+      "name": "succ"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 75,
+      "name": "slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "txsEnd"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 90,
+      "name": "txExists"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 95,
+      "name": "txRead"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 102,
+      "name": "digest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Base const> const& base",
+        "CachedSLEs& cache"
+      ],
+      "lineno": 117,
+      "name": "CachedView"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "base"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ]
+}

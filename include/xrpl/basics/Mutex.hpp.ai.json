@@ -1,0 +1,60 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ProtectedDataType"
+    },
+    {
+      "lineno": 11,
+      "name": "MutexType"
+    },
+    {
+      "lineno": 15,
+      "name": "LockType"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "MutexType& mutex, ProtectedDataType& data"
+      ],
+      "lineno": 18,
+      "name": "Lock"
+    },
+    {
+      "args": [
+        "ProtectedDataType data"
+      ],
+      "lineno": 56,
+      "name": "Mutex"
+    }
+  ],
+  "description": "Provides a thread-safe container (Mutex) for protecting data with a mutex, inspired by Rust's Mutex, and a Lock class for accessing the protected data safely.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Mutex.hpp",
+  "functions": [
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 66,
+      "name": "Mutex::make"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "Mutex::lock (const)"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "Mutex::lock"
+    }
+  ],
+  "language": "cpp header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

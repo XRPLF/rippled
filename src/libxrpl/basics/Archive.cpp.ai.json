@@ -1,0 +1,653 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "src"
+    },
+    {
+      "lineno": 11,
+      "name": "dst"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "extractTarLz4"
+      ],
+      "entry_point": "extractTarLz4",
+      "purpose": "Extracts a .tar.lz4 archive from src to dst, validating inputs and archive operations at each step.",
+      "validation_points": [
+        "if (!is_regular_file(src))",
+        "if (!ar)",
+        "if (archive_read_support_format_tar(ar.get()) < ARCHIVE_OK)",
+        "if (archive_read_support_filter_lz4(ar.get()) < ARCHIVE_OK)",
+        "if (archive_read_open_filename(ar.get(), src.string().c_str(), 10240) < ARCHIVE_OK)",
+        "if (!aw)",
+        "if (archive_write_disk_set_options(...) < ARCHIVE_OK)",
+        "if (archive_write_disk_set_standard_lookup(aw.get()) < ARCHIVE_OK)",
+        "if (result < ARCHIVE_OK) in archive_read_next_header",
+        "if (archive_write_header(aw.get(), entry) < ARCHIVE_OK)",
+        "if (result < ARCHIVE_OK) in archive_read_data_block",
+        "if (archive_write_data_block(aw.get(), buf, sz, offset) < ARCHIVE_OK)",
+        "if (archive_write_finish_entry(aw.get()) < ARCHIVE_OK)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "src (source archive path)",
+      "flow": [
+        "extractTarLz4 argument",
+        "is_regular_file(src) validation",
+        "src.string().c_str() passed to archive_read_open_filename"
+      ],
+      "origin": "Function argument to extractTarLz4",
+      "transformations": [
+        "Checked for regular file",
+        "Converted to string for libarchive"
+      ],
+      "validated_at": "is_regular_file(src)"
+    },
+    {
+      "field": "ar (archive read pointer)",
+      "flow": [
+        "archive_read_new()",
+        "archive_read_support_format_tar(ar.get())",
+        "archive_read_support_filter_lz4(ar.get())",
+        "archive_read_open_filename(ar.get(), ...)",
+        "archive_read_next_header(ar.get(), ...)",
+        "archive_read_data_block(ar.get(), ...)"
+      ],
+      "origin": "archive_read_new()",
+      "transformations": [
+        "Pointer allocation",
+        "Format and filter support enabled",
+        "Opened with filename",
+        "Used for reading headers and data blocks"
+      ],
+      "validated_at": [
+        "if (!ar)",
+        "if (archive_read_support_format_tar(ar.get()) < ARCHIVE_OK)",
+        "if (archive_read_support_filter_lz4(ar.get()) < ARCHIVE_OK)",
+        "if (archive_read_open_filename(ar.get(), ...) < ARCHIVE_OK)",
+        "if (result < ARCHIVE_OK) in archive_read_next_header",
+        "if (result < ARCHIVE_OK) in archive_read_data_block"
+      ]
+    },
+    {
+      "field": "aw (archive write pointer)",
+      "flow": [
+        "archive_write_disk_new()",
+        "archive_write_disk_set_options(aw.get(), ...)",
+        "archive_write_disk_set_standard_lookup(aw.get())",
+        "archive_write_header(aw.get(), entry)",
+        "archive_write_data_block(aw.get(), ...)",
+        "archive_write_finish_entry(aw.get())"
+      ],
+      "origin": "archive_write_disk_new()",
+      "transformations": [
+        "Pointer allocation",
+        "Options set for extraction",
+        "Standard lookup set",
+        "Used for writing headers and data blocks"
+      ],
+      "validated_at": [
+        "if (!aw)",
+        "if (archive_write_disk_set_options(...) < ARCHIVE_OK)",
+        "if (archive_write_disk_set_standard_lookup(aw.get()) < ARCHIVE_OK)",
+        "if (archive_write_header(aw.get(), entry) < ARCHIVE_OK)",
+        "if (archive_write_data_block(aw.get(), buf, sz, offset) < ARCHIVE_OK)",
+        "if (archive_write_finish_entry(aw.get()) < ARCHIVE_OK)"
+      ]
+    },
+    {
+      "field": "archive_entry (per file in archive)",
+      "flow": [
+        "archive_read_next_header(ar.get(), &entry)",
+        "archive_entry_set_pathname(entry, ...)",
+        "archive_write_header(aw.get(), entry)",
+        "archive_entry_size(entry)",
+        "archive_read_data_block(ar.get(), ...)",
+        "archive_write_data_block(aw.get(), ...)",
+        "archive_write_finish_entry(aw.get())"
+      ],
+      "origin": "archive_read_next_header(ar.get(), &entry)",
+      "transformations": [
+        "Pathname rewritten to be under dst",
+        "Header and data blocks written to disk"
+      ],
+      "validated_at": [
+        "if (result < ARCHIVE_OK) in archive_read_next_header",
+        "if (archive_write_header(aw.get(), entry) < ARCHIVE_OK)",
+        "if (archive_write_data_block(aw.get(), buf, sz, offset) < ARCHIVE_OK)",
+        "if (archive_write_finish_entry(aw.get()) < ARCHIVE_OK)"
+      ]
+    }
+  ],
+  "description": "Provides a function to extract files from a .tar.lz4 archive to a destination directory using libarchive and Boost filesystem, with error handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "src (source file path)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_regular_file() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for src (source file path)",
+      "why_false_positive": "is_regular_file() validates src (source file path) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (archive pointer allocation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_new() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for ar (archive pointer allocation)",
+      "why_false_positive": "archive_read_new() validates ar (archive pointer allocation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ar (archive pointer allocation)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "archive_read_new() at extractTarLz4",
+      "issue_pattern": "Missing type validation for ar (archive pointer allocation)",
+      "why_false_positive": "archive_read_new() validates ar (archive pointer allocation) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (tar format support)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_support_format_tar() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for ar (tar format support)",
+      "why_false_positive": "archive_read_support_format_tar() validates ar (tar format support) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (lz4 filter support)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_support_filter_lz4() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for ar (lz4 filter support)",
+      "why_false_positive": "archive_read_support_filter_lz4() validates ar (lz4 filter support) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (archive open)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_open_filename() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for ar (archive open)",
+      "why_false_positive": "archive_read_open_filename() validates ar (archive open) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ar (archive open)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "archive_read_open_filename() at extractTarLz4",
+      "issue_pattern": "Missing format validation for ar (archive open)",
+      "why_false_positive": "archive_read_open_filename() validates ar (archive open) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "aw (archive write pointer allocation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_write_disk_new() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for aw (archive write pointer allocation)",
+      "why_false_positive": "archive_write_disk_new() validates aw (archive write pointer allocation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "aw (archive write pointer allocation)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "archive_write_disk_new() at extractTarLz4",
+      "issue_pattern": "Missing type validation for aw (archive write pointer allocation)",
+      "why_false_positive": "archive_write_disk_new() validates aw (archive write pointer allocation) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "aw (write disk options)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_write_disk_set_options() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for aw (write disk options)",
+      "why_false_positive": "archive_write_disk_set_options() validates aw (write disk options) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "aw (standard lookup)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_write_disk_set_standard_lookup() at extractTarLz4",
+      "issue_pattern": "Missing empty string validation for aw (standard lookup)",
+      "why_false_positive": "archive_write_disk_set_standard_lookup() validates aw (standard lookup) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (archive read next header)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_next_header() at extractTarLz4 (while loop)",
+      "issue_pattern": "Missing empty string validation for ar (archive read next header)",
+      "why_false_positive": "archive_read_next_header() validates ar (archive read next header) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ar (archive read next header)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "archive_read_next_header() at extractTarLz4 (while loop)",
+      "issue_pattern": "Missing format validation for ar (archive read next header)",
+      "why_false_positive": "archive_read_next_header() validates ar (archive read next header) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "aw (archive write header)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_write_header() at extractTarLz4 (while loop)",
+      "issue_pattern": "Missing empty string validation for aw (archive write header)",
+      "why_false_positive": "archive_write_header() validates aw (archive write header) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "aw (archive write header)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "archive_write_header() at extractTarLz4 (while loop)",
+      "issue_pattern": "Missing format validation for aw (archive write header)",
+      "why_false_positive": "archive_write_header() validates aw (archive write header) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ar (archive read data block)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_read_data_block() at extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "issue_pattern": "Missing empty string validation for ar (archive read data block)",
+      "why_false_positive": "archive_read_data_block() validates ar (archive read data block) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ar (archive read data block)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "archive_read_data_block() at extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "issue_pattern": "Missing format validation for ar (archive read data block)",
+      "why_false_positive": "archive_read_data_block() validates ar (archive read data block) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "aw (archive write data block)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "archive_write_data_block() at extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "issue_pattern": "Missing empty string validation for aw (archive write data block)",
+      "why_false_positive": "archive_write_data_block() validates aw (archive write data block) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "aw (archive write data block)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "archive_write_data_block() at extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "issue_pattern": "Missing format validation for aw (archive write data block)",
+      "why_false_positive": "archive_write_data_block() validates aw (archive write data block) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/Archive.cpp",
+  "functions": [
+    {
+      "args": [
+        "src",
+        "dst"
+      ],
+      "lineno": 10,
+      "name": "extractTarLz4"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or references). Typical test coverage would be in a separate test suite, likely under a test/ or tests/ directory, possibly named Archive_test.cpp or similar. Gaps: No evidence of tests for invalid src, archive allocation failures, format/filter support failures, or error handling for corrupt/incomplete archives. Edge cases (e.g., permission errors, disk full, path traversal) may not be covered unless explicitly tested elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "libarchive, boost::filesystem, custom Throw<>",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Invalid source file\")",
+      "field": "src (source file path)",
+      "location": "extractTarLz4",
+      "validated_by": "is_regular_file()",
+      "validates": [
+        "Checks that the source path refers to a regular file (not directory, symlink, etc.)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Failed to allocate archive\")",
+      "field": "ar (archive pointer allocation)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_read_new()",
+      "validates": [
+        "Checks that the archive pointer was successfully allocated (not null)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "ar (tar format support)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_read_support_format_tar()",
+      "validates": [
+        "Checks that the archive object supports tar format"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "ar (lz4 filter support)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_read_support_filter_lz4()",
+      "validates": [
+        "Checks that the archive object supports lz4 compression"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "ar (archive open)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_read_open_filename()",
+      "validates": [
+        "Checks that the archive file can be opened for reading"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Failed to allocate archive\")",
+      "field": "aw (archive write pointer allocation)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_write_disk_new()",
+      "validates": [
+        "Checks that the archive write pointer was successfully allocated (not null)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "aw (write disk options)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_write_disk_set_options()",
+      "validates": [
+        "Checks that disk extraction options are set successfully"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "aw (standard lookup)",
+      "location": "extractTarLz4",
+      "validated_by": "archive_write_disk_set_standard_lookup()",
+      "validates": [
+        "Checks that standard user/group lookup is set for extraction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "ar (archive read next header)",
+      "location": "extractTarLz4 (while loop)",
+      "validated_by": "archive_read_next_header()",
+      "validates": [
+        "Checks that the next archive entry header can be read"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "aw (archive write header)",
+      "location": "extractTarLz4 (while loop)",
+      "validated_by": "archive_write_header()",
+      "validates": [
+        "Checks that the archive entry header can be written to disk"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "ar (archive read data block)",
+      "location": "extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "validated_by": "archive_read_data_block()",
+      "validates": [
+        "Checks that the next data block for the archive entry can be read"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (archive_error_string)",
+      "field": "aw (archive write data block)",
+      "location": "extractTarLz4 (while loop, if archive_entry_size(entry) > 0)",
+      "validated_by": "archive_write_data_block()",
+      "validates": [
+        "Checks that the data block can be written to disk"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

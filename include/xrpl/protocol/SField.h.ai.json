@@ -1,0 +1,185 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "SField"
+    },
+    {
+      "args": [
+        "private_access_tag_t pat",
+        "Args&&... args"
+      ],
+      "lineno": 254,
+      "name": "TypedField"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f_"
+      ],
+      "lineno": 263,
+      "name": "OptionaledField"
+    }
+  ],
+  "description": "Defines the SField class and related types for identifying and handling fields in XRPL protocol objects, including serialization type IDs, field codes, and typed fields for protocol serialization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/SField.h",
+  "functions": [
+    {
+      "args": [
+        "SerializedTypeID id",
+        "int index"
+      ],
+      "lineno": 74,
+      "name": "field_code"
+    },
+    {
+      "args": [
+        "int id",
+        "int index"
+      ],
+      "lineno": 80,
+      "name": "field_code"
+    },
+    {
+      "args": [
+        "int fieldCode"
+      ],
+      "lineno": 134,
+      "name": "getField"
+    },
+    {
+      "args": [
+        "std::string const& fieldName"
+      ],
+      "lineno": 137,
+      "name": "getField"
+    },
+    {
+      "args": [
+        "int type",
+        "int value"
+      ],
+      "lineno": 140,
+      "name": "getField"
+    },
+    {
+      "args": [
+        "SerializedTypeID type",
+        "int value"
+      ],
+      "lineno": 145,
+      "name": "getField"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 155,
+      "name": "hasName"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "getJsonName"
+    },
+    {
+      "args": [],
+      "lineno": 165,
+      "name": "operator Json::StaticString const&"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "isInvalid"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "isUseful"
+    },
+    {
+      "args": [],
+      "lineno": 180,
+      "name": "isBinary"
+    },
+    {
+      "args": [],
+      "lineno": 188,
+      "name": "isDiscardable"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "getCode"
+    },
+    {
+      "args": [],
+      "lineno": 200,
+      "name": "getNum"
+    },
+    {
+      "args": [],
+      "lineno": 203,
+      "name": "getNumFields"
+    },
+    {
+      "args": [
+        "int c"
+      ],
+      "lineno": 208,
+      "name": "shouldMeta"
+    },
+    {
+      "args": [
+        "bool withSigningField"
+      ],
+      "lineno": 213,
+      "name": "shouldInclude"
+    },
+    {
+      "args": [
+        "SField const& f"
+      ],
+      "lineno": 218,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "SField const& f"
+      ],
+      "lineno": 223,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "SField const& f1",
+        "SField const& f2"
+      ],
+      "lineno": 228,
+      "name": "compare"
+    },
+    {
+      "args": [],
+      "lineno": 231,
+      "name": "getKnownCodeToField"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f"
+      ],
+      "lineno": 271,
+      "name": "operator~"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

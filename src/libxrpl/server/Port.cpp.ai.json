@@ -1,0 +1,332 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parse_Port",
+        "populate"
+      ],
+      "entry_point": "parse_Port",
+      "purpose": "Parses a configuration Section to populate a Port object, including validation of IP addresses and networks.",
+      "validation_points": [
+        "populate: beast::IP::Endpoint::from_string_checked (validates IP string)",
+        "populate: is_unspecified(*addr) (checks for wildcard IPs)",
+        "populate: boost::asio::ip::make_network_v4/make_network_v6 (validates and parses network notation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "operator<<"
+      ],
+      "entry_point": "operator<<",
+      "purpose": "Serializes a Port object for logging or display, including its validated IP/networks.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Port::secure"
+      ],
+      "entry_point": "Port::secure",
+      "purpose": "Checks if the Port uses a secure protocol.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Port::protocols"
+      ],
+      "entry_point": "Port::protocols",
+      "purpose": "Returns a comma-separated string of protocols for the Port.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ip (from Section field)",
+      "flow": [
+        "Section.get(field)",
+        "populate (reads and splits by ',')",
+        "beast::IP::Endpoint::from_string_checked (validates/creates endpoint)",
+        "is_unspecified(*addr) (checks for wildcard)",
+        "boost::asio::ip::make_network_v4/make_network_v6 (parses/validates network)",
+        "nets4/nets6 vectors in Port"
+      ],
+      "origin": "Section configuration (e.g., config file)",
+      "transformations": [
+        "Trimmed",
+        "Parsed as IP or network",
+        "Converted to network notation if single IP"
+      ],
+      "validated_at": "populate (see validation_points above)"
+    },
+    {
+      "field": "protocol",
+      "flow": [
+        "Section.get('protocol')",
+        "parse_Port",
+        "Port.protocol set"
+      ],
+      "origin": "Section configuration",
+      "transformations": [
+        "Split into set of strings"
+      ],
+      "validated_at": "No explicit validation, but checked for known values in Port::secure"
+    },
+    {
+      "field": "admin_nets_v4/admin_nets_v6",
+      "flow": [
+        "Section.get('admin_networks')",
+        "populate",
+        "Port.admin_nets_v4/admin_nets_v6"
+      ],
+      "origin": "Section configuration (admin_networks field)",
+      "transformations": [
+        "Parsed as comma-separated list",
+        "Validated as above"
+      ],
+      "validated_at": "populate"
+    },
+    {
+      "field": "secure_gateway_nets_v4/secure_gateway_nets_v6",
+      "flow": [
+        "Section.get('secure_gateway_networks')",
+        "populate",
+        "Port.secure_gateway_nets_v4/secure_gateway_nets_v6"
+      ],
+      "origin": "Section configuration (secure_gateway_networks field)",
+      "transformations": [
+        "Parsed as comma-separated list",
+        "Validated as above"
+      ],
+      "validated_at": "populate"
+    }
+  ],
+  "description": "This file provides utility functions for parsing and representing network port configuration in the XRPL server, including parsing IP addresses, protocols, admin and secure gateway networks, and websocket options from configuration sections.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ip (from Section field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at populate",
+      "issue_pattern": "Missing empty string validation for ip (from Section field)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates ip (from Section field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ip (from Section field)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at populate",
+      "issue_pattern": "Missing format validation for ip (from Section field)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates ip (from Section field) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ip (from Section field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_unspecified(*addr) at populate",
+      "issue_pattern": "Missing empty string validation for ip (from Section field)",
+      "why_false_positive": "is_unspecified(*addr) validates ip (from Section field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ip (from Section field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::asio::ip::make_network_v4 / make_network_v6 at populate",
+      "issue_pattern": "Missing empty string validation for ip (from Section field)",
+      "why_false_positive": "boost::asio::ip::make_network_v4 / make_network_v6 validates ip (from Section field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ip (from Section field)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::asio::ip::make_network_v4 / make_network_v6 at populate",
+      "issue_pattern": "Missing format validation for ip (from Section field)",
+      "why_false_positive": "boost::asio::ip::make_network_v4 / make_network_v6 validates ip (from Section field) format"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/Port.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Port::secure"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "Port::protocols"
+    },
+    {
+      "args": [
+        "os",
+        "p"
+      ],
+      "lineno": 27,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "section",
+        "field",
+        "log",
+        "nets4",
+        "nets6"
+      ],
+      "lineno": 56,
+      "name": "populate"
+    },
+    {
+      "args": [
+        "port",
+        "section",
+        "log"
+      ],
+      "lineno": 120,
+      "name": "parse_Port"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for this code is typically found in integration/configuration tests, such as those in 'src/test/server/Port_test.cpp' or similar files. These tests likely cover valid and invalid IP/network configurations, wildcard handling, and protocol parsing. However, edge cases such as malformed IPs, invalid network masks, or duplicate/wildcard entries may not be exhaustively tested. There may be limited unit tests for exception handling paths (e.g., what happens if make_network_v4 throws). Manual review of test files is needed to confirm coverage of all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "beast::IP, boost::asio::ip",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns std::optional, skips invalid)",
+      "field": "ip (from Section field)",
+      "location": "populate",
+      "validated_by": "beast::IP::Endpoint::from_string_checked",
+      "validates": [
+        "Checks if the IP string is a valid IPv4 or IPv6 address"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "ip (from Section field)",
+      "location": "populate",
+      "validated_by": "is_unspecified(*addr)",
+      "validates": [
+        "Checks if the IP address is unspecified (0.0.0.0 or ::)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::system_error (on invalid network format)",
+      "field": "ip (from Section field)",
+      "location": "populate",
+      "validated_by": "boost::asio::ip::make_network_v4 / make_network_v6",
+      "validates": [
+        "Checks if the IP string is a valid IPv4 or IPv6 network (CIDR notation)"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

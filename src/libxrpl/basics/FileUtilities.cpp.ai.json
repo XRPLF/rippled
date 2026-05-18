@@ -1,0 +1,562 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getFileContents"
+      ],
+      "entry_point": "getFileContents",
+      "purpose": "Reads the contents of a file at sourcePath, optionally enforcing a maximum file size.",
+      "validation_points": [
+        "sourcePath validated by boost::filesystem::canonical (checks path validity, existence, symlinks, etc.)",
+        "maxSize validated by file_size(fullPath, ec) > *maxSize (checks file is not too large)",
+        "fullPath validated by file_size(fullPath, ec) (checks file exists and is accessible)",
+        "fullPath validated by std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream) (checks file can be opened for reading)",
+        "fileStream validated by fileStream.bad() (checks for stream errors after reading)"
+      ]
+    },
+    {
+      "call_chain": [
+        "writeFileContents"
+      ],
+      "entry_point": "writeFileContents",
+      "purpose": "Writes the given contents to the file at destPath, overwriting any existing file.",
+      "validation_points": [
+        "destPath validated by std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream) (checks file can be opened for writing)",
+        "fileStream validated by fileStream.bad() (checks for stream errors after writing)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sourcePath",
+      "flow": [
+        "Input parameter",
+        "canonical(sourcePath, ec) \u2192 fullPath",
+        "file_size(fullPath, ec)",
+        "std::ifstream fileStream(fullPath.string(), std::ios::in)",
+        "std::istreambuf_iterator<char>{fileStream} \u2192 result"
+      ],
+      "origin": "Input parameter to getFileContents",
+      "transformations": [
+        "canonical() resolves symlinks, checks existence, returns absolute path",
+        "file_size() checks file size and existence",
+        "ifstream opens file for reading",
+        "istreambuf_iterator reads file contents into string"
+      ],
+      "validated_at": "canonical(sourcePath, ec), file_size(fullPath, ec), ifstream open, fileStream.bad()"
+    },
+    {
+      "field": "maxSize",
+      "flow": [
+        "Input parameter",
+        "if (maxSize && (file_size(fullPath, ec) > *maxSize || ec))"
+      ],
+      "origin": "Input parameter to getFileContents",
+      "transformations": [
+        "file_size() retrieves file size",
+        "Comparison to *maxSize"
+      ],
+      "validated_at": "file_size(fullPath, ec) > *maxSize"
+    },
+    {
+      "field": "fullPath",
+      "flow": [
+        "Result of canonical()",
+        "file_size(fullPath, ec)",
+        "std::ifstream fileStream(fullPath.string(), std::ios::in)"
+      ],
+      "origin": "Result of canonical(sourcePath, ec)",
+      "transformations": [
+        "Used as input to file_size() and ifstream"
+      ],
+      "validated_at": "file_size(fullPath, ec), ifstream open"
+    },
+    {
+      "field": "fileStream",
+      "flow": [
+        "ifstream open",
+        "istreambuf_iterator reads from fileStream",
+        "fileStream.bad() checked after reading"
+      ],
+      "origin": "std::ifstream fileStream(fullPath.string(), std::ios::in)",
+      "transformations": [
+        "ifstream reads file into string"
+      ],
+      "validated_at": "if (!fileStream), fileStream.bad()"
+    },
+    {
+      "field": "destPath",
+      "flow": [
+        "Input parameter",
+        "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc)",
+        "fileStream << contents"
+      ],
+      "origin": "Input parameter to writeFileContents",
+      "transformations": [
+        "ofstream opens file for writing"
+      ],
+      "validated_at": "if (!fileStream), fileStream.bad()"
+    },
+    {
+      "field": "contents",
+      "flow": [
+        "Input parameter",
+        "fileStream << contents"
+      ],
+      "origin": "Input parameter to writeFileContents",
+      "transformations": [
+        "Written directly to file"
+      ],
+      "validated_at": "fileStream.bad() (indirectly, after writing)"
+    }
+  ],
+  "description": "Provides utility functions for reading from and writing to files, with error handling, in the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sourcePath (via boost::filesystem::canonical)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sourcePath (via boost::filesystem::canonical) validated by Boost.Filesystem, std::fstream",
+      "issue_pattern": "Missing validation for sourcePath (via boost::filesystem::canonical)",
+      "why_false_positive": "Boost.Filesystem, std::fstream validates sourcePath (via boost::filesystem::canonical) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fullPath (via boost::filesystem::file_size and std::ifstream)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fullPath (via boost::filesystem::file_size and std::ifstream) validated by Boost.Filesystem, std::fstream",
+      "issue_pattern": "Missing validation for fullPath (via boost::filesystem::file_size and std::ifstream)",
+      "why_false_positive": "Boost.Filesystem, std::fstream validates fullPath (via boost::filesystem::file_size and std::ifstream) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "destPath (via std::ofstream)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field destPath (via std::ofstream) validated by Boost.Filesystem, std::fstream",
+      "issue_pattern": "Missing validation for destPath (via std::ofstream)",
+      "why_false_positive": "Boost.Filesystem, std::fstream validates destPath (via std::ofstream) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sourcePath",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::filesystem::canonical at getFileContents",
+      "issue_pattern": "Missing empty string validation for sourcePath",
+      "why_false_positive": "boost::filesystem::canonical validates sourcePath for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sourcePath",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::filesystem::canonical at getFileContents",
+      "issue_pattern": "Missing format validation for sourcePath",
+      "why_false_positive": "boost::filesystem::canonical validates sourcePath format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "maxSize",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "file_size(fullPath, ec) > *maxSize at getFileContents",
+      "issue_pattern": "Missing empty string validation for maxSize",
+      "why_false_positive": "file_size(fullPath, ec) > *maxSize validates maxSize for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "maxSize",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "file_size(fullPath, ec) > *maxSize at getFileContents",
+      "issue_pattern": "Missing range validation for maxSize",
+      "why_false_positive": "file_size(fullPath, ec) > *maxSize validates maxSize range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fullPath",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "file_size(fullPath, ec) at getFileContents",
+      "issue_pattern": "Missing empty string validation for fullPath",
+      "why_false_positive": "file_size(fullPath, ec) validates fullPath for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fullPath",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "file_size(fullPath, ec) at getFileContents",
+      "issue_pattern": "Missing format validation for fullPath",
+      "why_false_positive": "file_size(fullPath, ec) validates fullPath format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fullPath",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream) at getFileContents",
+      "issue_pattern": "Missing empty string validation for fullPath",
+      "why_false_positive": "std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream) validates fullPath for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fullPath",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream) at getFileContents",
+      "issue_pattern": "Missing format validation for fullPath",
+      "why_false_positive": "std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream) validates fullPath format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fileStream",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "fileStream.bad() at getFileContents",
+      "issue_pattern": "Missing empty string validation for fileStream",
+      "why_false_positive": "fileStream.bad() validates fileStream for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fileStream",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "fileStream.bad() at getFileContents",
+      "issue_pattern": "Missing format validation for fileStream",
+      "why_false_positive": "fileStream.bad() validates fileStream format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destPath",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream) at writeFileContents",
+      "issue_pattern": "Missing empty string validation for destPath",
+      "why_false_positive": "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream) validates destPath for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "destPath",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream) at writeFileContents",
+      "issue_pattern": "Missing format validation for destPath",
+      "why_false_positive": "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream) validates destPath format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fileStream",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "fileStream.bad() at writeFileContents",
+      "issue_pattern": "Missing empty string validation for fileStream",
+      "why_false_positive": "fileStream.bad() validates fileStream for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fileStream",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "fileStream.bad() at writeFileContents",
+      "issue_pattern": "Missing format validation for fileStream",
+      "why_false_positive": "fileStream.bad() validates fileStream format"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "file handle",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::ifstream",
+      "issue_pattern": "Missing file handle cleanup",
+      "why_false_positive": "std::ifstream provides automatic file handle cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "file handle",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::ofstream",
+      "issue_pattern": "Missing file handle cleanup",
+      "why_false_positive": "std::ofstream provides automatic file handle cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/FileUtilities.cpp",
+  "functions": [
+    {
+      "args": [
+        "ec",
+        "sourcePath",
+        "maxSize"
+      ],
+      "lineno": 11,
+      "name": "getFileContents"
+    },
+    {
+      "args": [
+        "ec",
+        "destPath",
+        "contents"
+      ],
+      "lineno": 44,
+      "name": "writeFileContents"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic file handle cleanup",
+        "false_positive_risk": "Missing file handle cleanup",
+        "resource": "file handle",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::ifstream"
+      },
+      {
+        "audit_implication": "Automatic file handle cleanup",
+        "false_positive_risk": "Missing file handle cleanup",
+        "resource": "file handle",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::ofstream"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or references). Typical tests would be in a corresponding test suite (e.g., FileUtilities_test.cpp or similar). Key validation paths (invalid path, file too large, file open failure, stream errors) should be tested. Gaps may include: edge cases for symlinks, permission errors, partial reads/writes, and error_code propagation. If tests do not explicitly check error_code values and all validation branches, coverage may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sourcePath (via boost::filesystem::canonical)",
+      "fullPath (via boost::filesystem::file_size and std::ifstream)",
+      "destPath (via std::ofstream)"
+    ],
+    "framework": "Boost.Filesystem, std::fstream",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec)",
+      "field": "sourcePath",
+      "location": "getFileContents",
+      "validated_by": "boost::filesystem::canonical",
+      "validates": [
+        "Checks if sourcePath exists and is a valid path",
+        "Resolves symbolic links and returns the canonical path"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec) with file_too_large",
+      "field": "maxSize",
+      "location": "getFileContents",
+      "validated_by": "file_size(fullPath, ec) > *maxSize",
+      "validates": [
+        "Checks if file size exceeds maxSize"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec)",
+      "field": "fullPath",
+      "location": "getFileContents",
+      "validated_by": "file_size(fullPath, ec)",
+      "validates": [
+        "Checks if file at fullPath exists and is accessible"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec) with errno",
+      "field": "fullPath",
+      "location": "getFileContents",
+      "validated_by": "std::ifstream fileStream(fullPath.string(), std::ios::in); if (!fileStream)",
+      "validates": [
+        "Checks if file can be opened for reading"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec) with errno",
+      "field": "fileStream",
+      "location": "getFileContents",
+      "validated_by": "fileStream.bad()",
+      "validates": [
+        "Checks for I/O errors during file reading"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec) with errno",
+      "field": "destPath",
+      "location": "writeFileContents",
+      "validated_by": "std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc); if (!fileStream)",
+      "validates": [
+        "Checks if file can be opened for writing"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code set (ec) with errno",
+      "field": "fileStream",
+      "location": "writeFileContents",
+      "validated_by": "fileStream.bad()",
+      "validates": [
+        "Checks for I/O errors during file writing"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "ep"
+    },
+    {
+      "lineno": 6,
+      "name": "hops_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::IP::Endpoint const& ep",
+        "std::uint32_t hops_"
+      ],
+      "lineno": 6,
+      "name": "Endpoint"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "External code (e.g., PeerFinderManager, PeerFinder logic)",
+        "Endpoint::Endpoint"
+      ],
+      "entry_point": "Endpoint::Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_)",
+      "purpose": "Constructs an Endpoint object, validating and storing the number of hops and the network address.",
+      "validation_points": [
+        "Endpoint::Endpoint: hops_ is validated via std::min(hops_, Tuning::maxHops + 1)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hops",
+      "flow": [
+        "Caller provides hops_",
+        "Endpoint::Endpoint receives hops_",
+        "hops is set to std::min(hops_, Tuning::maxHops + 1)",
+        "hops stored as member variable"
+      ],
+      "origin": "Constructor argument hops_ (passed from caller, e.g., PeerFinder logic)",
+      "transformations": [
+        "hops_ is clamped to a maximum of Tuning::maxHops + 1 using std::min"
+      ],
+      "validated_at": "Endpoint::Endpoint (constructor)"
+    },
+    {
+      "field": "address",
+      "flow": [
+        "Caller provides ep",
+        "Endpoint::Endpoint receives ep",
+        "address is set to ep",
+        "address stored as member variable"
+      ],
+      "origin": "Constructor argument ep (beast::IP::Endpoint)",
+      "transformations": [
+        "No transformation; direct assignment"
+      ],
+      "validated_at": "No explicit validation in this code"
+    }
+  ],
+  "description": "Defines the constructor for the Endpoint class in the xrpl::PeerFinder namespace, initializing endpoint address and hop count with a maximum limit.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hops_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::min at Endpoint::Endpoint (constructor)",
+      "issue_pattern": "Missing empty string validation for hops_",
+      "why_false_positive": "std::min validates hops_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "hops_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "std::min at Endpoint::Endpoint (constructor)",
+      "issue_pattern": "Missing range validation for hops_",
+      "why_false_positive": "std::min validates hops_ range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Endpoint.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "Direct tests for Endpoint validation (hops clamping) would likely be found in PeerFinder or Endpoint unit tests, possibly in files like test/peerfinder/ or test/unit/PeerFinder*.cpp. If such tests exist, they should check that hops is never set above Tuning::maxHops + 1. If not, this validation path may be untested. There is no evidence in this file of explicit test hooks or assertions, so coverage depends on higher-level PeerFinder tests. Gaps may exist if tests do not provide hops_ values above Tuning::maxHops + 1 to verify clamping.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation using std::min)",
+    "validation_layer": "business_logic (constructor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (value is clamped, not rejected)",
+      "field": "hops_",
+      "location": "Endpoint::Endpoint (constructor)",
+      "validated_by": "std::min",
+      "validates": [
+        "Ensures hops_ does not exceed Tuning::maxHops + 1",
+        "If hops_ > Tuning::maxHops + 1, sets hops to Tuning::maxHops + 1"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

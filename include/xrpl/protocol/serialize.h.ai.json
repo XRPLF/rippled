@@ -1,0 +1,29 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides utility functions to serialize XRPL protocol objects to blobs or hex strings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/serialize.h",
+  "functions": [
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 10,
+      "name": "serializeBlob"
+    },
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 19,
+      "name": "serializeHex"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

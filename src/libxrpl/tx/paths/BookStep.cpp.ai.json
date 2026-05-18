@@ -1,0 +1,573 @@
+{
+  "args": [
+    {
+      "lineno": 312,
+      "name": "offer"
+    },
+    {
+      "lineno": 312,
+      "name": "ofrAmt"
+    },
+    {
+      "lineno": 312,
+      "name": "stpAmt"
+    },
+    {
+      "lineno": 312,
+      "name": "ownerGives"
+    },
+    {
+      "lineno": 312,
+      "name": "transferRateIn"
+    },
+    {
+      "lineno": 312,
+      "name": "transferRateOut"
+    },
+    {
+      "lineno": 312,
+      "name": "limit"
+    },
+    {
+      "lineno": 627,
+      "name": "col"
+    },
+    {
+      "lineno": 1012,
+      "name": "step"
+    },
+    {
+      "lineno": 1012,
+      "name": "book"
+    },
+    {
+      "lineno": 1042,
+      "name": "ctx"
+    },
+    {
+      "lineno": 1042,
+      "name": "in"
+    },
+    {
+      "lineno": 1042,
+      "name": "out"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "StrandContext const& ctx, Asset const& in, Asset const& out"
+      ],
+      "lineno": 18,
+      "name": "BookStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx, Asset const& in, Asset const& out"
+      ],
+      "lineno": 202,
+      "name": "BookPaymentStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx, Asset const& in, Asset const& out"
+      ],
+      "lineno": 246,
+      "name": "BookOfferCrossingStep"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BookStep::BookStep",
+        "ctx.view.read(keylet::amm(in, out))",
+        "ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero",
+        "AMMLiquidity<TIn, TOut>::AMMLiquidity (emplace)"
+      ],
+      "entry_point": "BookStep::BookStep (constructor)",
+      "purpose": "Initializes a BookStep, checks if an AMM exists for the book, and if so, validates that the AMM has a nonzero LP token balance before constructing AMMLiquidity.",
+      "validation_points": [
+        "if (auto const ammSle = ctx.view.read(keylet::amm(in, out)); ...)",
+        "ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero"
+      ]
+    },
+    {
+      "call_chain": [
+        "make_BookStepHelper/make_BookStepII/make_BookStepIX/make_BookStepXI/make_BookStepMM",
+        "BookStep::BookStep"
+      ],
+      "entry_point": "make_BookStep* functions",
+      "purpose": "Factory functions that create BookStep instances, triggering the constructor and thus the validation logic.",
+      "validation_points": [
+        "BookStep::BookStep (see above)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ammSle",
+      "flow": [
+        "ctx.view.read(keylet::amm(in, out))",
+        "if (ammSle && ...)",
+        "used to access sfLPTokenBalance and sfAccount"
+      ],
+      "origin": "ctx.view.read(keylet::amm(in, out))",
+      "transformations": [
+        "Read from ledger as SLE::pointer",
+        "Checked for existence (non-null)",
+        "Used to extract fields"
+      ],
+      "validated_at": "BookStep::BookStep (if (auto const ammSle = ...))"
+    },
+    {
+      "field": "sfLPTokenBalance",
+      "flow": [
+        "ammSle->getFieldAmount(sfLPTokenBalance)",
+        "compared to beast::zero",
+        "if nonzero, used to construct AMMLiquidity"
+      ],
+      "origin": "ammSle->getFieldAmount(sfLPTokenBalance)",
+      "transformations": [
+        "Extracted as Amount from SLE",
+        "Compared to zero"
+      ],
+      "validated_at": "BookStep::BookStep (ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero)"
+    },
+    {
+      "field": "AMMLiquidity<TIn, TOut>",
+      "flow": [
+        "BookStep::BookStep",
+        "AMMLiquidity<TIn, TOut>::AMMLiquidity",
+        "Stored in BookStep::ammLiquidity_"
+      ],
+      "origin": "Constructed in BookStep::BookStep if AMM exists and LPTokenBalance > 0",
+      "transformations": [
+        "Constructed with context, account, trading fee, in/out assets, etc."
+      ],
+      "validated_at": "BookStep::BookStep (after both AMM existence and LPTokenBalance > 0 checks)"
+    }
+  ],
+  "description": "Implements the BookStep logic for XRPL payments and offer crossing, handling order book and AMM offers, transfer fees, quality calculations, and step execution in payment/offer crossing strands.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "book_ (Book constructed from in, out, ctx.domainID)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field book_ (Book constructed from in, out, ctx.domainID) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for book_ (Book constructed from in, out, ctx.domainID)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates book_ (Book constructed from in, out, ctx.domainID) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strandSrc_ (AccountID from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strandSrc_ (AccountID from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for strandSrc_ (AccountID from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates strandSrc_ (AccountID from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strandDst_ (AccountID from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strandDst_ (AccountID from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for strandDst_ (AccountID from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates strandDst_ (AccountID from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "prevStep_ (pointer from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field prevStep_ (pointer from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for prevStep_ (pointer from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates prevStep_ (pointer from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ownerPaysTransferFee_ (bool from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ownerPaysTransferFee_ (bool from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for ownerPaysTransferFee_ (bool from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates ownerPaysTransferFee_ (bool from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "j_ (Journal from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field j_ (Journal from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for j_ (Journal from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates j_ (Journal from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strandDeliver_ (Asset from ctx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strandDeliver_ (Asset from ctx) validated by None explicit; uses C++ type system and business logic checks",
+      "issue_pattern": "Missing validation for strandDeliver_ (Asset from ctx)",
+      "why_false_positive": "None explicit; uses C++ type system and business logic checks validates strandDeliver_ (Asset from ctx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ammSle->getFieldAmount(sfLPTokenBalance)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison with beast::zero at BookStep constructor",
+      "issue_pattern": "Missing empty string validation for ammSle->getFieldAmount(sfLPTokenBalance)",
+      "why_false_positive": "comparison with beast::zero validates ammSle->getFieldAmount(sfLPTokenBalance) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ammSle",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (auto const ammSle = ctx.view.read(keylet::amm(in, out)); ...) at BookStep constructor",
+      "issue_pattern": "Missing empty string validation for ammSle",
+      "why_false_positive": "if (auto const ammSle = ctx.view.read(keylet::amm(in, out)); ...) validates ammSle for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/BookStep.cpp",
+  "functions": [
+    {
+      "args": [
+        "offer",
+        "ofrAmt",
+        "stpAmt",
+        "ownerGives",
+        "transferRateIn",
+        "transferRateOut",
+        "limit"
+      ],
+      "lineno": 312,
+      "name": "limitStepIn"
+    },
+    {
+      "args": [
+        "offer",
+        "ofrAmt",
+        "stpAmt",
+        "ownerGives",
+        "transferRateIn",
+        "transferRateOut",
+        "limit"
+      ],
+      "lineno": 332,
+      "name": "limitStepOut"
+    },
+    {
+      "args": [
+        "col"
+      ],
+      "lineno": 627,
+      "name": "sum"
+    },
+    {
+      "args": [
+        "step",
+        "book"
+      ],
+      "lineno": 1012,
+      "name": "equalHelper"
+    },
+    {
+      "args": [
+        "step",
+        "book"
+      ],
+      "lineno": 1018,
+      "name": "bookStepEqual"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 1042,
+      "name": "make_BookStepHelper"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 1057,
+      "name": "make_BookStepII"
+    },
+    {
+      "args": [
+        "ctx",
+        "in"
+      ],
+      "lineno": 1062,
+      "name": "make_BookStepIX"
+    },
+    {
+      "args": [
+        "ctx",
+        "out"
+      ],
+      "lineno": 1067,
+      "name": "make_BookStepXI"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 1072,
+      "name": "make_BookStepMM"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 1077,
+      "name": "make_BookStepMI"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 1082,
+      "name": "make_BookStepIM"
+    },
+    {
+      "args": [
+        "ctx",
+        "in"
+      ],
+      "lineno": 1087,
+      "name": "make_BookStepMX"
+    },
+    {
+      "args": [
+        "ctx",
+        "out"
+      ],
+      "lineno": 1092,
+      "name": "make_BookStepXM"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 1009,
+      "name": "test"
+    }
+  ],
+  "test_coverage_notes": "BookStep and its validation logic are likely tested indirectly via pathfinding, AMM, and payment integration tests. Look for tests in files such as 'test/AMM_test.cpp', 'test/Path_test.cpp', 'test/BookStep_test.cpp', or similar. Direct unit tests for BookStep constructor validation (AMM existence and LPTokenBalance > 0) may be missing or only covered via higher-level integration tests. Edge cases such as AMM present but LPTokenBalance == 0, or AMM not present, should be explicitly tested but may not be. There may be a gap in direct negative-path unit tests for these validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "book_ (Book constructed from in, out, ctx.domainID)",
+      "strandSrc_ (AccountID from ctx)",
+      "strandDst_ (AccountID from ctx)",
+      "prevStep_ (pointer from ctx)",
+      "ownerPaysTransferFee_ (bool from ctx)",
+      "j_ (Journal from ctx)",
+      "strandDeliver_ (Asset from ctx)"
+    ],
+    "framework": "None explicit; uses C++ type system and business logic checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "No exception; AMM liquidity not emplaced if validation fails",
+      "field": "ammSle->getFieldAmount(sfLPTokenBalance)",
+      "location": "BookStep constructor",
+      "validated_by": "comparison with beast::zero",
+      "validates": [
+        "Checks if AMM ledger entry exists and has nonzero LP token balance before constructing AMMLiquidity"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "No exception; AMM liquidity not emplaced if validation fails",
+      "field": "ammSle",
+      "location": "BookStep constructor",
+      "validated_by": "if (auto const ammSle = ctx.view.read(keylet::amm(in, out)); ...)",
+      "validates": [
+        "Checks if AMM ledger entry exists for the given in/out assets"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "ctx"
+    },
+    {
+      "lineno": 44,
+      "name": "ctx"
+    },
+    {
+      "lineno": 44,
+      "name": "sle"
+    },
+    {
+      "lineno": 44,
+      "name": "owner"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DIDSet::preflight"
+      ],
+      "entry_point": "DIDSet::preflight",
+      "purpose": "Performs stateless validation of the DIDSet transaction before it is applied to the ledger.",
+      "validation_points": [
+        "Checks if at least one of sfURI, sfDIDDocument, sfData is present.",
+        "Checks if all present fields are empty.",
+        "Checks if any field exceeds its maximum allowed length."
+      ]
+    },
+    {
+      "call_chain": [
+        "DIDSet::doApply",
+        "addSLE (conditionally, for new objects)"
+      ],
+      "entry_point": "DIDSet::doApply",
+      "purpose": "Applies the DIDSet transaction to the ledger, updating or creating the DID object.",
+      "validation_points": [
+        "Re-checks for empty fields after update (returns tecEMPTY_DID if all are absent)."
+      ]
+    },
+    {
+      "call_chain": [
+        "addSLE"
+      ],
+      "entry_point": "addSLE",
+      "purpose": "Handles insertion of a new SLE (ledger object) for a DID, including reserve checks and directory insertion.",
+      "validation_points": [
+        "Checks account reserve before allowing object creation."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfURI",
+      "flow": [
+        "ctx.tx[sfURI] (input)",
+        "DIDSet::preflight (presence, emptiness, length validation)",
+        "DIDSet::doApply (update or set on SLE)",
+        "SLE (ledger object, persisted)"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence and emptiness",
+        "Checked for length (isTooLong)",
+        "Set or removed from SLE depending on value"
+      ],
+      "validated_at": "DIDSet::preflight"
+    },
+    {
+      "field": "sfDIDDocument",
+      "flow": [
+        "ctx.tx[sfDIDDocument] (input)",
+        "DIDSet::preflight (presence, emptiness, length validation)",
+        "DIDSet::doApply (update or set on SLE)",
+        "SLE (ledger object, persisted)"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence and emptiness",
+        "Checked for length (isTooLong)",
+        "Set or removed from SLE depending on value"
+      ],
+      "validated_at": "DIDSet::preflight"
+    },
+    {
+      "field": "sfData",
+      "flow": [
+        "ctx.tx[sfData] (input)",
+        "DIDSet::preflight (presence, emptiness, length validation)",
+        "DIDSet::doApply (update or set on SLE)",
+        "SLE (ledger object, persisted)"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence and emptiness",
+        "Checked for length (isTooLong)",
+        "Set or removed from SLE depending on value"
+      ],
+      "validated_at": "DIDSet::preflight"
+    }
+  ],
+  "description": "Implements the DIDSet transaction for managing Decentralized Identifiers (DIDs) on the XRPL ledger, including validation, creation, and updating of DID ledger objects.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfURI",
+          "sfDIDDocument",
+          "sfData"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit field presence check at DIDSet::preflight",
+      "issue_pattern": "Missing empty string validation for ['sfURI', 'sfDIDDocument', 'sfData']",
+      "why_false_positive": "explicit field presence check validates ['sfURI', 'sfDIDDocument', 'sfData'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfURI",
+          "sfDIDDocument",
+          "sfData"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit field emptiness check at DIDSet::preflight",
+      "issue_pattern": "Missing empty string validation for ['sfURI', 'sfDIDDocument', 'sfData']",
+      "why_false_positive": "explicit field emptiness check validates ['sfURI', 'sfDIDDocument', 'sfData'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfURI",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfURI",
+      "why_false_positive": "isTooLong lambda (length check) validates sfURI for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfURI",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing range validation for sfURI",
+      "why_false_positive": "isTooLong lambda (length check) validates sfURI range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDIDDocument",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfDIDDocument",
+      "why_false_positive": "isTooLong lambda (length check) validates sfDIDDocument for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfDIDDocument",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing range validation for sfDIDDocument",
+      "why_false_positive": "isTooLong lambda (length check) validates sfDIDDocument range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfData",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfData",
+      "why_false_positive": "isTooLong lambda (length check) validates sfData for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfData",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isTooLong lambda (length check) at DIDSet::preflight",
+      "issue_pattern": "Missing range validation for sfData",
+      "why_false_positive": "isTooLong lambda (length check) validates sfData range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account reserve (owner's XRP balance)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit balance and reserve check at addSLE",
+      "issue_pattern": "Missing empty string validation for account reserve (owner's XRP balance)",
+      "why_false_positive": "explicit balance and reserve check validates account reserve (owner's XRP balance) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/did/DIDSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 23,
+      "name": "DIDSet::preflight"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx",
+        "std::shared_ptr<SLE> const& sle",
+        "AccountID const& owner"
+      ],
+      "lineno": 44,
+      "name": "addSLE"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "DIDSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in unit/integration tests for the DIDSet transaction. Look for files like 'DIDSet_test.cpp', 'Transactor_test.cpp', or generic transaction/ledger tests in the rippled codebase. Tests should cover: (1) missing all fields, (2) all fields empty, (3) fields exceeding max length, (4) valid field updates, (5) object creation with/without sufficient reserve, (6) object deletion when all fields are removed. Gaps may exist if edge cases (e.g., boundary lengths, simultaneous field updates, or reserve exhaustion) are not explicitly tested. Code coverage tools or manual inspection of test files are needed to confirm full coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (no external validation framework)",
+    "validation_layer": "business_logic (preflight and apply phase of transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temEMPTY_DID",
+      "field": [
+        "sfURI",
+        "sfDIDDocument",
+        "sfData"
+      ],
+      "location": "DIDSet::preflight",
+      "validated_by": "explicit field presence check",
+      "validates": [
+        "At least one of sfURI, sfDIDDocument, or sfData must be present in the transaction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temEMPTY_DID",
+      "field": [
+        "sfURI",
+        "sfDIDDocument",
+        "sfData"
+      ],
+      "location": "DIDSet::preflight",
+      "validated_by": "explicit field emptiness check",
+      "validates": [
+        "If a field is present, it must not be empty (all present fields must have non-empty values)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfURI",
+      "location": "DIDSet::preflight",
+      "validated_by": "isTooLong lambda (length check)",
+      "validates": [
+        "sfURI must not exceed maxDIDURILength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDIDDocument",
+      "location": "DIDSet::preflight",
+      "validated_by": "isTooLong lambda (length check)",
+      "validates": [
+        "sfDIDDocument must not exceed maxDIDDocumentLength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfData",
+      "location": "DIDSet::preflight",
+      "validated_by": "isTooLong lambda (length check)",
+      "validates": [
+        "sfData must not exceed maxDIDDataLength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "account reserve (owner's XRP balance)",
+      "location": "addSLE",
+      "validated_by": "explicit balance and reserve check",
+      "validates": [
+        "Owner must have sufficient XRP balance to meet reserve requirements for new object creation"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file declares functions for building a new ledger in the XRPL system, either by applying consensus transactions or by replaying transactions from a prior ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/BuildLedger.h",
+  "functions": [
+    {
+      "args": [
+        "parent",
+        "closeTime",
+        "closeTimeCorrect",
+        "closeResolution",
+        "app",
+        "txns",
+        "failedTxs",
+        "j"
+      ],
+      "lineno": 23,
+      "name": "buildLedger"
+    },
+    {
+      "args": [
+        "replayData",
+        "applyFlags",
+        "app",
+        "j"
+      ],
+      "lineno": 46,
+      "name": "buildLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

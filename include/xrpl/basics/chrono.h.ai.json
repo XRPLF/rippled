@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "tp"
+    },
+    {
+      "lineno": 44,
+      "name": "tp"
+    },
+    {
+      "lineno": 54,
+      "name": "tp"
+    },
+    {
+      "lineno": 60,
+      "name": "tp"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "NetClock"
+    }
+  ],
+  "description": "Defines network and stopwatch clocks for the XRPL project, including time formatting utilities and epoch offset calculations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/chrono.h",
+  "functions": [
+    {
+      "args": [
+        "tp"
+      ],
+      "lineno": 38,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "tp"
+      ],
+      "lineno": 44,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "tp"
+      ],
+      "lineno": 54,
+      "name": "to_string_iso"
+    },
+    {
+      "args": [
+        "tp"
+      ],
+      "lineno": 60,
+      "name": "to_string_iso"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "stopwatch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

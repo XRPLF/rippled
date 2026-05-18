@@ -1,0 +1,524 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultCreate::preflight"
+      ],
+      "entry_point": "VaultCreate::preflight",
+      "purpose": "Performs stateless transaction validation before execution.",
+      "validation_points": [
+        "validDataLength(ctx.tx[~sfData], maxDataPayloadLength)",
+        "ctx.tx[~sfWithdrawalPolicy] direct comparison",
+        "ctx.tx[~sfDomainID] direct comparison and flag check",
+        "ctx.tx[~sfAssetsMaximum] direct comparison",
+        "ctx.tx[~sfMPTokenMetadata] empty() and length() checks",
+        "ctx.tx[~sfScale] type/limit checks"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultCreate::preclaim"
+      ],
+      "entry_point": "VaultCreate::preclaim",
+      "purpose": "Performs contextual validation using ledger state before transaction application.",
+      "validation_points": [
+        "canAddHolding(ctx.view, vaultAsset)",
+        "isPseudoAccount(ctx.view, vaultAsset.getIssuer())",
+        "isFrozen(ctx.view, account, vaultAsset)",
+        "ctx.tx[~sfDomainID] existence check in ledger",
+        "pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultCreate::doApply"
+      ],
+      "entry_point": "VaultCreate::doApply",
+      "purpose": "Applies the transaction to the ledger after all validations pass.",
+      "validation_points": [
+        "Relies on preflight and preclaim having already validated inputs"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::apply",
+        "VaultCreate::preflight",
+        "VaultCreate::preclaim",
+        "VaultCreate::doApply"
+      ],
+      "entry_point": "Transactor::apply",
+      "purpose": "Top-level transaction application entry point; orchestrates validation and application.",
+      "validation_points": [
+        "preflight",
+        "preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfData",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfData]",
+        "validDataLength() in preflight"
+      ],
+      "origin": "ctx.tx[~sfData] (transaction input)",
+      "transformations": [
+        "Length checked against maxDataPayloadLength"
+      ],
+      "validated_at": "VaultCreate::preflight"
+    },
+    {
+      "field": "sfWithdrawalPolicy",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfWithdrawalPolicy]",
+        "Direct comparison in preflight"
+      ],
+      "origin": "ctx.tx[~sfWithdrawalPolicy] (transaction input)",
+      "transformations": [
+        "Compared to vaultStrategyFirstComeFirstServe"
+      ],
+      "validated_at": "VaultCreate::preflight"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfDomainID]",
+        "Zero check and flag check in preflight",
+        "Ledger existence check in preclaim"
+      ],
+      "origin": "ctx.tx[~sfDomainID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Checked that tfVaultPrivate flag is set",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "VaultCreate::preflight, VaultCreate::preclaim"
+    },
+    {
+      "field": "sfAssetsMaximum",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfAssetsMaximum]",
+        "Direct comparison in preflight"
+      ],
+      "origin": "ctx.tx[~sfAssetsMaximum] (transaction input)",
+      "transformations": [
+        "Checked for non-negative value"
+      ],
+      "validated_at": "VaultCreate::preflight"
+    },
+    {
+      "field": "sfMPTokenMetadata",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfMPTokenMetadata]",
+        "empty() and length() checks in preflight"
+      ],
+      "origin": "ctx.tx[~sfMPTokenMetadata] (transaction input)",
+      "transformations": [
+        "Checked for non-empty and within maxMPTokenMetadataLength"
+      ],
+      "validated_at": "VaultCreate::preflight"
+    },
+    {
+      "field": "sfScale",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfScale]",
+        "Type/limit checks in preflight"
+      ],
+      "origin": "ctx.tx[~sfScale] (transaction input)",
+      "transformations": [
+        "Checked for asset type compatibility",
+        "Checked against vaultMaximumIOUScale"
+      ],
+      "validated_at": "VaultCreate::preflight"
+    },
+    {
+      "field": "sfAsset",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfAsset]",
+        "Used in preflight (type checks), preclaim (canAddHolding, isPseudoAccount, isFrozen)"
+      ],
+      "origin": "ctx.tx[sfAsset] (transaction input)",
+      "transformations": [
+        "Checked for type (MPTIssue, native)",
+        "Checked for pseudo-account issuer",
+        "Checked for frozen status"
+      ],
+      "validated_at": "VaultCreate::preflight, VaultCreate::preclaim"
+    }
+  ],
+  "description": "Implements the VaultCreate transaction logic for the XRPL, including preflight, preclaim, and application of vault creation, with checks for asset validity, permissions, and creation of associated pseudo-accounts and tokens.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfData",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validDataLength at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfData",
+      "why_false_positive": "validDataLength validates sfData for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfData",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validDataLength at VaultCreate::preflight",
+      "issue_pattern": "Missing range validation for sfData",
+      "why_false_positive": "validDataLength validates sfData range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfWithdrawalPolicy",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "direct comparison at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfWithdrawalPolicy",
+      "why_false_positive": "direct comparison validates sfWithdrawalPolicy for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "direct comparison and flag check at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "direct comparison and flag check validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAssetsMaximum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "direct comparison at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfAssetsMaximum",
+      "why_false_positive": "direct comparison validates sfAssetsMaximum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAssetsMaximum",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "direct comparison at VaultCreate::preflight",
+      "issue_pattern": "Missing range validation for sfAssetsMaximum",
+      "why_false_positive": "direct comparison validates sfAssetsMaximum range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMPTokenMetadata",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "empty() and length() checks at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfMPTokenMetadata",
+      "why_false_positive": "empty() and length() checks validates sfMPTokenMetadata for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfScale",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "direct comparison and type check at VaultCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfScale",
+      "why_false_positive": "direct comparison and type check validates sfScale for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureMPTokensV1",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled at VaultCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for featureMPTokensV1",
+      "why_false_positive": "ctx.rules.enabled validates featureMPTokensV1 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled at VaultCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.rules.enabled validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAsset",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canAddHolding at VaultCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAsset",
+      "why_false_positive": "canAddHolding validates sfAsset for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAsset.issuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isPseudoAccount at VaultCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAsset.issuer",
+      "why_false_positive": "isPseudoAccount validates sfAsset.issuer for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "VaultCreate::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "VaultCreate::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "VaultCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 61,
+      "name": "VaultCreate::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "VaultCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Tests for VaultCreate are likely found in files such as 'vault_create_test.cpp', 'VaultTransactor_test.cpp', or similar in the test/ or unit_test/ directories. These should cover valid/invalid field values, flag combinations, and ledger state conditions. However, edge cases such as maximum metadata length, domain ID with/without tfVaultPrivate, and pseudo-account issuer checks may not be exhaustively tested. Tests for negative asset maximum, zero domain ID, and scale limits should be verified for coverage. Integration tests may be required to fully exercise preclaim ledger state checks.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation via explicit checks and helper functions (e.g., validDataLength, canAddHolding, isPseudoAccount)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfData",
+      "location": "VaultCreate::preflight",
+      "validated_by": "validDataLength",
+      "validates": [
+        "Checks that the data field (sfData) does not exceed maxDataPayloadLength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfWithdrawalPolicy",
+      "location": "VaultCreate::preflight",
+      "validated_by": "direct comparison",
+      "validates": [
+        "Ensures withdrawal policy is vaultStrategyFirstComeFirstServe if present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID",
+      "location": "VaultCreate::preflight",
+      "validated_by": "direct comparison and flag check",
+      "validates": [
+        "Ensures DomainID is not zero",
+        "Ensures DomainID is only present if tfVaultPrivate flag is set"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAssetsMaximum",
+      "location": "VaultCreate::preflight",
+      "validated_by": "direct comparison",
+      "validates": [
+        "Ensures AssetsMaximum is not negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfMPTokenMetadata",
+      "location": "VaultCreate::preflight",
+      "validated_by": "empty() and length() checks",
+      "validates": [
+        "Ensures MPTokenMetadata is not empty",
+        "Ensures MPTokenMetadata does not exceed maxMPTokenMetadataLength"
+      ],
+      "validation_type": "format|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfScale",
+      "location": "VaultCreate::preflight",
+      "validated_by": "direct comparison and type check",
+      "validates": [
+        "Ensures scale is not present for native or MPTIssue assets",
+        "Ensures scale does not exceed vaultMaximumIOUScale"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "featureMPTokensV1",
+      "location": "VaultCreate::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled",
+      "validates": [
+        "Ensures featureMPTokensV1 is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "sfDomainID",
+      "location": "VaultCreate::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled",
+      "validates": [
+        "Ensures featurePermissionedDomains is enabled if DomainID is present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns ter (transaction error code)",
+      "field": "sfAsset",
+      "location": "VaultCreate::preclaim",
+      "validated_by": "canAddHolding",
+      "validates": [
+        "Checks if the asset can be added to the vault (business logic, e.g., asset type, limits)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tec (transaction error code)",
+      "field": "sfAsset.issuer",
+      "location": "VaultCreate::preclaim",
+      "validated_by": "isPseudoAccount",
+      "validates": [
+        "Ensures the asset issuer is not a pseudo-account (prevents holding assets that can't be clawed back)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

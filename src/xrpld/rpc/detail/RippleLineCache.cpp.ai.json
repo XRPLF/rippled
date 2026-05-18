@@ -1,0 +1,170 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RippleLineCache::RippleLineCache",
+        "parseBase58<AccountID>",
+        "RippleLineCache::getLedger"
+      ],
+      "entry_point": "RippleLineCache::RippleLineCache",
+      "purpose": "Constructs a RippleLineCache object, validates the accountID, and sets up the ledger reference.",
+      "validation_points": [
+        "parseBase58<AccountID> (validates accountID)",
+        "RippleLineCache::getLedger (checks ledger_ != nullptr)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RippleLineCache::getRippleLines",
+        "parseBase58<AccountID>",
+        "RippleLineCache::getLedger"
+      ],
+      "entry_point": "RippleLineCache::getRippleLines",
+      "purpose": "Retrieves trust lines for a given account, validating the accountID and ensuring the ledger is valid.",
+      "validation_points": [
+        "parseBase58<AccountID> (validates accountID)",
+        "RippleLineCache::getLedger (checks ledger_ != nullptr)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "accountID",
+      "flow": [
+        "RPC request",
+        "parseBase58<AccountID>",
+        "RippleLineCache/account context",
+        "Used in trust line lookup"
+      ],
+      "origin": "Input parameter to RippleLineCache or getRippleLines (typically from RPC request)",
+      "transformations": [
+        "String base58 \u2192 AccountID object via parseBase58"
+      ],
+      "validated_at": "parseBase58<AccountID>"
+    },
+    {
+      "field": "ledger_",
+      "flow": [
+        "RPC context/ledger lookup",
+        "RippleLineCache::RippleLineCache",
+        "Stored as member ledger_",
+        "Checked in getLedger and used for trust line queries"
+      ],
+      "origin": "Passed to RippleLineCache constructor (from RPC context or ledger lookup)",
+      "transformations": [
+        "Pointer/reference assignment"
+      ],
+      "validated_at": "getLedger (ledger_ != nullptr)"
+    }
+  ],
+  "description": "No source code provided; the file is empty.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "accountID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at RippleLineCache::getLineCache",
+      "issue_pattern": "Missing empty string validation for accountID",
+      "why_false_positive": "parseBase58<AccountID> validates accountID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "accountID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at RippleLineCache::getLineCache",
+      "issue_pattern": "Missing format validation for accountID",
+      "why_false_positive": "parseBase58<AccountID> validates accountID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger_ != nullptr at RippleLineCache::RippleLineCache (constructor)",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "ledger_ != nullptr validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "ledger_ != nullptr at RippleLineCache::RippleLineCache (constructor)",
+      "issue_pattern": "Missing type validation for ledger",
+      "why_false_positive": "ledger_ != nullptr validates ledger type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RippleLineCache.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [],
+  "test_coverage_notes": "RippleLineCache and related validation logic are typically tested in unit tests under 'test/rpc' or 'test/app/ledger'. Tests likely cover valid and invalid accountID parsing and ledger presence. However, edge cases such as malformed base58 strings, null ledger pointers, or unusual ledger states may not be exhaustively tested. Look for tests in files like 'RippleLineCache_test.cpp', 'RPCHandler_test.cpp', or integration tests for trust line RPCs. Gaps may exist for negative validation paths and error handling.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns boost::none on failure)",
+      "field": "accountID",
+      "location": "RippleLineCache::getLineCache",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "Checks if the input string is a valid Base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (assert(ledger_))",
+      "field": "ledger",
+      "location": "RippleLineCache::RippleLineCache (constructor)",
+      "validated_by": "ledger_ != nullptr",
+      "validates": [
+        "Ensures ledger pointer is not null"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

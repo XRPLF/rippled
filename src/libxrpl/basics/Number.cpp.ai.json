@@ -1,0 +1,477 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Number::Guard"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Number::setMantissaScale"
+      ],
+      "entry_point": "Number::setMantissaScale",
+      "purpose": "Sets the mantissa scale for Number operations, switching between small and large ranges.",
+      "validation_points": [
+        "Number::setMantissaScale: Validates that 'scale' is either MantissaRange::small or MantissaRange::large. Throws LogicError otherwise."
+      ]
+    },
+    {
+      "call_chain": [
+        "Number::getMantissaScale"
+      ],
+      "entry_point": "Number::getMantissaScale",
+      "purpose": "Retrieves the current mantissa scale from the thread-local range_ reference.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Number::Guard::push",
+        "Number::Guard::doPush"
+      ],
+      "entry_point": "Number::Guard::push",
+      "purpose": "Adds a digit to the guard digits for precision/rounding purposes.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Number::Guard::pop"
+      ],
+      "entry_point": "Number::Guard::pop",
+      "purpose": "Removes a digit from the guard digits.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Number::Guard::doRoundUp"
+      ],
+      "entry_point": "Number::Guard::doRoundUp",
+      "purpose": "Rounds up the mantissa if required, adjusting sign, mantissa, and exponent.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Number::Guard::doRoundDown"
+      ],
+      "entry_point": "Number::Guard::doRoundDown",
+      "purpose": "Rounds down the mantissa if required.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Number::Guard::doRound"
+      ],
+      "entry_point": "Number::Guard::doRound",
+      "purpose": "Rounds the value in-place based on guard digits.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "MantissaRange::mantissa_scale scale",
+      "flow": [
+        "Input to Number::setMantissaScale",
+        "Validated against MantissaRange::small and MantissaRange::large",
+        "Used to set thread_local Number::range_ to smallRange or largeRange"
+      ],
+      "origin": "Input parameter to Number::setMantissaScale",
+      "transformations": [
+        "Checked for valid enum value",
+        "Used to select reference to smallRange or largeRange"
+      ],
+      "validated_at": "Number::setMantissaScale"
+    },
+    {
+      "field": "Number::range_ (thread_local)",
+      "flow": [
+        "Initialized to largeRange",
+        "Set by Number::setMantissaScale",
+        "Read by Number::getMantissaScale"
+      ],
+      "origin": "Initialized to largeRange at thread start",
+      "transformations": [
+        "Reference wrapper updated to point to smallRange or largeRange"
+      ],
+      "validated_at": "Indirectly validated via setMantissaScale"
+    },
+    {
+      "field": "Number::Guard::digits_",
+      "flow": [
+        "Guard constructed",
+        "Digits pushed via Guard::push (calls doPush)",
+        "Digits popped via Guard::pop"
+      ],
+      "origin": "Default-initialized to 0 in Guard constructor",
+      "transformations": [
+        "Digits shifted and masked in doPush and pop"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "Number::Guard::sbit_",
+      "flow": [
+        "Set via set_positive or set_negative",
+        "Read via is_negative"
+      ],
+      "origin": "Default-initialized to 0 in Guard constructor",
+      "transformations": [
+        "Set to 0 or 1"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements arbitrary-precision decimal number arithmetic for the XRPL project, including normalization, rounding, arithmetic operations, and conversion to string, with support for different mantissa ranges and rounding modes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "scale (MantissaRange::mantissa_scale)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement and LogicError exception at Number::setMantissaScale",
+      "issue_pattern": "Missing empty string validation for scale (MantissaRange::mantissa_scale)",
+      "why_false_positive": "if statement and LogicError exception validates scale (MantissaRange::mantissa_scale) for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/Number.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "Number::getround"
+    },
+    {
+      "args": [
+        "mode"
+      ],
+      "lineno": 28,
+      "name": "Number::setround"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "Number::getMantissaScale"
+    },
+    {
+      "args": [
+        "scale"
+      ],
+      "lineno": 37,
+      "name": "Number::setMantissaScale"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "Number::Guard::set_positive"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "Number::Guard::set_negative"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "Number::Guard::is_negative"
+    },
+    {
+      "args": [
+        "d"
+      ],
+      "lineno": 82,
+      "name": "Number::Guard::doPush"
+    },
+    {
+      "args": [
+        "d"
+      ],
+      "lineno": 89,
+      "name": "Number::Guard::push"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "Number::Guard::pop"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "Number::Guard::round"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa"
+      ],
+      "lineno": 120,
+      "name": "Number::Guard::bringIntoRange"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa",
+        "maxMantissa",
+        "location"
+      ],
+      "lineno": 137,
+      "name": "Number::Guard::doRoundUp"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa"
+      ],
+      "lineno": 157,
+      "name": "Number::Guard::doRoundDown"
+    },
+    {
+      "args": [
+        "drops",
+        "location"
+      ],
+      "lineno": 172,
+      "name": "Number::Guard::doRound"
+    },
+    {
+      "args": [
+        "mantissa"
+      ],
+      "lineno": 192,
+      "name": "Number::externalToInternal"
+    },
+    {
+      "args": [],
+      "lineno": 206,
+      "name": "Number::oneSmall"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "Number::oneLarge"
+    },
+    {
+      "args": [],
+      "lineno": 216,
+      "name": "Number::one"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa_",
+        "exponent_",
+        "minMantissa",
+        "maxMantissa"
+      ],
+      "lineno": 227,
+      "name": "doNormalize"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa",
+        "maxMantissa"
+      ],
+      "lineno": 282,
+      "name": "Number::normalize<uint128_t>"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa",
+        "maxMantissa"
+      ],
+      "lineno": 289,
+      "name": "Number::normalize<unsigned long long>"
+    },
+    {
+      "args": [
+        "negative",
+        "mantissa",
+        "exponent",
+        "minMantissa",
+        "maxMantissa"
+      ],
+      "lineno": 296,
+      "name": "Number::normalize<unsigned long>"
+    },
+    {
+      "args": [],
+      "lineno": 303,
+      "name": "Number::normalize"
+    },
+    {
+      "args": [
+        "exponentDelta"
+      ],
+      "lineno": 314,
+      "name": "Number::shiftExponent"
+    },
+    {
+      "args": [
+        "y"
+      ],
+      "lineno": 329,
+      "name": "Number::operator+="
+    },
+    {
+      "args": [
+        "u"
+      ],
+      "lineno": 389,
+      "name": "divu10"
+    },
+    {
+      "args": [
+        "y"
+      ],
+      "lineno": 404,
+      "name": "Number::operator*="
+    },
+    {
+      "args": [
+        "y"
+      ],
+      "lineno": 448,
+      "name": "Number::operator/="
+    },
+    {
+      "args": [],
+      "lineno": 507,
+      "name": "Number::operator rep"
+    },
+    {
+      "args": [],
+      "lineno": 534,
+      "name": "Number::truncate"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 548,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "f",
+        "n"
+      ],
+      "lineno": 601,
+      "name": "power"
+    },
+    {
+      "args": [
+        "f",
+        "d"
+      ],
+      "lineno": 617,
+      "name": "root"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 678,
+      "name": "root2"
+    },
+    {
+      "args": [
+        "f",
+        "n",
+        "d"
+      ],
+      "lineno": 719,
+      "name": "power"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation (mantissa scale) is only checked in Number::setMantissaScale. Test coverage would require unit tests that call setMantissaScale with valid and invalid values to ensure LogicError is thrown as expected. There is no evidence in this file of test hooks or test-specific code. Tests would likely be in a file such as test_basics_Number.cpp or similar in the test suite. Guard logic (push/pop/round) is not validated for input range, so tests should cover edge cases for digit manipulation and rounding, but this is not enforced by validation code. Gaps: No validation for Guard digit values, no explicit tests referenced in this file, and no coverage for thread_local behavior or exception propagation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError",
+      "field": "scale (MantissaRange::mantissa_scale)",
+      "location": "Number::setMantissaScale",
+      "validated_by": "if statement and LogicError exception",
+      "validates": [
+        "Checks that scale is either MantissaRange::small or MantissaRange::large",
+        "Rejects any unknown or invalid scale values"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

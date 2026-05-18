@@ -1,0 +1,37 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "NullCollector()"
+      ],
+      "lineno": 8,
+      "name": "NullCollector"
+    }
+  ],
+  "description": "Defines the NullCollector class, a Collector implementation that does not collect metrics, within the beast::insight namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/NullCollector.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "NullCollector"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "New"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 5,
+      "name": "insight"
+    }
+  ]
+}

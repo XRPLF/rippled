@@ -1,0 +1,196 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 4,
+      "name": "ApplyViewImpl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyViewImpl::apply",
+        "ApplyViewItems::apply",
+        "OpenView (possibly state changes or further validation)"
+      ],
+      "entry_point": "ApplyViewImpl::apply",
+      "purpose": "Applies a transaction (STTx) to an OpenView, possibly as part of ledger update or transaction processing. Handles transaction effects, metadata, and error codes.",
+      "validation_points": [
+        "ApplyViewItems::apply (likely where transaction validation, effects, and error handling occur)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewImpl::visit",
+        "ApplyViewItems::visit",
+        "func (user-supplied function)"
+      ],
+      "entry_point": "ApplyViewImpl::visit",
+      "purpose": "Iterates over items in the ApplyView, calling a user-supplied function for each, possibly for validation, auditing, or state inspection.",
+      "validation_points": [
+        "func (user-supplied function may perform validation on before/after SLEs)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "tx (STTx const&)",
+      "flow": [
+        "ApplyViewImpl::apply (receives tx)",
+        "ApplyViewItems::apply (tx passed through)",
+        "OpenView (tx effects applied)"
+      ],
+      "origin": "Input parameter to ApplyViewImpl::apply",
+      "transformations": [
+        "May be checked for validity, effects computed, metadata generated"
+      ],
+      "validated_at": "ApplyViewItems::apply (likely, as ApplyViewImpl::apply is a thin wrapper)"
+    },
+    {
+      "field": "ter (TER)",
+      "flow": [
+        "ApplyViewImpl::apply",
+        "ApplyViewItems::apply"
+      ],
+      "origin": "Input parameter to ApplyViewImpl::apply",
+      "transformations": [
+        "May be checked/updated based on transaction processing outcome"
+      ],
+      "validated_at": "ApplyViewItems::apply"
+    },
+    {
+      "field": "deliver_",
+      "flow": [
+        "ApplyViewImpl::apply (passed to ApplyViewItems::apply)"
+      ],
+      "origin": "Member of ApplyViewImpl",
+      "transformations": [
+        "May be set/updated during transaction application"
+      ],
+      "validated_at": "ApplyViewItems::apply"
+    },
+    {
+      "field": "items_",
+      "flow": [
+        "ApplyViewImpl::* (all methods delegate to items_)",
+        "ApplyViewItems::*"
+      ],
+      "origin": "Member of ApplyViewImpl (ApplyViewItems)",
+      "transformations": [
+        "Holds staged changes, applies them to OpenView"
+      ],
+      "validated_at": "ApplyViewItems::*"
+    }
+  ],
+  "description": "Implements the ApplyViewImpl class, which provides methods to apply transactions and manage state changes on top of a base ledger view in the XRPL ledger system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/ApplyViewImpl.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 4,
+      "name": "ApplyViewImpl::ApplyViewImpl"
+    },
+    {
+      "args": [
+        "OpenView& to",
+        "STTx const& tx",
+        "TER ter",
+        "std::optional<uint256> parentBatchId",
+        "bool isDryRun",
+        "beast::Journal j"
+      ],
+      "lineno": 8,
+      "name": "ApplyViewImpl::apply"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "ApplyViewImpl::size"
+    },
+    {
+      "args": [
+        "OpenView& to",
+        "std::function<void(uint256 const& key, bool isDelete, std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after)> const& func"
+      ],
+      "lineno": 21,
+      "name": "ApplyViewImpl::visit"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file (ApplyViewImpl.cpp) is a thin wrapper delegating to ApplyViewItems. Direct validation logic is not present here, but in ApplyViewItems::apply and related methods. Tests likely exist in files covering transaction application, ledger updates, and ApplyView logic, such as 'ApplyView_test.cpp', 'Transactor_test.cpp', or integration tests for transaction processing. Gaps: Direct unit tests for ApplyViewImpl may be minimal; most validation is tested indirectly via higher-level transaction/ledger tests. If ApplyViewItems is not thoroughly tested, validation coverage may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

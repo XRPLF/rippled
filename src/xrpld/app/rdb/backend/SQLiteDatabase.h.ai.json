@@ -1,0 +1,347 @@
+{
+  "args": [
+    {
+      "lineno": 292,
+      "name": "registry"
+    },
+    {
+      "lineno": 292,
+      "name": "config"
+    },
+    {
+      "lineno": 292,
+      "name": "jobQueue"
+    },
+    {
+      "lineno": 295,
+      "name": "SQLiteDatabase&& rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ServiceRegistry& registry, Config const& config, JobQueue& jobQueue",
+        "SQLiteDatabase(SQLiteDatabase const&) = delete",
+        "SQLiteDatabase(SQLiteDatabase&& rhs) noexcept"
+      ],
+      "lineno": 10,
+      "name": "SQLiteDatabase"
+    }
+  ],
+  "description": "Defines the SQLiteDatabase class, a final implementation of RelationalDatabase for managing ledger and transaction data in SQLite databases within the xrpl namespace. Provides methods for querying, saving, and deleting ledger and transaction records, as well as utility functions for database management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/rdb/backend/SQLiteDatabase.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "getMinLedgerSeq"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "getMaxLedgerSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 32,
+      "name": "getLedgerInfoByIndex"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "ledgerHash"
+      ],
+      "lineno": 46,
+      "name": "getLedgerInfoByHash"
+    },
+    {
+      "args": [
+        "ledgerIndex"
+      ],
+      "lineno": 53,
+      "name": "getHashByIndex"
+    },
+    {
+      "args": [
+        "ledgerIndex"
+      ],
+      "lineno": 60,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "minSeq",
+        "maxSeq"
+      ],
+      "lineno": 68,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "startIndex"
+      ],
+      "lineno": 77,
+      "name": "getTxHistory"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "getTransactionsMinLedgerSeq"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "getAccountTransactionsMinLedgerSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 99,
+      "name": "deleteTransactionByLedgerSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 106,
+      "name": "deleteBeforeLedgerSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 113,
+      "name": "deleteTransactionsBeforeLedgerSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 120,
+      "name": "deleteAccountTransactionsBeforeLedgerSeq"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "getTransactionCount"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "getAccountTransactionCount"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "getLedgerCountMinMax"
+    },
+    {
+      "args": [
+        "ledger",
+        "current"
+      ],
+      "lineno": 149,
+      "name": "saveValidatedLedger"
+    },
+    {
+      "args": [
+        "ledgerFirstIndex"
+      ],
+      "lineno": 157,
+      "name": "getLimitedOldestLedgerInfo"
+    },
+    {
+      "args": [
+        "ledgerFirstIndex"
+      ],
+      "lineno": 165,
+      "name": "getLimitedNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 173,
+      "name": "getOldestAccountTxs"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 182,
+      "name": "getNewestAccountTxs"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 191,
+      "name": "getOldestAccountTxsB"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 200,
+      "name": "getNewestAccountTxsB"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 209,
+      "name": "oldestAccountTxPage"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 219,
+      "name": "newestAccountTxPage"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 229,
+      "name": "oldestAccountTxPageB"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 239,
+      "name": "newestAccountTxPageB"
+    },
+    {
+      "args": [
+        "id",
+        "range",
+        "ec"
+      ],
+      "lineno": 249,
+      "name": "getTransaction"
+    },
+    {
+      "args": [],
+      "lineno": 263,
+      "name": "getKBUsedAll"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "getKBUsedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 277,
+      "name": "getKBUsedTransaction"
+    },
+    {
+      "args": [],
+      "lineno": 284,
+      "name": "closeLedgerDB"
+    },
+    {
+      "args": [],
+      "lineno": 290,
+      "name": "closeTransactionDB"
+    },
+    {
+      "args": [
+        "registry",
+        "config",
+        "jobQueue"
+      ],
+      "lineno": 292,
+      "name": "SQLiteDatabase"
+    },
+    {
+      "args": [
+        "SQLiteDatabase&& rhs"
+      ],
+      "lineno": 295,
+      "name": "SQLiteDatabase"
+    },
+    {
+      "args": [
+        "SQLiteDatabase const&"
+      ],
+      "lineno": 298,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "SQLiteDatabase&&"
+      ],
+      "lineno": 300,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 307,
+      "name": "ledgerDbHasSpace"
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 314,
+      "name": "transactionDbHasSpace"
+    },
+    {
+      "args": [
+        "config",
+        "setup",
+        "checkpointerSetup"
+      ],
+      "lineno": 323,
+      "name": "makeLedgerDBs"
+    },
+    {
+      "args": [],
+      "lineno": 332,
+      "name": "existsLedger"
+    },
+    {
+      "args": [],
+      "lineno": 340,
+      "name": "existsTransaction"
+    },
+    {
+      "args": [],
+      "lineno": 348,
+      "name": "checkoutLedger"
+    },
+    {
+      "args": [],
+      "lineno": 356,
+      "name": "checkoutTransaction"
+    },
+    {
+      "args": [
+        "registry",
+        "config",
+        "jobQueue"
+      ],
+      "lineno": 366,
+      "name": "setup_RelationalDatabase"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

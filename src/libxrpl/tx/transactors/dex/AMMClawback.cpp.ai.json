@@ -1,0 +1,673 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMClawback::preflight"
+      ],
+      "entry_point": "AMMClawback::preflight",
+      "purpose": "Performs initial stateless validation of the AMMClawback transaction. Checks for malformed fields, flag correctness, and asset/account relationships.",
+      "validation_points": [
+        "issuer == holder check (malformed)",
+        "isXRP(asset) check (malformed)",
+        "tfClawTwoAssets flag and issuer match (invalid flag)",
+        "asset.getIssuer() == issuer (malformed)",
+        "clawAmount.asset() == asset (bad amount)",
+        "clawAmount > 0 (bad amount)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMClawback::preclaim"
+      ],
+      "entry_point": "AMMClawback::preclaim",
+      "purpose": "Performs contextual validation using ledger state. Checks for existence of accounts, AMM pool, and issuer permissions.",
+      "validation_points": [
+        "issuer account exists",
+        "holder account exists",
+        "AMM pool exists",
+        "issuer flags (lsfAllowTrustLineClawback, lsfNoFreeze)",
+        "MPTIssue: sleIssuance flags and issuer match"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMClawback::checkExtraFeatures"
+      ],
+      "entry_point": "AMMClawback::checkExtraFeatures",
+      "purpose": "Checks if the required protocol features are enabled and validates asset types for MPTokens.",
+      "validation_points": [
+        "featureAMMClawback enabled",
+        "featureMPTokensV2 enabled or asset types not MPTIssue"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "issuer variable in preflight/preclaim",
+        "used for issuer/holder comparison, asset issuer match, and permission checks"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to sfHolder",
+        "Compared to asset.getIssuer()",
+        "Used to fetch account SLE from ledger"
+      ],
+      "validated_at": "preflight (issuer == holder, asset.getIssuer() == issuer), preclaim (account exists, permission checks)"
+    },
+    {
+      "field": "sfHolder",
+      "flow": [
+        "ctx.tx[sfHolder]",
+        "holder variable in preflight/preclaim",
+        "used for issuer/holder comparison and account existence check"
+      ],
+      "origin": "ctx.tx[sfHolder] (transaction input)",
+      "transformations": [
+        "Compared to sfAccount"
+      ],
+      "validated_at": "preflight (issuer == holder), preclaim (account exists)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[~sfAmount]",
+        "clawAmount variable in preflight/checkExtraFeatures",
+        "used for asset match and value checks"
+      ],
+      "origin": "ctx.tx[~sfAmount] (optional transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Compared to asset",
+        "Checked for > 0"
+      ],
+      "validated_at": "preflight (asset match, > 0), checkExtraFeatures (MPTIssue check)"
+    },
+    {
+      "field": "sfAsset",
+      "flow": [
+        "ctx.tx[sfAsset]",
+        "asset variable in preflight/preclaim/checkExtraFeatures",
+        "used for isXRP check, issuer match, AMM pool lookup, and MPTIssue checks"
+      ],
+      "origin": "ctx.tx[sfAsset] (transaction input)",
+      "transformations": [
+        "Checked for isXRP",
+        "Compared to asset2.getIssuer()",
+        "Compared to asset.getIssuer()",
+        "Used in keylet::amm lookup"
+      ],
+      "validated_at": "preflight (isXRP, issuer match), preclaim (AMM pool exists, permission checks), checkExtraFeatures (MPTIssue check)"
+    },
+    {
+      "field": "sfAsset2",
+      "flow": [
+        "ctx.tx[sfAsset2]",
+        "asset2 variable in preflight/preclaim/checkExtraFeatures",
+        "used for issuer match, AMM pool lookup, and MPTIssue checks"
+      ],
+      "origin": "ctx.tx[sfAsset2] (transaction input)",
+      "transformations": [
+        "Compared to asset.getIssuer()",
+        "Used in keylet::amm lookup"
+      ],
+      "validated_at": "preflight (issuer match for tfClawTwoAssets), preclaim (AMM pool exists), checkExtraFeatures (MPTIssue check)"
+    },
+    {
+      "field": "flags",
+      "flow": [
+        "ctx.tx.getFlags()",
+        "flags variable in preflight",
+        "used for tfClawTwoAssets logic"
+      ],
+      "origin": "ctx.tx.getFlags() (transaction input)",
+      "transformations": [
+        "Bitmask checked for tfClawTwoAssets"
+      ],
+      "validated_at": "preflight (tfClawTwoAssets logic)"
+    },
+    {
+      "field": "issuerFlagsIn",
+      "flow": [
+        "sleIssuer->getFieldU32(sfFlags)",
+        "issuerFlagsIn variable in preclaim",
+        "used for permission checks"
+      ],
+      "origin": "sleIssuer->getFieldU32(sfFlags) (ledger state)",
+      "transformations": [
+        "Bitmask checked for lsfAllowTrustLineClawback, lsfNoFreeze"
+      ],
+      "validated_at": "preclaim (permission checks)"
+    }
+  ],
+  "description": "Implements the AMMClawback transaction logic for the XRPL decentralized exchange, handling preflight checks, permissions, and the application of clawback operations on AMM pools.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfHolder",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfHolder validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for sfHolder",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates sfHolder automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for sfAsset",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates sfAsset automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset2",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset2 validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for sfAsset2",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates sfAsset2 automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmount validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for sfAmount",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates sfAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "flags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field flags validated by xrpl transaction preflight/preclaim validation",
+      "issue_pattern": "Missing validation for flags",
+      "why_false_positive": "xrpl transaction preflight/preclaim validation validates flags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureAMMClawback",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for featureAMMClawback",
+      "why_false_positive": "ctx.rules.enabled validates featureAMMClawback for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureMPTokensV2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for featureMPTokensV2",
+      "why_false_positive": "ctx.rules.enabled validates featureMPTokensV2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[~sfAmount] at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfAmount (optional)",
+      "why_false_positive": "ctx.tx[~sfAmount] validates sfAmount (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount vs sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "issuer == holder at preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount vs sfHolder",
+      "why_false_positive": "issuer == holder validates sfAccount vs sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAsset",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP(asset) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAsset",
+      "why_false_positive": "isXRP(asset) validates sfAsset for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfClawTwoAssets flag and asset issuers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "flags & tfClawTwoAssets, asset.getIssuer() != asset2.getIssuer() at preflight",
+      "issue_pattern": "Missing empty string validation for tfClawTwoAssets flag and asset issuers",
+      "why_false_positive": "flags & tfClawTwoAssets, asset.getIssuer() != asset2.getIssuer() validates tfClawTwoAssets flag and asset issuers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAsset.getIssuer() vs sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "asset.getIssuer() != issuer at preflight",
+      "issue_pattern": "Missing empty string validation for sfAsset.getIssuer() vs sfAccount",
+      "why_false_positive": "asset.getIssuer() != issuer validates sfAsset.getIssuer() vs sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.asset() vs sfAsset",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "clawAmount && clawAmount->asset() != asset at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount.asset() vs sfAsset",
+      "why_false_positive": "clawAmount && clawAmount->asset() != asset validates sfAmount.asset() vs sfAsset for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "clawAmount && *clawAmount <= beast::zero at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "clawAmount && *clawAmount <= beast::zero validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "clawAmount && *clawAmount <= beast::zero at preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "clawAmount && *clawAmount <= beast::zero validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (issuer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(ctx.tx[sfAccount])) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount (issuer)",
+      "why_false_positive": "ctx.view.read(keylet::account(ctx.tx[sfAccount])) validates sfAccount (issuer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(ctx.tx[sfHolder])) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfHolder",
+      "why_false_positive": "ctx.view.read(keylet::account(ctx.tx[sfHolder])) validates sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM pool (asset, asset2)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::amm(asset, asset2)) at preclaim",
+      "issue_pattern": "Missing empty string validation for AMM pool (asset, asset2)",
+      "why_false_positive": "ctx.view.read(keylet::amm(asset, asset2)) validates AMM pool (asset, asset2) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMClawback.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 10,
+      "name": "AMMClawback::getFlagsMask"
+    },
+    {
+      "args": [
+        "xrpl::PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "AMMClawback::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "AMMClawback::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 54,
+      "name": "AMMClawback::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "AMMClawback::doApply"
+    },
+    {
+      "args": [
+        "Sandbox& sb"
+      ],
+      "lineno": 108,
+      "name": "AMMClawback::applyGuts"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "SLE const& ammSle",
+        "AccountID const& holder",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& holdLPtokens",
+        "STAmount const& amount"
+      ],
+      "lineno": 196,
+      "name": "AMMClawback::equalWithdrawMatchingOneAmount"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMClawback is a new transaction type, so coverage is likely in integration/functional tests for AMM and clawback features. Look for test files such as 'AMMClawback_test.cpp', 'AMM_test.cpp', or 'AMMClawback.feature' in the test suite. Key validation paths (issuer/holder mismatch, asset checks, flag logic, permission checks) should be covered, but edge cases (e.g., MPTIssue handling, feature flag combinations, missing accounts, malformed assets) may lack exhaustive tests. Coverage for negative cases (malformed, permission denied, missing AMM) should be verified. No explicit test references in this file; review test suite for gaps in MPTokens, feature flag, and multi-asset scenarios.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAccount",
+      "sfHolder",
+      "sfAsset",
+      "sfAsset2",
+      "sfAmount",
+      "flags"
+    ],
+    "framework": "xrpl transaction preflight/preclaim validation",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents operation)",
+      "field": "featureAMMClawback",
+      "location": "checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled",
+      "validates": [
+        "Checks if the AMMClawback feature is enabled in the rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents operation)",
+      "field": "featureMPTokensV2",
+      "location": "checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled",
+      "validates": [
+        "Checks if the MPTokensV2 feature is enabled in the rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents operation)",
+      "field": "sfAmount (optional)",
+      "location": "checkExtraFeatures",
+      "validated_by": "ctx.tx[~sfAmount]",
+      "validates": [
+        "If MPTokensV2 is not enabled, checks that sfAmount, sfAsset, and sfAsset2 do not hold MPTIssue"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAccount vs sfHolder",
+      "location": "preflight",
+      "validated_by": "issuer == holder",
+      "validates": [
+        "Ensures the issuer and holder are not the same account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAsset",
+      "location": "preflight",
+      "validated_by": "isXRP(asset)",
+      "validates": [
+        "Ensures the asset is not XRP"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfClawTwoAssets flag and asset issuers",
+      "location": "preflight",
+      "validated_by": "flags & tfClawTwoAssets, asset.getIssuer() != asset2.getIssuer()",
+      "validates": [
+        "If tfClawTwoAssets is set, both assets must have the same issuer"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAsset.getIssuer() vs sfAccount",
+      "location": "preflight",
+      "validated_by": "asset.getIssuer() != issuer",
+      "validates": [
+        "Ensures the asset's issuer matches the Account field"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount.asset() vs sfAsset",
+      "location": "preflight",
+      "validated_by": "clawAmount && clawAmount->asset() != asset",
+      "validates": [
+        "If sfAmount is present, its asset subfield must match sfAsset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "clawAmount && *clawAmount <= beast::zero",
+      "validates": [
+        "If sfAmount is present, it must be greater than zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount (issuer)",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::account(ctx.tx[sfAccount]))",
+      "validates": [
+        "Ensures the issuer account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfHolder",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::account(ctx.tx[sfHolder]))",
+      "validates": [
+        "Ensures the holder account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_AMM",
+      "field": "AMM pool (asset, asset2)",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::amm(asset, asset2))",
+      "validates": [
+        "Ensures the AMM pool for the asset pair exists"
+      ],
+      "validation_type": "existence|business_logic"
+    }
+  ]
+}

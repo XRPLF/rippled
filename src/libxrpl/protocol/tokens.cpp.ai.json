@@ -1,0 +1,609 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "data"
+    },
+    {
+      "lineno": 61,
+      "name": "size"
+    },
+    {
+      "lineno": 68,
+      "name": "v"
+    },
+    {
+      "lineno": 74,
+      "name": "args"
+    },
+    {
+      "lineno": 86,
+      "name": "out"
+    },
+    {
+      "lineno": 86,
+      "name": "message"
+    },
+    {
+      "lineno": 86,
+      "name": "size"
+    },
+    {
+      "lineno": 98,
+      "name": "type"
+    },
+    {
+      "lineno": 98,
+      "name": "token"
+    },
+    {
+      "lineno": 98,
+      "name": "size"
+    },
+    {
+      "lineno": 107,
+      "name": "s"
+    },
+    {
+      "lineno": 107,
+      "name": "type"
+    },
+    {
+      "lineno": 122,
+      "name": "message"
+    },
+    {
+      "lineno": 122,
+      "name": "size"
+    },
+    {
+      "lineno": 122,
+      "name": "temp"
+    },
+    {
+      "lineno": 122,
+      "name": "temp_size"
+    },
+    {
+      "lineno": 151,
+      "name": "s"
+    },
+    {
+      "lineno": 185,
+      "name": "type"
+    },
+    {
+      "lineno": 185,
+      "name": "token"
+    },
+    {
+      "lineno": 185,
+      "name": "size"
+    },
+    {
+      "lineno": 206,
+      "name": "s"
+    },
+    {
+      "lineno": 206,
+      "name": "type"
+    },
+    {
+      "lineno": 241,
+      "name": "input"
+    },
+    {
+      "lineno": 241,
+      "name": "out"
+    },
+    {
+      "lineno": 326,
+      "name": "input"
+    },
+    {
+      "lineno": 326,
+      "name": "out"
+    },
+    {
+      "lineno": 429,
+      "name": "token_type"
+    },
+    {
+      "lineno": 429,
+      "name": "input"
+    },
+    {
+      "lineno": 429,
+      "name": "out"
+    },
+    {
+      "lineno": 453,
+      "name": "type"
+    },
+    {
+      "lineno": 453,
+      "name": "s"
+    },
+    {
+      "lineno": 453,
+      "name": "outBuf"
+    },
+    {
+      "lineno": 491,
+      "name": "type"
+    },
+    {
+      "lineno": 491,
+      "name": "token"
+    },
+    {
+      "lineno": 491,
+      "name": "size"
+    },
+    {
+      "lineno": 510,
+      "name": "s"
+    },
+    {
+      "lineno": 510,
+      "name": "type"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "decodeBase58Token",
+        "b58_ref::DecodeBase58",
+        "decodeBase58Token (internal validation)",
+        "safe_cast"
+      ],
+      "entry_point": "decodeBase58Token",
+      "purpose": "Decodes a Base58-encoded token string, validates its structure, type, and checksum, and returns the decoded payload and token type.",
+      "validation_points": [
+        "b58_ref::DecodeBase58 (validates Base58 encoding)",
+        "decodeBase58Token (validates payload length, prefix, checksum)",
+        "safe_cast (validates token type enum)"
+      ]
+    },
+    {
+      "call_chain": [
+        "encodeBase58Token",
+        "encodeBase58"
+      ],
+      "entry_point": "encodeBase58Token",
+      "purpose": "Encodes a payload and token type into a Base58-encoded token string, including prefix and checksum.",
+      "validation_points": [
+        "encodeBase58Token (may validate payload length/type before encoding)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "input_string (Base58-encoded token)",
+      "flow": [
+        "input_string",
+        "decodeBase58Token",
+        "b58_ref::DecodeBase58",
+        "decodeBase58Token (payload extraction, prefix/type/length/cksum validation)",
+        "safe_cast (token type enum validation)",
+        "decoded payload and type returned"
+      ],
+      "origin": "External input (e.g., user, network, API)",
+      "transformations": [
+        "Base58 decoding",
+        "Payload extraction",
+        "Prefix/type/length/cksum validation",
+        "Type enum conversion"
+      ],
+      "validated_at": "b58_ref::DecodeBase58, decodeBase58Token, safe_cast"
+    },
+    {
+      "field": "payload (binary data)",
+      "flow": [
+        "decodeBase58Token",
+        "payload extracted from decoded bytes",
+        "payload validated (length, prefix, checksum)",
+        "payload returned or used"
+      ],
+      "origin": "Decoded from Base58 string",
+      "transformations": [
+        "Extracted from decoded bytes",
+        "Validated for length, prefix, checksum"
+      ],
+      "validated_at": "decodeBase58Token"
+    },
+    {
+      "field": "token_type (enum)",
+      "flow": [
+        "decodeBase58Token",
+        "prefix byte extracted",
+        "safe_cast to enum",
+        "enum used in return value"
+      ],
+      "origin": "Prefix byte in decoded payload",
+      "transformations": [
+        "Prefix byte to enum conversion"
+      ],
+      "validated_at": "decodeBase58Token (prefix check), safe_cast"
+    }
+  ],
+  "description": "This file implements base58 encoding and decoding routines for XRPL tokens, including fast and reference algorithms, checksum calculation, and token type validation. It provides functions to encode and decode tokens in base58 format, with support for both generic and platform-specific implementations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Base58-encoded input string",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "b58_ref::DecodeBase58 at decodeBase58Token / b58_ref::DecodeBase58",
+      "issue_pattern": "Missing empty string validation for Base58-encoded input string",
+      "why_false_positive": "b58_ref::DecodeBase58 validates Base58-encoded input string for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Base58-encoded input string",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "b58_ref::DecodeBase58 at decodeBase58Token / b58_ref::DecodeBase58",
+      "issue_pattern": "Missing format validation for Base58-encoded input string",
+      "why_false_positive": "b58_ref::DecodeBase58 validates Base58-encoded input string format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Decoded payload length",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token at decodeBase58Token",
+      "issue_pattern": "Missing empty string validation for Decoded payload length",
+      "why_false_positive": "decodeBase58Token validates Decoded payload length for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Decoded payload length",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token at decodeBase58Token",
+      "issue_pattern": "Missing range validation for Decoded payload length",
+      "why_false_positive": "decodeBase58Token validates Decoded payload length range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Token type prefix",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token at decodeBase58Token",
+      "issue_pattern": "Missing empty string validation for Token type prefix",
+      "why_false_positive": "decodeBase58Token validates Token type prefix for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Checksum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token at decodeBase58Token",
+      "issue_pattern": "Missing empty string validation for Checksum",
+      "why_false_positive": "decodeBase58Token validates Checksum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Checksum",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "decodeBase58Token at decodeBase58Token",
+      "issue_pattern": "Missing format validation for Checksum",
+      "why_false_positive": "decodeBase58Token validates Checksum format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Token type (enum)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_cast at decodeBase58Token",
+      "issue_pattern": "Missing empty string validation for Token type (enum)",
+      "why_false_positive": "safe_cast validates Token type (enum) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Token type (enum)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_cast at decodeBase58Token",
+      "issue_pattern": "Missing type validation for Token type (enum)",
+      "why_false_positive": "safe_cast validates Token type (enum) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/tokens.cpp",
+  "functions": [
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 61,
+      "name": "digest"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 68,
+      "name": "digest"
+    },
+    {
+      "args": [
+        "args..."
+      ],
+      "lineno": 74,
+      "name": "digest2"
+    },
+    {
+      "args": [
+        "out",
+        "message",
+        "size"
+      ],
+      "lineno": 86,
+      "name": "checksum"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 98,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 107,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "message",
+        "size",
+        "temp",
+        "temp_size"
+      ],
+      "lineno": 122,
+      "name": "encodeBase58"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 151,
+      "name": "decodeBase58"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 185,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 206,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "input",
+        "out"
+      ],
+      "lineno": 241,
+      "name": "b256_to_b58_be"
+    },
+    {
+      "args": [
+        "input",
+        "out"
+      ],
+      "lineno": 326,
+      "name": "b58_to_b256_be"
+    },
+    {
+      "args": [
+        "token_type",
+        "input",
+        "out"
+      ],
+      "lineno": 429,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "type",
+        "s",
+        "outBuf"
+      ],
+      "lineno": 453,
+      "name": "decodeBase58Token"
+    },
+    {
+      "args": [
+        "type",
+        "token",
+        "size"
+      ],
+      "lineno": 491,
+      "name": "encodeBase58Token"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 510,
+      "name": "decodeBase58Token"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 59,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 113,
+      "name": "b58_ref"
+    },
+    {
+      "lineno": 115,
+      "name": "detail"
+    },
+    {
+      "lineno": 238,
+      "name": "b58_fast"
+    },
+    {
+      "lineno": 240,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in decodeBase58Token and b58_ref::DecodeBase58. Typical test coverage would be in protocol/tokens_test.cpp or similar, testing valid/invalid Base58 strings, payload lengths, prefixes, checksums, and token type enums. Gaps may exist if edge cases (e.g., malformed Base58, wrong prefix, invalid checksum, or out-of-range enum values) are not exhaustively tested. Tests should also cover round-trip encode/decode. If fuzzing or property-based tests are absent, some malformed or boundary cases may be untested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (xrpl/protocol/detail/b58_utils.h, xrpl/protocol/detail/token_errors.h)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "TokenError::badBase58",
+      "field": "Base58-encoded input string",
+      "location": "decodeBase58Token / b58_ref::DecodeBase58",
+      "validated_by": "b58_ref::DecodeBase58",
+      "validates": [
+        "Checks that input string only contains valid Base58 characters",
+        "Checks for leading/trailing whitespace",
+        "Checks for empty input"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "TokenError::badTokenLength",
+      "field": "Decoded payload length",
+      "location": "decodeBase58Token",
+      "validated_by": "decodeBase58Token",
+      "validates": [
+        "Checks that decoded payload length matches expected length for token type"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "TokenError::badTokenType",
+      "field": "Token type prefix",
+      "location": "decodeBase58Token",
+      "validated_by": "decodeBase58Token",
+      "validates": [
+        "Checks that the prefix bytes match the expected token type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "TokenError::badTokenChecksum",
+      "field": "Checksum",
+      "location": "decodeBase58Token",
+      "validated_by": "decodeBase58Token",
+      "validates": [
+        "Computes and verifies the 4-byte checksum at the end of the decoded payload"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::bad_cast or assertion",
+      "field": "Token type (enum)",
+      "location": "decodeBase58Token",
+      "validated_by": "safe_cast",
+      "validates": [
+        "Casts prefix bytes to enum type, ensuring valid enum value"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

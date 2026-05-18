@@ -1,0 +1,669 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "canHaveNFTokenID"
+      ],
+      "entry_point": "canHaveNFTokenID",
+      "purpose": "Determines if a transaction and its metadata are eligible to have an NFTokenID (i.e., if the transaction is of the correct type and succeeded).",
+      "validation_points": [
+        "serializedTx null check",
+        "serializedTx->getTxnType() enum check",
+        "transactionMeta.getResultTER() isTesSuccess check"
+      ]
+    },
+    {
+      "call_chain": [
+        "getNFTokenIDFromPage"
+      ],
+      "entry_point": "getNFTokenIDFromPage",
+      "purpose": "Extracts the NFTokenID that was added in a transaction by comparing previous and final NFT states in affected ledger nodes.",
+      "validation_points": [
+        "node.getFieldU16(sfLedgerEntryType) enum check",
+        "node.getFName() enum check",
+        "previousFields.isFieldPresent(sfNFTokens) check",
+        "finalIDs.size() != prevIDs.size() + 1 check"
+      ]
+    },
+    {
+      "call_chain": [
+        "getNFTokenIDFromDeletedOffer"
+      ],
+      "entry_point": "getNFTokenIDFromDeletedOffer",
+      "purpose": "Extracts the NFTokenID from a deleted offer node in transaction metadata.",
+      "validation_points": [
+        "node.getFieldU16(sfLedgerEntryType) enum check",
+        "node.getFName() enum check"
+      ]
+    },
+    {
+      "call_chain": [
+        "insertNFTokenID"
+      ],
+      "entry_point": "insertNFTokenID",
+      "purpose": "Inserts an NFTokenID into a JSON object if present.",
+      "validation_points": [
+        "nftokenID.has_value() check"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "serializedTx",
+      "flow": [
+        "Function argument",
+        "Null check",
+        "getTxnType()",
+        "Used for transaction type validation"
+      ],
+      "origin": "Function argument to canHaveNFTokenID",
+      "transformations": [
+        "Dereferenced if not null",
+        "Transaction type extracted"
+      ],
+      "validated_at": "Null check at function start"
+    },
+    {
+      "field": "TxType (from serializedTx->getTxnType())",
+      "flow": [
+        "Extracted from serializedTx",
+        "Compared to allowed types (ttNFTOKEN_MINT, ttNFTOKEN_ACCEPT_OFFER, ttNFTOKEN_CANCEL_OFFER)"
+      ],
+      "origin": "serializedTx",
+      "transformations": [
+        "Enum comparison"
+      ],
+      "validated_at": "Immediately after extraction"
+    },
+    {
+      "field": "transactionMeta.getResultTER()",
+      "flow": [
+        "Extracted from transactionMeta",
+        "Passed to isTesSuccess()"
+      ],
+      "origin": "transactionMeta",
+      "transformations": [
+        "Boolean success/failure check"
+      ],
+      "validated_at": "Immediately after extraction"
+    },
+    {
+      "field": "node.getFieldU16(sfLedgerEntryType)",
+      "flow": [
+        "Extracted from node",
+        "Compared to ltNFTOKEN_PAGE (or ltOFFER in getNFTokenIDFromDeletedOffer)"
+      ],
+      "origin": "Each node in transactionMeta.getNodes()",
+      "transformations": [
+        "Enum comparison"
+      ],
+      "validated_at": "At start of each node-processing loop"
+    },
+    {
+      "field": "node.getFName()",
+      "flow": [
+        "Extracted from node",
+        "Compared to sfCreatedNode, sfModifiedNode, or sfDeletedNode"
+      ],
+      "origin": "Each node in transactionMeta.getNodes()",
+      "transformations": [
+        "Enum comparison"
+      ],
+      "validated_at": "After ledger entry type check"
+    },
+    {
+      "field": "NFTokens arrays",
+      "flow": [
+        "Extracted from node fields",
+        "Downcast to STObject",
+        "getFieldArray(sfNFTokens)",
+        "Transformed into vector<uint256> via std::transform"
+      ],
+      "origin": "STObject fields in node (sfNewFields, sfPreviousFields, sfFinalFields)",
+      "transformations": [
+        "Downcast",
+        "Array extraction",
+        "Mapping to uint256"
+      ],
+      "validated_at": "previousFields.isFieldPresent(sfNFTokens) check"
+    },
+    {
+      "field": "finalIDs and prevIDs",
+      "flow": [
+        "Built from NFTokens arrays",
+        "Compared in size",
+        "Compared element-wise to find new NFTokenID"
+      ],
+      "origin": "Vectors built from NFTokens arrays",
+      "transformations": [
+        "Vector construction",
+        "Size and content comparison"
+      ],
+      "validated_at": "finalIDs.size() != prevIDs.size() + 1 check"
+    }
+  ],
+  "description": "This file provides utility functions for extracting NFTokenID(s) from transaction metadata in the XRPL protocol, specifically for NFT mint, accept offer, and cancel offer transactions. It analyzes affected ledger nodes to determine which NFT(s) were created, accepted, or canceled, and inserts the relevant NFTokenID(s) into a JSON response.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "STObject field types (via downcast, getFieldArray, getFieldH256)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field STObject field types (via downcast, getFieldArray, getFieldH256) validated by xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere",
+      "issue_pattern": "Missing validation for STObject field types (via downcast, getFieldArray, getFieldH256)",
+      "why_false_positive": "xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere validates STObject field types (via downcast, getFieldArray, getFieldH256) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction type (via getTxnType)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction type (via getTxnType) validated by xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere",
+      "issue_pattern": "Missing validation for Transaction type (via getTxnType)",
+      "why_false_positive": "xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere validates Transaction type (via getTxnType) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction result code (via isTesSuccess)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction result code (via isTesSuccess) validated by xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere",
+      "issue_pattern": "Missing validation for Transaction result code (via isTesSuccess)",
+      "why_false_positive": "xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere validates Transaction result code (via isTesSuccess) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx (transaction pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at canHaveNFTokenID",
+      "issue_pattern": "Missing empty string validation for serializedTx (transaction pointer)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "serializedTx (transaction pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at canHaveNFTokenID",
+      "issue_pattern": "Missing type validation for serializedTx (transaction pointer)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx->getTxnType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit enum comparison at canHaveNFTokenID",
+      "issue_pattern": "Missing empty string validation for serializedTx->getTxnType()",
+      "why_false_positive": "explicit enum comparison validates serializedTx->getTxnType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transactionMeta.getResultTER()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess function at canHaveNFTokenID",
+      "issue_pattern": "Missing empty string validation for transactionMeta.getResultTER()",
+      "why_false_positive": "isTesSuccess function validates transactionMeta.getResultTER() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.getFieldU16(sfLedgerEntryType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit enum comparison at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for node.getFieldU16(sfLedgerEntryType)",
+      "why_false_positive": "explicit enum comparison validates node.getFieldU16(sfLedgerEntryType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.getFName()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit enum comparison at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for node.getFName()",
+      "why_false_positive": "explicit enum comparison validates node.getFName() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "previousFields.isFieldPresent(sfNFTokens)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent method at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for previousFields.isFieldPresent(sfNFTokens)",
+      "why_false_positive": "isFieldPresent method validates previousFields.isFieldPresent(sfNFTokens) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.peekAtField(sfNewFields).downcast<STObject>()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "downcast<STObject>() at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for node.peekAtField(sfNewFields).downcast<STObject>()",
+      "why_false_positive": "downcast<STObject>() validates node.peekAtField(sfNewFields).downcast<STObject>() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "node.peekAtField(sfNewFields).downcast<STObject>()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "downcast<STObject>() at getNFTokenIDFromPage",
+      "issue_pattern": "Missing type validation for node.peekAtField(sfNewFields).downcast<STObject>()",
+      "why_false_positive": "downcast<STObject>() validates node.peekAtField(sfNewFields).downcast<STObject>() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.peekAtField(sfPreviousFields).downcast<STObject>()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "downcast<STObject>() at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for node.peekAtField(sfPreviousFields).downcast<STObject>()",
+      "why_false_positive": "downcast<STObject>() validates node.peekAtField(sfPreviousFields).downcast<STObject>() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "node.peekAtField(sfPreviousFields).downcast<STObject>()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "downcast<STObject>() at getNFTokenIDFromPage",
+      "issue_pattern": "Missing type validation for node.peekAtField(sfPreviousFields).downcast<STObject>()",
+      "why_false_positive": "downcast<STObject>() validates node.peekAtField(sfPreviousFields).downcast<STObject>() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "toAddPrevNFTs.getFieldArray(sfNFTokens)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldArray at getNFTokenIDFromPage",
+      "issue_pattern": "Missing empty string validation for toAddPrevNFTs.getFieldArray(sfNFTokens)",
+      "why_false_positive": "getFieldArray validates toAddPrevNFTs.getFieldArray(sfNFTokens) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "nft.getFieldH256(sfNFTokenID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldH256 at getNFTokenIDFromPage (lambda in std::transform)",
+      "issue_pattern": "Missing empty string validation for nft.getFieldH256(sfNFTokenID)",
+      "why_false_positive": "getFieldH256 validates nft.getFieldH256(sfNFTokenID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/NFTokenID.cpp",
+  "functions": [
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 13,
+      "name": "canHaveNFTokenID"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 25,
+      "name": "getNFTokenIDFromPage"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 74,
+      "name": "getNFTokenIDFromDeletedOffer"
+    },
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 94,
+      "name": "insertNFTokenID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The functions in NFTokenID.cpp are typically tested via integration and unit tests that exercise NFT minting, offer creation/cancellation, and metadata parsing. Likely test files include: 'test/ledger/NFToken_test.cpp', 'test/app/tx/impl/NFToken_test.cpp', and possibly 'test/protocol/TxMeta_test.cpp'. These would cover positive and negative cases for transaction types, metadata parsing, and error handling. Gaps may exist in edge cases for malformed metadata, rare node types, or unusual ledger states. Direct unit tests for each validation branch (e.g., all enum mismatches, null pointers, and size mismatches) should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "STObject field types (via downcast, getFieldArray, getFieldH256)",
+      "Transaction type (via getTxnType)",
+      "Transaction result code (via isTesSuccess)"
+    ],
+    "framework": "xrpl protocol/STObject/STArray/STTx (custom type system), possible jss:: for JSON validation elsewhere",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx (transaction pointer)",
+      "location": "canHaveNFTokenID",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if serializedTx is not null before use"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx->getTxnType()",
+      "location": "canHaveNFTokenID",
+      "validated_by": "explicit enum comparison",
+      "validates": [
+        "Checks if transaction type is one of: ttNFTOKEN_MINT, ttNFTOKEN_ACCEPT_OFFER, ttNFTOKEN_CANCEL_OFFER"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "transactionMeta.getResultTER()",
+      "location": "canHaveNFTokenID",
+      "validated_by": "isTesSuccess function",
+      "validates": [
+        "Checks if transaction result code is a success code"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "continues loop (no exception)",
+      "field": "node.getFieldU16(sfLedgerEntryType)",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "explicit enum comparison",
+      "validates": [
+        "Checks if ledger entry type is ltNFTOKEN_PAGE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "continues loop (no exception)",
+      "field": "node.getFName()",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "explicit enum comparison",
+      "validates": [
+        "Checks if node is sfCreatedNode or sfModifiedNode"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "continues loop (no exception)",
+      "field": "previousFields.isFieldPresent(sfNFTokens)",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "isFieldPresent method",
+      "validates": [
+        "Checks if sfNFTokens field is present in previousFields"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely assertion or exception if downcast fails (implementation-dependent)",
+      "field": "node.peekAtField(sfNewFields).downcast<STObject>()",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "downcast<STObject>()",
+      "validates": [
+        "Ensures sfNewFields is an STObject"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely assertion or exception if downcast fails (implementation-dependent)",
+      "field": "node.peekAtField(sfPreviousFields).downcast<STObject>()",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "downcast<STObject>()",
+      "validates": [
+        "Ensures sfPreviousFields is an STObject"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely assertion or exception if field missing (implementation-dependent)",
+      "field": "toAddPrevNFTs.getFieldArray(sfNFTokens)",
+      "location": "getNFTokenIDFromPage",
+      "validated_by": "getFieldArray",
+      "validates": [
+        "Ensures sfNFTokens is present and is an array"
+      ],
+      "validation_type": "type/presence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely assertion or exception if field missing or wrong type (implementation-dependent)",
+      "field": "nft.getFieldH256(sfNFTokenID)",
+      "location": "getNFTokenIDFromPage (lambda in std::transform)",
+      "validated_by": "getFieldH256",
+      "validates": [
+        "Ensures sfNFTokenID is present and is a 256-bit hash"
+      ],
+      "validation_type": "type/presence/format"
+    }
+  ]
+}

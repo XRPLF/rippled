@@ -1,0 +1,175 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "addr"
+    },
+    {
+      "lineno": 18,
+      "name": "addr"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "is_private"
+      ],
+      "entry_point": "is_private(AddressV6 const& addr)",
+      "purpose": "Determines if an IPv6 address is private.",
+      "validation_points": [
+        "Manual bitmask check on addr.to_bytes()[0]",
+        "is_v4_mapped() check",
+        "Delegation to is_private(AddressV4) for v4-mapped addresses"
+      ]
+    },
+    {
+      "call_chain": [
+        "is_public",
+        "is_private",
+        "is_multicast"
+      ],
+      "entry_point": "is_public(AddressV6 const& addr)",
+      "purpose": "Determines if an IPv6 address is public (not private and not multicast).",
+      "validation_points": [
+        "is_private(AddressV6) call",
+        "is_multicast() method call on AddressV6"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AddressV6 addr",
+      "flow": [
+        "Input to is_private/is_public",
+        "addr.to_bytes()[0] bitmask check",
+        "addr.is_v4_mapped() check",
+        "If v4-mapped: converted to AddressV4 via boost::asio::ip::make_address_v4",
+        "Delegated to is_private(AddressV4) if v4-mapped",
+        "Result returned"
+      ],
+      "origin": "Passed as argument to is_private/is_public",
+      "transformations": [
+        "Bitmask applied to first byte",
+        "Potential conversion to AddressV4"
+      ],
+      "validated_at": "is_private(AddressV6) (bitmask and v4-mapped check)"
+    },
+    {
+      "field": "AddressV6 addr",
+      "flow": [
+        "Input to is_public",
+        "is_private(addr) called",
+        "addr.is_multicast() called",
+        "Result returned"
+      ],
+      "origin": "Passed as argument to is_public",
+      "transformations": [
+        "Boolean logic: !is_private && !is_multicast"
+      ],
+      "validated_at": "is_private(AddressV6), addr.is_multicast()"
+    }
+  ],
+  "description": "Provides functions to determine if an IPv6 address is private or public within the beast::IP namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "AddressV6 addr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual bitmask and function call at is_private",
+      "issue_pattern": "Missing empty string validation for AddressV6 addr",
+      "why_false_positive": "manual bitmask and function call validates AddressV6 addr for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AddressV6 addr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_multicast method at is_public",
+      "issue_pattern": "Missing empty string validation for AddressV6 addr",
+      "why_false_positive": "is_multicast method validates AddressV6 addr for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/net/IPAddressV6.cpp",
+  "functions": [
+    {
+      "args": [
+        "AddressV6 const& addr"
+      ],
+      "lineno": 8,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "AddressV6 const& addr"
+      ],
+      "lineno": 17,
+      "name": "is_public"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 6,
+      "name": "IP"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage. Typical test files would be in a test/ or unit_test/ directory, possibly named IPAddressV6_test.cpp or similar. The code relies on correct behavior of AddressV6::to_bytes(), is_v4_mapped(), and is_multicast(), as well as the AddressV4 validation. Gaps: No explicit test hooks or asserts here; edge cases (e.g., fc00::/8, multicast, v4-mapped) may not be fully covered unless tested elsewhere. The TODO comment suggests incomplete handling of some private address ranges (fc00::/8).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation, some Boost usage for address conversion)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (returns bool)",
+      "field": "AddressV6 addr",
+      "location": "is_private",
+      "validated_by": "manual bitmask and function call",
+      "validates": [
+        "Checks if the first byte of the IPv6 address, masked with 0xfd, is nonzero (potentially to detect private address ranges, but logic is unclear and marked TODO)",
+        "If the address is IPv4-mapped, calls is_private on the mapped IPv4 address"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (returns bool)",
+      "field": "AddressV6 addr",
+      "location": "is_public",
+      "validated_by": "is_multicast method",
+      "validates": [
+        "Checks that the address is not private (using is_private)",
+        "Checks that the address is not multicast (using is_multicast method)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

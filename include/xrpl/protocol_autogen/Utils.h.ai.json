@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a type alias 'Optional' in the xrpl::protocol_autogen namespace that adapts std::optional for both value and reference types using type traits.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/Utils.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl::protocol_autogen"
+    }
+  ]
+}

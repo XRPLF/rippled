@@ -1,0 +1,154 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "sle"
+    },
+    {
+      "lineno": 110,
+      "name": "nFTokens"
+    },
+    {
+      "lineno": 110,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 110,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 119,
+      "name": "sle"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    },
+    {
+      "lineno": 133,
+      "name": "value"
+    },
+    {
+      "lineno": 142,
+      "name": "value"
+    },
+    {
+      "lineno": 151,
+      "name": "value"
+    },
+    {
+      "lineno": 160,
+      "name": "value"
+    },
+    {
+      "lineno": 169,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 27,
+      "name": "NFTokenPage"
+    },
+    {
+      "args": [
+        "nFTokens",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 106,
+      "name": "NFTokenPageBuilder"
+    }
+  ],
+  "description": "Defines the NFTokenPage ledger entry and its builder for the XRPL protocol, providing type-safe accessors and a fluent builder interface for constructing and manipulating NFTokenPage ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/NFTokenPage.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getPreviousPageMin"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "hasPreviousPageMin"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getNextPageMin"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "hasNextPageMin"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getNFTokens"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 122,
+      "name": "setPreviousPageMin"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 131,
+      "name": "setNextPageMin"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 140,
+      "name": "setNFTokens"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 149,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 158,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 167,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

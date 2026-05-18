@@ -1,0 +1,136 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "TIn"
+    },
+    {
+      "lineno": 12,
+      "name": "TOut"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "AMMLiquidity"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "QualityFunction"
+    },
+    {
+      "args": [
+        "AMMLiquidity<TIn, TOut> const& ammLiquidity, TAmounts<TIn, TOut> const& amounts, TAmounts<TIn, TOut> const& balances, Quality const& quality"
+      ],
+      "lineno": 18,
+      "name": "AMMOffer"
+    }
+  ],
+  "description": "Defines the AMMOffer class template, representing a synthetic Automated Market Maker (AMM) offer for use in the BookStep logic of the XRPL ledger. The class provides methods for offer quality, asset access, consumption, limiting, and invariant checking, simulating AMM pool behavior in pathfinding and offer crossing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/AMMOffer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "quality"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "assetIn"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "assetOut"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "owner"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "key"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "amount"
+    },
+    {
+      "args": [
+        "view",
+        "consumed"
+      ],
+      "lineno": 59,
+      "name": "consume"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "fully_consumed"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 69,
+      "name": "limitOut"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 75,
+      "name": "limitIn"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getQualityFunc"
+    },
+    {
+      "args": [
+        "args"
+      ],
+      "lineno": 86,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "isFunded"
+    },
+    {
+      "args": [
+        "ofrInRate",
+        "ofrOutRate"
+      ],
+      "lineno": 98,
+      "name": "adjustRates"
+    },
+    {
+      "args": [
+        "consumed",
+        "j"
+      ],
+      "lineno": 106,
+      "name": "checkInvariant"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

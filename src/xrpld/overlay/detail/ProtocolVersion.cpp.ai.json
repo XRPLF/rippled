@@ -1,0 +1,356 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseProtocolVersions"
+      ],
+      "entry_point": "parseProtocolVersions",
+      "purpose": "Parses a comma-separated string of protocol version tokens (e.g., 'XRPL/2.1,XRPL/2.2') into a vector of ProtocolVersion, validating each token.",
+      "validation_points": [
+        "boost::regex_match: Validates protocol version string format",
+        "beast::lexicalCastChecked: Validates major version is a valid integer",
+        "beast::lexicalCastChecked: Validates minor version is a valid integer",
+        "to_string(proto) == s: Sanity check that parsed version matches input string"
+      ]
+    },
+    {
+      "call_chain": [
+        "static_assert (lambda)"
+      ],
+      "entry_point": "supportedProtocolList (static initialization)",
+      "purpose": "At compile time, validates that the supportedProtocolList is sorted and contains no duplicates.",
+      "validation_points": [
+        "static_assert: Validates supportedProtocolList order and uniqueness"
+      ]
+    },
+    {
+      "call_chain": [
+        "negotiateProtocolVersion"
+      ],
+      "entry_point": "negotiateProtocolVersion",
+      "purpose": "Negotiates the highest mutually supported protocol version between local and peer lists.",
+      "validation_points": [
+        "Relies on parseProtocolVersions to provide validated input"
+      ]
+    },
+    {
+      "call_chain": [
+        "isProtocolSupported"
+      ],
+      "entry_point": "isProtocolSupported",
+      "purpose": "Checks if a given ProtocolVersion is in supportedProtocolList.",
+      "validation_points": [
+        "Relies on prior validation of ProtocolVersion construction"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "protocol version string (e.g., 'XRPL/2.1')",
+      "flow": [
+        "Input string",
+        "beast::rfc2616::split_commas (splits into tokens)",
+        "boost::regex_match (validates format)",
+        "beast::lexicalCastChecked (parses major/minor)",
+        "make_protocol (constructs ProtocolVersion)",
+        "to_string(proto) == s (sanity check)",
+        "result vector"
+      ],
+      "origin": "Input to parseProtocolVersions (from network or config)",
+      "transformations": [
+        "Split into tokens",
+        "Regex validation",
+        "String to integer conversion",
+        "ProtocolVersion construction",
+        "Sanity check"
+      ],
+      "validated_at": "boost::regex_match, beast::lexicalCastChecked, to_string(proto) == s"
+    },
+    {
+      "field": "supportedProtocolList",
+      "flow": [
+        "Definition",
+        "static_assert lambda (compile-time validation)",
+        "Used in negotiateProtocolVersion, isProtocolSupported"
+      ],
+      "origin": "Static constexpr array in source file",
+      "transformations": [
+        "Compile-time validation for order and uniqueness"
+      ],
+      "validated_at": "static_assert (compile time)"
+    },
+    {
+      "field": "ProtocolVersion (major, minor)",
+      "flow": [
+        "Extracted from regex match groups",
+        "beast::lexicalCastChecked (string to uint16_t)",
+        "make_protocol (constructs ProtocolVersion)",
+        "Used in negotiation and support checks"
+      ],
+      "origin": "Parsed from protocol version string in parseProtocolVersions",
+      "transformations": [
+        "String to integer conversion",
+        "Struct construction"
+      ],
+      "validated_at": "beast::lexicalCastChecked"
+    }
+  ],
+  "description": "Implements protocol version negotiation, parsing, and support checking for XRPL overlay communication, including utilities for string conversion and validation of supported protocol versions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "supportedProtocolList",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert with custom lambda at global scope (static_assert after supportedProtocolList definition)",
+      "issue_pattern": "Missing empty string validation for supportedProtocolList",
+      "why_false_positive": "static_assert with custom lambda validates supportedProtocolList for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "protocol version string (e.g., 'XRPL/2.1')",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::regex_match at parseProtocolVersions",
+      "issue_pattern": "Missing empty string validation for protocol version string (e.g., 'XRPL/2.1')",
+      "why_false_positive": "boost::regex_match validates protocol version string (e.g., 'XRPL/2.1') for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "protocol version string (e.g., 'XRPL/2.1')",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::regex_match at parseProtocolVersions",
+      "issue_pattern": "Missing format validation for protocol version string (e.g., 'XRPL/2.1')",
+      "why_false_positive": "boost::regex_match validates protocol version string (e.g., 'XRPL/2.1') format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "major version (parsed from protocol string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::lexicalCastChecked at parseProtocolVersions",
+      "issue_pattern": "Missing empty string validation for major version (parsed from protocol string)",
+      "why_false_positive": "beast::lexicalCastChecked validates major version (parsed from protocol string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "major version (parsed from protocol string)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "beast::lexicalCastChecked at parseProtocolVersions",
+      "issue_pattern": "Missing type validation for major version (parsed from protocol string)",
+      "why_false_positive": "beast::lexicalCastChecked validates major version (parsed from protocol string) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "minor version (parsed from protocol string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::lexicalCastChecked at parseProtocolVersions",
+      "issue_pattern": "Missing empty string validation for minor version (parsed from protocol string)",
+      "why_false_positive": "beast::lexicalCastChecked validates minor version (parsed from protocol string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "minor version (parsed from protocol string)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "beast::lexicalCastChecked at parseProtocolVersions",
+      "issue_pattern": "Missing type validation for minor version (parsed from protocol string)",
+      "why_false_positive": "beast::lexicalCastChecked validates minor version (parsed from protocol string) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "protocol version string (sanity check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_string(proto) == s at parseProtocolVersions",
+      "issue_pattern": "Missing empty string validation for protocol version string (sanity check)",
+      "why_false_positive": "to_string(proto) == s validates protocol version string (sanity check) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ProtocolVersion.cpp",
+  "functions": [
+    {
+      "args": [
+        "ProtocolVersion const& p"
+      ],
+      "lineno": 38,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "boost::beast::string_view const& value"
+      ],
+      "lineno": 43,
+      "name": "parseProtocolVersions"
+    },
+    {
+      "args": [
+        "std::vector<ProtocolVersion> const& versions"
+      ],
+      "lineno": 77,
+      "name": "negotiateProtocolVersion"
+    },
+    {
+      "args": [
+        "boost::beast::string_view const& versions"
+      ],
+      "lineno": 95,
+      "name": "negotiateProtocolVersion"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "supportedProtocolVersions"
+    },
+    {
+      "args": [
+        "ProtocolVersion const& v"
+      ],
+      "lineno": 117,
+      "name": "isProtocolSupported"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by unit tests for protocol negotiation, parsing, and validation. Look for test files such as 'ProtocolVersion_test.cpp', 'Overlay_test.cpp', or integration tests for peer negotiation. Gaps may exist if there are no tests for malformed protocol strings, duplicate/unsorted supportedProtocolList, or edge cases in version negotiation. Compile-time static_assert is not directly testable at runtime, so errors here would only be caught at build time.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "boost::regex, beast::lexicalCastChecked, static_assert",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error (static_assert failure)",
+      "field": "supportedProtocolList",
+      "location": "global scope (static_assert after supportedProtocolList definition)",
+      "validated_by": "static_assert with custom lambda",
+      "validates": [
+        "List is not empty",
+        "List is sorted in strictly ascending order",
+        "List contains no duplicates"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "input is skipped (no exception, just not parsed)",
+      "field": "protocol version string (e.g., 'XRPL/2.1')",
+      "location": "parseProtocolVersions",
+      "validated_by": "boost::regex_match",
+      "validates": [
+        "String starts with 'XRPL/'",
+        "Major version is a number >= 2, no leading zeroes",
+        "Minor version is a number, no leading zeroes unless zero",
+        "String matches the exact pattern"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "input is skipped (no exception, just not parsed)",
+      "field": "major version (parsed from protocol string)",
+      "location": "parseProtocolVersions",
+      "validated_by": "beast::lexicalCastChecked",
+      "validates": [
+        "Major version can be converted to uint16_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "input is skipped (no exception, just not parsed)",
+      "field": "minor version (parsed from protocol string)",
+      "location": "parseProtocolVersions",
+      "validated_by": "beast::lexicalCastChecked",
+      "validates": [
+        "Minor version can be converted to uint16_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "input is skipped (no exception, just not parsed)",
+      "field": "protocol version string (sanity check)",
+      "location": "parseProtocolVersions",
+      "validated_by": "to_string(proto) == s",
+      "validates": [
+        "Parsed protocol version, when converted back to string, matches original input"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "tx"
+    },
+    {
+      "lineno": 125,
+      "name": "account"
+    },
+    {
+      "lineno": 126,
+      "name": "vaultID"
+    },
+    {
+      "lineno": 127,
+      "name": "sequence"
+    },
+    {
+      "lineno": 128,
+      "name": "fee"
+    },
+    {
+      "lineno": 135,
+      "name": "tx"
+    },
+    {
+      "lineno": 146,
+      "name": "value"
+    },
+    {
+      "lineno": 155,
+      "name": "value"
+    },
+    {
+      "lineno": 164,
+      "name": "value"
+    },
+    {
+      "lineno": 173,
+      "name": "value"
+    },
+    {
+      "lineno": 182,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 182,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "VaultSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& vaultID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 115,
+      "name": "VaultSetBuilder"
+    }
+  ],
+  "description": "Defines the VaultSet transaction type for XRPL, including a type-safe wrapper and a builder class for constructing and signing VaultSet transactions with specific fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/VaultSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "VaultSet::getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "VaultSet::getAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "VaultSet::hasAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "VaultSet::getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "VaultSet::hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "VaultSet::getData"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "VaultSet::hasData"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& vaultID",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 124,
+      "name": "VaultSetBuilder::VaultSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 134,
+      "name": "VaultSetBuilder::VaultSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 144,
+      "name": "VaultSetBuilder::setVaultID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 153,
+      "name": "VaultSetBuilder::setAssetsMaximum"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 162,
+      "name": "VaultSetBuilder::setDomainID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 171,
+      "name": "VaultSetBuilder::setData"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 180,
+      "name": "VaultSetBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

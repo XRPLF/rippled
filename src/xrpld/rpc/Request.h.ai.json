@@ -1,0 +1,43 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "journal_"
+    },
+    {
+      "lineno": 15,
+      "name": "method_"
+    },
+    {
+      "lineno": 16,
+      "name": "params_"
+    },
+    {
+      "lineno": 17,
+      "name": "app_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::Journal journal_, std::string const& method_, Json::Value& params_, Application& app_"
+      ],
+      "lineno": 11,
+      "name": "Request"
+    }
+  ],
+  "description": "Defines the RPC::Request struct, which encapsulates the context and data for an RPC request in the XRPL application, including logging, method name, parameters, resource fee, result, and application reference.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/Request.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "RPC"
+    }
+  ]
+}

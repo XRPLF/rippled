@@ -1,0 +1,65 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "LedgerReplayer& replayer"
+      ],
+      "lineno": 8,
+      "name": "LedgerReplayMsgHandler"
+    }
+  ],
+  "description": "Defines the LedgerReplayMsgHandler class, which handles processing of ledger replay and proof path protocol messages in the XRPL application.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerReplayMsgHandler.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "LedgerReplayer& replayer"
+      ],
+      "lineno": 10,
+      "name": "LedgerReplayMsgHandler"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "~LedgerReplayMsgHandler"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathRequest> const& msg"
+      ],
+      "lineno": 17,
+      "name": "processProofPathRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathResponse> const& msg"
+      ],
+      "lineno": 23,
+      "name": "processProofPathResponse"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaRequest> const& msg"
+      ],
+      "lineno": 30,
+      "name": "processReplayDeltaRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg"
+      ],
+      "lineno": 36,
+      "name": "processReplayDeltaResponse"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

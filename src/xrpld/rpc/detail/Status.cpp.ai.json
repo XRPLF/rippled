@@ -1,0 +1,522 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "value"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Status::codeString"
+      ],
+      "entry_point": "Status::codeString",
+      "purpose": "Converts the Status object to a string representation of its code, depending on its type.",
+      "validation_points": [
+        "if (!*this) return \"\";",
+        "if (type_ == Type::none) return std::to_string(code_);",
+        "if (type_ == Status::Type::TER) {...}",
+        "if (type_ == Status::Type::error_code_i) {...}",
+        "UNREACHABLE(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Status::fillJson",
+        "Status::codeString"
+      ],
+      "entry_point": "Status::fillJson",
+      "purpose": "Fills a JSON object with error information from the Status object.",
+      "validation_points": [
+        "if (!*this) return;",
+        "Status::codeString() (contains its own validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Status::toString",
+        "Status::codeString",
+        "Status::message"
+      ],
+      "entry_point": "Status::toString",
+      "purpose": "Returns a string combining the code string and message, or empty if invalid.",
+      "validation_points": [
+        "if (*this) ... else return \"\";",
+        "Status::codeString() (contains its own validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type_",
+      "flow": [
+        "constructor/assignment",
+        "Status::* methods",
+        "validation in codeString/fillJson/toString"
+      ],
+      "origin": "Set during Status object construction or assignment",
+      "transformations": [
+        "Compared against enum values to determine code path"
+      ],
+      "validated_at": "Status::codeString (multiple if statements), UNREACHABLE"
+    },
+    {
+      "field": "code_",
+      "flow": [
+        "constructor/assignment",
+        "Status::codeString",
+        "Status::fillJson"
+      ],
+      "origin": "Set during Status object construction or assignment",
+      "transformations": [
+        "Converted to string if type_ == Type::none",
+        "Inserted into JSON"
+      ],
+      "validated_at": "Indirectly via type_ validation in codeString"
+    },
+    {
+      "field": "messages_",
+      "flow": [
+        "constructor/assignment",
+        "Status::message",
+        "Status::fillJson"
+      ],
+      "origin": "Set during Status object construction or via methods",
+      "transformations": [
+        "Concatenated with '/' in message()",
+        "Appended to JSON array in fillJson"
+      ],
+      "validated_at": "Not explicitly validated; checked for empty() in fillJson"
+    },
+    {
+      "field": "*this (Status object validity)",
+      "flow": [
+        "Status::* methods",
+        "if (!*this) ..."
+      ],
+      "origin": "Status object state (likely via operator bool)",
+      "transformations": [
+        "Short-circuits method logic if invalid"
+      ],
+      "validated_at": "First line of codeString, fillJson, toString"
+    }
+  ],
+  "description": "Implements methods for the RPC Status class, providing error/status code string conversion, JSON serialization, and message formatting for XRPL RPC responses.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "*this (Status object validity)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field *this (Status object validity) validated by XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE)",
+      "issue_pattern": "Missing validation for *this (Status object validity)",
+      "why_false_positive": "XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE) validates *this (Status object validity) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field type_ (Status type) validated by XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE)",
+      "issue_pattern": "Missing validation for type_ (Status type)",
+      "why_false_positive": "XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE) validates type_ (Status type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "messages_ (Status messages list)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field messages_ (Status messages list) validated by XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE)",
+      "issue_pattern": "Missing validation for messages_ (Status messages list)",
+      "why_false_positive": "XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE) validates messages_ (Status messages list) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "*this (Status object validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "operator bool() (likely Status::operator bool) at Status::codeString",
+      "issue_pattern": "Missing empty string validation for *this (Status object validity)",
+      "why_false_positive": "operator bool() (likely Status::operator bool) validates *this (Status object validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type_ == Type::none) at Status::codeString",
+      "issue_pattern": "Missing empty string validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Type::none) validates type_ (Status type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (type_ == Type::none) at Status::codeString",
+      "issue_pattern": "Missing type validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Type::none) validates type_ (Status type) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type_ == Status::Type::TER) at Status::codeString",
+      "issue_pattern": "Missing empty string validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Status::Type::TER) validates type_ (Status type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (type_ == Status::Type::TER) at Status::codeString",
+      "issue_pattern": "Missing type validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Status::Type::TER) validates type_ (Status type) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type_ == Status::Type::error_code_i) at Status::codeString",
+      "issue_pattern": "Missing empty string validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Status::Type::error_code_i) validates type_ (Status type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (type_ == Status::Type::error_code_i) at Status::codeString",
+      "issue_pattern": "Missing type validation for type_ (Status type)",
+      "why_false_positive": "if (type_ == Status::Type::error_code_i) validates type_ (Status type) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type_ (Status type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "UNREACHABLE macro at Status::codeString (final else)",
+      "issue_pattern": "Missing empty string validation for type_ (Status type)",
+      "why_false_positive": "UNREACHABLE macro validates type_ (Status type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "*this (Status object validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "operator bool() (likely Status::operator bool) at Status::fillJson",
+      "issue_pattern": "Missing empty string validation for *this (Status object validity)",
+      "why_false_positive": "operator bool() (likely Status::operator bool) validates *this (Status object validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "messages_ (Status messages list)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!messages_.empty()) at Status::fillJson",
+      "issue_pattern": "Missing empty string validation for messages_ (Status messages list)",
+      "why_false_positive": "if (!messages_.empty()) validates messages_ (Status messages list) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "*this (Status object validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "operator bool() (likely Status::operator bool) at Status::toString",
+      "issue_pattern": "Missing empty string validation for *this (Status object validity)",
+      "why_false_positive": "operator bool() (likely Status::operator bool) validates *this (Status object validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Status.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Status::codeString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 38,
+      "name": "Status::fillJson"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "Status::message"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "Status::toString"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The code contains LCOV_EXCL_START/STOP around the UNREACHABLE macro, indicating that the unreachable branch is excluded from coverage and likely not tested. The main validation paths (operator bool, type_ checks) are likely tested in unit tests for Status, but coverage for all enum values and error conditions depends on the thoroughness of those tests. Test files would likely be found in the test/rpc or test/unit/rpc directories, possibly named Status_test.cpp or similar. There may be gaps in coverage for rare or unreachable type_ values, and for the exact behavior of fillJson with multiple messages.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "*this (Status object validity)",
+      "type_ (Status type)",
+      "messages_ (Status messages list)"
+    ],
+    "framework": "XRPL custom (jss:: for JSON keys, XRPL_ASSERT, UNREACHABLE)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns empty string (no exception)",
+      "field": "*this (Status object validity)",
+      "location": "Status::codeString",
+      "validated_by": "operator bool() (likely Status::operator bool)",
+      "validates": [
+        "Status object is valid before proceeding"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns code_ as string (no exception)",
+      "field": "type_ (Status type)",
+      "location": "Status::codeString",
+      "validated_by": "if (type_ == Type::none)",
+      "validates": [
+        "Status type is checked for 'none'"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT if transResultInfo fails (likely aborts or logs error)",
+      "field": "type_ (Status type)",
+      "location": "Status::codeString",
+      "validated_by": "if (type_ == Status::Type::TER)",
+      "validates": [
+        "Status type is checked for 'TER'",
+        "transResultInfo must succeed"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "No exception, returns error info as string",
+      "field": "type_ (Status type)",
+      "location": "Status::codeString",
+      "validated_by": "if (type_ == Status::Type::error_code_i)",
+      "validates": [
+        "Status type is checked for 'error_code_i'"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE macro (likely aborts or asserts)",
+      "field": "type_ (Status type)",
+      "location": "Status::codeString (final else)",
+      "validated_by": "UNREACHABLE macro",
+      "validates": [
+        "Status type must be one of the handled types"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns early (no exception)",
+      "field": "*this (Status object validity)",
+      "location": "Status::fillJson",
+      "validated_by": "operator bool() (likely Status::operator bool)",
+      "validates": [
+        "Status object is valid before filling JSON"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "No exception, skips appending if empty",
+      "field": "messages_ (Status messages list)",
+      "location": "Status::fillJson",
+      "validated_by": "if (!messages_.empty())",
+      "validates": [
+        "messages_ is checked for non-empty before appending"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns empty string (no exception)",
+      "field": "*this (Status object validity)",
+      "location": "Status::toString",
+      "validated_by": "operator bool() (likely Status::operator bool)",
+      "validates": [
+        "Status object is valid before converting to string"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

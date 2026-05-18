@@ -1,0 +1,579 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PathRequestManager::updateAll",
+        "PathRequestManager::getAssetCache",
+        "AssetCache::getLedger",
+        "PathRequest::needsUpdate",
+        "PathRequest::getSubscriber",
+        "InfoSub::getRequest"
+      ],
+      "entry_point": "PathRequestManager::updateAll",
+      "purpose": "Updates all path requests with the latest ledger and asset cache, removing or updating requests as needed.",
+      "validation_points": [
+        "getAssetCache: Validates assetCache pointer, ledger pointer, and ledger sequence numbers.",
+        "updateAll: Validates requests_ vector by type, request pointer by lock(), and InfoSub pointer by getSubscriber."
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequestManager::getAssetCache",
+        "AssetCache::getLedger"
+      ],
+      "entry_point": "PathRequestManager::getAssetCache",
+      "purpose": "Retrieves or creates an AssetCache for a given ledger, ensuring the cache is up-to-date and valid.",
+      "validation_points": [
+        "getAssetCache: Validates assetCache pointer, ledger pointer, and ledger sequence numbers."
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequestManager::insertPathRequest",
+        "requests_.push_back"
+      ],
+      "entry_point": "PathRequestManager::insertPathRequest",
+      "purpose": "Inserts a new path request into the manager's request list.",
+      "validation_points": [
+        "insertPathRequest: Validates request pointer by type (weak_ptr)."
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequestManager::makePathRequest",
+        "PathRequest::create"
+      ],
+      "entry_point": "PathRequestManager::makePathRequest",
+      "purpose": "Creates a new path request and adds it to the manager.",
+      "validation_points": [
+        "makePathRequest: Validates input parameters and request pointer."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger (std::shared_ptr<ReadView const>)",
+      "flow": [
+        "Function argument",
+        "getAssetCache",
+        "AssetCache constructor",
+        "AssetCache::getLedger"
+      ],
+      "origin": "Passed as argument to getAssetCache and updateAll",
+      "transformations": [
+        "Checked for validity (non-null)",
+        "Used to get sequence number",
+        "Possibly wrapped in AssetCache"
+      ],
+      "validated_at": "getAssetCache (type system, pointer validity, sequence number checks)"
+    },
+    {
+      "field": "assetCache (std::shared_ptr<AssetCache>)",
+      "flow": [
+        "assetCache_ (weak_ptr)",
+        "lock() to shared_ptr",
+        "getLedger()",
+        "Used in updateAll"
+      ],
+      "origin": "Weak pointer member assetCache_",
+      "transformations": [
+        "lock() to check validity",
+        "Created anew if invalid or outdated"
+      ],
+      "validated_at": "getAssetCache (pointer validity, sequence number checks)"
+    },
+    {
+      "field": "ledger sequence numbers (lineSeq, lgrSeq)",
+      "flow": [
+        "getLedger()->seq()",
+        "Compared in getAssetCache",
+        "Used to decide cache validity"
+      ],
+      "origin": "lineSeq from assetCache->getLedger()->seq(), lgrSeq from ledger->seq()",
+      "transformations": [
+        "Compared for range and business logic"
+      ],
+      "validated_at": "getAssetCache (if conditions on sequence numbers)"
+    },
+    {
+      "field": "requests_ (std::vector<PathRequest::wptr>)",
+      "flow": [
+        "Copied under lock in updateAll",
+        "Iterated in updateAll",
+        "Each weak_ptr locked to shared_ptr"
+      ],
+      "origin": "Member variable of PathRequestManager",
+      "transformations": [
+        "lock() to shared_ptr",
+        "Removed if expired or not needed"
+      ],
+      "validated_at": "updateAll (type system, pointer validity via lock())"
+    },
+    {
+      "field": "request (PathRequest::pointer)",
+      "flow": [
+        "wr.lock()",
+        "Checked for validity",
+        "Used in needsUpdate, getSubscriber"
+      ],
+      "origin": "Locked from PathRequest::wptr in requests_",
+      "transformations": [
+        "Checked for null",
+        "Passed to other functions"
+      ],
+      "validated_at": "updateAll (pointer validity via lock())"
+    }
+  ],
+  "description": "Implements the PathRequestManager class, which manages pathfinding requests for the XRPL ledger, including updating, inserting, and processing both new and legacy path requests.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "pointer types (shared_ptr, weak_ptr)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field pointer types (shared_ptr, weak_ptr) validated by C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file",
+      "issue_pattern": "Missing validation for pointer types (shared_ptr, weak_ptr)",
+      "why_false_positive": "C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file validates pointer types (shared_ptr, weak_ptr) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "container types (vector)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field container types (vector) validated by C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file",
+      "issue_pattern": "Missing validation for container types (vector)",
+      "why_false_positive": "C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file validates container types (vector) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "constness",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field constness validated by C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file",
+      "issue_pattern": "Missing validation for constness",
+      "why_false_positive": "C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file validates constness automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<ReadView const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type system (smart pointer, constness) at PathRequestManager::getAssetCache",
+      "issue_pattern": "Missing empty string validation for ledger (std::shared_ptr<ReadView const>)",
+      "why_false_positive": "type system (smart pointer, constness) validates ledger (std::shared_ptr<ReadView const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<ReadView const>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type system (smart pointer, constness) at PathRequestManager::getAssetCache",
+      "issue_pattern": "Missing type validation for ledger (std::shared_ptr<ReadView const>)",
+      "why_false_positive": "type system (smart pointer, constness) validates ledger (std::shared_ptr<ReadView const>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assetCache (std::shared_ptr<AssetCache>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer validity check (assetCache ? ... : ...) at PathRequestManager::getAssetCache",
+      "issue_pattern": "Missing empty string validation for assetCache (std::shared_ptr<AssetCache>)",
+      "why_false_positive": "pointer validity check (assetCache ? ... : ...) validates assetCache (std::shared_ptr<AssetCache>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger sequence numbers (lineSeq, lgrSeq)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "range and business logic checks (if conditions) at PathRequestManager::getAssetCache",
+      "issue_pattern": "Missing empty string validation for ledger sequence numbers (lineSeq, lgrSeq)",
+      "why_false_positive": "range and business logic checks (if conditions) validates ledger sequence numbers (lineSeq, lgrSeq) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "requests_ (std::vector<PathRequest::wptr>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type system (vector of weak_ptr) at PathRequestManager::updateAll",
+      "issue_pattern": "Missing empty string validation for requests_ (std::vector<PathRequest::wptr>)",
+      "why_false_positive": "type system (vector of weak_ptr) validates requests_ (std::vector<PathRequest::wptr>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "requests_ (std::vector<PathRequest::wptr>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type system (vector of weak_ptr) at PathRequestManager::updateAll",
+      "issue_pattern": "Missing type validation for requests_ (std::vector<PathRequest::wptr>)",
+      "why_false_positive": "type system (vector of weak_ptr) validates requests_ (std::vector<PathRequest::wptr>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "request (PathRequest::pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer validity check (request = wr.lock()) at PathRequestManager::updateAll",
+      "issue_pattern": "Missing empty string validation for request (PathRequest::pointer)",
+      "why_false_positive": "pointer validity check (request = wr.lock()) validates request (PathRequest::pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "subscriber (InfoSub::pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getSubscriber lambda (ipSub && ipSub->getRequest() == request) at PathRequestManager::updateAll (getSubscriber lambda)",
+      "issue_pattern": "Missing empty string validation for subscriber (InfoSub::pointer)",
+      "why_false_positive": "getSubscriber lambda (ipSub && ipSub->getRequest() == request) validates subscriber (InfoSub::pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/PathRequestManager.cpp",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "authoritative"
+      ],
+      "lineno": 10,
+      "name": "getAssetCache"
+    },
+    {
+      "args": [
+        "inLedger"
+      ],
+      "lineno": 34,
+      "name": "updateAll"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "requestsPending"
+    },
+    {
+      "args": [
+        "req"
+      ],
+      "lineno": 134,
+      "name": "insertPathRequest"
+    },
+    {
+      "args": [
+        "subscriber",
+        "inLedger",
+        "requestJson"
+      ],
+      "lineno": 146,
+      "name": "makePathRequest"
+    },
+    {
+      "args": [
+        "req",
+        "completion",
+        "consumer",
+        "inLedger",
+        "request"
+      ],
+      "lineno": 162,
+      "name": "makeLegacyPathRequest"
+    },
+    {
+      "args": [
+        "consumer",
+        "inLedger",
+        "request"
+      ],
+      "lineno": 186,
+      "name": "doLegacyPathRequest"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code likely exists in integration or functional tests for pathfinding and RPC requests, such as tests in 'test/rpc/PathRequest_test.cpp', 'test/app/PathRequestManager_test.cpp', or similar. However, direct unit tests for validation logic (e.g., sequence number edge cases, assetCache invalidation, expired requests) may be limited or missing. Edge cases such as rapid ledger jumps, expired weak_ptrs, or invalid assetCache scenarios should be explicitly tested if not already covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "pointer types (shared_ptr, weak_ptr)",
+      "container types (vector)",
+      "constness"
+    ],
+    "framework": "C++ type system, RAII, business logic checks, no explicit jss:: or template validation in this file",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time/type safety)",
+      "field": "ledger (std::shared_ptr<ReadView const>)",
+      "location": "PathRequestManager::getAssetCache",
+      "validated_by": "type system (smart pointer, constness)",
+      "validates": [
+        "ledger must be a valid shared_ptr to ReadView const"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (logic branch, not exception)",
+      "field": "assetCache (std::shared_ptr<AssetCache>)",
+      "location": "PathRequestManager::getAssetCache",
+      "validated_by": "pointer validity check (assetCache ? ... : ...)",
+      "validates": [
+        "assetCache is checked for null before dereference"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (logic branch, not exception)",
+      "field": "ledger sequence numbers (lineSeq, lgrSeq)",
+      "location": "PathRequestManager::getAssetCache",
+      "validated_by": "range and business logic checks (if conditions)",
+      "validates": [
+        "lineSeq == 0 (no ledger)",
+        "authoritative && (lgrSeq > lineSeq) (newer authoritative ledger)",
+        "authoritative && ((lgrSeq + 8) < lineSeq) (jumped way back)",
+        "lgrSeq > (lineSeq + 8) (jumped way forward)"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a",
+      "field": "requests_ (std::vector<PathRequest::wptr>)",
+      "location": "PathRequestManager::updateAll",
+      "validated_by": "type system (vector of weak_ptr)",
+      "validates": [
+        "requests_ is a vector of weak_ptr, checked for lock() validity"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (logic branch, not exception)",
+      "field": "request (PathRequest::pointer)",
+      "location": "PathRequestManager::updateAll",
+      "validated_by": "pointer validity check (request = wr.lock())",
+      "validates": [
+        "request is checked for null after lock()"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (returns nullptr, calls doAborting)",
+      "field": "subscriber (InfoSub::pointer)",
+      "location": "PathRequestManager::updateAll (getSubscriber lambda)",
+      "validated_by": "getSubscriber lambda (ipSub && ipSub->getRequest() == request)",
+      "validates": [
+        "subscriber is valid and matches request",
+        "if not, request->doAborting() is called"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

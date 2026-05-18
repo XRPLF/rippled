@@ -1,0 +1,355 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "view"
+    },
+    {
+      "lineno": 19,
+      "name": "saMaxAmountReq"
+    },
+    {
+      "lineno": 27,
+      "name": "saDstAmountReq"
+    },
+    {
+      "lineno": 31,
+      "name": "uDstAccountID"
+    },
+    {
+      "lineno": 32,
+      "name": "uSrcAccountID"
+    },
+    {
+      "lineno": 36,
+      "name": "spsPaths"
+    },
+    {
+      "lineno": 38,
+      "name": "domainID"
+    },
+    {
+      "lineno": 39,
+      "name": "registry"
+    },
+    {
+      "lineno": 40,
+      "name": "pInputs"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "xrpl::path::RippleCalc::rippleCalculate",
+        "flow (xrpl::path::flow)"
+      ],
+      "entry_point": "xrpl::path::RippleCalc::rippleCalculate",
+      "purpose": "Calculates the result of a payment path, including liquidity and quality, using the provided ledger view and transaction parameters.",
+      "validation_points": [
+        "Inline lambda for saMaxAmountReq (limitQuality)",
+        "Inline lambda for saMaxAmountReq (sendMax)",
+        "Pointer check for pInputs",
+        "flow() parameter validation (external to this file)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "saMaxAmountReq",
+      "flow": [
+        "Function parameter",
+        "Used in inline lambda for limitQuality",
+        "Used in inline lambda for sendMax",
+        "Passed as sendMax to flow()"
+      ],
+      "origin": "Function parameter (caller of rippleCalculate)",
+      "transformations": [
+        "Checked for > beast::zero in limitQuality lambda",
+        "Checked for >= beast::zero, asset equality, and issuer match in sendMax lambda",
+        "Converted to Quality or std::optional<STAmount>"
+      ],
+      "validated_at": "Inline lambdas in rippleCalculate"
+    },
+    {
+      "field": "pInputs",
+      "flow": [
+        "Function parameter",
+        "Pointer checked for nullptr",
+        "Dereferenced for defaultPathsAllowed and partialPaymentAllowed"
+      ],
+      "origin": "Function parameter (caller of rippleCalculate)",
+      "transformations": [
+        "If nullptr, defaultPaths = true, partialPayment = false",
+        "If not nullptr, values taken from struct"
+      ],
+      "validated_at": "Pointer check at start of function"
+    },
+    {
+      "field": "saDstAmountReq",
+      "flow": [
+        "Function parameter",
+        "Used in limitQuality lambda",
+        "Passed directly to flow()"
+      ],
+      "origin": "Function parameter (caller of rippleCalculate)",
+      "transformations": [
+        "Combined with saMaxAmountReq to create Quality in limitQuality lambda"
+      ],
+      "validated_at": "Indirectly in limitQuality lambda"
+    },
+    {
+      "field": "defaultPaths",
+      "flow": [
+        "Set from pInputs or default",
+        "Passed to flow()"
+      ],
+      "origin": "Derived from pInputs or defaulted",
+      "transformations": [
+        "Boolean logic based on pInputs"
+      ],
+      "validated_at": "At assignment from pInputs"
+    },
+    {
+      "field": "partialPayment",
+      "flow": [
+        "Set from pInputs or default",
+        "Passed to flow()"
+      ],
+      "origin": "Derived from pInputs or defaulted",
+      "transformations": [
+        "Boolean logic based on pInputs"
+      ],
+      "validated_at": "At assignment from pInputs"
+    },
+    {
+      "field": "limitQuality",
+      "flow": [
+        "Computed in lambda",
+        "Passed to flow()"
+      ],
+      "origin": "Derived from saMaxAmountReq, saDstAmountReq, and pInputs",
+      "transformations": [
+        "std::optional<Quality> based on checks"
+      ],
+      "validated_at": "In lambda"
+    },
+    {
+      "field": "sendMax",
+      "flow": [
+        "Computed in lambda",
+        "Passed to flow()"
+      ],
+      "origin": "Derived from saMaxAmountReq, saDstAmountReq, uSrcAccountID",
+      "transformations": [
+        "std::optional<STAmount> based on checks"
+      ],
+      "validated_at": "In lambda"
+    }
+  ],
+  "description": "Implements the rippleCalculate function for pathfinding and liquidity calculation in XRPL payments, using the Flow algorithm and handling payment sandboxing, path exploration, and error handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "pInputs (pointer null check)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field pInputs (pointer null check) validated by None explicit (custom logic, some validation likely in flow())",
+      "issue_pattern": "Missing validation for pInputs (pointer null check)",
+      "why_false_positive": "None explicit (custom logic, some validation likely in flow()) validates pInputs (pointer null check) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "saMaxAmountReq (range and asset/issuer checks before use)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field saMaxAmountReq (range and asset/issuer checks before use) validated by None explicit (custom logic, some validation likely in flow())",
+      "issue_pattern": "Missing validation for saMaxAmountReq (range and asset/issuer checks before use)",
+      "why_false_positive": "None explicit (custom logic, some validation likely in flow()) validates saMaxAmountReq (range and asset/issuer checks before use) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "saMaxAmountReq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "inline lambda in rippleCalculate at RippleCalc::rippleCalculate (limitQuality lambda)",
+      "issue_pattern": "Missing empty string validation for saMaxAmountReq",
+      "why_false_positive": "inline lambda in rippleCalculate validates saMaxAmountReq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "saMaxAmountReq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "inline lambda in rippleCalculate at RippleCalc::rippleCalculate (sendMax lambda)",
+      "issue_pattern": "Missing empty string validation for saMaxAmountReq",
+      "why_false_positive": "inline lambda in rippleCalculate validates saMaxAmountReq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pInputs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer check at RippleCalc::rippleCalculate (defaultPaths/partialPayment assignment)",
+      "issue_pattern": "Missing empty string validation for pInputs",
+      "why_false_positive": "pointer check validates pInputs for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "flow() call parameters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "flow() function (external) at RippleCalc::rippleCalculate (flow() call)",
+      "issue_pattern": "Missing empty string validation for flow() call parameters",
+      "why_false_positive": "flow() function (external) validates flow() call parameters for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/RippleCalc.cpp",
+  "functions": [
+    {
+      "args": [
+        "PaymentSandbox& view",
+        "STAmount const& saMaxAmountReq",
+        "STAmount const& saDstAmountReq",
+        "AccountID const& uDstAccountID",
+        "AccountID const& uSrcAccountID",
+        "STPathSet const& spsPaths",
+        "std::optional<uint256> const& domainID",
+        "ServiceRegistry& registry",
+        "Input const* const pInputs"
+      ],
+      "lineno": 10,
+      "name": "xrpl::path::RippleCalc::rippleCalculate"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "xrpl::path"
+    }
+  ],
+  "test_coverage_notes": "The core logic of rippleCalculate is likely covered by integration and unit tests for payment pathfinding and payment execution. Typical test files would be in the rippled codebase under 'src/test/app/paths/' or similar, such as 'Path_test.cpp', 'RippleCalc_test.cpp', or 'Flow_test.cpp'. However, the inline validation lambdas for saMaxAmountReq and pInputs are only as well-tested as the test cases that exercise edge cases (e.g., null pInputs, negative/zero saMaxAmountReq, asset mismatches). There may be gaps in coverage for unusual or malformed input combinations, especially if tests do not explicitly check for validation failures or exception handling in flow().",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "pInputs (pointer null check)",
+      "saMaxAmountReq (range and asset/issuer checks before use)"
+    ],
+    "framework": "None explicit (custom logic, some validation likely in flow())",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (conditional logic)",
+      "field": "saMaxAmountReq",
+      "location": "RippleCalc::rippleCalculate (limitQuality lambda)",
+      "validated_by": "inline lambda in rippleCalculate",
+      "validates": [
+        "Checks if saMaxAmountReq > beast::zero before using for limitQuality"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (conditional logic)",
+      "field": "saMaxAmountReq",
+      "location": "RippleCalc::rippleCalculate (sendMax lambda)",
+      "validated_by": "inline lambda in rippleCalculate",
+      "validates": [
+        "Checks if saMaxAmountReq >= beast::zero",
+        "Checks if saMaxAmountReq.asset() != saDstAmountReq.asset()",
+        "Checks if saMaxAmountReq.getIssuer() != uSrcAccountID"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic)",
+      "field": "pInputs",
+      "location": "RippleCalc::rippleCalculate (defaultPaths/partialPayment assignment)",
+      "validated_by": "pointer check",
+      "validates": [
+        "Checks if pInputs is nullptr before accessing members"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::exception (caught)",
+      "field": "flow() call parameters",
+      "location": "RippleCalc::rippleCalculate (flow() call)",
+      "validated_by": "flow() function (external)",
+      "validates": [
+        "All parameters to flow() are assumed to be validated inside flow()",
+        "Any exception thrown by flow() is caught and handled"
+      ],
+      "validation_type": "business_logic|type|range"
+    }
+  ]
+}

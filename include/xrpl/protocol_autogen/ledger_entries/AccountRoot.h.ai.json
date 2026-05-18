@@ -1,0 +1,528 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "sle"
+    },
+    {
+      "lineno": 439,
+      "name": "account"
+    },
+    {
+      "lineno": 439,
+      "name": "sequence"
+    },
+    {
+      "lineno": 439,
+      "name": "balance"
+    },
+    {
+      "lineno": 439,
+      "name": "ownerCount"
+    },
+    {
+      "lineno": 439,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 439,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 450,
+      "name": "sle"
+    },
+    {
+      "lineno": 457,
+      "name": "value"
+    },
+    {
+      "lineno": 466,
+      "name": "value"
+    },
+    {
+      "lineno": 475,
+      "name": "value"
+    },
+    {
+      "lineno": 484,
+      "name": "value"
+    },
+    {
+      "lineno": 493,
+      "name": "value"
+    },
+    {
+      "lineno": 502,
+      "name": "value"
+    },
+    {
+      "lineno": 511,
+      "name": "value"
+    },
+    {
+      "lineno": 520,
+      "name": "value"
+    },
+    {
+      "lineno": 529,
+      "name": "value"
+    },
+    {
+      "lineno": 538,
+      "name": "value"
+    },
+    {
+      "lineno": 547,
+      "name": "value"
+    },
+    {
+      "lineno": 556,
+      "name": "value"
+    },
+    {
+      "lineno": 565,
+      "name": "value"
+    },
+    {
+      "lineno": 574,
+      "name": "value"
+    },
+    {
+      "lineno": 583,
+      "name": "value"
+    },
+    {
+      "lineno": 592,
+      "name": "value"
+    },
+    {
+      "lineno": 601,
+      "name": "value"
+    },
+    {
+      "lineno": 610,
+      "name": "value"
+    },
+    {
+      "lineno": 619,
+      "name": "value"
+    },
+    {
+      "lineno": 628,
+      "name": "value"
+    },
+    {
+      "lineno": 637,
+      "name": "value"
+    },
+    {
+      "lineno": 646,
+      "name": "value"
+    },
+    {
+      "lineno": 655,
+      "name": "value"
+    },
+    {
+      "lineno": 664,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 18,
+      "name": "AccountRoot"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_UINT32::type::value_type> const& sequence, std::decay_t<typename SF_AMOUNT::type::value_type> const& balance, std::decay_t<typename SF_UINT32::type::value_type> const& ownerCount, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 432,
+      "name": "AccountRootBuilder"
+    }
+  ],
+  "description": "Provides type-safe C++ wrappers and builder for the XRPL AccountRoot ledger entry, including field getters, setters, and construction logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/AccountRoot.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getBalance"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getOwnerCount"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "getAccountTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "hasAccountTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "getRegularKey"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "hasRegularKey"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "getEmailHash"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "hasEmailHash"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "getWalletLocator"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "hasWalletLocator"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "getWalletSize"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "hasWalletSize"
+    },
+    {
+      "args": [],
+      "lineno": 190,
+      "name": "getMessageKey"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "hasMessageKey"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "getTransferRate"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "hasTransferRate"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "getDomain"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "hasDomain"
+    },
+    {
+      "args": [],
+      "lineno": 250,
+      "name": "getTickSize"
+    },
+    {
+      "args": [],
+      "lineno": 261,
+      "name": "hasTickSize"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "getTicketCount"
+    },
+    {
+      "args": [],
+      "lineno": 281,
+      "name": "hasTicketCount"
+    },
+    {
+      "args": [],
+      "lineno": 290,
+      "name": "getNFTokenMinter"
+    },
+    {
+      "args": [],
+      "lineno": 301,
+      "name": "hasNFTokenMinter"
+    },
+    {
+      "args": [],
+      "lineno": 310,
+      "name": "getMintedNFTokens"
+    },
+    {
+      "args": [],
+      "lineno": 321,
+      "name": "hasMintedNFTokens"
+    },
+    {
+      "args": [],
+      "lineno": 330,
+      "name": "getBurnedNFTokens"
+    },
+    {
+      "args": [],
+      "lineno": 341,
+      "name": "hasBurnedNFTokens"
+    },
+    {
+      "args": [],
+      "lineno": 350,
+      "name": "getFirstNFTokenSequence"
+    },
+    {
+      "args": [],
+      "lineno": 361,
+      "name": "hasFirstNFTokenSequence"
+    },
+    {
+      "args": [],
+      "lineno": 370,
+      "name": "getAMMID"
+    },
+    {
+      "args": [],
+      "lineno": 381,
+      "name": "hasAMMID"
+    },
+    {
+      "args": [],
+      "lineno": 390,
+      "name": "getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 401,
+      "name": "hasVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 410,
+      "name": "getLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 421,
+      "name": "hasLoanBrokerID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 456,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 465,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 474,
+      "name": "setBalance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 483,
+      "name": "setOwnerCount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 492,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 501,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 510,
+      "name": "setAccountTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 519,
+      "name": "setRegularKey"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 528,
+      "name": "setEmailHash"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 537,
+      "name": "setWalletLocator"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 546,
+      "name": "setWalletSize"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 555,
+      "name": "setMessageKey"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 564,
+      "name": "setTransferRate"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 573,
+      "name": "setDomain"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 582,
+      "name": "setTickSize"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 591,
+      "name": "setTicketCount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 600,
+      "name": "setNFTokenMinter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 609,
+      "name": "setMintedNFTokens"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 618,
+      "name": "setBurnedNFTokens"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 627,
+      "name": "setFirstNFTokenSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 636,
+      "name": "setAMMID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 645,
+      "name": "setVaultID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 654,
+      "name": "setLoanBrokerID"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 663,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

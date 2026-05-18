@@ -1,0 +1,116 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "sslVerifyDir"
+    },
+    {
+      "lineno": 13,
+      "name": "sslVerifyFile"
+    },
+    {
+      "lineno": 14,
+      "name": "sslVerify"
+    },
+    {
+      "lineno": 15,
+      "name": "j"
+    },
+    {
+      "lineno": 16,
+      "name": "method"
+    },
+    {
+      "lineno": 57,
+      "name": "strm"
+    },
+    {
+      "lineno": 57,
+      "name": "host"
+    },
+    {
+      "lineno": 81,
+      "name": "strm"
+    },
+    {
+      "lineno": 81,
+      "name": "host"
+    },
+    {
+      "lineno": 106,
+      "name": "domain"
+    },
+    {
+      "lineno": 107,
+      "name": "preverified"
+    },
+    {
+      "lineno": 108,
+      "name": "ctx"
+    },
+    {
+      "lineno": 109,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sslVerifyDir",
+        "sslVerifyFile",
+        "sslVerify",
+        "j",
+        "method"
+      ],
+      "lineno": 9,
+      "name": "HTTPClientSSLContext"
+    }
+  ],
+  "description": "Defines the HTTPClientSSLContext class, which manages SSL context setup and verification for HTTP clients, including certificate verification and hostname validation, using Boost.Asio and custom logging.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/net/HTTPClientSSLContext.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "context"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "sslVerify"
+    },
+    {
+      "args": [
+        "strm",
+        "host"
+      ],
+      "lineno": 56,
+      "name": "preConnectVerify"
+    },
+    {
+      "args": [
+        "strm",
+        "host"
+      ],
+      "lineno": 80,
+      "name": "postConnectVerify"
+    },
+    {
+      "args": [
+        "domain",
+        "preverified",
+        "ctx",
+        "j"
+      ],
+      "lineno": 104,
+      "name": "rfc6125_verify"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Source& source",
+        "std::shared_ptr<WSSession> const& ws"
+      ],
+      "lineno": 11,
+      "name": "WSInfoSub"
+    }
+  ],
+  "description": "Defines the WSInfoSub class, which represents a WebSocket-based subscription for XRPL server notifications, handling user and forwarded-for information and sending JSON messages over a WebSocket session.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/WSInfoSub.h",
+  "functions": [
+    {
+      "args": [
+        "Source& source",
+        "std::shared_ptr<WSSession> const& ws"
+      ],
+      "lineno": 16,
+      "name": "WSInfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "user"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "forwarded_for"
+    },
+    {
+      "args": [
+        "Json::Value const& jv",
+        "bool"
+      ],
+      "lineno": 40,
+      "name": "send"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 35,
+      "name": "amount"
+    },
+    {
+      "lineno": 41,
+      "name": "amount"
+    },
+    {
+      "lineno": 47,
+      "name": "amount"
+    },
+    {
+      "lineno": 26,
+      "name": "impl"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "()",
+        "std::shared_ptr<MeterImpl> const& impl"
+      ],
+      "lineno": 13,
+      "name": "Meter"
+    }
+  ],
+  "description": "Defines the Meter class, a lightweight reference wrapper for an increment-only metric used for measuring integral values, within the beast::insight namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Meter.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "Meter"
+    },
+    {
+      "args": [
+        "std::shared_ptr<MeterImpl> const& impl"
+      ],
+      "lineno": 26,
+      "name": "Meter"
+    },
+    {
+      "args": [
+        "value_type amount"
+      ],
+      "lineno": 35,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "value_type amount"
+      ],
+      "lineno": 41,
+      "name": "operator+="
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 53,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "impl"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "insight"
+    }
+  ]
+}

@@ -1,0 +1,259 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "tx"
+    },
+    {
+      "lineno": 224,
+      "name": "account"
+    },
+    {
+      "lineno": 224,
+      "name": "sequence"
+    },
+    {
+      "lineno": 224,
+      "name": "fee"
+    },
+    {
+      "lineno": 233,
+      "name": "tx"
+    },
+    {
+      "lineno": 246,
+      "name": "value"
+    },
+    {
+      "lineno": 256,
+      "name": "value"
+    },
+    {
+      "lineno": 266,
+      "name": "value"
+    },
+    {
+      "lineno": 276,
+      "name": "value"
+    },
+    {
+      "lineno": 286,
+      "name": "value"
+    },
+    {
+      "lineno": 296,
+      "name": "value"
+    },
+    {
+      "lineno": 306,
+      "name": "value"
+    },
+    {
+      "lineno": 316,
+      "name": "value"
+    },
+    {
+      "lineno": 326,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 326,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 22,
+      "name": "SetFee"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 211,
+      "name": "SetFeeBuilder"
+    }
+  ],
+  "description": "Defines the SetFee transaction type for XRPL, providing a type-safe wrapper (SetFee) and a fluent builder (SetFeeBuilder) for constructing and signing SetFee transactions, including accessors and mutators for transaction-specific fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/SetFee.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "SetFee::SetFee"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "SetFee::getLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "SetFee::hasLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "SetFee::getBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "SetFee::hasBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "SetFee::getReferenceFeeUnits"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "SetFee::hasReferenceFeeUnits"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "SetFee::getReserveBase"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "SetFee::hasReserveBase"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "SetFee::getReserveIncrement"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "SetFee::hasReserveIncrement"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "SetFee::getBaseFeeDrops"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "SetFee::hasBaseFeeDrops"
+    },
+    {
+      "args": [],
+      "lineno": 171,
+      "name": "SetFee::getReserveBaseDrops"
+    },
+    {
+      "args": [],
+      "lineno": 182,
+      "name": "SetFee::hasReserveBaseDrops"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "SetFee::getReserveIncrementDrops"
+    },
+    {
+      "args": [],
+      "lineno": 204,
+      "name": "SetFee::hasReserveIncrementDrops"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 224,
+      "name": "SetFeeBuilder::SetFeeBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 233,
+      "name": "SetFeeBuilder::SetFeeBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 246,
+      "name": "SetFeeBuilder::setLedgerSequence"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 256,
+      "name": "SetFeeBuilder::setBaseFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 266,
+      "name": "SetFeeBuilder::setReferenceFeeUnits"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 276,
+      "name": "SetFeeBuilder::setReserveBase"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 286,
+      "name": "SetFeeBuilder::setReserveIncrement"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 296,
+      "name": "SetFeeBuilder::setBaseFeeDrops"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 306,
+      "name": "SetFeeBuilder::setReserveBaseDrops"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 316,
+      "name": "SetFeeBuilder::setReserveIncrementDrops"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 326,
+      "name": "SetFeeBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,597 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyStateTable::apply(RawView& to) const",
+        "to.rawDestroyXRP",
+        "for (item in items_)",
+        "switch (item.second.first)",
+        "to.rawErase/rawInsert/rawReplace"
+      ],
+      "entry_point": "ApplyStateTable::apply(RawView& to) const",
+      "purpose": "Applies all pending state changes in items_ to the RawView ledger, dispatching by Action enum.",
+      "validation_points": [
+        "switch (item.second.first) // Validates Action enum value"
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyStateTable::apply(OpenView& to, ...)",
+        "if (!to.open() || isDryRun)",
+        "for (item in items_)",
+        "switch (item.second.first)",
+        "to.read(keylet::unchecked(item.first))",
+        "meta.setDeliveredAmount(deliver)",
+        "meta.setParentBatchID(parentBatchId)"
+      ],
+      "entry_point": "ApplyStateTable::apply(OpenView& to, STTx const& tx, TER ter, std::optional<STAmount> const& deliver, std::optional<uint256 const> const& parentBatchId, bool isDryRun, beast::Journal j)",
+      "purpose": "Applies state changes and builds transaction metadata, including delivered amount and parent batch ID if present.",
+      "validation_points": [
+        "to.open() // Validates ledger is open",
+        "std::optional presence check for deliver",
+        "std::optional presence check for parentBatchId",
+        "switch (item.second.first) // Validates Action enum value"
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyStateTable::visit(ReadView const& to, func)",
+        "for (item in items_)",
+        "switch (item.second.first)",
+        "func(...)"
+      ],
+      "entry_point": "ApplyStateTable::visit(ReadView const& to, std::function...) const",
+      "purpose": "Iterates over state changes and invokes a callback for each, passing before/after SLEs.",
+      "validation_points": [
+        "switch (item.second.first) // Validates Action enum value"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "item.second.first (Action enum)",
+      "flow": [
+        "items_",
+        "for (item in items_)",
+        "switch (item.second.first)",
+        "dispatch to rawErase/rawInsert/rawReplace or callback"
+      ],
+      "origin": "items_ container (ApplyStateTable member)",
+      "transformations": [
+        "Used to determine which ledger operation to perform"
+      ],
+      "validated_at": "switch (item.second.first) in all main methods"
+    },
+    {
+      "field": "deliver (std::optional<STAmount>)",
+      "flow": [
+        "function argument",
+        "meta.setDeliveredAmount(deliver)"
+      ],
+      "origin": "ApplyStateTable::apply(OpenView&, ...)",
+      "transformations": [
+        "Optional: only set if present"
+      ],
+      "validated_at": "Presence checked before use (std::optional)"
+    },
+    {
+      "field": "parentBatchId (std::optional<uint256>)",
+      "flow": [
+        "function argument",
+        "meta.setParentBatchID(parentBatchId)"
+      ],
+      "origin": "ApplyStateTable::apply(OpenView&, ...)",
+      "transformations": [
+        "Optional: only set if present"
+      ],
+      "validated_at": "Presence checked before use (std::optional)"
+    },
+    {
+      "field": "to.open()",
+      "flow": [
+        "ApplyStateTable::apply(OpenView&, ...)",
+        "if (!to.open() || isDryRun)"
+      ],
+      "origin": "OpenView& to (function argument)",
+      "transformations": [
+        "Boolean check to determine if ledger is open"
+      ],
+      "validated_at": "Method call returns bool, used in conditional"
+    },
+    {
+      "field": "items_ (container of state changes)",
+      "flow": [
+        "ApplyStateTable instance",
+        "for (item in items_)",
+        "switch (item.second.first)",
+        "used in ledger operations or callbacks"
+      ],
+      "origin": "ApplyStateTable member, populated elsewhere",
+      "transformations": [
+        "Iterated, filtered by Action, passed to ledger ops"
+      ],
+      "validated_at": "Switch on Action in all main methods"
+    }
+  ],
+  "description": "Implements the ApplyStateTable class and related functions for managing and applying state changes to the XRPL ledger, including inserting, modifying, erasing, and threading ledger entries, as well as generating transaction metadata.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Action (enum type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Action (enum type) validated by C++ type system, enum, std::optional",
+      "issue_pattern": "Missing validation for Action (enum type)",
+      "why_false_positive": "C++ type system, enum, std::optional validates Action (enum type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "items_ (container type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field items_ (container type) validated by C++ type system, enum, std::optional",
+      "issue_pattern": "Missing validation for items_ (container type)",
+      "why_false_positive": "C++ type system, enum, std::optional validates items_ (container type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "deliver (std::optional<STAmount>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field deliver (std::optional<STAmount>) validated by C++ type system, enum, std::optional",
+      "issue_pattern": "Missing validation for deliver (std::optional<STAmount>)",
+      "why_false_positive": "C++ type system, enum, std::optional validates deliver (std::optional<STAmount>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "parentBatchId (std::optional<uint256>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field parentBatchId (std::optional<uint256>) validated by C++ type system, enum, std::optional",
+      "issue_pattern": "Missing validation for parentBatchId (std::optional<uint256>)",
+      "why_false_positive": "C++ type system, enum, std::optional validates parentBatchId (std::optional<uint256>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Action enum value (item.second.first)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch statement (enum type) at ApplyStateTable::apply(RawView& to) and others",
+      "issue_pattern": "Missing empty string validation for Action enum value (item.second.first)",
+      "why_false_positive": "switch statement (enum type) validates Action enum value (item.second.first) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "items_ (container of state changes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "iteration and switch on Action at ApplyStateTable::apply, ::size, ::visit, ::apply(OpenView&...)",
+      "issue_pattern": "Missing empty string validation for items_ (container of state changes)",
+      "why_false_positive": "iteration and switch on Action validates items_ (container of state changes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "deliver (optional STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional presence check at ApplyStateTable::apply(OpenView&, ...)",
+      "issue_pattern": "Missing empty string validation for deliver (optional STAmount)",
+      "why_false_positive": "std::optional presence check validates deliver (optional STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "parentBatchId (optional uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional presence check at ApplyStateTable::apply(OpenView&, ...)",
+      "issue_pattern": "Missing empty string validation for parentBatchId (optional uint256)",
+      "why_false_positive": "std::optional presence check validates parentBatchId (optional uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "to.open()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "method call (returns bool) at ApplyStateTable::apply(OpenView&, ...)",
+      "issue_pattern": "Missing empty string validation for to.open()",
+      "why_false_positive": "method call (returns bool) validates to.open() for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/ApplyStateTable.cpp",
+  "functions": [
+    {
+      "args": [
+        "RawView& to"
+      ],
+      "lineno": 9,
+      "name": "ApplyStateTable::apply"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "ApplyStateTable::size"
+    },
+    {
+      "args": [
+        "ReadView const& to",
+        "std::function<void(uint256 const& key, bool isDelete, std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after)> const& func"
+      ],
+      "lineno": 39,
+      "name": "ApplyStateTable::visit"
+    },
+    {
+      "args": [
+        "OpenView& to",
+        "STTx const& tx",
+        "TER ter",
+        "std::optional<STAmount> const& deliver",
+        "std::optional<uint256 const> const& parentBatchId",
+        "bool isDryRun",
+        "beast::Journal j"
+      ],
+      "lineno": 61,
+      "name": "ApplyStateTable::apply"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 181,
+      "name": "ApplyStateTable::exists"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 196,
+      "name": "ApplyStateTable::succ"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 221,
+      "name": "ApplyStateTable::read"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 236,
+      "name": "ApplyStateTable::peek"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 259,
+      "name": "ApplyStateTable::erase"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 277,
+      "name": "ApplyStateTable::rawErase"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 295,
+      "name": "ApplyStateTable::insert"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 314,
+      "name": "ApplyStateTable::replace"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 332,
+      "name": "ApplyStateTable::update"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 349,
+      "name": "ApplyStateTable::destroyXRP"
+    },
+    {
+      "args": [
+        "TxMeta& meta",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 356,
+      "name": "ApplyStateTable::threadItem"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "key_type const& key",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 377,
+      "name": "ApplyStateTable::getForMod"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "TxMeta& meta",
+        "AccountID const& to",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 406,
+      "name": "ApplyStateTable::threadTx"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "TxMeta& meta",
+        "std::shared_ptr<SLE const> const& sle",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 423,
+      "name": "ApplyStateTable::threadOwners"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "Core ApplyStateTable logic is likely tested in integration and unit tests for ledger application and transaction processing. Look for tests in files such as 'ApplyStateTable_test.cpp', 'Ledger_test.cpp', or 'Transactor_test.cpp' in the rippled codebase. However, edge cases for optional fields (deliver, parentBatchId), and all Action enum branches (especially 'cache') may not be fully covered. Direct tests for validation failures (e.g., invalid Action values, missing nodes on erase) may be limited or absent.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Action (enum type)",
+      "items_ (container type)",
+      "deliver (std::optional<STAmount>)",
+      "parentBatchId (std::optional<uint256>)"
+    ],
+    "framework": "C++ type system, enum, std::optional",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (default case is break/continue)",
+      "field": "Action enum value (item.second.first)",
+      "location": "ApplyStateTable::apply(RawView& to) and others",
+      "validated_by": "switch statement (enum type)",
+      "validates": [
+        "Ensures only valid Action enum values are processed",
+        "Unknown values are ignored"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (invalid actions are skipped)",
+      "field": "items_ (container of state changes)",
+      "location": "ApplyStateTable::apply, ::size, ::visit, ::apply(OpenView&...)",
+      "validated_by": "iteration and switch on Action",
+      "validates": [
+        "Only valid actions (erase, insert, modify) are counted or processed",
+        "cache is ignored"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (optional, not present is handled)",
+      "field": "deliver (optional STAmount)",
+      "location": "ApplyStateTable::apply(OpenView&, ...)",
+      "validated_by": "std::optional presence check",
+      "validates": [
+        "Checks if deliver amount is present before using"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (optional, not present is handled)",
+      "field": "parentBatchId (optional uint256)",
+      "location": "ApplyStateTable::apply(OpenView&, ...)",
+      "validated_by": "std::optional presence check",
+      "validates": [
+        "Checks if parentBatchId is present before using"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (branching logic)",
+      "field": "to.open()",
+      "location": "ApplyStateTable::apply(OpenView&, ...)",
+      "validated_by": "method call (returns bool)",
+      "validates": [
+        "Checks if the OpenView is open before proceeding"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

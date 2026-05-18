@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "PaymentChannelCreate"
+    }
+  ],
+  "description": "Defines the PaymentChannelCreate transactor class for creating payment channels in the XRPL system, including its interface and related static methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "PaymentChannelCreate"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

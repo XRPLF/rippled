@@ -1,0 +1,324 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "name"
+    },
+    {
+      "lineno": 0,
+      "name": "src"
+    },
+    {
+      "lineno": 0,
+      "name": "dst"
+    },
+    {
+      "lineno": 45,
+      "name": "value"
+    },
+    {
+      "lineno": 66,
+      "name": "key"
+    },
+    {
+      "lineno": 72,
+      "name": "lines"
+    },
+    {
+      "lineno": 78,
+      "name": "line"
+    },
+    {
+      "lineno": 94,
+      "name": "other"
+    },
+    {
+      "lineno": 156,
+      "name": "section"
+    },
+    {
+      "lineno": 193,
+      "name": "sectionName"
+    },
+    {
+      "lineno": 211,
+      "name": "ifs"
+    },
+    {
+      "lineno": 220,
+      "name": "target"
+    },
+    {
+      "lineno": 235,
+      "name": "defaultValue"
+    },
+    {
+      "lineno": 272,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 13,
+      "name": "Section"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "BasicConfig"
+    }
+  ],
+  "description": "Defines classes and utility functions for handling configuration sections and key/value pairs, including parsing, storing, and retrieving configuration data for the xrpl project.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/BasicConfig.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "Section::name"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "Section::lines"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "Section::values"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 44,
+      "name": "Section::legacy"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "Section::legacy"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 65,
+      "name": "Section::set"
+    },
+    {
+      "args": [
+        "lines"
+      ],
+      "lineno": 71,
+      "name": "Section::append"
+    },
+    {
+      "args": [
+        "line"
+      ],
+      "lineno": 77,
+      "name": "Section::append"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 82,
+      "name": "Section::exists"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 85,
+      "name": "Section::get"
+    },
+    {
+      "args": [
+        "name",
+        "other"
+      ],
+      "lineno": 93,
+      "name": "Section::value_or"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "Section::had_trailing_comments"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "Section::empty"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "Section::size"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "Section::begin"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "Section::cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "Section::end"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "Section::cend"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 151,
+      "name": "BasicConfig::exists"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 155,
+      "name": "BasicConfig::section"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 158,
+      "name": "BasicConfig::section"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 161,
+      "name": "BasicConfig::operator[]"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 165,
+      "name": "BasicConfig::operator[]"
+    },
+    {
+      "args": [
+        "section",
+        "key",
+        "value"
+      ],
+      "lineno": 171,
+      "name": "BasicConfig::overwrite"
+    },
+    {
+      "args": [
+        "section"
+      ],
+      "lineno": 176,
+      "name": "BasicConfig::deprecatedClearSection"
+    },
+    {
+      "args": [
+        "section",
+        "value"
+      ],
+      "lineno": 183,
+      "name": "BasicConfig::legacy"
+    },
+    {
+      "args": [
+        "sectionName"
+      ],
+      "lineno": 192,
+      "name": "BasicConfig::legacy"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "BasicConfig::had_trailing_comments"
+    },
+    {
+      "args": [
+        "ifs"
+      ],
+      "lineno": 210,
+      "name": "BasicConfig::build"
+    },
+    {
+      "args": [
+        "target",
+        "name",
+        "section"
+      ],
+      "lineno": 219,
+      "name": "set"
+    },
+    {
+      "args": [
+        "target",
+        "defaultValue",
+        "name",
+        "section"
+      ],
+      "lineno": 234,
+      "name": "set"
+    },
+    {
+      "args": [
+        "section",
+        "name",
+        "defaultValue"
+      ],
+      "lineno": 247,
+      "name": "get"
+    },
+    {
+      "args": [
+        "section",
+        "name",
+        "defaultValue"
+      ],
+      "lineno": 260,
+      "name": "get"
+    },
+    {
+      "args": [
+        "section",
+        "name",
+        "v"
+      ],
+      "lineno": 271,
+      "name": "get_if_exists"
+    },
+    {
+      "args": [
+        "section",
+        "name",
+        "v"
+      ],
+      "lineno": 277,
+      "name": "get_if_exists<bool>"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

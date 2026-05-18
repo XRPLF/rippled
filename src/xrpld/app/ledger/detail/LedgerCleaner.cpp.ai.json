@@ -1,0 +1,509 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app, beast::Journal journal"
+      ],
+      "lineno": 27,
+      "name": "LedgerCleanerImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "clean",
+        "LedgerMaster::getFullValidatedRange",
+        "LedgerCleanerImp::clean (field assignments)",
+        "run (via thread_)"
+      ],
+      "entry_point": "clean",
+      "purpose": "Initiates a ledger cleaning operation, sets up parameters, and triggers the background cleaning thread.",
+      "validation_points": [
+        "LedgerMaster::getFullValidatedRange (validates ledger range)",
+        "LedgerCleanerImp::clean (validates and assigns minRange_, maxRange_, checkNodes_, fixTxns_, failures_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "start",
+        "std::thread{&LedgerCleanerImp::run, this}",
+        "run"
+      ],
+      "entry_point": "start",
+      "purpose": "Starts the background cleaning thread.",
+      "validation_points": [
+        "RAII validation of thread_ (checked in destructor and stop)"
+      ]
+    },
+    {
+      "call_chain": [
+        "stop",
+        "shouldExit_ = true",
+        "wakeup_.notify_one()",
+        "thread_.join()"
+      ],
+      "entry_point": "stop",
+      "purpose": "Stops the background cleaning thread safely.",
+      "validation_points": [
+        "RAII validation of thread_ (checked in destructor and stop)"
+      ]
+    },
+    {
+      "call_chain": [
+        "onWrite",
+        "PropertyStream::Map population"
+      ],
+      "entry_point": "onWrite",
+      "purpose": "Reports the current status and parameters of the cleaner.",
+      "validation_points": [
+        "Explicit checks on maxRange_, failures_, checkNodes_, fixTxns_"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "thread_",
+      "flow": [
+        "constructor",
+        "start (assigned new std::thread)",
+        "run (executed in thread)",
+        "stop (joined)",
+        "destructor (checked for joinable)"
+      ],
+      "origin": "LedgerCleanerImp constructor (default-initialized)",
+      "transformations": [
+        "Created, started, joined, checked for proper shutdown"
+      ],
+      "validated_at": "Destructor (RAII), stop()"
+    },
+    {
+      "field": "minRange_ / maxRange_",
+      "flow": [
+        "clean (retrieved from LedgerMaster)",
+        "assigned to minRange_, maxRange_",
+        "used in run/onWrite/doLedgerCleaner"
+      ],
+      "origin": "LedgerMaster::getFullValidatedRange (called in clean)",
+      "transformations": [
+        "Set from validated ledger range, used to control cleaning scope"
+      ],
+      "validated_at": "Type system (LedgerIndex), explicit checks in onWrite"
+    },
+    {
+      "field": "checkNodes_",
+      "flow": [
+        "clean (set)",
+        "used in run/doLedgerCleaner/onWrite"
+      ],
+      "origin": "clean (set from JSON params or default)",
+      "transformations": [
+        "Boolean flag, set from input, controls node checking"
+      ],
+      "validated_at": "Type system, explicit check in onWrite"
+    },
+    {
+      "field": "fixTxns_",
+      "flow": [
+        "clean (set)",
+        "used in run/doLedgerCleaner/onWrite"
+      ],
+      "origin": "clean (set from JSON params or default)",
+      "transformations": [
+        "Boolean flag, set from input, controls SQL rewrite"
+      ],
+      "validated_at": "Type system, explicit check in onWrite"
+    },
+    {
+      "field": "failures_",
+      "flow": [
+        "clean (reset)",
+        "incremented on error",
+        "reported in onWrite"
+      ],
+      "origin": "clean (reset to 0), incremented in run/doLedgerCleaner",
+      "transformations": [
+        "Integer counter, reset and incremented"
+      ],
+      "validated_at": "Type system, explicit check in onWrite"
+    }
+  ],
+  "description": "Implements the LedgerCleaner, which cleans up and repairs inconsistencies in the ledger databases, checks for missing nodes, and can reprocess transactions or stop cleaning on request.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "thread_ (lifetime and joinability via RAII)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field thread_ (lifetime and joinability via RAII) validated by C++ type system, RAII, custom exception (LogicError)",
+      "issue_pattern": "Missing validation for thread_ (lifetime and joinability via RAII)",
+      "why_false_positive": "C++ type system, RAII, custom exception (LogicError) validates thread_ (lifetime and joinability via RAII) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "minRange_, maxRange_, checkNodes_, fixTxns_, failures_ (type-checked by compiler)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field minRange_, maxRange_, checkNodes_, fixTxns_, failures_ (type-checked by compiler) validated by C++ type system, RAII, custom exception (LogicError)",
+      "issue_pattern": "Missing validation for minRange_, maxRange_, checkNodes_, fixTxns_, failures_ (type-checked by compiler)",
+      "why_false_positive": "C++ type system, RAII, custom exception (LogicError) validates minRange_, maxRange_, checkNodes_, fixTxns_, failures_ (type-checked by compiler) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "thread_ (std::thread)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RAII pattern, destructor check at LedgerCleanerImp::~LedgerCleanerImp()",
+      "issue_pattern": "Missing empty string validation for thread_ (std::thread)",
+      "why_false_positive": "RAII pattern, destructor check validates thread_ (std::thread) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "status fields (minRange_, maxRange_, checkNodes_, fixTxns_, failures_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type system, explicit checks at onWrite()",
+      "issue_pattern": "Missing empty string validation for status fields (minRange_, maxRange_, checkNodes_, fixTxns_, failures_)",
+      "why_false_positive": "type system, explicit checks validates status fields (minRange_, maxRange_, checkNodes_, fixTxns_, failures_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerCleaner.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 67,
+      "name": "onWrite"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 89,
+      "name": "clean"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "run"
+    },
+    {
+      "args": [
+        "ledger",
+        "index"
+      ],
+      "lineno": 185,
+      "name": "getLedgerHash"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "ledgerHash",
+        "doNodes",
+        "doTxns"
+      ],
+      "lineno": 205,
+      "name": "doLedger"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "referenceLedger"
+      ],
+      "lineno": 246,
+      "name": "getHash"
+    },
+    {
+      "args": [],
+      "lineno": 288,
+      "name": "doLedgerCleaner"
+    },
+    {
+      "args": [
+        "app",
+        "journal"
+      ],
+      "lineno": 355,
+      "name": "make_LedgerCleaner"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LedgerCleaner is a background maintenance component. Typical test coverage would be in integration/system tests, not unit tests. Look for tests in files like 'LedgerCleaner_test.cpp', 'LedgerMaster_test.cpp', or higher-level ledger/consensus tests. Validation of thread lifecycle (start/stop/destructor) is hard to unit test; may rely on manual or integration testing. JSON parameter parsing and field validation may be tested via RPC/command tests. Gaps: Direct unit tests for thread RAII, error handling, and edge cases (e.g., double start/stop, invalid ledger ranges) may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "thread_ (lifetime and joinability via RAII)",
+      "minRange_, maxRange_, checkNodes_, fixTxns_, failures_ (type-checked by compiler)"
+    ],
+    "framework": "C++ type system, RAII, custom exception (LogicError)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError(\"LedgerCleanerImp::stop not called.\")",
+      "field": "thread_ (std::thread)",
+      "location": "LedgerCleanerImp::~LedgerCleanerImp()",
+      "validated_by": "RAII pattern, destructor check",
+      "validates": [
+        "Ensures thread_ is not joinable (i.e., stop() was called before destruction)",
+        "Prevents resource leak or undefined behavior"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (fields are only reported, not set)",
+      "field": "status fields (minRange_, maxRange_, checkNodes_, fixTxns_, failures_)",
+      "location": "onWrite()",
+      "validated_by": "type system, explicit checks",
+      "validates": [
+        "Checks if maxRange_ == 0 to determine idle/running status",
+        "Ensures only valid status is reported"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

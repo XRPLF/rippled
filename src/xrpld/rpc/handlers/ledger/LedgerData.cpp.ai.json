@@ -1,0 +1,440 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "context"
+    },
+    {
+      "lineno": 87,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerData",
+        "RPC::lookupLedger",
+        "RPC::chooseLedgerEntryType"
+      ],
+      "entry_point": "doLedgerData",
+      "purpose": "Handles the /ledger_data RPC request, validates input, fetches ledger, paginates state nodes, and returns results.",
+      "validation_points": [
+        "RPC::lookupLedger (ledger existence/validity)",
+        "manual check (marker: isString + key.parseHex)",
+        "manual check (limit: isIntegral, range, maxLimit, isUnlimited)",
+        "RPC::chooseLedgerEntryType (type validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "doLedgerDataGrpc",
+        "RPC::ledgerFromRequest"
+      ],
+      "entry_point": "doLedgerDataGrpc",
+      "purpose": "Handles the gRPC GetLedgerData request, validates ledger, and (presumably) processes similar logic as doLedgerData.",
+      "validation_points": [
+        "RPC::ledgerFromRequest (ledger existence/validity)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger (doLedgerData) / RPC::ledgerFromRequest (doLedgerDataGrpc)",
+        "lpLedger/ledger (shared_ptr<ReadView const>)",
+        "used for ledger data extraction"
+      ],
+      "origin": "context.params (JSON) or context.params (gRPC)",
+      "transformations": [
+        "Validated for existence and accessibility",
+        "Converted to ReadView pointer"
+      ],
+      "validated_at": "RPC::lookupLedger (doLedgerData), RPC::ledgerFromRequest (doLedgerDataGrpc)"
+    },
+    {
+      "field": "marker",
+      "flow": [
+        "context.params[jss::marker]",
+        "manual check: isString && key.parseHex",
+        "key (ReadView::key_type)",
+        "used as resume point in ledger traversal"
+      ],
+      "origin": "context.params[jss::marker]",
+      "transformations": [
+        "Checked for string type",
+        "Parsed as hex to key_type"
+      ],
+      "validated_at": "manual check in doLedgerData"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "context.params[jss::limit]",
+        "manual check: isIntegral",
+        "limit = jLimit.asInt()",
+        "range check: (limit < 0) || (limit > maxLimit && !isUnlimited)",
+        "used to control number of ledger entries returned"
+      ],
+      "origin": "context.params[jss::limit]",
+      "transformations": [
+        "Checked for integer type",
+        "Capped to maxLimit unless unlimited role"
+      ],
+      "validated_at": "manual check in doLedgerData"
+    },
+    {
+      "field": "type",
+      "flow": [
+        "context.params[jss::type]",
+        "RPC::chooseLedgerEntryType",
+        "type (used to filter ledger entries)"
+      ],
+      "origin": "context.params[jss::type]",
+      "transformations": [
+        "Validated and mapped to internal ledger entry type"
+      ],
+      "validated_at": "RPC::chooseLedgerEntryType"
+    },
+    {
+      "field": "binary",
+      "flow": [
+        "context.params[jss::binary]",
+        "isBinary = params[jss::binary].asBool()",
+        "affects output format (binary vs JSON)"
+      ],
+      "origin": "context.params[jss::binary]",
+      "transformations": [
+        "Converted to bool",
+        "Controls serialization format"
+      ],
+      "validated_at": "implicit (no explicit validation, but type conversion)"
+    }
+  ],
+  "description": "Implements the ledger_data RPC handler for XRPL, providing functions to retrieve state nodes from a ledger in both JSON and gRPC formats, with support for pagination, filtering, and binary output.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger (via lookupLedger)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger (via lookupLedger) validated by xrpld RPC framework (jss::, RPC::, Json::Value)",
+      "issue_pattern": "Missing validation for ledger (via lookupLedger)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, Json::Value) validates ledger (via lookupLedger) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "type (via chooseLedgerEntryType)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field type (via chooseLedgerEntryType) validated by xrpld RPC framework (jss::, RPC::, Json::Value)",
+      "issue_pattern": "Missing validation for type (via chooseLedgerEntryType)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, Json::Value) validates type (via chooseLedgerEntryType) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doLedgerData",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "RPC::lookupLedger validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isString + key.parseHex) at doLedgerData",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "manual check (isString + key.parseHex) validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isIntegral) at doLedgerData",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "manual check (isIntegral) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "limit",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual check (isIntegral) at doLedgerData",
+      "issue_pattern": "Missing type validation for limit",
+      "why_false_positive": "manual check (isIntegral) validates limit type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (range, maxLimit, isUnlimited) at doLedgerData",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "manual check (range, maxLimit, isUnlimited) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::chooseLedgerEntryType at doLedgerData",
+      "issue_pattern": "Missing empty string validation for type",
+      "why_false_positive": "RPC::chooseLedgerEntryType validates type for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerData.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 18,
+      "name": "doLedgerData"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 87,
+      "name": "doLedgerDataGrpc"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in doLedgerData, which is typically tested via RPC integration tests. Likely test files: 'ledger_data_test.cpp', 'rpc_ledger_test.cpp', or similar in the test/rpc or test/ledger directories. Tests should cover valid/invalid ledger, marker, limit, and type values. Gaps may exist for edge cases (e.g., malformed marker, negative/overflowing limit, unknown type). Template-based validation is not fully shown here, so coverage of template-specific errors may be incomplete. gRPC path (doLedgerDataGrpc) may have less coverage if tests focus on JSON RPC.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger (via lookupLedger)",
+      "type (via chooseLedgerEntryType)"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, Json::Value)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error Json::Value if ledger not found",
+      "field": "ledger",
+      "location": "doLedgerData",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "ledger existence",
+        "ledger accessibility"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::marker, \"valid\")",
+      "field": "marker",
+      "location": "doLedgerData",
+      "validated_by": "manual check (isString + key.parseHex)",
+      "validates": [
+        "marker is string",
+        "marker is valid hex"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::limit, \"integer\")",
+      "field": "limit",
+      "location": "doLedgerData",
+      "validated_by": "manual check (isIntegral)",
+      "validates": [
+        "limit is integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "limit is clamped to maxLimit if out of range",
+      "field": "limit",
+      "location": "doLedgerData",
+      "validated_by": "manual check (range, maxLimit, isUnlimited)",
+      "validates": [
+        "limit is non-negative",
+        "limit does not exceed maxLimit unless unlimited role"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcStatus.inject(jvResult) (error injected in result)",
+      "field": "type",
+      "location": "doLedgerData",
+      "validated_by": "RPC::chooseLedgerEntryType",
+      "validates": [
+        "type is valid ledger entry type"
+      ],
+      "validation_type": "business_logic|type"
+    }
+  ]
+}

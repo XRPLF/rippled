@@ -1,0 +1,315 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "slep"
+    },
+    {
+      "lineno": 10,
+      "name": "view"
+    },
+    {
+      "lineno": 11,
+      "name": "key"
+    },
+    {
+      "lineno": 12,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "closeChannel"
+      ],
+      "entry_point": "closeChannel",
+      "purpose": "Closes a payment channel, removes it from owner directories, returns remaining funds to source, decrements owner count, and erases the channel from the ledger.",
+      "validation_points": [
+        "view.dirRemove(keylet::ownerDir(src), page, key, true) // Validates src owner directory removal",
+        "view.dirRemove(keylet::ownerDir(dst), *page, key, true) // Validates dst owner directory removal",
+        "view.peek(keylet::account(src)) // Validates src account existence",
+        "XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance], ...) // Validates channel amount >= balance"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount (src)",
+      "flow": [
+        "(*slep)[sfAccount]",
+        "src",
+        "keylet::ownerDir(src)",
+        "view.dirRemove(...)",
+        "keylet::account(src)",
+        "view.peek(...)"
+      ],
+      "origin": "(*slep)[sfAccount] // From PaymentChannel SLE",
+      "transformations": [
+        "Used as key for owner directory and account lookup"
+      ],
+      "validated_at": "view.dirRemove (owner directory removal), view.peek (account existence)"
+    },
+    {
+      "field": "sfOwnerNode (page)",
+      "flow": [
+        "(*slep)[sfOwnerNode]",
+        "page",
+        "view.dirRemove(keylet::ownerDir(src), page, key, true)"
+      ],
+      "origin": "(*slep)[sfOwnerNode] // From PaymentChannel SLE",
+      "transformations": [
+        "Used as page index for directory removal"
+      ],
+      "validated_at": "view.dirRemove (owner directory removal)"
+    },
+    {
+      "field": "sfDestinationNode (page)",
+      "flow": [
+        "(*slep)[~sfDestinationNode]",
+        "page",
+        "view.dirRemove(keylet::ownerDir(dst), *page, key, true)"
+      ],
+      "origin": "(*slep)[~sfDestinationNode] // Optional field from PaymentChannel SLE",
+      "transformations": [
+        "Used as page index for destination directory removal"
+      ],
+      "validated_at": "view.dirRemove (destination owner directory removal)"
+    },
+    {
+      "field": "sfDestination (dst)",
+      "flow": [
+        "(*slep)[sfDestination]",
+        "dst",
+        "keylet::ownerDir(dst)",
+        "view.dirRemove(...)"
+      ],
+      "origin": "(*slep)[sfDestination] // From PaymentChannel SLE",
+      "transformations": [
+        "Used as key for destination owner directory"
+      ],
+      "validated_at": "view.dirRemove (destination owner directory removal)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "(*slep)[sfAmount]",
+        "XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance])",
+        "(*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance]"
+      ],
+      "origin": "(*slep)[sfAmount] // From PaymentChannel SLE",
+      "transformations": [
+        "Checked against sfBalance for invariant",
+        "Used to compute new balance for src account"
+      ],
+      "validated_at": "XRPL_ASSERT"
+    },
+    {
+      "field": "sfBalance",
+      "flow": [
+        "(*slep)[sfBalance]",
+        "XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance])",
+        "(*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance]"
+      ],
+      "origin": "(*slep)[sfBalance] // From PaymentChannel SLE",
+      "transformations": [
+        "Checked against sfAmount for invariant",
+        "Used to compute new balance for src account"
+      ],
+      "validated_at": "XRPL_ASSERT"
+    }
+  ],
+  "description": "Implements the closeChannel function to close a payment channel in the XRPL ledger, handling directory removals, balance adjustments, and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "src owner directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove at closeChannel",
+      "issue_pattern": "Missing empty string validation for src owner directory removal",
+      "why_false_positive": "view.dirRemove validates src owner directory removal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dst owner directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove at closeChannel",
+      "issue_pattern": "Missing empty string validation for dst owner directory removal",
+      "why_false_positive": "view.dirRemove validates dst owner directory removal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "src account existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek at closeChannel",
+      "issue_pattern": "Missing empty string validation for src account existence",
+      "why_false_positive": "view.peek validates src account existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "channel amount >= channel balance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at closeChannel",
+      "issue_pattern": "Missing empty string validation for channel amount >= channel balance",
+      "why_false_positive": "XRPL_ASSERT validates channel amount >= channel balance for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/PaymentChannelHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "slep",
+        "view",
+        "key",
+        "j"
+      ],
+      "lineno": 8,
+      "name": "closeChannel"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function closeChannel is likely tested indirectly via higher-level transaction tests for payment channel closure (e.g., PaymentChannelClaim, PaymentChannelClose). Tests should cover: successful closure, failure to remove from owner directories (src/dst), missing src account, and invariant violation (amount < balance). However, the LCOV_EXCL_* comments indicate that some error paths (e.g., directory removal failures, missing account) are not covered by standard tests. Test files to check include: PaymentChannel_test.cpp, PaymentChannelClose_test.cpp, and possibly integration/ledger/PaymentChannel*.json. Gaps: Directory removal failures and assertion failures may not be directly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic, XRPL_ASSERT macro, ApplyView interface",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "src owner directory removal",
+      "location": "closeChannel",
+      "validated_by": "view.dirRemove",
+      "validates": [
+        "Checks if the payment channel can be removed from the source account's owner directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "dst owner directory removal",
+      "location": "closeChannel",
+      "validated_by": "view.dirRemove",
+      "validates": [
+        "Checks if the payment channel can be removed from the destination account's owner directory (if present)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "src account existence",
+      "location": "closeChannel",
+      "validated_by": "view.peek",
+      "validates": [
+        "Checks if the source account exists in the ledger before updating balance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts in debug)",
+      "field": "channel amount >= channel balance",
+      "location": "closeChannel",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the channel's total amount is not less than its balance"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

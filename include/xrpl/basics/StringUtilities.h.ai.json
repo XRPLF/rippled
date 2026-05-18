@@ -1,0 +1,125 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "blob"
+    },
+    {
+      "lineno": 22,
+      "name": "strSize"
+    },
+    {
+      "lineno": 22,
+      "name": "begin"
+    },
+    {
+      "lineno": 22,
+      "name": "end"
+    },
+    {
+      "lineno": 61,
+      "name": "strSrc"
+    },
+    {
+      "lineno": 66,
+      "name": "strSrc"
+    },
+    {
+      "lineno": 81,
+      "name": "pUrl"
+    },
+    {
+      "lineno": 81,
+      "name": "strUrl"
+    },
+    {
+      "lineno": 83,
+      "name": "str"
+    },
+    {
+      "lineno": 85,
+      "name": "s"
+    },
+    {
+      "lineno": 93,
+      "name": "domain"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "parsedURL"
+    }
+  ],
+  "description": "Provides utility functions for handling binary data, hexadecimal encoding/decoding, URL parsing, string trimming, and TOML domain validation in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/StringUtilities.h",
+  "functions": [
+    {
+      "args": [
+        "blob"
+      ],
+      "lineno": 18,
+      "name": "sqlBlobLiteral"
+    },
+    {
+      "args": [
+        "strSize",
+        "begin",
+        "end"
+      ],
+      "lineno": 22,
+      "name": "strUnHex"
+    },
+    {
+      "args": [
+        "strSrc"
+      ],
+      "lineno": 61,
+      "name": "strUnHex"
+    },
+    {
+      "args": [
+        "strSrc"
+      ],
+      "lineno": 66,
+      "name": "strViewUnHex"
+    },
+    {
+      "args": [
+        "pUrl",
+        "strUrl"
+      ],
+      "lineno": 81,
+      "name": "parseUrl"
+    },
+    {
+      "args": [
+        "str"
+      ],
+      "lineno": 83,
+      "name": "trim_whitespace"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 85,
+      "name": "to_uint64"
+    },
+    {
+      "args": [
+        "domain"
+      ],
+      "lineno": 93,
+      "name": "isProperlyFormedTomlDomain"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

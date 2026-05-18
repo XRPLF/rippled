@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "buffer"
+    },
+    {
+      "lineno": 10,
+      "name": "bytes"
+    },
+    {
+      "lineno": 10,
+      "name": "g"
+    },
+    {
+      "lineno": 35,
+      "name": "a"
+    },
+    {
+      "lineno": 35,
+      "name": "g"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utility functions to fill a buffer or std::array with random data using a supplied generator.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/rngfill.h",
+  "functions": [
+    {
+      "args": [
+        "buffer",
+        "bytes",
+        "g"
+      ],
+      "lineno": 9,
+      "name": "rngfill"
+    },
+    {
+      "args": [
+        "a",
+        "g"
+      ],
+      "lineno": 34,
+      "name": "rngfill"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

@@ -1,0 +1,586 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyTx",
+        "InvariantChecks::visitEntry (for each invariant)",
+        "InvariantChecks::finalize (for each invariant)"
+      ],
+      "entry_point": "ApplyTx (or similar transaction application function)",
+      "purpose": "Applies a transaction, running all registered invariants to validate ledger changes and transaction properties.",
+      "validation_points": [
+        "TransactionFeeCheck::finalize",
+        "hasPrivilege"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionFeeCheck::visitEntry",
+        "TransactionFeeCheck::finalize"
+      ],
+      "entry_point": "TransactionFeeCheck invariant",
+      "purpose": "Validates that the transaction fee is non-negative, below system maximum, and does not exceed the fee specified in the transaction.",
+      "validation_points": [
+        "TransactionFeeCheck::finalize"
+      ]
+    },
+    {
+      "call_chain": [
+        "hasPrivilege"
+      ],
+      "entry_point": "Privilege check for transaction type",
+      "purpose": "Checks if a transaction type has the required privilege.",
+      "validation_points": [
+        "hasPrivilege"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "fee (XRPAmount)",
+      "flow": [
+        "ApplyTx",
+        "TransactionFeeCheck::finalize (fee argument)",
+        "Validation logic (fee.drops() < 0, fee >= INITIAL_XRP, fee > tx.sfFee)"
+      ],
+      "origin": "Computed during transaction application (ApplyTx), passed to invariants",
+      "transformations": [
+        "Checked for negativity",
+        "Checked against system maximum (INITIAL_XRP)",
+        "Compared to tx.sfFee"
+      ],
+      "validated_at": "TransactionFeeCheck::finalize"
+    },
+    {
+      "field": "tx.sfFee (STAmount)",
+      "flow": [
+        "STTx",
+        "TransactionFeeCheck::finalize (tx.getFieldAmount(sfFee))"
+      ],
+      "origin": "Field in the transaction (STTx)",
+      "transformations": [
+        "Extracted from transaction",
+        "Converted to XRPAmount via .xrp()"
+      ],
+      "validated_at": "TransactionFeeCheck::finalize"
+    },
+    {
+      "field": "transaction type privilege",
+      "flow": [
+        "STTx",
+        "hasPrivilege"
+      ],
+      "origin": "Transaction type (STTx::getTxnType())",
+      "transformations": [
+        "Transaction type mapped to privilege mask via macro",
+        "Bitwise check against required privilege"
+      ],
+      "validated_at": "hasPrivilege"
+    }
+  ],
+  "description": "Implements various transaction and ledger invariants for the XRPL, ensuring ledger integrity by checking for invalid state changes after transaction application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fee (XRPAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TransactionFeeCheck::finalize at TransactionFeeCheck::finalize",
+      "issue_pattern": "Missing empty string validation for fee (XRPAmount)",
+      "why_false_positive": "TransactionFeeCheck::finalize validates fee (XRPAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fee (XRPAmount)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "TransactionFeeCheck::finalize at TransactionFeeCheck::finalize",
+      "issue_pattern": "Missing range validation for fee (XRPAmount)",
+      "why_false_positive": "TransactionFeeCheck::finalize validates fee (XRPAmount) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fee (XRPAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TransactionFeeCheck::finalize at TransactionFeeCheck::finalize",
+      "issue_pattern": "Missing empty string validation for fee (XRPAmount)",
+      "why_false_positive": "TransactionFeeCheck::finalize validates fee (XRPAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fee (XRPAmount)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "TransactionFeeCheck::finalize at TransactionFeeCheck::finalize",
+      "issue_pattern": "Missing range validation for fee (XRPAmount)",
+      "why_false_positive": "TransactionFeeCheck::finalize validates fee (XRPAmount) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fee (XRPAmount) vs. tx.sfFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TransactionFeeCheck::finalize at TransactionFeeCheck::finalize",
+      "issue_pattern": "Missing empty string validation for fee (XRPAmount) vs. tx.sfFee",
+      "why_false_positive": "TransactionFeeCheck::finalize validates fee (XRPAmount) vs. tx.sfFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "transaction type privilege",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasPrivilege at hasPrivilege",
+      "issue_pattern": "Missing empty string validation for transaction type privilege",
+      "why_false_positive": "hasPrivilege validates transaction type privilege for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/InvariantCheck.cpp",
+  "functions": [
+    {
+      "args": [
+        "STTx const& tx",
+        "Privilege priv"
+      ],
+      "lineno": 27,
+      "name": "hasPrivilege"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 44,
+      "name": "TransactionFeeCheck::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const",
+        "XRPAmount const fee",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 49,
+      "name": "TransactionFeeCheck::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 72,
+      "name": "XRPNotCreated::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const",
+        "XRPAmount const fee",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 108,
+      "name": "XRPNotCreated::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 126,
+      "name": "XRPBalanceChecks::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 148,
+      "name": "XRPBalanceChecks::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 163,
+      "name": "NoBadOffers::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 181,
+      "name": "NoBadOffers::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 196,
+      "name": "NoZeroEscrow::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& txn",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const& rv",
+        "beast::Journal const& j"
+      ],
+      "lineno": 246,
+      "name": "NoZeroEscrow::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 263,
+      "name": "AccountRootsNotDeleted::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const result",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 270,
+      "name": "AccountRootsNotDeleted::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 295,
+      "name": "AccountRootsDeletedClean::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const result",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 301,
+      "name": "AccountRootsDeletedClean::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 370,
+      "name": "LedgerEntryTypesMatch::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 399,
+      "name": "LedgerEntryTypesMatch::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 418,
+      "name": "NoXRPTrustLines::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 429,
+      "name": "NoXRPTrustLines::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 441,
+      "name": "NoDeepFreezeTrustLinesWithoutFreeze::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const& j"
+      ],
+      "lineno": 454,
+      "name": "NoDeepFreezeTrustLinesWithoutFreeze::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 466,
+      "name": "ValidNewAccountRoot::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const result",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 478,
+      "name": "ValidNewAccountRoot::finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 517,
+      "name": "ValidClawback::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const result",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 523,
+      "name": "ValidClawback::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 561,
+      "name": "ValidPseudoAccounts::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 594,
+      "name": "ValidPseudoAccounts::finalize"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 613,
+      "name": "NoModifiedUnmodifiableFields::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 622,
+      "name": "NoModifiedUnmodifiableFields::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The invariants are typically tested in integration and unit tests under the rippled/test/ or xrplf/rippled/test/ directories, such as InvariantCheck_test.cpp, Transaction_test.cpp, or ApplyTx_test.cpp. These tests cover cases like negative fees, excessive fees, and privilege checks. However, gaps may exist for edge cases (e.g., maximum fee boundary, privilege escalation attempts, malformed transactions). Direct unit tests for hasPrivilege may be limited, as it is often exercised indirectly via transaction application tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom C++ logic, no external validation framework",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Logs fatal error, returns false (no exception thrown)",
+      "field": "fee (XRPAmount)",
+      "location": "TransactionFeeCheck::finalize",
+      "validated_by": "TransactionFeeCheck::finalize",
+      "validates": [
+        "fee must not be negative (fee.drops() < 0)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Logs fatal error, returns false (no exception thrown)",
+      "field": "fee (XRPAmount)",
+      "location": "TransactionFeeCheck::finalize",
+      "validated_by": "TransactionFeeCheck::finalize",
+      "validates": [
+        "fee must be less than INITIAL_XRP (fee >= INITIAL_XRP)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Logs fatal error, returns false (no exception thrown)",
+      "field": "fee (XRPAmount) vs. tx.sfFee",
+      "location": "TransactionFeeCheck::finalize",
+      "validated_by": "TransactionFeeCheck::finalize",
+      "validates": [
+        "fee must not exceed the fee specified in the transaction (fee > tx.getFieldAmount(sfFee).xrp())"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Returns false (no exception thrown)",
+      "field": "transaction type privilege",
+      "location": "hasPrivilege",
+      "validated_by": "hasPrivilege",
+      "validates": [
+        "Checks if transaction type has required privilege"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

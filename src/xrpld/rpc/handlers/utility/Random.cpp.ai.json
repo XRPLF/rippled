@@ -1,0 +1,136 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC::Handler dispatch (not shown here, but typically: RPC::doCommand or similar)",
+        "doRandom"
+      ],
+      "entry_point": "doRandom",
+      "purpose": "Handles the 'random' RPC command, generating a cryptographically secure random uint256 and returning it in JSON.",
+      "validation_points": [
+        "No explicit input validation in doRandom; all logic is internal."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "random",
+      "flow": [
+        "doRandom: uint256 rand is declared",
+        "beast::rngfill(rand.begin(), rand.size(), crypto_prng()) fills rand with random bytes",
+        "to_string(rand) converts rand to string",
+        "jvResult[jss::random] = to_string(rand) inserts into JSON result",
+        "return jvResult returns JSON to caller"
+      ],
+      "origin": "Generated internally using beast::rngfill and crypto_prng()",
+      "transformations": [
+        "rand is filled with random bytes",
+        "rand is converted to string for JSON"
+      ],
+      "validated_at": "No validation required; all data is generated internally and not user-supplied"
+    }
+  ],
+  "description": "Implements the doRandom RPC handler, which returns a random 256-bit value in JSON format.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/utility/Random.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 16,
+      "name": "doRandom"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "This handler does not process user input, so there are no validation code paths to test. Test coverage would focus on: (1) Ensuring the 'random' field is present and well-formed in the response; (2) Ensuring error handling (e.g., exception path) is covered. Likely tested in integration or RPC handler tests (e.g., rpc/random_test.cpp or similar), but code coverage for the exception path is likely missing (as indicated by LCOV_EXCL_LINE). No template-based validation is exercised here, as there are no inputs to validate.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (no explicit validation framework used in this file)",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

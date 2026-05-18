@@ -1,0 +1,51 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "tx_json"
+    },
+    {
+      "lineno": 19,
+      "name": "txnType"
+    },
+    {
+      "lineno": 19,
+      "name": "apiVersion"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "Value"
+    }
+  ],
+  "description": "Provides a function to copy the 'Amount' field to the 'DeliverMax' field in the JSON output of Payment transactions, with behavior depending on API version.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/DeliverMax.h",
+  "functions": [
+    {
+      "args": [
+        "tx_json",
+        "txnType",
+        "apiVersion"
+      ],
+      "lineno": 19,
+      "name": "insertDeliverMax"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "Json"
+    },
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "RPC"
+    }
+  ]
+}

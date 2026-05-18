@@ -1,0 +1,240 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "tx_json"
+    },
+    {
+      "lineno": 8,
+      "name": "txnType"
+    },
+    {
+      "lineno": 8,
+      "name": "apiVersion"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "insertDeliverMax"
+      ],
+      "entry_point": "insertDeliverMax",
+      "purpose": "Handles the migration of the 'Amount' field to 'DeliverMax' in payment transactions, depending on API version.",
+      "validation_points": [
+        "tx_json.isMember(jss::Amount) - Validates presence of 'Amount' field",
+        "txnType == ttPAYMENT - Validates transaction type is PAYMENT",
+        "apiVersion > 1 - Validates API version is greater than 1"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Amount",
+      "flow": [
+        "tx_json['Amount'] (input)",
+        "Checked by tx_json.isMember(jss::Amount)",
+        "If valid and txnType == ttPAYMENT, copied to tx_json['DeliverMax']",
+        "If apiVersion > 1, tx_json['Amount'] is removed"
+      ],
+      "origin": "Input JSON (tx_json) provided to insertDeliverMax",
+      "transformations": [
+        "Copied to 'DeliverMax' field if conditions met",
+        "Removed from JSON if apiVersion > 1"
+      ],
+      "validated_at": "tx_json.isMember(jss::Amount)"
+    },
+    {
+      "field": "txnType",
+      "flow": [
+        "txnType (argument)",
+        "Compared to ttPAYMENT"
+      ],
+      "origin": "Function argument to insertDeliverMax",
+      "transformations": [
+        "Used as a condition to gate copying/removal logic"
+      ],
+      "validated_at": "txnType == ttPAYMENT"
+    },
+    {
+      "field": "apiVersion",
+      "flow": [
+        "apiVersion (argument)",
+        "Compared to 1"
+      ],
+      "origin": "Function argument to insertDeliverMax",
+      "transformations": [
+        "If > 1, triggers removal of 'Amount' from tx_json"
+      ],
+      "validated_at": "apiVersion > 1"
+    }
+  ],
+  "description": "Provides a utility function to insert or modify the DeliverMax field in a transaction JSON object for payment transactions, depending on the API version.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Amount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember at insertDeliverMax",
+      "issue_pattern": "Missing empty string validation for Amount",
+      "why_false_positive": "Json::Value::isMember validates Amount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "txnType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison (txnType == ttPAYMENT) at insertDeliverMax",
+      "issue_pattern": "Missing empty string validation for txnType",
+      "why_false_positive": "explicit comparison (txnType == ttPAYMENT) validates txnType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "apiVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison (apiVersion > 1) at insertDeliverMax",
+      "issue_pattern": "Missing empty string validation for apiVersion",
+      "why_false_positive": "explicit comparison (apiVersion > 1) validates apiVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/DeliverMax.cpp",
+  "functions": [
+    {
+      "args": [
+        "tx_json",
+        "txnType",
+        "apiVersion"
+      ],
+      "lineno": 7,
+      "name": "insertDeliverMax"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The function is simple and likely tested indirectly via higher-level transaction processing or API tests. Direct unit tests for insertDeliverMax may not exist unless specifically written in the test suite for DeliverMax or payment transaction handling. Gaps may exist if there are no tests for edge cases (e.g., missing 'Amount', non-PAYMENT txnType, apiVersion boundary). Test files to check: any under 'test' or 'unittest' directories related to payment transactions, DeliverMax, or JSON transaction construction.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "JsonCpp (Json::Value), jss:: (field name constants)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional branch, no exception)",
+      "field": "Amount",
+      "location": "insertDeliverMax",
+      "validated_by": "Json::Value::isMember",
+      "validates": [
+        "Checks if the 'Amount' field exists in the input JSON object before proceeding"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional branch, no exception)",
+      "field": "txnType",
+      "location": "insertDeliverMax",
+      "validated_by": "explicit comparison (txnType == ttPAYMENT)",
+      "validates": [
+        "Checks if the transaction type is 'ttPAYMENT' before copying 'Amount' to 'DeliverMax'"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional branch, no exception)",
+      "field": "apiVersion",
+      "location": "insertDeliverMax",
+      "validated_by": "explicit comparison (apiVersion > 1)",
+      "validates": [
+        "Checks if the API version is greater than 1 before removing the 'Amount' field"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

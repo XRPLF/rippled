@@ -1,0 +1,80 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Json::Value const& init = {}"
+      ],
+      "lineno": 16,
+      "name": "MultiApiJson"
+    }
+  ],
+  "description": "Defines a template struct MultiApiJson for managing collections of Json::Value objects indexed by API version, enabling versioned JSON manipulation and visitation for XRPL APIs.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/MultiApiJson.h",
+  "functions": [
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 23,
+      "name": "valid"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 28,
+      "name": "index"
+    },
+    {
+      "args": [
+        "key",
+        "v"
+      ],
+      "lineno": 38,
+      "name": "set"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 47,
+      "name": "isMember"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "visit"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "visit"
+    },
+    {
+      "args": [
+        "args..."
+      ],
+      "lineno": 124,
+      "name": "visit"
+    },
+    {
+      "args": [
+        "args..."
+      ],
+      "lineno": 133,
+      "name": "visit"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ]
+}

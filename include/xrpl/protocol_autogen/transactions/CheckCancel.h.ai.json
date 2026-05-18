@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 61,
+      "name": "account"
+    },
+    {
+      "lineno": 62,
+      "name": "checkID"
+    },
+    {
+      "lineno": 63,
+      "name": "sequence"
+    },
+    {
+      "lineno": 64,
+      "name": "fee"
+    },
+    {
+      "lineno": 73,
+      "name": "tx"
+    },
+    {
+      "lineno": 82,
+      "name": "value"
+    },
+    {
+      "lineno": 92,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 92,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "CheckCancel"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& checkID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 56,
+      "name": "CheckCancelBuilder"
+    }
+  ],
+  "description": "Defines the CheckCancel transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing CheckCancel transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/CheckCancel.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getCheckID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 81,
+      "name": "setCheckID"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 91,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

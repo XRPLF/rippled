@@ -1,0 +1,221 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "s"
+    },
+    {
+      "lineno": 23,
+      "name": "c"
+    },
+    {
+      "lineno": 23,
+      "name": "secureOnly"
+    },
+    {
+      "lineno": 23,
+      "name": "plainOnly"
+    },
+    {
+      "lineno": 31,
+      "name": "s"
+    },
+    {
+      "lineno": 31,
+      "name": "c"
+    },
+    {
+      "lineno": 61,
+      "name": "s"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::asio::io_context& s",
+        "boost::asio::ssl::context& c",
+        "bool secureOnly",
+        "bool plainOnly"
+      ],
+      "lineno": 15,
+      "name": "AutoSocket"
+    }
+  ],
+  "description": "Defines the AutoSocket class, a socket wrapper supporting both SSL and non-SSL connections with asynchronous read/write and handshake operations, enabling auto-detection of connection type.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/net/AutoSocket.h",
+  "functions": [
+    {
+      "args": [
+        "boost::asio::io_context& s",
+        "boost::asio::ssl::context& c",
+        "bool secureOnly",
+        "bool plainOnly"
+      ],
+      "lineno": 23,
+      "name": "AutoSocket"
+    },
+    {
+      "args": [
+        "boost::asio::io_context& s",
+        "boost::asio::ssl::context& c"
+      ],
+      "lineno": 31,
+      "name": "AutoSocket"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "isSecure"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "SSLSocket"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "PlainSocket"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "local_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "remote_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "lowest_layer"
+    },
+    {
+      "args": [
+        "AutoSocket& s"
+      ],
+      "lineno": 61,
+      "name": "swap"
+    },
+    {
+      "args": [
+        "boost::system::error_code& ec"
+      ],
+      "lineno": 67,
+      "name": "cancel"
+    },
+    {
+      "args": [
+        "handshake_type type",
+        "callback cbFunc"
+      ],
+      "lineno": 72,
+      "name": "async_handshake"
+    },
+    {
+      "args": [
+        "ShutdownHandler handler"
+      ],
+      "lineno": 93,
+      "name": "async_shutdown"
+    },
+    {
+      "args": [
+        "Seq const& buffers",
+        "Handler handler"
+      ],
+      "lineno": 106,
+      "name": "async_read_some"
+    },
+    {
+      "args": [
+        "Seq const& buffers",
+        "Condition condition",
+        "Handler handler"
+      ],
+      "lineno": 113,
+      "name": "async_read_until"
+    },
+    {
+      "args": [
+        "boost::asio::basic_streambuf<Allocator>& buffers",
+        "std::string const& delim",
+        "Handler handler"
+      ],
+      "lineno": 120,
+      "name": "async_read_until"
+    },
+    {
+      "args": [
+        "boost::asio::basic_streambuf<Allocator>& buffers",
+        "MatchCondition cond",
+        "Handler handler"
+      ],
+      "lineno": 127,
+      "name": "async_read_until"
+    },
+    {
+      "args": [
+        "Buf const& buffers",
+        "Handler handler"
+      ],
+      "lineno": 134,
+      "name": "async_write"
+    },
+    {
+      "args": [
+        "boost::asio::basic_streambuf<Allocator>& buffers",
+        "Handler handler"
+      ],
+      "lineno": 141,
+      "name": "async_write"
+    },
+    {
+      "args": [
+        "Buf const& buffers",
+        "Condition cond",
+        "Handler handler"
+      ],
+      "lineno": 148,
+      "name": "async_read"
+    },
+    {
+      "args": [
+        "boost::asio::basic_streambuf<Allocator>& buffers",
+        "Condition cond",
+        "Handler handler"
+      ],
+      "lineno": 155,
+      "name": "async_read"
+    },
+    {
+      "args": [
+        "Buf const& buffers",
+        "Handler handler"
+      ],
+      "lineno": 162,
+      "name": "async_read"
+    },
+    {
+      "args": [
+        "Seq const& buffers",
+        "Handler handler"
+      ],
+      "lineno": 169,
+      "name": "async_write_some"
+    },
+    {
+      "args": [
+        "callback cbFunc",
+        "error_code const& ec",
+        "size_t bytesTransferred"
+      ],
+      "lineno": 176,
+      "name": "handle_autodetect"
+    }
+  ],
+  "language": "c header",
+  "namespaces": []
+}

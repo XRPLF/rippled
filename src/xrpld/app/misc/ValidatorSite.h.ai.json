@@ -1,0 +1,170 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "std::optional<beast::Journal> j = std::nullopt",
+        "std::chrono::seconds timeout = std::chrono::seconds{20}"
+      ],
+      "lineno": 41,
+      "name": "ValidatorSite"
+    },
+    {
+      "args": [
+        "std::string uri"
+      ],
+      "lineno": 52,
+      "name": "Site"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Status"
+    },
+    {
+      "args": [
+        "std::string uri_"
+      ],
+      "lineno": 60,
+      "name": "Resource"
+    }
+  ],
+  "description": "This file defines the ValidatorSite class, which manages the set of configured remote sites used to fetch the latest published recommended validator lists for XRPL. It handles fetching, parsing, and updating validator lists from remote sources at regular intervals, with support for JSON parsing, redirects, and thread safety.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/ValidatorSite.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "std::optional<beast::Journal> j = std::nullopt",
+        "std::chrono::seconds timeout = std::chrono::seconds{20}"
+      ],
+      "lineno": 66,
+      "name": "ValidatorSite"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "~ValidatorSite"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& siteURIs"
+      ],
+      "lineno": 75,
+      "name": "load"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "join"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& siteURIs",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 124,
+      "name": "load"
+    },
+    {
+      "args": [
+        "std::lock_guard<std::mutex> const&",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 128,
+      "name": "setTimer"
+    },
+    {
+      "args": [
+        "std::size_t siteIdx",
+        "error_code const& ec"
+      ],
+      "lineno": 132,
+      "name": "onRequestTimeout"
+    },
+    {
+      "args": [
+        "std::size_t siteIdx",
+        "error_code const& ec"
+      ],
+      "lineno": 136,
+      "name": "onTimer"
+    },
+    {
+      "args": [
+        "boost::system::error_code const& ec",
+        "endpoint_type const& endpoint",
+        "detail::response_type const& res",
+        "std::size_t siteIdx"
+      ],
+      "lineno": 140,
+      "name": "onSiteFetch"
+    },
+    {
+      "args": [
+        "boost::system::error_code const& ec",
+        "std::string const& res",
+        "std::size_t siteIdx"
+      ],
+      "lineno": 146,
+      "name": "onTextFetch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Site::Resource> resource",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 151,
+      "name": "makeRequest"
+    },
+    {
+      "args": [
+        "std::string const& res",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 157,
+      "name": "parseJsonResponse"
+    },
+    {
+      "args": [
+        "detail::response_type const& res",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 163,
+      "name": "processRedirect"
+    },
+    {
+      "args": [
+        "std::lock_guard<std::mutex> const&"
+      ],
+      "lineno": 169,
+      "name": "missingSite"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

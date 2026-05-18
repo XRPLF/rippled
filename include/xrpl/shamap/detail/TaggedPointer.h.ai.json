@@ -1,0 +1,165 @@
+{
+  "args": [
+    {
+      "lineno": 41,
+      "name": "RawAllocateTag"
+    },
+    {
+      "lineno": 44,
+      "name": "numChildren"
+    },
+    {
+      "lineno": 56,
+      "name": "other"
+    },
+    {
+      "lineno": 57,
+      "name": "isBranch"
+    },
+    {
+      "lineno": 58,
+      "name": "toAllocate"
+    },
+    {
+      "lineno": 68,
+      "name": "other"
+    },
+    {
+      "lineno": 69,
+      "name": "srcBranches"
+    },
+    {
+      "lineno": 70,
+      "name": "dstBranches"
+    },
+    {
+      "lineno": 71,
+      "name": "toAllocate"
+    },
+    {
+      "lineno": 136,
+      "name": "isBranch"
+    },
+    {
+      "lineno": 137,
+      "name": "f"
+    },
+    {
+      "lineno": 148,
+      "name": "isBranch"
+    },
+    {
+      "lineno": 149,
+      "name": "f"
+    },
+    {
+      "lineno": 161,
+      "name": "isBranch"
+    },
+    {
+      "lineno": 161,
+      "name": "i"
+    },
+    {
+      "lineno": 167,
+      "name": "a"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "RawAllocateTag, std::uint8_t numChildren",
+        "std::uint8_t numChildren",
+        "TaggedPointer&& other, std::uint16_t isBranch, std::uint8_t toAllocate",
+        "TaggedPointer&& other, std::uint16_t srcBranches, std::uint16_t dstBranches, std::uint8_t toAllocate",
+        "TaggedPointer(TaggedPointer const&)",
+        "TaggedPointer(TaggedPointer&&)",
+        "operator=(TaggedPointer&&)"
+      ],
+      "lineno": 19,
+      "name": "TaggedPointer"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "RawAllocateTag"
+    }
+  ],
+  "description": "Implements the TaggedPointer class, which efficiently stores a pointer and a small tag in the low bits to manage sparse arrays of SHAMapHash and SHAMapTreeNode pointers for memory-efficient SHAMap inner nodes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/detail/TaggedPointer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "destroyHashesAndChildren"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "decode"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "capacity"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "isDense"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "getHashesAndChildren"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "getHashes"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "getChildren"
+    },
+    {
+      "args": [
+        "isBranch",
+        "f"
+      ],
+      "lineno": 134,
+      "name": "iterChildren"
+    },
+    {
+      "args": [
+        "isBranch",
+        "f"
+      ],
+      "lineno": 146,
+      "name": "iterNonEmptyChildIndexes"
+    },
+    {
+      "args": [
+        "isBranch",
+        "i"
+      ],
+      "lineno": 159,
+      "name": "getChildIndex"
+    },
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 166,
+      "name": "popcnt16"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

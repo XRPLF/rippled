@@ -1,0 +1,81 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doValidators",
+        "context.app.getValidators()",
+        "ValidatorList::getJson()"
+      ],
+      "entry_point": "doValidators",
+      "purpose": "Returns the current validator list as JSON in response to an RPC call.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "RPC::JsonContext context",
+      "flow": [
+        "RPC framework receives request",
+        "Constructs JsonContext with request data and Application reference",
+        "Passed to doValidators"
+      ],
+      "origin": "Created by the RPC framework when an RPC request is received.",
+      "transformations": [
+        "No transformation in doValidators; context is passed as-is."
+      ],
+      "validated_at": "No validation occurs in doValidators."
+    },
+    {
+      "field": "ValidatorList (from context.app.getValidators())",
+      "flow": [
+        "context.app.getValidators() retrieves ValidatorList",
+        "ValidatorList::getJson() serializes validator data to JSON"
+      ],
+      "origin": "Application singleton holds ValidatorList instance.",
+      "transformations": [
+        "ValidatorList data is serialized to JSON via getJson()."
+      ],
+      "validated_at": "Any validation would occur inside ValidatorList methods, but not in this code."
+    }
+  ],
+  "description": "Implements the doValidators RPC handler, which returns validator information from the application's ValidatorList as JSON.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/Validators.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doValidators"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is a simple passthrough with no input validation or transformation. Test coverage would be in integration or RPC handler tests, likely in files such as 'rpc/handlers/Validators_test.cpp' or broader RPC test suites. There is no direct validation logic to test here; coverage would focus on correct JSON output and error handling if ValidatorList is unavailable. Gaps: No field-level validation or error handling is present in this code path.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

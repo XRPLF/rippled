@@ -1,0 +1,226 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Seq s",
+        "ID i",
+        "Ledger const lgr"
+      ],
+      "lineno": 13,
+      "name": "SpanTip"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "Span"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "Node"
+    },
+    {
+      "args": [],
+      "lineno": 200,
+      "name": "LedgerTrie"
+    }
+  ],
+  "description": "Implements a compressed trie data structure (LedgerTrie) for tracking ledger ancestry and validation support in the XRPL consensus process. Provides efficient insertion, removal, and querying of ledger support, as well as determining the preferred ledger for consensus.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/LedgerTrie.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 28,
+      "name": "ancestor"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "end"
+    },
+    {
+      "args": [
+        "spot"
+      ],
+      "lineno": 69,
+      "name": "from"
+    },
+    {
+      "args": [
+        "spot"
+      ],
+      "lineno": 75,
+      "name": "before"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "startID"
+    },
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 86,
+      "name": "diff"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "tip"
+    },
+    {
+      "args": [
+        "val"
+      ],
+      "lineno": 101,
+      "name": "clamp"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 106,
+      "name": "sub"
+    },
+    {
+      "args": [
+        "o",
+        "s"
+      ],
+      "lineno": 116,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 122,
+      "name": "merge"
+    },
+    {
+      "args": [
+        "child"
+      ],
+      "lineno": 146,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "o",
+        "s"
+      ],
+      "lineno": 157,
+      "name": "operator<<"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 217,
+      "name": "find"
+    },
+    {
+      "args": [
+        "ledger",
+        "parent"
+      ],
+      "lineno": 244,
+      "name": "findByLedgerID"
+    },
+    {
+      "args": [
+        "o",
+        "curr",
+        "offset"
+      ],
+      "lineno": 259,
+      "name": "dumpImpl"
+    },
+    {
+      "args": [
+        "ledger",
+        "count"
+      ],
+      "lineno": 277,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "ledger",
+        "count"
+      ],
+      "lineno": 340,
+      "name": "remove"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 399,
+      "name": "tipSupport"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 412,
+      "name": "branchSupport"
+    },
+    {
+      "args": [
+        "largestIssued"
+      ],
+      "lineno": 441,
+      "name": "getPreferred"
+    },
+    {
+      "args": [],
+      "lineno": 540,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 546,
+      "name": "dump"
+    },
+    {
+      "args": [],
+      "lineno": 552,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 561,
+      "name": "checkInvariants"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 34,
+      "name": "ledger_trie_detail"
+    }
+  ]
+}

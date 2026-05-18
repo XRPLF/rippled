@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "Handler"
+    },
+    {
+      "lineno": 33,
+      "name": "Body"
+    },
+    {
+      "lineno": 33,
+      "name": "Headers"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "remote_endpoint",
+        "request",
+        "stream_ptr",
+        "journal"
+      ],
+      "lineno": 13,
+      "name": "SSLWSPeer"
+    }
+  ],
+  "description": "Defines the SSLWSPeer class template for handling SSL WebSocket peers in the xrpl server, including its constructor and relevant type aliases.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/SSLWSPeer.h",
+  "functions": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "remote_endpoint",
+        "request",
+        "stream_ptr",
+        "journal"
+      ],
+      "lineno": 34,
+      "name": "SSLWSPeer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

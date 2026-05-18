@@ -1,0 +1,227 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "s"
+    },
+    {
+      "lineno": 43,
+      "name": "s"
+    },
+    {
+      "lineno": 49,
+      "name": "s"
+    },
+    {
+      "lineno": 57,
+      "name": "first"
+    },
+    {
+      "lineno": 57,
+      "name": "last"
+    },
+    {
+      "lineno": 66,
+      "name": "first"
+    },
+    {
+      "lineno": 66,
+      "name": "last"
+    },
+    {
+      "lineno": 66,
+      "name": "pred"
+    },
+    {
+      "lineno": 76,
+      "name": "c"
+    },
+    {
+      "lineno": 85,
+      "name": "c"
+    },
+    {
+      "lineno": 85,
+      "name": "pred"
+    },
+    {
+      "lineno": 93,
+      "name": "suite_info const&"
+    },
+    {
+      "lineno": 103,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 134,
+      "name": "name"
+    },
+    {
+      "lineno": 154,
+      "name": "reason"
+    },
+    {
+      "lineno": 163,
+      "name": "s"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "runner"
+    }
+  ],
+  "description": "Defines the interface and implementation for a unit test runner, allowing customization of test reporting and execution of test suites and cases in a thread-safe manner.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/runner.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "runner"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "~runner"
+    },
+    {
+      "args": [
+        "runner const&"
+      ],
+      "lineno": 30,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 36,
+      "name": "arg"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "arg"
+    },
+    {
+      "args": [
+        "suite_info const& s"
+      ],
+      "lineno": 49,
+      "name": "run"
+    },
+    {
+      "args": [
+        "FwdIter first",
+        "FwdIter last"
+      ],
+      "lineno": 57,
+      "name": "run"
+    },
+    {
+      "args": [
+        "FwdIter first",
+        "FwdIter last",
+        "Pred pred"
+      ],
+      "lineno": 66,
+      "name": "run_if"
+    },
+    {
+      "args": [
+        "SequenceContainer const& c"
+      ],
+      "lineno": 76,
+      "name": "run_each"
+    },
+    {
+      "args": [
+        "SequenceContainer const& c",
+        "Pred pred"
+      ],
+      "lineno": 85,
+      "name": "run_each_if"
+    },
+    {
+      "args": [
+        "suite_info const&"
+      ],
+      "lineno": 93,
+      "name": "on_suite_begin"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "on_suite_end"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 103,
+      "name": "on_case_begin"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "on_case_end"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "on_pass"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 118,
+      "name": "on_fail"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 123,
+      "name": "on_log"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 134,
+      "name": "testcase"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "pass"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 154,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 163,
+      "name": "log"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "unit_test"
+    }
+  ]
+}

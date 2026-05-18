@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines protocol and system-specific constants and utility functions for the XRPL (XRP Ledger), including system name, currency code, initial XRP amount, and amendment thresholds.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/SystemParameters.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "systemName"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 25,
+      "name": "isLegalAmount"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 32,
+      "name": "isLegalAmountSigned"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "systemCurrencyCode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

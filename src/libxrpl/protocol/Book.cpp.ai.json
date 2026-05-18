@@ -1,0 +1,238 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "isConsistent(Book)",
+        "isConsistent(book.in)",
+        "isConsistent(book.out)",
+        "book.in != book.out"
+      ],
+      "entry_point": "isConsistent(Book const& book)",
+      "purpose": "Validates that a Book is well-formed: both in and out Issues are consistent and not equal.",
+      "validation_points": [
+        "isConsistent(book.in)",
+        "isConsistent(book.out)",
+        "book.in != book.out"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_string(Book)",
+        "to_string(book.in)",
+        "to_string(book.out)"
+      ],
+      "entry_point": "to_string(Book const& book)",
+      "purpose": "Converts a Book to a string representation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "operator<<(ostream, Book)",
+        "to_string(Book)",
+        "to_string(book.in)",
+        "to_string(book.out)"
+      ],
+      "entry_point": "operator<<(std::ostream&, Book const&)",
+      "purpose": "Streams a Book to an output stream.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "reversed(Book)",
+        "Book(book.out, book.in, book.domain)"
+      ],
+      "entry_point": "reversed(Book const& book)",
+      "purpose": "Returns a new Book with in/out Issues swapped.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "book.in",
+      "flow": [
+        "Book creation",
+        "book.in",
+        "isConsistent(book.in)",
+        "to_string(book.in)",
+        "Book(book.out, book.in, book.domain) in reversed"
+      ],
+      "origin": "Book constructor or deserialization",
+      "transformations": [
+        "Validated for consistency in isConsistent",
+        "Converted to string in to_string",
+        "Swapped with book.out in reversed"
+      ],
+      "validated_at": "isConsistent(book.in) in isConsistent(Book)"
+    },
+    {
+      "field": "book.out",
+      "flow": [
+        "Book creation",
+        "book.out",
+        "isConsistent(book.out)",
+        "to_string(book.out)",
+        "Book(book.out, book.in, book.domain) in reversed"
+      ],
+      "origin": "Book constructor or deserialization",
+      "transformations": [
+        "Validated for consistency in isConsistent",
+        "Converted to string in to_string",
+        "Swapped with book.in in reversed"
+      ],
+      "validated_at": "isConsistent(book.out) in isConsistent(Book)"
+    },
+    {
+      "field": "book.domain",
+      "flow": [
+        "Book creation",
+        "book.domain",
+        "Book(book.out, book.in, book.domain) in reversed"
+      ],
+      "origin": "Book constructor or deserialization",
+      "transformations": [
+        "Passed through unchanged in reversed"
+      ],
+      "validated_at": "Not validated in this file"
+    }
+  ],
+  "description": "Provides utility functions for handling and representing 'Book' objects in the XRPL protocol, including consistency checks, string conversion, stream output, and reversal.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book.in",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isConsistent (xrpl::isConsistent) at isConsistent(Book const& book)",
+      "issue_pattern": "Missing empty string validation for book.in",
+      "why_false_positive": "isConsistent (xrpl::isConsistent) validates book.in for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book.out",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isConsistent (xrpl::isConsistent) at isConsistent(Book const& book)",
+      "issue_pattern": "Missing empty string validation for book.out",
+      "why_false_positive": "isConsistent (xrpl::isConsistent) validates book.out for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book.in != book.out",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "operator!= (likely Issue::operator!=) at isConsistent(Book const& book)",
+      "issue_pattern": "Missing empty string validation for book.in != book.out",
+      "why_false_positive": "operator!= (likely Issue::operator!=) validates book.in != book.out for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Book.cpp",
+  "functions": [
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 7,
+      "name": "isConsistent"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 12,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 17,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 23,
+      "name": "reversed"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code in Book.cpp is utility/logic code and does not contain tests itself. Validation logic (isConsistent) is likely tested in higher-level Book or Issue tests. Look for tests in files like 'Book_test.cpp', 'Issue_test.cpp', or protocol-level tests in the test suite. Gaps: No direct evidence here of tests for reversed(Book), operator<<, or to_string(Book). Validation of book.domain is not present in this file. If Issue::isConsistent or Issue::operator!= are not thoroughly tested, Book validation may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (xrpl::isConsistent, operator!=)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false)",
+      "field": "book.in",
+      "location": "isConsistent(Book const& book)",
+      "validated_by": "isConsistent (xrpl::isConsistent)",
+      "validates": [
+        "book.in is consistent according to isConsistent(Issue const&)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false)",
+      "field": "book.out",
+      "location": "isConsistent(Book const& book)",
+      "validated_by": "isConsistent (xrpl::isConsistent)",
+      "validates": [
+        "book.out is consistent according to isConsistent(Issue const&)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false)",
+      "field": "book.in != book.out",
+      "location": "isConsistent(Book const& book)",
+      "validated_by": "operator!= (likely Issue::operator!=)",
+      "validates": [
+        "book.in and book.out are not the same Issue"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

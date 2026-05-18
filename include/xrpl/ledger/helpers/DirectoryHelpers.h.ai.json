@@ -1,0 +1,142 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides helper functions for iterating and interacting with directory objects in the XRPL ledger, including legacy directory traversal functions and utilities for iterating over account owner directories.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/DirectoryHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 16,
+      "name": "internalDirNext"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 49,
+      "name": "internalDirFirst"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 80,
+      "name": "cdirFirst"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 87,
+      "name": "dirFirst"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 101,
+      "name": "cdirNext"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 108,
+      "name": "dirNext"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "f"
+      ],
+      "lineno": 120,
+      "name": "forEachItem"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "after",
+        "hint",
+        "limit",
+        "f"
+      ],
+      "lineno": 126,
+      "name": "forEachItemAfter"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "f"
+      ],
+      "lineno": 136,
+      "name": "forEachItem"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "after",
+        "hint",
+        "limit",
+        "f"
+      ],
+      "lineno": 144,
+      "name": "forEachItemAfter"
+    },
+    {
+      "args": [
+        "view",
+        "k"
+      ],
+      "lineno": 155,
+      "name": "dirIsEmpty"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 160,
+      "name": "describeOwnerDir"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ]
+}

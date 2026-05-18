@@ -1,0 +1,114 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMap::visitNodes / SHAMap::fetchNode / SHAMap::getMissingNodes",
+        "AccountStateSF::gotNode"
+      ],
+      "entry_point": "AccountStateSF::gotNode",
+      "purpose": "Handles receipt of a node's data during SHAMap traversal or fetch, storing it in the node database.",
+      "validation_points": [
+        "Upstream: SHAMap logic may validate node data before calling gotNode, but gotNode itself does not perform validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::getNode / SHAMap::fetchNode / SHAMap::getMissingNodes",
+        "AccountStateSF::getNode"
+      ],
+      "entry_point": "AccountStateSF::getNode",
+      "purpose": "Retrieves node data from the fetch pack for SHAMap reconstruction or validation.",
+      "validation_points": [
+        "Upstream: SHAMap may validate the returned data, but getNode itself does not perform validation."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "nodeData (Blob)",
+      "flow": [
+        "SHAMap fetches node data (from network or disk)",
+        "nodeData passed to AccountStateSF::gotNode",
+        "db_.store(hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq)"
+      ],
+      "origin": "Passed into AccountStateSF::gotNode by SHAMap traversal/fetch logic",
+      "transformations": [
+        "nodeData is moved (std::move) into the database store method; no validation or transformation in gotNode"
+      ],
+      "validated_at": "Not validated in gotNode; assumed validated upstream in SHAMap or network layer"
+    },
+    {
+      "field": "nodeHash (SHAMapHash)",
+      "flow": [
+        "SHAMap computes or receives nodeHash",
+        "nodeHash passed to AccountStateSF::gotNode or getNode",
+        "Converted to uint256 via as_uint256()",
+        "Used as key in db_.store or fp_.getFetchPack"
+      ],
+      "origin": "Passed into AccountStateSF::gotNode and getNode by SHAMap logic",
+      "transformations": [
+        "Type conversion from SHAMapHash to uint256"
+      ],
+      "validated_at": "Not validated in AccountStateSF; assumed valid from SHAMap context"
+    },
+    {
+      "field": "ledgerSeq (std::uint32_t)",
+      "flow": [
+        "SHAMap determines ledger sequence",
+        "ledgerSeq passed to AccountStateSF::gotNode",
+        "Used as argument in db_.store"
+      ],
+      "origin": "Passed into AccountStateSF::gotNode by SHAMap logic",
+      "transformations": [
+        "No transformation"
+      ],
+      "validated_at": "Not validated in AccountStateSF"
+    }
+  ],
+  "description": "Implements methods for AccountStateSF to handle storing and retrieving account state nodes in the ledger, interacting with a database and fetch pack.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/AccountStateSF.cpp",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "SHAMapHash const& nodeHash",
+        "std::uint32_t ledgerSeq",
+        "Blob&& nodeData",
+        "SHAMapNodeType"
+      ],
+      "lineno": 5,
+      "name": "AccountStateSF::gotNode"
+    },
+    {
+      "args": [
+        "SHAMapHash const& nodeHash"
+      ],
+      "lineno": 13,
+      "name": "AccountStateSF::getNode"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Direct unit tests for AccountStateSF are unlikely; coverage is typically indirect via SHAMap and ledger synchronization tests. Likely test files: SHAMap_test.cpp, LedgerReplay_test.cpp, LedgerMaster_test.cpp, FetchPack_test.cpp. Gaps: No direct validation or error handling in AccountStateSF methods; relies on upstream validation. Edge cases (e.g., corrupt nodeData, invalid nodeHash) are not handled or tested at this level.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

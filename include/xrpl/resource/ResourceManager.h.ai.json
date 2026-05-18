@@ -1,0 +1,78 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "address"
+    },
+    {
+      "lineno": 22,
+      "name": "address"
+    },
+    {
+      "lineno": 23,
+      "name": "proxy"
+    },
+    {
+      "lineno": 24,
+      "name": "forwardedFor"
+    },
+    {
+      "lineno": 27,
+      "name": "address"
+    },
+    {
+      "lineno": 30,
+      "name": "address"
+    },
+    {
+      "lineno": 39,
+      "name": "threshold"
+    },
+    {
+      "lineno": 45,
+      "name": "origin"
+    },
+    {
+      "lineno": 45,
+      "name": "gossip"
+    },
+    {
+      "lineno": 54,
+      "name": "collector"
+    },
+    {
+      "lineno": 54,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Manager"
+    }
+  ],
+  "description": "Defines the xrpl::Resource::Manager class, an abstract interface for tracking load and resource consumption by endpoints, including methods for creating consumers, exporting/importing consumer data, and reporting usage.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/ResourceManager.h",
+  "functions": [
+    {
+      "args": [
+        "collector",
+        "journal"
+      ],
+      "lineno": 54,
+      "name": "make_Manager"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "Resource"
+    }
+  ]
+}

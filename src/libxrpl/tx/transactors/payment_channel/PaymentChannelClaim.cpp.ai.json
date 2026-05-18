@@ -1,0 +1,619 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    },
+    {
+      "lineno": 67,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PaymentChannelClaim::preflight"
+      ],
+      "entry_point": "PaymentChannelClaim::preflight",
+      "purpose": "Performs stateless validation of PaymentChannelClaim transaction fields before ledger access.",
+      "validation_points": [
+        "sfBalance: isXRP, > 0",
+        "sfAmount: isXRP, > 0",
+        "sfBalance <= sfAmount",
+        "Flags: tfClose and tfRenew not both set",
+        "sfSignature: present with sfPublicKey and sfBalance, signature verification",
+        "Credential fields: credentials::checkFields"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentChannelClaim::preclaim",
+        "Transactor::preclaim (if featureCredentials not enabled)",
+        "credentials::valid (if featureCredentials enabled)"
+      ],
+      "entry_point": "PaymentChannelClaim::preclaim",
+      "purpose": "Performs contextual validation (ledger state, credentials) before applying transaction.",
+      "validation_points": [
+        "credentials::valid: credential field validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentChannelClaim::doApply",
+        "closeChannel (if expired)",
+        "Field checks and signature checks"
+      ],
+      "entry_point": "PaymentChannelClaim::doApply",
+      "purpose": "Applies the PaymentChannelClaim transaction to the ledger, enforcing business rules and updating state.",
+      "validation_points": [
+        "Channel existence",
+        "Expiration/cancelAfter checks",
+        "Account permissions (src/dst)",
+        "Signature presence and correctness",
+        "Balance/funds checks"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfBalance",
+      "flow": [
+        "Transaction JSON",
+        "preflight: checked for isXRP, > 0",
+        "preflight: compared to sfAmount",
+        "preflight: used in signature verification",
+        "doApply: compared to channel balance/funds"
+      ],
+      "origin": "ctx.tx[~sfBalance] (transaction JSON)",
+      "transformations": [
+        "Converted to XRPAmount",
+        "Compared to zero",
+        "Compared to sfAmount",
+        "Used in signature message"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "Transaction JSON",
+        "preflight: checked for isXRP, > 0",
+        "preflight: compared to sfBalance",
+        "preflight: used in signature verification"
+      ],
+      "origin": "ctx.tx[~sfAmount] (transaction JSON)",
+      "transformations": [
+        "Converted to XRPAmount",
+        "Compared to zero",
+        "Compared to sfBalance"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfSignature",
+      "flow": [
+        "Transaction JSON",
+        "preflight: checked for presence",
+        "preflight: used in signature verification",
+        "doApply: checked for presence if dst"
+      ],
+      "origin": "ctx.tx[~sfSignature] (transaction JSON)",
+      "transformations": [
+        "Used as input to verify()"
+      ],
+      "validated_at": "preflight, doApply"
+    },
+    {
+      "field": "sfPublicKey",
+      "flow": [
+        "Transaction JSON",
+        "preflight: checked for presence if sfSignature present",
+        "preflight: checked for type",
+        "preflight: used to construct PublicKey",
+        "doApply: compared to channel's public key"
+      ],
+      "origin": "ctx.tx[~sfPublicKey] (transaction JSON)",
+      "transformations": [
+        "Type checked",
+        "Constructed as PublicKey"
+      ],
+      "validated_at": "preflight, doApply"
+    },
+    {
+      "field": "Flags (tfClose, tfRenew)",
+      "flow": [
+        "Transaction JSON",
+        "preflight: checked for both tfClose and tfRenew set"
+      ],
+      "origin": "ctx.tx.getFlags() (transaction JSON)",
+      "transformations": [
+        "Bitmask checked"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfCredentialIDs",
+      "flow": [
+        "Transaction JSON",
+        "checkExtraFeatures: checked for featureCredentials enabled"
+      ],
+      "origin": "ctx.tx.isFieldPresent(sfCredentialIDs) (transaction JSON)",
+      "transformations": [
+        "Presence checked"
+      ],
+      "validated_at": "checkExtraFeatures"
+    }
+  ],
+  "description": "Implements the PaymentChannelClaim transaction logic for the XRPL, including preflight, preclaim, and apply steps for payment channel claims.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBalance",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBalance validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for sfBalance",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates sfBalance automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmount validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for sfAmount",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates sfAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSignature validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for sfSignature",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates sfSignature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPublicKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPublicKey validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for sfPublicKey",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates sfPublicKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCredentialIDs validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for sfCredentialIDs",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates sfCredentialIDs automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "flags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field flags validated by xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+      "issue_pattern": "Missing validation for flags",
+      "why_false_positive": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification validates flags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP, *bal <= beast::zero at preflight",
+      "issue_pattern": "Missing empty string validation for sfBalance",
+      "why_false_positive": "isXRP, *bal <= beast::zero validates sfBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP, *amt <= beast::zero at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isXRP, *amt <= beast::zero validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance, sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "*bal > *amt at preflight",
+      "issue_pattern": "Missing empty string validation for sfBalance, sfAmount",
+      "why_false_positive": "*bal > *amt validates sfBalance, sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Flags (tfClose, tfRenew)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "flags & tfClose, flags & tfRenew at preflight",
+      "issue_pattern": "Missing empty string validation for Flags (tfClose, tfRenew)",
+      "why_false_positive": "flags & tfClose, flags & tfRenew validates Flags (tfClose, tfRenew) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[~sfSignature] at preflight",
+      "issue_pattern": "Missing empty string validation for sfSignature",
+      "why_false_positive": "ctx.tx[~sfSignature] validates sfSignature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPublicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "publicKeyType(ctx.tx[sfPublicKey]) at preflight",
+      "issue_pattern": "Missing empty string validation for sfPublicKey",
+      "why_false_positive": "publicKeyType(ctx.tx[sfPublicKey]) validates sfPublicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "verify(pk, msg.slice(), *sig) at preflight",
+      "issue_pattern": "Missing empty string validation for sfSignature",
+      "why_false_positive": "verify(pk, msg.slice(), *sig) validates sfSignature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance, sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "reqBalance > authAmt at preflight",
+      "issue_pattern": "Missing empty string validation for sfBalance, sfAmount",
+      "why_false_positive": "reqBalance > authAmt validates sfBalance, sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials) at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfCredentialIDs",
+      "why_false_positive": "!ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials) validates sfCredentialIDs for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "credentials fields",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::checkFields(ctx.tx, ctx.j) at preflight",
+      "issue_pattern": "Missing empty string validation for credentials fields",
+      "why_false_positive": "credentials::checkFields(ctx.tx, ctx.j) validates credentials fields for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "credentials validity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j) at preclaim",
+      "issue_pattern": "Missing empty string validation for credentials validity",
+      "why_false_positive": "credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j) validates credentials validity for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/payment_channel/PaymentChannelClaim.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "PaymentChannelClaim::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const&"
+      ],
+      "lineno": 16,
+      "name": "PaymentChannelClaim::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "PaymentChannelClaim::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 67,
+      "name": "PaymentChannelClaim::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "PaymentChannelClaim::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "PaymentChannelClaim is typically tested in integration and unit tests under the rippled codebase, especially in files like 'test/tx/PaymentChannel_test.cpp', 'test/tx/PaymentChannelClaim_test.cpp', and possibly 'test/tx/Transactor_test.cpp'. These tests cover valid/invalid claims, signature checks, balance/amount edge cases, and flag combinations. However, gaps may exist for edge cases involving credential fields (sfCredentialIDs), feature flag transitions (featureCredentials), and malformed public keys or signatures. Some negative paths (e.g., both tfClose and tfRenew set, or missing required fields when signature is present) may not be exhaustively tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfBalance",
+      "sfAmount",
+      "sfSignature",
+      "sfPublicKey",
+      "sfCredentialIDs",
+      "flags"
+    ],
+    "framework": "xrpl protocol custom validation, credentials::checkFields/valid, cryptographic signature verification",
+    "validation_layer": "business_logic (preflight/preclaim), some feature gating"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfBalance",
+      "location": "preflight",
+      "validated_by": "isXRP, *bal <= beast::zero",
+      "validates": [
+        "must be XRP",
+        "must be > 0"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "isXRP, *amt <= beast::zero",
+      "validates": [
+        "must be XRP",
+        "must be > 0"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfBalance, sfAmount",
+      "location": "preflight",
+      "validated_by": "*bal > *amt",
+      "validates": [
+        "balance cannot exceed amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "Flags (tfClose, tfRenew)",
+      "location": "preflight",
+      "validated_by": "flags & tfClose, flags & tfRenew",
+      "validates": [
+        "tfClose and tfRenew cannot both be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfSignature",
+      "location": "preflight",
+      "validated_by": "ctx.tx[~sfSignature]",
+      "validates": [
+        "if signature is present, public key and balance must be present"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfPublicKey",
+      "location": "preflight",
+      "validated_by": "publicKeyType(ctx.tx[sfPublicKey])",
+      "validates": [
+        "public key must be valid type"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SIGNATURE",
+      "field": "sfSignature",
+      "location": "preflight",
+      "validated_by": "verify(pk, msg.slice(), *sig)",
+      "validates": [
+        "signature must be valid for message"
+      ],
+      "validation_type": "cryptographic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfBalance, sfAmount",
+      "location": "preflight",
+      "validated_by": "reqBalance > authAmt",
+      "validates": [
+        "requested balance cannot exceed authorized amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (returns false, used upstream)",
+      "field": "sfCredentialIDs",
+      "location": "checkExtraFeatures",
+      "validated_by": "!ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials)",
+      "validates": [
+        "credential IDs only allowed if feature enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "various (depends on credentials::checkFields)",
+      "field": "credentials fields",
+      "location": "preflight",
+      "validated_by": "credentials::checkFields(ctx.tx, ctx.j)",
+      "validates": [
+        "credential fields must be valid"
+      ],
+      "validation_type": "business_logic|custom"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "various (depends on credentials::valid)",
+      "field": "credentials validity",
+      "location": "preclaim",
+      "validated_by": "credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j)",
+      "validates": [
+        "credential must be valid in context"
+      ],
+      "validation_type": "business_logic|custom"
+    }
+  ]
+}

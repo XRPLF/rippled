@@ -1,0 +1,101 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC framework dispatches to doLogRotate",
+        "doLogRotate",
+        "context.app.getPerfLog().rotate()",
+        "context.app.getLogs().rotate()",
+        "RPC::makeObjectValue"
+      ],
+      "entry_point": "doLogRotate",
+      "purpose": "Handles the 'log_rotate' RPC command, rotating log files and returning the result.",
+      "validation_points": [
+        "RPC framework (before doLogRotate): likely validates admin permissions and request structure",
+        "No explicit validation in doLogRotate itself"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC framework receives request",
+        "Constructs JsonContext (context)",
+        "Passes context to doLogRotate"
+      ],
+      "origin": "RPC::JsonContext (constructed by RPC framework from incoming HTTP/JSON-RPC request)",
+      "transformations": [
+        "No transformation in doLogRotate; context is used as-is"
+      ],
+      "validated_at": "Likely validated by RPC framework before handler is called (e.g., admin access, request shape)"
+    },
+    {
+      "field": "context.app",
+      "flow": [
+        "context",
+        "context.app",
+        "context.app.getPerfLog().rotate()",
+        "context.app.getLogs().rotate()"
+      ],
+      "origin": "Application instance (injected into context by framework)",
+      "transformations": [
+        "Used to access logging subsystems; no transformation"
+      ],
+      "validated_at": "Not validated in doLogRotate; assumed valid by design"
+    },
+    {
+      "field": "RPC response",
+      "flow": [
+        "context.app.getLogs().rotate()",
+        "RPC::makeObjectValue",
+        "Returned as JSON to client"
+      ],
+      "origin": "Result of context.app.getLogs().rotate()",
+      "transformations": [
+        "Result is wrapped in a JSON object"
+      ],
+      "validated_at": "No validation of output in doLogRotate"
+    }
+  ],
+  "description": "Implements the doLogRotate RPC handler, which rotates log files and performance logs in the XRPL application.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/log/LogRotate.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doLogRotate"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is likely tested via integration or functional tests that exercise the 'log_rotate' RPC command, typically in files like 'rpc-admin_test.cpp', 'log_test.cpp', or similar. There is no evidence of unit tests for doLogRotate itself, and no explicit validation logic in the function. Validation (such as admin access) is expected to be enforced by the RPC framework before this handler is invoked. Gaps: No direct unit test coverage for doLogRotate; relies on higher-level tests and framework validation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

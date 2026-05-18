@@ -1,0 +1,152 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "is_contiguous_container"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "is_contiguous_container<Container, std::void_t<...>>"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "is_contiguous_container<Slice>"
+    },
+    {
+      "args": [
+        "void const* data, VoidHelper",
+        "std::uint64_t b",
+        "std::string_view sv",
+        "Container const& c"
+      ],
+      "lineno": 34,
+      "name": "base_uint"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "base_uint::VoidHelper"
+    },
+    {
+      "args": [],
+      "lineno": 464,
+      "name": "is_uniquely_represented<xrpl::base_uint<Bits, Tag>>"
+    }
+  ],
+  "description": "Defines the xrpl::base_uint template class for fixed-width big-endian unsigned integers (128, 160, 192, 256 bits) used in XRP Ledger, along with related operators, utilities, and type aliases.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/base_uint.h",
+  "functions": [
+    {
+      "args": [
+        "Hasher& h",
+        "base_uint const& a"
+      ],
+      "lineno": 232,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& lhs",
+        "base_uint<Bits, Tag> const& rhs"
+      ],
+      "lineno": 370,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& lhs",
+        "base_uint<Bits, Tag> const& rhs"
+      ],
+      "lineno": 384,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a",
+        "std::uint64_t b"
+      ],
+      "lineno": 392,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a",
+        "base_uint<Bits, Tag> const& b"
+      ],
+      "lineno": 399,
+      "name": "operator^"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a",
+        "base_uint<Bits, Tag> const& b"
+      ],
+      "lineno": 405,
+      "name": "operator&"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a",
+        "base_uint<Bits, Tag> const& b"
+      ],
+      "lineno": 411,
+      "name": "operator|"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a",
+        "base_uint<Bits, Tag> const& b"
+      ],
+      "lineno": 417,
+      "name": "operator+"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a"
+      ],
+      "lineno": 423,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& a"
+      ],
+      "lineno": 429,
+      "name": "to_short_string"
+    },
+    {
+      "args": [
+        "std::ostream& out",
+        "base_uint<Bits, Tag> const& u"
+      ],
+      "lineno": 435,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 441,
+      "name": "extract"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "detail"
+    },
+    {
+      "lineno": 461,
+      "name": "beast"
+    }
+  ]
+}

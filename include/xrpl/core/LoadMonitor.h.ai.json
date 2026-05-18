@@ -1,0 +1,81 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 11,
+      "name": "LoadMonitor"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "Stats"
+    }
+  ],
+  "description": "Defines the LoadMonitor class, which monitors load levels and response times, providing statistics and overload detection for the XRPL system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/LoadMonitor.h",
+  "functions": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 14,
+      "name": "LoadMonitor"
+    },
+    {
+      "args": [
+        "LoadEvent const& sample"
+      ],
+      "lineno": 16,
+      "name": "addLoadSample"
+    },
+    {
+      "args": [
+        "int count",
+        "std::chrono::milliseconds latency"
+      ],
+      "lineno": 19,
+      "name": "addSamples"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds avg",
+        "std::chrono::milliseconds pk"
+      ],
+      "lineno": 22,
+      "name": "setTargetLatency"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds avg",
+        "std::chrono::milliseconds peak"
+      ],
+      "lineno": 25,
+      "name": "isOverTarget"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getStats"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "isOver"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "update"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

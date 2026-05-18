@@ -1,0 +1,117 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "app"
+    },
+    {
+      "lineno": 13,
+      "name": "journal"
+    },
+    {
+      "lineno": 13,
+      "name": "collector"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal journal",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 11,
+      "name": "PathRequestManager"
+    }
+  ],
+  "description": "Defines the PathRequestManager class, which manages and updates pathfinding requests in the XRPL server, handling both new and legacy path requests, asset caching, and event reporting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/PathRequestManager.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal journal",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 12,
+      "name": "PathRequestManager"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger"
+      ],
+      "lineno": 25,
+      "name": "updateAll"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "requestsPending"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "bool authoritative"
+      ],
+      "lineno": 32,
+      "name": "getAssetCache"
+    },
+    {
+      "args": [
+        "std::shared_ptr<InfoSub> const& subscriber",
+        "std::shared_ptr<ReadView const> const& ledger",
+        "Json::Value const& request"
+      ],
+      "lineno": 38,
+      "name": "makePathRequest"
+    },
+    {
+      "args": [
+        "PathRequest::pointer& req",
+        "std::function<void(void)> completion",
+        "Resource::Consumer& consumer",
+        "std::shared_ptr<ReadView const> const& inLedger",
+        "Json::Value const& request"
+      ],
+      "lineno": 45,
+      "name": "makeLegacyPathRequest"
+    },
+    {
+      "args": [
+        "Resource::Consumer& consumer",
+        "std::shared_ptr<ReadView const> const& inLedger",
+        "Json::Value const& request"
+      ],
+      "lineno": 53,
+      "name": "doLegacyPathRequest"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds ms"
+      ],
+      "lineno": 60,
+      "name": "reportFast"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds ms"
+      ],
+      "lineno": 65,
+      "name": "reportFull"
+    },
+    {
+      "args": [
+        "PathRequest::pointer const&"
+      ],
+      "lineno": 71,
+      "name": "insertPathRequest"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

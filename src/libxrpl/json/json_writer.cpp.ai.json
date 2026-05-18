@@ -1,0 +1,647 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ch"
+    },
+    {
+      "lineno": 16,
+      "name": "str"
+    },
+    {
+      "lineno": 27,
+      "name": "value"
+    },
+    {
+      "lineno": 27,
+      "name": "current"
+    },
+    {
+      "lineno": 39,
+      "name": "value"
+    },
+    {
+      "lineno": 54,
+      "name": "value"
+    },
+    {
+      "lineno": 66,
+      "name": "value"
+    },
+    {
+      "lineno": 81,
+      "name": "value"
+    },
+    {
+      "lineno": 85,
+      "name": "value"
+    },
+    {
+      "lineno": 134,
+      "name": "root"
+    },
+    {
+      "lineno": 140,
+      "name": "value"
+    },
+    {
+      "lineno": 189,
+      "name": "root"
+    },
+    {
+      "lineno": 196,
+      "name": "value"
+    },
+    {
+      "lineno": 241,
+      "name": "value"
+    },
+    {
+      "lineno": 277,
+      "name": "value"
+    },
+    {
+      "lineno": 303,
+      "name": "value"
+    },
+    {
+      "lineno": 322,
+      "name": "value"
+    },
+    {
+      "lineno": 326,
+      "name": "value"
+    },
+    {
+      "lineno": 330,
+      "name": "value"
+    },
+    {
+      "lineno": 339,
+      "name": "indentation"
+    },
+    {
+      "lineno": 343,
+      "name": "out"
+    },
+    {
+      "lineno": 343,
+      "name": "root"
+    },
+    {
+      "lineno": 350,
+      "name": "value"
+    },
+    {
+      "lineno": 395,
+      "name": "value"
+    },
+    {
+      "lineno": 431,
+      "name": "value"
+    },
+    {
+      "lineno": 457,
+      "name": "value"
+    },
+    {
+      "lineno": 478,
+      "name": "value"
+    },
+    {
+      "lineno": 482,
+      "name": "value"
+    },
+    {
+      "lineno": 486,
+      "name": "value"
+    },
+    {
+      "lineno": 492,
+      "name": "sout"
+    },
+    {
+      "lineno": 492,
+      "name": "root"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "FastWriter"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "StyledWriter"
+    },
+    {
+      "args": [
+        "indentation"
+      ],
+      "lineno": 339,
+      "name": "StyledStreamWriter"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "valueToQuotedString",
+        "strpbrk/containsControlCharacter",
+        "isControlCharacter"
+      ],
+      "entry_point": "valueToQuotedString",
+      "purpose": "Serializes a C-string to a JSON-quoted string, escaping special/control characters.",
+      "validation_points": [
+        "strpbrk(value, ...) checks for special characters",
+        "containsControlCharacter(value) checks for control characters via isControlCharacter"
+      ]
+    },
+    {
+      "call_chain": [
+        "valueToString(Int)",
+        "uintToString",
+        "XRPL_ASSERT"
+      ],
+      "entry_point": "valueToString(Int)",
+      "purpose": "Converts an integer to a string, handling negatives and buffer overflow.",
+      "validation_points": [
+        "XRPL_ASSERT(current >= buffer) ensures no buffer overflow"
+      ]
+    },
+    {
+      "call_chain": [
+        "valueToString(UInt)",
+        "uintToString",
+        "XRPL_ASSERT"
+      ],
+      "entry_point": "valueToString(UInt)",
+      "purpose": "Converts an unsigned integer to a string, checks buffer bounds.",
+      "validation_points": [
+        "XRPL_ASSERT(current >= buffer) ensures no buffer overflow"
+      ]
+    },
+    {
+      "call_chain": [
+        "containsControlCharacter",
+        "isControlCharacter"
+      ],
+      "entry_point": "containsControlCharacter",
+      "purpose": "Checks if a string contains any control characters.",
+      "validation_points": [
+        "isControlCharacter(ch) validates each character"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "char ch",
+      "flow": [
+        "input to isControlCharacter",
+        "returns bool"
+      ],
+      "origin": "Passed to isControlCharacter (from containsControlCharacter or elsewhere)",
+      "transformations": [
+        "Checks if ch > 0 && ch <= 0x1F"
+      ],
+      "validated_at": "isControlCharacter"
+    },
+    {
+      "field": "char const* str",
+      "flow": [
+        "input to containsControlCharacter",
+        "iterates over each char",
+        "calls isControlCharacter"
+      ],
+      "origin": "Passed to containsControlCharacter (from valueToQuotedString or elsewhere)",
+      "transformations": [
+        "Iterates string, checks each char"
+      ],
+      "validated_at": "containsControlCharacter (calls isControlCharacter)"
+    },
+    {
+      "field": "char const* value",
+      "flow": [
+        "input to valueToQuotedString",
+        "checked by strpbrk for special chars",
+        "checked by containsControlCharacter for control chars",
+        "if clean, wrapped in quotes",
+        "if not, escapes applied and wrapped in quotes"
+      ],
+      "origin": "Input to valueToQuotedString",
+      "transformations": [
+        "Escaping of special/control characters",
+        "String concatenation"
+      ],
+      "validated_at": "strpbrk and containsControlCharacter"
+    },
+    {
+      "field": "buffer pointer (char* current)",
+      "flow": [
+        "buffer allocated",
+        "current initialized to buffer+size",
+        "uintToString writes backwards",
+        "XRPL_ASSERT checks current >= buffer",
+        "returns string from current"
+      ],
+      "origin": "Stack buffer in valueToString(Int/UInt)",
+      "transformations": [
+        "Digits written in reverse order",
+        "Negative sign prepended if needed"
+      ],
+      "validated_at": "XRPL_ASSERT"
+    }
+  ],
+  "description": "Implements JSON value-to-string serialization and pretty-printing for the XRPL project's JSON library, including FastWriter, StyledWriter, and StyledStreamWriter for various output formats.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "char ch (input character)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isControlCharacter (static function) at isControlCharacter",
+      "issue_pattern": "Missing empty string validation for char ch (input character)",
+      "why_false_positive": "isControlCharacter (static function) validates char ch (input character) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "char ch (input character)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isControlCharacter (static function) at isControlCharacter",
+      "issue_pattern": "Missing range validation for char ch (input character)",
+      "why_false_positive": "isControlCharacter (static function) validates char ch (input character) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "char const* str (input string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "containsControlCharacter (static function) at containsControlCharacter",
+      "issue_pattern": "Missing empty string validation for char const* str (input string)",
+      "why_false_positive": "containsControlCharacter (static function) validates char const* str (input string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "char const* str (input string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "containsControlCharacter (static function) at containsControlCharacter",
+      "issue_pattern": "Missing format validation for char const* str (input string)",
+      "why_false_positive": "containsControlCharacter (static function) validates char const* str (input string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "buffer overflow (internal buffer pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at valueToString(Int), valueToString(UInt)",
+      "issue_pattern": "Missing empty string validation for buffer overflow (internal buffer pointer)",
+      "why_false_positive": "XRPL_ASSERT macro validates buffer overflow (internal buffer pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "char const* value (input string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "strpbrk, containsControlCharacter at valueToQuotedString",
+      "issue_pattern": "Missing empty string validation for char const* value (input string)",
+      "why_false_positive": "strpbrk, containsControlCharacter validates char const* value (input string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "char const* value (input string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "strpbrk, containsControlCharacter at valueToQuotedString",
+      "issue_pattern": "Missing format validation for char const* value (input string)",
+      "why_false_positive": "strpbrk, containsControlCharacter validates char const* value (input string) format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/json_writer.cpp",
+  "functions": [
+    {
+      "args": [
+        "ch"
+      ],
+      "lineno": 11,
+      "name": "isControlCharacter"
+    },
+    {
+      "args": [
+        "str"
+      ],
+      "lineno": 16,
+      "name": "containsControlCharacter"
+    },
+    {
+      "args": [
+        "value",
+        "current"
+      ],
+      "lineno": 27,
+      "name": "uintToString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 39,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 54,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 66,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 81,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 85,
+      "name": "valueToQuotedString"
+    },
+    {
+      "args": [
+        "root"
+      ],
+      "lineno": 134,
+      "name": "FastWriter::write"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 140,
+      "name": "FastWriter::writeValue"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "StyledWriter::StyledWriter"
+    },
+    {
+      "args": [
+        "root"
+      ],
+      "lineno": 189,
+      "name": "StyledWriter::write"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 196,
+      "name": "StyledWriter::writeValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 241,
+      "name": "StyledWriter::writeArrayValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 277,
+      "name": "StyledWriter::isMultilineArray"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 303,
+      "name": "StyledWriter::pushValue"
+    },
+    {
+      "args": [],
+      "lineno": 311,
+      "name": "StyledWriter::writeIndent"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 322,
+      "name": "StyledWriter::writeWithIndent"
+    },
+    {
+      "args": [],
+      "lineno": 326,
+      "name": "StyledWriter::indent"
+    },
+    {
+      "args": [],
+      "lineno": 330,
+      "name": "StyledWriter::unindent"
+    },
+    {
+      "args": [
+        "indentation"
+      ],
+      "lineno": 339,
+      "name": "StyledStreamWriter::StyledStreamWriter"
+    },
+    {
+      "args": [
+        "out",
+        "root"
+      ],
+      "lineno": 343,
+      "name": "StyledStreamWriter::write"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 350,
+      "name": "StyledStreamWriter::writeValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 395,
+      "name": "StyledStreamWriter::writeArrayValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 431,
+      "name": "StyledStreamWriter::isMultilineArray"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 457,
+      "name": "StyledStreamWriter::pushValue"
+    },
+    {
+      "args": [],
+      "lineno": 465,
+      "name": "StyledStreamWriter::writeIndent"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 478,
+      "name": "StyledStreamWriter::writeWithIndent"
+    },
+    {
+      "args": [],
+      "lineno": 482,
+      "name": "StyledStreamWriter::indent"
+    },
+    {
+      "args": [],
+      "lineno": 486,
+      "name": "StyledStreamWriter::unindent"
+    },
+    {
+      "args": [
+        "sout",
+        "root"
+      ],
+      "lineno": 492,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "The code is low-level and likely tested indirectly via higher-level JSON serialization/deserialization tests. Direct unit tests for valueToString, valueToQuotedString, and control character handling may exist in test suites for the JSON library (e.g., json_writer_test.cpp, json_value_test.cpp). However, buffer overflow checks (XRPL_ASSERT) and edge cases for control characters may not be exhaustively tested. There is no evidence in this file of explicit test hooks or test-only code. Gaps may exist in testing malformed input, very large numbers, or strings with embedded control characters.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "char ch (input character)",
+      "location": "isControlCharacter",
+      "validated_by": "isControlCharacter (static function)",
+      "validates": [
+        "Checks if character is a control character (0 < ch <= 0x1F)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "char const* str (input string)",
+      "location": "containsControlCharacter",
+      "validated_by": "containsControlCharacter (static function)",
+      "validates": [
+        "Checks if string contains any control characters (calls isControlCharacter on each char)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts program)",
+      "field": "buffer overflow (internal buffer pointer)",
+      "location": "valueToString(Int), valueToString(UInt)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that buffer pointer has not underflowed (current >= buffer)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic)",
+      "field": "char const* value (input string)",
+      "location": "valueToQuotedString",
+      "validated_by": "strpbrk, containsControlCharacter",
+      "validates": [
+        "Checks if string contains any special JSON characters (\", \\, \\b, \\f, \\n, \\r, \\t)",
+        "Checks if string contains any control characters (via containsControlCharacter)"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

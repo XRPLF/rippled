@@ -1,0 +1,41 @@
+{
+  "args": [
+    {
+      "lineno": 46,
+      "name": "isBinary"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "LimitRange"
+    }
+  ],
+  "description": "Defines tuned constants and limit parameters for various XRPL RPC commands within the xrpl::RPC::Tuning namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Tuning.h",
+  "functions": [
+    {
+      "args": [
+        "isBinary"
+      ],
+      "lineno": 46,
+      "name": "pageLength"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "RPC"
+    },
+    {
+      "lineno": 7,
+      "name": "Tuning"
+    }
+  ]
+}

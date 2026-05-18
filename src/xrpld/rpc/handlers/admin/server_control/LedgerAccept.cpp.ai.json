@@ -1,0 +1,197 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerAccept"
+      ],
+      "entry_point": "doLedgerAccept",
+      "purpose": "Handles the 'ledger_accept' RPC command, which forces ledger closure in standalone mode.",
+      "validation_points": [
+        "if (!context.app.config().standalone())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "standalone (config flag)",
+      "flow": [
+        "context (RPC::JsonContext)",
+        "context.app (Application)",
+        "context.app.config() (Config)",
+        "standalone()"
+      ],
+      "origin": "context.app.config().standalone()",
+      "transformations": [
+        "Boolean check: determines if server is in standalone mode"
+      ],
+      "validated_at": "doLedgerAccept: if (!context.app.config().standalone())"
+    },
+    {
+      "field": "jvResult[jss::error]",
+      "flow": [
+        "doLedgerAccept",
+        "Set to 'notStandAlone' if not in standalone mode",
+        "Returned as RPC response"
+      ],
+      "origin": "Local variable in doLedgerAccept",
+      "transformations": [
+        "Assigned error string if validation fails"
+      ],
+      "validated_at": "doLedgerAccept: after standalone() check"
+    },
+    {
+      "field": "jvResult[jss::ledger_current_index]",
+      "flow": [
+        "doLedgerAccept",
+        "context.ledgerMaster.getCurrentLedgerIndex()",
+        "Assigned to jvResult",
+        "Returned as RPC response"
+      ],
+      "origin": "context.ledgerMaster.getCurrentLedgerIndex()",
+      "transformations": [
+        "No transformation; direct assignment"
+      ],
+      "validated_at": "Only set if standalone() validation passes"
+    }
+  ],
+  "description": "Implements the doLedgerAccept RPC handler, which accepts a new ledger if the application is running in standalone mode.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "standalone mode (application config)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.config().standalone() at doLedgerAccept",
+      "issue_pattern": "Missing empty string validation for standalone mode (application config)",
+      "why_false_positive": "context.app.config().standalone() validates standalone mode (application config) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/server_control/LedgerAccept.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doLedgerAccept"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is typically tested via RPC integration tests that exercise admin/server_control endpoints in standalone mode. Likely test files: 'rpc/ServerControl_test.cpp', 'rpc/LedgerAccept_test.cpp', or similar. Key validation (standalone mode check) should be covered by tests that attempt 'ledger_accept' in both standalone and networked modes. Gaps may exist if tests do not explicitly check error response for non-standalone mode or do not verify correct ledger index returned after acceptance.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc (jss:: for JSON fields, but not used for input validation here)",
+    "notes": "No explicit input or field validation is performed on user-supplied fields in this function. The only validation is a business logic check on server mode. All other parameters are assumed to be validated upstream or are not present.",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = \"notStandAlone\" (returns error in JSON result)",
+      "field": "standalone mode (application config)",
+      "location": "doLedgerAccept",
+      "validated_by": "context.app.config().standalone()",
+      "validates": [
+        "Checks if the server is running in standalone mode before allowing ledger accept"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,594 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "cowid"
+    },
+    {
+      "lineno": 9,
+      "name": "numAllocatedChildren"
+    },
+    {
+      "lineno": 35,
+      "name": "toAllocate"
+    },
+    {
+      "lineno": 40,
+      "name": "i"
+    },
+    {
+      "lineno": 81,
+      "name": "hash"
+    },
+    {
+      "lineno": 81,
+      "name": "hashValid"
+    },
+    {
+      "lineno": 81,
+      "name": "data"
+    },
+    {
+      "lineno": 108,
+      "name": "data"
+    },
+    {
+      "lineno": 167,
+      "name": "s"
+    },
+    {
+      "lineno": 187,
+      "name": "s"
+    },
+    {
+      "lineno": 194,
+      "name": "id"
+    },
+    {
+      "lineno": 207,
+      "name": "m"
+    },
+    {
+      "lineno": 207,
+      "name": "child"
+    },
+    {
+      "lineno": 232,
+      "name": "m"
+    },
+    {
+      "lineno": 232,
+      "name": "child"
+    },
+    {
+      "lineno": 247,
+      "name": "branch"
+    },
+    {
+      "lineno": 259,
+      "name": "branch"
+    },
+    {
+      "lineno": 271,
+      "name": "m"
+    },
+    {
+      "lineno": 280,
+      "name": "branch"
+    },
+    {
+      "lineno": 280,
+      "name": "node"
+    },
+    {
+      "lineno": 304,
+      "name": "is_root"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::uint32_t cowid",
+        "std::uint8_t numAllocatedChildren"
+      ],
+      "lineno": 9,
+      "name": "SHAMapInnerNode"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMapInnerNode::SHAMapInnerNode"
+      ],
+      "entry_point": "SHAMapInnerNode::SHAMapInnerNode",
+      "purpose": "Constructs a SHAMapInnerNode with given cowid and numAllocatedChildren.",
+      "validation_points": [
+        "numAllocatedChildren validated by parameter type (std::uint8_t)",
+        "cowid validated by parameter type (std::uint32_t)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapInnerNode::resizeChildArrays",
+        "TaggedPointer::TaggedPointer"
+      ],
+      "entry_point": "SHAMapInnerNode::resizeChildArrays",
+      "purpose": "Resizes the child arrays to allocate space for a given number of children.",
+      "validation_points": [
+        "toAllocate validated by parameter type (std::uint8_t)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapInnerNode::makeFullInner",
+        "intr_ptr::make_shared<SHAMapInnerNode>",
+        "SHAMapInnerNode::SHAMapInnerNode",
+        "SHAMapInnerNode::resizeChildArrays"
+      ],
+      "entry_point": "SHAMapInnerNode::makeFullInner",
+      "purpose": "Creates a fully populated inner node from serialized data.",
+      "validation_points": [
+        "data.size() checked against expected size; throws if invalid"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapInnerNode::clone",
+        "intr_ptr::make_shared<SHAMapInnerNode>",
+        "SHAMapInnerNode::SHAMapInnerNode"
+      ],
+      "entry_point": "SHAMapInnerNode::clone",
+      "purpose": "Creates a deep copy of the node, including children and hashes.",
+      "validation_points": [
+        "branchCount validated by parameter type (std::uint8_t) in constructor"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "numAllocatedChildren",
+      "flow": [
+        "SHAMapInnerNode::SHAMapInnerNode(numAllocatedChildren)",
+        "hashesAndChildren_ initialized with numAllocatedChildren",
+        "Used in child array allocations and resizing"
+      ],
+      "origin": "Constructor parameter to SHAMapInnerNode",
+      "transformations": [
+        "Passed directly to hashesAndChildren_",
+        "Used to size arrays"
+      ],
+      "validated_at": "Constructor parameter type (std::uint8_t) ensures range"
+    },
+    {
+      "field": "cowid",
+      "flow": [
+        "SHAMapInnerNode::SHAMapInnerNode(cowid)",
+        "Passed to SHAMapTreeNode base class"
+      ],
+      "origin": "Constructor parameter to SHAMapInnerNode",
+      "transformations": [
+        "No transformation; stored as-is"
+      ],
+      "validated_at": "Constructor parameter type (std::uint32_t)"
+    },
+    {
+      "field": "toAllocate",
+      "flow": [
+        "SHAMapInnerNode::resizeChildArrays(toAllocate)",
+        "Passed to TaggedPointer constructor",
+        "TaggedPointer resizes internal arrays"
+      ],
+      "origin": "Parameter to resizeChildArrays",
+      "transformations": [
+        "Used to allocate new arrays"
+      ],
+      "validated_at": "Parameter type (std::uint8_t)"
+    },
+    {
+      "field": "data (Slice)",
+      "flow": [
+        "SHAMapInnerNode::makeFullInner(data, ...)",
+        "data.size() validated against branchFactor * uint256::bytes",
+        "SerialIter si(data)",
+        "Hashes extracted from data and stored in hashesAndChildren_"
+      ],
+      "origin": "Parameter to makeFullInner",
+      "transformations": [
+        "Checked for correct size",
+        "Deserialized into hashes"
+      ],
+      "validated_at": "Explicit check: if (data.size() != branchFactor * uint256::bytes) Throw"
+    }
+  ],
+  "description": "Implements the SHAMapInnerNode class, which represents an inner node in a SHAMap (a specialized Merkle tree used in XRPL). Provides methods for node construction, cloning, serialization, hash updating, child management, and invariants checking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "numAllocatedChildren",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field numAllocatedChildren validated by C++ type system (no explicit validation framework in this file)",
+      "issue_pattern": "Missing validation for numAllocatedChildren",
+      "why_false_positive": "C++ type system (no explicit validation framework in this file) validates numAllocatedChildren automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cowid",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field cowid validated by C++ type system (no explicit validation framework in this file)",
+      "issue_pattern": "Missing validation for cowid",
+      "why_false_positive": "C++ type system (no explicit validation framework in this file) validates cowid automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "toAllocate",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field toAllocate validated by C++ type system (no explicit validation framework in this file)",
+      "issue_pattern": "Missing validation for toAllocate",
+      "why_false_positive": "C++ type system (no explicit validation framework in this file) validates toAllocate automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "numAllocatedChildren",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit (constructor parameter type: std::uint8_t) at SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "issue_pattern": "Missing empty string validation for numAllocatedChildren",
+      "why_false_positive": "implicit (constructor parameter type: std::uint8_t) validates numAllocatedChildren for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "numAllocatedChildren",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit (constructor parameter type: std::uint8_t) at SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "issue_pattern": "Missing type validation for numAllocatedChildren",
+      "why_false_positive": "implicit (constructor parameter type: std::uint8_t) validates numAllocatedChildren type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cowid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit (constructor parameter type: std::uint32_t) at SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "issue_pattern": "Missing empty string validation for cowid",
+      "why_false_positive": "implicit (constructor parameter type: std::uint32_t) validates cowid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "cowid",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit (constructor parameter type: std::uint32_t) at SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "issue_pattern": "Missing type validation for cowid",
+      "why_false_positive": "implicit (constructor parameter type: std::uint32_t) validates cowid type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "toAllocate",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit (parameter type: std::uint8_t) at SHAMapInnerNode::resizeChildArrays",
+      "issue_pattern": "Missing empty string validation for toAllocate",
+      "why_false_positive": "implicit (parameter type: std::uint8_t) validates toAllocate for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "toAllocate",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit (parameter type: std::uint8_t) at SHAMapInnerNode::resizeChildArrays",
+      "issue_pattern": "Missing type validation for toAllocate",
+      "why_false_positive": "implicit (parameter type: std::uint8_t) validates toAllocate type"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapInnerNode.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::uint32_t cowid",
+        "std::uint8_t numAllocatedChildren"
+      ],
+      "lineno": 9,
+      "name": "SHAMapInnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~SHAMapInnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "partialDestructor"
+    },
+    {
+      "args": [
+        "F&& f"
+      ],
+      "lineno": 23,
+      "name": "iterChildren"
+    },
+    {
+      "args": [
+        "F&& f"
+      ],
+      "lineno": 29,
+      "name": "iterNonEmptyChildIndexes"
+    },
+    {
+      "args": [
+        "std::uint8_t toAllocate"
+      ],
+      "lineno": 35,
+      "name": "resizeChildArrays"
+    },
+    {
+      "args": [
+        "int i"
+      ],
+      "lineno": 40,
+      "name": "getChildIndex"
+    },
+    {
+      "args": [
+        "std::uint32_t cowid"
+      ],
+      "lineno": 45,
+      "name": "clone"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 81,
+      "name": "makeFullInner"
+    },
+    {
+      "args": [
+        "Slice data"
+      ],
+      "lineno": 108,
+      "name": "makeCompressedInner"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "updateHash"
+    },
+    {
+      "args": [],
+      "lineno": 153,
+      "name": "updateHashDeep"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 167,
+      "name": "serializeForWire"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 187,
+      "name": "serializeWithPrefix"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& id"
+      ],
+      "lineno": 194,
+      "name": "getString"
+    },
+    {
+      "args": [
+        "int m",
+        "intr_ptr::SharedPtr<SHAMapTreeNode> child"
+      ],
+      "lineno": 207,
+      "name": "setChild"
+    },
+    {
+      "args": [
+        "int m",
+        "intr_ptr::SharedPtr<SHAMapTreeNode> const& child"
+      ],
+      "lineno": 232,
+      "name": "shareChild"
+    },
+    {
+      "args": [
+        "int branch"
+      ],
+      "lineno": 247,
+      "name": "getChildPointer"
+    },
+    {
+      "args": [
+        "int branch"
+      ],
+      "lineno": 259,
+      "name": "getChild"
+    },
+    {
+      "args": [
+        "int m"
+      ],
+      "lineno": 271,
+      "name": "getChildHash"
+    },
+    {
+      "args": [
+        "int branch",
+        "intr_ptr::SharedPtr<SHAMapTreeNode> node"
+      ],
+      "lineno": 280,
+      "name": "canonicalizeChild"
+    },
+    {
+      "args": [
+        "bool is_root"
+      ],
+      "lineno": 304,
+      "name": "invariants"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic (constructor parameter types, explicit size check in makeFullInner) is likely covered by unit tests in the SHAMap or SHAMapInnerNode test suites. Typical test files would be in 'src/test/shamap/' or similar, e.g., SHAMap_test.cpp, SHAMapInnerNode_test.cpp. However, implicit validation via parameter types (e.g., std::uint8_t for numAllocatedChildren) may not be directly tested for out-of-range or overflow conditions. The explicit exception in makeFullInner is likely tested for invalid input data, but edge cases for maximum/minimum values of numAllocatedChildren, cowid, and toAllocate may not be thoroughly tested unless specifically targeted in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "numAllocatedChildren",
+      "cowid",
+      "toAllocate"
+    ],
+    "framework": "C++ type system (no explicit validation framework in this file)",
+    "validation_layer": "entry_point (constructor parameter types)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "numAllocatedChildren",
+      "location": "SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "validated_by": "implicit (constructor parameter type: std::uint8_t)",
+      "validates": [
+        "numAllocatedChildren must be an unsigned 8-bit integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "cowid",
+      "location": "SHAMapInnerNode::SHAMapInnerNode (constructor)",
+      "validated_by": "implicit (constructor parameter type: std::uint32_t)",
+      "validates": [
+        "cowid must be an unsigned 32-bit integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "toAllocate",
+      "location": "SHAMapInnerNode::resizeChildArrays",
+      "validated_by": "implicit (parameter type: std::uint8_t)",
+      "validates": [
+        "toAllocate must be an unsigned 8-bit integer"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "LedgerEntryType type_",
+        "uint256 const& key_"
+      ],
+      "lineno": 13,
+      "name": "Keylet"
+    }
+  ],
+  "description": "Defines the Keylet struct, which represents a pair of a SHAMap key and a LedgerEntryType, used to identify both a key in the state map and its ledger entry type in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Keylet.h",
+  "functions": [
+    {
+      "args": [
+        "LedgerEntryType type_",
+        "uint256 const& key_"
+      ],
+      "lineno": 18,
+      "name": "Keylet"
+    },
+    {
+      "args": [
+        "STLedgerEntry const&"
+      ],
+      "lineno": 24,
+      "name": "check"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

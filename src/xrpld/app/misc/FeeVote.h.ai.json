@@ -1,0 +1,80 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "lastFees"
+    },
+    {
+      "lineno": 15,
+      "name": "rules"
+    },
+    {
+      "lineno": 15,
+      "name": "val"
+    },
+    {
+      "lineno": 23,
+      "name": "lastClosedLedger"
+    },
+    {
+      "lineno": 23,
+      "name": "parentValidations"
+    },
+    {
+      "lineno": 23,
+      "name": "initialPosition"
+    },
+    {
+      "lineno": 33,
+      "name": "setup"
+    },
+    {
+      "lineno": 33,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "FeeVote"
+    }
+  ],
+  "description": "Defines the FeeVote interface for managing and processing fee voting logic in the XRPL, including methods for validation and voting, and a factory function to create FeeVote instances.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/FeeVote.h",
+  "functions": [
+    {
+      "args": [
+        "Fees const& lastFees",
+        "Rules const& rules",
+        "STValidation& val"
+      ],
+      "lineno": 15,
+      "name": "doValidation"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& lastClosedLedger",
+        "std::vector<std::shared_ptr<STValidation>> const& parentValidations",
+        "std::shared_ptr<SHAMap> const& initialPosition"
+      ],
+      "lineno": 23,
+      "name": "doVoting"
+    },
+    {
+      "args": [
+        "FeeSetup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 33,
+      "name": "make_FeeVote"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

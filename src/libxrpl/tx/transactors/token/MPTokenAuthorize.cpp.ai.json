@@ -1,0 +1,449 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "MPTokenAuthorize::preflight"
+      ],
+      "entry_point": "MPTokenAuthorize::preflight",
+      "purpose": "Initial lightweight validation of transaction fields before deeper checks or ledger access.",
+      "validation_points": [
+        "Checks if sfAccount == ~sfHolder (malformed if true)"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTokenAuthorize::preclaim"
+      ],
+      "entry_point": "MPTokenAuthorize::preclaim",
+      "purpose": "Performs contextual validation using ledger state, including existence and permission checks.",
+      "validation_points": [
+        "Checks presence of ~sfHolder",
+        "Validates MPToken existence (ctx.view.read)",
+        "Checks for unauthorize flag and validates MPT state",
+        "Validates sfMPTAmount and ~sfLockedAmount",
+        "Checks issuer permissions and MPT issuance flags"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTokenAuthorize::doApply"
+      ],
+      "entry_point": "MPTokenAuthorize::doApply",
+      "purpose": "Executes the transaction after all validations pass (not shown in provided code, but standard in XRPL transactors).",
+      "validation_points": [
+        "Assumes all validation already performed in preflight/preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "Read in preflight/preclaim",
+        "Compared to ~sfHolder and used as accountID"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Direct comparison to ~sfHolder",
+        "Used as key for ledger lookups"
+      ],
+      "validated_at": "preflight (compared to ~sfHolder), preclaim (used for permission checks)"
+    },
+    {
+      "field": "~sfHolder",
+      "flow": [
+        "Transaction input",
+        "Read in preflight/preclaim",
+        "Presence checked",
+        "Used as holderID"
+      ],
+      "origin": "ctx.tx[~sfHolder] (transaction input, optional)",
+      "transformations": [
+        "Presence check (!holderID)",
+        "Used as key for ledger lookups"
+      ],
+      "validated_at": "preflight (compared to sfAccount), preclaim (presence check, used for account lookup)"
+    },
+    {
+      "field": "sfMPTokenIssuanceID",
+      "flow": [
+        "Transaction input",
+        "Used to construct keylet for mptoken and mptIssuance ledger objects"
+      ],
+      "origin": "ctx.tx[sfMPTokenIssuanceID] (transaction input)",
+      "transformations": [
+        "Used as argument to keylet::mptoken and keylet::mptIssuance"
+      ],
+      "validated_at": "preclaim (used for ledger existence checks)"
+    },
+    {
+      "field": "sfMPTAmount",
+      "flow": [
+        "Read from mptoken ledger object",
+        "Checked for nonzero value"
+      ],
+      "origin": "(*sleMpt)[sfMPTAmount] (ledger object field)",
+      "transformations": [
+        "Compared to 0"
+      ],
+      "validated_at": "preclaim (if nonzero, triggers tecHAS_OBLIGATIONS)"
+    },
+    {
+      "field": "~sfLockedAmount",
+      "flow": [
+        "Read from mptoken ledger object",
+        "Checked for nonzero value (value_or(0))"
+      ],
+      "origin": "(*sleMpt)[~sfLockedAmount] (ledger object field, optional)",
+      "transformations": [
+        "value_or(0) to handle optionality",
+        "Compared to 0"
+      ],
+      "validated_at": "preclaim (if nonzero, triggers tecHAS_OBLIGATIONS)"
+    },
+    {
+      "field": "sfIssuer",
+      "flow": [
+        "Read from mptIssuance ledger object",
+        "Compared to accountID"
+      ],
+      "origin": "(*sleMptIssuance)[sfIssuer] (ledger object field)",
+      "transformations": [
+        "Direct comparison"
+      ],
+      "validated_at": "preclaim (permission check: only issuer can perform certain actions)"
+    },
+    {
+      "field": "sfFlags",
+      "flow": [
+        "Read from mptIssuance ledger object",
+        "Bitmask checked for lsfMPTRequireAuth"
+      ],
+      "origin": "(*sleMptIssuance)[sfFlags] (ledger object field)",
+      "transformations": [
+        "Bitmask operation"
+      ],
+      "validated_at": "preclaim (authorization requirement check)"
+    }
+  ],
+  "description": "Implements the MPTokenAuthorize transaction logic for authorizing or unauthorizing Multi-Party Tokens (MPT) in the XRPL ledger, including preflight, preclaim, and apply logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount and ~sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison at MPTokenAuthorize::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount and ~sfHolder",
+      "why_false_positive": "explicit comparison validates sfAccount and ~sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "~sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "presence check (if (!holderID)) at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for ~sfHolder",
+      "why_false_positive": "presence check (if (!holderID)) validates ~sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPToken existence (keylet::mptoken)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for MPToken existence (keylet::mptoken)",
+      "why_false_positive": "ctx.view.read validates MPToken existence (keylet::mptoken) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMPTAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sleMpt)[sfMPTAmount] != 0 at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for sfMPTAmount",
+      "why_false_positive": "(*sleMpt)[sfMPTAmount] != 0 validates sfMPTAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "~sfLockedAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sleMpt)[~sfLockedAmount].value_or(0) != 0 at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for ~sfLockedAmount",
+      "why_false_positive": "(*sleMpt)[~sfLockedAmount].value_or(0) != 0 validates ~sfLockedAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTIssuance existence (keylet::mptIssuance)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for MPTIssuance existence (keylet::mptIssuance)",
+      "why_false_positive": "ctx.view.read validates MPTIssuance existence (keylet::mptIssuance) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfMPTLocked flag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleMpt->isFlag(lsfMPTLocked) at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for lsfMPTLocked flag",
+      "why_false_positive": "sleMpt->isFlag(lsfMPTLocked) validates lsfMPTLocked flag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfIssuer vs. sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "accountID == (*sleMptIssuance)[sfIssuer] at MPTokenAuthorize::preclaim",
+      "issue_pattern": "Missing empty string validation for sfIssuer vs. sfAccount",
+      "why_false_positive": "accountID == (*sleMptIssuance)[sfIssuer] validates sfIssuer vs. sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/MPTokenAuthorize.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "MPTokenAuthorize::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "MPTokenAuthorize::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "MPTokenAuthorize::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "MPTokenAuthorize::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in preflight and preclaim is likely covered by unit/integration tests for MPTokenAuthorize transactions. Tests should exist for malformed transactions (sfAccount == ~sfHolder), missing or invalid ~sfHolder, non-existent mptoken/mptIssuance objects, permission errors (issuer vs. holder), and obligations (nonzero sfMPTAmount/~sfLockedAmount). Gaps may exist for edge cases such as featureSingleAssetVault flag, internal errors (tefINTERNAL), and rare ledger states (e.g., deleted MPTs with zero balance). Test files may be found in the rippled/test or xrplf/xrpl.js/test directories, especially those named with 'MPToken', 'Authorize', or 'Transactor'.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAccount and ~sfHolder",
+      "location": "MPTokenAuthorize::preflight",
+      "validated_by": "explicit comparison",
+      "validates": [
+        "Ensures that the transaction's sfAccount is not the same as ~sfHolder"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none directly (branches logic)",
+      "field": "~sfHolder",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "presence check (if (!holderID))",
+      "validates": [
+        "Checks if ~sfHolder is present to determine transaction intent (delete/unauthorize vs. create/authorize)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "MPToken existence (keylet::mptoken)",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "ctx.view.read",
+      "validates": [
+        "Checks if the Multi-Party Token (MPT) exists before unauthorizing/deleting"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfMPTAmount",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "(*sleMpt)[sfMPTAmount] != 0",
+      "validates": [
+        "Ensures MPT balance is zero before allowing unauthorization/deletion"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "~sfLockedAmount",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "(*sleMpt)[~sfLockedAmount].value_or(0) != 0",
+      "validates": [
+        "Ensures locked amount is zero before allowing unauthorization/deletion"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND or tefINTERNAL",
+      "field": "MPTIssuance existence (keylet::mptIssuance)",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "ctx.view.read",
+      "validates": [
+        "Checks if the MPTIssuance object exists before proceeding"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "lsfMPTLocked flag",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "sleMpt->isFlag(lsfMPTLocked)",
+      "validates": [
+        "Prevents unauthorization if the MPT is locked and the feature is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfIssuer vs. sfAccount",
+      "location": "MPTokenAuthorize::preclaim",
+      "validated_by": "accountID == (*sleMptIssuance)[sfIssuer]",
+      "validates": [
+        "Prevents issuer from authorizing themselves as a holder"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

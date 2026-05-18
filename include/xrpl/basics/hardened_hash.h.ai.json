@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 56,
+      "name": "HashAlgorithm"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "state_t"
+    },
+    {
+      "args": [
+        "HashAlgorithm = beast::xxhasher"
+      ],
+      "lineno": 56,
+      "name": "hardened_hash"
+    }
+  ],
+  "description": "Provides a hardened hash functor for use in hash-based containers, using a seeded hash algorithm to resist adversarial inputs. Includes utilities for generating random seeds and a template class for hashing with customizable algorithms.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/hardened_hash.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "make_seed_pair"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

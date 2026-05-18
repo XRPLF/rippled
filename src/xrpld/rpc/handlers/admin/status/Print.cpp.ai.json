@@ -1,0 +1,281 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doPrint"
+      ],
+      "entry_point": "doPrint",
+      "purpose": "Handles the 'print' RPC command, validates input, and writes application state to a property stream.",
+      "validation_points": [
+        "context.params.isObject()",
+        "context.params[jss::params].isArray()",
+        "context.params[jss::params][0u].isString()"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.params",
+      "flow": [
+        "RPC JSON request",
+        "context.params",
+        "doPrint",
+        "validation (isObject)",
+        "used to access jss::params"
+      ],
+      "origin": "RPC::JsonContext (populated from incoming RPC JSON request)",
+      "transformations": [
+        "Checked for object type"
+      ],
+      "validated_at": "doPrint (context.params.isObject())"
+    },
+    {
+      "field": "context.params[jss::params]",
+      "flow": [
+        "context.params",
+        "context.params[jss::params]",
+        "doPrint",
+        "validation (isArray)",
+        "used to access [0u]"
+      ],
+      "origin": "context.params (JSON object from RPC request)",
+      "transformations": [
+        "Checked for array type"
+      ],
+      "validated_at": "doPrint (context.params[jss::params].isArray())"
+    },
+    {
+      "field": "context.params[jss::params][0u]",
+      "flow": [
+        "context.params[jss::params]",
+        "context.params[jss::params][0u]",
+        "doPrint",
+        "validation (isString)",
+        "used as argument to context.app.write"
+      ],
+      "origin": "context.params[jss::params] (JSON array from RPC request)",
+      "transformations": [
+        "Checked for string type",
+        "Converted to std::string via asString()"
+      ],
+      "validated_at": "doPrint (context.params[jss::params][0u].isString())"
+    }
+  ],
+  "description": "Implements the doPrint RPC handler, which outputs application state or information to a JSON property stream, optionally filtered by a string parameter.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isObject() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing empty string validation for context.params",
+      "why_false_positive": "isObject() method (Json::Value API) validates context.params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "context.params",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isObject() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing type validation for context.params",
+      "why_false_positive": "isObject() method (Json::Value API) validates context.params type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.params[jss::params]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isArray() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing empty string validation for context.params[jss::params]",
+      "why_false_positive": "isArray() method (Json::Value API) validates context.params[jss::params] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "context.params[jss::params]",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isArray() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing type validation for context.params[jss::params]",
+      "why_false_positive": "isArray() method (Json::Value API) validates context.params[jss::params] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.params[jss::params][0u]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isString() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing empty string validation for context.params[jss::params][0u]",
+      "why_false_positive": "isString() method (Json::Value API) validates context.params[jss::params][0u] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "context.params[jss::params][0u]",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isString() method (Json::Value API) at doPrint",
+      "issue_pattern": "Missing type validation for context.params[jss::params][0u]",
+      "why_false_positive": "isString() method (Json::Value API) validates context.params[jss::params][0u] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/Print.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doPrint"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code relies on the structure of the incoming JSON RPC request. Typical test coverage would be in RPC handler or integration tests, likely under test suites for admin/status or print RPC commands. Tests should cover: (1) valid object/array/string input, (2) missing or malformed params (object/array/string), (3) default path (no string param). Gaps may exist if there are no negative tests for malformed input or if the property stream output is not validated. No explicit unit tests are shown in this file; coverage depends on higher-level RPC handler tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Json::Value API, jss:: (JSON field name constants)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branching logic, not exception)",
+      "field": "context.params",
+      "location": "doPrint",
+      "validated_by": "isObject() method (Json::Value API)",
+      "validates": [
+        "Checks that context.params is a JSON object"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branching logic, not exception)",
+      "field": "context.params[jss::params]",
+      "location": "doPrint",
+      "validated_by": "isArray() method (Json::Value API)",
+      "validates": [
+        "Checks that context.params[jss::params] is a JSON array"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branching logic, not exception)",
+      "field": "context.params[jss::params][0u]",
+      "location": "doPrint",
+      "validated_by": "isString() method (Json::Value API)",
+      "validates": [
+        "Checks that the first element of context.params[jss::params] is a string"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

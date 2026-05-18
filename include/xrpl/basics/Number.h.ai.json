@@ -1,0 +1,363 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "amount"
+    },
+    {
+      "lineno": 13,
+      "name": "value"
+    },
+    {
+      "lineno": 31,
+      "name": "scale_"
+    },
+    {
+      "lineno": 119,
+      "name": "mantissa"
+    },
+    {
+      "lineno": 119,
+      "name": "exponent"
+    },
+    {
+      "lineno": 117,
+      "name": "negative"
+    },
+    {
+      "lineno": 373,
+      "name": "mode"
+    },
+    {
+      "lineno": 407,
+      "name": "scale"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "mantissa_scale scale_"
+      ],
+      "lineno": 28,
+      "name": "MantissaRange"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "Number"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "Number::unchecked"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "Number::normalized"
+    },
+    {
+      "args": [
+        "Number::rounding_mode mode"
+      ],
+      "lineno": 370,
+      "name": "saveNumberRoundMode"
+    },
+    {
+      "args": [
+        "Number::rounding_mode mode"
+      ],
+      "lineno": 386,
+      "name": "NumberRoundModeGuard"
+    },
+    {
+      "args": [
+        "MantissaRange::mantissa_scale scale"
+      ],
+      "lineno": 404,
+      "name": "NumberMantissaScaleGuard"
+    }
+  ],
+  "description": "Defines the xrpl::Number class, a floating point type for representing a wide range of asset values with precise mantissa and exponent control, including normalization, rounding, and mantissa range switching. Also provides related utilities, guards, and helper functions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Number.h",
+  "functions": [
+    {
+      "args": [
+        "Number const& amount"
+      ],
+      "lineno": 10,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "T value"
+      ],
+      "lineno": 13,
+      "name": "logTen"
+    },
+    {
+      "args": [
+        "T value"
+      ],
+      "lineno": 24,
+      "name": "isPowerOfTen"
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 154,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 160,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 165,
+      "name": "operator<"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "signum"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "truncate"
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 194,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 198,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& y"
+      ],
+      "lineno": 202,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "Number const& x"
+      ],
+      "lineno": 206,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "Number const& amount"
+      ],
+      "lineno": 211,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Number f",
+        "unsigned d"
+      ],
+      "lineno": 213,
+      "name": "root"
+    },
+    {
+      "args": [
+        "Number f"
+      ],
+      "lineno": 215,
+      "name": "root2"
+    },
+    {
+      "args": [],
+      "lineno": 220,
+      "name": "getround"
+    },
+    {
+      "args": [
+        "rounding_mode mode"
+      ],
+      "lineno": 222,
+      "name": "setround"
+    },
+    {
+      "args": [],
+      "lineno": 229,
+      "name": "getMantissaScale"
+    },
+    {
+      "args": [
+        "MantissaRange::mantissa_scale scale"
+      ],
+      "lineno": 234,
+      "name": "setMantissaScale"
+    },
+    {
+      "args": [],
+      "lineno": 238,
+      "name": "minMantissa"
+    },
+    {
+      "args": [],
+      "lineno": 243,
+      "name": "maxMantissa"
+    },
+    {
+      "args": [],
+      "lineno": 248,
+      "name": "mantissaLog"
+    },
+    {
+      "args": [],
+      "lineno": 254,
+      "name": "oneSmall"
+    },
+    {
+      "args": [],
+      "lineno": 256,
+      "name": "oneLarge"
+    },
+    {
+      "args": [],
+      "lineno": 260,
+      "name": "one"
+    },
+    {
+      "args": [
+        "T minMantissa",
+        "T maxMantissa"
+      ],
+      "lineno": 264,
+      "name": "normalizeToRange"
+    },
+    {
+      "args": [],
+      "lineno": 282,
+      "name": "normalize"
+    },
+    {
+      "args": [
+        "bool& negative",
+        "T& mantissa",
+        "int& exponent",
+        "internalrep const& minMantissa",
+        "internalrep const& maxMantissa"
+      ],
+      "lineno": 287,
+      "name": "normalize"
+    },
+    {
+      "args": [
+        "bool& negative",
+        "T& mantissa_",
+        "int& exponent_",
+        "MantissaRange::rep const& minMantissa",
+        "MantissaRange::rep const& maxMantissa"
+      ],
+      "lineno": 295,
+      "name": "doNormalize"
+    },
+    {
+      "args": [],
+      "lineno": 299,
+      "name": "isnormal"
+    },
+    {
+      "args": [
+        "int exponentDelta"
+      ],
+      "lineno": 304,
+      "name": "shiftExponent"
+    },
+    {
+      "args": [
+        "rep mantissa"
+      ],
+      "lineno": 309,
+      "name": "externalToInternal"
+    },
+    {
+      "args": [
+        "Number x"
+      ],
+      "lineno": 324,
+      "name": "abs"
+    },
+    {
+      "args": [
+        "Number const& f",
+        "unsigned n"
+      ],
+      "lineno": 334,
+      "name": "power"
+    },
+    {
+      "args": [
+        "Number f",
+        "unsigned d"
+      ],
+      "lineno": 338,
+      "name": "root"
+    },
+    {
+      "args": [
+        "Number f"
+      ],
+      "lineno": 341,
+      "name": "root2"
+    },
+    {
+      "args": [
+        "Number const& f",
+        "unsigned n",
+        "unsigned d"
+      ],
+      "lineno": 344,
+      "name": "power"
+    },
+    {
+      "args": [
+        "Number const& x",
+        "Number const& limit"
+      ],
+      "lineno": 348,
+      "name": "squelch"
+    },
+    {
+      "args": [
+        "MantissaRange::mantissa_scale const& scale"
+      ],
+      "lineno": 355,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

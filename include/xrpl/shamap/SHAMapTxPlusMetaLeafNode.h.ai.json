@@ -1,0 +1,55 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid",
+        "boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash"
+      ],
+      "lineno": 10,
+      "name": "SHAMapTxPlusMetaLeafNode"
+    }
+  ],
+  "description": "Defines the SHAMapTxPlusMetaLeafNode class, representing a SHAMap leaf node for a transaction and its associated metadata, including methods for cloning, hashing, and serialization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapTxPlusMetaLeafNode.h",
+  "functions": [
+    {
+      "args": [
+        "cowid"
+      ],
+      "lineno": 23,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "updateHash"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 40,
+      "name": "serializeForWire"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 46,
+      "name": "serializeWithPrefix"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

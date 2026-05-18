@@ -1,0 +1,145 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "rate"
+    },
+    {
+      "lineno": 27,
+      "name": "lhs"
+    },
+    {
+      "lineno": 27,
+      "name": "rhs"
+    },
+    {
+      "lineno": 37,
+      "name": "os"
+    },
+    {
+      "lineno": 43,
+      "name": "amount"
+    },
+    {
+      "lineno": 46,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 49,
+      "name": "asset"
+    },
+    {
+      "lineno": 63,
+      "name": "fee"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "rate"
+      ],
+      "lineno": 13,
+      "name": "Rate"
+    }
+  ],
+  "description": "Defines the Rate struct representing transfer rates in the XRPL protocol, along with related arithmetic functions and operators for manipulating transfer rates and amounts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Rate.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 27,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 32,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "os",
+        "rate"
+      ],
+      "lineno": 37,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "amount",
+        "rate"
+      ],
+      "lineno": 43,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "roundUp"
+      ],
+      "lineno": 46,
+      "name": "multiplyRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 49,
+      "name": "multiplyRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate"
+      ],
+      "lineno": 52,
+      "name": "divide"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "roundUp"
+      ],
+      "lineno": 55,
+      "name": "divideRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 58,
+      "name": "divideRound"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 63,
+      "name": "transferFeeAsRate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 61,
+      "name": "nft"
+    }
+  ]
+}

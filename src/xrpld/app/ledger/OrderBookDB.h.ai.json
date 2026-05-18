@@ -1,0 +1,37 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "beast::insight::Collector::ptr const& collector",
+        "Application& app"
+      ],
+      "lineno": 11,
+      "name": "LedgerHistory"
+    }
+  ],
+  "description": "This file defines the LedgerHistory class, which is responsible for retaining and tracking historical ledgers in the XRPL system. It provides mechanisms to track, retrieve, and manage ledgers by their hash or sequence number.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/OrderBookDB.h",
+  "functions": [
+    {
+      "args": [
+        "beast::insight::Collector::ptr const& collector",
+        "Application& app"
+      ],
+      "lineno": 15,
+      "name": "LedgerHistory"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "trackLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

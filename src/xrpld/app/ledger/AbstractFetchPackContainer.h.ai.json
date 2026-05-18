@@ -1,0 +1,33 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "nodeHash"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "AbstractFetchPackContainer"
+    }
+  ],
+  "description": "Defines an abstract interface for retrieving fetch packs (partial ledger data) by hash, without requiring an application or ledgermaster object, in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/AbstractFetchPackContainer.h",
+  "functions": [
+    {
+      "args": [
+        "nodeHash"
+      ],
+      "lineno": 18,
+      "name": "getFetchPack"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "nodeId"
+    },
+    {
+      "lineno": 14,
+      "name": "description"
+    },
+    {
+      "lineno": 44,
+      "name": "journal"
+    },
+    {
+      "lineno": 52,
+      "name": "nodeId"
+    },
+    {
+      "lineno": 59,
+      "name": "connection"
+    },
+    {
+      "lineno": 66,
+      "name": "reservation"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "PeerReservation"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "KeyEqual"
+    },
+    {
+      "args": [
+        "beast::Journal journal"
+      ],
+      "lineno": 41,
+      "name": "PeerReservationTable"
+    }
+  ],
+  "description": "Defines data structures and logic for managing peer reservations in the XRPL network, including reservation insertion, deletion, lookup, and listing, with thread safety and optional database integration.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/PeerReservationTable.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "PeerReservation::toJson"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "PeerReservation const& x"
+      ],
+      "lineno": 19,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "PeerReservation const& a",
+        "PeerReservation const& b"
+      ],
+      "lineno": 25,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "PeerReservation const& lhs",
+        "PeerReservation const& rhs"
+      ],
+      "lineno": 36,
+      "name": "KeyEqual::operator()"
+    },
+    {
+      "args": [
+        "beast::Journal journal"
+      ],
+      "lineno": 43,
+      "name": "PeerReservationTable::PeerReservationTable"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "PeerReservationTable::list"
+    },
+    {
+      "args": [
+        "PublicKey const& nodeId"
+      ],
+      "lineno": 51,
+      "name": "PeerReservationTable::contains"
+    },
+    {
+      "args": [
+        "DatabaseCon& connection"
+      ],
+      "lineno": 58,
+      "name": "PeerReservationTable::load"
+    },
+    {
+      "args": [
+        "PeerReservation const& reservation"
+      ],
+      "lineno": 65,
+      "name": "PeerReservationTable::insert_or_assign"
+    },
+    {
+      "args": [
+        "PublicKey const& nodeId"
+      ],
+      "lineno": 71,
+      "name": "PeerReservationTable::erase"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

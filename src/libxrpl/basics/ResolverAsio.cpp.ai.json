@@ -1,0 +1,425 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "Derived"
+    },
+    {
+      "lineno": 34,
+      "name": "owner"
+    },
+    {
+      "lineno": 38,
+      "name": "other"
+    },
+    {
+      "lineno": 297,
+      "name": "io_context"
+    },
+    {
+      "lineno": 297,
+      "name": "journal"
+    },
+    {
+      "lineno": 94,
+      "name": "names_"
+    },
+    {
+      "lineno": 94,
+      "name": "handler_"
+    },
+    {
+      "lineno": 151,
+      "name": "names"
+    },
+    {
+      "lineno": 151,
+      "name": "handler"
+    },
+    {
+      "lineno": 165,
+      "name": "CompletionCounter"
+    },
+    {
+      "lineno": 174,
+      "name": "name"
+    },
+    {
+      "lineno": 175,
+      "name": "ec"
+    },
+    {
+      "lineno": 176,
+      "name": "results"
+    },
+    {
+      "lineno": 200,
+      "name": "str"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "AsyncObject"
+    },
+    {
+      "args": [
+        "owner"
+      ],
+      "lineno": 33,
+      "name": "AsyncObject::CompletionCounter"
+    },
+    {
+      "args": [
+        "io_context",
+        "journal"
+      ],
+      "lineno": 75,
+      "name": "ResolverAsioImpl"
+    },
+    {
+      "args": [
+        "names_",
+        "handler_"
+      ],
+      "lineno": 92,
+      "name": "ResolverAsioImpl::Work"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ResolverAsioImpl::~ResolverAsioImpl",
+        "AsyncObject<ResolverAsioImpl>::~AsyncObject"
+      ],
+      "entry_point": "ResolverAsioImpl::~ResolverAsioImpl",
+      "purpose": "Destructor chain to ensure all async work and references are cleaned up before destruction.",
+      "validation_points": [
+        "AsyncObject<ResolverAsioImpl>::~AsyncObject: XRPL_ASSERT(m_pending.load() == 0, ...)",
+        "ResolverAsioImpl::~ResolverAsioImpl: XRPL_ASSERT(m_work.empty(), ...), XRPL_ASSERT(m_stopped, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AsyncObject<Derived>::CompletionCounter::CompletionCounter",
+        "AsyncObject<Derived>::CompletionCounter::~CompletionCounter",
+        "Derived::asyncHandlersComplete"
+      ],
+      "entry_point": "AsyncObject<Derived>::CompletionCounter (RAII)",
+      "purpose": "Tracks the number of outstanding async handlers. When the last handler completes, triggers asyncHandlersComplete.",
+      "validation_points": [
+        "AsyncObject<Derived>::CompletionCounter::~CompletionCounter: if (--m_owner->m_pending == 0) m_owner->asyncHandlersComplete()"
+      ]
+    },
+    {
+      "call_chain": [
+        "AsyncObject<Derived>::addReference",
+        "AsyncObject<Derived>::removeReference",
+        "Derived::asyncHandlersComplete"
+      ],
+      "entry_point": "AsyncObject<Derived>::addReference / removeReference",
+      "purpose": "Manual reference counting for async operations, triggers completion when count reaches zero.",
+      "validation_points": [
+        "AsyncObject<Derived>::removeReference: if (--m_pending == 0) asyncHandlersComplete()"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_pending",
+      "flow": [
+        "AsyncObject<Derived> constructor",
+        "Incremented in CompletionCounter::CompletionCounter and addReference",
+        "Decremented in CompletionCounter::~CompletionCounter and removeReference",
+        "Checked in AsyncObject<Derived>::~AsyncObject and in CompletionCounter::~CompletionCounter/removeReference"
+      ],
+      "origin": "AsyncObject<Derived> constructor (initialized to 0)",
+      "transformations": [
+        "Incremented for each async handler or reference",
+        "Decremented when handler completes or reference is removed"
+      ],
+      "validated_at": "AsyncObject<Derived>::~AsyncObject (XRPL_ASSERT(m_pending.load() == 0, ...))"
+    },
+    {
+      "field": "m_work",
+      "flow": [
+        "ResolverAsioImpl constructor",
+        "Work items pushed in resolve/start (not shown in snippet)",
+        "Work items processed by async handlers",
+        "Checked in ResolverAsioImpl::~ResolverAsioImpl"
+      ],
+      "origin": "ResolverAsioImpl constructor (empty deque)",
+      "transformations": [
+        "Work items added and removed as async operations are scheduled and completed"
+      ],
+      "validated_at": "ResolverAsioImpl::~ResolverAsioImpl (XRPL_ASSERT(m_work.empty(), ...))"
+    },
+    {
+      "field": "m_stopped",
+      "flow": [
+        "ResolverAsioImpl constructor",
+        "Set/reset in start/stop/do_stop (not shown in snippet)",
+        "Checked in ResolverAsioImpl::~ResolverAsioImpl"
+      ],
+      "origin": "ResolverAsioImpl constructor (set to true)",
+      "transformations": [
+        "Set to false when starting, true when stopped"
+      ],
+      "validated_at": "ResolverAsioImpl::~ResolverAsioImpl (XRPL_ASSERT(m_stopped, ...))"
+    }
+  ],
+  "description": "This file implements an asynchronous DNS resolver for the XRPL project using Boost.Asio, providing asynchronous name resolution with work queuing, handler tracking, and clean shutdown semantics.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "m_pending (pending I/O count)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field m_pending (pending I/O count) validated by XRPL_ASSERT (custom assertion macro)",
+      "issue_pattern": "Missing validation for m_pending (pending I/O count)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro) validates m_pending (pending I/O count) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_pending (pending I/O count)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at AsyncObject::~AsyncObject (destructor)",
+      "issue_pattern": "Missing empty string validation for m_pending (pending I/O count)",
+      "why_false_positive": "XRPL_ASSERT macro validates m_pending (pending I/O count) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/ResolverAsio.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "AsyncObject::addReference"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "AsyncObject::removeReference"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "ResolverAsioImpl::asyncHandlersComplete"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "ResolverAsioImpl::start"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "ResolverAsioImpl::stop_async"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "ResolverAsioImpl::stop"
+    },
+    {
+      "args": [
+        "names",
+        "handler"
+      ],
+      "lineno": 151,
+      "name": "ResolverAsioImpl::resolve"
+    },
+    {
+      "args": [
+        "CompletionCounter"
+      ],
+      "lineno": 165,
+      "name": "ResolverAsioImpl::do_stop"
+    },
+    {
+      "args": [
+        "name",
+        "ec",
+        "handler",
+        "results",
+        "CompletionCounter"
+      ],
+      "lineno": 174,
+      "name": "ResolverAsioImpl::do_finish"
+    },
+    {
+      "args": [
+        "str"
+      ],
+      "lineno": 200,
+      "name": "ResolverAsioImpl::parseName"
+    },
+    {
+      "args": [
+        "CompletionCounter"
+      ],
+      "lineno": 236,
+      "name": "ResolverAsioImpl::do_work"
+    },
+    {
+      "args": [
+        "names",
+        "handler",
+        "CompletionCounter"
+      ],
+      "lineno": 273,
+      "name": "ResolverAsioImpl::do_resolve"
+    },
+    {
+      "args": [
+        "io_context",
+        "journal"
+      ],
+      "lineno": 297,
+      "name": "ResolverAsio::New"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic (especially XRPL_ASSERT on m_pending, m_work, m_stopped) is primarily checked at destruction time. Typical test coverage would require integration or unit tests that create ResolverAsioImpl, schedule async work, and ensure all work completes before destruction. However, these destructors are only triggered on object deletion, so tests must ensure proper cleanup. There is no evidence in this file of direct test hooks or test-specific code. Test coverage gaps may exist if tests do not exercise abnormal shutdowns (e.g., destruction with pending work or references). Tests likely reside in files testing networking/resolver logic, such as 'test/ResolverAsio_test.cpp' or similar, but coverage of assertion failures (e.g., forced destruction with pending work) may be limited unless explicitly tested for error handling and resource leaks.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "m_pending (pending I/O count)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "m_pending (pending I/O count)",
+      "location": "AsyncObject::~AsyncObject (destructor)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that all pending I/O operations are complete (m_pending == 0) before object destruction"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

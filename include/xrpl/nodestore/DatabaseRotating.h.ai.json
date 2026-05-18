@@ -1,0 +1,63 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 18,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 19,
+      "name": "config"
+    },
+    {
+      "lineno": 20,
+      "name": "journal"
+    },
+    {
+      "lineno": 29,
+      "name": "newBackend"
+    },
+    {
+      "lineno": 30,
+      "name": "f"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "Section const& config",
+        "beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "DatabaseRotating"
+    }
+  ],
+  "description": "Defines the DatabaseRotating class, which manages two rotating key-value store Backend objects for persisting SHAMap records, facilitating online deletion of data in the XRPL NodeStore.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/DatabaseRotating.h",
+  "functions": [
+    {
+      "args": [
+        "std::unique_ptr<NodeStore::Backend>&& newBackend",
+        "std::function<void(std::string const& writableName, std::string const& archiveName)> const& f"
+      ],
+      "lineno": 28,
+      "name": "rotate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "NodeStore"
+    }
+  ]
+}

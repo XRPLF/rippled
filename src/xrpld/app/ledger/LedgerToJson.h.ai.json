@@ -1,0 +1,55 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "l"
+    },
+    {
+      "lineno": 14,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "o"
+    },
+    {
+      "lineno": 16,
+      "name": "q"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the LedgerFill struct and related functions for serializing ledger data to JSON in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerToJson.h",
+  "functions": [
+    {
+      "args": [
+        "Json::Value&",
+        "LedgerFill const&"
+      ],
+      "lineno": 38,
+      "name": "addJson"
+    },
+    {
+      "args": [
+        "LedgerFill const&"
+      ],
+      "lineno": 42,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Json::Value&",
+        "Json::Value const&"
+      ],
+      "lineno": 46,
+      "name": "copyFrom"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

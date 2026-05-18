@@ -1,0 +1,28 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "uhash"
+    }
+  ],
+  "description": "Defines a universal hash function template (uhash) in the beast namespace, using a specified Hasher (default xxhasher) and hash_append to compute hash values for arbitrary types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/hash/uhash.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 13,
+      "name": "operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    }
+  ]
+}

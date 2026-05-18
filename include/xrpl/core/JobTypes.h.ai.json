@@ -1,0 +1,70 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "JobTypes"
+    }
+  ],
+  "description": "Defines the JobTypes singleton class, which manages static information about all job types in the XRPL system, including their names, limits, and latency expectations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/JobTypes.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "instance"
+    },
+    {
+      "args": [
+        "jt"
+      ],
+      "lineno": 80,
+      "name": "name"
+    },
+    {
+      "args": [
+        "jt"
+      ],
+      "lineno": 85,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "getInvalid"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "cend"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

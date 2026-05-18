@@ -1,0 +1,147 @@
+{
+  "args": [
+    {
+      "lineno": 5,
+      "name": "seq"
+    },
+    {
+      "lineno": 10,
+      "name": "seq"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "isVotingLedger"
+      ],
+      "entry_point": "xrpl::isVotingLedger",
+      "purpose": "Determines if a given ledger sequence number is a 'voting ledger' (i.e., if it is a multiple of FLAG_LEDGER_INTERVAL). Used to trigger consensus voting logic at specific intervals.",
+      "validation_points": [
+        "isVotingLedger"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFlagLedger"
+      ],
+      "entry_point": "xrpl::isFlagLedger",
+      "purpose": "Determines if a given ledger sequence number is a 'flag ledger' (i.e., if it is a multiple of FLAG_LEDGER_INTERVAL). Used to trigger flag ledger logic at specific intervals.",
+      "validation_points": [
+        "isFlagLedger"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "LedgerIndex seq",
+      "flow": [
+        "LedgerIndex seq (from ledger object or consensus state)",
+        "passed to isVotingLedger/isFlagLedger",
+        "modulo operation with FLAG_LEDGER_INTERVAL",
+        "boolean result returned to caller"
+      ],
+      "origin": "Passed as an argument to isVotingLedger or isFlagLedger, typically sourced from the current ledger's sequence number in consensus or ledger management code.",
+      "transformations": [
+        "seq is checked for divisibility by FLAG_LEDGER_INTERVAL (seq % FLAG_LEDGER_INTERVAL == 0)"
+      ],
+      "validated_at": "isVotingLedger or isFlagLedger"
+    }
+  ],
+  "description": "Provides utility functions to determine if a given ledger index corresponds to a voting or flag ledger in the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isVotingLedger (custom function) at isVotingLedger",
+      "issue_pattern": "Missing empty string validation for seq",
+      "why_false_positive": "isVotingLedger (custom function) validates seq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFlagLedger (custom function) at isFlagLedger",
+      "issue_pattern": "Missing empty string validation for seq",
+      "why_false_positive": "isFlagLedger (custom function) validates seq for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Protocol.cpp",
+  "functions": [
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 4,
+      "name": "isVotingLedger"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 9,
+      "name": "isFlagLedger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The provided code is a simple utility with no direct tests in this file. Test coverage for these functions likely exists in higher-level consensus, ledger, or protocol tests that exercise voting and flag ledger logic. Look for tests in files such as Consensus_test.cpp, LedgerMaster_test.cpp, or Protocol_test.cpp. There may be a gap in direct unit tests for isVotingLedger and isFlagLedger; if so, consider adding explicit tests for edge cases (e.g., seq = 0, seq = FLAG_LEDGER_INTERVAL, seq = FLAG_LEDGER_INTERVAL - 1, negative values if allowed).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (custom logic, no framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "seq",
+      "location": "isVotingLedger",
+      "validated_by": "isVotingLedger (custom function)",
+      "validates": [
+        "Checks if seq is a multiple of FLAG_LEDGER_INTERVAL"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "seq",
+      "location": "isFlagLedger",
+      "validated_by": "isFlagLedger (custom function)",
+      "validates": [
+        "Checks if seq is a multiple of FLAG_LEDGER_INTERVAL"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

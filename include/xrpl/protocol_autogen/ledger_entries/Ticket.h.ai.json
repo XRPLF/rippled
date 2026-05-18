@@ -1,0 +1,151 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "sle"
+    },
+    {
+      "lineno": 98,
+      "name": "account"
+    },
+    {
+      "lineno": 98,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 98,
+      "name": "ticketSequence"
+    },
+    {
+      "lineno": 98,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 98,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 107,
+      "name": "sle"
+    },
+    {
+      "lineno": 112,
+      "name": "value"
+    },
+    {
+      "lineno": 122,
+      "name": "value"
+    },
+    {
+      "lineno": 132,
+      "name": "value"
+    },
+    {
+      "lineno": 142,
+      "name": "value"
+    },
+    {
+      "lineno": 152,
+      "name": "value"
+    },
+    {
+      "lineno": 162,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 28,
+      "name": "Ticket"
+    },
+    {
+      "args": [
+        "account, ownerNode, ticketSequence, previousTxnID, previousTxnLgrSeq",
+        "sle"
+      ],
+      "lineno": 91,
+      "name": "TicketBuilder"
+    }
+  ],
+  "description": "Defines the Ticket ledger entry and its builder for XRPL, providing type-safe accessors and a fluent builder interface for constructing Ticket ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Ticket.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getTicketSequence"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 110,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 120,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 130,
+      "name": "setTicketSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 140,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 150,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 160,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

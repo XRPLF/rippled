@@ -1,0 +1,60 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines administrative roles and utility functions for determining user privileges, resource limits, and IP-based access control for XRPL server RPC endpoints.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/Role.h",
+  "functions": [
+    {
+      "args": [
+        "required",
+        "port",
+        "params",
+        "remoteIp",
+        "user"
+      ],
+      "lineno": 27,
+      "name": "requestRole"
+    },
+    {
+      "args": [
+        "manager",
+        "remoteAddress",
+        "role",
+        "user",
+        "forwardedFor"
+      ],
+      "lineno": 39,
+      "name": "requestInboundEndpoint"
+    },
+    {
+      "args": [
+        "role"
+      ],
+      "lineno": 48,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [
+        "remoteIp",
+        "nets4",
+        "nets6"
+      ],
+      "lineno": 56,
+      "name": "ipAllowed"
+    },
+    {
+      "args": [
+        "request"
+      ],
+      "lineno": 67,
+      "name": "forwardedFor"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

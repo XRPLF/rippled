@@ -1,0 +1,162 @@
+{
+  "args": [
+    {
+      "lineno": 41,
+      "name": "cowid"
+    },
+    {
+      "lineno": 44,
+      "name": "hash"
+    },
+    {
+      "lineno": 103,
+      "name": "is_root"
+    },
+    {
+      "lineno": 106,
+      "name": "rawNode"
+    },
+    {
+      "lineno": 113,
+      "name": "hashValid"
+    },
+    {
+      "lineno": 113,
+      "name": "data"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SHAMapTreeNode const&",
+        "std::uint32_t cowid",
+        "std::uint32_t cowid, SHAMapHash const& hash"
+      ],
+      "lineno": 23,
+      "name": "SHAMapTreeNode"
+    }
+  ],
+  "description": "Defines the SHAMapTreeNode base class and related types for nodes in the SHAMap data structure, including serialization, copy-on-write semantics, and node type identification.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapTreeNode.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "cowid"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "unshare"
+    },
+    {
+      "args": [
+        "cowid"
+      ],
+      "lineno": 75,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "updateHash"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getHash"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "isLeaf"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "isInner"
+    },
+    {
+      "args": [
+        "Serializer&"
+      ],
+      "lineno": 95,
+      "name": "serializeForWire"
+    },
+    {
+      "args": [
+        "Serializer&"
+      ],
+      "lineno": 98,
+      "name": "serializeWithPrefix"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const&"
+      ],
+      "lineno": 101,
+      "name": "getString"
+    },
+    {
+      "args": [
+        "is_root"
+      ],
+      "lineno": 103,
+      "name": "invariants"
+    },
+    {
+      "args": [
+        "Slice rawNode",
+        "SHAMapHash const& hash"
+      ],
+      "lineno": 106,
+      "name": "makeFromPrefix"
+    },
+    {
+      "args": [
+        "Slice rawNode"
+      ],
+      "lineno": 109,
+      "name": "makeFromWire"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 113,
+      "name": "makeTransaction"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 116,
+      "name": "makeAccountState"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 119,
+      "name": "makeTransactionWithMeta"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

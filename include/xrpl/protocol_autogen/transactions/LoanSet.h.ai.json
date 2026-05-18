@@ -1,0 +1,448 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "tx"
+    },
+    {
+      "lineno": 374,
+      "name": "account"
+    },
+    {
+      "lineno": 375,
+      "name": "loanBrokerID"
+    },
+    {
+      "lineno": 376,
+      "name": "principalRequested"
+    },
+    {
+      "lineno": 377,
+      "name": "sequence"
+    },
+    {
+      "lineno": 378,
+      "name": "fee"
+    },
+    {
+      "lineno": 386,
+      "name": "tx"
+    },
+    {
+      "lineno": 398,
+      "name": "value"
+    },
+    {
+      "lineno": 407,
+      "name": "value"
+    },
+    {
+      "lineno": 416,
+      "name": "value"
+    },
+    {
+      "lineno": 425,
+      "name": "value"
+    },
+    {
+      "lineno": 434,
+      "name": "value"
+    },
+    {
+      "lineno": 443,
+      "name": "value"
+    },
+    {
+      "lineno": 452,
+      "name": "value"
+    },
+    {
+      "lineno": 461,
+      "name": "value"
+    },
+    {
+      "lineno": 470,
+      "name": "value"
+    },
+    {
+      "lineno": 479,
+      "name": "value"
+    },
+    {
+      "lineno": 488,
+      "name": "value"
+    },
+    {
+      "lineno": 497,
+      "name": "value"
+    },
+    {
+      "lineno": 506,
+      "name": "value"
+    },
+    {
+      "lineno": 515,
+      "name": "value"
+    },
+    {
+      "lineno": 524,
+      "name": "value"
+    },
+    {
+      "lineno": 533,
+      "name": "value"
+    },
+    {
+      "lineno": 542,
+      "name": "value"
+    },
+    {
+      "lineno": 551,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 551,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "LoanSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID, std::decay_t<typename SF_NUMBER::type::value_type> const& principalRequested, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 371,
+      "name": "LoanSetBuilder"
+    }
+  ],
+  "description": "Defines the LoanSet transaction type for the XRPL lending protocol, providing a type-safe wrapper and a builder for constructing and accessing transaction fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LoanSet.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "LoanSet"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getData"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "hasData"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "getCounterparty"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "hasCounterparty"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "getCounterpartySignature"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "hasCounterpartySignature"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "getLoanOriginationFee"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "hasLoanOriginationFee"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "getLoanServiceFee"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "hasLoanServiceFee"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "getLatePaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 168,
+      "name": "hasLatePaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 177,
+      "name": "getClosePaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 188,
+      "name": "hasClosePaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "getOverpaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "hasOverpaymentFee"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "getInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 228,
+      "name": "hasInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 237,
+      "name": "getLateInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 248,
+      "name": "hasLateInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "getCloseInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 268,
+      "name": "hasCloseInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 277,
+      "name": "getOverpaymentInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 288,
+      "name": "hasOverpaymentInterestRate"
+    },
+    {
+      "args": [],
+      "lineno": 297,
+      "name": "getPrincipalRequested"
+    },
+    {
+      "args": [],
+      "lineno": 307,
+      "name": "getPaymentTotal"
+    },
+    {
+      "args": [],
+      "lineno": 318,
+      "name": "hasPaymentTotal"
+    },
+    {
+      "args": [],
+      "lineno": 327,
+      "name": "getPaymentInterval"
+    },
+    {
+      "args": [],
+      "lineno": 338,
+      "name": "hasPaymentInterval"
+    },
+    {
+      "args": [],
+      "lineno": 347,
+      "name": "getGracePeriod"
+    },
+    {
+      "args": [],
+      "lineno": 358,
+      "name": "hasGracePeriod"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID",
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& principalRequested",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 374,
+      "name": "LoanSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 386,
+      "name": "LoanSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 397,
+      "name": "setLoanBrokerID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 406,
+      "name": "setData"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 415,
+      "name": "setCounterparty"
+    },
+    {
+      "args": [
+        "STObject const& value"
+      ],
+      "lineno": 424,
+      "name": "setCounterpartySignature"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 433,
+      "name": "setLoanOriginationFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 442,
+      "name": "setLoanServiceFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 451,
+      "name": "setLatePaymentFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 460,
+      "name": "setClosePaymentFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 469,
+      "name": "setOverpaymentFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 478,
+      "name": "setInterestRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 487,
+      "name": "setLateInterestRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 496,
+      "name": "setCloseInterestRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 505,
+      "name": "setOverpaymentInterestRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 514,
+      "name": "setPrincipalRequested"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 523,
+      "name": "setPaymentTotal"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 532,
+      "name": "setPaymentInterval"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 541,
+      "name": "setGracePeriod"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 550,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

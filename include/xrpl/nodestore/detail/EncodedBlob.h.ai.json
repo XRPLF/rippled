@@ -1,0 +1,59 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "obj"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& obj"
+      ],
+      "lineno": 32,
+      "name": "EncodedBlob"
+    }
+  ],
+  "description": "Defines the EncodedBlob class, which serializes a NodeObject into a database format with a specific prefix, type byte, and payload, optimizing for in-stack allocation and minimizing dynamic memory usage.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/EncodedBlob.h",
+  "functions": [
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 44,
+      "name": "EncodedBlob"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "~EncodedBlob"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "getKey"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "getSize"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "getData"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "NodeStore"
+    }
+  ]
+}

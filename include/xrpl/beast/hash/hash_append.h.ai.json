@@ -1,0 +1,702 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "T& t"
+    },
+    {
+      "lineno": 23,
+      "name": "T& t"
+    },
+    {
+      "lineno": 28,
+      "name": "T& t"
+    },
+    {
+      "lineno": 33,
+      "name": "T& t"
+    },
+    {
+      "lineno": 120,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 120,
+      "name": "T const& t"
+    },
+    {
+      "lineno": 127,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 127,
+      "name": "T t"
+    },
+    {
+      "lineno": 135,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 135,
+      "name": "T t"
+    },
+    {
+      "lineno": 143,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 143,
+      "name": "std::nullptr_t"
+    },
+    {
+      "lineno": 150,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 150,
+      "name": "T (&a)[N]"
+    },
+    {
+      "lineno": 154,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 154,
+      "name": "std::basic_string<CharT, Traits, Alloc> const& s"
+    },
+    {
+      "lineno": 158,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 158,
+      "name": "std::basic_string<CharT, Traits, Alloc> const& s"
+    },
+    {
+      "lineno": 162,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 162,
+      "name": "std::pair<T, U> const& p"
+    },
+    {
+      "lineno": 166,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 166,
+      "name": "std::vector<T, Alloc> const& v"
+    },
+    {
+      "lineno": 170,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 170,
+      "name": "std::vector<T, Alloc> const& v"
+    },
+    {
+      "lineno": 174,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 174,
+      "name": "std::array<T, N> const& a"
+    },
+    {
+      "lineno": 178,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 178,
+      "name": "std::tuple<T...> const& t"
+    },
+    {
+      "lineno": 182,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 182,
+      "name": "std::unordered_map<Key, T, Hash, Pred, Alloc> const& m"
+    },
+    {
+      "lineno": 187,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 187,
+      "name": "std::unordered_set<Key, Hash, Pred, Alloc> const& s"
+    },
+    {
+      "lineno": 192,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 192,
+      "name": "boost::container::flat_set<Key, Compare, Alloc> const& v"
+    },
+    {
+      "lineno": 195,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 195,
+      "name": "boost::container::flat_set<Key, Compare, Alloc> const& v"
+    },
+    {
+      "lineno": 198,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 198,
+      "name": "T0 const& t0"
+    },
+    {
+      "lineno": 198,
+      "name": "T1 const& t1"
+    },
+    {
+      "lineno": 198,
+      "name": "T const&... t"
+    },
+    {
+      "lineno": 203,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 203,
+      "name": "T (&a)[N]"
+    },
+    {
+      "lineno": 210,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 210,
+      "name": "std::basic_string<CharT, Traits, Alloc> const& s"
+    },
+    {
+      "lineno": 217,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 217,
+      "name": "std::basic_string<CharT, Traits, Alloc> const& s"
+    },
+    {
+      "lineno": 224,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 224,
+      "name": "std::pair<T, U> const& p"
+    },
+    {
+      "lineno": 230,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 230,
+      "name": "std::vector<T, Alloc> const& v"
+    },
+    {
+      "lineno": 237,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 237,
+      "name": "std::vector<T, Alloc> const& v"
+    },
+    {
+      "lineno": 243,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 243,
+      "name": "std::array<T, N> const& a"
+    },
+    {
+      "lineno": 249,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 249,
+      "name": "boost::container::flat_set<Key, Compare, Alloc> const& v"
+    },
+    {
+      "lineno": 254,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 254,
+      "name": "boost::container::flat_set<Key, Compare, Alloc> const& v"
+    },
+    {
+      "lineno": 260,
+      "name": "..."
+    },
+    {
+      "lineno": 264,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 264,
+      "name": "T const& t"
+    },
+    {
+      "lineno": 269,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 269,
+      "name": "std::tuple<T...> const& t"
+    },
+    {
+      "lineno": 269,
+      "name": "std::index_sequence<I...>"
+    },
+    {
+      "lineno": 276,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 276,
+      "name": "std::tuple<T...> const& t"
+    },
+    {
+      "lineno": 282,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 282,
+      "name": "std::shared_ptr<T> const& p"
+    },
+    {
+      "lineno": 287,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 287,
+      "name": "std::chrono::duration<Rep, Period> const& d"
+    },
+    {
+      "lineno": 292,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 292,
+      "name": "std::chrono::time_point<Clock, Duration> const& tp"
+    },
+    {
+      "lineno": 297,
+      "name": "Hasher& h"
+    },
+    {
+      "lineno": 297,
+      "name": "T0 const& t0"
+    },
+    {
+      "lineno": 297,
+      "name": "T1 const& t1"
+    },
+    {
+      "lineno": 297,
+      "name": "T const&... t"
+    },
+    {
+      "lineno": 303,
+      "name": "HashAlgorithm& h"
+    },
+    {
+      "lineno": 303,
+      "name": "std::error_code const& ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "is_uniquely_represented"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "is_uniquely_represented<T const>"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "is_uniquely_represented<T volatile>"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "is_uniquely_represented<T const volatile>"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "is_uniquely_represented<std::pair<T, U>>"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "is_uniquely_represented<std::tuple<T...>>"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "is_uniquely_represented<T[N]>"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "is_uniquely_represented<std::array<T, N>>"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "is_contiguously_hashable"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "is_contiguously_hashable<T[N], HashAlgorithm>"
+    }
+  ],
+  "description": "This file provides a set of C++ template utilities and metafunctions for determining if types are uniquely represented and contiguously hashable, and for appending various types to a hash algorithm in a consistent, endian-aware way. It includes specializations for standard containers, tuples, pairs, arrays, and chrono types, and supports Boost and standard library types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/hash/hash_append.h",
+  "functions": [
+    {
+      "args": [
+        "T& t"
+      ],
+      "lineno": 15,
+      "name": "reverse_bytes"
+    },
+    {
+      "args": [
+        "T& t",
+        "std::false_type"
+      ],
+      "lineno": 23,
+      "name": "maybe_reverse_bytes"
+    },
+    {
+      "args": [
+        "T& t",
+        "std::true_type"
+      ],
+      "lineno": 28,
+      "name": "maybe_reverse_bytes"
+    },
+    {
+      "args": [
+        "T& t",
+        "Hasher&"
+      ],
+      "lineno": 33,
+      "name": "maybe_reverse_bytes"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T const& t"
+      ],
+      "lineno": 120,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T t"
+      ],
+      "lineno": 127,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T t"
+      ],
+      "lineno": 135,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::nullptr_t"
+      ],
+      "lineno": 143,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T (&a)[N]"
+      ],
+      "lineno": 150,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::basic_string<CharT, Traits, Alloc> const& s"
+      ],
+      "lineno": 154,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::basic_string<CharT, Traits, Alloc> const& s"
+      ],
+      "lineno": 158,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::pair<T, U> const& p"
+      ],
+      "lineno": 162,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::vector<T, Alloc> const& v"
+      ],
+      "lineno": 166,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::vector<T, Alloc> const& v"
+      ],
+      "lineno": 170,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::array<T, N> const& a"
+      ],
+      "lineno": 174,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::tuple<T...> const& t"
+      ],
+      "lineno": 178,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::unordered_map<Key, T, Hash, Pred, Alloc> const& m"
+      ],
+      "lineno": 182,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::unordered_set<Key, Hash, Pred, Alloc> const& s"
+      ],
+      "lineno": 187,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "boost::container::flat_set<Key, Compare, Alloc> const& v"
+      ],
+      "lineno": 192,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "boost::container::flat_set<Key, Compare, Alloc> const& v"
+      ],
+      "lineno": 195,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T0 const& t0",
+        "T1 const& t1",
+        "T const&... t"
+      ],
+      "lineno": 198,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T (&a)[N]"
+      ],
+      "lineno": 203,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::basic_string<CharT, Traits, Alloc> const& s"
+      ],
+      "lineno": 210,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::basic_string<CharT, Traits, Alloc> const& s"
+      ],
+      "lineno": 217,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::pair<T, U> const& p"
+      ],
+      "lineno": 224,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::vector<T, Alloc> const& v"
+      ],
+      "lineno": 230,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::vector<T, Alloc> const& v"
+      ],
+      "lineno": 237,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::array<T, N> const& a"
+      ],
+      "lineno": 243,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "boost::container::flat_set<Key, Compare, Alloc> const& v"
+      ],
+      "lineno": 249,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "boost::container::flat_set<Key, Compare, Alloc> const& v"
+      ],
+      "lineno": 254,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "..."
+      ],
+      "lineno": 260,
+      "name": "for_each_item"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T const& t"
+      ],
+      "lineno": 264,
+      "name": "hash_one"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::tuple<T...> const& t",
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 269,
+      "name": "tuple_hash"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::tuple<T...> const& t"
+      ],
+      "lineno": 276,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::shared_ptr<T> const& p"
+      ],
+      "lineno": 282,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::chrono::duration<Rep, Period> const& d"
+      ],
+      "lineno": 287,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::chrono::time_point<Clock, Duration> const& tp"
+      ],
+      "lineno": 292,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "T0 const& t0",
+        "T1 const& t1",
+        "T const&... t"
+      ],
+      "lineno": 297,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "HashAlgorithm& h",
+        "std::error_code const& ec"
+      ],
+      "lineno": 303,
+      "name": "hash_append"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 14,
+      "name": "detail"
+    },
+    {
+      "lineno": 258,
+      "name": "detail"
+    }
+  ]
+}

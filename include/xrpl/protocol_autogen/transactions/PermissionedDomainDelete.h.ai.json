@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 65,
+      "name": "account"
+    },
+    {
+      "lineno": 66,
+      "name": "domainID"
+    },
+    {
+      "lineno": 67,
+      "name": "sequence"
+    },
+    {
+      "lineno": 68,
+      "name": "fee"
+    },
+    {
+      "lineno": 75,
+      "name": "tx"
+    },
+    {
+      "lineno": 87,
+      "name": "value"
+    },
+    {
+      "lineno": 96,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 96,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "PermissionedDomainDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& domainID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 61,
+      "name": "PermissionedDomainDeleteBuilder"
+    }
+  ],
+  "description": "Defines the PermissionedDomainDelete transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/PermissionedDomainDelete.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "PermissionedDomainDelete"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getDomainID"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& domainID",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 65,
+      "name": "PermissionedDomainDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 75,
+      "name": "PermissionedDomainDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 87,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 96,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

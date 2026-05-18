@@ -1,0 +1,332 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 61,
+      "name": "ctx"
+    },
+    {
+      "lineno": 181,
+      "name": "view"
+    },
+    {
+      "lineno": 181,
+      "name": "preauthIndex"
+    },
+    {
+      "lineno": 181,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DepositPreauth::preflight",
+        "credentials::checkArray (if credentials fields present)",
+        "DepositPreauth::checkExtraFeatures (may be called elsewhere, e.g., feature gating)"
+      ],
+      "entry_point": "DepositPreauth::preflight",
+      "purpose": "Performs initial transaction validation: checks field presence, mutual exclusivity, account validity, and credentials array structure.",
+      "validation_points": [
+        "preflight: Checks that exactly one of sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials is present.",
+        "preflight: Validates account IDs (not zero, not self-preauth).",
+        "preflight: Calls credentials::checkArray for credentials arrays.",
+        "checkExtraFeatures: Ensures credentials fields are only allowed if featureCredentials is enabled."
+      ]
+    },
+    {
+      "call_chain": [
+        "DepositPreauth::preclaim"
+      ],
+      "entry_point": "DepositPreauth::preclaim",
+      "purpose": "Performs ledger state validation: checks existence/non-existence of accounts and preauth entries.",
+      "validation_points": [
+        "preclaim: Checks that target account exists for sfAuthorize.",
+        "preclaim: Checks for duplicate or missing preauth entries.",
+        "preclaim: For credentials arrays, checks issuer existence and uniqueness."
+      ]
+    },
+    {
+      "call_chain": [
+        "DepositPreauth::doApply",
+        "removeFromLedger (if unauthorizing)"
+      ],
+      "entry_point": "DepositPreauth::doApply",
+      "purpose": "Applies the transaction to the ledger, after all validations.",
+      "validation_points": [
+        "doApply: Assumes preflight and preclaim have already validated input."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAuthorize",
+      "flow": [
+        "ctx.tx[~sfAuthorize] (optional field extraction in preflight)",
+        "Checked for presence and value in preflight",
+        "Used in preclaim to check ledger state",
+        "Used in doApply to update ledger"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for presence (has_value)",
+        "Compared to sfAccount to prevent self-preauth"
+      ],
+      "validated_at": "preflight (presence, value, not self), preclaim (account exists, not duplicate)"
+    },
+    {
+      "field": "sfUnauthorize",
+      "flow": [
+        "ctx.tx[~sfUnauthorize] (optional field extraction in preflight)",
+        "Checked for presence and value in preflight",
+        "Used in preclaim to check ledger state",
+        "Used in doApply to update ledger"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for presence (has_value)"
+      ],
+      "validated_at": "preflight (presence, value), preclaim (entry exists)"
+    },
+    {
+      "field": "sfAuthorizeCredentials",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfAuthorizeCredentials) (preflight, checkExtraFeatures)",
+        "ctx.tx.getFieldArray(sfAuthorizeCredentials) (preflight, preclaim)",
+        "credentials::checkArray (preflight)",
+        "DepositPreauth::checkExtraFeatures (feature gating)",
+        "Used in preclaim for issuer checks"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for presence",
+        "Validated as array (size, structure)",
+        "Each element's issuer checked for existence"
+      ],
+      "validated_at": "preflight (array structure), checkExtraFeatures (feature gating), preclaim (issuer existence, uniqueness)"
+    },
+    {
+      "field": "sfUnauthorizeCredentials",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfUnauthorizeCredentials) (preflight, checkExtraFeatures)",
+        "ctx.tx.getFieldArray(sfUnauthorizeCredentials) (preflight, preclaim)",
+        "credentials::checkArray (preflight)",
+        "DepositPreauth::checkExtraFeatures (feature gating)",
+        "Used in preclaim for issuer checks"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for presence",
+        "Validated as array (size, structure)",
+        "Each element's issuer checked for existence"
+      ],
+      "validated_at": "preflight (array structure), checkExtraFeatures (feature gating), preclaim (issuer existence, uniqueness)"
+    }
+  ],
+  "description": "Implements the DepositPreauth transaction logic for the XRPL ledger, including preflight, preclaim, application, and removal of DepositPreauth entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic (field presence check) at DepositPreauth::preflight",
+      "issue_pattern": "Missing empty string validation for sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "why_false_positive": "explicit logic (field presence check) validates sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthorize, sfUnauthorize",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic (has_value check) at DepositPreauth::preflight",
+      "issue_pattern": "Missing empty string validation for sfAuthorize, sfUnauthorize",
+      "why_false_positive": "explicit logic (has_value check) validates sfAuthorize, sfUnauthorize for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthorize",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic (equality check) at DepositPreauth::preflight",
+      "issue_pattern": "Missing empty string validation for sfAuthorize",
+      "why_false_positive": "explicit logic (equality check) validates sfAuthorize for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfAuthorizeCredentials, sfUnauthorizeCredentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::checkArray at DepositPreauth::preflight",
+      "issue_pattern": "Missing empty string validation for sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "why_false_positive": "credentials::checkArray validates sfAuthorizeCredentials, sfUnauthorizeCredentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "sfAuthorizeCredentials, sfUnauthorizeCredentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "DepositPreauth::checkExtraFeatures at DepositPreauth::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "why_false_positive": "DepositPreauth::checkExtraFeatures validates sfAuthorizeCredentials, sfUnauthorizeCredentials for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/payment/DepositPreauth.cpp",
+  "functions": [
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 11,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 61,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "view",
+        "preauthIndex",
+        "j"
+      ],
+      "lineno": 181,
+      "name": "removeFromLedger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "DepositPreauth is typically tested in unit/integration tests under the transaction processing suite, e.g., 'test/tx/DepositPreauth_test.cpp' or similar. Tests likely cover: valid/invalid field combinations, self-preauth, zero account, credentials array size/structure, feature gating, and ledger state checks (duplicate, missing entries). Gaps may exist for edge cases in credentials array validation (e.g., duplicate issuers, malformed elements), and for feature gating if featureCredentials is toggled. Tests for checkExtraFeatures may be indirect unless feature toggling is explicitly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl custom validation (no external framework detected)",
+    "validation_layer": "business_logic (preflight/preclaim methods in transactor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "location": "DepositPreauth::preflight",
+      "validated_by": "explicit logic (field presence check)",
+      "validates": [
+        "Exactly one of the four fields (sfAuthorize, sfUnauthorize, sfAuthorizeCredentials, sfUnauthorizeCredentials) must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_ACCOUNT_ID",
+      "field": "sfAuthorize, sfUnauthorize",
+      "location": "DepositPreauth::preflight",
+      "validated_by": "explicit logic (has_value check)",
+      "validates": [
+        "If sfAuthorize or sfUnauthorize is present, the value must be a valid (non-zero) AccountID"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temCANNOT_PREAUTH_SELF",
+      "field": "sfAuthorize",
+      "location": "DepositPreauth::preflight",
+      "validated_by": "explicit logic (equality check)",
+      "validates": [
+        "An account cannot preauthorize itself (sfAuthorize must not equal sfAccount)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "various (depends on credentials::checkArray, but not tesSUCCESS)",
+      "field": "sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "location": "DepositPreauth::preflight",
+      "validated_by": "credentials::checkArray",
+      "validates": [
+        "Credential array must pass credentials::checkArray (likely checks size, format, and content of array)"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "implicit (feature not enabled, transaction not allowed)",
+      "field": "sfAuthorizeCredentials, sfUnauthorizeCredentials",
+      "location": "DepositPreauth::checkExtraFeatures",
+      "validated_by": "DepositPreauth::checkExtraFeatures",
+      "validates": [
+        "If credential arrays are present, featureCredentials must be enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    }
+  ]
+}

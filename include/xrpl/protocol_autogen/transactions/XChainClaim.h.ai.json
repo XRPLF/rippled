@@ -1,0 +1,149 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "tx"
+    },
+    {
+      "lineno": 109,
+      "name": "account"
+    },
+    {
+      "lineno": 110,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 111,
+      "name": "xChainClaimID"
+    },
+    {
+      "lineno": 112,
+      "name": "destination"
+    },
+    {
+      "lineno": 113,
+      "name": "amount"
+    },
+    {
+      "lineno": 114,
+      "name": "sequence"
+    },
+    {
+      "lineno": 115,
+      "name": "fee"
+    },
+    {
+      "lineno": 167,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 167,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 122,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 19,
+      "name": "XChainClaim"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 104,
+      "name": "XChainClaimBuilder"
+    }
+  ],
+  "description": "Defines the XChainClaim transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing XChainClaim transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/XChainClaim.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getXChainClaimID"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 120,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 129,
+      "name": "setXChainClaimID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 138,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 147,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 156,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 165,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Source"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "Results"
+    }
+  ],
+  "description": "Defines the abstract Source class for providing peer addresses in the XRPL PeerFinder module, used for bootstrapping or fallback when local peer caches are unavailable.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Source.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "~Source"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "cancel"
+    },
+    {
+      "args": [
+        "results",
+        "journal"
+      ],
+      "lineno": 39,
+      "name": "fetch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "PeerFinder"
+    }
+  ]
+}

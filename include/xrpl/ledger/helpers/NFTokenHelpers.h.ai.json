@@ -1,0 +1,300 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "view"
+    },
+    {
+      "lineno": 14,
+      "name": "directory"
+    },
+    {
+      "lineno": 15,
+      "name": "maxDeletableOffers"
+    },
+    {
+      "lineno": 20,
+      "name": "nftokenID"
+    },
+    {
+      "lineno": 23,
+      "name": "owner"
+    },
+    {
+      "lineno": 31,
+      "name": "token_"
+    },
+    {
+      "lineno": 31,
+      "name": "page_"
+    },
+    {
+      "lineno": 42,
+      "name": "nft"
+    },
+    {
+      "lineno": 49,
+      "name": "page"
+    },
+    {
+      "lineno": 62,
+      "name": "offer"
+    },
+    {
+      "lineno": 78,
+      "name": "a"
+    },
+    {
+      "lineno": 78,
+      "name": "b"
+    },
+    {
+      "lineno": 82,
+      "name": "uri"
+    },
+    {
+      "lineno": 91,
+      "name": "acctID"
+    },
+    {
+      "lineno": 92,
+      "name": "amount"
+    },
+    {
+      "lineno": 93,
+      "name": "dest"
+    },
+    {
+      "lineno": 94,
+      "name": "expiration"
+    },
+    {
+      "lineno": 95,
+      "name": "nftFlags"
+    },
+    {
+      "lineno": 96,
+      "name": "rules"
+    },
+    {
+      "lineno": 98,
+      "name": "txFlags"
+    },
+    {
+      "lineno": 103,
+      "name": "nftIssuer"
+    },
+    {
+      "lineno": 106,
+      "name": "xferFee"
+    },
+    {
+      "lineno": 107,
+      "name": "j"
+    },
+    {
+      "lineno": 117,
+      "name": "seqProxy"
+    },
+    {
+      "lineno": 120,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 127,
+      "name": "id"
+    },
+    {
+      "lineno": 129,
+      "name": "issue"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "token_",
+        "page_"
+      ],
+      "lineno": 27,
+      "name": "TokenAndPage"
+    }
+  ],
+  "description": "This file provides helper functions and structures for managing NFTs (Non-Fungible Tokens) in the XRPL ledger, including token offer management, token directory operations, and preflight/preclaim checks for NFT-related transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/NFTokenHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "directory",
+        "maxDeletableOffers"
+      ],
+      "lineno": 13,
+      "name": "removeTokenOffersWithLimit"
+    },
+    {
+      "args": [
+        "view",
+        "nftokenID"
+      ],
+      "lineno": 19,
+      "name": "notTooManyOffers"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nftokenID"
+      ],
+      "lineno": 22,
+      "name": "findToken"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nftokenID"
+      ],
+      "lineno": 36,
+      "name": "findTokenAndPage"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nft"
+      ],
+      "lineno": 41,
+      "name": "insertToken"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nftokenID"
+      ],
+      "lineno": 44,
+      "name": "removeToken"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nftokenID",
+        "page"
+      ],
+      "lineno": 48,
+      "name": "removeToken"
+    },
+    {
+      "args": [
+        "view",
+        "offer"
+      ],
+      "lineno": 61,
+      "name": "deleteTokenOffer"
+    },
+    {
+      "args": [
+        "view",
+        "owner"
+      ],
+      "lineno": 73,
+      "name": "repairNFTokenDirectoryLinks"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 77,
+      "name": "compareTokens"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "nftokenID",
+        "uri"
+      ],
+      "lineno": 79,
+      "name": "changeTokenURI"
+    },
+    {
+      "args": [
+        "acctID",
+        "amount",
+        "dest",
+        "expiration",
+        "nftFlags",
+        "rules",
+        "owner",
+        "txFlags"
+      ],
+      "lineno": 89,
+      "name": "tokenOfferCreatePreflight"
+    },
+    {
+      "args": [
+        "view",
+        "acctID",
+        "nftIssuer",
+        "amount",
+        "dest",
+        "nftFlags",
+        "xferFee",
+        "j",
+        "owner",
+        "txFlags"
+      ],
+      "lineno": 101,
+      "name": "tokenOfferCreatePreclaim"
+    },
+    {
+      "args": [
+        "view",
+        "acctID",
+        "amount",
+        "dest",
+        "expiration",
+        "seqProxy",
+        "nftokenID",
+        "priorBalance",
+        "j",
+        "txFlags"
+      ],
+      "lineno": 114,
+      "name": "tokenOfferCreateApply"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "j",
+        "issue"
+      ],
+      "lineno": 126,
+      "name": "checkTrustlineAuthorized"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "j",
+        "issue"
+      ],
+      "lineno": 132,
+      "name": "checkTrustlineDeepFrozen"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "nft"
+    }
+  ]
+}

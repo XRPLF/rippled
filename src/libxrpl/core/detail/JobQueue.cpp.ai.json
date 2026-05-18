@@ -1,0 +1,720 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "threadCount"
+    },
+    {
+      "lineno": 9,
+      "name": "collector"
+    },
+    {
+      "lineno": 10,
+      "name": "journal"
+    },
+    {
+      "lineno": 11,
+      "name": "logs"
+    },
+    {
+      "lineno": 12,
+      "name": "perfLog"
+    },
+    {
+      "lineno": 50,
+      "name": "type"
+    },
+    {
+      "lineno": 50,
+      "name": "name"
+    },
+    {
+      "lineno": 50,
+      "name": "func"
+    },
+    {
+      "lineno": 86,
+      "name": "t"
+    },
+    {
+      "lineno": 94,
+      "name": "t"
+    },
+    {
+      "lineno": 102,
+      "name": "t"
+    },
+    {
+      "lineno": 115,
+      "name": "t"
+    },
+    {
+      "lineno": 115,
+      "name": "name"
+    },
+    {
+      "lineno": 125,
+      "name": "t"
+    },
+    {
+      "lineno": 125,
+      "name": "count"
+    },
+    {
+      "lineno": 125,
+      "name": "elapsed"
+    },
+    {
+      "lineno": 140,
+      "name": "c"
+    },
+    {
+      "lineno": 183,
+      "name": "type"
+    },
+    {
+      "lineno": 218,
+      "name": "job"
+    },
+    {
+      "lineno": 244,
+      "name": "type"
+    },
+    {
+      "lineno": 257,
+      "name": "instance"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "JobQueue::JobQueue",
+        "JobTypes::instance()",
+        "JobTypes::instance().getInvalid()",
+        "m_workers(*this, &perfLog, \"JobQueue\", threadCount)",
+        "m_collector->make_hook",
+        "m_collector->make_gauge"
+      ],
+      "entry_point": "JobQueue::JobQueue",
+      "purpose": "Initializes the JobQueue, sets up job types, worker threads, and metrics.",
+      "validation_points": [
+        "JobTypes::instance() validated by XRPL_ASSERT (ensures job types are added)",
+        "threadCount validated by implicit usage/logging (JLOG)"
+      ]
+    },
+    {
+      "call_chain": [
+        "JobQueue::addRefCountedJob",
+        "XRPL_ASSERT(type != jtINVALID)",
+        "m_jobData.find(type)",
+        "XRPL_ASSERT(iter != m_jobData.end())",
+        "XRPL_ASSERT((type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || m_workers.getNumberOfThreads() > 0)",
+        "m_jobSet.emplace(...)",
+        "XRPL_ASSERT(type != jtINVALID)",
+        "XRPL_ASSERT(m_jobSet.contains(job))",
+        "perfLog_.jobQueue(type)",
+        "getJobTypeData(type)",
+        "getJobLimit(type)",
+        "m_workers.addTask() / ++data.deferred"
+      ],
+      "entry_point": "JobQueue::addRefCountedJob",
+      "purpose": "Adds a job to the queue, validates job type, ensures threads are available, and updates job data.",
+      "validation_points": [
+        "XRPL_ASSERT(type != jtINVALID)",
+        "XRPL_ASSERT(iter != m_jobData.end())",
+        "XRPL_ASSERT((type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || m_workers.getNumberOfThreads() > 0)",
+        "XRPL_ASSERT(type != jtINVALID) (again after emplace)",
+        "XRPL_ASSERT(m_jobSet.contains(job))"
+      ]
+    },
+    {
+      "call_chain": [
+        "JobQueue::collect",
+        "job_count = m_jobSet.size()"
+      ],
+      "entry_point": "JobQueue::collect",
+      "purpose": "Collects and updates the current job count metric.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JobQueue::getJobCount",
+        "m_jobData.find(t)"
+      ],
+      "entry_point": "JobQueue::getJobCount",
+      "purpose": "Returns the number of waiting jobs for a given type.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JobQueue::getJobCountTotal",
+        "m_jobData.find(t)"
+      ],
+      "entry_point": "JobQueue::getJobCountTotal",
+      "purpose": "Returns the total number of waiting and running jobs for a given type.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JobQueue::getJobCountGE",
+        "for (auto const& x : m_jobData) { if (x.first >= t) ... }"
+      ],
+      "entry_point": "JobQueue::getJobCountGE",
+      "purpose": "Returns the number of jobs at or above a given priority.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "threadCount",
+      "flow": [
+        "JobQueue::JobQueue parameter",
+        "m_workers(*this, &perfLog, \"JobQueue\", threadCount)",
+        "JLOG(m_journal.info()) << \"Using \" << threadCount << \"  threads\""
+      ],
+      "origin": "JobQueue::JobQueue parameter",
+      "transformations": [
+        "Passed to m_workers for thread pool creation",
+        "Logged for informational purposes"
+      ],
+      "validated_at": "Implicitly validated by usage/logging; explicit validation not shown"
+    },
+    {
+      "field": "type (JobType)",
+      "flow": [
+        "addRefCountedJob parameter",
+        "XRPL_ASSERT(type != jtINVALID)",
+        "m_jobData.find(type)",
+        "XRPL_ASSERT(iter != m_jobData.end())",
+        "m_jobSet.emplace(type, ...)",
+        "XRPL_ASSERT(type != jtINVALID)",
+        "XRPL_ASSERT(m_jobSet.contains(job))",
+        "perfLog_.jobQueue(type)",
+        "getJobTypeData(type)",
+        "getJobLimit(type)"
+      ],
+      "origin": "addRefCountedJob parameter",
+      "transformations": [
+        "Checked for validity (not jtINVALID)",
+        "Looked up in m_jobData",
+        "Used to create and track job in m_jobSet",
+        "Used for performance logging and job limit checks"
+      ],
+      "validated_at": "Multiple XRPL_ASSERTs in addRefCountedJob"
+    },
+    {
+      "field": "m_jobData",
+      "flow": [
+        "JobQueue::JobQueue",
+        "for (auto const& x : JobTypes::instance())",
+        "m_jobData.emplace(jt.type(), ...)",
+        "Used in addRefCountedJob, getJobCount, getJobCountTotal, getJobCountGE"
+      ],
+      "origin": "Initialized in JobQueue::JobQueue from JobTypes::instance()",
+      "transformations": [
+        "Populated with JobTypeInfo and metrics objects",
+        "Queried and updated as jobs are added and processed"
+      ],
+      "validated_at": "XRPL_ASSERT(result.second == true) in JobQueue::JobQueue"
+    },
+    {
+      "field": "m_workers",
+      "flow": [
+        "JobQueue::JobQueue",
+        "m_workers(*this, &perfLog, \"JobQueue\", threadCount)",
+        "Used in addRefCountedJob for getNumberOfThreads() and addTask()"
+      ],
+      "origin": "Constructed in JobQueue::JobQueue with threadCount",
+      "transformations": [
+        "Thread pool management",
+        "Checked for available threads before adding jobs"
+      ],
+      "validated_at": "XRPL_ASSERT((type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) || m_workers.getNumberOfThreads() > 0)"
+    },
+    {
+      "field": "job_count",
+      "flow": [
+        "JobQueue::JobQueue",
+        "job_count = m_collector->make_gauge(\"job_count\")",
+        "Updated in JobQueue::collect() as job_count = m_jobSet.size()"
+      ],
+      "origin": "Created in JobQueue::JobQueue via m_collector->make_gauge",
+      "transformations": [
+        "Metric gauge for current job count"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements the JobQueue class for managing and processing jobs in a multi-threaded environment, including job scheduling, execution, monitoring, and statistics reporting for the XRPL (XRP Ledger) server.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "JobType (enum, type-checked)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field JobType (enum, type-checked) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for JobType (enum, type-checked)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates JobType (enum, type-checked) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "threadCount (int, type-checked)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field threadCount (int, type-checked) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for threadCount (int, type-checked)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates threadCount (int, type-checked) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "m_jobData (map, checked for existence)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field m_jobData (map, checked for existence) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for m_jobData (map, checked for existence)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates m_jobData (map, checked for existence) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.5,
+      "detection_keywords": [
+        "threadCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit (usage/logging) at JobQueue constructor",
+      "issue_pattern": "Missing empty string validation for threadCount",
+      "why_false_positive": "implicit (usage/logging) validates threadCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "JobTypes::instance()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at JobQueue constructor",
+      "issue_pattern": "Missing empty string validation for JobTypes::instance()",
+      "why_false_positive": "XRPL_ASSERT validates JobTypes::instance() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (JobType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at addRefCountedJob",
+      "issue_pattern": "Missing empty string validation for type (JobType)",
+      "why_false_positive": "XRPL_ASSERT validates type (JobType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (JobType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at addRefCountedJob",
+      "issue_pattern": "Missing empty string validation for type (JobType)",
+      "why_false_positive": "XRPL_ASSERT validates type (JobType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (JobType) and thread count",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at addRefCountedJob",
+      "issue_pattern": "Missing empty string validation for type (JobType) and thread count",
+      "why_false_positive": "XRPL_ASSERT validates type (JobType) and thread count for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "job (in m_jobSet)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at addRefCountedJob",
+      "issue_pattern": "Missing empty string validation for job (in m_jobSet)",
+      "why_false_positive": "XRPL_ASSERT validates job (in m_jobSet) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/detail/JobQueue.cpp",
+  "functions": [
+    {
+      "args": [
+        "threadCount",
+        "collector",
+        "journal",
+        "logs",
+        "perfLog"
+      ],
+      "lineno": 7,
+      "name": "JobQueue::JobQueue"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "JobQueue::~JobQueue"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "JobQueue::collect"
+    },
+    {
+      "args": [
+        "type",
+        "name",
+        "func"
+      ],
+      "lineno": 49,
+      "name": "JobQueue::addRefCountedJob"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 85,
+      "name": "JobQueue::getJobCount"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 93,
+      "name": "JobQueue::getJobCountTotal"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 101,
+      "name": "JobQueue::getJobCountGE"
+    },
+    {
+      "args": [
+        "t",
+        "name"
+      ],
+      "lineno": 114,
+      "name": "JobQueue::makeLoadEvent"
+    },
+    {
+      "args": [
+        "t",
+        "count",
+        "elapsed"
+      ],
+      "lineno": 124,
+      "name": "JobQueue::addLoadEvents"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "JobQueue::isOverloaded"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 139,
+      "name": "JobQueue::getJson"
+    },
+    {
+      "args": [],
+      "lineno": 176,
+      "name": "JobQueue::rendezvous"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 182,
+      "name": "JobQueue::getJobTypeData"
+    },
+    {
+      "args": [],
+      "lineno": 194,
+      "name": "JobQueue::stop"
+    },
+    {
+      "args": [],
+      "lineno": 213,
+      "name": "JobQueue::isStopped"
+    },
+    {
+      "args": [
+        "job"
+      ],
+      "lineno": 217,
+      "name": "JobQueue::getNextJob"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 243,
+      "name": "JobQueue::finishJob"
+    },
+    {
+      "args": [
+        "instance"
+      ],
+      "lineno": 256,
+      "name": "JobQueue::processTask"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 292,
+      "name": "JobQueue::getJobLimit"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested in the XRPLF/rippled repository under test modules such as src/test/core/JobQueue_test.cpp or similar. These tests typically cover job addition, job limits, thread pool behavior, and validation failures (e.g., invalid job types). However, not all validation paths (especially XRPL_ASSERTs for internal invariants) may be directly tested, as some are intended to catch programming errors rather than user input errors. There may be limited coverage for edge cases like zero threads, invalid job types, or shutdown ordering. Tests for metrics (job_count, hooks) may also be limited.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "JobType (enum, type-checked)",
+      "threadCount (int, type-checked)",
+      "m_jobData (map, checked for existence)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.5,
+      "error_thrown": "none (just logs thread count)",
+      "field": "threadCount",
+      "location": "JobQueue constructor",
+      "validated_by": "implicit (usage/logging)",
+      "validates": [
+        "threadCount is used to create worker threads",
+        "no explicit check for >0, but see below"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "contract violation (likely assertion failure)",
+      "field": "JobTypes::instance()",
+      "location": "JobQueue constructor",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "result.second == true",
+        "ensures each job type is added to m_jobData"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "contract violation (assertion failure)",
+      "field": "type (JobType)",
+      "location": "addRefCountedJob",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "type != jtINVALID",
+        "job type must be valid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "contract violation (assertion failure)",
+      "field": "type (JobType)",
+      "location": "addRefCountedJob",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "iter != m_jobData.end()",
+        "job type must exist in m_jobData"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "contract violation (assertion failure)",
+      "field": "type (JobType) and thread count",
+      "location": "addRefCountedJob",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "if job type is not a client job, there must be worker threads",
+        "either (type is client job) OR (threads > 0)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "contract violation (assertion failure)",
+      "field": "job (in m_jobSet)",
+      "location": "addRefCountedJob",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "job.getType() != jtINVALID",
+        "job is present in m_jobSet after insertion"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,614 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TransactionAcquire::onTimer",
+        "TransactionAcquire::trigger",
+        "TransactionAcquire::done"
+      ],
+      "entry_point": "TransactionAcquire::onTimer",
+      "purpose": "Handles periodic timeout events for transaction set acquisition, triggers peer requests or marks as failed/complete.",
+      "validation_points": [
+        "onTimer: if (timeouts_ > MAX_TIMEOUTS)",
+        "onTimer: if (timeouts_ >= NORM_TIMEOUTS)",
+        "trigger: if (complete_)",
+        "trigger: if (failed_)",
+        "trigger: if (!mHaveRoot)",
+        "trigger: if (!mMap->isValid())"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionAcquire::trigger",
+        "TransactionAcquire::done"
+      ],
+      "entry_point": "TransactionAcquire::trigger",
+      "purpose": "Handles the logic for requesting missing transaction set nodes from peers, or marks acquisition as complete/failed.",
+      "validation_points": [
+        "trigger: if (complete_)",
+        "trigger: if (failed_)",
+        "trigger: if (!mHaveRoot)",
+        "trigger: if (!mMap->isValid())"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionAcquire::done"
+      ],
+      "entry_point": "TransactionAcquire::done",
+      "purpose": "Finalizes the acquisition process, either marking as failed or passing the acquired set to the application.",
+      "validation_points": [
+        "done: if (failed_)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "timeouts_",
+      "flow": [
+        "TimeoutCounter (base class)",
+        "TransactionAcquire::onTimer (checks and increments)",
+        "TransactionAcquire::trigger (affects query type)"
+      ],
+      "origin": "Inherited from TimeoutCounter, incremented on each timer event",
+      "transformations": [
+        "Incremented on each timeout",
+        "Compared to NORM_TIMEOUTS and MAX_TIMEOUTS for validation"
+      ],
+      "validated_at": "onTimer: if (timeouts_ > MAX_TIMEOUTS), if (timeouts_ >= NORM_TIMEOUTS)"
+    },
+    {
+      "field": "complete_",
+      "flow": [
+        "TransactionAcquire::trigger (set when mMap->isValid() and no missing nodes)",
+        "TransactionAcquire::done (checked for logging)"
+      ],
+      "origin": "TransactionAcquire member, set to true when acquisition is complete",
+      "transformations": [
+        "Set to true when acquisition is complete"
+      ],
+      "validated_at": "trigger: if (complete_)"
+    },
+    {
+      "field": "failed_",
+      "flow": [
+        "TransactionAcquire::onTimer (set if timeouts_ > MAX_TIMEOUTS)",
+        "TransactionAcquire::trigger (set if mMap is invalid or other failure)",
+        "TransactionAcquire::done (checked for logging)"
+      ],
+      "origin": "TransactionAcquire member, set to true on failure",
+      "transformations": [
+        "Set to true on failure"
+      ],
+      "validated_at": "onTimer: if (timeouts_ > MAX_TIMEOUTS), trigger: if (failed_)"
+    },
+    {
+      "field": "mHaveRoot",
+      "flow": [
+        "TransactionAcquire::trigger (checked to determine if root node is present)"
+      ],
+      "origin": "TransactionAcquire member, set when root node is acquired",
+      "transformations": [
+        "Set when root node is acquired"
+      ],
+      "validated_at": "trigger: if (!mHaveRoot)"
+    },
+    {
+      "field": "mMap",
+      "flow": [
+        "TransactionAcquire::trigger (checked for validity, used to get missing nodes)",
+        "TransactionAcquire::done (set immutable, passed to giveSet)"
+      ],
+      "origin": "Constructed in TransactionAcquire constructor as new SHAMap",
+      "transformations": [
+        "Built up as nodes are acquired",
+        "Set immutable when complete"
+      ],
+      "validated_at": "trigger: if (!mMap->isValid())"
+    }
+  ],
+  "description": "Implements the TransactionAcquire class, which manages the acquisition of transaction sets (SHAMap) from peers in the XRPL network, handling timeouts, peer requests, and node data integration for consensus operations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "peerSet (via unique_ptr)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field peerSet (via unique_ptr) validated by C++ type system, business logic checks, SHAMap/ProtoBuf for hash",
+      "issue_pattern": "Missing validation for peerSet (via unique_ptr)",
+      "why_false_positive": "C++ type system, business logic checks, SHAMap/ProtoBuf for hash validates peerSet (via unique_ptr) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hash (via uint256 type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field hash (via uint256 type) validated by C++ type system, business logic checks, SHAMap/ProtoBuf for hash",
+      "issue_pattern": "Missing validation for hash (via uint256 type)",
+      "why_false_positive": "C++ type system, business logic checks, SHAMap/ProtoBuf for hash validates hash (via uint256 type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "timeouts_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (timeouts_ > MAX_TIMEOUTS) at onTimer",
+      "issue_pattern": "Missing empty string validation for timeouts_",
+      "why_false_positive": "if (timeouts_ > MAX_TIMEOUTS) validates timeouts_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "timeouts_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (timeouts_ > MAX_TIMEOUTS) at onTimer",
+      "issue_pattern": "Missing range validation for timeouts_",
+      "why_false_positive": "if (timeouts_ > MAX_TIMEOUTS) validates timeouts_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "timeouts_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (timeouts_ >= NORM_TIMEOUTS) at onTimer",
+      "issue_pattern": "Missing empty string validation for timeouts_",
+      "why_false_positive": "if (timeouts_ >= NORM_TIMEOUTS) validates timeouts_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "timeouts_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (timeouts_ >= NORM_TIMEOUTS) at onTimer",
+      "issue_pattern": "Missing range validation for timeouts_",
+      "why_false_positive": "if (timeouts_ >= NORM_TIMEOUTS) validates timeouts_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "complete_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (complete_) at trigger",
+      "issue_pattern": "Missing empty string validation for complete_",
+      "why_false_positive": "if (complete_) validates complete_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "failed_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (failed_) at trigger",
+      "issue_pattern": "Missing empty string validation for failed_",
+      "why_false_positive": "if (failed_) validates failed_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mHaveRoot",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!mHaveRoot) at trigger",
+      "issue_pattern": "Missing empty string validation for mHaveRoot",
+      "why_false_positive": "if (!mHaveRoot) validates mHaveRoot for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "peerSet",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::move(peerSet) into mPeerSet at TransactionAcquire constructor",
+      "issue_pattern": "Missing empty string validation for peerSet",
+      "why_false_positive": "std::move(peerSet) into mPeerSet validates peerSet for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "peerSet",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::move(peerSet) into mPeerSet at TransactionAcquire constructor",
+      "issue_pattern": "Missing type validation for peerSet",
+      "why_false_positive": "std::move(peerSet) into mPeerSet validates peerSet type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "passed to SHAMap and set_ledgerhash at TransactionAcquire constructor, trigger",
+      "issue_pattern": "Missing empty string validation for hash",
+      "why_false_positive": "passed to SHAMap and set_ledgerhash validates hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/TransactionAcquire.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "uint256 const& hash",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 18,
+      "name": "TransactionAcquire"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "done"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& psl"
+      ],
+      "lineno": 51,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "pmDowncast"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Peer> const& peer"
+      ],
+      "lineno": 70,
+      "name": "trigger"
+    },
+    {
+      "args": [
+        "std::vector<std::pair<SHAMapNodeID, Slice>> const& data",
+        "std::shared_ptr<Peer> const& peer"
+      ],
+      "lineno": 110,
+      "name": "takeNodes"
+    },
+    {
+      "args": [
+        "std::size_t limit"
+      ],
+      "lineno": 163,
+      "name": "addPeers"
+    },
+    {
+      "args": [
+        "int numPeers"
+      ],
+      "lineno": 171,
+      "name": "init"
+    },
+    {
+      "args": [],
+      "lineno": 179,
+      "name": "stillNeed"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "TransactionAcquire is a core ledger acquisition component. Typical test coverage would be in integration/system tests for ledger sync and transaction set acquisition, likely in test files under 'src/test/ledger/' or 'src/test/app/'. Direct unit tests for TransactionAcquire may be limited due to its reliance on network and peer infrastructure. Validation paths (timeouts_, complete_, failed_, mHaveRoot) are likely exercised indirectly via tests that simulate timeouts, peer failures, and successful/failed acquisition. Gaps may exist in direct unit testing of edge cases (e.g., MAX_TIMEOUTS boundary, mMap invalidity, root node missing). Mocking or test harnesses would be needed for full coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "peerSet (via unique_ptr)",
+      "hash (via uint256 type)"
+    ],
+    "framework": "C++ type system, business logic checks, SHAMap/ProtoBuf for hash",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets failed_ = true, calls done())",
+      "field": "timeouts_",
+      "location": "onTimer",
+      "validated_by": "if (timeouts_ > MAX_TIMEOUTS)",
+      "validates": [
+        "timeouts_ does not exceed MAX_TIMEOUTS (20)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (calls trigger(nullptr))",
+      "field": "timeouts_",
+      "location": "onTimer",
+      "validated_by": "if (timeouts_ >= NORM_TIMEOUTS)",
+      "validates": [
+        "timeouts_ is at least NORM_TIMEOUTS (4)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs and returns)",
+      "field": "complete_",
+      "location": "trigger",
+      "validated_by": "if (complete_)",
+      "validates": [
+        "prevents trigger if already complete"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs and returns)",
+      "field": "failed_",
+      "location": "trigger",
+      "validated_by": "if (failed_)",
+      "validates": [
+        "prevents trigger if already failed"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (controls message sending)",
+      "field": "mHaveRoot",
+      "location": "trigger",
+      "validated_by": "if (!mHaveRoot)",
+      "validates": [
+        "checks if root node is present before requesting ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (relies on std::unique_ptr semantics)",
+      "field": "peerSet",
+      "location": "TransactionAcquire constructor",
+      "validated_by": "std::move(peerSet) into mPeerSet",
+      "validates": [
+        "peerSet must be a valid unique_ptr"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (relies on uint256 type and SHAMap/ProtoBuf validation)",
+      "field": "hash",
+      "location": "TransactionAcquire constructor, trigger",
+      "validated_by": "passed to SHAMap and set_ledgerhash",
+      "validates": [
+        "hash must be a valid uint256"
+      ],
+      "validation_type": "type/format"
+    }
+  ]
+}

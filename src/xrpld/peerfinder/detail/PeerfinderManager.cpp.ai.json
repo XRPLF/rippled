@@ -1,0 +1,701 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "io_context"
+    },
+    {
+      "lineno": 20,
+      "name": "clock"
+    },
+    {
+      "lineno": 21,
+      "name": "journal"
+    },
+    {
+      "lineno": 22,
+      "name": "config"
+    },
+    {
+      "lineno": 23,
+      "name": "collector"
+    },
+    {
+      "lineno": 53,
+      "name": "config"
+    },
+    {
+      "lineno": 61,
+      "name": "name"
+    },
+    {
+      "lineno": 61,
+      "name": "addresses"
+    },
+    {
+      "lineno": 66,
+      "name": "name"
+    },
+    {
+      "lineno": 66,
+      "name": "strings"
+    },
+    {
+      "lineno": 70,
+      "name": "name"
+    },
+    {
+      "lineno": 70,
+      "name": "url"
+    },
+    {
+      "lineno": 76,
+      "name": "local_endpoint"
+    },
+    {
+      "lineno": 76,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 82,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 87,
+      "name": "slot"
+    },
+    {
+      "lineno": 87,
+      "name": "endpoints"
+    },
+    {
+      "lineno": 92,
+      "name": "slot"
+    },
+    {
+      "lineno": 97,
+      "name": "slot"
+    },
+    {
+      "lineno": 102,
+      "name": "remote_address"
+    },
+    {
+      "lineno": 102,
+      "name": "eps"
+    },
+    {
+      "lineno": 109,
+      "name": "slot"
+    },
+    {
+      "lineno": 109,
+      "name": "local_endpoint"
+    },
+    {
+      "lineno": 114,
+      "name": "slot"
+    },
+    {
+      "lineno": 114,
+      "name": "key"
+    },
+    {
+      "lineno": 114,
+      "name": "reserved"
+    },
+    {
+      "lineno": 119,
+      "name": "slot"
+    },
+    {
+      "lineno": 146,
+      "name": "map"
+    },
+    {
+      "lineno": 151,
+      "name": "handler"
+    },
+    {
+      "lineno": 151,
+      "name": "collector"
+    },
+    {
+      "lineno": 173,
+      "name": "io_context"
+    },
+    {
+      "lineno": 174,
+      "name": "clock"
+    },
+    {
+      "lineno": 175,
+      "name": "journal"
+    },
+    {
+      "lineno": 176,
+      "name": "config"
+    },
+    {
+      "lineno": 177,
+      "name": "collector"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::asio::io_context& io_context",
+        "clock_type& clock",
+        "beast::Journal journal",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 13,
+      "name": "ManagerImp"
+    },
+    {
+      "args": [
+        "Handler const& handler",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 149,
+      "name": "Stats"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ManagerImp::setConfig",
+        "m_logic.config(config)"
+      ],
+      "entry_point": "setConfig",
+      "purpose": "Sets and validates the PeerFinder configuration.",
+      "validation_points": [
+        "m_logic.config(config)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::addFixedPeer",
+        "m_logic.addFixedPeer(name, addresses)"
+      ],
+      "entry_point": "addFixedPeer",
+      "purpose": "Adds a fixed peer (static peer) to the PeerFinder, validating name and addresses.",
+      "validation_points": [
+        "m_logic.addFixedPeer(name, addresses)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::addFallbackStrings",
+        "SourceStrings::New(name, strings)",
+        "m_logic.addStaticSource(...)"
+      ],
+      "entry_point": "addFallbackStrings",
+      "purpose": "Adds fallback peer sources from string lists, validating name and strings.",
+      "validation_points": [
+        "SourceStrings::New(name, strings)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::new_inbound_slot",
+        "m_logic.new_inbound_slot(local_endpoint, remote_endpoint)"
+      ],
+      "entry_point": "new_inbound_slot",
+      "purpose": "Creates a new inbound peer slot, validating local and remote endpoints.",
+      "validation_points": [
+        "m_logic.new_inbound_slot(local_endpoint, remote_endpoint)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Config object",
+      "flow": [
+        "setConfig(config)",
+        "m_logic.config(config)",
+        "Logic::config(config) (validation and storage)"
+      ],
+      "origin": "Passed to setConfig (external input)",
+      "transformations": [
+        "Config object may be checked for validity, normalized, or have defaults applied"
+      ],
+      "validated_at": "m_logic.config(config)"
+    },
+    {
+      "field": "Fixed peer name and addresses",
+      "flow": [
+        "addFixedPeer(name, addresses)",
+        "m_logic.addFixedPeer(name, addresses)",
+        "Logic::addFixedPeer(name, addresses) (validation and storage)"
+      ],
+      "origin": "Passed to addFixedPeer (external input)",
+      "transformations": [
+        "Addresses may be parsed, checked for duplicates, or validated for format"
+      ],
+      "validated_at": "m_logic.addFixedPeer(name, addresses)"
+    },
+    {
+      "field": "Fallback source name and strings",
+      "flow": [
+        "addFallbackStrings(name, strings)",
+        "SourceStrings::New(name, strings) (validation)",
+        "m_logic.addStaticSource(...)"
+      ],
+      "origin": "Passed to addFallbackStrings (external input)",
+      "transformations": [
+        "Strings parsed into endpoints, checked for validity"
+      ],
+      "validated_at": "SourceStrings::New(name, strings)"
+    },
+    {
+      "field": "local_endpoint, remote_endpoint",
+      "flow": [
+        "new_inbound_slot(local_endpoint, remote_endpoint)",
+        "m_logic.new_inbound_slot(local_endpoint, remote_endpoint)",
+        "Logic::new_inbound_slot(local_endpoint, remote_endpoint) (validation and slot creation)"
+      ],
+      "origin": "Passed to new_inbound_slot (external input, e.g. from network accept)",
+      "transformations": [
+        "Endpoints checked for validity, uniqueness, and possibly blacklisting"
+      ],
+      "validated_at": "m_logic.new_inbound_slot(local_endpoint, remote_endpoint)"
+    }
+  ],
+  "description": "Implements the PeerFinder Manager for XRPL, managing peer connections, slots, and related logic, including metrics collection and configuration.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "Config object",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_logic.config(config) at setConfig",
+      "issue_pattern": "Missing empty string validation for Config object",
+      "why_false_positive": "m_logic.config(config) validates Config object for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "name, addresses (for fixed peers)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_logic.addFixedPeer(name, addresses) at addFixedPeer",
+      "issue_pattern": "Missing empty string validation for name, addresses (for fixed peers)",
+      "why_false_positive": "m_logic.addFixedPeer(name, addresses) validates name, addresses (for fixed peers) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "name, strings (for fallback strings)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SourceStrings::New(name, strings) and m_logic.addStaticSource at addFallbackStrings",
+      "issue_pattern": "Missing empty string validation for name, strings (for fallback strings)",
+      "why_false_positive": "SourceStrings::New(name, strings) and m_logic.addStaticSource validates name, strings (for fallback strings) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "local_endpoint, remote_endpoint",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_logic.new_inbound_slot(local_endpoint, remote_endpoint) at new_inbound_slot",
+      "issue_pattern": "Missing empty string validation for local_endpoint, remote_endpoint",
+      "why_false_positive": "m_logic.new_inbound_slot(local_endpoint, remote_endpoint) validates local_endpoint, remote_endpoint for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/PeerfinderManager.cpp",
+  "functions": [
+    {
+      "args": [
+        "boost::asio::io_context& io_context",
+        "clock_type& clock",
+        "beast::Journal journal",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 18,
+      "name": "ManagerImp"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "~ManagerImp"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "Config const& config"
+      ],
+      "lineno": 52,
+      "name": "setConfig"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "config"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "std::vector<beast::IP::Endpoint> const& addresses"
+      ],
+      "lineno": 60,
+      "name": "addFixedPeer"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "std::vector<std::string> const& strings"
+      ],
+      "lineno": 65,
+      "name": "addFallbackStrings"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "std::string const& url"
+      ],
+      "lineno": 69,
+      "name": "addFallbackURL"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& local_endpoint",
+        "beast::IP::Endpoint const& remote_endpoint"
+      ],
+      "lineno": 75,
+      "name": "new_inbound_slot"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& remote_endpoint"
+      ],
+      "lineno": 81,
+      "name": "new_outbound_slot"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot",
+        "Endpoints const& endpoints"
+      ],
+      "lineno": 86,
+      "name": "on_endpoints"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot"
+      ],
+      "lineno": 91,
+      "name": "on_closed"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot"
+      ],
+      "lineno": 96,
+      "name": "on_failure"
+    },
+    {
+      "args": [
+        "boost::asio::ip::tcp::endpoint const& remote_address",
+        "std::vector<boost::asio::ip::tcp::endpoint> const& eps"
+      ],
+      "lineno": 101,
+      "name": "onRedirects"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot",
+        "beast::IP::Endpoint const& local_endpoint"
+      ],
+      "lineno": 108,
+      "name": "onConnected"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot",
+        "PublicKey const& key",
+        "bool reserved"
+      ],
+      "lineno": 113,
+      "name": "activate"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Slot> const& slot"
+      ],
+      "lineno": 118,
+      "name": "redirect"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "autoconnect"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "once_per_second"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "buildEndpointsForPeers"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "start"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& map"
+      ],
+      "lineno": 145,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "collect_metrics"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "Manager"
+    },
+    {
+      "args": [
+        "boost::asio::io_context& io_context",
+        "clock_type& clock",
+        "beast::Journal journal",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 171,
+      "name": "make_Manager"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "PeerFinderManager and its logic are typically tested via integration and unit tests in the PeerFinder subsystem. Likely test files: PeerFinder_test.cpp, PeerFinderLogic_test.cpp, and possibly config/Config_test.cpp. Tests should cover config validation, fixed peer addition, fallback source parsing, and slot creation. However, addFallbackURL is not implemented and thus not tested. Some validation logic may be tested only indirectly via higher-level PeerFinder tests. There may be gaps in negative testing (invalid input cases) and in direct unit tests for validation branches inside Logic and SourceStrings.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (Logic, SourceStrings, StoreSqdb, Checker)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (depends on Logic::config implementation)",
+      "field": "Config object",
+      "location": "setConfig",
+      "validated_by": "m_logic.config(config)",
+      "validates": [
+        "structure",
+        "values",
+        "business rules of Config"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (depends on Logic::addFixedPeer implementation)",
+      "field": "name, addresses (for fixed peers)",
+      "location": "addFixedPeer",
+      "validated_by": "m_logic.addFixedPeer(name, addresses)",
+      "validates": [
+        "name non-empty",
+        "addresses valid endpoints"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (depends on SourceStrings::New implementation)",
+      "field": "name, strings (for fallback strings)",
+      "location": "addFallbackStrings",
+      "validated_by": "SourceStrings::New(name, strings) and m_logic.addStaticSource",
+      "validates": [
+        "name non-empty",
+        "strings valid peer addresses"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (depends on Logic::new_inbound_slot implementation)",
+      "field": "local_endpoint, remote_endpoint",
+      "location": "new_inbound_slot",
+      "validated_by": "m_logic.new_inbound_slot(local_endpoint, remote_endpoint)",
+      "validates": [
+        "endpoints are valid",
+        "not blacklisted",
+        "not duplicate"
+      ],
+      "validation_type": "format|business_logic"
+    }
+  ]
+}

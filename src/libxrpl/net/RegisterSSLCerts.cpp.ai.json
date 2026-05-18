@@ -1,0 +1,459 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 11,
+      "name": "ec"
+    },
+    {
+      "lineno": 11,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "registerSSLCerts",
+        "CertOpenSystemStore (Windows only)",
+        "X509_STORE_new",
+        "CertEnumCertificatesInStore (loop)",
+        "d2i_X509",
+        "X509_STORE_add_cert",
+        "SSL_CTX_set_cert_store"
+      ],
+      "entry_point": "registerSSLCerts",
+      "purpose": "Loads system SSL certificates into an OpenSSL context, validating each step to ensure proper loading and error handling.",
+      "validation_points": [
+        "CertOpenSystemStore return value (hStore)",
+        "X509_STORE_new return value (store)",
+        "d2i_X509 return value (x509)",
+        "X509_STORE_add_cert return value",
+        "ctx.set_default_verify_paths (non-Windows)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hStore",
+      "flow": [
+        "CertOpenSystemStore",
+        "unique_ptr hStore",
+        "used in CertEnumCertificatesInStore"
+      ],
+      "origin": "CertOpenSystemStore(0, \"ROOT\")",
+      "transformations": [
+        "Wrapped in unique_ptr for RAII"
+      ],
+      "validated_at": "Immediately after CertOpenSystemStore call"
+    },
+    {
+      "field": "store",
+      "flow": [
+        "X509_STORE_new",
+        "unique_ptr store",
+        "passed to X509_STORE_add_cert",
+        "released to SSL_CTX_set_cert_store"
+      ],
+      "origin": "X509_STORE_new()",
+      "transformations": [
+        "Wrapped in unique_ptr for RAII"
+      ],
+      "validated_at": "Immediately after X509_STORE_new call"
+    },
+    {
+      "field": "x509",
+      "flow": [
+        "d2i_X509",
+        "unique_ptr x509",
+        "passed to X509_STORE_add_cert"
+      ],
+      "origin": "d2i_X509(NULL, &pbCertEncoded, pContext->cbCertEncoded)",
+      "transformations": [
+        "DER-encoded cert decoded to X509*"
+      ],
+      "validated_at": "Immediately after d2i_X509 call"
+    },
+    {
+      "field": "X509_STORE_add_cert return value",
+      "flow": [
+        "X509_STORE_add_cert",
+        "if success: x509.release()",
+        "if fail: warn()"
+      ],
+      "origin": "X509_STORE_add_cert(store.get(), x509.get())",
+      "transformations": [
+        "Certificate added to store or error logged"
+      ],
+      "validated_at": "Immediately after X509_STORE_add_cert call"
+    },
+    {
+      "field": "default SSL certificate paths",
+      "flow": [
+        "ctx.set_default_verify_paths",
+        "ec set if error"
+      ],
+      "origin": "ctx.set_default_verify_paths(ec)",
+      "transformations": [
+        "Sets default system certificate paths"
+      ],
+      "validated_at": "Return value of set_default_verify_paths"
+    }
+  ],
+  "description": "This file implements the registerSSLCerts function, which registers SSL certificates with a Boost.Asio SSL context, handling both Windows and non-Windows platforms. On Windows, it loads certificates from the system store and adds them to the OpenSSL context; on other platforms, it sets default verify paths.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "certificate store handle (hStore)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field certificate store handle (hStore) validated by OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+      "issue_pattern": "Missing validation for certificate store handle (hStore)",
+      "why_false_positive": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL validates certificate store handle (hStore) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "X509_STORE pointer (store)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field X509_STORE pointer (store) validated by OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+      "issue_pattern": "Missing validation for X509_STORE pointer (store)",
+      "why_false_positive": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL validates X509_STORE pointer (store) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "DER-encoded certificate decoding (x509)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field DER-encoded certificate decoding (x509) validated by OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+      "issue_pattern": "Missing validation for DER-encoded certificate decoding (x509)",
+      "why_false_positive": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL validates DER-encoded certificate decoding (x509) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "certificate addition to store",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field certificate addition to store validated by OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+      "issue_pattern": "Missing validation for certificate addition to store",
+      "why_false_positive": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL validates certificate addition to store automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "default SSL certificate paths",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field default SSL certificate paths validated by OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+      "issue_pattern": "Missing validation for default SSL certificate paths",
+      "why_false_positive": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL validates default SSL certificate paths automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hStore (certificate store handle)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "CertOpenSystemStore return value at registerSSLCerts",
+      "issue_pattern": "Missing empty string validation for hStore (certificate store handle)",
+      "why_false_positive": "CertOpenSystemStore return value validates hStore (certificate store handle) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "hStore (certificate store handle)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "CertOpenSystemStore return value at registerSSLCerts",
+      "issue_pattern": "Missing type validation for hStore (certificate store handle)",
+      "why_false_positive": "CertOpenSystemStore return value validates hStore (certificate store handle) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "store (OpenSSL X509_STORE pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "X509_STORE_new return value at registerSSLCerts",
+      "issue_pattern": "Missing empty string validation for store (OpenSSL X509_STORE pointer)",
+      "why_false_positive": "X509_STORE_new return value validates store (OpenSSL X509_STORE pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "store (OpenSSL X509_STORE pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "X509_STORE_new return value at registerSSLCerts",
+      "issue_pattern": "Missing type validation for store (OpenSSL X509_STORE pointer)",
+      "why_false_positive": "X509_STORE_new return value validates store (OpenSSL X509_STORE pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "x509 (OpenSSL X509 certificate pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "d2i_X509 return value at registerSSLCerts (inside certificate enumeration loop)",
+      "issue_pattern": "Missing empty string validation for x509 (OpenSSL X509 certificate pointer)",
+      "why_false_positive": "d2i_X509 return value validates x509 (OpenSSL X509 certificate pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "x509 (OpenSSL X509 certificate pointer)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "d2i_X509 return value at registerSSLCerts (inside certificate enumeration loop)",
+      "issue_pattern": "Missing format validation for x509 (OpenSSL X509 certificate pointer)",
+      "why_false_positive": "d2i_X509 return value validates x509 (OpenSSL X509 certificate pointer) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "X509_STORE_add_cert return value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "X509_STORE_add_cert return value at registerSSLCerts (inside certificate enumeration loop)",
+      "issue_pattern": "Missing empty string validation for X509_STORE_add_cert return value",
+      "why_false_positive": "X509_STORE_add_cert return value validates X509_STORE_add_cert return value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "default SSL certificate paths",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.set_default_verify_paths at registerSSLCerts (non-Windows branch)",
+      "issue_pattern": "Missing empty string validation for default SSL certificate paths",
+      "why_false_positive": "ctx.set_default_verify_paths validates default SSL certificate paths for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/net/RegisterSSLCerts.cpp",
+  "functions": [
+    {
+      "args": [
+        "ctx",
+        "ec",
+        "j"
+      ],
+      "lineno": 10,
+      "name": "registerSSLCerts"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is platform-specific (main logic only runs on Windows). There is no direct evidence in this file of unit or integration tests. Testing would require mocking Windows APIs (CertOpenSystemStore, CertEnumCertificatesInStore) and OpenSSL APIs (X509_STORE_new, d2i_X509, X509_STORE_add_cert). Test coverage is likely limited, especially for error paths and Windows-specific logic. Tests may exist in higher-level integration tests or in files that exercise SSL context initialization, but direct unit tests for this function are unlikely unless special test harnesses are used. Non-Windows path (ctx.set_default_verify_paths) is trivial and may be covered by generic SSL context tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "certificate store handle (hStore)",
+      "X509_STORE pointer (store)",
+      "DER-encoded certificate decoding (x509)",
+      "certificate addition to store",
+      "default SSL certificate paths"
+    ],
+    "framework": "OpenSSL, Windows CryptoAPI, Boost.Asio SSL",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code(GetLastError(), boost::system::system_category())",
+      "field": "hStore (certificate store handle)",
+      "location": "registerSSLCerts",
+      "validated_by": "CertOpenSystemStore return value",
+      "validates": [
+        "Checks if the Windows certificate store handle was successfully opened (not null)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code(static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category())",
+      "field": "store (OpenSSL X509_STORE pointer)",
+      "location": "registerSSLCerts",
+      "validated_by": "X509_STORE_new return value",
+      "validates": [
+        "Checks if the OpenSSL X509_STORE was successfully created (not null)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "warn('Error decoding certificate') (logs warning, does not throw/return error)",
+      "field": "x509 (OpenSSL X509 certificate pointer)",
+      "location": "registerSSLCerts (inside certificate enumeration loop)",
+      "validated_by": "d2i_X509 return value",
+      "validates": [
+        "Checks if the DER-encoded certificate can be decoded into an X509 structure"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "warn('Error adding certificate') (logs warning, does not throw/return error)",
+      "field": "X509_STORE_add_cert return value",
+      "location": "registerSSLCerts (inside certificate enumeration loop)",
+      "validated_by": "X509_STORE_add_cert return value",
+      "validates": [
+        "Checks if the decoded X509 certificate can be added to the X509_STORE (e.g., not duplicate, valid cert)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "boost::system::error_code (set via ec parameter)",
+      "field": "default SSL certificate paths",
+      "location": "registerSSLCerts (non-Windows branch)",
+      "validated_by": "ctx.set_default_verify_paths",
+      "validates": [
+        "Checks if the default system certificate paths can be set in the SSL context"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

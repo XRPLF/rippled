@@ -1,0 +1,117 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "t"
+    },
+    {
+      "lineno": 19,
+      "name": "h"
+    },
+    {
+      "lineno": 39,
+      "name": "first"
+    },
+    {
+      "lineno": 39,
+      "name": "last"
+    },
+    {
+      "lineno": 39,
+      "name": "seq_first"
+    },
+    {
+      "lineno": 39,
+      "name": "seq_last"
+    },
+    {
+      "lineno": 69,
+      "name": "slot"
+    },
+    {
+      "lineno": 80,
+      "name": "ep"
+    },
+    {
+      "lineno": 122,
+      "name": "slot"
+    },
+    {
+      "lineno": 133,
+      "name": "ep"
+    },
+    {
+      "lineno": 179,
+      "name": "needed"
+    },
+    {
+      "lineno": 179,
+      "name": "squelches"
+    },
+    {
+      "lineno": 185,
+      "name": "endpoint"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 67,
+      "name": "RedirectHandouts"
+    },
+    {
+      "args": [
+        "SlotImp::ptr const& slot"
+      ],
+      "lineno": 120,
+      "name": "SlotHandouts"
+    },
+    {
+      "args": [
+        "std::size_t needed",
+        "Squelches& squelches"
+      ],
+      "lineno": 176,
+      "name": "ConnectHandouts"
+    }
+  ],
+  "description": "This file provides utilities for distributing network endpoint information among peers in the XRPL PeerFinder system, including classes and functions for handing out endpoints for connection redirection, periodic sharing, and automatic connection attempts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Handouts.h",
+  "functions": [
+    {
+      "args": [
+        "Target& t",
+        "HopContainer& h"
+      ],
+      "lineno": 18,
+      "name": "handout_one"
+    },
+    {
+      "args": [
+        "TargetFwdIter first",
+        "TargetFwdIter last",
+        "SeqFwdIter seq_first",
+        "SeqFwdIter seq_last"
+      ],
+      "lineno": 38,
+      "name": "handout"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "PeerFinder"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ]
+}

@@ -1,0 +1,431 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "source"
+    },
+    {
+      "lineno": 19,
+      "name": "io_context"
+    },
+    {
+      "lineno": 20,
+      "name": "jobQueue"
+    },
+    {
+      "lineno": 21,
+      "name": "strUrl"
+    },
+    {
+      "lineno": 22,
+      "name": "strUsername"
+    },
+    {
+      "lineno": 23,
+      "name": "strPassword"
+    },
+    {
+      "lineno": 24,
+      "name": "registry"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "source",
+        "io_context",
+        "jobQueue",
+        "strUrl",
+        "strUsername",
+        "strPassword",
+        "registry"
+      ],
+      "lineno": 11,
+      "name": "RPCSubImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPCSubImp::RPCSubImp",
+        "parseUrl",
+        "manual scheme/port checks"
+      ],
+      "entry_point": "RPCSubImp::RPCSubImp",
+      "purpose": "Constructs a subscription object, validates and parses the URL, sets up connection parameters.",
+      "validation_points": [
+        "parseUrl (validates strUrl)",
+        "manual scheme check (validates parsedURL.scheme)",
+        "manual port check (validates parsedURL.port)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RPCSubImp::send",
+        "JobQueue::addJob",
+        "RPCSubImp::sendThread",
+        "RPCCall::fromNetwork"
+      ],
+      "entry_point": "RPCSubImp::send",
+      "purpose": "Queues and sends JSON-RPC events to the remote endpoint.",
+      "validation_points": [
+        "No new validation; relies on constructor's validation of connection parameters."
+      ]
+    },
+    {
+      "call_chain": [
+        "RPCSubImp::setUsername"
+      ],
+      "entry_point": "RPCSubImp::setUsername",
+      "purpose": "Sets the username for the RPC connection.",
+      "validation_points": [
+        "No validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "RPCSubImp::setPassword"
+      ],
+      "entry_point": "RPCSubImp::setPassword",
+      "purpose": "Sets the password for the RPC connection.",
+      "validation_points": [
+        "No validation."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "strUrl",
+      "flow": [
+        "RPCSubImp::RPCSubImp(strUrl)",
+        "parseUrl(pUrl, strUrl)",
+        "parsedURL fields assigned to member variables (mIp, mPort, mPath, mSSL)"
+      ],
+      "origin": "Constructor argument to RPCSubImp",
+      "transformations": [
+        "Parsed into parsedURL struct",
+        "Scheme checked for 'http'/'https'",
+        "Port defaulted if missing"
+      ],
+      "validated_at": "parseUrl and manual scheme/port checks in constructor"
+    },
+    {
+      "field": "parsedURL.scheme",
+      "flow": [
+        "parseUrl",
+        "manual if/else in constructor",
+        "sets mSSL"
+      ],
+      "origin": "Result of parseUrl",
+      "transformations": [
+        "Checked for 'http'/'https', else error"
+      ],
+      "validated_at": "manual check in constructor"
+    },
+    {
+      "field": "parsedURL.port",
+      "flow": [
+        "parseUrl",
+        "manual if/else in constructor",
+        "sets mPort"
+      ],
+      "origin": "Result of parseUrl",
+      "transformations": [
+        "If missing, defaulted to 443 (SSL) or 80 (non-SSL)"
+      ],
+      "validated_at": "manual check in constructor"
+    },
+    {
+      "field": "mUsername",
+      "flow": [
+        "RPCSubImp::RPCSubImp(strUsername) or setUsername(strUsername)",
+        "assigned to mUsername",
+        "used in RPCCall::fromNetwork"
+      ],
+      "origin": "Constructor argument or setUsername()",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "Not validated"
+    },
+    {
+      "field": "mPassword",
+      "flow": [
+        "RPCSubImp::RPCSubImp(strPassword) or setPassword(strPassword)",
+        "assigned to mPassword",
+        "used in RPCCall::fromNetwork"
+      ],
+      "origin": "Constructor argument or setPassword()",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "Not validated"
+    },
+    {
+      "field": "jvObj",
+      "flow": [
+        "send(jvObj)",
+        "queued in mDeque",
+        "sendThread() dequeues and adds 'seq'",
+        "passed to RPCCall::fromNetwork"
+      ],
+      "origin": "Argument to send()",
+      "transformations": [
+        "seq field added before sending"
+      ],
+      "validated_at": "Not validated"
+    }
+  ],
+  "description": "Implements a subscription object (RPCSubImp) for JSON-RPC in the XRPL server, handling sending of JSON events to remote endpoints via HTTP(S), with support for authentication and job queueing.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "strUrl",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseUrl() at RPCSubImp constructor",
+      "issue_pattern": "Missing empty string validation for strUrl",
+      "why_false_positive": "parseUrl() validates strUrl for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "strUrl",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseUrl() at RPCSubImp constructor",
+      "issue_pattern": "Missing format validation for strUrl",
+      "why_false_positive": "parseUrl() validates strUrl format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "parsedURL.scheme",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if/else) at RPCSubImp constructor",
+      "issue_pattern": "Missing empty string validation for parsedURL.scheme",
+      "why_false_positive": "manual check (if/else) validates parsedURL.scheme for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "parsedURL.port",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if/else) at RPCSubImp constructor",
+      "issue_pattern": "Missing empty string validation for parsedURL.port",
+      "why_false_positive": "manual check (if/else) validates parsedURL.port for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCSub.cpp",
+  "functions": [
+    {
+      "args": [
+        "jvObj",
+        "broadcast"
+      ],
+      "lineno": 46,
+      "name": "send"
+    },
+    {
+      "args": [
+        "strUsername"
+      ],
+      "lineno": 62,
+      "name": "setUsername"
+    },
+    {
+      "args": [
+        "strPassword"
+      ],
+      "lineno": 68,
+      "name": "setPassword"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "sendThread"
+    },
+    {
+      "args": [
+        "source",
+        "io_context",
+        "jobQueue",
+        "strUrl",
+        "strUsername",
+        "strPassword",
+        "registry"
+      ],
+      "lineno": 139,
+      "name": "make_RPCSub"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). Likely, tests would exist in higher-level integration or unit test files for RPC subscriptions, possibly under test/rpc or test/subscription directories. The critical validation logic (URL parsing, scheme/port checks) is only exercised via construction of RPCSubImp, so tests must construct this object with various URLs to cover validation paths. There is no evidence of negative tests for invalid usernames/passwords, nor for malformed JSON events. Gaps: No validation or tests for username/password content, no explicit tests for malformed or unsupported URLs unless covered elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (parseUrl, explicit checks)",
+    "validation_layer": "entry_point (constructor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Failed to parse url.\")",
+      "field": "strUrl",
+      "location": "RPCSubImp constructor",
+      "validated_by": "parseUrl()",
+      "validates": [
+        "URL is syntactically valid and can be parsed"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Only http and https is supported.\")",
+      "field": "parsedURL.scheme",
+      "location": "RPCSubImp constructor",
+      "validated_by": "manual check (if/else)",
+      "validates": [
+        "Scheme is either 'http' or 'https'"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (default port assigned if missing)",
+      "field": "parsedURL.port",
+      "location": "RPCSubImp constructor",
+      "validated_by": "manual check (if/else)",
+      "validates": [
+        "Port is present or defaulted to 443/80 based on scheme"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

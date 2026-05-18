@@ -1,0 +1,385 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "requestRole",
+        "isAdmin",
+        [
+          "ipAllowed",
+          "passwordUnrequiredOrSentCorrect"
+        ]
+      ],
+      "entry_point": "requestRole",
+      "purpose": "Determines the role (ADMIN, IDENTIFIED, PROXY, GUEST, FORBID) for an incoming request based on IP, credentials, and required role.",
+      "validation_points": [
+        "ipAllowed: Validates remoteIp against admin_nets_v4/v6",
+        "passwordUnrequiredOrSentCorrect: Validates admin_user/admin_password in params"
+      ]
+    },
+    {
+      "call_chain": [
+        "isAdmin",
+        [
+          "ipAllowed",
+          "passwordUnrequiredOrSentCorrect"
+        ]
+      ],
+      "entry_point": "isAdmin",
+      "purpose": "Checks if the request is from an admin by validating IP and credentials.",
+      "validation_points": [
+        "ipAllowed: Validates remoteIp against admin_nets_v4/v6",
+        "passwordUnrequiredOrSentCorrect: Validates admin_user/admin_password in params"
+      ]
+    },
+    {
+      "call_chain": [
+        "isUnlimited (Role, Port, Json::Value, Endpoint, string)",
+        "requestRole",
+        "isAdmin",
+        [
+          "ipAllowed",
+          "passwordUnrequiredOrSentCorrect"
+        ]
+      ],
+      "entry_point": "isUnlimited",
+      "purpose": "Checks if a request should have unlimited resources by determining its role.",
+      "validation_points": [
+        "ipAllowed: Validates remoteIp against admin_nets_v4/v6",
+        "passwordUnrequiredOrSentCorrect: Validates admin_user/admin_password in params"
+      ]
+    },
+    {
+      "call_chain": [
+        "requestInboundEndpoint",
+        "isUnlimited"
+      ],
+      "entry_point": "requestInboundEndpoint",
+      "purpose": "Creates a resource consumer for an inbound endpoint, using role and user info.",
+      "validation_points": [
+        "isUnlimited: Validates role (which is determined by requestRole and thus by ipAllowed/passwordUnrequiredOrSentCorrect)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "params['admin_password']",
+      "flow": [
+        "params['admin_password'] (input)",
+        "passwordUnrequiredOrSentCorrect",
+        "isAdmin",
+        "requestRole"
+      ],
+      "origin": "JSON RPC request parameters",
+      "transformations": [
+        "Checked with isString()",
+        "Compared to port.admin_password"
+      ],
+      "validated_at": "passwordUnrequiredOrSentCorrect"
+    },
+    {
+      "field": "params['admin_user']",
+      "flow": [
+        "params['admin_user'] (input)",
+        "passwordUnrequiredOrSentCorrect",
+        "isAdmin",
+        "requestRole"
+      ],
+      "origin": "JSON RPC request parameters",
+      "transformations": [
+        "Checked with isString()",
+        "Compared to port.admin_user"
+      ],
+      "validated_at": "passwordUnrequiredOrSentCorrect"
+    },
+    {
+      "field": "remoteIp",
+      "flow": [
+        "remoteIp (input)",
+        "ipAllowed",
+        "isAdmin",
+        "requestRole"
+      ],
+      "origin": "beast::IP::Endpoint from incoming connection",
+      "transformations": [
+        "Converted to string",
+        "Appended with /32 or /128",
+        "Converted to boost::asio::ip::network_v4/v6",
+        "Checked with is_subnet_of or =="
+      ],
+      "validated_at": "ipAllowed"
+    },
+    {
+      "field": "user",
+      "flow": [
+        "user (input)",
+        "requestRole"
+      ],
+      "origin": "Extracted from request (e.g., HTTP Basic Auth)",
+      "transformations": [
+        "Checked for empty()"
+      ],
+      "validated_at": "requestRole (if !user.empty() for IDENTIFIED role)"
+    },
+    {
+      "field": "port.admin_nets_v4 / port.admin_nets_v6",
+      "flow": [
+        "port.admin_nets_v4/v6 (config)",
+        "XRPL_ASSERT in passwordUnrequiredOrSentCorrect",
+        "ipAllowed"
+      ],
+      "origin": "Server configuration",
+      "transformations": [
+        "Checked for empty() in XRPL_ASSERT",
+        "Used as subnet list in ipAllowed"
+      ],
+      "validated_at": "XRPL_ASSERT in passwordUnrequiredOrSentCorrect, ipAllowed"
+    }
+  ],
+  "description": "This file provides utility functions for determining user roles and permissions (such as admin, guest, proxy, identified) based on IP address, HTTP request headers, and authentication parameters in the context of the XRPL server's RPC interface.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "port.admin_nets_v4 and port.admin_nets_v6",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at passwordUnrequiredOrSentCorrect",
+      "issue_pattern": "Missing empty string validation for port.admin_nets_v4 and port.admin_nets_v6",
+      "why_false_positive": "XRPL_ASSERT macro validates port.admin_nets_v4 and port.admin_nets_v6 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params['admin_password']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isString() method and string comparison at passwordUnrequiredOrSentCorrect",
+      "issue_pattern": "Missing empty string validation for params['admin_password']",
+      "why_false_positive": "isString() method and string comparison validates params['admin_password'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params['admin_user']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isString() method and string comparison at passwordUnrequiredOrSentCorrect",
+      "issue_pattern": "Missing empty string validation for params['admin_user']",
+      "why_false_positive": "isString() method and string comparison validates params['admin_user'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "remoteIp (beast::IP::Address)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::asio::ip::make_network_v4/make_network_v6, is_subnet_of, == at ipAllowed",
+      "issue_pattern": "Missing empty string validation for remoteIp (beast::IP::Address)",
+      "why_false_positive": "boost::asio::ip::make_network_v4/make_network_v6, is_subnet_of, == validates remoteIp (beast::IP::Address) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "user (string_view)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "empty() check at requestRole",
+      "issue_pattern": "Missing empty string validation for user (string_view)",
+      "why_false_positive": "empty() check validates user (string_view) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Role.cpp",
+  "functions": [
+    {
+      "args": [
+        "Port const& port",
+        "Json::Value const& params"
+      ],
+      "lineno": 6,
+      "name": "passwordUnrequiredOrSentCorrect"
+    },
+    {
+      "args": [
+        "beast::IP::Address const& remoteIp",
+        "std::vector<boost::asio::ip::network_v4> const& nets4",
+        "std::vector<boost::asio::ip::network_v6> const& nets6"
+      ],
+      "lineno": 19,
+      "name": "ipAllowed"
+    },
+    {
+      "args": [
+        "Port const& port",
+        "Json::Value const& params",
+        "beast::IP::Address const& remoteIp"
+      ],
+      "lineno": 49,
+      "name": "isAdmin"
+    },
+    {
+      "args": [
+        "Role const& required",
+        "Port const& port",
+        "Json::Value const& params",
+        "beast::IP::Endpoint const& remoteIp",
+        "std::string_view user"
+      ],
+      "lineno": 54,
+      "name": "requestRole"
+    },
+    {
+      "args": [
+        "Role const& role"
+      ],
+      "lineno": 74,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [
+        "Role const& required",
+        "Port const& port",
+        "Json::Value const& params",
+        "beast::IP::Endpoint const& remoteIp",
+        "std::string const& user"
+      ],
+      "lineno": 80,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [
+        "Resource::Manager& manager",
+        "beast::IP::Endpoint const& remoteAddress",
+        "Role const& role",
+        "std::string_view user",
+        "std::string_view forwardedFor"
+      ],
+      "lineno": 87,
+      "name": "requestInboundEndpoint"
+    },
+    {
+      "args": [
+        "std::string_view field"
+      ],
+      "lineno": 97,
+      "name": "extractIpAddrFromField"
+    },
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 176,
+      "name": "forwardedFor"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is critical for security (admin access, IP whitelisting, credential checks). Typical test coverage would be in unit tests for the RPC layer, possibly in files like 'test/rpc/Role_test.cpp', 'test/rpc/ServerHandler_test.cpp', or integration tests for admin endpoints. Gaps may exist if tests do not cover edge cases such as malformed IPs, empty admin nets, incorrect/missing credentials, or IPv6 subnets. There is no evidence in this file of direct test hooks or test-only code, so coverage depends on external test suites. The XRPL_ASSERT macro may not be tested unless assertions are enabled in test builds.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic, boost::asio, XRPL_ASSERT, Json::Value",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "port.admin_nets_v4 and port.admin_nets_v6",
+      "location": "passwordUnrequiredOrSentCorrect",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that at least one of admin_nets_v4 or admin_nets_v6 is non-empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false if invalid)",
+      "field": "params['admin_password']",
+      "location": "passwordUnrequiredOrSentCorrect",
+      "validated_by": "isString() method and string comparison",
+      "validates": [
+        "Checks that params['admin_password'] is a string",
+        "Checks that params['admin_password'] matches port.admin_password"
+      ],
+      "validation_type": "type, business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false if invalid)",
+      "field": "params['admin_user']",
+      "location": "passwordUnrequiredOrSentCorrect",
+      "validated_by": "isString() method and string comparison",
+      "validates": [
+        "Checks that params['admin_user'] is a string",
+        "Checks that params['admin_user'] matches port.admin_user"
+      ],
+      "validation_type": "type, business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false if not allowed)",
+      "field": "remoteIp (beast::IP::Address)",
+      "location": "ipAllowed",
+      "validated_by": "boost::asio::ip::make_network_v4/make_network_v6, is_subnet_of, ==",
+      "validates": [
+        "Checks if remoteIp is in any of the allowed IPv4 or IPv6 subnets"
+      ],
+      "validation_type": "business_logic, format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (role changes based on presence)",
+      "field": "user (string_view)",
+      "location": "requestRole",
+      "validated_by": "empty() check",
+      "validates": [
+        "Checks if user is non-empty to assign IDENTIFIED role"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,509 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "current"
+    },
+    {
+      "lineno": 16,
+      "name": "target"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "value_type current",
+        "value_type target"
+      ],
+      "lineno": 11,
+      "name": "VotableValue"
+    },
+    {
+      "args": [
+        "FeeSetup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 54,
+      "name": "FeeVoteImpl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "FeeVoteImpl::doValidation"
+      ],
+      "entry_point": "FeeVoteImpl::doValidation",
+      "purpose": "Validates and potentially sets fee-related fields in a validation object (STValidation) based on current ledger fees, protocol rules, and target configuration.",
+      "validation_points": [
+        "FeeVoteImpl::doValidation (checks protocol rule featureXRPFees, compares current vs target fees, only sets values if within valid range as per comment and logic)"
+      ]
+    },
+    {
+      "call_chain": [
+        "FeeVoteImpl::doVoting",
+        "detail::VotableValue::addVote",
+        "detail::VotableValue::getVotes"
+      ],
+      "entry_point": "FeeVoteImpl::doVoting",
+      "purpose": "Aggregates votes from parent validations and determines the most popular fee values to propose for the next ledger.",
+      "validation_points": [
+        "detail::VotableValue::getVotes (ensures only values between current and target are considered, picks most voted value)"
+      ]
+    },
+    {
+      "call_chain": [
+        "FeeVoteImpl::FeeVoteImpl",
+        "detail::VotableValue::VotableValue (constructor)"
+      ],
+      "entry_point": "FeeVoteImpl::FeeVoteImpl",
+      "purpose": "Constructs the FeeVoteImpl object, initializing the target fee setup and registering the initial vote.",
+      "validation_points": [
+        "detail::VotableValue::VotableValue (validates target_ by adding it as a vote)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "target_ (FeeSetup)",
+      "flow": [
+        "FeeVoteImpl::FeeVoteImpl (setup)",
+        "target_ member",
+        "used in doValidation and doVoting"
+      ],
+      "origin": "FeeVoteImpl constructor argument (setup)",
+      "transformations": [
+        "Stored as member variable",
+        "Passed to VotableValue as target"
+      ],
+      "validated_at": "detail::VotableValue::VotableValue (constructor)"
+    },
+    {
+      "field": "vote values (current, target)",
+      "flow": [
+        "Passed to VotableValue (current_, target_)",
+        "Votes added via addVote/noVote",
+        "Aggregated in voteMap_",
+        "Evaluated in getVotes"
+      ],
+      "origin": "Ledger fees (current), FeeSetup (target)",
+      "transformations": [
+        "Mapped and counted in voteMap_",
+        "Filtered to range between current and target in getVotes"
+      ],
+      "validated_at": "detail::VotableValue::getVotes"
+    },
+    {
+      "field": "fees (base, reserve, increment)",
+      "flow": [
+        "doValidation receives lastFees and target_",
+        "Compares lastFees fields to target_ fields",
+        "If different, sets value in STValidation"
+      ],
+      "origin": "Fees struct (lastFees), FeeSetup (target_)",
+      "transformations": [
+        "Type conversion (to32/to64) if featureXRPFees is not enabled",
+        "Direct assignment if featureXRPFees is enabled"
+      ],
+      "validated_at": "FeeVoteImpl::doValidation (range and protocol rule checks)"
+    },
+    {
+      "field": "featureXRPFees (protocol rule)",
+      "flow": [
+        "doValidation receives Rules",
+        "Checks rules.enabled(featureXRPFees)",
+        "Determines which voting logic to use"
+      ],
+      "origin": "Rules object",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "FeeVoteImpl::doValidation"
+    }
+  ],
+  "description": "Implements the fee voting mechanism for the XRPL ledger, allowing validators to vote on transaction fees and reserves, and to propose changes via transactions in the consensus process.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "target_ (FeeSetup)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "VotableValue constructor at detail::VotableValue::VotableValue",
+      "issue_pattern": "Missing empty string validation for target_ (FeeSetup)",
+      "why_false_positive": "VotableValue constructor validates target_ (FeeSetup) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "vote values (current, target)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "detail::VotableValue::getVotes at detail::VotableValue::getVotes",
+      "issue_pattern": "Missing empty string validation for vote values (current, target)",
+      "why_false_positive": "detail::VotableValue::getVotes validates vote values (current, target) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "vote values (current, target)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "detail::VotableValue::getVotes at detail::VotableValue::getVotes",
+      "issue_pattern": "Missing range validation for vote values (current, target)",
+      "why_false_positive": "detail::VotableValue::getVotes validates vote values (current, target) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "fees (base, reserve, increment)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "FeeVoteImpl::doValidation at FeeVoteImpl::doValidation",
+      "issue_pattern": "Missing empty string validation for fees (base, reserve, increment)",
+      "why_false_positive": "FeeVoteImpl::doValidation validates fees (base, reserve, increment) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "featureXRPFees (protocol rule)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "rules.enabled(featureXRPFees) at FeeVoteImpl::doValidation",
+      "issue_pattern": "Missing empty string validation for featureXRPFees (protocol rule)",
+      "why_false_positive": "rules.enabled(featureXRPFees) validates featureXRPFees (protocol rule) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "fee values (base, reserve, increment)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comment in FeeVoteImpl::doValidation at FeeVoteImpl::doValidation",
+      "issue_pattern": "Missing empty string validation for fee values (base, reserve, increment)",
+      "why_false_positive": "comment in FeeVoteImpl::doValidation validates fee values (base, reserve, increment) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fee values (base, reserve, increment)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "comment in FeeVoteImpl::doValidation at FeeVoteImpl::doValidation",
+      "issue_pattern": "Missing range validation for fee values (base, reserve, increment)",
+      "why_false_positive": "comment in FeeVoteImpl::doValidation validates fee values (base, reserve, increment) range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/FeeVoteImpl.cpp",
+  "functions": [
+    {
+      "args": [
+        "value_type vote"
+      ],
+      "lineno": 22,
+      "name": "VotableValue::addVote"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "VotableValue::noVote"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "VotableValue::current"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "VotableValue::getVotes"
+    },
+    {
+      "args": [
+        "FeeSetup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 61,
+      "name": "FeeVoteImpl::FeeVoteImpl"
+    },
+    {
+      "args": [
+        "Fees const& lastFees",
+        "Rules const& rules",
+        "STValidation& v"
+      ],
+      "lineno": 65,
+      "name": "FeeVoteImpl::doValidation"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& lastClosedLedger",
+        "std::vector<std::shared_ptr<STValidation>> const& set",
+        "std::shared_ptr<SHAMap> const& initialPosition"
+      ],
+      "lineno": 99,
+      "name": "FeeVoteImpl::doVoting"
+    },
+    {
+      "args": [
+        "FeeSetup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 202,
+      "name": "make_FeeVote"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by integration and unit tests for fee voting and validation logic. Look for test files such as FeeVote_test.cpp, Ledger_test.cpp, or Validation_test.cpp in the test or unit_test directories. However, the code relies on protocol rules and ledger state, so full coverage requires tests that simulate different rule activations (featureXRPFees enabled/disabled), out-of-range fee values, and voting scenarios. Gaps may exist if tests do not cover edge cases like invalid fee ranges, exception handling, or all protocol rule branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (no exception, just sets up vote map)",
+      "field": "target_ (FeeSetup)",
+      "location": "detail::VotableValue::VotableValue",
+      "validated_by": "VotableValue constructor",
+      "validates": [
+        "Ensures the target value is always included in the vote map"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (out-of-range values are ignored)",
+      "field": "vote values (current, target)",
+      "location": "detail::VotableValue::getVotes",
+      "validated_by": "detail::VotableValue::getVotes",
+      "validates": [
+        "Only considers votes between current and target (inclusive)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (does not throw, just skips setting field)",
+      "field": "fees (base, reserve, increment)",
+      "location": "FeeVoteImpl::doValidation",
+      "validated_by": "FeeVoteImpl::doValidation",
+      "validates": [
+        "Checks if current fee != target fee before voting",
+        "Skips voting if values are equal"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (conditional logic, not exception)",
+      "field": "featureXRPFees (protocol rule)",
+      "location": "FeeVoteImpl::doValidation",
+      "validated_by": "rules.enabled(featureXRPFees)",
+      "validates": [
+        "Only performs voting if featureXRPFees is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (out-of-range values are ignored, not set)",
+      "field": "fee values (base, reserve, increment)",
+      "location": "FeeVoteImpl::doValidation",
+      "validated_by": "comment in FeeVoteImpl::doValidation",
+      "validates": [
+        "If values are out of valid range, do not send a value"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

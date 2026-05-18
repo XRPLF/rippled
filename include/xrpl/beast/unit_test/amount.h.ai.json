@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "n"
+    },
+    {
+      "lineno": 29,
+      "name": "what"
+    },
+    {
+      "lineno": 33,
+      "name": "s"
+    },
+    {
+      "lineno": 33,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "amount const&",
+        "std::size_t n, std::string const& what"
+      ],
+      "lineno": 12,
+      "name": "amount"
+    }
+  ],
+  "description": "Provides a utility class for producing nicely formatted output of amounts with units, primarily for unit testing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/amount.h",
+  "functions": [
+    {
+      "args": [
+        "amount const&"
+      ],
+      "lineno": 18,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "std::string const& what"
+      ],
+      "lineno": 21,
+      "name": "amount"
+    },
+    {
+      "args": [
+        "std::ostream& s",
+        "amount const& t"
+      ],
+      "lineno": 24,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "std::string const& what"
+      ],
+      "lineno": 29,
+      "name": "amount"
+    },
+    {
+      "args": [
+        "std::ostream& s",
+        "amount const& t"
+      ],
+      "lineno": 33,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "unit_test"
+    }
+  ]
+}

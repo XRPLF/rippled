@@ -1,0 +1,413 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "data"
+    },
+    {
+      "lineno": 15,
+      "name": "size"
+    },
+    {
+      "lineno": 40,
+      "name": "data"
+    },
+    {
+      "lineno": 40,
+      "name": "size"
+    },
+    {
+      "lineno": 65,
+      "name": "data"
+    },
+    {
+      "lineno": 65,
+      "name": "size"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "openssl_ripemd160_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "openssl_sha512_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "openssl_sha256_hasher"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "openssl_ripemd160_hasher::openssl_ripemd160_hasher",
+        "static_assert (sizeof(ctx_) == sizeof(RIPEMD160_CTX))",
+        "RIPEMD160_Init(ctx_)"
+      ],
+      "entry_point": "openssl_ripemd160_hasher::openssl_ripemd160_hasher",
+      "purpose": "Constructs a RIPEMD160 hasher, validates internal buffer size, initializes context.",
+      "validation_points": [
+        "static_assert (sizeof(ctx_) == sizeof(RIPEMD160_CTX))"
+      ]
+    },
+    {
+      "call_chain": [
+        "openssl_ripemd160_hasher::operator()",
+        "RIPEMD160_Update(ctx_, data, size)"
+      ],
+      "entry_point": "openssl_ripemd160_hasher::operator()",
+      "purpose": "Feeds data into the RIPEMD160 hash context.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "openssl_ripemd160_hasher::operator result_type",
+        "RIPEMD160_Final(digest, ctx_)"
+      ],
+      "entry_point": "openssl_ripemd160_hasher::operator result_type",
+      "purpose": "Finalizes the RIPEMD160 hash and returns the digest.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "openssl_sha512_hasher::openssl_sha512_hasher",
+        "static_assert (sizeof(ctx_) == sizeof(SHA512_CTX))",
+        "SHA512_Init(ctx_)"
+      ],
+      "entry_point": "openssl_sha512_hasher::openssl_sha512_hasher",
+      "purpose": "Constructs a SHA512 hasher, validates internal buffer size, initializes context.",
+      "validation_points": [
+        "static_assert (sizeof(ctx_) == sizeof(SHA512_CTX))"
+      ]
+    },
+    {
+      "call_chain": [
+        "openssl_sha512_hasher::operator()",
+        "SHA512_Update(ctx_, data, size)"
+      ],
+      "entry_point": "openssl_sha512_hasher::operator()",
+      "purpose": "Feeds data into the SHA512 hash context.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "openssl_sha512_hasher::operator result_type",
+        "SHA512_Final(digest, ctx_)"
+      ],
+      "entry_point": "openssl_sha512_hasher::operator result_type",
+      "purpose": "Finalizes the SHA512 hash and returns the digest.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "openssl_sha256_hasher::openssl_sha256_hasher",
+        "static_assert (sizeof(ctx_) == sizeof(SHA256_CTX))",
+        "SHA256_Init(ctx_)"
+      ],
+      "entry_point": "openssl_sha256_hasher::openssl_sha256_hasher",
+      "purpose": "Constructs a SHA256 hasher, validates internal buffer size, initializes context.",
+      "validation_points": [
+        "static_assert (sizeof(ctx_) == sizeof(SHA256_CTX))"
+      ]
+    },
+    {
+      "call_chain": [
+        "openssl_sha256_hasher::operator()",
+        "SHA256_Update(ctx_, data, size)"
+      ],
+      "entry_point": "openssl_sha256_hasher::operator()",
+      "purpose": "Feeds data into the SHA256 hash context.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "openssl_sha256_hasher::operator result_type",
+        "SHA256_Final(digest, ctx_)"
+      ],
+      "entry_point": "openssl_sha256_hasher::operator result_type",
+      "purpose": "Finalizes the SHA256 hash and returns the digest.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ctx_ (internal context buffer)",
+      "flow": [
+        "Declared as ctx_ in hasher class",
+        "Validated for size in constructor via static_assert",
+        "Reinterpreted as OpenSSL context pointer",
+        "Initialized by OpenSSL *_Init",
+        "Updated by OpenSSL *_Update with input data",
+        "Finalized by OpenSSL *_Final to produce digest"
+      ],
+      "origin": "Member variable of each hasher class (openssl_ripemd160_hasher, openssl_sha512_hasher, openssl_sha256_hasher)",
+      "transformations": [
+        "Casted to OpenSSL context type",
+        "Initialized (zeroed/seeded)",
+        "Mutated by Update with input data",
+        "Read and finalized to produce digest"
+      ],
+      "validated_at": "Constructor (static_assert on size)"
+    },
+    {
+      "field": "data (input to operator())",
+      "flow": [
+        "Passed to operator()(void const* data, std::size_t size)",
+        "Fed into OpenSSL *_Update(ctx_, data, size)",
+        "Mutates ctx_"
+      ],
+      "origin": "Caller of operator() (user of hasher class)",
+      "transformations": [
+        "No transformation in this code; passed directly to OpenSSL"
+      ],
+      "validated_at": "No explicit validation in this code"
+    },
+    {
+      "field": "digest (result_type)",
+      "flow": [
+        "Created in operator result_type()",
+        "Filled by OpenSSL *_Final(digest.data(), ctx_)",
+        "Returned to caller"
+      ],
+      "origin": "Local variable in operator result_type()",
+      "transformations": [
+        "Filled with hash result"
+      ],
+      "validated_at": "No explicit validation in this code"
+    }
+  ],
+  "description": "This file implements cryptographic hashers (RIPEMD-160, SHA-256, SHA-512) using OpenSSL for the XRPL protocol, providing wrapper classes for hashing operations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ctx_ (internal context buffer for each hasher)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ctx_ (internal context buffer for each hasher) validated by C++ static_assert (compile-time type validation)",
+      "issue_pattern": "Missing validation for ctx_ (internal context buffer for each hasher)",
+      "why_false_positive": "C++ static_assert (compile-time type validation) validates ctx_ (internal context buffer for each hasher) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at openssl_ripemd160_hasher::openssl_ripemd160_hasher (constructor)",
+      "issue_pattern": "Missing empty string validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert at openssl_ripemd160_hasher::openssl_ripemd160_hasher (constructor)",
+      "issue_pattern": "Missing type validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at openssl_sha512_hasher::openssl_sha512_hasher (constructor)",
+      "issue_pattern": "Missing empty string validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert at openssl_sha512_hasher::openssl_sha512_hasher (constructor)",
+      "issue_pattern": "Missing type validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at openssl_sha256_hasher::openssl_sha256_hasher (constructor)",
+      "issue_pattern": "Missing empty string validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ctx_ (internal context buffer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert at openssl_sha256_hasher::openssl_sha256_hasher (constructor)",
+      "issue_pattern": "Missing type validation for ctx_ (internal context buffer)",
+      "why_false_positive": "static_assert validates ctx_ (internal context buffer) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/digest.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "openssl_ripemd160_hasher::openssl_ripemd160_hasher"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 15,
+      "name": "openssl_ripemd160_hasher::operator()"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "openssl_ripemd160_hasher::operator result_type"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "openssl_sha512_hasher::openssl_sha512_hasher"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 40,
+      "name": "openssl_sha512_hasher::operator()"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "openssl_sha512_hasher::operator result_type"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "openssl_sha256_hasher::openssl_sha256_hasher"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 65,
+      "name": "openssl_sha256_hasher::operator()"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "openssl_sha256_hasher::operator result_type"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains only implementation, not tests. Typical test coverage would be in files like 'test/digest_test.cpp', 'test/hasher_test.cpp', or similar. Tests should verify: (1) correct hash output for known inputs, (2) that the hasher classes can be constructed and used, (3) that ctx_ is the correct size (indirectly via static_assert). Gaps: No runtime validation of input data (e.g., null pointers, size==0), no explicit error handling for OpenSSL failures, and static_asserts are only compile-time checks. If test files do not exist or do not cover edge cases (e.g., very large inputs, multiple updates, empty input), those would be gaps.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ctx_ (internal context buffer for each hasher)"
+    ],
+    "framework": "C++ static_assert (compile-time type validation)",
+    "validation_layer": "constructor (class initialization)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Compilation error (static_assert failure)",
+      "field": "ctx_ (internal context buffer)",
+      "location": "openssl_ripemd160_hasher::openssl_ripemd160_hasher (constructor)",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures that the size of ctx_ matches the size of RIPEMD160_CTX"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Compilation error (static_assert failure)",
+      "field": "ctx_ (internal context buffer)",
+      "location": "openssl_sha512_hasher::openssl_sha512_hasher (constructor)",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures that the size of ctx_ matches the size of SHA512_CTX"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Compilation error (static_assert failure)",
+      "field": "ctx_ (internal context buffer)",
+      "location": "openssl_sha256_hasher::openssl_sha256_hasher (constructor)",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures that the size of ctx_ matches the size of SHA256_CTX"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

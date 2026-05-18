@@ -1,0 +1,494 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "fillHandler"
+      ],
+      "entry_point": "fillHandler",
+      "purpose": "Validates incoming RPC request parameters and determines the appropriate handler for the command.",
+      "validation_points": [
+        "isUnlimited(context.role) - validates role",
+        "context.params.isMember(jss::command) / jss::method - validates command presence",
+        "context.params[jss::command].asString() == context.params[jss::method].asString() - validates command consistency"
+      ]
+    },
+    {
+      "call_chain": [
+        "callMethod",
+        "fillHandler",
+        "getHandler",
+        "handler->invoke"
+      ],
+      "entry_point": "callMethod",
+      "purpose": "Top-level dispatcher for executing an RPC command, including validation and handler invocation.",
+      "validation_points": [
+        "fillHandler (all validations above)",
+        "handler->invoke (template-based parameter validation, e.g., ledger_index, api_version, request)"
+      ]
+    },
+    {
+      "call_chain": [
+        "doCommand",
+        "callMethod",
+        "fillHandler",
+        "getHandler",
+        "handler->invoke"
+      ],
+      "entry_point": "doCommand",
+      "purpose": "Processes an RPC command from the HTTP/WebSocket layer, including validation, execution, and error handling.",
+      "validation_points": [
+        "callMethod (see above)",
+        "Exception handling for validation errors"
+      ]
+    },
+    {
+      "call_chain": [
+        "roleRequired"
+      ],
+      "entry_point": "roleRequired",
+      "purpose": "Determines the minimum role required for a given command.",
+      "validation_points": [
+        "Checks command against role requirements"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "role",
+      "flow": [
+        "context.role",
+        "fillHandler",
+        "isUnlimited(context.role)",
+        "job queue check"
+      ],
+      "origin": "context.role (set by HTTP/WebSocket layer based on authentication)",
+      "transformations": [
+        "Checked for 'unlimited' status to bypass job queue limits"
+      ],
+      "validated_at": "fillHandler"
+    },
+    {
+      "field": "command",
+      "flow": [
+        "context.params",
+        "fillHandler (isMember checks, asString extraction)",
+        "getHandler (lookup handler for command)",
+        "handler->invoke (template validation)"
+      ],
+      "origin": "context.params[jss::command] or context.params[jss::method] (from incoming JSON request)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for consistency if both command and method present",
+        "String extracted for handler lookup"
+      ],
+      "validated_at": "fillHandler"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "context.params",
+        "handler->invoke (template-based validation)",
+        "Used in ledger lookup"
+      ],
+      "origin": "context.params[jss::ledger_index] (from incoming JSON request)",
+      "transformations": [
+        "Validated for type and range by template validation framework"
+      ],
+      "validated_at": "handler->invoke (template validation)"
+    },
+    {
+      "field": "api_version",
+      "flow": [
+        "context.apiVersion",
+        "getHandler (selects handler implementation)",
+        "handler->invoke (template validation)"
+      ],
+      "origin": "context.apiVersion (set by HTTP/WebSocket layer, possibly from params)",
+      "transformations": [
+        "Used to select handler and error message format"
+      ],
+      "validated_at": "handler->invoke (template validation)"
+    },
+    {
+      "field": "request",
+      "flow": [
+        "context.params",
+        "handler->invoke (template validation)",
+        "Used for command execution"
+      ],
+      "origin": "context.params (entire incoming JSON request)",
+      "transformations": [
+        "Validated for required fields and types by template validation"
+      ],
+      "validated_at": "handler->invoke (template validation)"
+    }
+  ],
+  "description": "Implements core logic for dispatching and executing XRPL RPC commands, including handler lookup, permission checks, and method invocation, with support for both HTTP and WebSocket response formats.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "command",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field command validated by jss:: (JSON field specifiers, likely macro/template-based validation)",
+      "issue_pattern": "Missing validation for command",
+      "why_false_positive": "jss:: (JSON field specifiers, likely macro/template-based validation) validates command automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by jss:: (JSON field specifiers, likely macro/template-based validation)",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "jss:: (JSON field specifiers, likely macro/template-based validation) validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "api_version",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field api_version validated by jss:: (JSON field specifiers, likely macro/template-based validation)",
+      "issue_pattern": "Missing validation for api_version",
+      "why_false_positive": "jss:: (JSON field specifiers, likely macro/template-based validation) validates api_version automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "request",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field request validated by jss:: (JSON field specifiers, likely macro/template-based validation)",
+      "issue_pattern": "Missing validation for request",
+      "why_false_positive": "jss:: (JSON field specifiers, likely macro/template-based validation) validates request automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isUnlimited(context.role) at fillHandler",
+      "issue_pattern": "Missing empty string validation for role",
+      "why_false_positive": "isUnlimited(context.role) validates role for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "command",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss::command (likely via template or macro expansion) at JSON request parsing (implied in comments and error responses)",
+      "issue_pattern": "Missing empty string validation for command",
+      "why_false_positive": "jss::command (likely via template or macro expansion) validates command for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss::ledger_index (likely via template or macro expansion) at JSON request parsing (implied in comments and error responses)",
+      "issue_pattern": "Missing empty string validation for ledger_index",
+      "why_false_positive": "jss::ledger_index (likely via template or macro expansion) validates ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "api_version",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss::api_version (likely via template or macro expansion) at JSON request parsing (implied in comments and error responses)",
+      "issue_pattern": "Missing empty string validation for api_version",
+      "why_false_positive": "jss::api_version (likely via template or macro expansion) validates api_version for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "request",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss::request (likely via template or macro expansion) at JSON error response construction",
+      "issue_pattern": "Missing empty string validation for request",
+      "why_false_positive": "jss::request (likely via template or macro expansion) validates request for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCHandler.cpp",
+  "functions": [
+    {
+      "args": [
+        "context",
+        "result"
+      ],
+      "lineno": 74,
+      "name": "fillHandler"
+    },
+    {
+      "args": [
+        "context",
+        "method",
+        "name",
+        "result"
+      ],
+      "lineno": 110,
+      "name": "callMethod"
+    },
+    {
+      "args": [
+        "context",
+        "result"
+      ],
+      "lineno": 154,
+      "name": "doCommand"
+    },
+    {
+      "args": [
+        "version",
+        "betaEnabled",
+        "method"
+      ],
+      "lineno": 186,
+      "name": "roleRequired"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 20,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "Core validation logic is likely covered by integration tests in the 'rippled' test suite, especially those under 'src/test/rpc' (e.g., RPCHandler_test.cpp, Handler_test.cpp, or WebSocket/RPC HTTP tests). Template-based parameter validation is often tested via command-specific tests (e.g., ledger, account_info). However, edge cases such as conflicting 'command' and 'method', missing required fields, or role-based access control may not be exhaustively tested. There may be gaps in negative testing for malformed or ambiguous requests, and for job queue overload scenarios.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "command",
+      "ledger_index",
+      "api_version",
+      "request"
+    ],
+    "framework": "jss:: (JSON field specifiers, likely macro/template-based validation)",
+    "validation_layer": "entry_point (JSON RPC handler, before business logic)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "error_code_i (custom error code)",
+      "field": "role",
+      "location": "fillHandler",
+      "validated_by": "isUnlimited(context.role)",
+      "validates": [
+        "Checks if the user role has unlimited access (admin/privileged)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "error_code_i (e.g., missingCommand)",
+      "field": "command",
+      "location": "JSON request parsing (implied in comments and error responses)",
+      "validated_by": "jss::command (likely via template or macro expansion)",
+      "validates": [
+        "Checks that the 'command' field is present and is a string"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "error_code_i (e.g., invalidParams)",
+      "field": "ledger_index",
+      "location": "JSON request parsing (implied in comments and error responses)",
+      "validated_by": "jss::ledger_index (likely via template or macro expansion)",
+      "validates": [
+        "Checks that 'ledger_index' is present, is an integer, and within valid range"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "error_code_i (e.g., invalidParams)",
+      "field": "api_version",
+      "location": "JSON request parsing (implied in comments and error responses)",
+      "validated_by": "jss::api_version (likely via template or macro expansion)",
+      "validates": [
+        "Checks that 'api_version' is present and is a supported integer value"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "error_code_i (e.g., invalidParams)",
+      "field": "request",
+      "location": "JSON error response construction",
+      "validated_by": "jss::request (likely via template or macro expansion)",
+      "validates": [
+        "Checks that 'request' is a valid JSON object"
+      ],
+      "validation_type": "type|format"
+    }
+  ]
+}

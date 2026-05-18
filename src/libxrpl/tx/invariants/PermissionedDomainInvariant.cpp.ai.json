@@ -1,0 +1,231 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "isDel"
+    },
+    {
+      "lineno": 12,
+      "name": "before"
+    },
+    {
+      "lineno": 13,
+      "name": "after"
+    },
+    {
+      "lineno": 43,
+      "name": "tx"
+    },
+    {
+      "lineno": 44,
+      "name": "result"
+    },
+    {
+      "lineno": 46,
+      "name": "view"
+    },
+    {
+      "lineno": 47,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InvariantCheck::visitEntry (base class, called by ApplyContext)",
+        "ValidPermissionedDomain::visitEntry"
+      ],
+      "entry_point": "ValidPermissionedDomain::visitEntry",
+      "purpose": "Collects and validates the state of sfAcceptedCredentials in SLEs of type ltPERMISSIONED_DOMAIN as they are modified by a transaction.",
+      "validation_points": [
+        "Lambda 'check' inside visitEntry validates uniqueness and sortedness of sfAcceptedCredentials"
+      ]
+    },
+    {
+      "call_chain": [
+        "InvariantCheck::finalize (base class, called by ApplyContext after tx apply)",
+        "ValidPermissionedDomain::finalize"
+      ],
+      "entry_point": "ValidPermissionedDomain::finalize",
+      "purpose": "Performs final validation after transaction application, ensuring all permissioned domain invariants are enforced.",
+      "validation_points": [
+        "Lambda 'check' inside finalize validates size, uniqueness, and sortedness of sfAcceptedCredentials",
+        "Additional logic checks number of affected entries, deletion, and transaction type"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAcceptedCredentials",
+      "flow": [
+        "SLE (before/after) passed to visitEntry",
+        "visitEntry extracts sfAcceptedCredentials via sle->getFieldArray(sfAcceptedCredentials)",
+        "credentials::makeSorted creates a sorted vector of (issuer, credentialType) pairs",
+        "Lambda 'check' in visitEntry compares sorted array to original for uniqueness and sortedness",
+        "SleStatus struct records validation results and is stored in sleStatus_",
+        "finalize iterates sleStatus_ and applies further validation"
+      ],
+      "origin": "SLE (ledger entry) of type ltPERMISSIONED_DOMAIN, field sfAcceptedCredentials (STArray)",
+      "transformations": [
+        "Extraction from SLE as STArray",
+        "Sorting and duplicate detection via credentials::makeSorted",
+        "Comparison of sorted vs original for order and uniqueness"
+      ],
+      "validated_at": "Lambda 'check' in visitEntry (uniqueness, sortedness), Lambda 'check' in finalize (size, uniqueness, sortedness)"
+    }
+  ],
+  "description": "Implements the ValidPermissionedDomain invariant check for XRPL transactions, ensuring that permissioned domain ledger entries are only modified in valid ways, with credential arrays being unique, sorted, and within allowed size limits.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lambda check in visitEntry at visitEntry",
+      "issue_pattern": "Missing empty string validation for sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+      "why_false_positive": "lambda check in visitEntry validates sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lambda check in finalize at finalize",
+      "issue_pattern": "Missing empty string validation for sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+      "why_false_positive": "lambda check in finalize validates sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/PermissionedDomainInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDel",
+        "before",
+        "after"
+      ],
+      "lineno": 9,
+      "name": "ValidPermissionedDomain::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "",
+        "view",
+        "j"
+      ],
+      "lineno": 41,
+      "name": "ValidPermissionedDomain::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage likely exists in unit/integration tests for PermissionedDomainSet transactions and invariants, possibly in files like test/tx/PermissionedDomain_test.cpp or test/invariants/PermissionedDomainInvariant_test.cpp. However, gaps may exist for edge cases: (1) transactions affecting multiple permissioned domains, (2) deletion scenarios, (3) malformed or empty sfAcceptedCredentials arrays, (4) transactions with feature flag fixPermissionedDomainInvariant disabled. Manual review of test files is needed to confirm coverage of all invariant failure paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom invariant logic (no external validation framework)",
+    "validation_layer": "business_logic (Invariant enforcement in transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (status is recorded in SleStatus, not thrown immediately)",
+      "field": "sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+      "location": "visitEntry",
+      "validated_by": "lambda check in visitEntry",
+      "validates": [
+        "Checks if credentials array is unique (no duplicates)",
+        "Checks if credentials array is sorted by (sfIssuer, sfCredentialType)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false, triggers invariant failure, logs fatal error)",
+      "field": "sfAcceptedCredentials (array field in SLE of type ltPERMISSIONED_DOMAIN)",
+      "location": "finalize",
+      "validated_by": "lambda check in finalize",
+      "validates": [
+        "Checks that credentials array is not empty",
+        "Checks that credentials array size does not exceed maxPermissionedDomainCredentialsArraySize",
+        "Checks that credentials array is unique (no duplicates)",
+        "Checks that credentials array is sorted by (sfIssuer, sfCredentialType)"
+      ],
+      "validation_type": "business_logic|range"
+    }
+  ]
+}

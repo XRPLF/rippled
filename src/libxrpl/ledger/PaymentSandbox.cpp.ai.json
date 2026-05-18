@@ -1,0 +1,651 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "a1"
+    },
+    {
+      "lineno": 9,
+      "name": "a2"
+    },
+    {
+      "lineno": 9,
+      "name": "c"
+    },
+    {
+      "lineno": 17,
+      "name": "sender"
+    },
+    {
+      "lineno": 17,
+      "name": "receiver"
+    },
+    {
+      "lineno": 17,
+      "name": "amount"
+    },
+    {
+      "lineno": 17,
+      "name": "preCreditSenderBalance"
+    },
+    {
+      "lineno": 48,
+      "name": "preCreditBalanceHolder"
+    },
+    {
+      "lineno": 48,
+      "name": "preCreditBalanceIssuer"
+    },
+    {
+      "lineno": 91,
+      "name": "issue"
+    },
+    {
+      "lineno": 91,
+      "name": "origBalance"
+    },
+    {
+      "lineno": 108,
+      "name": "id"
+    },
+    {
+      "lineno": 108,
+      "name": "cur"
+    },
+    {
+      "lineno": 108,
+      "name": "next"
+    },
+    {
+      "lineno": 129,
+      "name": "main"
+    },
+    {
+      "lineno": 129,
+      "name": "other"
+    },
+    {
+      "lineno": 129,
+      "name": "currency"
+    },
+    {
+      "lineno": 148,
+      "name": "mptID"
+    },
+    {
+      "lineno": 154,
+      "name": "to"
+    },
+    {
+      "lineno": 196,
+      "name": "account"
+    },
+    {
+      "lineno": 196,
+      "name": "issuer"
+    },
+    {
+      "lineno": 299,
+      "name": "from"
+    },
+    {
+      "lineno": 299,
+      "name": "to"
+    },
+    {
+      "lineno": 299,
+      "name": "preCreditBalance"
+    },
+    {
+      "lineno": 288,
+      "name": "count"
+    },
+    {
+      "lineno": 348,
+      "name": "view"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PaymentSandbox::creditIOU (likely, not shown in snippet)",
+        "DeferredCredits::creditIOU"
+      ],
+      "entry_point": "DeferredCredits::creditIOU",
+      "purpose": "Records a deferred IOU credit between two accounts, updating internal credit tracking structures.",
+      "validation_points": [
+        "DeferredCredits::creditIOU: XRPL_ASSERT(sender != receiver)",
+        "DeferredCredits::creditIOU: XRPL_ASSERT(!amount.negative())",
+        "DeferredCredits::creditIOU: XRPL_ASSERT(amount.holds<Issue>())"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentSandbox::creditMPT (likely, not shown in snippet)",
+        "DeferredCredits::creditMPT"
+      ],
+      "entry_point": "DeferredCredits::creditMPT",
+      "purpose": "Records a deferred MPT (Multi-Party Trustline) credit between two accounts, updating internal MPT credit tracking.",
+      "validation_points": [
+        "DeferredCredits::creditMPT: XRPL_ASSERT(amount.holds<MPTIssue>())",
+        "DeferredCredits::creditMPT: XRPL_ASSERT(!amount.negative())",
+        "DeferredCredits::creditMPT: XRPL_ASSERT(sender != receiver)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sender",
+      "flow": [
+        "Function argument",
+        "Validation (XRPL_ASSERT(sender != receiver))",
+        "Used to construct key for creditsIOU_ or creditsMPT_",
+        "Used to determine which account is high/low or issuer/holder"
+      ],
+      "origin": "Function argument to DeferredCredits::creditIOU/creditMPT",
+      "transformations": [
+        "Compared to receiver for validation",
+        "Used in tuple for map key"
+      ],
+      "validated_at": "Immediately at function entry via XRPL_ASSERT"
+    },
+    {
+      "field": "receiver",
+      "flow": [
+        "Function argument",
+        "Validation (XRPL_ASSERT(sender != receiver))",
+        "Used to construct key for creditsIOU_ or creditsMPT_",
+        "Used to determine which account is high/low or issuer/holder"
+      ],
+      "origin": "Function argument to DeferredCredits::creditIOU/creditMPT",
+      "transformations": [
+        "Compared to sender for validation",
+        "Used in tuple for map key"
+      ],
+      "validated_at": "Immediately at function entry via XRPL_ASSERT"
+    },
+    {
+      "field": "amount",
+      "flow": [
+        "Function argument",
+        "Validation (XRPL_ASSERT(!amount.negative()), XRPL_ASSERT(amount.holds<Issue>()/amount.holds<MPTIssue>()))",
+        "amount.get<Issue>() or amount.get<MPTIssue>() to extract currency or MPT ID",
+        "amount.zeroed() for zero value",
+        "amount.mpt().value() for MPT value"
+      ],
+      "origin": "Function argument to DeferredCredits::creditIOU/creditMPT",
+      "transformations": [
+        "Checked for negativity",
+        "Checked for type (Issue or MPTIssue)",
+        "Extracted for currency or MPT ID",
+        "Zeroed for initialization"
+      ],
+      "validated_at": "Immediately at function entry via XRPL_ASSERT"
+    },
+    {
+      "field": "preCreditSenderBalance / preCreditBalanceHolder / preCreditBalanceIssuer",
+      "flow": [
+        "Function argument",
+        "Stored in ValueIOU.lowAcctOrigBalance or IssuerValueMPT.origBalance",
+        "Used for later balance calculations"
+      ],
+      "origin": "Function argument to DeferredCredits::creditIOU/creditMPT",
+      "transformations": [
+        "Negated if sender > receiver (for IOU)",
+        "Stored as-is for MPT"
+      ],
+      "validated_at": "Not directly validated in shown code"
+    }
+  ],
+  "description": "Implements deferred credit and balance adjustment logic for IOU and MPT assets in the XRPL PaymentSandbox, including hooks for crediting, debiting, owner count adjustment, and balance change tracking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sender != receiver",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditIOU",
+      "issue_pattern": "Missing empty string validation for sender != receiver",
+      "why_false_positive": "XRPL_ASSERT validates sender != receiver for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.negative()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditIOU",
+      "issue_pattern": "Missing empty string validation for amount.negative()",
+      "why_false_positive": "XRPL_ASSERT validates amount.negative() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.holds<Issue>()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditIOU",
+      "issue_pattern": "Missing empty string validation for amount.holds<Issue>()",
+      "why_false_positive": "XRPL_ASSERT validates amount.holds<Issue>() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "amount.holds<Issue>()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditIOU",
+      "issue_pattern": "Missing type validation for amount.holds<Issue>()",
+      "why_false_positive": "XRPL_ASSERT validates amount.holds<Issue>() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.holds<MPTIssue>()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditMPT",
+      "issue_pattern": "Missing empty string validation for amount.holds<MPTIssue>()",
+      "why_false_positive": "XRPL_ASSERT validates amount.holds<MPTIssue>() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "amount.holds<MPTIssue>()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditMPT",
+      "issue_pattern": "Missing type validation for amount.holds<MPTIssue>()",
+      "why_false_positive": "XRPL_ASSERT validates amount.holds<MPTIssue>() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.negative()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditMPT",
+      "issue_pattern": "Missing empty string validation for amount.negative()",
+      "why_false_positive": "XRPL_ASSERT validates amount.negative() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sender != receiver",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at DeferredCredits::creditMPT",
+      "issue_pattern": "Missing empty string validation for sender != receiver",
+      "why_false_positive": "XRPL_ASSERT validates sender != receiver for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/PaymentSandbox.cpp",
+  "functions": [
+    {
+      "args": [
+        "AccountID const& a1",
+        "AccountID const& a2",
+        "Currency const& c"
+      ],
+      "lineno": 9,
+      "name": "DeferredCredits::makeKeyIOU"
+    },
+    {
+      "args": [
+        "AccountID const& sender",
+        "AccountID const& receiver",
+        "STAmount const& amount",
+        "STAmount const& preCreditSenderBalance"
+      ],
+      "lineno": 17,
+      "name": "DeferredCredits::creditIOU"
+    },
+    {
+      "args": [
+        "AccountID const& sender",
+        "AccountID const& receiver",
+        "STAmount const& amount",
+        "std::uint64_t preCreditBalanceHolder",
+        "std::int64_t preCreditBalanceIssuer"
+      ],
+      "lineno": 48,
+      "name": "DeferredCredits::creditMPT"
+    },
+    {
+      "args": [
+        "MPTIssue const& issue",
+        "std::uint64_t amount",
+        "std::int64_t origBalance"
+      ],
+      "lineno": 91,
+      "name": "DeferredCredits::issuerSelfDebitMPT"
+    },
+    {
+      "args": [
+        "AccountID const& id",
+        "std::uint32_t cur",
+        "std::uint32_t next"
+      ],
+      "lineno": 108,
+      "name": "DeferredCredits::ownerCount"
+    },
+    {
+      "args": [
+        "AccountID const& id"
+      ],
+      "lineno": 118,
+      "name": "DeferredCredits::ownerCount"
+    },
+    {
+      "args": [
+        "AccountID const& main",
+        "AccountID const& other",
+        "Currency const& currency"
+      ],
+      "lineno": 129,
+      "name": "DeferredCredits::adjustmentsIOU"
+    },
+    {
+      "args": [
+        "xrpl::MPTID const& mptID"
+      ],
+      "lineno": 148,
+      "name": "DeferredCredits::adjustmentsMPT"
+    },
+    {
+      "args": [
+        "DeferredCredits& to"
+      ],
+      "lineno": 154,
+      "name": "DeferredCredits::apply"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "AccountID const& issuer",
+        "STAmount const& amount"
+      ],
+      "lineno": 196,
+      "name": "PaymentSandbox::balanceHookIOU"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "MPTIssue const& issue",
+        "std::int64_t amount"
+      ],
+      "lineno": 241,
+      "name": "PaymentSandbox::balanceHookMPT"
+    },
+    {
+      "args": [
+        "xrpl::MPTIssue const& issue",
+        "std::int64_t amount"
+      ],
+      "lineno": 273,
+      "name": "PaymentSandbox::balanceHookSelfIssueMPT"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "std::uint32_t count"
+      ],
+      "lineno": 288,
+      "name": "PaymentSandbox::ownerCountHook"
+    },
+    {
+      "args": [
+        "AccountID const& from",
+        "AccountID const& to",
+        "STAmount const& amount",
+        "STAmount const& preCreditBalance"
+      ],
+      "lineno": 299,
+      "name": "PaymentSandbox::creditHookIOU"
+    },
+    {
+      "args": [
+        "AccountID const& from",
+        "AccountID const& to",
+        "STAmount const& amount",
+        "std::uint64_t preCreditBalanceHolder",
+        "std::int64_t preCreditBalanceIssuer"
+      ],
+      "lineno": 310,
+      "name": "PaymentSandbox::creditHookMPT"
+    },
+    {
+      "args": [
+        "MPTIssue const& issue",
+        "std::uint64_t amount",
+        "std::int64_t origBalance"
+      ],
+      "lineno": 321,
+      "name": "PaymentSandbox::issuerSelfDebitHookMPT"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "std::uint32_t cur",
+        "std::uint32_t next"
+      ],
+      "lineno": 329,
+      "name": "PaymentSandbox::adjustOwnerCountHook"
+    },
+    {
+      "args": [
+        "RawView& to"
+      ],
+      "lineno": 336,
+      "name": "PaymentSandbox::apply"
+    },
+    {
+      "args": [
+        "PaymentSandbox& to"
+      ],
+      "lineno": 342,
+      "name": "PaymentSandbox::apply"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 348,
+      "name": "PaymentSandbox::balanceChanges"
+    },
+    {
+      "args": [],
+      "lineno": 429,
+      "name": "PaymentSandbox::xrpDestroyed"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The PaymentSandbox and DeferredCredits logic is typically tested in unit tests under the 'test' or 'unittest' directories, such as PaymentSandbox_test.cpp or Ledger_test.cpp. These tests would cover scenarios like IOU/MPT credits, self-credit attempts, negative amounts, and type mismatches. However, the code relies on XRPL_ASSERT for validation, which may only be active in debug builds or with assertions enabled. There may be gaps in test coverage for assertion failures (e.g., sender == receiver, negative amounts, wrong type), especially if tests do not explicitly check for assertion-triggered aborts or exceptions. Fuzzing or negative tests may be needed to ensure all validation paths are exercised.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "sender != receiver",
+      "location": "DeferredCredits::creditIOU",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "sender and receiver must not be the same account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "amount.negative()",
+      "location": "DeferredCredits::creditIOU",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "amount must not be negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "amount.holds<Issue>()",
+      "location": "DeferredCredits::creditIOU",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "amount must hold Issue type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "amount.holds<MPTIssue>()",
+      "location": "DeferredCredits::creditMPT",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "amount must hold MPTIssue type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "amount.negative()",
+      "location": "DeferredCredits::creditMPT",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "amount must not be negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "sender != receiver",
+      "location": "DeferredCredits::creditMPT",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "sender and receiver must not be the same account"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

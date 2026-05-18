@@ -1,0 +1,9 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This header file conditionally includes various RocksDB headers if XRPL_ROCKSDB_AVAILABLE is defined, providing access to RocksDB database functionality.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/rocksdb.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": []
+}

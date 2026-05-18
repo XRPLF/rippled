@@ -1,0 +1,199 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 127,
+      "name": "account"
+    },
+    {
+      "lineno": 127,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 127,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 127,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 137,
+      "name": "sle"
+    },
+    {
+      "lineno": 148,
+      "name": "value"
+    },
+    {
+      "lineno": 157,
+      "name": "value"
+    },
+    {
+      "lineno": 166,
+      "name": "value"
+    },
+    {
+      "lineno": 175,
+      "name": "value"
+    },
+    {
+      "lineno": 184,
+      "name": "value"
+    },
+    {
+      "lineno": 193,
+      "name": "value"
+    },
+    {
+      "lineno": 202,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 24,
+      "name": "DepositPreauth"
+    },
+    {
+      "args": [
+        "account",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 124,
+      "name": "DepositPreauthBuilder"
+    }
+  ],
+  "description": "Defines the DepositPreauth ledger entry and its builder for the XRPL, providing type-safe accessors and a fluent builder interface for constructing and manipulating DepositPreauth ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/DepositPreauth.h",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 27,
+      "name": "DepositPreauth"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getAuthorize"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "hasAuthorize"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getAuthorizeCredentials"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "hasAuthorizeCredentials"
+    },
+    {
+      "args": [
+        "account",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 127,
+      "name": "DepositPreauthBuilder"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 137,
+      "name": "DepositPreauthBuilder"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 148,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 157,
+      "name": "setAuthorize"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 166,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 175,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 184,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 193,
+      "name": "setAuthorizeCredentials"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 202,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

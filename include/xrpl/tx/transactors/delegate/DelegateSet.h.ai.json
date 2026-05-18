@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 26,
+      "name": "view"
+    },
+    {
+      "lineno": 26,
+      "name": "sle"
+    },
+    {
+      "lineno": 26,
+      "name": "account"
+    },
+    {
+      "lineno": 26,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "DelegateSet"
+    }
+  ],
+  "description": "Defines the DelegateSet transaction class for the XRPL, including its interface and lifecycle methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/delegate/DelegateSet.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "DelegateSet"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& sle",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 26,
+      "name": "deleteDelegate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

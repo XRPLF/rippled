@@ -1,0 +1,186 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "Int"
+    },
+    {
+      "lineno": 17,
+      "name": "Tag"
+    },
+    {
+      "lineno": 27,
+      "name": "OtherInt"
+    },
+    {
+      "lineno": 145,
+      "name": "HashAlgorithm"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "OtherInt value"
+      ],
+      "lineno": 18,
+      "name": "tagged_integer"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "is_contiguously_hashable"
+    }
+  ],
+  "description": "Defines a type-safe wrapper around standard integral types called tagged_integer, providing type safety and supporting arithmetic, comparison, and bitwise operations. Also provides stream and string conversion operators, and a trait for hashability.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/tagged_integer.h",
+  "functions": [
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 36,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 41,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 46,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 51,
+      "name": "operator-="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 56,
+      "name": "operator*="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 61,
+      "name": "operator/="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 66,
+      "name": "operator%="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 71,
+      "name": "operator|="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 76,
+      "name": "operator&="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 81,
+      "name": "operator^="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 86,
+      "name": "operator<<="
+    },
+    {
+      "args": [
+        "tagged_integer const& rhs"
+      ],
+      "lineno": 91,
+      "name": "operator>>="
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "operator~"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "operator+"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "operator-"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "operator--"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "operator Int"
+    },
+    {
+      "args": [
+        "std::ostream& s",
+        "tagged_integer const& t"
+      ],
+      "lineno": 126,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "std::istream& s",
+        "tagged_integer& t"
+      ],
+      "lineno": 132,
+      "name": "operator>>"
+    },
+    {
+      "args": [
+        "tagged_integer const& t"
+      ],
+      "lineno": 138,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 144,
+      "name": "beast"
+    }
+  ]
+}

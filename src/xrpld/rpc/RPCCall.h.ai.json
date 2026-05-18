@@ -1,0 +1,68 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides functions for processing XRPL RPC calls, including command line and network invocation, as well as utilities for converting command line arguments to JSON and invoking the RPC client internally.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/RPCCall.h",
+  "functions": [
+    {
+      "args": [
+        "Config const& config",
+        "std::vector<std::string> const& vCmd",
+        "Logs& logs"
+      ],
+      "lineno": 19,
+      "name": "fromCommandLine"
+    },
+    {
+      "args": [
+        "boost::asio::io_context& io_context",
+        "std::string const& strIp",
+        "std::uint16_t const iPort",
+        "std::string const& strUsername",
+        "std::string const& strPassword",
+        "std::string const& strPath",
+        "std::string const& strMethod",
+        "Json::Value const& jvParams",
+        "bool const bSSL",
+        "bool quiet",
+        "Logs& logs",
+        "std::function<void(Json::Value const& jvInput)> callbackFuncP",
+        "std::unordered_map<std::string, std::string> headers"
+      ],
+      "lineno": 23,
+      "name": "fromNetwork"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& args",
+        "Json::Value& retParams",
+        "unsigned int apiVersion",
+        "beast::Journal j"
+      ],
+      "lineno": 39,
+      "name": "rpcCmdToJson"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& args",
+        "Config const& config",
+        "Logs& logs",
+        "unsigned int apiVersion",
+        "std::unordered_map<std::string, std::string> const& headers"
+      ],
+      "lineno": 46,
+      "name": "rpcClient"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 17,
+      "name": "RPCCall"
+    }
+  ]
+}

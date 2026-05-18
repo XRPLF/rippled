@@ -1,0 +1,81 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "in"
+    },
+    {
+      "lineno": 15,
+      "name": "in_size"
+    },
+    {
+      "lineno": 15,
+      "name": "bf"
+    }
+  ],
+  "classes": [],
+  "description": "Provides compression and decompression utilities (including LZ4 and custom inner node codecs) for XRPL NodeStore NodeObject blobs, including functions for compressing, decompressing, and filtering node data.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/codec.h",
+  "functions": [
+    {
+      "args": [
+        "in",
+        "in_size",
+        "bf"
+      ],
+      "lineno": 15,
+      "name": "lz4_decompress"
+    },
+    {
+      "args": [
+        "in",
+        "in_size",
+        "bf"
+      ],
+      "lineno": 36,
+      "name": "lz4_compress"
+    },
+    {
+      "args": [
+        "in",
+        "in_size",
+        "bf"
+      ],
+      "lineno": 74,
+      "name": "nodeobject_decompress"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "zero32"
+    },
+    {
+      "args": [
+        "in",
+        "in_size",
+        "bf"
+      ],
+      "lineno": 161,
+      "name": "nodeobject_compress"
+    },
+    {
+      "args": [
+        "in",
+        "in_size"
+      ],
+      "lineno": 227,
+      "name": "filter_inner"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "NodeStore"
+    }
+  ]
+}

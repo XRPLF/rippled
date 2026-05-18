@@ -1,0 +1,7 @@
+# `GetCounts.h` — Admin Status: Object and Resource Count Snapshot
+
+This header exposes a single free function, `getCountsJson`, which aggregates a broad snapshot of live object counts and runtime health metrics from the XRPL node into a `Json::Value` object. It sits in the `admin/status` RPC handler subdirectory and exists as a separately declared header — rather than being a private implementation detail of `GetCounts.cpp` — because it is consumed from two distinct call sites: the `doGetCounts` RPC handler (in `GetCounts.cpp`) and `OverlayImpl::getCountsJson` (in `overlay/detail/OverlayImpl.cpp`), which embeds the same snapshot into peer-overlay status reporting.
+
+The `minObjectCount` parameter acts as a noise filter: `CountedObjects::getInstance().getCounts(minObjectCount)` returns only those tracked types whose live instance count meets or exceeds the threshold, preventing the output from being cluttered by rarely-instantiated objects. The RPC entry point defaults this to 10 (overridable via the `min_count` request parameter), while `OverlayImpl` hard-codes 10 for its internal use.
+
+The separation of `getCountsJson` from `doGetCounts` is a deliberate interface boundary. It allows non-RPC subsystems to obtain the same diagnostic payload without depending on `RPC::JsonContext` or the full RPC dispatch machinery — only on `Application&`. The header's sole `#include` of `Application.h` enforces that minimal dependency surface.

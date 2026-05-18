@@ -1,0 +1,301 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "sb"
+    },
+    {
+      "lineno": 12,
+      "name": "srcAsset"
+    },
+    {
+      "lineno": 12,
+      "name": "dstAsset"
+    },
+    {
+      "lineno": 12,
+      "name": "f"
+    },
+    {
+      "lineno": 30,
+      "name": "sb"
+    },
+    {
+      "lineno": 31,
+      "name": "deliver"
+    },
+    {
+      "lineno": 32,
+      "name": "src"
+    },
+    {
+      "lineno": 33,
+      "name": "dst"
+    },
+    {
+      "lineno": 34,
+      "name": "paths"
+    },
+    {
+      "lineno": 35,
+      "name": "defaultPaths"
+    },
+    {
+      "lineno": 36,
+      "name": "partialPayment"
+    },
+    {
+      "lineno": 37,
+      "name": "ownerPaysTransferFee"
+    },
+    {
+      "lineno": 38,
+      "name": "offerCrossing"
+    },
+    {
+      "lineno": 39,
+      "name": "limitQuality"
+    },
+    {
+      "lineno": 40,
+      "name": "sendMax"
+    },
+    {
+      "lineno": 41,
+      "name": "domainID"
+    },
+    {
+      "lineno": 42,
+      "name": "j"
+    },
+    {
+      "lineno": 43,
+      "name": "flowDebugInfo"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "flow",
+        "toStrands",
+        "isTesSuccess (on toStrandsTer)",
+        "finishFlow"
+      ],
+      "entry_point": "flow",
+      "purpose": "Processes a payment path, validates the path construction, and executes the payment flow if valid.",
+      "validation_points": [
+        "isTesSuccess(toStrandsTer) - Validates if path construction succeeded before proceeding"
+      ]
+    },
+    {
+      "call_chain": [
+        "flow",
+        "sendMax (std::optional check)"
+      ],
+      "entry_point": "flow",
+      "purpose": "Determines the source asset for the payment, validating if sendMax is provided.",
+      "validation_points": [
+        "if (sendMax) - Validates presence of sendMax before using"
+      ]
+    },
+    {
+      "call_chain": [
+        "flow",
+        "std::visit",
+        "finishFlow"
+      ],
+      "entry_point": "flow",
+      "purpose": "Dispatches to the correct flow template based on asset types, then finalizes the flow result.",
+      "validation_points": [
+        "isTesSuccess(f.ter) in finishFlow - Validates transaction result before applying changes"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "toStrandsTer",
+      "flow": [
+        "toStrands() returns (toStrandsTer, strands)",
+        "isTesSuccess(toStrandsTer) checked",
+        "If not success, result.setResult(toStrandsTer) and return"
+      ],
+      "origin": "Result of toStrands() in flow",
+      "transformations": [
+        "Directly checked for success/failure"
+      ],
+      "validated_at": "Immediately after toStrands() call in flow"
+    },
+    {
+      "field": "sendMax",
+      "flow": [
+        "flow parameter",
+        "if (sendMax) check",
+        "sendMax->asset() used for srcAsset and sendMaxAsset"
+      ],
+      "origin": "Input parameter to flow (std::optional<STAmount>)",
+      "transformations": [
+        "Checked for presence (optional)",
+        "Converted to Asset via sendMax->asset()"
+      ],
+      "validated_at": "if (sendMax) check in flow"
+    },
+    {
+      "field": "strands",
+      "flow": [
+        "toStrands() returns strands",
+        "Used for AMMContext.setMultiPath(strands.size() > 1)",
+        "Passed to flow<TIn_, TOut_>()"
+      ],
+      "origin": "Result of toStrands()",
+      "transformations": [
+        "Counted for multi-path check",
+        "Passed as-is to flow template"
+      ],
+      "validated_at": "Indirectly validated by isTesSuccess(toStrandsTer)"
+    },
+    {
+      "field": "f.ter",
+      "flow": [
+        "Returned from flow<TIn_, TOut_>()",
+        "Checked by isTesSuccess(f.ter) in finishFlow",
+        "Used to set result.setResult(f.ter)"
+      ],
+      "origin": "Result field from flow<TIn_, TOut_>()",
+      "transformations": [
+        "Checked for success/failure",
+        "Copied to output"
+      ],
+      "validated_at": "isTesSuccess(f.ter) in finishFlow"
+    }
+  ],
+  "description": "Implements the main flow logic for XRPL payments, including pathfinding, strand construction, and payment execution, supporting multiple asset types and AMM context.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "toStrandsTer (result of toStrands)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess at flow",
+      "issue_pattern": "Missing empty string validation for toStrandsTer (result of toStrands)",
+      "why_false_positive": "isTesSuccess validates toStrandsTer (result of toStrands) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sendMax",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional check at flow",
+      "issue_pattern": "Missing empty string validation for sendMax",
+      "why_false_positive": "std::optional check validates sendMax for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sendMax",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::optional check at flow",
+      "issue_pattern": "Missing type validation for sendMax",
+      "why_false_positive": "std::optional check validates sendMax type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/Flow.cpp",
+  "functions": [
+    {
+      "args": [
+        "PaymentSandbox& sb",
+        "Asset const& srcAsset",
+        "Asset const& dstAsset",
+        "FlowResult&& f"
+      ],
+      "lineno": 11,
+      "name": "finishFlow"
+    },
+    {
+      "args": [
+        "PaymentSandbox& sb",
+        "STAmount const& deliver",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "STPathSet const& paths",
+        "bool defaultPaths",
+        "bool partialPayment",
+        "bool ownerPaysTransferFee",
+        "OfferCrossing offerCrossing",
+        "std::optional<Quality> const& limitQuality",
+        "std::optional<STAmount> const& sendMax",
+        "std::optional<uint256> const& domainID",
+        "beast::Journal j",
+        "path::detail::FlowDebugInfo* flowDebugInfo"
+      ],
+      "lineno": 29,
+      "name": "flow"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation paths (toStrandsTer via isTesSuccess, sendMax optional check) are likely covered by integration and unit tests for payment pathfinding and payment execution. Typical test files would be in the rippled repo under 'src/test/app/Flow_test.cpp', 'src/test/app/Payment_test.cpp', or 'src/test/paths/Path_test.cpp'. However, edge cases such as malformed paths, missing sendMax, or unusual asset types may not be exhaustively tested. There is no evidence in this file of explicit unit tests for the validation logic itself; coverage depends on higher-level payment and path tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (xrpl business logic, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "path::RippleCalc::Output with error ter",
+      "field": "toStrandsTer (result of toStrands)",
+      "location": "flow",
+      "validated_by": "isTesSuccess",
+      "validates": [
+        "Checks if the result of toStrands is a tesSUCCESS code",
+        "If not, returns early with error"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (optional, so no error)",
+      "field": "sendMax",
+      "location": "flow",
+      "validated_by": "std::optional check",
+      "validates": [
+        "Checks if sendMax is present before using"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

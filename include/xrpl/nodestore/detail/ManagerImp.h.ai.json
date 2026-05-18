@@ -1,0 +1,87 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "ManagerImp"
+    }
+  ],
+  "description": "Defines the ManagerImp class, an implementation of the NodeStore::Manager interface for managing backend factories and creating Backend and Database instances in the XRPL node store.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/ManagerImp.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "instance"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "missing_backend"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "ManagerImp"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "~ManagerImp"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 26,
+      "name": "find"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 29,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 32,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "parameters",
+        "burstSize",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 35,
+      "name": "make_Backend"
+    },
+    {
+      "args": [
+        "burstSize",
+        "scheduler",
+        "readThreads",
+        "config",
+        "journal"
+      ],
+      "lineno": 41,
+      "name": "make_Database"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "NodeStore"
+    }
+  ]
+}

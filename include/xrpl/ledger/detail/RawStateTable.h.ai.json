@@ -1,0 +1,161 @@
+{
+  "args": [
+    {
+      "lineno": 86,
+      "name": "action_"
+    },
+    {
+      "lineno": 86,
+      "name": "sle_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "RawStateTable"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "sles_iter_impl"
+    },
+    {
+      "args": [
+        "Action action_, std::shared_ptr<SLE> const& sle_"
+      ],
+      "lineno": 83,
+      "name": "sleAction"
+    }
+  ],
+  "description": "Defines the RawStateTable helper class for buffering raw ledger modifications in XRPL, using a monotonic buffer resource for efficient memory allocation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/detail/RawStateTable.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "RawStateTable"
+    },
+    {
+      "args": [
+        "RawStateTable const& rhs"
+      ],
+      "lineno": 26,
+      "name": "RawStateTable"
+    },
+    {
+      "args": [
+        "RawStateTable&&"
+      ],
+      "lineno": 32,
+      "name": "RawStateTable"
+    },
+    {
+      "args": [
+        "RawStateTable&&"
+      ],
+      "lineno": 35,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "RawStateTable const&"
+      ],
+      "lineno": 37,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "RawView& to"
+      ],
+      "lineno": 40,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 43,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 46,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 49,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 52,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 55,
+      "name": "replace"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 58,
+      "name": "read"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 61,
+      "name": "destroyXRP"
+    },
+    {
+      "args": [
+        "ReadView const& base"
+      ],
+      "lineno": 64,
+      "name": "slesBegin"
+    },
+    {
+      "args": [
+        "ReadView const& base"
+      ],
+      "lineno": 67,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "uint256 const& key"
+      ],
+      "lineno": 70,
+      "name": "slesUpperBound"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ]
+}

@@ -1,0 +1,435 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "manager"
+    },
+    {
+      "lineno": 24,
+      "name": "manager"
+    },
+    {
+      "lineno": 25,
+      "name": "manager"
+    },
+    {
+      "lineno": 26,
+      "name": "manager"
+    },
+    {
+      "lineno": 35,
+      "name": "parameters"
+    },
+    {
+      "lineno": 35,
+      "name": "burstSize"
+    },
+    {
+      "lineno": 35,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 35,
+      "name": "journal"
+    },
+    {
+      "lineno": 48,
+      "name": "burstSize"
+    },
+    {
+      "lineno": 48,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 48,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 48,
+      "name": "config"
+    },
+    {
+      "lineno": 48,
+      "name": "journal"
+    },
+    {
+      "lineno": 58,
+      "name": "factory"
+    },
+    {
+      "lineno": 63,
+      "name": "factory"
+    },
+    {
+      "lineno": 71,
+      "name": "name"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ManagerImp::make_Backend",
+        "ManagerImp::find",
+        "Factory::createInstance"
+      ],
+      "entry_point": "ManagerImp::make_Backend",
+      "purpose": "Creates a Backend instance based on configuration parameters. Validates the 'type' parameter and the existence of a corresponding Factory.",
+      "validation_points": [
+        "ManagerImp::make_Backend: Validates 'type' parameter is non-empty",
+        "ManagerImp::make_Backend: Validates 'factory' pointer is not null (from find(type))"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::make_Database",
+        "ManagerImp::make_Backend",
+        "ManagerImp::find",
+        "Factory::createInstance",
+        "Backend::open",
+        "DatabaseNodeImp::DatabaseNodeImp"
+      ],
+      "entry_point": "ManagerImp::make_Database",
+      "purpose": "Creates a Database instance, which includes creating and opening a Backend. Inherits all validations from make_Backend.",
+      "validation_points": [
+        "ManagerImp::make_Backend: Validates 'type' parameter and 'factory' pointer"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::erase"
+      ],
+      "entry_point": "ManagerImp::erase",
+      "purpose": "Removes a Factory from the internal list. Validates that the Factory exists in the list before erasing.",
+      "validation_points": [
+        "ManagerImp::erase: XRPL_ASSERT ensures the Factory pointer is present in list_"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type (from Section parameters)",
+      "flow": [
+        "Section config",
+        "get(parameters, \"type\") in make_Backend",
+        "std::string type",
+        "ManagerImp::find(type)",
+        "Factory* factory"
+      ],
+      "origin": "Section config parameter (likely from config file)",
+      "transformations": [
+        "Extracted from config Section",
+        "Passed as string to find()"
+      ],
+      "validated_at": "ManagerImp::make_Backend (checked for empty string)"
+    },
+    {
+      "field": "factory pointer",
+      "flow": [
+        "find(type)",
+        "returns Factory* or nullptr",
+        "checked in make_Backend",
+        "used to create Backend"
+      ],
+      "origin": "ManagerImp::find(type)",
+      "transformations": [
+        "Looked up in list_ by case-insensitive name"
+      ],
+      "validated_at": "ManagerImp::make_Backend (checked for nullptr)"
+    },
+    {
+      "field": "factory pointer (in erase)",
+      "flow": [
+        "erase(Factory& factory)",
+        "finds pointer in list_",
+        "XRPL_ASSERT checks pointer is present",
+        "erases from list_"
+      ],
+      "origin": "Passed as argument to ManagerImp::erase",
+      "transformations": [
+        "Pointer compared for equality in list_"
+      ],
+      "validated_at": "ManagerImp::erase (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the ManagerImp class for managing NodeStore backend factories and creating Backend and Database instances in the XRPL node store subsystem.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (from parameters Section)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ManagerImp::make_Backend at ManagerImp::make_Backend",
+      "issue_pattern": "Missing empty string validation for type (from parameters Section)",
+      "why_false_positive": "ManagerImp::make_Backend validates type (from parameters Section) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "factory pointer (from find(type))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ManagerImp::make_Backend at ManagerImp::make_Backend",
+      "issue_pattern": "Missing empty string validation for factory pointer (from find(type))",
+      "why_false_positive": "ManagerImp::make_Backend validates factory pointer (from find(type)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "factory pointer (from list_ in erase)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ManagerImp::erase",
+      "issue_pattern": "Missing empty string validation for factory pointer (from list_ in erase)",
+      "why_false_positive": "XRPL_ASSERT validates factory pointer (from list_ in erase) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/ManagerImp.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "ManagerImp::instance"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "ManagerImp::missing_backend"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 23,
+      "name": "registerNuDBFactory"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 24,
+      "name": "registerRocksDBFactory"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 25,
+      "name": "registerNullFactory"
+    },
+    {
+      "args": [
+        "manager"
+      ],
+      "lineno": 26,
+      "name": "registerMemoryFactory"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "ManagerImp::ManagerImp"
+    },
+    {
+      "args": [
+        "parameters",
+        "burstSize",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 35,
+      "name": "ManagerImp::make_Backend"
+    },
+    {
+      "args": [
+        "burstSize",
+        "scheduler",
+        "readThreads",
+        "config",
+        "journal"
+      ],
+      "lineno": 48,
+      "name": "ManagerImp::make_Database"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 58,
+      "name": "ManagerImp::insert"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 63,
+      "name": "ManagerImp::erase"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 71,
+      "name": "ManagerImp::find"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "Manager::instance"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "The code is core infrastructure and likely tested indirectly via higher-level NodeStore and Backend/Database tests. Direct unit tests for ManagerImp::make_Backend, make_Database, and erase may not exist, but their validation logic is exercised when invalid configs are loaded (e.g., missing or unknown 'type' in [node_db] section). Test files to check: nodestore/Manager_test.cpp, nodestore/Database_test.cpp, nodestore/Backend_test.cpp, and integration tests that load various xrpld.cfg files. Gaps: Direct negative tests for missing/invalid 'type' or erase with invalid pointer may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework, uses Throw<> and XRPL_ASSERT)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>)",
+      "field": "type (from parameters Section)",
+      "location": "ManagerImp::make_Backend",
+      "validated_by": "ManagerImp::make_Backend",
+      "validates": [
+        "Checks that the 'type' field is present and non-empty in the parameters Section",
+        "Checks that the 'type' field corresponds to a registered backend factory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>)",
+      "field": "factory pointer (from find(type))",
+      "location": "ManagerImp::make_Backend",
+      "validated_by": "ManagerImp::make_Backend",
+      "validates": [
+        "Checks that a backend factory matching the 'type' field exists (factory != nullptr)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "factory pointer (from list_ in erase)",
+      "location": "ManagerImp::erase",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the factory pointer to erase exists in the list_ container"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

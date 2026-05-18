@@ -1,0 +1,42 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "less"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "equal_to"
+    }
+  ],
+  "description": "Provides MSVC-specific wrappers for std::less and std::equal_to to strip [[nodiscard]] from operator() for compatibility with boost::bimap, and otherwise aliases them directly.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/comparators.h",
+  "functions": [
+    {
+      "args": [
+        "T const& left",
+        "T const& right"
+      ],
+      "lineno": 22,
+      "name": "xrpl::less::operator()"
+    },
+    {
+      "args": [
+        "T const& left",
+        "T const& right"
+      ],
+      "lineno": 34,
+      "name": "xrpl::equal_to::operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

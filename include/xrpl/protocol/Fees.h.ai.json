@@ -1,0 +1,49 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "base_"
+    },
+    {
+      "lineno": 27,
+      "name": "reserve_"
+    },
+    {
+      "lineno": 27,
+      "name": "increment_"
+    },
+    {
+      "lineno": 36,
+      "name": "ownerCount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "base",
+        "reserve",
+        "increment"
+      ],
+      "lineno": 13,
+      "name": "Fees"
+    }
+  ],
+  "description": "Defines the Fees struct representing ledger fee settings in the XRPL, including base transaction cost, account reserve, and reserve increment. Also includes a deprecated fee units constant for backward compatibility.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Fees.h",
+  "functions": [
+    {
+      "args": [
+        "ownerCount"
+      ],
+      "lineno": 36,
+      "name": "accountReserve"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

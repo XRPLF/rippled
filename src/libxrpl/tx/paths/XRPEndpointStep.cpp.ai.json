@@ -1,0 +1,471 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "acc"
+    },
+    {
+      "lineno": 133,
+      "name": "sb"
+    },
+    {
+      "lineno": 133,
+      "name": "afView"
+    },
+    {
+      "lineno": 133,
+      "name": "ofrsToRm"
+    },
+    {
+      "lineno": 133,
+      "name": "out"
+    },
+    {
+      "lineno": 147,
+      "name": "in"
+    },
+    {
+      "lineno": 127,
+      "name": "v"
+    },
+    {
+      "lineno": 127,
+      "name": "prevStepDir"
+    },
+    {
+      "lineno": 223,
+      "name": "step"
+    },
+    {
+      "lineno": 223,
+      "name": "acc"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "StrandContext const& ctx, AccountID const& acc"
+      ],
+      "lineno": 11,
+      "name": "XRPEndpointStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx, AccountID const& acc"
+      ],
+      "lineno": 74,
+      "name": "XRPEndpointPaymentStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx, AccountID const& acc"
+      ],
+      "lineno": 91,
+      "name": "XRPEndpointOfferCrossingStep"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "make_XRPEndpointStep (not shown, but implied)",
+        "XRPEndpointStep::XRPEndpointStep(StrandContext const&, AccountID const&)"
+      ],
+      "entry_point": "make_XRPEndpointStep / XRPEndpointStep constructor",
+      "purpose": "Constructs an XRPEndpointStep, initializing account, isLast, and journal fields.",
+      "validation_points": [
+        "StrandContext::isLast is implicitly validated by type (bool)",
+        "acc (AccountID) is implicitly validated by type"
+      ]
+    },
+    {
+      "call_chain": [
+        "XRPEndpointStep::check(StrandContext const&)"
+      ],
+      "entry_point": "XRPEndpointStep::check",
+      "purpose": "Performs error and constraint checks on the step (e.g., frozen constraints).",
+      "validation_points": [
+        "Explicit validation logic inside check (details not shown in snippet)"
+      ]
+    },
+    {
+      "call_chain": [
+        "XRPEndpointStep::validFwd(PaymentSandbox&, ApplyView&, EitherAmount const&)"
+      ],
+      "entry_point": "XRPEndpointStep::validFwd",
+      "purpose": "Checks if a forward step is valid given the input amount.",
+      "validation_points": [
+        "cache_ (std::optional<XRPAmount>) is checked for presence before use"
+      ]
+    },
+    {
+      "call_chain": [
+        "XRPEndpointStep::revImp(PaymentSandbox&, ApplyView&, flat_set<uint256>&, XRPAmount const&)",
+        "XRPEndpointStep::fwdImp(PaymentSandbox&, ApplyView&, flat_set<uint256>&, XRPAmount const&)"
+      ],
+      "entry_point": "XRPEndpointStep::revImp / fwdImp",
+      "purpose": "Implements reverse and forward liquidity calculations for the step.",
+      "validation_points": [
+        "cache_ is checked for presence before use"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "acc_ (AccountID)",
+      "flow": [
+        "Constructor parameter",
+        "Stored in acc_",
+        "Accessed via acc()",
+        "Used in directStepAccts(), xrpLiquidImpl(), logStringImpl()"
+      ],
+      "origin": "Constructor argument (AccountID const& acc)",
+      "transformations": [
+        "No transformation; direct assignment and usage"
+      ],
+      "validated_at": "Implicitly validated by AccountID type at construction"
+    },
+    {
+      "field": "isLast_ (bool)",
+      "flow": [
+        "ctx.isLast",
+        "Stored in isLast_",
+        "Used in directStepAccts() to determine account pair order"
+      ],
+      "origin": "Constructor argument (StrandContext const& ctx)",
+      "transformations": [
+        "No transformation; direct assignment and usage"
+      ],
+      "validated_at": "Implicitly validated by bool type at construction"
+    },
+    {
+      "field": "cache_ (std::optional<XRPAmount>)",
+      "flow": [
+        "Set internally (e.g., in revImp/fwdImp)",
+        "Accessed via cached(), cachedIn(), cachedOut()",
+        "Used in validFwd()"
+      ],
+      "origin": "Set internally during liquidity calculations (not shown in snippet)",
+      "transformations": [
+        "Wrapped/unwrapped in std::optional",
+        "Converted to EitherAmount in cached()"
+      ],
+      "validated_at": "Checked for presence (has_value) before dereferencing"
+    }
+  ],
+  "description": "Implements XRPEndpointStep and its derivatives for handling XRP endpoints in payment and offer crossing strands in the XRPL transaction pathfinding logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "acc (AccountID)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field acc (AccountID) validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for acc (AccountID)",
+      "why_false_positive": "C++ type system, std::optional validates acc (AccountID) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "isLast (bool)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field isLast (bool) validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for isLast (bool)",
+      "why_false_positive": "C++ type system, std::optional validates isLast (bool) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cache_ (std::optional<XRPAmount>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field cache_ (std::optional<XRPAmount>) validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for cache_ (std::optional<XRPAmount>)",
+      "why_false_positive": "C++ type system, std::optional validates cache_ (std::optional<XRPAmount>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "StrandContext::isLast",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (bool) at XRPEndpointStep constructor",
+      "issue_pattern": "Missing empty string validation for StrandContext::isLast",
+      "why_false_positive": "implicit type checking (bool) validates StrandContext::isLast for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "StrandContext::isLast",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (bool) at XRPEndpointStep constructor",
+      "issue_pattern": "Missing type validation for StrandContext::isLast",
+      "why_false_positive": "implicit type checking (bool) validates StrandContext::isLast type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "acc (AccountID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (AccountID) at XRPEndpointStep constructor",
+      "issue_pattern": "Missing empty string validation for acc (AccountID)",
+      "why_false_positive": "implicit type checking (AccountID) validates acc (AccountID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "acc (AccountID)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (AccountID) at XRPEndpointStep constructor",
+      "issue_pattern": "Missing type validation for acc (AccountID)",
+      "why_false_positive": "implicit type checking (AccountID) validates acc (AccountID) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cache_ (XRPAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional<XRPAmount> at cached(), cachedIn(), cachedOut()",
+      "issue_pattern": "Missing empty string validation for cache_ (XRPAmount)",
+      "why_false_positive": "std::optional<XRPAmount> validates cache_ (XRPAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/XRPEndpointStep.cpp",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 120,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "v",
+        "prevStepDir"
+      ],
+      "lineno": 126,
+      "name": "qualityUpperBound"
+    },
+    {
+      "args": [
+        "sb",
+        "afView",
+        "ofrsToRm",
+        "out"
+      ],
+      "lineno": 132,
+      "name": "revImp"
+    },
+    {
+      "args": [
+        "sb",
+        "afView",
+        "ofrsToRm",
+        "in"
+      ],
+      "lineno": 146,
+      "name": "fwdImp"
+    },
+    {
+      "args": [
+        "sb",
+        "afView",
+        "in"
+      ],
+      "lineno": 160,
+      "name": "validFwd"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 184,
+      "name": "check"
+    },
+    {
+      "args": [
+        "step",
+        "acc"
+      ],
+      "lineno": 222,
+      "name": "xrpEndpointStepEqual"
+    },
+    {
+      "args": [
+        "ctx",
+        "acc"
+      ],
+      "lineno": 232,
+      "name": "make_XRPEndpointStep"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 221,
+      "name": "test"
+    }
+  ],
+  "test_coverage_notes": "XRPEndpointStep is a core path step implementation, so it is likely tested indirectly via payment and pathfinding integration tests (e.g., in test/paths/ or test/app/paths/). Direct unit tests for XRPEndpointStep itself may be limited or absent, as much of its logic is exercised through higher-level transaction tests. Validation of acc_ and isLast_ is type-based and not explicitly tested. The cache_ logic is likely tested via liquidity/path tests, but edge cases (e.g., unset cache_) may not be directly covered. The check() method's error/frozen constraint logic should be covered by tests for frozen accounts or payment failures, but coverage depends on the thoroughness of those tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "acc (AccountID)",
+      "isLast (bool)",
+      "cache_ (std::optional<XRPAmount>)"
+    ],
+    "framework": "C++ type system, std::optional",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (compile-time type safety)",
+      "field": "StrandContext::isLast",
+      "location": "XRPEndpointStep constructor",
+      "validated_by": "implicit type checking (bool)",
+      "validates": [
+        "isLast is a boolean, only true/false accepted"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (compile-time type safety)",
+      "field": "acc (AccountID)",
+      "location": "XRPEndpointStep constructor",
+      "validated_by": "implicit type checking (AccountID)",
+      "validates": [
+        "acc must be a valid AccountID type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (optional checked at runtime)",
+      "field": "cache_ (XRPAmount)",
+      "location": "cached(), cachedIn(), cachedOut()",
+      "validated_by": "std::optional<XRPAmount>",
+      "validates": [
+        "cache_ is present before use"
+      ],
+      "validation_type": "type/presence"
+    }
+  ]
+}

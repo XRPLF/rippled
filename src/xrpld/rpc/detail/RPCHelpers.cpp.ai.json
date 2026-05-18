@@ -1,0 +1,519 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseAccountIds",
+        "parseBase58<AccountID>"
+      ],
+      "entry_point": "parseAccountIds",
+      "purpose": "Validates and parses an array of AccountID strings from JSON input.",
+      "validation_points": [
+        "parseAccountIds: Checks if each element is a string.",
+        "parseBase58<AccountID>: Validates if string is a valid AccountID."
+      ]
+    },
+    {
+      "call_chain": [
+        "isRelatedToAccount",
+        "SLE::getType",
+        "SLE::getFieldAmount",
+        "SLE::getAccountID",
+        "SLE::isFieldPresent"
+      ],
+      "entry_point": "isRelatedToAccount",
+      "purpose": "Checks if a ledger entry (SLE) is related to a given account by examining type and relevant fields.",
+      "validation_points": [
+        "isRelatedToAccount: Validates SLE type and presence of fields (sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner)."
+      ]
+    },
+    {
+      "call_chain": [
+        "getStartHint",
+        "SLE::getType",
+        "SLE::getFieldAmount",
+        "SLE::getFieldU64",
+        "SLE::isFieldPresent"
+      ],
+      "entry_point": "getStartHint",
+      "purpose": "Extracts a 'start hint' value from a ledger entry, validating type and field presence.",
+      "validation_points": [
+        "getStartHint: Validates SLE type and presence of sfLowLimit, sfHighLimit, sfOwnerNode fields."
+      ]
+    },
+    {
+      "call_chain": [
+        "readLimitField",
+        "context.params",
+        "isUnlimited"
+      ],
+      "entry_point": "readLimitField",
+      "purpose": "Validates and clamps the 'limit' field from JSON RPC input.",
+      "validation_points": [
+        "readLimitField: Checks if 'limit' is present, is an unsigned integer, is nonzero, and clamps to allowed range."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AccountID (from JSON)",
+      "flow": [
+        "JSON input",
+        "parseAccountIds",
+        "parseBase58<AccountID>",
+        "hash_set<AccountID> result"
+      ],
+      "origin": "JSON input array (jvArray)",
+      "transformations": [
+        "Type check (isString)",
+        "Base58 decoding and validation"
+      ],
+      "validated_at": "parseAccountIds (type and format validation)"
+    },
+    {
+      "field": "SLE fields (sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner)",
+      "flow": [
+        "SLE object",
+        "isRelatedToAccount",
+        "getFieldAmount/getAccountID/isFieldPresent",
+        "Comparison to input AccountID"
+      ],
+      "origin": "SLE (ledger entry) object",
+      "transformations": [
+        "Field presence check",
+        "Field extraction",
+        "Comparison"
+      ],
+      "validated_at": "isRelatedToAccount (type and field presence/ownership validation)"
+    },
+    {
+      "field": "limit (from JSON)",
+      "flow": [
+        "JSON input",
+        "readLimitField",
+        "Type/Range validation",
+        "Clamping to allowed range",
+        "Output as unsigned int"
+      ],
+      "origin": "context.params[jss::limit]",
+      "transformations": [
+        "Type check (isUInt/isInt >= 0)",
+        "Range check (nonzero, clamp to min/max)"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "start hint (sfLowNode, sfHighNode, sfOwnerNode)",
+      "flow": [
+        "SLE object",
+        "getStartHint",
+        "getType/isFieldPresent",
+        "getFieldU64"
+      ],
+      "origin": "SLE fields",
+      "transformations": [
+        "Type check",
+        "Field presence check",
+        "Field extraction"
+      ],
+      "validated_at": "getStartHint"
+    }
+  ],
+  "description": "This file provides various helper functions for XRPL RPC operations, including parsing account IDs, handling seeds and keypairs, validating ledger entry types, and parsing asset-related JSON fields.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountID (via parseBase58)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field AccountID (via parseBase58) validated by xrpl::protocol (parseBase58, SLE field accessors), Json::Value",
+      "issue_pattern": "Missing validation for AccountID (via parseBase58)",
+      "why_false_positive": "xrpl::protocol (parseBase58, SLE field accessors), Json::Value validates AccountID (via parseBase58) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SLE field presence (via isFieldPresent)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SLE field presence (via isFieldPresent) validated by xrpl::protocol (parseBase58, SLE field accessors), Json::Value",
+      "issue_pattern": "Missing validation for SLE field presence (via isFieldPresent)",
+      "why_false_positive": "xrpl::protocol (parseBase58, SLE field accessors), Json::Value validates SLE field presence (via isFieldPresent) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SLE type (via getType)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SLE type (via getType) validated by xrpl::protocol (parseBase58, SLE field accessors), Json::Value",
+      "issue_pattern": "Missing validation for SLE type (via getType)",
+      "why_false_positive": "xrpl::protocol (parseBase58, SLE field accessors), Json::Value validates SLE type (via getType) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jvArray elements (AccountID strings)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseAccountIds (parseBase58<AccountID>) at parseAccountIds",
+      "issue_pattern": "Missing empty string validation for jvArray elements (AccountID strings)",
+      "why_false_positive": "parseAccountIds (parseBase58<AccountID>) validates jvArray elements (AccountID strings) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sle->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isRelatedToAccount (SLE type checks) at isRelatedToAccount",
+      "issue_pattern": "Missing empty string validation for sle->getType()",
+      "why_false_positive": "isRelatedToAccount (SLE type checks) validates sle->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isRelatedToAccount (isFieldPresent, getAccountID) at isRelatedToAccount",
+      "issue_pattern": "Missing empty string validation for sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner",
+      "why_false_positive": "isRelatedToAccount (isFieldPresent, getAccountID) validates sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sle->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getStartHint (SLE type checks) at getStartHint",
+      "issue_pattern": "Missing empty string validation for sle->getType()",
+      "why_false_positive": "getStartHint (SLE type checks) validates sle->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfLowLimit, sfHighLimit, sfOwnerNode",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getStartHint (isFieldPresent, getFieldU64) at getStartHint",
+      "issue_pattern": "Missing empty string validation for sfLowLimit, sfHighLimit, sfOwnerNode",
+      "why_false_positive": "getStartHint (isFieldPresent, getFieldU64) validates sfLowLimit, sfHighLimit, sfOwnerNode for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "sle",
+        "accountID"
+      ],
+      "lineno": 13,
+      "name": "getStartHint"
+    },
+    {
+      "args": [
+        "ledger",
+        "sle",
+        "accountID"
+      ],
+      "lineno": 28,
+      "name": "isRelatedToAccount"
+    },
+    {
+      "args": [
+        "jvArray"
+      ],
+      "lineno": 56,
+      "name": "parseAccountIds"
+    },
+    {
+      "args": [
+        "limit",
+        "range",
+        "context"
+      ],
+      "lineno": 70,
+      "name": "readLimitField"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 92,
+      "name": "parseXrplLibSeed"
+    },
+    {
+      "args": [
+        "params",
+        "error"
+      ],
+      "lineno": 104,
+      "name": "getSeedFromRPC"
+    },
+    {
+      "args": [
+        "params",
+        "error",
+        "apiVersion"
+      ],
+      "lineno": 143,
+      "name": "keypairForSignature"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 238,
+      "name": "chooseLedgerEntryType"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 282,
+      "name": "isAccountObjectsValidType"
+    },
+    {
+      "args": [
+        "asset",
+        "params",
+        "name",
+        "j"
+      ],
+      "lineno": 295,
+      "name": "parseSubUnsubJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit and integration tests for RPC handlers that use these helpers, such as account_objects, account_lines, and trustline-related RPCs. Tests would be found in files like 'test/rpc/AccountObjects_test.cpp', 'test/rpc/AccountLines_test.cpp', and possibly 'test/rpc/handlers/AccountObjects_test.cpp'. However, direct unit tests for these helpers may be limited; edge cases (e.g., malformed JSON, invalid AccountID strings, missing fields in SLEs) may not be fully covered unless explicitly tested in those files. Template-based validation may have generic test coverage, but specific field validation (e.g., for parseAccountIds or readLimitField) should be checked for negative and boundary cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "AccountID (via parseBase58)",
+      "SLE field presence (via isFieldPresent)",
+      "SLE type (via getType)"
+    ],
+    "framework": "xrpl::protocol (parseBase58, SLE field accessors), Json::Value",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns empty hash_set<AccountID>()",
+      "field": "jvArray elements (AccountID strings)",
+      "location": "parseAccountIds",
+      "validated_by": "parseAccountIds (parseBase58<AccountID>)",
+      "validates": [
+        "Each element is a string (jv.isString())",
+        "Each string is valid base58 AccountID (parseBase58<AccountID>)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns false",
+      "field": "sle->getType()",
+      "location": "isRelatedToAccount",
+      "validated_by": "isRelatedToAccount (SLE type checks)",
+      "validates": [
+        "SLE type is checked for ltRIPPLE_STATE, ltSIGNER_LIST, ltNFTOKEN_OFFER"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns false",
+      "field": "sfLowLimit, sfHighLimit, sfAccount, sfDestination, sfOwner",
+      "location": "isRelatedToAccount",
+      "validated_by": "isRelatedToAccount (isFieldPresent, getAccountID)",
+      "validates": [
+        "Field presence checked (isFieldPresent)",
+        "AccountID extracted only if present"
+      ],
+      "validation_type": "presence|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "returns 0",
+      "field": "sle->getType()",
+      "location": "getStartHint",
+      "validated_by": "getStartHint (SLE type checks)",
+      "validates": [
+        "SLE type is checked for ltRIPPLE_STATE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "returns 0",
+      "field": "sfLowLimit, sfHighLimit, sfOwnerNode",
+      "location": "getStartHint",
+      "validated_by": "getStartHint (isFieldPresent, getFieldU64)",
+      "validates": [
+        "Field presence checked (isFieldPresent)",
+        "Field value extracted only if present"
+      ],
+      "validation_type": "presence|business_logic"
+    }
+  ]
+}

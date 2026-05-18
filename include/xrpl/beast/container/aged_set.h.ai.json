@@ -1,0 +1,31 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "Key"
+    },
+    {
+      "lineno": 11,
+      "name": "Clock"
+    },
+    {
+      "lineno": 12,
+      "name": "Compare"
+    },
+    {
+      "lineno": 13,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the aged_set type alias in the beast namespace, which is a set-like container that tracks the age of its elements using a specified clock.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_set.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "i"
+    },
+    {
+      "lineno": 22,
+      "name": "t"
+    },
+    {
+      "lineno": 29,
+      "name": "id"
+    },
+    {
+      "lineno": 36,
+      "name": "id"
+    },
+    {
+      "lineno": 43,
+      "name": "id"
+    },
+    {
+      "lineno": 50,
+      "name": "tokenSeq"
+    },
+    {
+      "lineno": 50,
+      "name": "taxon"
+    },
+    {
+      "lineno": 71,
+      "name": "id"
+    },
+    {
+      "lineno": 81,
+      "name": "id"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "TaxonTag"
+    }
+  ],
+  "description": "Provides utility functions and types for handling NFT (Non-Fungible Token) taxons, flags, transfer fees, serials, and issuer extraction from a 256-bit NFT identifier in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/nft.h",
+  "functions": [
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 17,
+      "name": "toTaxon"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 22,
+      "name": "toUInt32"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 29,
+      "name": "getFlags"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 36,
+      "name": "getTransferFee"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 43,
+      "name": "getSerial"
+    },
+    {
+      "args": [
+        "tokenSeq",
+        "taxon"
+      ],
+      "lineno": 50,
+      "name": "cipheredTaxon"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 71,
+      "name": "getTaxon"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 81,
+      "name": "getIssuer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "nft"
+    }
+  ]
+}

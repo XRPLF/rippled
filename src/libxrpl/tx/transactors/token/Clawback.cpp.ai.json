@@ -1,0 +1,596 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 28,
+      "name": "ctx"
+    },
+    {
+      "lineno": 45,
+      "name": "ctx"
+    },
+    {
+      "lineno": 61,
+      "name": "ctx"
+    },
+    {
+      "lineno": 61,
+      "name": "sleIssuer"
+    },
+    {
+      "lineno": 61,
+      "name": "issuer"
+    },
+    {
+      "lineno": 61,
+      "name": "holder"
+    },
+    {
+      "lineno": 61,
+      "name": "clawAmount"
+    },
+    {
+      "lineno": 93,
+      "name": "ctx"
+    },
+    {
+      "lineno": 93,
+      "name": "sleIssuer"
+    },
+    {
+      "lineno": 93,
+      "name": "issuer"
+    },
+    {
+      "lineno": 93,
+      "name": "holder"
+    },
+    {
+      "lineno": 93,
+      "name": "clawAmount"
+    },
+    {
+      "lineno": 112,
+      "name": "ctx"
+    },
+    {
+      "lineno": 139,
+      "name": "ctx"
+    },
+    {
+      "lineno": 157,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Clawback::preflight",
+        "preflightHelper<Issue> or preflightHelper<MPTIssue>"
+      ],
+      "entry_point": "Clawback::preflight",
+      "purpose": "Performs stateless validation of Clawback transactions before they are accepted for further processing.",
+      "validation_points": [
+        "preflightHelper<Issue>: Validates sfHolder absence, sfAmount (isXRP, <= 0), issuer != holder",
+        "preflightHelper<MPTIssue>: Validates featureMPTokensV1 enabled, sfHolder present, issuer != holder, amount <= max, amount > 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "Clawback::preclaim",
+        "preclaimHelper<Issue> or preclaimHelper<MPTIssue>"
+      ],
+      "entry_point": "Clawback::preclaim",
+      "purpose": "Performs stateful validation (ledger-dependent) to check permissions, trustlines, and balances before applying the Clawback.",
+      "validation_points": [
+        "preclaimHelper<Issue>: Checks issuer flags, trustline existence, trustline balance sign, accountHolds > 0",
+        "preclaimHelper<MPTIssue>: (Partial in provided code, but would check MPT issuance existence, permissions, etc.)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Clawback::doApply",
+        "applyHelper<Issue> or applyHelper<MPTIssue>"
+      ],
+      "entry_point": "Clawback::doApply",
+      "purpose": "Applies the Clawback operation after all validations pass.",
+      "validation_points": [
+        "Assumes preflight and preclaim have already validated inputs; doApply focuses on state mutation."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfHolder",
+      "flow": [
+        "ctx.tx",
+        "preflightHelper<Issue>: ctx.tx.isFieldPresent(sfHolder)",
+        "preflightHelper<MPTIssue>: ctx.tx[~sfHolder]",
+        "Used as 'holder' in further validation"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence/absence depending on Issue/MPTIssue",
+        "Extracted as AccountID"
+      ],
+      "validated_at": "preflightHelper<Issue> (must be absent), preflightHelper<MPTIssue> (must be present)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx",
+        "preflightHelper<Issue>: ctx.tx[sfAmount]",
+        "preflightHelper<MPTIssue>: ctx.tx[sfAmount]",
+        "Used as 'clawAmount' in further validation"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for isXRP, <= 0 (Issue)",
+        "Checked for <= maxMPTokenAmount, <= 0 (MPTIssue)",
+        "Issuer extracted from amount"
+      ],
+      "validated_at": "preflightHelper<Issue>, preflightHelper<MPTIssue>"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx",
+        "preflightHelper<Issue>: ctx.tx[sfAccount]",
+        "preflightHelper<MPTIssue>: ctx.tx[sfAccount]",
+        "Used as 'issuer' in further validation"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Compared to holder for != check"
+      ],
+      "validated_at": "preflightHelper<Issue>, preflightHelper<MPTIssue>"
+    },
+    {
+      "field": "featureMPTokensV1",
+      "flow": [
+        "ctx.rules",
+        "preflightHelper<MPTIssue>: ctx.rules.enabled(featureMPTokensV1)"
+      ],
+      "origin": "ctx.rules (network rules/feature flags)",
+      "transformations": [
+        "Boolean check for feature enablement"
+      ],
+      "validated_at": "preflightHelper<MPTIssue>"
+    },
+    {
+      "field": "issuer flags (lsfAllowTrustLineClawback, lsfNoFreeze)",
+      "flow": [
+        "ctx.view.read(sleIssuer)",
+        "preclaimHelper<Issue>: sleIssuer.getFieldU32(sfFlags)"
+      ],
+      "origin": "SLE issuer account (ledger state)",
+      "transformations": [
+        "Bitmask checks for permissions"
+      ],
+      "validated_at": "preclaimHelper<Issue>"
+    },
+    {
+      "field": "trustline (RippleState)",
+      "flow": [
+        "ctx.view.read(keylet::line(holder, issuer, currency))",
+        "preclaimHelper<Issue>: sleRippleState"
+      ],
+      "origin": "Ledger (ctx.view)",
+      "transformations": [
+        "Existence check, balance extraction"
+      ],
+      "validated_at": "preclaimHelper<Issue>"
+    },
+    {
+      "field": "accountHolds",
+      "flow": [
+        "accountHolds(ctx.view, holder, currency, issuer, fhIGNORE_FREEZE, ctx.j)"
+      ],
+      "origin": "Ledger (ctx.view)",
+      "transformations": [
+        "Returns available balance for holder"
+      ],
+      "validated_at": "preclaimHelper<Issue>"
+    }
+  ],
+  "description": "Implements the Clawback transaction logic for XRPL tokens, including preflight, preclaim, and apply steps for both Issue and MPTIssue token types.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx.isFieldPresent(sfHolder)) at preflightHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfHolder",
+      "why_false_positive": "explicit check (ctx.tx.isFieldPresent(sfHolder)) validates sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit checks (isXRP, <= beast::zero) at preflightHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "explicit checks (isXRP, <= beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount vs sfAmount.issuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (issuer == holder) at preflightHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfAccount vs sfAmount.issuer",
+      "why_false_positive": "explicit check (issuer == holder) validates sfAccount vs sfAmount.issuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureMPTokensV1",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV1) at preflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for featureMPTokensV1",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV1) validates featureMPTokensV1 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfHolder (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (auto const mptHolder = ctx.tx[~sfHolder]; if (!mptHolder)) at preflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for sfHolder (optional)",
+      "why_false_positive": "explicit check (auto const mptHolder = ctx.tx[~sfHolder]; if (!mptHolder)) validates sfHolder (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount vs sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfAccount] == *mptHolder) at preflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for sfAccount vs sfHolder",
+      "why_false_positive": "explicit check (ctx.tx[sfAccount] == *mptHolder) validates sfAccount vs sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (MPT)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero) at preflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for sfAmount (MPT)",
+      "why_false_positive": "explicit check (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero) validates sfAmount (MPT) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount.asset().value()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::visit with preflightHelper<T> at Clawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount.asset().value()",
+      "why_false_positive": "std::visit with preflightHelper<T> validates sfAmount.asset().value() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfAllowTrustLineClawback, lsfNoFreeze (issuer flags)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (issuerFlagsIn & lsfAllowTrustLineClawback, issuerFlagsIn & lsfNoFreeze) at preclaimHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for lsfAllowTrustLineClawback, lsfNoFreeze (issuer flags)",
+      "why_false_positive": "explicit check (issuerFlagsIn & lsfAllowTrustLineClawback, issuerFlagsIn & lsfNoFreeze) validates lsfAllowTrustLineClawback, lsfNoFreeze (issuer flags) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "trust line existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::line(...)) at preclaimHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for trust line existence",
+      "why_false_positive": "ctx.view.read(keylet::line(...)) validates trust line existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance (trust line balance sign)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (balance > beast::zero && issuer < holder, balance < beast::zero && issuer > holder) at preclaimHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfBalance (trust line balance sign)",
+      "why_false_positive": "explicit check (balance > beast::zero && issuer < holder, balance < beast::zero && issuer > holder) validates sfBalance (trust line balance sign) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/Clawback.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "preflightHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "preflightHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 45,
+      "name": "Clawback::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "SLE const& sleIssuer",
+        "AccountID const& issuer",
+        "AccountID const& holder",
+        "STAmount const& clawAmount"
+      ],
+      "lineno": 61,
+      "name": "preclaimHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "SLE const& sleIssuer",
+        "AccountID const& issuer",
+        "AccountID const& holder",
+        "STAmount const& clawAmount"
+      ],
+      "lineno": 93,
+      "name": "preclaimHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 112,
+      "name": "Clawback::preclaim"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 139,
+      "name": "applyHelper<Issue>"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 157,
+      "name": "applyHelper<MPTIssue>"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "Clawback::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Clawback transaction logic is typically tested in unit/integration tests under the transaction or token test suites. Look for files like 'test/tx/Clawback_test.cpp', 'test/tx/MPTokens_test.cpp', or similar. Tests should cover: (1) malformed transactions (missing/extra fields), (2) permission errors (issuer flags), (3) trustline existence, (4) insufficient funds, (5) feature flag enablement. Gaps may exist for edge cases in MPTIssue (since code is partial), and for negative test cases involving complex trustline states or feature flag transitions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation via explicit checks and helper functions (no external validation framework)",
+    "validation_layer": "business_logic (preflight/preclaim functions in transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfHolder",
+      "location": "preflightHelper<Issue>",
+      "validated_by": "explicit check (ctx.tx.isFieldPresent(sfHolder))",
+      "validates": [
+        "Ensures sfHolder is not present for Issue type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflightHelper<Issue>",
+      "validated_by": "explicit checks (isXRP, <= beast::zero)",
+      "validates": [
+        "Ensures amount is not XRP",
+        "Ensures amount is greater than zero"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAccount vs sfAmount.issuer",
+      "location": "preflightHelper<Issue>",
+      "validated_by": "explicit check (issuer == holder)",
+      "validates": [
+        "Ensures issuer and holder are not the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDISABLED",
+      "field": "featureMPTokensV1",
+      "location": "preflightHelper<MPTIssue>",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV1)",
+      "validates": [
+        "Ensures MPTokensV1 feature is enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfHolder (optional)",
+      "location": "preflightHelper<MPTIssue>",
+      "validated_by": "explicit check (auto const mptHolder = ctx.tx[~sfHolder]; if (!mptHolder))",
+      "validates": [
+        "Ensures sfHolder is present for MPTIssue"
+      ],
+      "validation_type": "business_logic|presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAccount vs sfHolder",
+      "location": "preflightHelper<MPTIssue>",
+      "validated_by": "explicit check (ctx.tx[sfAccount] == *mptHolder)",
+      "validates": [
+        "Ensures issuer and holder are not the same for MPTIssue"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount (MPT)",
+      "location": "preflightHelper<MPTIssue>",
+      "validated_by": "explicit check (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)",
+      "validates": [
+        "Ensures MPT amount does not exceed maxMPTokenAmount",
+        "Ensures MPT amount is greater than zero"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "varies (temBAD_AMOUNT, temMALFORMED, temDISABLED, etc.)",
+      "field": "sfAmount.asset().value()",
+      "location": "Clawback::preflight",
+      "validated_by": "std::visit with preflightHelper<T>",
+      "validates": [
+        "Dispatches to correct preflightHelper based on asset type"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "lsfAllowTrustLineClawback, lsfNoFreeze (issuer flags)",
+      "location": "preclaimHelper<Issue>",
+      "validated_by": "explicit check (issuerFlagsIn & lsfAllowTrustLineClawback, issuerFlagsIn & lsfNoFreeze)",
+      "validates": [
+        "Ensures issuer has permission to clawback (AllowTrustLineClawback set, NoFreeze not set)"
+      ],
+      "validation_type": "business_logic|permission"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_LINE",
+      "field": "trust line existence",
+      "location": "preclaimHelper<Issue>",
+      "validated_by": "ctx.view.read(keylet::line(...))",
+      "validates": [
+        "Ensures trust line exists between holder and issuer"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfBalance (trust line balance sign)",
+      "location": "preclaimHelper<Issue>",
+      "validated_by": "explicit check (balance > beast::zero && issuer < holder, balance < beast::zero && issuer > holder)",
+      "validates": [
+        "Ensures correct address ordering for positive/negative balances"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

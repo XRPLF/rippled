@@ -1,0 +1,769 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMWithdraw::doApply",
+        "AMMWithdraw::applyGuts",
+        "AMMWithdraw::withdraw",
+        "tokensWithdraw"
+      ],
+      "entry_point": "AMMWithdraw::doApply",
+      "purpose": "Executes the AMMWithdraw transaction, applying business logic after validation.",
+      "validation_points": [
+        "AMMWithdraw::preflight",
+        "AMMWithdraw::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMWithdraw::preflight"
+      ],
+      "entry_point": "AMMWithdraw::preflight",
+      "purpose": "Performs all static and syntactic validation on the transaction before execution.",
+      "validation_points": [
+        "AMMWithdraw::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMWithdraw::preclaim"
+      ],
+      "entry_point": "AMMWithdraw::preclaim",
+      "purpose": "Performs contextual validation (e.g., ledger state) before transaction application.",
+      "validation_points": [
+        "AMMWithdraw::preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "flags",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Bitmask checks for flag combinations",
+        "Controls which validation branch is taken"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Bitmasking with tfWithdrawSubTx and other flags",
+        "std::popcount to ensure only one sub-transaction flag is set"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "lpTokens",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Checked for presence/absence depending on flags",
+        "Used in downstream logic if validation passes"
+      ],
+      "origin": "ctx.tx[~sfLPTokenIn]",
+      "transformations": [
+        "Optional extraction",
+        "Compared to beast::zero for validity"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "amount",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Checked for presence/absence depending on flags",
+        "Passed to invalidAMMAmount for further validation"
+      ],
+      "origin": "ctx.tx[~sfAmount]",
+      "transformations": [
+        "Optional extraction",
+        "Type/issue checks",
+        "Passed to invalidAMMAmount"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "amount2",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Checked for presence/absence depending on flags",
+        "Passed to invalidAMMAmount for further validation"
+      ],
+      "origin": "ctx.tx[~sfAmount2]",
+      "transformations": [
+        "Optional extraction",
+        "Type/issue checks",
+        "Passed to invalidAMMAmount"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "ePrice",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Checked for presence/absence depending on flags",
+        "Passed to invalidAMMAmount for further validation"
+      ],
+      "origin": "ctx.tx[~sfEPrice]",
+      "transformations": [
+        "Optional extraction",
+        "Type/issue checks",
+        "Passed to invalidAMMAmount"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "asset",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Passed to invalidAMMAssetPair for validation"
+      ],
+      "origin": "ctx.tx[sfAsset]",
+      "transformations": [
+        "Type/issue checks"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    },
+    {
+      "field": "asset2",
+      "flow": [
+        "Transaction input (ctx.tx)",
+        "AMMWithdraw::preflight",
+        "Passed to invalidAMMAssetPair for validation"
+      ],
+      "origin": "ctx.tx[sfAsset2]",
+      "transformations": [
+        "Type/issue checks"
+      ],
+      "validated_at": "AMMWithdraw::preflight"
+    }
+  ],
+  "description": "Implements the logic for Automated Market Maker (AMM) Withdraw transactions in the XRPL, including preflight checks, withdrawal calculations, and ledger updates for various withdrawal scenarios.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "flags (tfWithdrawSubTx)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::popcount(flags & tfWithdrawSubTx) != 1 at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for flags (tfWithdrawSubTx)",
+      "why_false_positive": "std::popcount(flags & tfWithdrawSubTx) != 1 validates flags (tfWithdrawSubTx) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lpTokens, amount, amount2, ePrice (when tfLPToken set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!lpTokens || amount || amount2 || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for lpTokens, amount, amount2, ePrice (when tfLPToken set)",
+      "why_false_positive": "if (!lpTokens || amount || amount2 || ePrice) validates lpTokens, amount, amount2, ePrice (when tfLPToken set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lpTokens, amount, amount2, ePrice (when tfWithdrawAll set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (lpTokens || amount || amount2 || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for lpTokens, amount, amount2, ePrice (when tfWithdrawAll set)",
+      "why_false_positive": "if (lpTokens || amount || amount2 || ePrice) validates lpTokens, amount, amount2, ePrice (when tfWithdrawAll set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, lpTokens, amount2, ePrice (when tfOneAssetWithdrawAll set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!amount || lpTokens || amount2 || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, lpTokens, amount2, ePrice (when tfOneAssetWithdrawAll set)",
+      "why_false_positive": "if (!amount || lpTokens || amount2 || ePrice) validates amount, lpTokens, amount2, ePrice (when tfOneAssetWithdrawAll set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, lpTokens, amount2, ePrice (when tfSingleAsset set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!amount || lpTokens || amount2 || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, lpTokens, amount2, ePrice (when tfSingleAsset set)",
+      "why_false_positive": "if (!amount || lpTokens || amount2 || ePrice) validates amount, lpTokens, amount2, ePrice (when tfSingleAsset set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, amount2, lpTokens, ePrice (when tfTwoAsset set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!amount || !amount2 || lpTokens || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, amount2, lpTokens, ePrice (when tfTwoAsset set)",
+      "why_false_positive": "if (!amount || !amount2 || lpTokens || ePrice) validates amount, amount2, lpTokens, ePrice (when tfTwoAsset set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, lpTokens, amount2, ePrice (when tfOneAssetLPToken set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!amount || !lpTokens || amount2 || ePrice) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, lpTokens, amount2, ePrice (when tfOneAssetLPToken set)",
+      "why_false_positive": "if (!amount || !lpTokens || amount2 || ePrice) validates amount, lpTokens, amount2, ePrice (when tfOneAssetLPToken set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, ePrice, lpTokens, amount2 (when tfLimitLPToken set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!amount || !ePrice || lpTokens || amount2) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, ePrice, lpTokens, amount2 (when tfLimitLPToken set)",
+      "why_false_positive": "if (!amount || !ePrice || lpTokens || amount2) validates amount, ePrice, lpTokens, amount2 (when tfLimitLPToken set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "asset, asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAssetPair(asset, asset2) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for asset, asset2",
+      "why_false_positive": "invalidAMMAssetPair(asset, asset2) validates asset, asset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount, amount2 (must not be same asset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (amount && amount2 && amount->asset() == amount2->asset()) at AMMWithdraw::preflight",
+      "issue_pattern": "Missing empty string validation for amount, amount2 (must not be same asset)",
+      "why_false_positive": "if (amount && amount2 && amount->asset() == amount2->asset()) validates amount, amount2 (must not be same asset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM feature enabled",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMWithdraw::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for AMM feature enabled",
+      "why_false_positive": "ammEnabled(ctx.rules) validates AMM feature enabled for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTokens V2 feature or asset types",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) || ... at AMMWithdraw::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for MPTokens V2 feature or asset types",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) || ... validates MPTokens V2 feature or asset types for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMWithdraw.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "AMMWithdraw::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "AMMWithdraw::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 26,
+      "name": "AMMWithdraw::preflight"
+    },
+    {
+      "args": [
+        "STAmount const& lpTokens",
+        "std::optional<STAmount> const& tokensIn",
+        "std::uint32_t flags"
+      ],
+      "lineno": 74,
+      "name": "tokensWithdraw"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 82,
+      "name": "AMMWithdraw::preclaim"
+    },
+    {
+      "args": [
+        "Sandbox& sb"
+      ],
+      "lineno": 148,
+      "name": "AMMWithdraw::applyGuts"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "AMMWithdraw::doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amountWithdraw",
+        "std::optional<STAmount> const& amount2Withdraw",
+        "STAmount const& lpTokensAMMBalance",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 225,
+      "name": "AMMWithdraw::withdraw"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "AccountID const& account",
+        "STAmount const& amountBalance",
+        "STAmount const& amountWithdraw",
+        "std::optional<STAmount> const& amount2Withdraw",
+        "STAmount const& lpTokensAMMBalance",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "WithdrawAll withdrawAll",
+        "XRPAmount const& priorBalance",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 239,
+      "name": "AMMWithdraw::withdraw"
+    },
+    {
+      "args": [
+        "Rules const& rules",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensWithdraw",
+        "WithdrawAll withdrawAll"
+      ],
+      "lineno": 357,
+      "name": "adjustLPTokensIn"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokens",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 370,
+      "name": "AMMWithdraw::equalWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "std::shared_ptr<SLE> const ammSle",
+        "STAmount const& lpTokenBalance",
+        "Asset const& asset1",
+        "Asset const& asset2",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 384,
+      "name": "AMMWithdraw::deleteAMMAccountIfEmpty"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const account",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokens",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "WithdrawAll withdrawAll",
+        "XRPAmount const& priorBalance",
+        "beast::Journal const& journal"
+      ],
+      "lineno": 403,
+      "name": "AMMWithdraw::equalWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 453,
+      "name": "AMMWithdraw::equalWithdrawLimit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 502,
+      "name": "AMMWithdraw::singleWithdraw"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& lpTokensWithdraw",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 534,
+      "name": "AMMWithdraw::singleWithdrawTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& ePrice",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 561,
+      "name": "AMMWithdraw::singleWithdrawEPrice"
+    },
+    {
+      "args": [
+        "STTx const& tx"
+      ],
+      "lineno": 609,
+      "name": "AMMWithdraw::isWithdrawAll"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMWithdraw validation is typically covered by unit and integration tests in the rippled codebase, especially in files like 'test/AMM_test.cpp', 'test/AMMWithdraw_test.cpp', or similar. These tests should cover valid and invalid flag combinations, presence/absence of required fields, and edge cases for amounts and tokens. However, gaps may exist for rare flag combinations, malformed asset pairs, or negative/zero token values. Additional fuzz or property-based tests could help ensure all validation branches are exercised.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "flags (tfWithdrawSubTx)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "std::popcount(flags & tfWithdrawSubTx) != 1",
+      "validates": [
+        "Exactly one withdraw sub-transaction flag must be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "lpTokens, amount, amount2, ePrice (when tfLPToken set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!lpTokens || amount || amount2 || ePrice)",
+      "validates": [
+        "lpTokens must be present",
+        "amount, amount2, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "lpTokens, amount, amount2, ePrice (when tfWithdrawAll set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (lpTokens || amount || amount2 || ePrice)",
+      "validates": [
+        "lpTokens, amount, amount2, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, lpTokens, amount2, ePrice (when tfOneAssetWithdrawAll set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!amount || lpTokens || amount2 || ePrice)",
+      "validates": [
+        "amount must be present",
+        "lpTokens, amount2, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, lpTokens, amount2, ePrice (when tfSingleAsset set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!amount || lpTokens || amount2 || ePrice)",
+      "validates": [
+        "amount must be present",
+        "lpTokens, amount2, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, amount2, lpTokens, ePrice (when tfTwoAsset set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!amount || !amount2 || lpTokens || ePrice)",
+      "validates": [
+        "amount and amount2 must be present",
+        "lpTokens, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, lpTokens, amount2, ePrice (when tfOneAssetLPToken set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!amount || !lpTokens || amount2 || ePrice)",
+      "validates": [
+        "amount and lpTokens must be present",
+        "amount2, ePrice must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, ePrice, lpTokens, amount2 (when tfLimitLPToken set)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (!amount || !ePrice || lpTokens || amount2)",
+      "validates": [
+        "amount and ePrice must be present",
+        "lpTokens, amount2 must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "result of invalidAMMAssetPair (NotTEC error code)",
+      "field": "asset, asset2",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "invalidAMMAssetPair(asset, asset2)",
+      "validates": [
+        "asset and asset2 must form a valid AMM asset pair"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "amount, amount2 (must not be same asset)",
+      "location": "AMMWithdraw::preflight",
+      "validated_by": "if (amount && amount2 && amount->asset() == amount2->asset())",
+      "validates": [
+        "amount and amount2 must not refer to the same asset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "AMM feature enabled",
+      "location": "AMMWithdraw::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "AMM feature must be enabled in rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "MPTokens V2 feature or asset types",
+      "location": "AMMWithdraw::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) || ...",
+      "validates": [
+        "If MPTokensV2 not enabled, asset, asset2, amount, amount2 must not be MPTIssue"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

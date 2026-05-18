@@ -1,0 +1,238 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "SquelchHandler"
+    },
+    {
+      "args": [
+        "SquelchHandler const& handler",
+        "beast::Journal journal",
+        "uint16_t maxSelectedPeers"
+      ],
+      "lineno": 54,
+      "name": "Slot"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "SquelchHandler const& handler",
+        "Config const& config"
+      ],
+      "lineno": 324,
+      "name": "Slots"
+    }
+  ],
+  "description": "Implements the reduce relay mechanism for peer message squelching and relay selection in the XRPL overlay network, including peer state management, slot management per validator, and squelch/unsquelch logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Slot.h",
+  "functions": [
+    {
+      "args": [
+        "TP const& t"
+      ],
+      "lineno": 27,
+      "name": "epoch"
+    },
+    {
+      "args": [
+        "PublicKey const& validator"
+      ],
+      "lineno": 109,
+      "name": "Slot<clock_type>::deleteIdlePeer"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "id_t id",
+        "protocol::MessageType type",
+        "ignored_squelch_callback callback"
+      ],
+      "lineno": 124,
+      "name": "Slot<clock_type>::update"
+    },
+    {
+      "args": [
+        "std::size_t npeers"
+      ],
+      "lineno": 210,
+      "name": "Slot<clock_type>::getSquelchDuration"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "id_t id",
+        "bool erase"
+      ],
+      "lineno": 224,
+      "name": "Slot<clock_type>::deletePeer"
+    },
+    {
+      "args": [],
+      "lineno": 260,
+      "name": "Slot<clock_type>::resetCounts"
+    },
+    {
+      "args": [],
+      "lineno": 267,
+      "name": "Slot<clock_type>::initCounting"
+    },
+    {
+      "args": [
+        "PeerState state"
+      ],
+      "lineno": 274,
+      "name": "Slot<clock_type>::inState"
+    },
+    {
+      "args": [
+        "PeerState state"
+      ],
+      "lineno": 281,
+      "name": "Slot<clock_type>::notInState"
+    },
+    {
+      "args": [],
+      "lineno": 288,
+      "name": "Slot<clock_type>::getSelected"
+    },
+    {
+      "args": [],
+      "lineno": 297,
+      "name": "Slot<clock_type>::getPeers"
+    },
+    {
+      "args": [],
+      "lineno": 349,
+      "name": "Slots<clock_type>::baseSquelchReady"
+    },
+    {
+      "args": [],
+      "lineno": 354,
+      "name": "Slots<clock_type>::reduceRelayReady"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "id_t id",
+        "protocol::MessageType type"
+      ],
+      "lineno": 366,
+      "name": "Slots<clock_type>::updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "id_t id",
+        "protocol::MessageType type",
+        "typename Slot<clock_type>::ignored_squelch_callback callback"
+      ],
+      "lineno": 377,
+      "name": "Slots<clock_type>::updateSlotAndSquelch"
+    },
+    {
+      "args": [],
+      "lineno": 400,
+      "name": "Slots<clock_type>::deleteIdlePeers"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "PeerState state"
+      ],
+      "lineno": 409,
+      "name": "Slots<clock_type>::inState"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "PeerState state"
+      ],
+      "lineno": 418,
+      "name": "Slots<clock_type>::notInState"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "SlotState state"
+      ],
+      "lineno": 427,
+      "name": "Slots<clock_type>::inState"
+    },
+    {
+      "args": [
+        "PublicKey const& validator"
+      ],
+      "lineno": 434,
+      "name": "Slots<clock_type>::getSelected"
+    },
+    {
+      "args": [
+        "PublicKey const& validator"
+      ],
+      "lineno": 442,
+      "name": "Slots<clock_type>::getPeers"
+    },
+    {
+      "args": [
+        "PublicKey const& validator"
+      ],
+      "lineno": 451,
+      "name": "Slots<clock_type>::getState"
+    },
+    {
+      "args": [
+        "id_t id",
+        "bool erase"
+      ],
+      "lineno": 460,
+      "name": "Slots<clock_type>::deletePeer"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "id_t id"
+      ],
+      "lineno": 468,
+      "name": "Slots<clock_type>::addPeerMessage"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "id_t id",
+        "protocol::MessageType type",
+        "typename Slot<clock_type>::ignored_squelch_callback callback"
+      ],
+      "lineno": 491,
+      "name": "Slots<clock_type>::updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "id_t id",
+        "bool erase"
+      ],
+      "lineno": 507,
+      "name": "Slots<clock_type>::deletePeer"
+    },
+    {
+      "args": [],
+      "lineno": 513,
+      "name": "Slots<clock_type>::deleteIdlePeers"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 17,
+      "name": "reduce_relay"
+    }
+  ]
+}

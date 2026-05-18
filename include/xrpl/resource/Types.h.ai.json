@@ -1,0 +1,29 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "Key"
+    },
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Entry"
+    }
+  ],
+  "description": "Declares forward declarations for Key and Entry structs within the xrpl::Resource namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Types.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "Resource"
+    }
+  ]
+}

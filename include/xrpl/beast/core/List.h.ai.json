@@ -1,0 +1,245 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "T"
+    },
+    {
+      "lineno": 10,
+      "name": "U"
+    },
+    {
+      "lineno": 17,
+      "name": "T const"
+    },
+    {
+      "lineno": 17,
+      "name": "U"
+    },
+    {
+      "lineno": 25,
+      "name": "T"
+    },
+    {
+      "lineno": 25,
+      "name": "Tag"
+    },
+    {
+      "lineno": 41,
+      "name": "N"
+    },
+    {
+      "lineno": 98,
+      "name": "T"
+    },
+    {
+      "lineno": 98,
+      "name": "Tag"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "CopyConst"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "CopyConst<T const, U>"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "ListNode"
+    },
+    {
+      "args": [
+        "N* node = nullptr"
+      ],
+      "lineno": 41,
+      "name": "ListIterator"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "List"
+    }
+  ],
+  "description": "This file implements an intrusive doubly linked list container (List) similar to std::list, allowing objects to be part of one or more lists simultaneously by deriving from List::Node. It provides STL-like interface and iterators, but requires manual memory management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/core/List.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "front"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "front"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "back"
+    },
+    {
+      "args": [],
+      "lineno": 142,
+      "name": "back"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 155,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 173,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 179,
+      "name": "cend"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "clear"
+    },
+    {
+      "args": [
+        "pos",
+        "element"
+      ],
+      "lineno": 193,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "pos",
+        "other"
+      ],
+      "lineno": 205,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "pos"
+      ],
+      "lineno": 221,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "element"
+      ],
+      "lineno": 233,
+      "name": "push_front"
+    },
+    {
+      "args": [],
+      "lineno": 240,
+      "name": "pop_front"
+    },
+    {
+      "args": [
+        "element"
+      ],
+      "lineno": 249,
+      "name": "push_back"
+    },
+    {
+      "args": [],
+      "lineno": 256,
+      "name": "pop_back"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 263,
+      "name": "swap"
+    },
+    {
+      "args": [
+        "list"
+      ],
+      "lineno": 271,
+      "name": "prepend"
+    },
+    {
+      "args": [
+        "list"
+      ],
+      "lineno": 278,
+      "name": "append"
+    },
+    {
+      "args": [
+        "element"
+      ],
+      "lineno": 285,
+      "name": "iterator_to"
+    },
+    {
+      "args": [
+        "element"
+      ],
+      "lineno": 293,
+      "name": "const_iterator_to"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 299,
+      "name": "element_from"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 304,
+      "name": "element_from"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "detail"
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "io_context"
+    },
+    {
+      "lineno": 101,
+      "name": "owner"
+    },
+    {
+      "lineno": 101,
+      "name": "handler"
+    },
+    {
+      "lineno": 89,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 94,
+      "name": "op"
+    },
+    {
+      "lineno": 116,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::asio::io_context& io_context"
+      ],
+      "lineno": 13,
+      "name": "Checker"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "basic_async_op"
+    },
+    {
+      "args": [
+        "Checker& owner",
+        "boost::asio::io_context& io_context",
+        "Handler&& handler"
+      ],
+      "lineno": 29,
+      "name": "async_op"
+    }
+  ],
+  "description": "Defines a template class Checker that tests remote listening sockets to ensure they are connectable, providing asynchronous connection testing and management of pending operations using Boost.Asio.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Checker.h",
+  "functions": [
+    {
+      "args": [
+        "boost::asio::io_context& io_context"
+      ],
+      "lineno": 54,
+      "name": "Checker"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "~Checker"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "wait"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint",
+        "Handler&& handler"
+      ],
+      "lineno": 89,
+      "name": "async_connect"
+    },
+    {
+      "args": [
+        "basic_async_op& op"
+      ],
+      "lineno": 94,
+      "name": "remove"
+    },
+    {
+      "args": [
+        "Checker& owner",
+        "boost::asio::io_context& io_context",
+        "Handler&& handler"
+      ],
+      "lineno": 101,
+      "name": "async_op"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "~async_op"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 116,
+      "name": "operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "PeerFinder"
+    }
+  ]
+}

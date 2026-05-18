@@ -1,0 +1,50 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "SetRegularKey"
+    }
+  ],
+  "description": "Defines the SetRegularKey transaction transactor class for the XRPL, which handles logic for setting or removing a regular key on an account.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/account/SetRegularKey.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "SetRegularKey"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 19,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

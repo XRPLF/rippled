@@ -1,0 +1,137 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides functions and utilities for handling the handshake and feature negotiation process in the XRPL peer-to-peer overlay network, including SSL shared value computation, HTTP handshake building and verification, and protocol feature negotiation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/Handshake.h",
+  "functions": [
+    {
+      "args": [
+        "stream_type& ssl",
+        "beast::Journal journal"
+      ],
+      "lineno": 28,
+      "name": "makeSharedValue"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields& h",
+        "uint256 const& sharedValue",
+        "std::optional<std::uint32_t> networkID",
+        "beast::IP::Address public_ip",
+        "beast::IP::Address remote_ip",
+        "Application& app"
+      ],
+      "lineno": 39,
+      "name": "buildHandshake"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields const& headers",
+        "uint256 const& sharedValue",
+        "std::optional<std::uint32_t> networkID",
+        "beast::IP::Address public_ip",
+        "beast::IP::Address remote",
+        "Application& app"
+      ],
+      "lineno": 54,
+      "name": "verifyHandshake"
+    },
+    {
+      "args": [
+        "bool crawlPublic",
+        "bool comprEnabled",
+        "bool ledgerReplayEnabled",
+        "bool txReduceRelayEnabled",
+        "bool vpReduceRelayEnabled"
+      ],
+      "lineno": 73,
+      "name": "makeRequest"
+    },
+    {
+      "args": [
+        "bool crawlPublic",
+        "http_request_type const& req",
+        "beast::IP::Address public_ip",
+        "beast::IP::Address remote_ip",
+        "uint256 const& sharedValue",
+        "std::optional<std::uint32_t> networkID",
+        "ProtocolVersion version",
+        "Application& app"
+      ],
+      "lineno": 89,
+      "name": "makeResponse"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields const& headers",
+        "std::string const& feature"
+      ],
+      "lineno": 120,
+      "name": "getFeatureValue"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields const& headers",
+        "std::string const& feature",
+        "std::string const& value"
+      ],
+      "lineno": 130,
+      "name": "isFeatureValue"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields const& headers",
+        "std::string const& feature"
+      ],
+      "lineno": 142,
+      "name": "featureEnabled"
+    },
+    {
+      "args": [
+        "headers const& request",
+        "std::string const& feature",
+        "std::string value",
+        "bool config"
+      ],
+      "lineno": 151,
+      "name": "peerFeatureEnabled"
+    },
+    {
+      "args": [
+        "headers const& request",
+        "std::string const& feature",
+        "bool config"
+      ],
+      "lineno": 161,
+      "name": "peerFeatureEnabled"
+    },
+    {
+      "args": [
+        "bool comprEnabled",
+        "bool ledgerReplayEnabled",
+        "bool txReduceRelayEnabled",
+        "bool vpReduceRelayEnabled"
+      ],
+      "lineno": 170,
+      "name": "makeFeaturesRequestHeader"
+    },
+    {
+      "args": [
+        "http_request_type const& headers",
+        "bool comprEnabled",
+        "bool ledgerReplayEnabled",
+        "bool txReduceRelayEnabled",
+        "bool vpReduceRelayEnabled"
+      ],
+      "lineno": 185,
+      "name": "makeFeaturesResponseHeader"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

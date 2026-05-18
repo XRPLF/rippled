@@ -1,0 +1,85 @@
+{
+  "args": [
+    {
+      "lineno": 26,
+      "name": "info_"
+    },
+    {
+      "lineno": 27,
+      "name": "collector"
+    },
+    {
+      "lineno": 28,
+      "name": "logs"
+    },
+    {
+      "lineno": 41,
+      "name": "other"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JobTypeInfo const& info_",
+        "beast::insight::Collector::ptr const& collector",
+        "Logs& logs"
+      ],
+      "lineno": 8,
+      "name": "JobTypeData"
+    }
+  ],
+  "description": "Defines the JobTypeData struct, which holds metadata and statistics for a specific job type in the XRPL job queue system, including load monitoring, event tracking, and job counts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/JobTypeData.h",
+  "functions": [
+    {
+      "args": [
+        "JobTypeInfo const& info_",
+        "beast::insight::Collector::ptr const& collector",
+        "Logs& logs"
+      ],
+      "lineno": 25,
+      "name": "JobTypeData"
+    },
+    {
+      "args": [
+        "JobTypeData const& other"
+      ],
+      "lineno": 41,
+      "name": "JobTypeData"
+    },
+    {
+      "args": [
+        "JobTypeData const& other"
+      ],
+      "lineno": 42,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "type"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "load"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "stats"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

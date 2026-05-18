@@ -1,0 +1,162 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "open_ledger_t"
+    },
+    {
+      "lineno": 27,
+      "name": "batch_view_t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "OpenView"
+    }
+  ],
+  "description": "Defines the OpenView class, a writable ledger view in the XRPL codebase that accumulates state and transaction changes, presenting as a ReadView to clients. It supports open ledger and batch view construction, transaction insertion, and state modifications.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/OpenView.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "txCount"
+    },
+    {
+      "args": [
+        "TxsRawView& to"
+      ],
+      "lineno": 122,
+      "name": "apply"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "header"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "rules"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 136,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 139,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 142,
+      "name": "read"
+    },
+    {
+      "args": [],
+      "lineno": 145,
+      "name": "slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 151,
+      "name": "slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "txsEnd"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 160,
+      "name": "txExists"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 163,
+      "name": "txRead"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 167,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 170,
+      "name": "rawInsert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 173,
+      "name": "rawReplace"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 176,
+      "name": "rawDestroyXRP"
+    },
+    {
+      "args": [
+        "key_type const& key",
+        "std::shared_ptr<Serializer const> const& txn",
+        "std::shared_ptr<Serializer const> const& metaData"
+      ],
+      "lineno": 180,
+      "name": "rawTxInsert"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

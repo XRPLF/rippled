@@ -1,0 +1,392 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountObjects",
+        "getAccountObjects"
+      ],
+      "entry_point": "doAccountObjects",
+      "purpose": "Handles the RPC request for account_objects, parses/validates input, and gathers account objects from the ledger.",
+      "validation_points": [
+        "doAccountObjects: parses and checks input fields (account, type, dirIndex, entryIndex, limit)",
+        "getAccountObjects: validates dirIndex, entryIndex, typeFilter"
+      ]
+    },
+    {
+      "call_chain": [
+        "getAccountObjects"
+      ],
+      "entry_point": "getAccountObjects",
+      "purpose": "Gathers all ledger objects for an account, applying filters and pagination.",
+      "validation_points": [
+        "dirIndex: checked for existence in ledger",
+        "typeFilter: checked via typeMatchesFilter lambda",
+        "entryIndex: checked via bitmask (entryIndex & ~nft::pageMask)",
+        "limit: implicitly validated by type (uint32_t)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "dirIndex",
+      "flow": [
+        "doAccountObjects (parse from request)",
+        "getAccountObjects (argument)",
+        "manual check: if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))",
+        "used to determine directory traversal"
+      ],
+      "origin": "Parsed from RPC request in doAccountObjects",
+      "transformations": [
+        "Checked for zero",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "getAccountObjects (early in function)"
+    },
+    {
+      "field": "typeFilter",
+      "flow": [
+        "doAccountObjects (parse from request)",
+        "getAccountObjects (argument)",
+        "typeMatchesFilter lambda used to check if ledger entry matches filter"
+      ],
+      "origin": "Parsed from RPC request in doAccountObjects",
+      "transformations": [
+        "Converted from string to vector<LedgerEntryType>",
+        "Checked via lambda"
+      ],
+      "validated_at": "getAccountObjects (typeMatchesFilter lambda)"
+    },
+    {
+      "field": "entryIndex",
+      "flow": [
+        "doAccountObjects (parse from request)",
+        "getAccountObjects (argument)",
+        "Checked: if (firstNFTPage.key != (entryIndex & ~nft::pageMask))",
+        "Used to determine NFT page traversal"
+      ],
+      "origin": "Parsed from RPC request in doAccountObjects",
+      "transformations": [
+        "Bitmask applied: (entryIndex & ~nft::pageMask)"
+      ],
+      "validated_at": "getAccountObjects (NFT page traversal logic)"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "doAccountObjects (parse from request)",
+        "getAccountObjects (argument)",
+        "Used as uint32_t mlimit for pagination"
+      ],
+      "origin": "Parsed from RPC request in doAccountObjects",
+      "transformations": [
+        "Casted/parsed to uint32_t",
+        "Decremented in loop"
+      ],
+      "validated_at": "Implicitly by type; not explicitly range-checked"
+    }
+  ],
+  "description": "Implements the logic for the XRPL 'account_objects' RPC command, which retrieves all ledger objects owned by a given account, with support for filtering by type, pagination, and handling special cases like NFT pages and deletion blockers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "jss::account_objects (JSON structure, not input)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field jss::account_objects (JSON structure, not input) validated by xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic)",
+      "issue_pattern": "Missing validation for jss::account_objects (JSON structure, not input)",
+      "why_false_positive": "xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic) validates jss::account_objects (JSON structure, not input) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LedgerEntryType (type safety via enum)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field LedgerEntryType (type safety via enum) validated by xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic)",
+      "issue_pattern": "Missing validation for LedgerEntryType (type safety via enum)",
+      "why_false_positive": "xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic) validates LedgerEntryType (type safety via enum) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountID (type safety, not shown in this snippet)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field AccountID (type safety, not shown in this snippet) validated by xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic)",
+      "issue_pattern": "Missing validation for AccountID (type safety, not shown in this snippet)",
+      "why_false_positive": "xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic) validates AccountID (type safety, not shown in this snippet) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dirIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check with ledger.read({ltDIR_NODE, dirIndex}) at getAccountObjects",
+      "issue_pattern": "Missing empty string validation for dirIndex",
+      "why_false_positive": "manual check with ledger.read({ltDIR_NODE, dirIndex}) validates dirIndex for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "typeFilter",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "typeMatchesFilter lambda at getAccountObjects",
+      "issue_pattern": "Missing empty string validation for typeFilter",
+      "why_false_positive": "typeMatchesFilter lambda validates typeFilter for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "entryIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask check: (entryIndex & ~nft::pageMask) at getAccountObjects",
+      "issue_pattern": "Missing empty string validation for entryIndex",
+      "why_false_positive": "bitmask check: (entryIndex & ~nft::pageMask) validates entryIndex for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit (used as uint32_t, not explicitly checked) at getAccountObjects",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "implicit (used as uint32_t, not explicitly checked) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountObjects.cpp",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "account",
+        "typeFilter",
+        "dirIndex",
+        "entryIndex",
+        "limit",
+        "jvResult"
+      ],
+      "lineno": 15,
+      "name": "getAccountObjects"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 133,
+      "name": "doAccountObjects"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in the RPC integration and unit test suites, such as 'account_objects' tests in 'rippled' or 'xrpld' test directories (e.g., test/rpc/AccountObjects_test.cpp, test/handlers/AccountObjects_test.cpp). These would cover valid/invalid dirIndex, typeFilter, entryIndex, and limit values, as well as pagination and marker logic. Gaps may exist in edge cases for malformed dirIndex/entryIndex, very large limits, or unusual typeFilter combinations. Explicit negative tests for bitmask logic or non-existent directory nodes may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "jss::account_objects (JSON structure, not input)",
+      "LedgerEntryType (type safety via enum)",
+      "AccountID (type safety, not shown in this snippet)"
+    ],
+    "framework": "xrpld/rpc (jss:: for JSON fields, Ledger/Keylet for business logic)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller must handle error)",
+      "field": "dirIndex",
+      "location": "getAccountObjects",
+      "validated_by": "manual check with ledger.read({ltDIR_NODE, dirIndex})",
+      "validates": [
+        "dirIndex is not zero",
+        "dirIndex exists as a DIR_NODE in the ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (controls logic flow, not error)",
+      "field": "typeFilter",
+      "location": "getAccountObjects",
+      "validated_by": "typeMatchesFilter lambda",
+      "validates": [
+        "typeFilter contains valid LedgerEntryType values"
+      ],
+      "validation_type": "business_logic|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (controls logic flow, not error)",
+      "field": "entryIndex",
+      "location": "getAccountObjects",
+      "validated_by": "bitmask check: (entryIndex & ~nft::pageMask)",
+      "validates": [
+        "entryIndex matches expected NFT page index format"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "N/A (no explicit error, but type enforces unsigned int)",
+      "field": "limit",
+      "location": "getAccountObjects",
+      "validated_by": "implicit (used as uint32_t, not explicitly checked)",
+      "validates": [
+        "limit is a non-negative integer (uint32_t)"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

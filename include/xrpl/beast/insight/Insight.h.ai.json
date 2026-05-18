@@ -1,0 +1,9 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file is a header that includes various metric and insight-related classes and interfaces for the Beast insight metrics framework, such as collectors, counters, gauges, events, groups, hooks, and their implementations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Insight.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": []
+}

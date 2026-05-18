@@ -1,0 +1,147 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "base64_encode",
+        "encode"
+      ],
+      "entry_point": "base64_encode",
+      "purpose": "Encodes a binary buffer into a base64 string.",
+      "validation_points": [
+        "No explicit validation in base64_encode or encode; assumes input pointers and lengths are valid and output buffer is large enough."
+      ]
+    },
+    {
+      "call_chain": [
+        "base64_decode",
+        "decode"
+      ],
+      "entry_point": "base64_decode",
+      "purpose": "Decodes a base64 string into a binary buffer.",
+      "validation_points": [
+        "decode: Validates each input character using get_inverse() table; skips invalid characters (those mapping to -1), but does not throw or error on malformed input."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "src (input buffer for encode)",
+      "flow": [
+        "Caller provides src and len",
+        "encode reads src as input bytes",
+        "encode transforms bytes to base64 chars using get_alphabet()",
+        "Output written to dest"
+      ],
+      "origin": "Caller of base64_encode/encode",
+      "transformations": [
+        "Groups input bytes in 3s, maps to 4 base64 chars",
+        "Pads output with '=' if input not multiple of 3"
+      ],
+      "validated_at": "No explicit validation; relies on caller to provide valid pointers and lengths"
+    },
+    {
+      "field": "src (input string for decode)",
+      "flow": [
+        "Caller provides src and len",
+        "decode reads src as input chars",
+        "decode uses get_inverse() to map chars to 6-bit values",
+        "decode reconstructs original bytes, writes to dest"
+      ],
+      "origin": "Caller of base64_decode/decode",
+      "transformations": [
+        "Skips characters not in base64 alphabet (get_inverse() returns -1)",
+        "Handles padding ('=')"
+      ],
+      "validated_at": "decode: Each character is validated via get_inverse(); invalid chars are skipped"
+    }
+  ],
+  "description": "Provides base64 encoding and decoding utilities, including functions to encode and decode data to and from base64, as well as helper functions for base64 alphabet and inverse lookup.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/base64.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "get_alphabet"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "get_inverse"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 90,
+      "name": "encoded_size"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 95,
+      "name": "decoded_size"
+    },
+    {
+      "args": [
+        "dest",
+        "src",
+        "len"
+      ],
+      "lineno": 104,
+      "name": "encode"
+    },
+    {
+      "args": [
+        "dest",
+        "src",
+        "len"
+      ],
+      "lineno": 139,
+      "name": "decode"
+    },
+    {
+      "args": [
+        "data",
+        "len"
+      ],
+      "lineno": 191,
+      "name": "base64_encode"
+    },
+    {
+      "args": [
+        "data"
+      ],
+      "lineno": 198,
+      "name": "base64_decode"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 28,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 30,
+      "name": "base64"
+    }
+  ],
+  "test_coverage_notes": "Test coverage is not shown in this file. Typically, base64 encoding/decoding is tested in unit test files (e.g., test_basics_base64.cpp or similar in the test/ or src/test/ directories). Key gaps: No explicit validation for buffer overruns or malformed input; decode skips invalid chars but does not error. No evidence of fuzz or malformed input tests in this file. Test coverage should ensure: correct encoding/decoding, handling of invalid input, correct padding, and buffer size edge cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none",
+    "validation_layer": "none"
+  },
+  "validations": []
+}

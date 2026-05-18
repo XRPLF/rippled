@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 58,
+      "name": "view"
+    },
+    {
+      "lineno": 58,
+      "name": "root"
+    },
+    {
+      "lineno": 58,
+      "name": "dir_key"
+    },
+    {
+      "lineno": 34,
+      "name": "other"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ReadView const&",
+        "Book const&"
+      ],
+      "lineno": 8,
+      "name": "BookDirs"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "BookDirs::const_iterator"
+    }
+  ],
+  "description": "Defines the BookDirs class and its const_iterator for iterating over order book directories in the XRPL ledger, providing access to ledger entries representing order books.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/BookDirs.h",
+  "functions": [
+    {
+      "args": [
+        "ReadView const&",
+        "Book const&"
+      ],
+      "lineno": 17,
+      "name": "BookDirs"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "end"
+    },
+    {
+      "args": [
+        "const_iterator const& other"
+      ],
+      "lineno": 34,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "const_iterator const& other"
+      ],
+      "lineno": 37,
+      "name": "operator!="
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 53,
+      "name": "operator++"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

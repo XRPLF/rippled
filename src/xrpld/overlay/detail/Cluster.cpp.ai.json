@@ -1,0 +1,400 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "j"
+    },
+    {
+      "lineno": 16,
+      "name": "identity"
+    },
+    {
+      "lineno": 31,
+      "name": "name"
+    },
+    {
+      "lineno": 31,
+      "name": "loadFee"
+    },
+    {
+      "lineno": 31,
+      "name": "reportTime"
+    },
+    {
+      "lineno": 48,
+      "name": "func"
+    },
+    {
+      "lineno": 55,
+      "name": "nodes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 12,
+      "name": "Cluster"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Cluster::load",
+        "boost::regex_match",
+        "parseBase58<PublicKey>",
+        "Cluster::member",
+        "Cluster::update"
+      ],
+      "entry_point": "Cluster::load",
+      "purpose": "Loads a list of node entries from a config section, validates and adds them to the cluster.",
+      "validation_points": [
+        "boost::regex_match (validates node entry string format)",
+        "parseBase58<PublicKey> (validates node identity string)",
+        "Cluster::member (checks for duplicate node identity)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Cluster::update"
+      ],
+      "entry_point": "Cluster::update",
+      "purpose": "Updates or inserts a node in the cluster, with validation on report time and name.",
+      "validation_points": [
+        "reportTime <= iter->getReportTime() (validates report time freshness)",
+        "name.empty() (validates name presence)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Cluster::member"
+      ],
+      "entry_point": "Cluster::member",
+      "purpose": "Checks if a node identity is a member of the cluster.",
+      "validation_points": [
+        "nodes_.find(identity) (validates existence of node identity)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "node entry string (n)",
+      "flow": [
+        "Section::values()",
+        "Cluster::load (for loop over n)",
+        "boost::regex_match (validates n)",
+        "match[1] (node identity string)",
+        "parseBase58<PublicKey> (converts to PublicKey)",
+        "Cluster::update"
+      ],
+      "origin": "Section::values() (config file or input source)",
+      "transformations": [
+        "Regex parsing to extract identity and optional name",
+        "Base58 decoding to PublicKey"
+      ],
+      "validated_at": "boost::regex_match"
+    },
+    {
+      "field": "node identity (match[1])",
+      "flow": [
+        "match[1]",
+        "parseBase58<PublicKey>",
+        "id (PublicKey)",
+        "Cluster::member",
+        "Cluster::update"
+      ],
+      "origin": "Extracted from regex match on node entry string",
+      "transformations": [
+        "Base58 decoding"
+      ],
+      "validated_at": "parseBase58<PublicKey>"
+    },
+    {
+      "field": "node identity (id)",
+      "flow": [
+        "id",
+        "Cluster::member",
+        "Cluster::update"
+      ],
+      "origin": "parseBase58<PublicKey>",
+      "transformations": [
+        "Lookup in nodes_ map"
+      ],
+      "validated_at": "Cluster::member"
+    },
+    {
+      "field": "reportTime",
+      "flow": [
+        "Cluster::update",
+        "reportTime <= iter->getReportTime()"
+      ],
+      "origin": "Passed to Cluster::update (from load or elsewhere)",
+      "transformations": [
+        "Comparison with existing node's reportTime"
+      ],
+      "validated_at": "Cluster::update (reportTime <= iter->getReportTime())"
+    },
+    {
+      "field": "name",
+      "flow": [
+        "match[2]",
+        "trim_whitespace",
+        "Cluster::update",
+        "name.empty()"
+      ],
+      "origin": "Extracted from regex match[2] or passed to update",
+      "transformations": [
+        "Whitespace trimming",
+        "Fallback to existing name if empty"
+      ],
+      "validated_at": "Cluster::update (name.empty())"
+    }
+  ],
+  "description": "Implements the xrpl::Cluster class, which manages a set of cluster nodes, allowing for membership checks, updates, iteration, and loading from configuration.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node entry string (n)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::regex_match at Cluster::load",
+      "issue_pattern": "Missing empty string validation for node entry string (n)",
+      "why_false_positive": "boost::regex_match validates node entry string (n) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "node entry string (n)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::regex_match at Cluster::load",
+      "issue_pattern": "Missing format validation for node entry string (n)",
+      "why_false_positive": "boost::regex_match validates node entry string (n) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node identity (match[1])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<PublicKey> at Cluster::load",
+      "issue_pattern": "Missing empty string validation for node identity (match[1])",
+      "why_false_positive": "parseBase58<PublicKey> validates node identity (match[1]) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node identity (id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "member(*id) at Cluster::load",
+      "issue_pattern": "Missing empty string validation for node identity (id)",
+      "why_false_positive": "member(*id) validates node identity (id) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "reportTime",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "reportTime <= iter->getReportTime() at Cluster::update",
+      "issue_pattern": "Missing empty string validation for reportTime",
+      "why_false_positive": "reportTime <= iter->getReportTime() validates reportTime for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "name",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "name.empty() at Cluster::update",
+      "issue_pattern": "Missing empty string validation for name",
+      "why_false_positive": "name.empty() validates name for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/Cluster.cpp",
+  "functions": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 12,
+      "name": "Cluster"
+    },
+    {
+      "args": [
+        "PublicKey const& identity"
+      ],
+      "lineno": 16,
+      "name": "member"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "size"
+    },
+    {
+      "args": [
+        "PublicKey const& identity",
+        "std::string name",
+        "std::uint32_t loadFee",
+        "NetClock::time_point reportTime"
+      ],
+      "lineno": 31,
+      "name": "update"
+    },
+    {
+      "args": [
+        "std::function<void(ClusterNode const&)> func"
+      ],
+      "lineno": 48,
+      "name": "for_each"
+    },
+    {
+      "args": [
+        "Section const& nodes"
+      ],
+      "lineno": 55,
+      "name": "load"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in unit tests for Cluster, ClusterNode, and overlay/Cluster. Tests should cover: valid/invalid node entry strings, duplicate identities, invalid base58 identities, reportTime ordering, and name handling. Gaps may exist if there are no tests for malformed entries, duplicate detection, or edge cases in reportTime/name logic. Look for test files like test_overlay_Cluster.cpp, test_ClusterNode.cpp, or integration tests for config loading. If these are missing, validation and error handling paths may not be fully tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "boost::regex, parseBase58, manual checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false from function (no exception); logs error",
+      "field": "node entry string (n)",
+      "location": "Cluster::load",
+      "validated_by": "boost::regex_match",
+      "validates": [
+        "Checks that the entry matches the expected format: optional whitespace, alphanumeric node identity, optional comment"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false from function (no exception); logs error",
+      "field": "node identity (match[1])",
+      "location": "Cluster::load",
+      "validated_by": "parseBase58<PublicKey>",
+      "validates": [
+        "Checks that the node identity is a valid base58-encoded NodePublic key"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "skips entry (continue); logs warning",
+      "field": "node identity (id)",
+      "location": "Cluster::load",
+      "validated_by": "member(*id)",
+      "validates": [
+        "Checks that the node identity is not already present in the cluster (no duplicates)"
+      ],
+      "validation_type": "business_logic|uniqueness"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "reportTime",
+      "location": "Cluster::update",
+      "validated_by": "reportTime <= iter->getReportTime()",
+      "validates": [
+        "Checks that the new reportTime is strictly greater than the previous reportTime for the node"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "sets name to previous value if empty (no error/exception)",
+      "field": "name",
+      "location": "Cluster::update",
+      "validated_by": "name.empty()",
+      "validates": [
+        "If name is empty, uses the previous name for the node"
+      ],
+      "validation_type": "business_logic|defaulting"
+    }
+  ]
+}

@@ -1,0 +1,570 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMap::visitLeaves",
+        "SHAMap::visitNodes"
+      ],
+      "entry_point": "SHAMap::visitLeaves",
+      "purpose": "Iterates over all leaf nodes in the SHAMap and applies a user-provided function to each.",
+      "validation_points": [
+        "SHAMap::visitNodes: if (!root_) return;"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::visitNodes"
+      ],
+      "entry_point": "SHAMap::visitNodes",
+      "purpose": "Traverses all nodes (inner and leaf) in the SHAMap, applying a user-provided function to each.",
+      "validation_points": [
+        "if (!root_) return;"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::visitDifferences"
+      ],
+      "entry_point": "SHAMap::visitDifferences",
+      "purpose": "Visits every node in this SHAMap that is not present in the specified 'have' SHAMap, applying a function to each differing node.",
+      "validation_points": [
+        "if (!root_) return;",
+        "if (root_->getHash().isZero()) return;",
+        "if ((have != nullptr) && (root_->getHash() == have->root_->getHash())) return;",
+        "if (have == nullptr) || !have->hasLeafNode(...)",
+        "if ((have == nullptr) || !have->hasInnerNode(...))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "root_",
+      "flow": [
+        "SHAMap instance",
+        "SHAMap::visitNodes/visitLeaves/visitDifferences",
+        "checked for null",
+        "used for traversal"
+      ],
+      "origin": "SHAMap instance (private member, set at construction or via addRootNode/deserialize)",
+      "transformations": [
+        "Checked for null before use",
+        "Casted to SHAMapInnerNode or SHAMapLeafNode as needed"
+      ],
+      "validated_at": "if (!root_) return; (in all traversal functions)"
+    },
+    {
+      "field": "root_->getHash()",
+      "flow": [
+        "root_",
+        "getHash()",
+        "compared to zero or to have->root_->getHash()"
+      ],
+      "origin": "Computed from root_ node",
+      "transformations": [
+        "Compared to zero (isZero())",
+        "Compared for equality with another SHAMap's root hash"
+      ],
+      "validated_at": [
+        "if (root_->getHash().isZero()) return;",
+        "if ((have != nullptr) && (root_->getHash() == have->root_->getHash())) return;"
+      ]
+    },
+    {
+      "field": "have (SHAMap const* have)",
+      "flow": [
+        "visitDifferences parameter",
+        "checked for null",
+        "used for hash comparison and node existence checks"
+      ],
+      "origin": "Input parameter to visitDifferences",
+      "transformations": [
+        "Null-checked before dereference",
+        "Used to call hasLeafNode/hasInnerNode"
+      ],
+      "validated_at": [
+        "if ((have != nullptr) && (root_->getHash() == have->root_->getHash())) return;",
+        "if (have == nullptr) || !have->hasLeafNode(...)",
+        "if ((have == nullptr) || !have->hasInnerNode(...))"
+      ]
+    },
+    {
+      "field": "SHAMapTreeNode* (descendNoStore/descendThrow)",
+      "flow": [
+        "descend from parent node",
+        "cast to SHAMapInnerNode or SHAMapLeafNode",
+        "used in traversal or validation"
+      ],
+      "origin": "Derived from traversal of SHAMapInnerNode branches",
+      "transformations": [
+        "Casted to correct node type",
+        "Used for further traversal or validation"
+      ],
+      "validated_at": "Type-checked via isInner()/isLeaf() before casting"
+    }
+  ],
+  "description": "Implements various traversal, comparison, proof, and synchronization methods for the SHAMap data structure in the XRPL (XRP Ledger) codebase.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root_ (SHAMap root node pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at SHAMap::visitNodes",
+      "issue_pattern": "Missing empty string validation for root_ (SHAMap root node pointer)",
+      "why_false_positive": "explicit null check validates root_ (SHAMap root node pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root_ (SHAMap root node pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at SHAMap::visitDifferences",
+      "issue_pattern": "Missing empty string validation for root_ (SHAMap root node pointer)",
+      "why_false_positive": "explicit null check validates root_ (SHAMap root node pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root_->getHash()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isZero() check at SHAMap::visitDifferences",
+      "issue_pattern": "Missing empty string validation for root_->getHash()",
+      "why_false_positive": "isZero() check validates root_->getHash() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "have (input SHAMap pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at SHAMap::visitDifferences",
+      "issue_pattern": "Missing empty string validation for have (input SHAMap pointer)",
+      "why_false_positive": "explicit null check validates have (input SHAMap pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root_->getHash() == have->root_->getHash()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "equality check at SHAMap::visitDifferences",
+      "issue_pattern": "Missing empty string validation for root_->getHash() == have->root_->getHash()",
+      "why_false_positive": "equality check validates root_->getHash() == have->root_->getHash() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.isInner()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isInner() method at SHAMap::visitLeaves (lambda in visitNodes)",
+      "issue_pattern": "Missing empty string validation for node.isInner()",
+      "why_false_positive": "isInner() method validates node.isInner() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "child->isLeaf()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLeaf() method at SHAMap::visitNodes",
+      "issue_pattern": "Missing empty string validation for child->isLeaf()",
+      "why_false_positive": "isLeaf() method validates child->isLeaf() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node->isEmptyBranch(pos)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isEmptyBranch() method at SHAMap::visitNodes",
+      "issue_pattern": "Missing empty string validation for node->isEmptyBranch(pos)",
+      "why_false_positive": "isEmptyBranch() method validates node->isEmptyBranch(pos) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "safe_downcast<SHAMapLeafNode&>(node)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_downcast (likely asserts/casts type) at SHAMap::visitLeaves",
+      "issue_pattern": "Missing empty string validation for safe_downcast<SHAMapLeafNode&>(node)",
+      "why_false_positive": "safe_downcast (likely asserts/casts type) validates safe_downcast<SHAMapLeafNode&>(node) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapSync.cpp",
+  "functions": [
+    {
+      "args": [
+        "leafFunction"
+      ],
+      "lineno": 8,
+      "name": "SHAMap::visitLeaves"
+    },
+    {
+      "args": [
+        "function"
+      ],
+      "lineno": 15,
+      "name": "SHAMap::visitNodes"
+    },
+    {
+      "args": [
+        "have",
+        "function"
+      ],
+      "lineno": 61,
+      "name": "SHAMap::visitDifferences"
+    },
+    {
+      "args": [
+        "mn",
+        "se"
+      ],
+      "lineno": 110,
+      "name": "SHAMap::gmn_ProcessNodes"
+    },
+    {
+      "args": [
+        "mn"
+      ],
+      "lineno": 181,
+      "name": "SHAMap::gmn_ProcessDeferredReads"
+    },
+    {
+      "args": [
+        "max",
+        "filter"
+      ],
+      "lineno": 222,
+      "name": "SHAMap::getMissingNodes"
+    },
+    {
+      "args": [
+        "wanted",
+        "data",
+        "fatLeaves",
+        "depth"
+      ],
+      "lineno": 314,
+      "name": "SHAMap::getNodeFat"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 377,
+      "name": "SHAMap::serializeRoot"
+    },
+    {
+      "args": [
+        "hash",
+        "rootNode",
+        "filter"
+      ],
+      "lineno": 381,
+      "name": "SHAMap::addRootNode"
+    },
+    {
+      "args": [
+        "node",
+        "rawNode",
+        "filter"
+      ],
+      "lineno": 414,
+      "name": "SHAMap::addKnownNode"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 491,
+      "name": "SHAMap::deepCompare"
+    },
+    {
+      "args": [
+        "targetNodeID",
+        "targetNodeHash"
+      ],
+      "lineno": 547,
+      "name": "SHAMap::hasInnerNode"
+    },
+    {
+      "args": [
+        "tag",
+        "targetNodeHash"
+      ],
+      "lineno": 565,
+      "name": "SHAMap::hasLeafNode"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 591,
+      "name": "SHAMap::getProofPath"
+    },
+    {
+      "args": [
+        "rootHash",
+        "key",
+        "path"
+      ],
+      "lineno": 617,
+      "name": "SHAMap::verifyProofPath"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The SHAMap traversal and difference functions are typically tested in unit tests under the rippled/test or xrplf/rippled/test directories, such as SHAMap_test.cpp, SHAMapSync_test.cpp, or Ledger_test.cpp. These tests cover basic traversal, leaf/inner node handling, and difference detection. However, edge cases such as null root_, zero hashes, and mismatched trees may not be exhaustively tested. There may be limited coverage for error handling paths (e.g., exceptions thrown by descendThrow), and for cases where 'have' is null or partially matching. Fuzzing or property-based tests may be lacking for deep or malformed trees.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, some use of safe_downcast for type safety)",
+    "validation_layer": "business_logic (validations occur during tree traversal, not at entry point)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "root_ (SHAMap root node pointer)",
+      "location": "SHAMap::visitNodes",
+      "validated_by": "explicit null check",
+      "validates": [
+        "root_ must not be null before traversal"
+      ],
+      "validation_type": "type (null pointer check)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "root_ (SHAMap root node pointer)",
+      "location": "SHAMap::visitDifferences",
+      "validated_by": "explicit null check",
+      "validates": [
+        "root_ must not be null before traversal"
+      ],
+      "validation_type": "type (null pointer check)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "root_->getHash()",
+      "location": "SHAMap::visitDifferences",
+      "validated_by": "isZero() check",
+      "validates": [
+        "root_ hash must not be zero"
+      ],
+      "validation_type": "business_logic (hash must be non-zero)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branching logic)",
+      "field": "have (input SHAMap pointer)",
+      "location": "SHAMap::visitDifferences",
+      "validated_by": "explicit null check",
+      "validates": [
+        "have may be null, logic adapts accordingly"
+      ],
+      "validation_type": "type (null pointer check)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "root_->getHash() == have->root_->getHash()",
+      "location": "SHAMap::visitDifferences",
+      "validated_by": "equality check",
+      "validates": [
+        "if both roots have same hash, skip traversal"
+      ],
+      "validation_type": "business_logic (skip if trees are identical)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branching logic)",
+      "field": "node.isInner()",
+      "location": "SHAMap::visitLeaves (lambda in visitNodes)",
+      "validated_by": "isInner() method",
+      "validates": [
+        "only process leaf nodes"
+      ],
+      "validation_type": "type (node type check)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branching logic)",
+      "field": "child->isLeaf()",
+      "location": "SHAMap::visitNodes",
+      "validated_by": "isLeaf() method",
+      "validates": [
+        "distinguish between leaf and inner nodes"
+      ],
+      "validation_type": "type (node type check)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branching logic)",
+      "field": "node->isEmptyBranch(pos)",
+      "location": "SHAMap::visitNodes",
+      "validated_by": "isEmptyBranch() method",
+      "validates": [
+        "skip empty branches in tree traversal"
+      ],
+      "validation_type": "business_logic (branch existence)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on bad cast (std::bad_cast or assertion)",
+      "field": "safe_downcast<SHAMapLeafNode&>(node)",
+      "location": "SHAMap::visitLeaves",
+      "validated_by": "safe_downcast (likely asserts/casts type)",
+      "validates": [
+        "node must be SHAMapLeafNode if not inner"
+      ],
+      "validation_type": "type (runtime type check)"
+    }
+  ]
+}

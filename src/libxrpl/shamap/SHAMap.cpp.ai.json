@@ -1,0 +1,689 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "makeTypedLeaf"
+      ],
+      "entry_point": "makeTypedLeaf",
+      "purpose": "Creates a typed SHAMap leaf node based on the SHAMapNodeType provided.",
+      "validation_points": [
+        "Manual check: if type is not recognized, triggers LogicError exception."
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::dirtyUp"
+      ],
+      "entry_point": "SHAMap::dirtyUp",
+      "purpose": "Propagates changes up the SHAMap tree, updating hashes and links from a modified child node up to the root.",
+      "validation_points": [
+        "XRPL_ASSERT: Validates state_ is not Synching or Immutable.",
+        "XRPL_ASSERT: Validates child is non-null and has correct cowid_.",
+        "XRPL_ASSERT: Validates node is non-null after dynamic cast.",
+        "XRPL_ASSERT: Validates branch index is valid (>= 0)."
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::walkTowardsKey"
+      ],
+      "entry_point": "SHAMap::walkTowardsKey",
+      "purpose": "Traverses the SHAMap from the root towards a key, optionally recording the path in a stack.",
+      "validation_points": [
+        "XRPL_ASSERT: Validates stack is null or empty at entry."
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::SHAMap",
+        "SHAMap::SHAMap (copy constructor)",
+        "SHAMap::snapShot"
+      ],
+      "entry_point": "SHAMap::SHAMap (constructors)",
+      "purpose": "Constructs a SHAMap in various states (Modifying, Synching, Immutable), optionally as a snapshot.",
+      "validation_points": [
+        "State is set explicitly; no runtime validation, but state_ is validated in downstream functions like dirtyUp."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type (SHAMapNodeType)",
+      "flow": [
+        "makeTypedLeaf parameter",
+        "if/else chain",
+        "constructor for specific SHAMapLeafNode subclass or LogicError"
+      ],
+      "origin": "Parameter to makeTypedLeaf",
+      "transformations": [
+        "Type is checked against known enum values; if not matched, triggers LogicError."
+      ],
+      "validated_at": "makeTypedLeaf (manual check, LogicError)"
+    },
+    {
+      "field": "state_ (SHAMapState)",
+      "flow": [
+        "SHAMap constructor",
+        "assigned to state_",
+        "used in dirtyUp and other methods"
+      ],
+      "origin": "Set in SHAMap constructors",
+      "transformations": [
+        "Set to Modifying, Synching, or Immutable depending on constructor and isMutable flag."
+      ],
+      "validated_at": "dirtyUp (XRPL_ASSERT), other methods may also assert state_"
+    },
+    {
+      "field": "child (SHAMapTreeNode pointer)",
+      "flow": [
+        "dirtyUp parameter",
+        "XRPL_ASSERT for non-null and cowid_ match",
+        "used as child node in tree update"
+      ],
+      "origin": "Parameter to dirtyUp",
+      "transformations": [
+        "Checked for validity, then moved up the tree as dirtyUp propagates."
+      ],
+      "validated_at": "dirtyUp (XRPL_ASSERT)"
+    },
+    {
+      "field": "stack (SharedPtrNodeStack)",
+      "flow": [
+        "walkTowardsKey parameter",
+        "XRPL_ASSERT for null or empty",
+        "populated during traversal",
+        "passed to dirtyUp"
+      ],
+      "origin": "Parameter to dirtyUp and walkTowardsKey",
+      "transformations": [
+        "Stack is filled with path nodes during traversal, then consumed in dirtyUp."
+      ],
+      "validated_at": "walkTowardsKey (XRPL_ASSERT)"
+    }
+  ],
+  "description": "This file implements the core logic for the SHAMap (Shared Hash Map) data structure used in the XRPL (XRP Ledger) project. It provides methods for traversing, modifying, and synchronizing the SHAMap tree, including adding, deleting, and updating items, as well as handling node sharing, caching, and persistence.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (SHAMapNodeType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LogicError (manual check) at makeTypedLeaf",
+      "issue_pattern": "Missing empty string validation for type (SHAMapNodeType)",
+      "why_false_positive": "LogicError (manual check) validates type (SHAMapNodeType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (SHAMapState)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at dirtyUp",
+      "issue_pattern": "Missing empty string validation for state_ (SHAMapState)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (SHAMapState) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "child (SHAMapTreeNode pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at dirtyUp",
+      "issue_pattern": "Missing empty string validation for child (SHAMapTreeNode pointer)",
+      "why_false_positive": "XRPL_ASSERT validates child (SHAMapTreeNode pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMap.cpp",
+  "functions": [
+    {
+      "args": [
+        "type",
+        "item",
+        "owner"
+      ],
+      "lineno": 11,
+      "name": "makeTypedLeaf"
+    },
+    {
+      "args": [
+        "t",
+        "f"
+      ],
+      "lineno": 23,
+      "name": "SHAMap::SHAMap"
+    },
+    {
+      "args": [
+        "t",
+        "hash",
+        "f"
+      ],
+      "lineno": 31,
+      "name": "SHAMap::SHAMap"
+    },
+    {
+      "args": [
+        "other",
+        "isMutable"
+      ],
+      "lineno": 39,
+      "name": "SHAMap::SHAMap"
+    },
+    {
+      "args": [
+        "isMutable"
+      ],
+      "lineno": 54,
+      "name": "SHAMap::snapShot"
+    },
+    {
+      "args": [
+        "stack",
+        "target",
+        "child"
+      ],
+      "lineno": 59,
+      "name": "SHAMap::dirtyUp"
+    },
+    {
+      "args": [
+        "id",
+        "stack"
+      ],
+      "lineno": 85,
+      "name": "SHAMap::walkTowardsKey"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 108,
+      "name": "SHAMap::findKey"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 117,
+      "name": "SHAMap::fetchNodeFromDB"
+    },
+    {
+      "args": [
+        "hash",
+        "object"
+      ],
+      "lineno": 123,
+      "name": "SHAMap::finishFetch"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 146,
+      "name": "SHAMap::checkFilter"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 167,
+      "name": "SHAMap::fetchNodeNT"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 183,
+      "name": "SHAMap::fetchNodeNT"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 192,
+      "name": "SHAMap::fetchNode"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 201,
+      "name": "SHAMap::descendThrow"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 209,
+      "name": "SHAMap::descendThrow"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 217,
+      "name": "SHAMap::descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 228,
+      "name": "SHAMap::descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 239,
+      "name": "SHAMap::descendNoStore"
+    },
+    {
+      "args": [
+        "parent",
+        "parentID",
+        "branch",
+        "filter"
+      ],
+      "lineno": 247,
+      "name": "SHAMap::descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch",
+        "filter",
+        "pending",
+        "callback"
+      ],
+      "lineno": 267,
+      "name": "SHAMap::descendAsync"
+    },
+    {
+      "args": [
+        "node",
+        "nodeID"
+      ],
+      "lineno": 295,
+      "name": "SHAMap::unshareNode"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch",
+        "loopParams"
+      ],
+      "lineno": 312,
+      "name": "SHAMap::belowHelper"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch"
+      ],
+      "lineno": 344,
+      "name": "SHAMap::lastBelow"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch"
+      ],
+      "lineno": 352,
+      "name": "SHAMap::firstBelow"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 360,
+      "name": "SHAMap::onlyBelow"
+    },
+    {
+      "args": [
+        "stack"
+      ],
+      "lineno": 389,
+      "name": "SHAMap::peekFirstItem"
+    },
+    {
+      "args": [
+        "id",
+        "stack"
+      ],
+      "lineno": 399,
+      "name": "SHAMap::peekNextItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 419,
+      "name": "SHAMap::peekItem"
+    },
+    {
+      "args": [
+        "id",
+        "hash"
+      ],
+      "lineno": 427,
+      "name": "SHAMap::peekItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 435,
+      "name": "SHAMap::upper_bound"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 464,
+      "name": "SHAMap::lower_bound"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 493,
+      "name": "SHAMap::hasItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 498,
+      "name": "SHAMap::delItem"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 563,
+      "name": "SHAMap::addGiveItem"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 617,
+      "name": "SHAMap::addItem"
+    },
+    {
+      "args": [],
+      "lineno": 622,
+      "name": "SHAMap::getHash"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 631,
+      "name": "SHAMap::updateGiveItem"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 663,
+      "name": "SHAMap::fetchRoot"
+    },
+    {
+      "args": [
+        "t",
+        "node"
+      ],
+      "lineno": 693,
+      "name": "SHAMap::writeNode"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 713,
+      "name": "SHAMap::preFlushNode"
+    },
+    {
+      "args": [],
+      "lineno": 726,
+      "name": "SHAMap::unshare"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 731,
+      "name": "SHAMap::flushDirty"
+    },
+    {
+      "args": [
+        "doWrite",
+        "t"
+      ],
+      "lineno": 736,
+      "name": "SHAMap::walkSubTree"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 813,
+      "name": "SHAMap::dump"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 849,
+      "name": "SHAMap::cacheLookup"
+    },
+    {
+      "args": [
+        "hash",
+        "node"
+      ],
+      "lineno": 855,
+      "name": "SHAMap::canonicalize"
+    },
+    {
+      "args": [],
+      "lineno": 862,
+      "name": "SHAMap::invariants"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The SHAMap code is core to XRPL and is typically tested in unit tests under 'src/test/shamap/' (e.g., SHAMap_test.cpp, SHAMapInner_test.cpp, SHAMapSync_test.cpp). These tests cover basic map operations, node insertion, deletion, and snapshotting. However, explicit tests for validation failures (e.g., passing invalid types to makeTypedLeaf, or invalid states/children to dirtyUp) may be limited or absent. Exception and assertion paths (LogicError, XRPL_ASSERT) are often not directly tested unless there are negative tests for error handling. Test coverage for normal data flows is likely high, but coverage for all validation error paths may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT, LogicError (custom contract/assertion macros/exceptions)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError (exception)",
+      "field": "type (SHAMapNodeType)",
+      "location": "makeTypedLeaf",
+      "validated_by": "LogicError (manual check)",
+      "validates": [
+        "Ensures 'type' is one of tnTRANSACTION_NM, tnTRANSACTION_MD, tnACCOUNT_STATE",
+        "Throws if 'type' is not a recognized SHAMapNodeType"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely contract violation exception)",
+      "field": "state_ (SHAMapState)",
+      "location": "dirtyUp",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures state_ is not Synching or Immutable before dirtyUp is called"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely contract violation exception)",
+      "field": "child (SHAMapTreeNode pointer)",
+      "location": "dirtyUp",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures child is not null",
+        "Ensures child->cowid() matches SHAMap::cowid_"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 12,
+      "name": "OfferCreate"
+    }
+  ],
+  "description": "Defines the OfferCreate transactor class for creating offers in the XRPL ledger, including methods for preflight checks, applying the transaction, and offer crossing logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/OfferCreate.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 15,
+      "name": "OfferCreate"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 23,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 26,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 30,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 34,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "Sandbox& view_cancel"
+      ],
+      "lineno": 42,
+      "name": "applyGuts"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "ApplyFlags const flags",
+        "AccountID const id",
+        "beast::Journal const j",
+        "Asset const& asset"
+      ],
+      "lineno": 46,
+      "name": "checkAcceptAsset"
+    },
+    {
+      "args": [
+        "PaymentSandbox& psb",
+        "PaymentSandbox& psbCancel",
+        "Amounts const& takerAmount",
+        "std::optional<uint256> const& domainID"
+      ],
+      "lineno": 52,
+      "name": "flowCross"
+    },
+    {
+      "args": [
+        "STAmount const& amount"
+      ],
+      "lineno": 58,
+      "name": "format_amount"
+    },
+    {
+      "args": [
+        "Sandbox& sb",
+        "std::shared_ptr<STLedgerEntry> sleOffer",
+        "Keylet const& offer_index",
+        "STAmount const& saTakerPays",
+        "STAmount const& saTakerGets",
+        "std::function<void(SLE::ref, std::optional<uint256>)> const& setDir"
+      ],
+      "lineno": 61,
+      "name": "applyHybrid"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

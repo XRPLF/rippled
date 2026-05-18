@@ -1,0 +1,679 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidatorSite::load(siteURIs)",
+        "ValidatorSite::load(siteURIs, lock_sites)",
+        "ValidatorSite::Site::Site(uri)",
+        "ValidatorSite::Site::Resource::Resource(uri)"
+      ],
+      "entry_point": "ValidatorSite::load(std::vector<std::string> const& siteURIs)",
+      "purpose": "Loads and validates a list of validator site URIs, constructing Site and Resource objects for each.",
+      "validation_points": [
+        "ValidatorSite::Site::Resource::Resource(uri): URI parsing and scheme/domain/path validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidatorSite::missingSite(lock_sites)",
+        "app_.getValidators().loadLists()",
+        "ValidatorSite::load(sites, lock_sites)",
+        "ValidatorSite::Site::Site(uri)",
+        "ValidatorSite::Site::Resource::Resource(uri)"
+      ],
+      "entry_point": "ValidatorSite::missingSite(std::lock_guard<std::mutex> const& lock_sites)",
+      "purpose": "Handles the case where no validator sites are configured, attempts to load default sites.",
+      "validation_points": [
+        "ValidatorSite::Site::Resource::Resource(uri): URI parsing and scheme/domain/path validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidatorSite::start()",
+        "ValidatorSite::setTimer(l0, l1) (not shown in code, but implied)"
+      ],
+      "entry_point": "ValidatorSite::start()",
+      "purpose": "Starts the periodic refresh timer for validator site fetching.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "uri (validator site URI)",
+      "flow": [
+        "Input to ValidatorSite::load",
+        "Passed to ValidatorSite::Site::Site(uri)",
+        "Passed to ValidatorSite::Site::Resource::Resource(uri)",
+        "Parsed and validated (parseUrl, scheme/domain/path checks)",
+        "Stored in Resource::uri and Resource::pUrl"
+      ],
+      "origin": "Input to ValidatorSite::load (from config or API)",
+      "transformations": [
+        "parseUrl splits URI into scheme/domain/path/port",
+        "Scheme/domain/path validated and possibly normalized (e.g., Windows path adjustment)"
+      ],
+      "validated_at": "ValidatorSite::Site::Resource::Resource(uri)"
+    },
+    {
+      "field": "pUrl (parsed URL struct)",
+      "flow": [
+        "Created in Resource::Resource",
+        "Fields (scheme, domain, path, port) validated and possibly modified",
+        "Used for subsequent network/file operations"
+      ],
+      "origin": "Result of parseUrl in Resource::Resource",
+      "transformations": [
+        "Scheme/domain/path/port set from parseUrl",
+        "Port defaulted if missing (80 for http, 443 for https)",
+        "Path adjusted for Windows"
+      ],
+      "validated_at": "Immediately after parseUrl in Resource::Resource"
+    }
+  ],
+  "description": "Implements the ValidatorSite class, which manages fetching, parsing, and refreshing validator list sites (from HTTP, HTTPS, or file URIs) for the XRPL network. Handles site loading, request scheduling, error handling, redirects, and JSON parsing of validator lists.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "uri",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseUrl at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for uri",
+      "why_false_positive": "parseUrl validates uri for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "uri",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseUrl at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing format validation for uri",
+      "why_false_positive": "parseUrl validates uri format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pUrl.scheme",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual string comparison at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for pUrl.scheme",
+      "why_false_positive": "manual string comparison validates pUrl.scheme for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "pUrl.scheme",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual string comparison at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing format validation for pUrl.scheme",
+      "why_false_positive": "manual string comparison validates pUrl.scheme format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pUrl.domain (for file scheme)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for pUrl.domain (for file scheme)",
+      "why_false_positive": "manual check validates pUrl.domain (for file scheme) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "pUrl.domain (for file scheme)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing format validation for pUrl.domain (for file scheme)",
+      "why_false_positive": "manual check validates pUrl.domain (for file scheme) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pUrl.path (for file scheme)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for pUrl.path (for file scheme)",
+      "why_false_positive": "manual check validates pUrl.path (for file scheme) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "pUrl.path (for file scheme)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing format validation for pUrl.path (for file scheme)",
+      "why_false_positive": "manual check validates pUrl.path (for file scheme) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pUrl.domain (for http/https scheme)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for pUrl.domain (for http/https scheme)",
+      "why_false_positive": "manual check validates pUrl.domain (for http/https scheme) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "pUrl.domain (for http/https scheme)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual check at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing format validation for pUrl.domain (for http/https scheme)",
+      "why_false_positive": "manual check validates pUrl.domain (for http/https scheme) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pUrl.port (for http/https scheme)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual assignment at ValidatorSite::Site::Resource::Resource (constructor)",
+      "issue_pattern": "Missing empty string validation for pUrl.port (for http/https scheme)",
+      "why_false_positive": "manual assignment validates pUrl.port (for http/https scheme) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/ValidatorSite.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::string uri_"
+      ],
+      "lineno": 13,
+      "name": "ValidatorSite::Site::Resource::Resource"
+    },
+    {
+      "args": [
+        "std::string uri"
+      ],
+      "lineno": 38,
+      "name": "ValidatorSite::Site::Site"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::optional<beast::Journal> j",
+        "std::chrono::seconds timeout"
+      ],
+      "lineno": 44,
+      "name": "ValidatorSite::ValidatorSite"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "ValidatorSite::~ValidatorSite"
+    },
+    {
+      "args": [
+        "std::lock_guard<std::mutex> const& lock_sites"
+      ],
+      "lineno": 66,
+      "name": "ValidatorSite::missingSite"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& siteURIs"
+      ],
+      "lineno": 72,
+      "name": "ValidatorSite::load"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& siteURIs",
+        "std::lock_guard<std::mutex> const& lock_sites"
+      ],
+      "lineno": 78,
+      "name": "ValidatorSite::load"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "ValidatorSite::start"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "ValidatorSite::join"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "ValidatorSite::stop"
+    },
+    {
+      "args": [
+        "std::lock_guard<std::mutex> const& site_lock",
+        "std::lock_guard<std::mutex> const& state_lock"
+      ],
+      "lineno": 130,
+      "name": "ValidatorSite::setTimer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Site::Resource> resource",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const& sites_lock"
+      ],
+      "lineno": 146,
+      "name": "ValidatorSite::makeRequest"
+    },
+    {
+      "args": [
+        "std::size_t siteIdx",
+        "error_code const& ec"
+      ],
+      "lineno": 196,
+      "name": "ValidatorSite::onRequestTimeout"
+    },
+    {
+      "args": [
+        "std::size_t siteIdx",
+        "error_code const& ec"
+      ],
+      "lineno": 217,
+      "name": "ValidatorSite::onTimer"
+    },
+    {
+      "args": [
+        "std::string const& res",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const& sites_lock"
+      ],
+      "lineno": 241,
+      "name": "ValidatorSite::parseJsonResponse"
+    },
+    {
+      "args": [
+        "detail::response_type const& res",
+        "std::size_t siteIdx",
+        "std::lock_guard<std::mutex> const& sites_lock"
+      ],
+      "lineno": 307,
+      "name": "ValidatorSite::processRedirect"
+    },
+    {
+      "args": [
+        "boost::system::error_code const& ec",
+        "endpoint_type const& endpoint",
+        "detail::response_type const& res",
+        "std::size_t siteIdx"
+      ],
+      "lineno": 338,
+      "name": "ValidatorSite::onSiteFetch"
+    },
+    {
+      "args": [
+        "boost::system::error_code const& ec",
+        "std::string const& res",
+        "std::size_t siteIdx"
+      ],
+      "lineno": 399,
+      "name": "ValidatorSite::onTextFetch"
+    },
+    {
+      "args": [],
+      "lineno": 429,
+      "name": "ValidatorSite::getJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "ValidatorSite and its validation logic are typically tested via integration tests that load validator site URIs from configuration or API. Tests should cover valid and invalid URIs, all supported schemes (file, http, https), and error handling for malformed URIs. However, there is no evidence in this file of direct unit tests for Resource::Resource or parseUrl validation logic. Gaps may exist in edge cases (e.g., Windows path handling, unsupported schemes, empty paths/domains). Test files likely to cover this are in the test/app/misc or test/app/misc/detail directories, but explicit test coverage for all validation branches should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation, parseUrl utility, C++ exceptions",
+    "validation_layer": "entry_point (Resource constructor, i.e. object creation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"URI '... cannot be parsed\")",
+      "field": "uri",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "parseUrl",
+      "validates": [
+        "URI string is parseable into URL components"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"Unsupported scheme: '...'\")",
+      "field": "pUrl.scheme",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "manual string comparison",
+      "validates": [
+        "Scheme is one of: file, http, https"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"file URI cannot contain a hostname\")",
+      "field": "pUrl.domain (for file scheme)",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "manual check",
+      "validates": [
+        "file: URI does not have a hostname/domain"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"file URI must contain a path\")",
+      "field": "pUrl.path (for file scheme)",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "manual check",
+      "validates": [
+        "file: URI has a non-empty path"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"http[s] URI must contain a hostname\")",
+      "field": "pUrl.domain (for http/https scheme)",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "manual check",
+      "validates": [
+        "http[s]: URI has a non-empty hostname/domain"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (default port assigned)",
+      "field": "pUrl.port (for http/https scheme)",
+      "location": "ValidatorSite::Site::Resource::Resource (constructor)",
+      "validated_by": "manual assignment",
+      "validates": [
+        "http: default port 80 assigned if missing",
+        "https: default port 443 assigned if missing"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

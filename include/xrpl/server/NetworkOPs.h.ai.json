@@ -1,0 +1,306 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "NetworkOPs"
+    }
+  ],
+  "description": "Defines the NetworkOPs interface, which provides core server functionality for clients interacting with the XRPL network, including transaction processing, ledger management, and network state tracking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/NetworkOPs.h",
+  "functions": [
+    {
+      "args": [
+        "noMeansDont"
+      ],
+      "lineno": 44,
+      "name": "doFailHard"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "~NetworkOPs"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getOperatingMode"
+    },
+    {
+      "args": [
+        "mode",
+        "admin"
+      ],
+      "lineno": 57,
+      "name": "strOperatingMode"
+    },
+    {
+      "args": [
+        "admin"
+      ],
+      "lineno": 58,
+      "name": "strOperatingMode"
+    },
+    {
+      "args": [
+        "const&"
+      ],
+      "lineno": 63,
+      "name": "submitTransaction"
+    },
+    {
+      "args": [
+        "transaction",
+        "bUnlimited",
+        "bLocal",
+        "failType"
+      ],
+      "lineno": 71,
+      "name": "processTransaction"
+    },
+    {
+      "args": [
+        "set"
+      ],
+      "lineno": 81,
+      "name": "processTransactionSet"
+    },
+    {
+      "args": [
+        "lpLedger",
+        "account"
+      ],
+      "lineno": 87,
+      "name": "getOwnerInfo"
+    },
+    {
+      "args": [
+        "lpLedger",
+        "book",
+        "uTakerID",
+        "bProof",
+        "iLimit",
+        "jvMarker",
+        "jvResult"
+      ],
+      "lineno": 93,
+      "name": "getBookPage"
+    },
+    {
+      "args": [
+        "peerPos"
+      ],
+      "lineno": 102,
+      "name": "processTrustedProposal"
+    },
+    {
+      "args": [
+        "val",
+        "source"
+      ],
+      "lineno": 104,
+      "name": "recvValidation"
+    },
+    {
+      "args": [
+        "map",
+        "fromAcquire"
+      ],
+      "lineno": 106,
+      "name": "mapComplete"
+    },
+    {
+      "args": [
+        "netLCL",
+        "clog"
+      ],
+      "lineno": 109,
+      "name": "beginConsensus"
+    },
+    {
+      "args": [
+        "clog"
+      ],
+      "lineno": 111,
+      "name": "endConsensus"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "setStandAlone"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "setStateTimer"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "setNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "clearNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "isNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "isFull"
+    },
+    {
+      "args": [
+        "om"
+      ],
+      "lineno": 119,
+      "name": "setMode"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "isBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "isAmendmentBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "setAmendmentBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "isAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "setAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "clearAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "isUNLBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "setUNLBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "clearUNLBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "consensusViewChange"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "getConsensusInfo"
+    },
+    {
+      "args": [
+        "human",
+        "admin",
+        "counters"
+      ],
+      "lineno": 132,
+      "name": "getServerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "clearLedgerFetch"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "getLedgerFetchInfo"
+    },
+    {
+      "args": [
+        "consensusDelay"
+      ],
+      "lineno": 141,
+      "name": "acceptLedger"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "reportFeeChange"
+    },
+    {
+      "args": [
+        "newValidLedger"
+      ],
+      "lineno": 149,
+      "name": "updateLocalTx"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "getLocalTxCount"
+    },
+    {
+      "args": [
+        "lpAccepted"
+      ],
+      "lineno": 155,
+      "name": "pubLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "transaction",
+        "result"
+      ],
+      "lineno": 157,
+      "name": "pubProposedTransaction"
+    },
+    {
+      "args": [
+        "val"
+      ],
+      "lineno": 160,
+      "name": "pubValidation"
+    },
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 162,
+      "name": "stateAccounting"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

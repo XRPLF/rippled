@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "SHAMapSyncFilter"
+    }
+  ],
+  "description": "Defines the SHAMapSyncFilter abstract class, which provides a callback interface for filtering SHAMap nodes during synchronization in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapSyncFilter.h",
+  "functions": [
+    {
+      "args": [
+        "fromFilter",
+        "nodeHash",
+        "ledgerSeq",
+        "nodeData",
+        "type"
+      ],
+      "lineno": 18,
+      "name": "gotNode"
+    },
+    {
+      "args": [
+        "nodeHash"
+      ],
+      "lineno": 26,
+      "name": "getNode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

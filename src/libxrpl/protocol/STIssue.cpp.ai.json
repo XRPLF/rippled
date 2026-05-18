@@ -1,0 +1,275 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "name"
+    },
+    {
+      "lineno": 18,
+      "name": "sit"
+    },
+    {
+      "lineno": 66,
+      "name": "s"
+    },
+    {
+      "lineno": 83,
+      "name": "t"
+    },
+    {
+      "lineno": 96,
+      "name": "n"
+    },
+    {
+      "lineno": 96,
+      "name": "buf"
+    },
+    {
+      "lineno": 106,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 15,
+      "name": "STIssue"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STIssue::STIssue(SerialIter&, SField const&)",
+        "sit.get160()",
+        "isXRP(static_cast<Currency>(currencyOrAccount))",
+        "sit.get160() (again, if not XRP)",
+        "noAccount() == account",
+        "sit.get32() (if MPT)",
+        "isConsistent(issue) (if not MPT)",
+        "Throw<std::runtime_error>(...) (if validation fails)"
+      ],
+      "entry_point": "STIssue::STIssue(SerialIter&, SField const&)",
+      "purpose": "Deserializes an Issue or MPTIssue from serialized data, validates Issue consistency.",
+      "validation_points": [
+        "isConsistent(issue) (validates currency/account native mismatch)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STIssue::add(Serializer&)",
+        "asset_.visit(...)",
+        "s.addBitString(issue.currency)",
+        "s.addBitString(issue.account) (if not XRP)",
+        "s.addBitString(issue.getIssuer()) (if MPTIssue)",
+        "s.addBitString(noAccount())",
+        "s.add32(sequence)"
+      ],
+      "entry_point": "STIssue::add(Serializer&)",
+      "purpose": "Serializes the Issue or MPTIssue to a Serializer.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "issueFromJson(SField const&, Json::Value const&)",
+        "assetFromJson(v)",
+        "STIssue{name, assetFromJson(v)}"
+      ],
+      "entry_point": "issueFromJson(SField const&, Json::Value const&)",
+      "purpose": "Constructs an STIssue from JSON input.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "currency",
+      "flow": [
+        "sit.get160()",
+        "static_cast<Currency>(currencyOrAccount)",
+        "isXRP() check",
+        "if not XRP: assigned to issue.currency",
+        "isConsistent(issue) validation",
+        "asset_ = issue"
+      ],
+      "origin": "sit.get160() in STIssue::STIssue(SerialIter&, SField const&)",
+      "transformations": [
+        "Deserialized from serialized data",
+        "Type-cast to Currency",
+        "Checked for XRP special case"
+      ],
+      "validated_at": "isConsistent(issue)"
+    },
+    {
+      "field": "account",
+      "flow": [
+        "sit.get160()",
+        "static_cast<AccountID>(...)",
+        "if noAccount() == account: MPT path",
+        "else: assigned to issue.account",
+        "isConsistent(issue) validation",
+        "asset_ = issue"
+      ],
+      "origin": "sit.get160() (second call, if not XRP) in STIssue::STIssue(SerialIter&, SField const&)",
+      "transformations": [
+        "Deserialized from serialized data",
+        "Type-cast to AccountID",
+        "Checked for MPT special case"
+      ],
+      "validated_at": "isConsistent(issue)"
+    },
+    {
+      "field": "MPTID",
+      "flow": [
+        "sit.get32() (sequence)",
+        "memcpy to mptID.data()",
+        "memcpy currencyOrAccount to mptID.data() + sizeof(sequence)",
+        "MPTIssue const issue{mptID}",
+        "asset_ = issue"
+      ],
+      "origin": "sit.get32() and currencyOrAccount in STIssue::STIssue(SerialIter&, SField const&)",
+      "transformations": [
+        "Constructed from sequence and currencyOrAccount",
+        "No explicit validation"
+      ],
+      "validated_at": "N/A (no explicit validation)"
+    }
+  ],
+  "description": "Implements the STIssue class for serializing, deserializing, and handling Issue and MPTIssue types in the XRPL protocol, including JSON and binary serialization, equivalence checks, and default value checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issue (currency and account fields)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isConsistent(issue) at STIssue::STIssue(SerialIter& sit, SField const& name) constructor",
+      "issue_pattern": "Missing empty string validation for issue (currency and account fields)",
+      "why_false_positive": "isConsistent(issue) validates issue (currency and account fields) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STIssue.cpp",
+  "functions": [
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 15,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 18,
+      "name": "STIssue"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 59,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 66,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 83,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 96,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 101,
+      "name": "move"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 106,
+      "name": "issueFromJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 14,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation (isConsistent(issue)) is only triggered during deserialization from SerialIter (binary input). There is no validation when constructing from JSON (issueFromJson) or when copying/moving. Test coverage should include tests for deserialization of both valid and invalid Issues (currency/account mismatch), including XRP, non-XRP, and MPT cases. Tests should also cover exception throwing on invalid input. Gaps: No validation on JSON input path, so malformed or inconsistent Issues could be constructed via JSON without error. Test files likely to cover this: protocol/STIssue_test.cpp, protocol/Issue_test.cpp, and possibly integration/serialization tests. Gaps may exist if tests do not explicitly check for exception throwing on invalid binary input.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (xrpl protocol, isConsistent, Throw)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>(...))",
+      "field": "issue (currency and account fields)",
+      "location": "STIssue::STIssue(SerialIter& sit, SField const& name) constructor",
+      "validated_by": "isConsistent(issue)",
+      "validates": [
+        "Checks that the currency and account fields of the Issue are consistent (e.g., native currency must have no issuer, non-native must have issuer)",
+        "Prevents native currency from being paired with a non-null account, and vice versa"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

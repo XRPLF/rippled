@@ -1,0 +1,92 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "sle"
+    },
+    {
+      "lineno": 33,
+      "name": "sle"
+    },
+    {
+      "lineno": 45,
+      "name": "sle"
+    },
+    {
+      "lineno": 56,
+      "name": "fee"
+    },
+    {
+      "lineno": 70,
+      "name": "key"
+    },
+    {
+      "lineno": 70,
+      "name": "txn"
+    },
+    {
+      "lineno": 70,
+      "name": "metaData"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "RawView"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "TxsRawView"
+    }
+  ],
+  "description": "Defines interfaces for raw modification of ledger entries and transaction insertion in the XRPL ledger, including RawView and TxsRawView classes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/RawView.h",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 22,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 33,
+      "name": "rawInsert"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 45,
+      "name": "rawReplace"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 56,
+      "name": "rawDestroyXRP"
+    },
+    {
+      "args": [
+        "key",
+        "txn",
+        "metaData"
+      ],
+      "lineno": 70,
+      "name": "rawTxInsert"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

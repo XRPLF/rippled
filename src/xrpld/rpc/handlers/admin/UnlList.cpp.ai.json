@@ -1,0 +1,146 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doUnlList",
+        "context.app.getValidators()",
+        "ValidatorList::for_each_listed",
+        "lambda (for each listed validator)"
+      ],
+      "entry_point": "doUnlList",
+      "purpose": "Handles the 'unl_list' admin RPC command, returning the list of validators (UNL) and their trusted status.",
+      "validation_points": [
+        "Template-based validation likely occurs before doUnlList is called (not in this file).",
+        "No explicit validation in doUnlList itself; assumes context is valid and user is authorized."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC framework receives HTTP/JSON-RPC request",
+        "Framework validates and parses request, constructs JsonContext",
+        "JsonContext passed to doUnlList"
+      ],
+      "origin": "RPC::JsonContext passed to doUnlList by the RPC framework",
+      "transformations": [
+        "Request is parsed and validated by framework before doUnlList is called"
+      ],
+      "validated_at": "Framework level, before doUnlList"
+    },
+    {
+      "field": "publicKey",
+      "flow": [
+        "ValidatorList stores validator public keys",
+        "for_each_listed iterates and passes each publicKey to lambda in doUnlList",
+        "Lambda encodes publicKey to base58 and adds to JSON output"
+      ],
+      "origin": "ValidatorList::for_each_listed iterates over listed validators",
+      "transformations": [
+        "publicKey is converted to base58 string via toBase58"
+      ],
+      "validated_at": "Assumed valid as stored in ValidatorList; no explicit validation in this function"
+    },
+    {
+      "field": "trusted",
+      "flow": [
+        "ValidatorList stores trusted status for each validator",
+        "for_each_listed passes trusted to lambda",
+        "Lambda adds trusted boolean to JSON output"
+      ],
+      "origin": "ValidatorList::for_each_listed provides trusted status for each validator",
+      "transformations": [
+        "No transformation; boolean copied directly"
+      ],
+      "validated_at": "Assumed valid as stored in ValidatorList; no explicit validation in this function"
+    }
+  ],
+  "description": "Implements the doUnlList RPC handler, which returns a list of validators (UNL) with their public keys and trusted status.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/UnlList.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 9,
+      "name": "doUnlList"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is likely tested indirectly via admin RPC integration tests (e.g., in test/rpc/ or test/handlers/ directories). There is no evidence of direct unit tests for doUnlList in this file. Validation of input is handled by the RPC framework and not tested here. Gaps: No explicit tests for malformed context or ValidatorList corruption; relies on framework and ValidatorList correctness.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for JSON field names, not validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

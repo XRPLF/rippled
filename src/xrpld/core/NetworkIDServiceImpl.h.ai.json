@@ -1,0 +1,45 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "networkID"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::uint32_t networkID"
+      ],
+      "lineno": 13,
+      "name": "NetworkIDServiceImpl"
+    }
+  ],
+  "description": "Defines NetworkIDServiceImpl, an implementation of NetworkIDService that caches and provides the network ID from the application Config.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/NetworkIDServiceImpl.h",
+  "functions": [
+    {
+      "args": [
+        "networkID"
+      ],
+      "lineno": 16,
+      "name": "NetworkIDServiceImpl"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "~NetworkIDServiceImpl"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "getNetworkID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

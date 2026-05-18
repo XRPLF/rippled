@@ -1,0 +1,49 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "STNumber"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "NumberParts"
+    }
+  ],
+  "description": "Defines the STNumber class, a serializable number type for use in XRPL ledger entries and transactions, integrating the Number type with the serialization framework and allowing association with an Asset.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STNumber.h",
+  "functions": [
+    {
+      "args": [
+        "out",
+        "rhs"
+      ],
+      "lineno": 61,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "number"
+      ],
+      "lineno": 68,
+      "name": "partsFromString"
+    },
+    {
+      "args": [
+        "field",
+        "value"
+      ],
+      "lineno": 71,
+      "name": "numberFromJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

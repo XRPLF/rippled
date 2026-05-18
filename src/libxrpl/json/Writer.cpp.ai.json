@@ -1,0 +1,488 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "s"
+    },
+    {
+      "lineno": 58,
+      "name": "ct"
+    },
+    {
+      "lineno": 63,
+      "name": "bytes"
+    },
+    {
+      "lineno": 68,
+      "name": "bytes"
+    },
+    {
+      "lineno": 93,
+      "name": "type"
+    },
+    {
+      "lineno": 93,
+      "name": "message"
+    },
+    {
+      "lineno": 105,
+      "name": "tag"
+    },
+    {
+      "lineno": 41,
+      "name": "output"
+    },
+    {
+      "lineno": 170,
+      "name": "s"
+    },
+    {
+      "lineno": 174,
+      "name": "s"
+    },
+    {
+      "lineno": 178,
+      "name": "value"
+    },
+    {
+      "lineno": 183,
+      "name": "f"
+    },
+    {
+      "lineno": 188,
+      "name": "f"
+    },
+    {
+      "lineno": 193,
+      "name": "nullptr"
+    },
+    {
+      "lineno": 197,
+      "name": "b"
+    },
+    {
+      "lineno": 201,
+      "name": "s"
+    },
+    {
+      "lineno": 214,
+      "name": "tag"
+    },
+    {
+      "lineno": 220,
+      "name": "type"
+    },
+    {
+      "lineno": 224,
+      "name": "type"
+    },
+    {
+      "lineno": 229,
+      "name": "type"
+    },
+    {
+      "lineno": 229,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Output const& output"
+      ],
+      "lineno": 41,
+      "name": "Writer::Impl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "output",
+        "markStarted",
+        "check(!isFinished())",
+        "output_"
+      ],
+      "entry_point": "Writer::Impl::output",
+      "purpose": "Outputs a chunk of JSON data, ensuring the writer is not finished before writing.",
+      "validation_points": [
+        "markStarted (calls check(!isFinished()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "stringOutput",
+        "markStarted",
+        "check(!isFinished())",
+        "output_"
+      ],
+      "entry_point": "Writer::Impl::stringOutput",
+      "purpose": "Outputs a JSON string, escaping special characters, ensuring the writer is not finished before writing.",
+      "validation_points": [
+        "markStarted (calls check(!isFinished()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "nextCollectionEntry",
+        "check(!empty())",
+        "stack_.top().type",
+        "check(type matches)",
+        "output_"
+      ],
+      "entry_point": "Writer::Impl::nextCollectionEntry",
+      "purpose": "Handles writing the next entry in a collection (array/object), validates stack is not empty and type matches.",
+      "validation_points": [
+        "check(!empty())",
+        "check(type matches stack_.top().type)"
+      ]
+    },
+    {
+      "call_chain": [
+        "writeObjectTag",
+        "check(!tags.contains(tag))",
+        "tags.insert(tag)",
+        "stringOutput",
+        "output_"
+      ],
+      "entry_point": "Writer::Impl::writeObjectTag",
+      "purpose": "Writes a JSON object key, ensuring the tag is unique in debug builds.",
+      "validation_points": [
+        "check(!tags.contains(tag)) (debug only)"
+      ]
+    },
+    {
+      "call_chain": [
+        "finish",
+        "check(!empty())",
+        "stack_.top().type",
+        "output_",
+        "stack_.pop()"
+      ],
+      "entry_point": "Writer::Impl::finish",
+      "purpose": "Finishes the current collection, validates stack is not empty.",
+      "validation_points": [
+        "check(!empty())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "stack_",
+      "flow": [
+        "start() pushes new Collection onto stack_",
+        "nextCollectionEntry() checks stack_ and type",
+        "writeObjectTag() accesses stack_.top().tags",
+        "finish() pops from stack_"
+      ],
+      "origin": "Writer::Impl constructor (empty stack)",
+      "transformations": [
+        "push/pop Collection objects",
+        "update isFirst, type, tags fields"
+      ],
+      "validated_at": [
+        "check(!empty()) in nextCollectionEntry and finish",
+        "check(type matches) in nextCollectionEntry"
+      ]
+    },
+    {
+      "field": "isStarted_",
+      "flow": [
+        "markStarted() sets isStarted_ = true",
+        "output()/stringOutput() call markStarted()",
+        "isFinished() checks isStarted_ && empty()"
+      ],
+      "origin": "Writer::Impl constructor (false)",
+      "transformations": [
+        "set to true on first output"
+      ],
+      "validated_at": [
+        "check(!isFinished()) in markStarted"
+      ]
+    },
+    {
+      "field": "tag (object key)",
+      "flow": [
+        "writeObjectTag() receives tag",
+        "checks tag not in stack_.top().tags (debug)",
+        "inserts tag into tags set",
+        "calls stringOutput(tag)"
+      ],
+      "origin": "writeObjectTag parameter",
+      "transformations": [
+        "checked for uniqueness (debug)",
+        "escaped and output as JSON string"
+      ],
+      "validated_at": [
+        "check(!tags.contains(tag)) (debug only)"
+      ]
+    },
+    {
+      "field": "output_ (Output const&)",
+      "flow": [
+        "output_ is called in output(), stringOutput(), nextCollectionEntry(), writeObjectTag(), finish()"
+      ],
+      "origin": "Writer::Impl constructor parameter",
+      "transformations": [
+        "receives raw or escaped JSON data"
+      ],
+      "validated_at": [
+        "Only indirectly, via stack_ and isStarted_ checks"
+      ]
+    }
+  ],
+  "description": "Implements a JSON Writer for serializing JSON values, handling special character escaping, collection management (arrays/objects), and output formatting for the XRPL project.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stack_ (internal collection stack)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "check function (likely an assert or custom error handler) at markStarted()",
+      "issue_pattern": "Missing empty string validation for stack_ (internal collection stack)",
+      "why_false_positive": "check function (likely an assert or custom error handler) validates stack_ (internal collection stack) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stack_ (internal collection stack)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "check function (likely an assert or custom error handler) at nextCollectionEntry()",
+      "issue_pattern": "Missing empty string validation for stack_ (internal collection stack)",
+      "why_false_positive": "check function (likely an assert or custom error handler) validates stack_ (internal collection stack) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/Writer.cpp",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 28,
+      "name": "lengthWithoutTrailingZeros"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "ct"
+      ],
+      "lineno": 58,
+      "name": "start"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 63,
+      "name": "output"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 68,
+      "name": "stringOutput"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "markStarted"
+    },
+    {
+      "args": [
+        "type",
+        "message"
+      ],
+      "lineno": 93,
+      "name": "nextCollectionEntry"
+    },
+    {
+      "args": [
+        "tag"
+      ],
+      "lineno": 105,
+      "name": "writeObjectTag"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "isFinished"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "finish"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "finishAll"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "getOutput"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 170,
+      "name": "output"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 174,
+      "name": "output"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 178,
+      "name": "output"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 183,
+      "name": "output"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 188,
+      "name": "output"
+    },
+    {
+      "args": [
+        "nullptr"
+      ],
+      "lineno": 193,
+      "name": "output"
+    },
+    {
+      "args": [
+        "b"
+      ],
+      "lineno": 197,
+      "name": "output"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 201,
+      "name": "implOutput"
+    },
+    {
+      "args": [],
+      "lineno": 205,
+      "name": "finishAll"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "rawAppend"
+    },
+    {
+      "args": [
+        "tag"
+      ],
+      "lineno": 214,
+      "name": "rawSet"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 220,
+      "name": "startRoot"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 224,
+      "name": "startAppend"
+    },
+    {
+      "args": [
+        "type",
+        "key"
+      ],
+      "lineno": 229,
+      "name": "startSet"
+    },
+    {
+      "args": [],
+      "lineno": 236,
+      "name": "finish"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested via higher-level JSON serialization tests, possibly in files like test/json/Writer_test.cpp or similar. Direct validation of stack_ integrity (empty, type matching) and tag uniqueness (in debug) would require tests that exercise error conditions: e.g., calling finish() on an empty stack, writing duplicate object keys, or writing to a finished writer. If such tests are missing, error paths and assertion failures may not be fully covered. There is no evidence in this file of explicit unit tests or test hooks; coverage depends on external test suites.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (check function, not standard framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "Exception or assertion (via check)",
+      "field": "stack_ (internal collection stack)",
+      "location": "markStarted()",
+      "validated_by": "check function (likely an assert or custom error handler)",
+      "validates": [
+        "Ensures that isFinished() is false before outputting data"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Exception or assertion (via check)",
+      "field": "stack_ (internal collection stack)",
+      "location": "nextCollectionEntry()",
+      "validated_by": "check function (likely an assert or custom error handler)",
+      "validates": [
+        "Ensures stack_ is not empty before processing next collection entry"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

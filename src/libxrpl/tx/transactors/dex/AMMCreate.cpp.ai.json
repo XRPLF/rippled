@@ -1,0 +1,490 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMCreate::preflight"
+      ],
+      "entry_point": "AMMCreate::preflight",
+      "purpose": "Performs stateless validation of the AMMCreate transaction before it is processed.",
+      "validation_points": [
+        "AMMCreate::preflight: asset uniqueness (amount.asset() == amount2.asset())",
+        "AMMCreate::preflight: invalidAMMAmount(amount)",
+        "AMMCreate::preflight: invalidAMMAmount(amount2)",
+        "AMMCreate::preflight: trading fee threshold (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMCreate::preclaim",
+        "keylet::amm",
+        "requireAuth",
+        "isFrozen",
+        "noDefaultRipple",
+        "xrpLiquid"
+      ],
+      "entry_point": "AMMCreate::preclaim",
+      "purpose": "Performs stateful validation, checking ledger state and account/asset conditions before applying the transaction.",
+      "validation_points": [
+        "AMMCreate::preclaim: AMM instance existence (ctx.view.read(ammKeylet))",
+        "AMMCreate::preclaim: requireAuth for both assets",
+        "AMMCreate::preclaim: isFrozen for both assets",
+        "AMMCreate::preclaim: noDefaultRipple for both assets",
+        "AMMCreate::preclaim: xrpLiquid (reserve check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMCreate::doApply",
+        "applyCreate"
+      ],
+      "entry_point": "AMMCreate::doApply",
+      "purpose": "Applies the transaction after all validations pass.",
+      "validation_points": [
+        "Relies on preflight and preclaim having already validated inputs"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMCreate::checkExtraFeatures"
+      ],
+      "entry_point": "AMMCreate::checkExtraFeatures",
+      "purpose": "Checks feature flags and token type compatibility before transaction processing.",
+      "validation_points": [
+        "AMMCreate::checkExtraFeatures: ammEnabled(ctx.rules)",
+        "AMMCreate::checkExtraFeatures: featureMPTokensV2 and MPTIssue checks"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "amount = ctx.tx[sfAmount]",
+        "used in preflight, preclaim, checkExtraFeatures"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for asset uniqueness (asset() comparison)",
+        "Validated by invalidAMMAmount(amount)",
+        "Checked for MPTIssue type"
+      ],
+      "validated_at": "AMMCreate::preflight, AMMCreate::checkExtraFeatures"
+    },
+    {
+      "field": "sfAmount2",
+      "flow": [
+        "ctx.tx[sfAmount2]",
+        "amount2 = ctx.tx[sfAmount2]",
+        "used in preflight, preclaim, checkExtraFeatures"
+      ],
+      "origin": "ctx.tx[sfAmount2] (transaction input)",
+      "transformations": [
+        "Checked for asset uniqueness (asset() comparison)",
+        "Validated by invalidAMMAmount(amount2)",
+        "Checked for MPTIssue type"
+      ],
+      "validated_at": "AMMCreate::preflight, AMMCreate::checkExtraFeatures"
+    },
+    {
+      "field": "sfTradingFee",
+      "flow": [
+        "ctx.tx[sfTradingFee]",
+        "used in preflight"
+      ],
+      "origin": "ctx.tx[sfTradingFee] (transaction input)",
+      "transformations": [
+        "Compared to TRADING_FEE_THRESHOLD"
+      ],
+      "validated_at": "AMMCreate::preflight"
+    },
+    {
+      "field": "AMM feature enablement",
+      "flow": [
+        "ctx.rules",
+        "ammEnabled(ctx.rules)",
+        "used in checkExtraFeatures"
+      ],
+      "origin": "ctx.rules (network rules/feature flags)",
+      "transformations": [
+        "Boolean check for AMM feature"
+      ],
+      "validated_at": "AMMCreate::checkExtraFeatures"
+    },
+    {
+      "field": "Account authorization",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "accountID = ctx.tx[sfAccount]",
+        "used in preclaim for requireAuth, isFrozen, xrpLiquid"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for authorization to hold assets",
+        "Checked for frozen status",
+        "Checked for sufficient XRP reserve"
+      ],
+      "validated_at": "AMMCreate::preclaim"
+    }
+  ],
+  "description": "Implements the logic for creating an Automated Market Maker (AMM) instance on the XRPL, including preflight checks, authorization, reserve and trustline management, and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount, sfAmount2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "asset() comparison at AMMCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount, sfAmount2",
+      "why_false_positive": "asset() comparison validates sfAmount, sfAmount2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAmount(amount) at AMMCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "invalidAMMAmount(amount) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAmount(amount2) at AMMCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount2",
+      "why_false_positive": "invalidAMMAmount(amount2) validates sfAmount2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison with TRADING_FEE_THRESHOLD at AMMCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfTradingFee",
+      "why_false_positive": "comparison with TRADING_FEE_THRESHOLD validates sfTradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTradingFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "comparison with TRADING_FEE_THRESHOLD at AMMCreate::preflight",
+      "issue_pattern": "Missing range validation for sfTradingFee",
+      "why_false_positive": "comparison with TRADING_FEE_THRESHOLD validates sfTradingFee range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM feature enablement",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for AMM feature enablement",
+      "why_false_positive": "ammEnabled(ctx.rules) validates AMM feature enablement for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTokensV2 feature and MPTIssue in sfAmount/sfAmount2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) and holds<MPTIssue>() at AMMCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for MPTokensV2 feature and MPTIssue in sfAmount/sfAmount2",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) and holds<MPTIssue>() validates MPTokensV2 feature and MPTIssue in sfAmount/sfAmount2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM existence for token pair",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(ammKeylet) at AMMCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for AMM existence for token pair",
+      "why_false_positive": "ctx.view.read(ammKeylet) validates AMM existence for token pair for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Authorization for asset1",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "requireAuth(ctx.view, amount.asset(), accountID) at AMMCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for Authorization for asset1",
+      "why_false_positive": "requireAuth(ctx.view, amount.asset(), accountID) validates Authorization for asset1 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Authorization for asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "requireAuth(ctx.view, amount2.asset(), accountID) at AMMCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for Authorization for asset2",
+      "why_false_positive": "requireAuth(ctx.view, amount2.asset(), accountID) validates Authorization for asset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Frozen status for asset1 and asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFrozen(ctx.view, accountID, amount.asset()) || isFrozen(ctx.view, accountID, amount2.asset()) at AMMCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for Frozen status for asset1 and asset2",
+      "why_false_positive": "isFrozen(ctx.view, accountID, amount.asset()) || isFrozen(ctx.view, accountID, amount2.asset()) validates Frozen status for asset1 and asset2 for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "AMMCreate::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "AMMCreate::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 48,
+      "name": "AMMCreate::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 54,
+      "name": "AMMCreate::preclaim"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx_",
+        "Sandbox& sb",
+        "AccountID const& account_",
+        "beast::Journal j_"
+      ],
+      "lineno": 143,
+      "name": "applyCreate"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "AMMCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Tests for AMMCreate are likely found in integration/tx/AMMCreate_test.cpp, possibly also in unit tests for AMMHelpers or protocol/AMMCore. Typical tests cover valid/invalid asset pairs, invalid amounts, trading fee limits, feature flag enablement, duplicate AMM creation, authorization, frozen assets, and reserve checks. Gaps may exist for edge cases in feature flag combinations (e.g., MPTokensV2 off with MPTIssue), and for negative test cases involving complex asset/freeze/authorization scenarios. Some validation logic (e.g., noDefaultRipple, requireAuth) may rely on helper functions that are not directly unit tested in the context of AMMCreate.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation via business logic and helper functions (no external validation framework detected)",
+    "validation_layer": "business_logic (preflight and preclaim transaction hooks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMM_TOKENS",
+      "field": "sfAmount, sfAmount2",
+      "location": "AMMCreate::preflight",
+      "validated_by": "asset() comparison",
+      "validates": [
+        "Ensures the two assets are not the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error code returned by invalidAMMAmount",
+      "field": "sfAmount",
+      "location": "AMMCreate::preflight",
+      "validated_by": "invalidAMMAmount(amount)",
+      "validates": [
+        "Checks if amount is a valid AMM amount (format, value, etc.)"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error code returned by invalidAMMAmount",
+      "field": "sfAmount2",
+      "location": "AMMCreate::preflight",
+      "validated_by": "invalidAMMAmount(amount2)",
+      "validates": [
+        "Checks if amount2 is a valid AMM amount (format, value, etc.)"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_FEE",
+      "field": "sfTradingFee",
+      "location": "AMMCreate::preflight",
+      "validated_by": "comparison with TRADING_FEE_THRESHOLD",
+      "validates": [
+        "Ensures trading fee does not exceed threshold"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents transaction)",
+      "field": "AMM feature enablement",
+      "location": "AMMCreate::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "Checks if AMM feature is enabled in rules"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents transaction)",
+      "field": "MPTokensV2 feature and MPTIssue in sfAmount/sfAmount2",
+      "location": "AMMCreate::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) and holds<MPTIssue>()",
+      "validates": [
+        "Prevents use of MPTIssue unless featureMPTokensV2 is enabled"
+      ],
+      "validation_type": "business_logic|feature_flag|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecDUPLICATE",
+      "field": "AMM existence for token pair",
+      "location": "AMMCreate::preclaim",
+      "validated_by": "ctx.view.read(ammKeylet)",
+      "validates": [
+        "Ensures no existing AMM for the token pair"
+      ],
+      "validation_type": "business_logic|uniqueness"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error code returned by requireAuth",
+      "field": "Authorization for asset1",
+      "location": "AMMCreate::preclaim",
+      "validated_by": "requireAuth(ctx.view, amount.asset(), accountID)",
+      "validates": [
+        "Checks if account is authorized to use asset1"
+      ],
+      "validation_type": "business_logic|authorization"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error code returned by requireAuth",
+      "field": "Authorization for asset2",
+      "location": "AMMCreate::preclaim",
+      "validated_by": "requireAuth(ctx.view, amount2.asset(), accountID)",
+      "validates": [
+        "Checks if account is authorized to use asset2"
+      ],
+      "validation_type": "business_logic|authorization"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecFROZEN",
+      "field": "Frozen status for asset1 and asset2",
+      "location": "AMMCreate::preclaim",
+      "validated_by": "isFrozen(ctx.view, accountID, amount.asset()) || isFrozen(ctx.view, accountID, amount2.asset())",
+      "validates": [
+        "Ensures neither asset is globally or individually frozen"
+      ],
+      "validation_type": "business_logic|status"
+    }
+  ]
+}

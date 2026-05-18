@@ -1,0 +1,141 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "j"
+    },
+    {
+      "lineno": 39,
+      "name": "node"
+    },
+    {
+      "lineno": 53,
+      "name": "identity"
+    },
+    {
+      "lineno": 54,
+      "name": "name"
+    },
+    {
+      "lineno": 55,
+      "name": "loadFee"
+    },
+    {
+      "lineno": 56,
+      "name": "reportTime"
+    },
+    {
+      "lineno": 63,
+      "name": "func"
+    },
+    {
+      "lineno": 76,
+      "name": "nodes"
+    },
+    {
+      "lineno": 16,
+      "name": "lhs"
+    },
+    {
+      "lineno": 16,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 9,
+      "name": "Cluster"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Comparator"
+    }
+  ],
+  "description": "Defines the xrpl::Cluster class, which manages a set of cluster nodes, providing membership checks, updates, iteration, and loading from configuration.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Cluster.h",
+  "functions": [
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 32,
+      "name": "Cluster"
+    },
+    {
+      "args": [
+        "PublicKey const& node"
+      ],
+      "lineno": 39,
+      "name": "member"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "size"
+    },
+    {
+      "args": [
+        "PublicKey const& identity",
+        "std::string name",
+        "std::uint32_t loadFee",
+        "NetClock::time_point reportTime"
+      ],
+      "lineno": 52,
+      "name": "update"
+    },
+    {
+      "args": [
+        "std::function<void(ClusterNode const&)> func"
+      ],
+      "lineno": 62,
+      "name": "for_each"
+    },
+    {
+      "args": [
+        "Section const& nodes"
+      ],
+      "lineno": 75,
+      "name": "load"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Comparator"
+    },
+    {
+      "args": [
+        "ClusterNode const& lhs",
+        "ClusterNode const& rhs"
+      ],
+      "lineno": 16,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "ClusterNode const& lhs",
+        "PublicKey const& rhs"
+      ],
+      "lineno": 21,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "PublicKey const& lhs",
+        "ClusterNode const& rhs"
+      ],
+      "lineno": 26,
+      "name": "operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

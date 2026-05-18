@@ -1,0 +1,157 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "PathAsset"
+    }
+  ],
+  "description": "Defines the PathAsset class in the xrpl namespace, representing an asset in a payment path (either Currency or MPTID), with utilities for construction, type checking, comparison, and visitation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/PathAsset.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "PathAsset"
+    },
+    {
+      "args": [
+        "Asset const& asset"
+      ],
+      "lineno": 16,
+      "name": "PathAsset"
+    },
+    {
+      "args": [
+        "Currency const& currency"
+      ],
+      "lineno": 17,
+      "name": "PathAsset"
+    },
+    {
+      "args": [
+        "MPTID const& mpt"
+      ],
+      "lineno": 20,
+      "name": "PathAsset"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "holds"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "isXRP"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "value"
+    },
+    {
+      "args": [
+        "Visitors&&... visitors"
+      ],
+      "lineno": 36,
+      "name": "visit"
+    },
+    {
+      "args": [
+        "PathAsset const& lhs",
+        "PathAsset const& rhs"
+      ],
+      "lineno": 45,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "is_currency_v"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "is_mptid_v"
+    },
+    {
+      "args": [
+        "Asset const& asset"
+      ],
+      "lineno": 54,
+      "name": "PathAsset"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "holds"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "value"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "PathAsset const& lhs",
+        "PathAsset const& rhs"
+      ],
+      "lineno": 82,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "PathAsset const& pathAsset"
+      ],
+      "lineno": 91,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "PathAsset const& asset"
+      ],
+      "lineno": 96,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "PathAsset const& asset"
+      ],
+      "lineno": 100,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "PathAsset const& x"
+      ],
+      "lineno": 102,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    },
+    {
+      "lineno": 28,
+      "name": "view"
+    },
+    {
+      "lineno": 28,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 28,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "DepositPreauth"
+    }
+  ],
+  "description": "Defines the DepositPreauth transaction transactor for the XRPL, including its interface and related static methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/payment/DepositPreauth.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "DepositPreauth"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "uint256 const& delIndex",
+        "beast::Journal j"
+      ],
+      "lineno": 28,
+      "name": "removeFromLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

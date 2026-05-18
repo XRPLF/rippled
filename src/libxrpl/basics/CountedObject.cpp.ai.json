@@ -1,0 +1,125 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "minimumThreshold"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "CountedObjects::getInstance",
+        "CountedObjects::CountedObjects (constructor, if first call)"
+      ],
+      "entry_point": "CountedObjects::getInstance",
+      "purpose": "Provides singleton access to the CountedObjects instance.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "CountedObjects::getCounts"
+      ],
+      "entry_point": "CountedObjects::getCounts",
+      "purpose": "Retrieves a list of counted object names and their counts, filtered by a minimum threshold.",
+      "validation_points": [
+        "if (ctr->getCount() >= minimumThreshold)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_count",
+      "flow": [
+        "CountedObjects::CountedObjects (constructor)",
+        "m_count.load() in getCounts"
+      ],
+      "origin": "Initialized to 0 in CountedObjects::CountedObjects",
+      "transformations": [
+        "Atomic load for reserving vector capacity"
+      ],
+      "validated_at": "No explicit validation; used for vector reservation"
+    },
+    {
+      "field": "m_head",
+      "flow": [
+        "CountedObjects::CountedObjects (constructor)",
+        "m_head.load() in getCounts",
+        "Iterated as linked list via ctr->getNext()"
+      ],
+      "origin": "Initialized to nullptr in CountedObjects::CountedObjects",
+      "transformations": [
+        "Atomic load; traversed as linked list"
+      ],
+      "validated_at": "No explicit validation; null-checked in for loop"
+    },
+    {
+      "field": "ctr->getCount()",
+      "flow": [
+        "ctr->getCount()",
+        "Compared to minimumThreshold in getCounts",
+        "If passes, included in counts vector"
+      ],
+      "origin": "Each counted object in the linked list",
+      "transformations": [
+        "Filtered by minimumThreshold"
+      ],
+      "validated_at": "Validated in: if (ctr->getCount() >= minimumThreshold)"
+    },
+    {
+      "field": "minimumThreshold (parameter)",
+      "flow": [
+        "Passed to getCounts",
+        "Used in filter: ctr->getCount() >= minimumThreshold"
+      ],
+      "origin": "Input parameter to getCounts",
+      "transformations": [
+        "Used as lower bound filter"
+      ],
+      "validated_at": "Used directly; no explicit validation of parameter itself"
+    }
+  ],
+  "description": "Implements the CountedObjects singleton for tracking and retrieving counts of registered objects, providing thread-safe access and sorted retrieval of object counts.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/CountedObject.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "CountedObjects::getInstance"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "CountedObjects::CountedObjects"
+    },
+    {
+      "args": [
+        "minimumThreshold"
+      ],
+      "lineno": 17,
+      "name": "CountedObjects::getCounts"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is a utility for tracking object counts and does not perform input validation in the traditional sense (e.g., user input). The only 'validation' is filtering counts by minimumThreshold in getCounts. Test coverage would likely exist in unit tests for CountedObject or CountedObjects, possibly in files like CountedObject_test.cpp or similar. Tests would check that getCounts returns correct results for various thresholds and object counts. There is no explicit validation of input parameters (e.g., negative minimumThreshold), so edge cases like negative thresholds may not be tested. No direct validation code paths exist beyond the count filtering.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

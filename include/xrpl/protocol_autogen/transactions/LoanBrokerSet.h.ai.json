@@ -1,0 +1,210 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "tx"
+    },
+    {
+      "lineno": 196,
+      "name": "account"
+    },
+    {
+      "lineno": 196,
+      "name": "vaultID"
+    },
+    {
+      "lineno": 196,
+      "name": "sequence"
+    },
+    {
+      "lineno": 196,
+      "name": "fee"
+    },
+    {
+      "lineno": 287,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 287,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 217,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 31,
+      "name": "LoanBrokerSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& vaultID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 193,
+      "name": "LoanBrokerSetBuilder"
+    }
+  ],
+  "description": "Defines the LoanBrokerSet transaction type for the XRPL protocol, providing a type-safe wrapper and a builder class for constructing and signing such transactions with specific fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LoanBrokerSet.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "LoanBrokerSet"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "hasLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getData"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "hasData"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "getManagementFeeRate"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "hasManagementFeeRate"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "getDebtMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "hasDebtMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "getCoverRateMinimum"
+    },
+    {
+      "args": [],
+      "lineno": 155,
+      "name": "hasCoverRateMinimum"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "getCoverRateLiquidation"
+    },
+    {
+      "args": [],
+      "lineno": 177,
+      "name": "hasCoverRateLiquidation"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& vaultID",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 196,
+      "name": "LoanBrokerSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 205,
+      "name": "LoanBrokerSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 217,
+      "name": "setVaultID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 227,
+      "name": "setLoanBrokerID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 237,
+      "name": "setData"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT16::type::value_type> const& value"
+      ],
+      "lineno": 247,
+      "name": "setManagementFeeRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_NUMBER::type::value_type> const& value"
+      ],
+      "lineno": 257,
+      "name": "setDebtMaximum"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 267,
+      "name": "setCoverRateMinimum"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 277,
+      "name": "setCoverRateLiquidation"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 287,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

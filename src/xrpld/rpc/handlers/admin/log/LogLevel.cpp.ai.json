@@ -1,0 +1,259 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLogLevel"
+      ],
+      "entry_point": "doLogLevel",
+      "purpose": "Handles the 'log_level' RPC command, which queries or sets log severity levels globally or per partition.",
+      "validation_points": [
+        "if (!context.params.isMember(jss::severity))",
+        "Logs::fromString(context.params[jss::severity].asString())",
+        "if (!context.params.isMember(jss::partition))",
+        "if (context.params.isMember(jss::partition))",
+        "if (boost::iequals(partition, \"base\"))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "severity",
+      "flow": [
+        "context.params[jss::severity] (input)",
+        "context.params.isMember(jss::severity) (existence check)",
+        "context.params[jss::severity].asString() (string extraction)",
+        "Logs::fromString(...) (string to enum conversion)",
+        "if (sv == lsINVALID) (enum validity check)",
+        "Logs::toSeverity(sv) (enum to internal severity type)",
+        "context.app.getLogs().threshold(severity) or .get(partition).threshold(severity) (applied)"
+      ],
+      "origin": "context.params[jss::severity] (JSON RPC input)",
+      "transformations": [
+        "JSON string \u2192 enum (Logs::fromString)",
+        "enum \u2192 internal severity (Logs::toSeverity)"
+      ],
+      "validated_at": [
+        "context.params.isMember(jss::severity)",
+        "Logs::fromString(...)",
+        "if (sv == lsINVALID)"
+      ]
+    },
+    {
+      "field": "partition",
+      "flow": [
+        "context.params[jss::partition] (input)",
+        "context.params.isMember(jss::partition) (existence check)",
+        "context.params[jss::partition].asString() (string extraction)",
+        "boost::iequals(partition, \"base\") (case-insensitive comparison)",
+        "context.app.getLogs().threshold(severity) or .get(partition).threshold(severity) (applied)"
+      ],
+      "origin": "context.params[jss::partition] (JSON RPC input)",
+      "transformations": [
+        "JSON string \u2192 std::string",
+        "case-insensitive comparison (boost::iequals)"
+      ],
+      "validated_at": [
+        "context.params.isMember(jss::partition)",
+        "boost::iequals(partition, \"base\")"
+      ]
+    }
+  ],
+  "description": "Implements the doLogLevel RPC handler for querying and setting log severity levels in the xrpl application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "severity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::severity) at doLogLevel",
+      "issue_pattern": "Missing empty string validation for severity",
+      "why_false_positive": "context.params.isMember(jss::severity) validates severity for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "severity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Logs::fromString(context.params[jss::severity].asString()) at doLogLevel",
+      "issue_pattern": "Missing empty string validation for severity",
+      "why_false_positive": "Logs::fromString(context.params[jss::severity].asString()) validates severity for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "partition",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::partition) at doLogLevel",
+      "issue_pattern": "Missing empty string validation for partition",
+      "why_false_positive": "context.params.isMember(jss::partition) validates partition for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "partition",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::iequals(partition, \"base\") at doLogLevel",
+      "issue_pattern": "Missing empty string validation for partition",
+      "why_false_positive": "boost::iequals(partition, \"base\") validates partition for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/log/LogLevel.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doLogLevel"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in the RPC integration or unit test suites, such as 'rpc_log_level_test.cpp' or similar files. Tests should cover: (1) querying log levels with no params, (2) setting global severity, (3) setting partition severity (including 'base'), (4) invalid severity values, (5) invalid/missing partition. Gaps may exist if there are no tests for edge cases (e.g., unknown partition names, malformed severity strings, or missing required fields). No test files are referenced in this code, so actual coverage must be checked in the test directory.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "jss:: (JSON field tags), Json::Value, custom Logs::* functions",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns log levels instead)",
+      "field": "severity",
+      "location": "doLogLevel",
+      "validated_by": "context.params.isMember(jss::severity)",
+      "validates": [
+        "checks if 'severity' field is present in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "severity",
+      "location": "doLogLevel",
+      "validated_by": "Logs::fromString(context.params[jss::severity].asString())",
+      "validates": [
+        "converts string to LogSeverity enum",
+        "checks if value is a valid log severity string"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets base threshold if not present)",
+      "field": "partition",
+      "location": "doLogLevel",
+      "validated_by": "context.params.isMember(jss::partition)",
+      "validates": [
+        "checks if 'partition' field is present in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (special handling for 'base')",
+      "field": "partition",
+      "location": "doLogLevel",
+      "validated_by": "boost::iequals(partition, \"base\")",
+      "validates": [
+        "checks if partition string equals 'base' (case-insensitive)",
+        "routes logic accordingly"
+      ],
+      "validation_type": "business_logic|format"
+    }
+  ]
+}

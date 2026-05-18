@@ -1,0 +1,530 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "MPTMutabilityFlags"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Transactor::preflight",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "entry_point": "MPTokenIssuanceSet::preflight",
+      "purpose": "Performs stateless validation of the MPTokenIssuanceSet transaction before it is accepted for further processing.",
+      "validation_points": [
+        "MPTokenIssuanceSet::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::preclaim",
+        "MPTokenIssuanceSet::preclaim"
+      ],
+      "entry_point": "MPTokenIssuanceSet::preclaim",
+      "purpose": "Performs contextual validation (e.g., ledger state) after preflight passes.",
+      "validation_points": [
+        "MPTokenIssuanceSet::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::apply",
+        "MPTokenIssuanceSet::doApply"
+      ],
+      "entry_point": "MPTokenIssuanceSet::doApply",
+      "purpose": "Applies the transaction to the ledger after all validations pass.",
+      "validation_points": [
+        "MPTokenIssuanceSet::preflight",
+        "MPTokenIssuanceSet::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTokenIssuanceSet::preflight",
+        "MPTokenIssuanceSet::checkExtraFeatures"
+      ],
+      "entry_point": "MPTokenIssuanceSet::checkExtraFeatures",
+      "purpose": "Checks if extra features are enabled when sfDomainID is present.",
+      "validation_points": [
+        "MPTokenIssuanceSet::checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.isFieldPresent(sfDomainID)",
+        "MPTokenIssuanceSet::preflight",
+        "MPTokenIssuanceSet::checkExtraFeatures"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Used in conditional logic to validate feature flags"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight, MPTokenIssuanceSet::checkExtraFeatures"
+    },
+    {
+      "field": "sfHolder",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.isFieldPresent(sfHolder)",
+        "ctx.tx[~sfHolder]",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Compared to sfAccount for equality"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "field": "transaction flags (tfMPTLock, tfMPTUnlock)",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.getFlags()",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Bitmask check for mutual exclusivity"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[sfAccount]",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Compared to sfHolder for equality"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "field": "sfMutableFlags",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[~sfMutableFlags]",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Bitmask checks for valid/invalid flag combinations",
+        "Checked for zero or invalid mask"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "field": "sfMPTokenMetadata",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[~sfMPTokenMetadata]",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for length against maxMPTokenMetadataLength"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "field": "sfTransferFee",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx[~sfTransferFee]",
+        "MPTokenIssuanceSet::preflight"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for value against maxTransferFee"
+      ],
+      "validated_at": "MPTokenIssuanceSet::preflight"
+    }
+  ],
+  "description": "Implements the MPTokenIssuanceSet transaction logic for the XRPL, including preflight validation, permission checks, preclaim checks, and application of changes to the ledger for multi-party token issuance settings.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isFieldPresent) at MPTokenIssuanceSet::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "manual check (isFieldPresent) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID and sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isFieldPresent) at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID and sfHolder",
+      "why_false_positive": "manual check (isFieldPresent) validates sfDomainID and sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction flags (tfMPTLock, tfMPTUnlock)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual bitmask check at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for transaction flags (tfMPTLock, tfMPTUnlock)",
+      "why_false_positive": "manual bitmask check validates transaction flags (tfMPTLock, tfMPTUnlock) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount and sfHolder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (==) at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount and sfHolder",
+      "why_false_positive": "manual check (==) validates sfAccount and sfHolder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction is a no-op",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (flags, fields, isMutate) at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for transaction is a no-op",
+      "why_false_positive": "manual check (flags, fields, isMutate) validates transaction is a no-op for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureDynamicMPT",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (ctx.rules.enabled) at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for featureDynamicMPT",
+      "why_false_positive": "manual check (ctx.rules.enabled) validates featureDynamicMPT for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfHolder (when mutating)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isMutate && holderID) at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfHolder (when mutating)",
+      "why_false_positive": "manual check (isMutate && holderID) validates sfHolder (when mutating) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction flags (tfUniversalMask) when mutating",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual bitmask check at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for transaction flags (tfUniversalMask) when mutating",
+      "why_false_positive": "manual bitmask check validates transaction flags (tfUniversalMask) when mutating for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual range check at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfTransferFee",
+      "why_false_positive": "manual range check validates sfTransferFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTransferFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual range check at MPTokenIssuanceSet::preflight",
+      "issue_pattern": "Missing range validation for sfTransferFee",
+      "why_false_positive": "manual range check validates sfTransferFee range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/MPTokenIssuanceSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "MPTokenIssuanceSet::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "MPTokenIssuanceSet::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 38,
+      "name": "MPTokenIssuanceSet::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 110,
+      "name": "MPTokenIssuanceSet::checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 143,
+      "name": "MPTokenIssuanceSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "MPTokenIssuanceSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for MPTokenIssuanceSet is likely found in unit/integration tests under the transaction or token test suites, such as 'test/tx/MPTokenIssuanceSet_test.cpp' or similar files. These tests should cover: field presence/absence, flag combinations, feature enablement, and malformed transactions. However, gaps may exist in edge cases for feature flag combinations, maximum metadata length, and simultaneous field/flag mutations. Manual or fuzz testing may be needed for full coverage of all validation branches, especially for new or experimental features (e.g., featureDynamicMPT).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework)",
+    "validation_layer": "business_logic (preflight transaction validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (preflight will fail)",
+      "field": "sfDomainID",
+      "location": "MPTokenIssuanceSet::checkExtraFeatures",
+      "validated_by": "manual check (isFieldPresent)",
+      "validates": [
+        "If sfDomainID is present, featurePermissionedDomains and featureSingleAssetVault must be enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID and sfHolder",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual check (isFieldPresent)",
+      "validates": [
+        "Both sfDomainID and sfHolder cannot be present in the same transaction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "transaction flags (tfMPTLock, tfMPTUnlock)",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual bitmask check",
+      "validates": [
+        "tfMPTLock and tfMPTUnlock cannot both be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAccount and sfHolder",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual check (==)",
+      "validates": [
+        "sfAccount and sfHolder cannot be the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "transaction is a no-op",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual check (flags, fields, isMutate)",
+      "validates": [
+        "Transaction must change something (flags, sfDomainID, or mutate fields)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDISABLED",
+      "field": "featureDynamicMPT",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual check (ctx.rules.enabled)",
+      "validates": [
+        "Mutation not allowed unless featureDynamicMPT is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfHolder (when mutating)",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual check (isMutate && holderID)",
+      "validates": [
+        "sfHolder not allowed when mutating MPTokenIssuance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "transaction flags (tfUniversalMask) when mutating",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual bitmask check",
+      "validates": [
+        "Cannot set universal flags when mutating MPTokenIssuance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_TRANSFER_FEE",
+      "field": "sfTransferFee",
+      "location": "MPTokenIssuanceSet::preflight",
+      "validated_by": "manual range check",
+      "validates": [
+        "sfTransferFee must not exceed maxTransferFee"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

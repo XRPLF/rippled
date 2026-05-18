@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "dst"
+    },
+    {
+      "lineno": 10,
+      "name": "src"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to compute the union of two boost::container::flat_set objects within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/FlatSets.h",
+  "functions": [
+    {
+      "args": [
+        "dst",
+        "src"
+      ],
+      "lineno": 10,
+      "name": "SetUnion"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

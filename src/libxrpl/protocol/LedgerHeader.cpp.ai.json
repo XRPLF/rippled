@@ -1,0 +1,222 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "deserializeHeader"
+      ],
+      "entry_point": "deserializeHeader",
+      "purpose": "Deserializes a LedgerHeader from a binary Slice, optionally including the hash.",
+      "validation_points": [
+        "No explicit validation in this function; assumes input Slice is well-formed and large enough."
+      ]
+    },
+    {
+      "call_chain": [
+        "deserializePrefixedHeader",
+        "deserializeHeader"
+      ],
+      "entry_point": "deserializePrefixedHeader",
+      "purpose": "Deserializes a LedgerHeader from a Slice, skipping a 4-byte prefix (e.g., HashPrefix).",
+      "validation_points": [
+        "No explicit validation; relies on deserializeHeader."
+      ]
+    },
+    {
+      "call_chain": [
+        "addRaw"
+      ],
+      "entry_point": "addRaw",
+      "purpose": "Serializes a LedgerHeader into a Serializer, optionally including the hash.",
+      "validation_points": [
+        "No explicit validation; assumes LedgerHeader fields are valid."
+      ]
+    },
+    {
+      "call_chain": [
+        "calculateLedgerHash"
+      ],
+      "entry_point": "calculateLedgerHash",
+      "purpose": "Calculates the hash of a LedgerHeader using its fields and a hash prefix.",
+      "validation_points": [
+        "No explicit validation; assumes LedgerHeader fields are valid and well-formed."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "seq",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get32()",
+        "LedgerHeader.seq",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct (addRaw/calculateLedgerHash)",
+      "transformations": [
+        "Read as uint32 from binary",
+        "Serialized as uint32",
+        "Used as uint32 in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "drops",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get64()",
+        "LedgerHeader.drops",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct",
+      "transformations": [
+        "Read as uint64",
+        "Serialized as uint64",
+        "Used as uint64 in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "parentHash / txHash / accountHash",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get256()",
+        "LedgerHeader.{parentHash,txHash,accountHash}",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct",
+      "transformations": [
+        "Read as 256-bit value",
+        "Serialized as bit string",
+        "Used as-is in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "parentCloseTime / closeTime",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get32()",
+        "NetClock::time_point{NetClock::duration{...}}",
+        "LedgerHeader.{parentCloseTime,closeTime}",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct",
+      "transformations": [
+        "Read as uint32",
+        "Wrapped in NetClock::duration/time_point",
+        "Serialized as uint32",
+        "Used as uint32 in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "closeTimeResolution",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get8()",
+        "NetClock::duration{...}",
+        "LedgerHeader.closeTimeResolution",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct",
+      "transformations": [
+        "Read as uint8",
+        "Wrapped in NetClock::duration",
+        "Serialized as uint8",
+        "Used as uint8 in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "closeFlags",
+      "flow": [
+        "Slice (deserializeHeader)",
+        "SerialIter::get8()",
+        "LedgerHeader.closeFlags",
+        "Used in addRaw, calculateLedgerHash"
+      ],
+      "origin": "Slice input (deserializeHeader) or LedgerHeader struct",
+      "transformations": [
+        "Read as uint8",
+        "Serialized as uint8",
+        "Used as uint8 in hash calculation"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "hash",
+      "flow": [
+        "Slice (deserializeHeader, if hasHash)",
+        "SerialIter::get256()",
+        "LedgerHeader.hash",
+        "Used in addRaw (if includeHash)"
+      ],
+      "origin": "Slice input (deserializeHeader, if hasHash) or LedgerHeader struct",
+      "transformations": [
+        "Read as 256-bit value",
+        "Serialized as bit string (if included)"
+      ],
+      "validated_at": "Not explicitly validated"
+    }
+  ],
+  "description": "Implements serialization, deserialization, and hash calculation for XRPL LedgerHeader structures.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/LedgerHeader.cpp",
+  "functions": [
+    {
+      "args": [
+        "LedgerHeader const& info",
+        "Serializer& s",
+        "bool includeHash"
+      ],
+      "lineno": 8,
+      "name": "addRaw"
+    },
+    {
+      "args": [
+        "Slice data",
+        "bool hasHash"
+      ],
+      "lineno": 21,
+      "name": "deserializeHeader"
+    },
+    {
+      "args": [
+        "Slice data",
+        "bool hasHash"
+      ],
+      "lineno": 44,
+      "name": "deserializePrefixedHeader"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info"
+      ],
+      "lineno": 49,
+      "name": "calculateLedgerHash"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no validation of input sizes, field ranges, or field consistency in these functions. They assume the input Slice is well-formed and large enough. Typical test coverage would be in unit tests for LedgerHeader serialization/deserialization and hash calculation, likely in files such as LedgerHeader_test.cpp, Ledger_test.cpp, or Serializer_test.cpp. However, negative tests for malformed or truncated input, or for invalid field values, may be missing unless explicitly written elsewhere. The code is vulnerable to buffer overruns or undefined behavior if given malformed input, as there are no checks on Slice size or field validity.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

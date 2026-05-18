@@ -1,0 +1,24 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides a function to register system default SSL root certificates for use with Boost.Asio SSL contexts, handling platform-specific details.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/net/RegisterSSLCerts.h",
+  "functions": [
+    {
+      "args": [
+        "boost::asio::ssl::context&",
+        "boost::system::error_code&",
+        "beast::Journal"
+      ],
+      "lineno": 13,
+      "name": "registerSSLCerts"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

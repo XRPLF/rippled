@@ -1,0 +1,815 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "app"
+    },
+    {
+      "lineno": 15,
+      "name": "subscriber"
+    },
+    {
+      "lineno": 16,
+      "name": "id"
+    },
+    {
+      "lineno": 17,
+      "name": "owner"
+    },
+    {
+      "lineno": 18,
+      "name": "journal"
+    },
+    {
+      "lineno": 30,
+      "name": "completion"
+    },
+    {
+      "lineno": 31,
+      "name": "consumer"
+    },
+    {
+      "lineno": 103,
+      "name": "crCache"
+    },
+    {
+      "lineno": 152,
+      "name": "cache"
+    },
+    {
+      "lineno": 152,
+      "name": "value"
+    },
+    {
+      "lineno": 181,
+      "name": "jvParams"
+    },
+    {
+      "lineno": 70,
+      "name": "newOnly"
+    },
+    {
+      "lineno": 70,
+      "name": "index"
+    },
+    {
+      "lineno": 354,
+      "name": "level"
+    },
+    {
+      "lineno": 355,
+      "name": "jvArray"
+    },
+    {
+      "lineno": 356,
+      "name": "continueCallback"
+    },
+    {
+      "lineno": 430,
+      "name": "fast"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app, std::shared_ptr<InfoSub> const& subscriber, int id, PathRequestManager& owner, beast::Journal journal",
+        "Application& app, std::function<void(void)> const& completion, Resource::Consumer& consumer, int id, PathRequestManager& owner, beast::Journal journal"
+      ],
+      "lineno": 12,
+      "name": "PathRequest"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PathRequestManager::doCreate",
+        "PathRequest::parseJson",
+        "PathRequest::isValid"
+      ],
+      "entry_point": "PathRequest::doCreate / PathRequestManager::doCreate",
+      "purpose": "Handles creation of a new PathRequest from incoming RPC JSON, parses and validates input.",
+      "validation_points": [
+        "PathRequest::parseJson (input parsing, type checks)",
+        "PathRequest::isValid (semantic validation of accounts, amounts, etc.)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequestManager::updateAll",
+        "PathRequest::needsUpdate"
+      ],
+      "entry_point": "PathRequest::needsUpdate",
+      "purpose": "Determines if a PathRequest needs to be updated based on ledger index and state.",
+      "validation_points": [
+        "PathRequest::needsUpdate (checks mInProgress, mLastIndex, index)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequestManager::updateAll",
+        "PathRequest::updateComplete"
+      ],
+      "entry_point": "PathRequest::updateComplete",
+      "purpose": "Marks a PathRequest as no longer in progress and triggers completion callback if set.",
+      "validation_points": [
+        "PathRequest::updateComplete (asserts mInProgress, resets state)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PathRequest::doCreate",
+        "PathRequest::isValid"
+      ],
+      "entry_point": "PathRequest::isValid",
+      "purpose": "Validates the logical correctness of the PathRequest (accounts exist, amounts valid, etc.)",
+      "validation_points": [
+        "PathRequest::isValid (multiple semantic checks, error setting)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "subscriber",
+      "flow": [
+        "constructor argument",
+        "stored as wpSubscriber (weak_ptr)",
+        "used to get consumer_ via subscriber->getConsumer()"
+      ],
+      "origin": "Passed to PathRequest constructor as std::shared_ptr<InfoSub>",
+      "transformations": [
+        "Type-checked by shared_ptr",
+        "Dereferenced for getConsumer()"
+      ],
+      "validated_at": "constructor (type system), getConsumer()"
+    },
+    {
+      "field": "consumer_",
+      "flow": [
+        "constructor",
+        "stored as member",
+        "used for resource tracking/limits"
+      ],
+      "origin": "Set in constructor from subscriber->getConsumer() or directly passed",
+      "transformations": [
+        "None (direct assignment)"
+      ],
+      "validated_at": "constructor (type system)"
+    },
+    {
+      "field": "id (iIdentifier)",
+      "flow": [
+        "constructor argument",
+        "stored as iIdentifier",
+        "used for logging, identification"
+      ],
+      "origin": "Passed to constructor",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "constructor (type system: int)"
+    },
+    {
+      "field": "mLastIndex",
+      "flow": [
+        "constructor",
+        "checked in isNew, needsUpdate",
+        "updated after processing"
+      ],
+      "origin": "Initialized to 0 in constructor",
+      "transformations": [
+        "Compared to 0 or ledger index"
+      ],
+      "validated_at": "isNew, needsUpdate"
+    },
+    {
+      "field": "raSrcAccount / raDstAccount",
+      "flow": [
+        "parseJson (from JSON)",
+        "stored as member",
+        "used in isValid for existence checks"
+      ],
+      "origin": "Set during parseJson from input JSON",
+      "transformations": [
+        "Parsed from string to AccountID"
+      ],
+      "validated_at": "isValid (null check, existence in ledger)"
+    },
+    {
+      "field": "saSendMax / saDstAmount",
+      "flow": [
+        "parseJson (from JSON)",
+        "stored as member",
+        "used in isValid for amount checks"
+      ],
+      "origin": "Set during parseJson from input JSON",
+      "transformations": [
+        "Parsed from JSON to STAmount"
+      ],
+      "validated_at": "isValid (amount logic, non-negativity, etc.)"
+    }
+  ],
+  "description": "Implements the PathRequest class, which manages and processes pathfinding requests for payments in the XRPL (XRP Ledger) system, including parsing input, validating requests, finding payment paths, and updating request status.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "subscriber (type, shared_ptr)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field subscriber (type, shared_ptr) validated by C++ type system, RAII, business logic checks",
+      "issue_pattern": "Missing validation for subscriber (type, shared_ptr)",
+      "why_false_positive": "C++ type system, RAII, business logic checks validates subscriber (type, shared_ptr) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "consumer (type, reference)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field consumer (type, reference) validated by C++ type system, RAII, business logic checks",
+      "issue_pattern": "Missing validation for consumer (type, reference)",
+      "why_false_positive": "C++ type system, RAII, business logic checks validates consumer (type, reference) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "id (type, int)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field id (type, int) validated by C++ type system, RAII, business logic checks",
+      "issue_pattern": "Missing validation for id (type, int)",
+      "why_false_positive": "C++ type system, RAII, business logic checks validates id (type, int) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "subscriber",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::shared_ptr (RAII, type system) at PathRequest constructor",
+      "issue_pattern": "Missing empty string validation for subscriber",
+      "why_false_positive": "std::shared_ptr (RAII, type system) validates subscriber for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "subscriber",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::shared_ptr (RAII, type system) at PathRequest constructor",
+      "issue_pattern": "Missing type validation for subscriber",
+      "why_false_positive": "std::shared_ptr (RAII, type system) validates subscriber type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "consumer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Resource::Consumer& (type system) at PathRequest constructor (overload 2)",
+      "issue_pattern": "Missing empty string validation for consumer",
+      "why_false_positive": "Resource::Consumer& (type system) validates consumer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "consumer",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Resource::Consumer& (type system) at PathRequest constructor (overload 2)",
+      "issue_pattern": "Missing type validation for consumer",
+      "why_false_positive": "Resource::Consumer& (type system) validates consumer type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "int (type system) at PathRequest constructor",
+      "issue_pattern": "Missing empty string validation for id",
+      "why_false_positive": "int (type system) validates id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "id",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "int (type system) at PathRequest constructor",
+      "issue_pattern": "Missing type validation for id",
+      "why_false_positive": "int (type system) validates id type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "subscriber",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "subscriber->getConsumer() (method call, pointer dereference) at PathRequest constructor",
+      "issue_pattern": "Missing empty string validation for subscriber",
+      "why_false_positive": "subscriber->getConsumer() (method call, pointer dereference) validates subscriber for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mLastIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison (mLastIndex == 0) at isNew()",
+      "issue_pattern": "Missing empty string validation for mLastIndex",
+      "why_false_positive": "comparison (mLastIndex == 0) validates mLastIndex for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mInProgress",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (mInProgress) at needsUpdate()",
+      "issue_pattern": "Missing empty string validation for mInProgress",
+      "why_false_positive": "if (mInProgress) validates mInProgress for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mLastIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (newOnly && (mLastIndex != 0)) at needsUpdate()",
+      "issue_pattern": "Missing empty string validation for mLastIndex",
+      "why_false_positive": "if (newOnly && (mLastIndex != 0)) validates mLastIndex for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/PathRequest.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "std::shared_ptr<InfoSub> const& subscriber",
+        "int id",
+        "PathRequestManager& owner",
+        "beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "PathRequest"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::function<void(void)> const& completion",
+        "Resource::Consumer& consumer",
+        "int id",
+        "PathRequestManager& owner",
+        "beast::Journal journal"
+      ],
+      "lineno": 28,
+      "name": "PathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "~PathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "isNew"
+    },
+    {
+      "args": [
+        "bool newOnly",
+        "LedgerIndex index"
+      ],
+      "lineno": 69,
+      "name": "needsUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "hasCompletion"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "updateComplete"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& crCache"
+      ],
+      "lineno": 102,
+      "name": "isValid"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "Json::Value const& value"
+      ],
+      "lineno": 151,
+      "name": "doCreate"
+    },
+    {
+      "args": [
+        "Json::Value const& jvParams"
+      ],
+      "lineno": 180,
+      "name": "parseJson"
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "doClose"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 319,
+      "name": "doStatus"
+    },
+    {
+      "args": [],
+      "lineno": 326,
+      "name": "doAborting"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "hash_map<PathAsset, std::unique_ptr<Pathfinder>>& pathasset_map",
+        "PathAsset const& asset",
+        "STAmount const& dst_amount",
+        "int const level",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 331,
+      "name": "getPathFinder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "int const level",
+        "Json::Value& jvArray",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 353,
+      "name": "findPaths"
+    },
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "bool fast",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 429,
+      "name": "doUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 502,
+      "name": "getSubscriber"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "PathRequest and related validation logic are typically tested in the XRPLF/rippled repo under 'src/test/rpc' (e.g., PathRequest_test.cpp, Path_find_test.cpp, PathRequestManager_test.cpp). These tests cover valid/invalid input, account existence, amount logic, and update logic. However, edge cases such as malformed JSON, rare race conditions in needsUpdate/updateComplete, and resource exhaustion scenarios may not be fully covered. Fuzzing or property-based tests for parseJson and isValid would improve coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "subscriber (type, shared_ptr)",
+      "consumer (type, reference)",
+      "id (type, int)"
+    ],
+    "framework": "C++ type system, RAII, business logic checks",
+    "validation_layer": "constructor (type), business_logic (methods)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "subscriber",
+      "location": "PathRequest constructor",
+      "validated_by": "std::shared_ptr (RAII, type system)",
+      "validates": [
+        "subscriber must be a valid shared_ptr<InfoSub>"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "consumer",
+      "location": "PathRequest constructor (overload 2)",
+      "validated_by": "Resource::Consumer& (type system)",
+      "validates": [
+        "consumer must be a valid Resource::Consumer reference"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "id",
+      "location": "PathRequest constructor",
+      "validated_by": "int (type system)",
+      "validates": [
+        "id must be an integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "undefined behavior if subscriber is null",
+      "field": "subscriber",
+      "location": "PathRequest constructor",
+      "validated_by": "subscriber->getConsumer() (method call, pointer dereference)",
+      "validates": [
+        "subscriber must not be null"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (returns bool)",
+      "field": "mLastIndex",
+      "location": "isNew()",
+      "validated_by": "comparison (mLastIndex == 0)",
+      "validates": [
+        "checks if request is new (mLastIndex == 0)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (returns false)",
+      "field": "mInProgress",
+      "location": "needsUpdate()",
+      "validated_by": "if (mInProgress)",
+      "validates": [
+        "checks if another thread is handling this"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (returns false)",
+      "field": "mLastIndex",
+      "location": "needsUpdate()",
+      "validated_by": "if (newOnly && (mLastIndex != 0))",
+      "validates": [
+        "checks if only new requests are handled"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

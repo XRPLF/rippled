@@ -1,0 +1,258 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TimeoutCounter::TimeoutCounter"
+      ],
+      "entry_point": "TimeoutCounter::TimeoutCounter",
+      "purpose": "Constructs a TimeoutCounter object, initializes fields, and validates the timer interval.",
+      "validation_points": [
+        "XRPL_ASSERT on timerInterval_"
+      ]
+    },
+    {
+      "call_chain": [
+        "TimeoutCounter::setTimer",
+        "TimeoutCounter::queueJob (via async_wait callback)"
+      ],
+      "entry_point": "TimeoutCounter::setTimer",
+      "purpose": "Sets an asynchronous timer; when it expires, attempts to queue a job.",
+      "validation_points": [
+        "TimeoutCounter::queueJob (jobLimit check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TimeoutCounter::queueJob",
+        "app_.getJobQueue().addJob (if jobLimit not exceeded)",
+        "TimeoutCounter::invokeOnTimer (via job callback)"
+      ],
+      "entry_point": "TimeoutCounter::queueJob",
+      "purpose": "Queues a job if jobLimit is not exceeded; otherwise, defers by resetting the timer.",
+      "validation_points": [
+        "Explicit jobLimit check"
+      ]
+    },
+    {
+      "call_chain": [
+        "TimeoutCounter::invokeOnTimer",
+        "TimeoutCounter::onTimer (not shown in code, likely virtual/overridable)",
+        "TimeoutCounter::setTimer (if not done)"
+      ],
+      "entry_point": "TimeoutCounter::invokeOnTimer",
+      "purpose": "Handles timer expiration, increments timeout count, and triggers onTimer logic.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "TimeoutCounter::cancel"
+      ],
+      "entry_point": "TimeoutCounter::cancel",
+      "purpose": "Cancels the TimeoutCounter, marking it as failed.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "timerInterval_",
+      "flow": [
+        "constructor parameter",
+        "assigned to timerInterval_",
+        "validated by XRPL_ASSERT",
+        "used in setTimer (timer_.expires_after)"
+      ],
+      "origin": "TimeoutCounter constructor parameter: interval",
+      "transformations": [
+        "Validated to be >10ms and <30s"
+      ],
+      "validated_at": "TimeoutCounter::TimeoutCounter (XRPL_ASSERT)"
+    },
+    {
+      "field": "queueJobParameter_.jobLimit",
+      "flow": [
+        "constructor parameter",
+        "assigned to queueJobParameter_",
+        "checked in queueJob (if jobLimit is set and job count >= jobLimit)"
+      ],
+      "origin": "TimeoutCounter constructor parameter: QueueJobParameter.jobLimit",
+      "transformations": [
+        "Explicitly checked before queuing job"
+      ],
+      "validated_at": "TimeoutCounter::queueJob (explicit check)"
+    },
+    {
+      "field": "queueJobParameter_",
+      "flow": [
+        "constructor parameter",
+        "std::move into queueJobParameter_",
+        "used in queueJob for jobType, jobName, jobLimit"
+      ],
+      "origin": "TimeoutCounter constructor parameter: QueueJobParameter",
+      "transformations": [
+        "Moved into member, fields accessed directly"
+      ],
+      "validated_at": "TimeoutCounter::queueJob (jobLimit check)"
+    },
+    {
+      "field": "timer_",
+      "flow": [
+        "constructed in constructor",
+        "used in setTimer (expires_after, async_wait)"
+      ],
+      "origin": "Constructed in TimeoutCounter::TimeoutCounter with app_.getIOContext()",
+      "transformations": [
+        "None (standard asio timer usage)"
+      ],
+      "validated_at": "Indirectly via timerInterval_ validation"
+    },
+    {
+      "field": "hash_",
+      "flow": [
+        "constructor parameter",
+        "assigned to hash_",
+        "used in logging in invokeOnTimer and cancel"
+      ],
+      "origin": "TimeoutCounter constructor parameter: hash",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Not validated"
+    }
+  ],
+  "description": "Implements the TimeoutCounter class, which manages timed retries and job queueing for network ledger acquisition tasks in the XRPL node.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "interval (timerInterval_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at TimeoutCounter constructor",
+      "issue_pattern": "Missing empty string validation for interval (timerInterval_)",
+      "why_false_positive": "XRPL_ASSERT macro validates interval (timerInterval_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "interval (timerInterval_)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at TimeoutCounter constructor",
+      "issue_pattern": "Missing range validation for interval (timerInterval_)",
+      "why_false_positive": "XRPL_ASSERT macro validates interval (timerInterval_) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "queueJobParameter_.jobLimit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at TimeoutCounter::queueJob",
+      "issue_pattern": "Missing empty string validation for queueJobParameter_.jobLimit",
+      "why_false_positive": "explicit check in code validates queueJobParameter_.jobLimit for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/TimeoutCounter.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "uint256 const& hash",
+        "std::chrono::milliseconds interval",
+        "QueueJobParameter&& jobParameter",
+        "beast::Journal journal"
+      ],
+      "lineno": 7,
+      "name": "TimeoutCounter"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 22,
+      "name": "setTimer"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 37,
+      "name": "queueJob"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "invokeOnTimer"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "cancel"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "TimeoutCounter is an internal detail class. Direct unit tests for this file are unlikely; instead, coverage would come from higher-level ledger or job queue tests. Look for tests in files like 'test/ledger/TimeoutCounter_test.cpp', 'test/app/ledger/LedgerMaster_test.cpp', or 'test/core/JobQueue_test.cpp'. Validation of timerInterval_ and jobLimit is only enforced at runtime, so tests would need to construct TimeoutCounter with invalid values to trigger assertions or job deferral. Gaps: No evidence of explicit negative tests for interval bounds or jobLimit enforcement; onTimer is not shown, so its testability is unknown.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), explicit C++ logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "interval (timerInterval_)",
+      "location": "TimeoutCounter constructor",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "interval must be greater than 10ms",
+        "interval must be less than 30s"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (defers job scheduling if limit exceeded)",
+      "field": "queueJobParameter_.jobLimit",
+      "location": "TimeoutCounter::queueJob",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "If jobLimit is set and current job count for jobType >= jobLimit, job is deferred"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,608 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "depth"
+    },
+    {
+      "lineno": 38,
+      "name": "depth"
+    },
+    {
+      "lineno": 38,
+      "name": "hash"
+    },
+    {
+      "lineno": 44,
+      "name": "m"
+    },
+    {
+      "lineno": 72,
+      "name": "data"
+    },
+    {
+      "lineno": 72,
+      "name": "size"
+    },
+    {
+      "lineno": 92,
+      "name": "id"
+    },
+    {
+      "lineno": 92,
+      "name": "hash"
+    },
+    {
+      "lineno": 106,
+      "name": "depth"
+    },
+    {
+      "lineno": 106,
+      "name": "key"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMapNodeID::SHAMapNodeID"
+      ],
+      "entry_point": "SHAMapNodeID::SHAMapNodeID",
+      "purpose": "Constructs a SHAMapNodeID from a depth and hash, canonicalizing the hash and validating inputs.",
+      "validation_points": [
+        "XRPL_ASSERT: depth <= SHAMap::leafDepth",
+        "XRPL_ASSERT: id_ == (id_ & depthMask(depth))"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapNodeID::getChildNodeID",
+        "SHAMapNodeID::SHAMapNodeID"
+      ],
+      "entry_point": "SHAMapNodeID::getChildNodeID",
+      "purpose": "Creates a child node ID from the current node, validating branch index and depth.",
+      "validation_points": [
+        "XRPL_ASSERT: m < SHAMap::branchFactor",
+        "XRPL_ASSERT: depth_ <= SHAMap::leafDepth",
+        "Throw<std::logic_error>: if depth_ >= SHAMap::leafDepth",
+        "Throw<std::logic_error>: if id_ != (id_ & depthMask(depth_))",
+        "SHAMapNodeID::SHAMapNodeID: re-validates depth and id"
+      ]
+    },
+    {
+      "call_chain": [
+        "deserializeSHAMapNodeID",
+        "SHAMapNodeID::SHAMapNodeID"
+      ],
+      "entry_point": "deserializeSHAMapNodeID",
+      "purpose": "Deserializes a SHAMapNodeID from raw data, validating depth and hash mask.",
+      "validation_points": [
+        "if (depth <= SHAMap::leafDepth)",
+        "if (id == (id & depthMask(depth)))",
+        "SHAMapNodeID::SHAMapNodeID: re-validates depth and id"
+      ]
+    },
+    {
+      "call_chain": [
+        "selectBranch"
+      ],
+      "entry_point": "selectBranch",
+      "purpose": "Selects a branch index from a node ID and hash, validating the result.",
+      "validation_points": [
+        "XRPL_ASSERT: branch < SHAMap::branchFactor"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapNodeID::createID",
+        "SHAMapNodeID::SHAMapNodeID"
+      ],
+      "entry_point": "SHAMapNodeID::createID",
+      "purpose": "Creates a canonical SHAMapNodeID from a depth and key, validating depth and masking key.",
+      "validation_points": [
+        "XRPL_ASSERT: (depth >= 0) && (depth < 65)",
+        "SHAMapNodeID::SHAMapNodeID: re-validates depth and id"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "depth",
+      "flow": [
+        "Input parameter",
+        "Validated (XRPL_ASSERT or if-check)",
+        "Stored in SHAMapNodeID::depth_",
+        "Used in masking, child node creation, serialization"
+      ],
+      "origin": "Input parameter to SHAMapNodeID::SHAMapNodeID, deserializeSHAMapNodeID, createID",
+      "transformations": [
+        "Checked for bounds (<= SHAMap::leafDepth, >= 0)",
+        "Incremented in getChildNodeID"
+      ],
+      "validated_at": "SHAMapNodeID::SHAMapNodeID, deserializeSHAMapNodeID, createID"
+    },
+    {
+      "field": "id (hash)",
+      "flow": [
+        "Input parameter",
+        "Masked with depthMask in createID and SHAMapNodeID::SHAMapNodeID",
+        "Stored in SHAMapNodeID::id_",
+        "Used in getChildNodeID, getRawString, selectBranch"
+      ],
+      "origin": "Input parameter to SHAMapNodeID::SHAMapNodeID, deserializeSHAMapNodeID, createID",
+      "transformations": [
+        "Masked with depthMask(depth)",
+        "Bitwise operations in getChildNodeID"
+      ],
+      "validated_at": "SHAMapNodeID::SHAMapNodeID, deserializeSHAMapNodeID"
+    },
+    {
+      "field": "m (branch index)",
+      "flow": [
+        "Input parameter",
+        "Validated (XRPL_ASSERT: m < SHAMap::branchFactor)",
+        "Used to set bits in id_ for child node"
+      ],
+      "origin": "Input parameter to SHAMapNodeID::getChildNodeID",
+      "transformations": [
+        "Bitwise OR into id_ at correct nibble"
+      ],
+      "validated_at": "SHAMapNodeID::getChildNodeID"
+    },
+    {
+      "field": "depth_ (current node depth)",
+      "flow": [
+        "Set in constructor",
+        "Used in getChildNodeID, selectBranch, getRawString"
+      ],
+      "origin": "Stored in SHAMapNodeID instance",
+      "transformations": [
+        "Incremented in getChildNodeID"
+      ],
+      "validated_at": "SHAMapNodeID::SHAMapNodeID, getChildNodeID"
+    }
+  ],
+  "description": "Implements SHAMapNodeID logic for the XRP Ledger, including node ID creation, serialization, deserialization, child node calculation, and branch selection for SHAMap nodes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::SHAMapNodeID (constructor)",
+      "issue_pattern": "Missing empty string validation for depth",
+      "why_false_positive": "XRPL_ASSERT validates depth for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "depth",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::SHAMapNodeID (constructor)",
+      "issue_pattern": "Missing range validation for depth",
+      "why_false_positive": "XRPL_ASSERT validates depth range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id (hash)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::SHAMapNodeID (constructor)",
+      "issue_pattern": "Missing empty string validation for id (hash)",
+      "why_false_positive": "XRPL_ASSERT validates id (hash) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m (branch index)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing empty string validation for m (branch index)",
+      "why_false_positive": "XRPL_ASSERT validates m (branch index) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m (branch index)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing range validation for m (branch index)",
+      "why_false_positive": "XRPL_ASSERT validates m (branch index) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth_ (current node depth)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing empty string validation for depth_ (current node depth)",
+      "why_false_positive": "XRPL_ASSERT validates depth_ (current node depth) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "depth_ (current node depth)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing range validation for depth_ (current node depth)",
+      "why_false_positive": "XRPL_ASSERT validates depth_ (current node depth) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth_ (current node depth)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Throw<std::logic_error> at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing empty string validation for depth_ (current node depth)",
+      "why_false_positive": "Throw<std::logic_error> validates depth_ (current node depth) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id_ (hash)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Throw<std::logic_error> at SHAMapNodeID::getChildNodeID",
+      "issue_pattern": "Missing empty string validation for id_ (hash)",
+      "why_false_positive": "Throw<std::logic_error> validates id_ (hash) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "size (input buffer size)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (size == 33)) at deserializeSHAMapNodeID",
+      "issue_pattern": "Missing empty string validation for size (input buffer size)",
+      "why_false_positive": "explicit check (if (size == 33)) validates size (input buffer size) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "size (input buffer size)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit check (if (size == 33)) at deserializeSHAMapNodeID",
+      "issue_pattern": "Missing format validation for size (input buffer size)",
+      "why_false_positive": "explicit check (if (size == 33)) validates size (input buffer size) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth (from input buffer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (depth <= SHAMap::leafDepth)) at deserializeSHAMapNodeID",
+      "issue_pattern": "Missing empty string validation for depth (from input buffer)",
+      "why_false_positive": "explicit check (if (depth <= SHAMap::leafDepth)) validates depth (from input buffer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "depth (from input buffer)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (if (depth <= SHAMap::leafDepth)) at deserializeSHAMapNodeID",
+      "issue_pattern": "Missing range validation for depth (from input buffer)",
+      "why_false_positive": "explicit check (if (depth <= SHAMap::leafDepth)) validates depth (from input buffer) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id (from input buffer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (id == (id & depthMask(depth)))) at deserializeSHAMapNodeID",
+      "issue_pattern": "Missing empty string validation for id (from input buffer)",
+      "why_false_positive": "explicit check (if (id == (id & depthMask(depth)))) validates id (from input buffer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapNodeID.cpp",
+  "functions": [
+    {
+      "args": [
+        "depth"
+      ],
+      "lineno": 7,
+      "name": "depthMask"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "SHAMapNodeID::getRawString"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 44,
+      "name": "SHAMapNodeID::getChildNodeID"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 72,
+      "name": "deserializeSHAMapNodeID"
+    },
+    {
+      "args": [
+        "id",
+        "hash"
+      ],
+      "lineno": 92,
+      "name": "selectBranch"
+    },
+    {
+      "args": [
+        "depth",
+        "key"
+      ],
+      "lineno": 106,
+      "name": "SHAMapNodeID::createID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::logic_error for error reporting",
+        "exception_type": "std::logic_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is likely found in SHAMapNodeID unit tests, possibly in files like 'test/shamap/SHAMapNodeID_test.cpp' or 'test/shamap/SHAMap_test.cpp'. The validation logic is well-guarded by assertions and exceptions, but coverage gaps may exist for error paths (e.g., invalid depth, invalid mask, branch index out of range). Exception-throwing branches (Throw<std::logic_error>) may not be fully covered unless negative tests are present. Serialization/deserialization edge cases (e.g., malformed input) should be explicitly tested. If fuzz or property-based tests exist, they may cover more edge cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, Throw<std::logic_error>, explicit checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort in debug)",
+      "field": "depth",
+      "location": "SHAMapNodeID::SHAMapNodeID (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "depth must be <= SHAMap::leafDepth"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort in debug)",
+      "field": "id (hash)",
+      "location": "SHAMapNodeID::SHAMapNodeID (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "id must match id & depthMask(depth)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort in debug)",
+      "field": "m (branch index)",
+      "location": "SHAMapNodeID::getChildNodeID",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "m must be < SHAMap::branchFactor"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort in debug)",
+      "field": "depth_ (current node depth)",
+      "location": "SHAMapNodeID::getChildNodeID",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "depth_ must be <= SHAMap::leafDepth"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error",
+      "field": "depth_ (current node depth)",
+      "location": "SHAMapNodeID::getChildNodeID",
+      "validated_by": "Throw<std::logic_error>",
+      "validates": [
+        "Cannot get child node if depth_ >= SHAMap::leafDepth"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error",
+      "field": "id_ (hash)",
+      "location": "SHAMapNodeID::getChildNodeID",
+      "validated_by": "Throw<std::logic_error>",
+      "validates": [
+        "id_ must match id_ & depthMask(depth_)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns std::nullopt)",
+      "field": "size (input buffer size)",
+      "location": "deserializeSHAMapNodeID",
+      "validated_by": "explicit check (if (size == 33))",
+      "validates": [
+        "input buffer must be exactly 33 bytes"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns std::nullopt)",
+      "field": "depth (from input buffer)",
+      "location": "deserializeSHAMapNodeID",
+      "validated_by": "explicit check (if (depth <= SHAMap::leafDepth))",
+      "validates": [
+        "depth must be <= SHAMap::leafDepth"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns std::nullopt)",
+      "field": "id (from input buffer)",
+      "location": "deserializeSHAMapNodeID",
+      "validated_by": "explicit check (if (id == (id & depthMask(depth))))",
+      "validates": [
+        "id must match id & depthMask(depth)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

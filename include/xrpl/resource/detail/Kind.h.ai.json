@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines the Kind enum representing different types of consumers (inbound, outbound, unlimited) in the xrpl::Resource namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/detail/Kind.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "Resource"
+    }
+  ]
+}

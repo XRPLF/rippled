@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "Clock"
+    },
+    {
+      "lineno": 43,
+      "name": "Facade"
+    },
+    {
+      "lineno": 43,
+      "name": "Clock"
+    },
+    {
+      "lineno": 61,
+      "name": "Facade"
+    },
+    {
+      "lineno": 61,
+      "name": "Clock"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "abstract_clock()",
+        "abstract_clock(abstract_clock const&)"
+      ],
+      "lineno": 19,
+      "name": "abstract_clock"
+    },
+    {
+      "args": [
+        "abstract_clock_wrapper()"
+      ],
+      "lineno": 44,
+      "name": "abstract_clock_wrapper"
+    }
+  ],
+  "description": "Defines an abstract interface for a clock, allowing dependency injection of time sources for testing and flexibility, with facilities to wrap standard clocks and provide global instances.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/clock/abstract_clock.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "get_abstract_clock"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "beast"
+    },
+    {
+      "lineno": 41,
+      "name": "detail"
+    }
+  ]
+}

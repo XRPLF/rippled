@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines an enumeration LedgerShortcut for specifying commonly used ledger references (Current, Closed, Validated) in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/LedgerShortcut.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ]
+}

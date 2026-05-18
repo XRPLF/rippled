@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "dest"
+    },
+    {
+      "lineno": 18,
+      "name": "bytes"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to securely erase a block of memory, attempting to prevent compiler optimizations from skipping the memory clearing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/crypto/secure_erase.h",
+  "functions": [
+    {
+      "args": [
+        "dest",
+        "bytes"
+      ],
+      "lineno": 18,
+      "name": "secure_erase"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

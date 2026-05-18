@@ -1,0 +1,83 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "mode"
+    },
+    {
+      "lineno": 38,
+      "name": "pattern"
+    },
+    {
+      "lineno": 41,
+      "name": "s"
+    },
+    {
+      "lineno": 110,
+      "name": "name"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "selector"
+    }
+  ],
+  "description": "Implements a selector class and utility functions for matching and selecting unit test suites based on suite, module, or library names, with support for different matching modes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/match.h",
+  "functions": [
+    {
+      "args": [
+        "mode",
+        "pattern"
+      ],
+      "lineno": 38,
+      "name": "selector::selector"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 41,
+      "name": "selector::operator()"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 110,
+      "name": "match_auto"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "match_all"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 122,
+      "name": "match_suite"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 127,
+      "name": "match_library"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "beast"
+    },
+    {
+      "lineno": 10,
+      "name": "unit_test"
+    }
+  ]
+}

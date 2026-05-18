@@ -1,0 +1,382 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "view"
+    },
+    {
+      "lineno": 25,
+      "name": "account"
+    },
+    {
+      "lineno": 25,
+      "name": "issuer"
+    },
+    {
+      "lineno": 25,
+      "name": "currency"
+    },
+    {
+      "lineno": 32,
+      "name": "v"
+    },
+    {
+      "lineno": 32,
+      "name": "acc"
+    },
+    {
+      "lineno": 32,
+      "name": "iss"
+    },
+    {
+      "lineno": 32,
+      "name": "cur"
+    },
+    {
+      "lineno": 104,
+      "name": "bSrcHigh"
+    },
+    {
+      "lineno": 104,
+      "name": "uSrcAccountID"
+    },
+    {
+      "lineno": 104,
+      "name": "uDstAccountID"
+    },
+    {
+      "lineno": 104,
+      "name": "uIndex"
+    },
+    {
+      "lineno": 104,
+      "name": "sleAccount"
+    },
+    {
+      "lineno": 104,
+      "name": "bAuth"
+    },
+    {
+      "lineno": 104,
+      "name": "bNoRipple"
+    },
+    {
+      "lineno": 104,
+      "name": "bFreeze"
+    },
+    {
+      "lineno": 104,
+      "name": "bDeepFreeze"
+    },
+    {
+      "lineno": 104,
+      "name": "saBalance"
+    },
+    {
+      "lineno": 104,
+      "name": "saLimit"
+    },
+    {
+      "lineno": 104,
+      "name": "uQualityIn"
+    },
+    {
+      "lineno": 104,
+      "name": "uQualityOut"
+    },
+    {
+      "lineno": 104,
+      "name": "j"
+    },
+    {
+      "lineno": 120,
+      "name": "sleRippleState"
+    },
+    {
+      "lineno": 120,
+      "name": "uLowAccountID"
+    },
+    {
+      "lineno": 120,
+      "name": "uHighAccountID"
+    },
+    {
+      "lineno": 128,
+      "name": "amount"
+    },
+    {
+      "lineno": 128,
+      "name": "issue"
+    },
+    {
+      "lineno": 146,
+      "name": "authType"
+    },
+    {
+      "lineno": 167,
+      "name": "from"
+    },
+    {
+      "lineno": 167,
+      "name": "to"
+    },
+    {
+      "lineno": 176,
+      "name": "accountID"
+    },
+    {
+      "lineno": 176,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 176,
+      "name": "journal"
+    },
+    {
+      "lineno": 191,
+      "name": "sleState"
+    },
+    {
+      "lineno": 191,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 201,
+      "name": "sleMPT"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides helper functions for managing RippleState (trustline) ledger entries in the XRPL, including credit limits, balances, freeze checks, trustline creation/deletion, IOU issuance/redemption, authorization checks, and AMM trustline/token operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/RippleStateHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "account",
+        "issuer",
+        "currency"
+      ],
+      "lineno": 25,
+      "name": "creditLimit"
+    },
+    {
+      "args": [
+        "v",
+        "acc",
+        "iss",
+        "cur"
+      ],
+      "lineno": 32,
+      "name": "creditLimit2"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issuer",
+        "currency"
+      ],
+      "lineno": 39,
+      "name": "creditBalance"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 48,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue"
+      ],
+      "lineno": 54,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 59,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue"
+      ],
+      "lineno": 65,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue",
+        "depth"
+      ],
+      "lineno": 71,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 77,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue",
+        "int"
+      ],
+      "lineno": 83,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue"
+      ],
+      "lineno": 89,
+      "name": "checkDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "bSrcHigh",
+        "uSrcAccountID",
+        "uDstAccountID",
+        "uIndex",
+        "sleAccount",
+        "bAuth",
+        "bNoRipple",
+        "bFreeze",
+        "bDeepFreeze",
+        "saBalance",
+        "saLimit",
+        "uQualityIn",
+        "uQualityOut",
+        "j"
+      ],
+      "lineno": 104,
+      "name": "trustCreate"
+    },
+    {
+      "args": [
+        "view",
+        "sleRippleState",
+        "uLowAccountID",
+        "uHighAccountID",
+        "j"
+      ],
+      "lineno": 120,
+      "name": "trustDelete"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "amount",
+        "issue",
+        "j"
+      ],
+      "lineno": 128,
+      "name": "issueIOU"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "amount",
+        "issue",
+        "j"
+      ],
+      "lineno": 135,
+      "name": "redeemIOU"
+    },
+    {
+      "args": [
+        "view",
+        "issue",
+        "account",
+        "authType"
+      ],
+      "lineno": 146,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "view",
+        "issue",
+        "from",
+        "to"
+      ],
+      "lineno": 167,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "priorBalance",
+        "issue",
+        "journal"
+      ],
+      "lineno": 176,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "issue",
+        "journal"
+      ],
+      "lineno": 183,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "sleState",
+        "ammAccountID",
+        "j"
+      ],
+      "lineno": 191,
+      "name": "deleteAMMTrustLine"
+    },
+    {
+      "args": [
+        "view",
+        "sleMPT",
+        "ammAccountID",
+        "j"
+      ],
+      "lineno": 201,
+      "name": "deleteAMMMPToken"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ]
+}

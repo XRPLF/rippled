@@ -1,0 +1,280 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "QualityFunction::QualityFunction"
+      ],
+      "entry_point": "QualityFunction::QualityFunction",
+      "purpose": "Constructs a QualityFunction object from a Quality, validates the rate, and initializes internal fields.",
+      "validation_points": [
+        "if (quality.rate() <= beast::zero) Throw<std::runtime_error>(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "QualityFunction::combine"
+      ],
+      "entry_point": "QualityFunction::combine",
+      "purpose": "Combines another QualityFunction into this one, updating internal state and possibly invalidating cached quality.",
+      "validation_points": [
+        "if (m_ != 0) quality_ = std::nullopt;"
+      ]
+    },
+    {
+      "call_chain": [
+        "QualityFunction::outFromAvgQ"
+      ],
+      "entry_point": "QualityFunction::outFromAvgQ",
+      "purpose": "Calculates an output value based on the average quality, with validation on input and result.",
+      "validation_points": [
+        "if (m_ != 0 && quality.rate() != beast::zero)",
+        "if (out <= 0) return std::nullopt;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "quality.rate()",
+      "flow": [
+        "QualityFunction::QualityFunction parameter",
+        "quality.rate() checked for <= 0",
+        "used to compute b_ = 1 / quality.rate()"
+      ],
+      "origin": "Passed as argument to QualityFunction constructor or outFromAvgQ",
+      "transformations": [
+        "Checked for <= 0 (validation)",
+        "Inverted (1 / rate) to compute b_"
+      ],
+      "validated_at": "QualityFunction::QualityFunction (constructor)"
+    },
+    {
+      "field": "b_",
+      "flow": [
+        "Set in constructor",
+        "Used in combine: b_ *= qf.b_",
+        "Used in outFromAvgQ: (1 / quality.rate() - b_) / m_"
+      ],
+      "origin": "Computed in QualityFunction::QualityFunction as 1 / quality.rate()",
+      "transformations": [
+        "Initial inversion of rate",
+        "Multiplied by other b_ in combine",
+        "Subtracted from 1 / quality.rate() in outFromAvgQ"
+      ],
+      "validated_at": "Indirectly validated via quality.rate() in constructor and outFromAvgQ"
+    },
+    {
+      "field": "m_",
+      "flow": [
+        "Set to 0 in constructor",
+        "Updated in combine: m_ += b_ * qf.m_",
+        "Used in outFromAvgQ: denominator in output calculation"
+      ],
+      "origin": "Initialized to 0 in constructor",
+      "transformations": [
+        "Incremented by b_ * qf.m_ in combine"
+      ],
+      "validated_at": "Checked for nonzero in outFromAvgQ"
+    },
+    {
+      "field": "out (result of calculation in outFromAvgQ)",
+      "flow": [
+        "Calculated in outFromAvgQ",
+        "Validated: if (out <= 0) return std::nullopt",
+        "Returned as optional<Number> if valid"
+      ],
+      "origin": "Computed as (1 / quality.rate() - b_) / m_",
+      "transformations": [
+        "Division and subtraction based on current state"
+      ],
+      "validated_at": "outFromAvgQ (explicit if-check for out <= 0)"
+    }
+  ],
+  "description": "Implements the QualityFunction class for handling quality calculations in the XRPL protocol, including construction, combination, and output calculation based on quality rates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "quality.rate()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::QualityFunction (constructor)",
+      "issue_pattern": "Missing empty string validation for quality.rate()",
+      "why_false_positive": "explicit if-check validates quality.rate() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "quality.rate()",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::QualityFunction (constructor)",
+      "issue_pattern": "Missing range validation for quality.rate()",
+      "why_false_positive": "explicit if-check validates quality.rate() range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "quality.rate()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::outFromAvgQ",
+      "issue_pattern": "Missing empty string validation for quality.rate()",
+      "why_false_positive": "explicit if-check validates quality.rate() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "quality.rate()",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::outFromAvgQ",
+      "issue_pattern": "Missing range validation for quality.rate()",
+      "why_false_positive": "explicit if-check validates quality.rate() range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "out (result of calculation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::outFromAvgQ",
+      "issue_pattern": "Missing empty string validation for out (result of calculation)",
+      "why_false_positive": "explicit if-check validates out (result of calculation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "out (result of calculation)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-check at QualityFunction::outFromAvgQ",
+      "issue_pattern": "Missing range validation for out (result of calculation)",
+      "why_false_positive": "explicit if-check validates out (result of calculation) range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/QualityFunction.cpp",
+  "functions": [
+    {
+      "args": [
+        "Quality const& quality",
+        "QualityFunction::CLOBLikeTag"
+      ],
+      "lineno": 9,
+      "name": "QualityFunction::QualityFunction"
+    },
+    {
+      "args": [
+        "QualityFunction const& qf"
+      ],
+      "lineno": 16,
+      "name": "QualityFunction::combine"
+    },
+    {
+      "args": [
+        "Quality const& quality"
+      ],
+      "lineno": 25,
+      "name": "QualityFunction::outFromAvgQ"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage. Typically, tests for QualityFunction would be found in files like 'QualityFunction_test.cpp', 'Quality_test.cpp', or broader protocol/ledger tests. The main validation paths (rate <= 0, m_ != 0, out <= 0) should be tested for both valid and invalid inputs. Gaps may exist if tests do not cover exception throwing in the constructor, edge cases for zero/negative rates, or the nullopt return paths in outFromAvgQ. Review of the test suite is needed to confirm coverage of all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual/explicit validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "quality.rate()",
+      "location": "QualityFunction::QualityFunction (constructor)",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Ensures that the rate of the provided Quality object is greater than zero",
+        "Prevents division by zero or invalid QualityFunction state"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "quality.rate()",
+      "location": "QualityFunction::outFromAvgQ",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Ensures that the rate of the provided Quality object is not zero before division"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "out (result of calculation)",
+      "location": "QualityFunction::outFromAvgQ",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Ensures that the calculated output is positive (greater than zero)"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

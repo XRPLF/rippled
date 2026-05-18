@@ -1,0 +1,149 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "m"
+    },
+    {
+      "lineno": 20,
+      "name": "peer"
+    },
+    {
+      "lineno": 34,
+      "name": "m"
+    },
+    {
+      "lineno": 34,
+      "name": "p"
+    },
+    {
+      "lineno": 39,
+      "name": "peer"
+    },
+    {
+      "lineno": 54,
+      "name": "m"
+    },
+    {
+      "lineno": 54,
+      "name": "f"
+    },
+    {
+      "lineno": 66,
+      "name": "m"
+    },
+    {
+      "lineno": 66,
+      "name": "p"
+    },
+    {
+      "lineno": 71,
+      "name": "peer"
+    },
+    {
+      "lineno": 86,
+      "name": "m"
+    },
+    {
+      "lineno": 86,
+      "name": "f"
+    },
+    {
+      "lineno": 95,
+      "name": "match"
+    },
+    {
+      "lineno": 99,
+      "name": "peer"
+    },
+    {
+      "lineno": 111,
+      "name": "skip"
+    },
+    {
+      "lineno": 115,
+      "name": "peer"
+    },
+    {
+      "lineno": 129,
+      "name": "peers"
+    },
+    {
+      "lineno": 133,
+      "name": "peer"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 10,
+      "name": "send_always"
+    },
+    {
+      "args": [
+        "m",
+        "p"
+      ],
+      "lineno": 29,
+      "name": "send_if_pred"
+    },
+    {
+      "args": [
+        "m",
+        "p"
+      ],
+      "lineno": 61,
+      "name": "send_if_not_pred"
+    },
+    {
+      "args": [
+        "match"
+      ],
+      "lineno": 93,
+      "name": "match_peer"
+    },
+    {
+      "args": [
+        "skip"
+      ],
+      "lineno": 109,
+      "name": "peer_in_cluster"
+    },
+    {
+      "args": [
+        "peers"
+      ],
+      "lineno": 127,
+      "name": "peer_in_set"
+    }
+  ],
+  "description": "This file provides utility structs and helper functions for sending messages to peers in the XRPL overlay network, with various selection predicates for targeting specific peers or groups of peers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/predicates.h",
+  "functions": [
+    {
+      "args": [
+        "m",
+        "f"
+      ],
+      "lineno": 49,
+      "name": "send_if"
+    },
+    {
+      "args": [
+        "m",
+        "f"
+      ],
+      "lineno": 81,
+      "name": "send_if_not"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

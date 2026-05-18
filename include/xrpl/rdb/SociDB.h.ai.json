@@ -1,0 +1,199 @@
+{
+  "args": [
+    {
+      "lineno": 30,
+      "name": "dbPath"
+    },
+    {
+      "lineno": 28,
+      "name": "config"
+    },
+    {
+      "lineno": 28,
+      "name": "dbName"
+    },
+    {
+      "lineno": 44,
+      "name": "s"
+    },
+    {
+      "lineno": 44,
+      "name": "config"
+    },
+    {
+      "lineno": 44,
+      "name": "dbName"
+    },
+    {
+      "lineno": 56,
+      "name": "s"
+    },
+    {
+      "lineno": 56,
+      "name": "beName"
+    },
+    {
+      "lineno": 56,
+      "name": "connectionString"
+    },
+    {
+      "lineno": 61,
+      "name": "s"
+    },
+    {
+      "lineno": 62,
+      "name": "s"
+    },
+    {
+      "lineno": 64,
+      "name": "from"
+    },
+    {
+      "lineno": 64,
+      "name": "to"
+    },
+    {
+      "lineno": 65,
+      "name": "from"
+    },
+    {
+      "lineno": 65,
+      "name": "to"
+    },
+    {
+      "lineno": 66,
+      "name": "from"
+    },
+    {
+      "lineno": 66,
+      "name": "to"
+    },
+    {
+      "lineno": 67,
+      "name": "from"
+    },
+    {
+      "lineno": 67,
+      "name": "to"
+    },
+    {
+      "lineno": 87,
+      "name": "id"
+    },
+    {
+      "lineno": 87,
+      "name": "session"
+    },
+    {
+      "lineno": 87,
+      "name": "JobQueue"
+    },
+    {
+      "lineno": 87,
+      "name": "ServiceRegistry"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "BasicConfig const& config, std::string const& dbName"
+      ],
+      "lineno": 27,
+      "name": "DBConfig"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "Checkpointer"
+    }
+  ],
+  "description": "An embedded database wrapper providing a type-safe, C++ interface to SQLite databases using SOCI, with utilities for configuration, session management, and checkpointing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/rdb/SociDB.h",
+  "functions": [
+    {
+      "args": [
+        "s",
+        "config",
+        "dbName"
+      ],
+      "lineno": 44,
+      "name": "open"
+    },
+    {
+      "args": [
+        "s",
+        "beName",
+        "connectionString"
+      ],
+      "lineno": 56,
+      "name": "open"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 61,
+      "name": "getKBUsedAll"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 62,
+      "name": "getKBUsedDB"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 64,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 65,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 66,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 67,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "id",
+        "session",
+        "JobQueue",
+        "ServiceRegistry"
+      ],
+      "lineno": 87,
+      "name": "makeCheckpointer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "sqlite_api"
+    },
+    {
+      "lineno": 22,
+      "name": "xrpl"
+    }
+  ]
+}

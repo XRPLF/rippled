@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "sle"
+    },
+    {
+      "lineno": 134,
+      "name": "account"
+    },
+    {
+      "lineno": 134,
+      "name": "mPTokenIssuanceID"
+    },
+    {
+      "lineno": 134,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 134,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 134,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 144,
+      "name": "sle"
+    },
+    {
+      "lineno": 153,
+      "name": "value"
+    },
+    {
+      "lineno": 163,
+      "name": "value"
+    },
+    {
+      "lineno": 173,
+      "name": "value"
+    },
+    {
+      "lineno": 183,
+      "name": "value"
+    },
+    {
+      "lineno": 193,
+      "name": "value"
+    },
+    {
+      "lineno": 203,
+      "name": "value"
+    },
+    {
+      "lineno": 213,
+      "name": "value"
+    },
+    {
+      "lineno": 223,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 27,
+      "name": "MPToken"
+    },
+    {
+      "args": [
+        "account",
+        "mPTokenIssuanceID",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 128,
+      "name": "MPTokenBuilder"
+    }
+  ],
+  "description": "Defines the MPToken ledger entry type for the XRPL, providing a type-safe wrapper for accessing fields and a builder class for constructing new entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/MPToken.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getMPTokenIssuanceID"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getMPTAmount"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "hasMPTAmount"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getLockedAmount"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "hasLockedAmount"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 151,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 161,
+      "name": "setMPTokenIssuanceID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 171,
+      "name": "setMPTAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 181,
+      "name": "setLockedAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 191,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 201,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 211,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 221,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

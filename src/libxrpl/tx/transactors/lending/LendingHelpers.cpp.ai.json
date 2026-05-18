@@ -1,0 +1,1143 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "ctx"
+    },
+    {
+      "lineno": 11,
+      "name": "other"
+    },
+    {
+      "lineno": 39,
+      "name": "interestRate"
+    },
+    {
+      "lineno": 39,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 51,
+      "name": "asset"
+    },
+    {
+      "lineno": 51,
+      "name": "value"
+    },
+    {
+      "lineno": 51,
+      "name": "scale"
+    },
+    {
+      "lineno": 72,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 72,
+      "name": "paymentsRemaining"
+    },
+    {
+      "lineno": 129,
+      "name": "interest"
+    },
+    {
+      "lineno": 129,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 129,
+      "name": "loanScale"
+    },
+    {
+      "lineno": 143,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 143,
+      "name": "lateInterestRate"
+    },
+    {
+      "lineno": 143,
+      "name": "parentCloseTime"
+    },
+    {
+      "lineno": 143,
+      "name": "nextPaymentDueDate"
+    },
+    {
+      "lineno": 167,
+      "name": "startDate"
+    },
+    {
+      "lineno": 167,
+      "name": "prevPaymentDate"
+    },
+    {
+      "lineno": 191,
+      "name": "NumberProxy"
+    },
+    {
+      "lineno": 191,
+      "name": "UInt32Proxy"
+    },
+    {
+      "lineno": 191,
+      "name": "UInt32OptionalProxy"
+    },
+    {
+      "lineno": 266,
+      "name": "overpaymentComponents"
+    },
+    {
+      "lineno": 266,
+      "name": "roundedOldState"
+    },
+    {
+      "lineno": 266,
+      "name": "periodicPayment"
+    },
+    {
+      "lineno": 266,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 266,
+      "name": "paymentRemaining"
+    },
+    {
+      "lineno": 266,
+      "name": "j"
+    },
+    {
+      "lineno": 340,
+      "name": "totalValueOutstandingProxy"
+    },
+    {
+      "lineno": 340,
+      "name": "principalOutstandingProxy"
+    },
+    {
+      "lineno": 340,
+      "name": "managementFeeOutstandingProxy"
+    },
+    {
+      "lineno": 340,
+      "name": "periodicPaymentProxy"
+    },
+    {
+      "lineno": 340,
+      "name": "paymentRemainingProxy"
+    },
+    {
+      "lineno": 393,
+      "name": "view"
+    },
+    {
+      "lineno": 393,
+      "name": "nextDueDate"
+    },
+    {
+      "lineno": 393,
+      "name": "periodic"
+    },
+    {
+      "lineno": 393,
+      "name": "latePaymentFee"
+    },
+    {
+      "lineno": 393,
+      "name": "amount"
+    },
+    {
+      "lineno": 453,
+      "name": "closeInterestRate"
+    },
+    {
+      "lineno": 453,
+      "name": "totalInterestOutstanding"
+    },
+    {
+      "lineno": 453,
+      "name": "closePaymentFee"
+    },
+    {
+      "lineno": 517,
+      "name": "PaymentComponents"
+    },
+    {
+      "lineno": 526,
+      "name": "totalValueOutstanding"
+    },
+    {
+      "lineno": 526,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 526,
+      "name": "managementFeeOutstanding"
+    },
+    {
+      "lineno": 526,
+      "name": "periodicPayment"
+    },
+    {
+      "lineno": 526,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 526,
+      "name": "paymentRemaining"
+    },
+    {
+      "lineno": 526,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 617,
+      "name": "overpayment"
+    },
+    {
+      "lineno": 617,
+      "name": "overpaymentInterestRate"
+    },
+    {
+      "lineno": 617,
+      "name": "overpaymentFeeRate"
+    },
+    {
+      "lineno": 661,
+      "name": "lhs"
+    },
+    {
+      "lineno": 661,
+      "name": "rhs"
+    },
+    {
+      "lineno": 687,
+      "name": "vaultAsset"
+    },
+    {
+      "lineno": 687,
+      "name": "principalRequested"
+    },
+    {
+      "lineno": 687,
+      "name": "expectInterest"
+    },
+    {
+      "lineno": 687,
+      "name": "paymentTotal"
+    },
+    {
+      "lineno": 687,
+      "name": "properties"
+    },
+    {
+      "lineno": 735,
+      "name": "theoreticalPrincipalOutstanding"
+    },
+    {
+      "lineno": 735,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 735,
+      "name": "parentCloseTime"
+    },
+    {
+      "lineno": 735,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 735,
+      "name": "prevPaymentDate"
+    },
+    {
+      "lineno": 735,
+      "name": "startDate"
+    },
+    {
+      "lineno": 735,
+      "name": "closeInterestRate"
+    },
+    {
+      "lineno": 759,
+      "name": "periodicPayment"
+    },
+    {
+      "lineno": 759,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 759,
+      "name": "paymentRemaining"
+    },
+    {
+      "lineno": 759,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 792,
+      "name": "totalValueOutstanding"
+    },
+    {
+      "lineno": 792,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 792,
+      "name": "managementFeeOutstanding"
+    },
+    {
+      "lineno": 805,
+      "name": "loan"
+    },
+    {
+      "lineno": 818,
+      "name": "value"
+    },
+    {
+      "lineno": 818,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 818,
+      "name": "scale"
+    },
+    {
+      "lineno": 829,
+      "name": "interestRate"
+    },
+    {
+      "lineno": 829,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 829,
+      "name": "paymentsRemaining"
+    },
+    {
+      "lineno": 829,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 829,
+      "name": "minimumScale"
+    },
+    {
+      "lineno": 849,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 849,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 849,
+      "name": "paymentsRemaining"
+    },
+    {
+      "lineno": 849,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 849,
+      "name": "minimumScale"
+    },
+    {
+      "lineno": 900,
+      "name": "asset"
+    },
+    {
+      "lineno": 900,
+      "name": "view"
+    },
+    {
+      "lineno": 900,
+      "name": "loan"
+    },
+    {
+      "lineno": 900,
+      "name": "brokerSle"
+    },
+    {
+      "lineno": 900,
+      "name": "amount"
+    },
+    {
+      "lineno": 900,
+      "name": "paymentType"
+    },
+    {
+      "lineno": 900,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "checkLendingProtocolDependencies",
+        "ctx.rules.enabled(featureSingleAssetVault)",
+        "VaultCreate::checkExtraFeatures(ctx)"
+      ],
+      "entry_point": "checkLendingProtocolDependencies",
+      "purpose": "Checks if lending protocol dependencies are enabled before proceeding with lending operations.",
+      "validation_points": [
+        "ctx.rules.enabled(featureSingleAssetVault)",
+        "VaultCreate::checkExtraFeatures(ctx)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanPaymentParts::operator+=",
+        "XRPL_ASSERT (other.principalPaid >= beast::zero)",
+        "XRPL_ASSERT (other.interestPaid >= beast::zero)",
+        "XRPL_ASSERT (other.feePaid >= beast::zero)"
+      ],
+      "entry_point": "LoanPaymentParts::operator+=",
+      "purpose": "Adds payment parts together, ensuring all components are non-negative before addition.",
+      "validation_points": [
+        "XRPL_ASSERT (other.principalPaid >= beast::zero)",
+        "XRPL_ASSERT (other.interestPaid >= beast::zero)",
+        "XRPL_ASSERT (other.feePaid >= beast::zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanStateDeltas::nonNegative",
+        "if (principal < beast::zero) principal = numZero",
+        "if (interest < beast::zero) interest = numZero",
+        "if (managementFee < beast::zero) managementFee = numZero"
+      ],
+      "entry_point": "LoanStateDeltas::nonNegative",
+      "purpose": "Ensures that all loan state delta fields are non-negative by clamping negatives to zero.",
+      "validation_points": [
+        "principal < beast::zero",
+        "interest < beast::zero",
+        "managementFee < beast::zero"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "other.principalPaid",
+      "flow": [
+        "LoanPaymentParts (input param)",
+        "XRPL_ASSERT (>= beast::zero)",
+        "principalPaid += other.principalPaid"
+      ],
+      "origin": "LoanPaymentParts input to operator+=",
+      "transformations": [
+        "Validated as non-negative",
+        "Added to this.principalPaid"
+      ],
+      "validated_at": "XRPL_ASSERT in LoanPaymentParts::operator+="
+    },
+    {
+      "field": "other.interestPaid",
+      "flow": [
+        "LoanPaymentParts (input param)",
+        "XRPL_ASSERT (>= beast::zero)",
+        "interestPaid += other.interestPaid"
+      ],
+      "origin": "LoanPaymentParts input to operator+=",
+      "transformations": [
+        "Validated as non-negative",
+        "Added to this.interestPaid"
+      ],
+      "validated_at": "XRPL_ASSERT in LoanPaymentParts::operator+="
+    },
+    {
+      "field": "other.feePaid",
+      "flow": [
+        "LoanPaymentParts (input param)",
+        "XRPL_ASSERT (>= beast::zero)",
+        "feePaid += other.feePaid"
+      ],
+      "origin": "LoanPaymentParts input to operator+=",
+      "transformations": [
+        "Validated as non-negative",
+        "Added to this.feePaid"
+      ],
+      "validated_at": "XRPL_ASSERT in LoanPaymentParts::operator+="
+    },
+    {
+      "field": "ctx.rules",
+      "flow": [
+        "PreflightContext",
+        "ctx.rules.enabled(featureSingleAssetVault)",
+        "VaultCreate::checkExtraFeatures(ctx)"
+      ],
+      "origin": "PreflightContext passed to checkLendingProtocolDependencies",
+      "transformations": [
+        "Checked for feature enablement",
+        "Passed to VaultCreate for further validation"
+      ],
+      "validated_at": "checkLendingProtocolDependencies"
+    },
+    {
+      "field": "LoanStateDeltas.principal/interest/managementFee",
+      "flow": [
+        "LoanStateDeltas fields",
+        "if < beast::zero, set to numZero"
+      ],
+      "origin": "LoanStateDeltas object",
+      "transformations": [
+        "Clamped to zero if negative"
+      ],
+      "validated_at": "LoanStateDeltas::nonNegative"
+    }
+  ],
+  "description": "This file implements core lending and loan amortization logic for the XRPL (XRP Ledger) lending protocol, including payment processing, overpayment handling, late/full payment calculations, loan state management, and related mathematical helpers. It closely follows the XLS-66 specification for loan amortization and payment breakdowns.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "other.principalPaid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing empty string validation for other.principalPaid",
+      "why_false_positive": "XRPL_ASSERT validates other.principalPaid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "other.principalPaid",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing range validation for other.principalPaid",
+      "why_false_positive": "XRPL_ASSERT validates other.principalPaid range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "other.interestPaid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing empty string validation for other.interestPaid",
+      "why_false_positive": "XRPL_ASSERT validates other.interestPaid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "other.interestPaid",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing range validation for other.interestPaid",
+      "why_false_positive": "XRPL_ASSERT validates other.interestPaid range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "other.feePaid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing empty string validation for other.feePaid",
+      "why_false_positive": "XRPL_ASSERT validates other.feePaid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "other.feePaid",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at LoanPaymentParts::operator+=",
+      "issue_pattern": "Missing range validation for other.feePaid",
+      "why_false_positive": "XRPL_ASSERT validates other.feePaid range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ctx.rules.enabled(featureSingleAssetVault)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled at checkLendingProtocolDependencies",
+      "issue_pattern": "Missing empty string validation for ctx.rules.enabled(featureSingleAssetVault)",
+      "why_false_positive": "ctx.rules.enabled validates ctx.rules.enabled(featureSingleAssetVault) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "VaultCreate::checkExtraFeatures(ctx)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "VaultCreate::checkExtraFeatures at checkLendingProtocolDependencies",
+      "issue_pattern": "Missing empty string validation for VaultCreate::checkExtraFeatures(ctx)",
+      "why_false_positive": "VaultCreate::checkExtraFeatures validates VaultCreate::checkExtraFeatures(ctx) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "principal, interest, managementFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (field < beast::zero) at LoanStateDeltas::nonNegative",
+      "issue_pattern": "Missing empty string validation for principal, interest, managementFee",
+      "why_false_positive": "if (field < beast::zero) validates principal, interest, managementFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "principal, interest, managementFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (field < beast::zero) at LoanStateDeltas::nonNegative",
+      "issue_pattern": "Missing range validation for principal, interest, managementFee",
+      "why_false_positive": "if (field < beast::zero) validates principal, interest, managementFee range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "value (rounded to scale)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isRounded (roundToAsset) at isRounded",
+      "issue_pattern": "Missing empty string validation for value (rounded to scale)",
+      "why_false_positive": "isRounded (roundToAsset) validates value (rounded to scale) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "value (rounded to scale)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isRounded (roundToAsset) at isRounded",
+      "issue_pattern": "Missing format validation for value (rounded to scale)",
+      "why_false_positive": "isRounded (roundToAsset) validates value (rounded to scale) format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LendingHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 6,
+      "name": "checkLendingProtocolDependencies"
+    },
+    {
+      "args": [
+        "LoanPaymentParts const& other"
+      ],
+      "lineno": 11,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "LoanPaymentParts const& other"
+      ],
+      "lineno": 27,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "TenthBips32 interestRate",
+        "std::uint32_t paymentInterval"
+      ],
+      "lineno": 39,
+      "name": "loanPeriodicRate"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "Number const& value",
+        "std::int32_t scale"
+      ],
+      "lineno": 51,
+      "name": "isRounded"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "LoanStateDeltas::nonNegative"
+    },
+    {
+      "args": [
+        "Number const& periodicRate",
+        "std::uint32_t paymentsRemaining"
+      ],
+      "lineno": 72,
+      "name": "computeRaisedRate"
+    },
+    {
+      "args": [
+        "Number const& periodicRate",
+        "std::uint32_t paymentsRemaining"
+      ],
+      "lineno": 82,
+      "name": "computePaymentFactor"
+    },
+    {
+      "args": [
+        "Number const& principalOutstanding",
+        "Number const& periodicRate",
+        "std::uint32_t paymentsRemaining"
+      ],
+      "lineno": 99,
+      "name": "loanPeriodicPayment"
+    },
+    {
+      "args": [
+        "Number const& periodicPayment",
+        "Number const& periodicRate",
+        "std::uint32_t paymentsRemaining"
+      ],
+      "lineno": 114,
+      "name": "loanPrincipalFromPeriodicPayment"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "Number const& interest",
+        "TenthBips16 managementFeeRate",
+        "std::int32_t loanScale"
+      ],
+      "lineno": 129,
+      "name": "computeInterestAndFeeParts"
+    },
+    {
+      "args": [
+        "Number const& principalOutstanding",
+        "TenthBips32 lateInterestRate",
+        "NetClock::time_point parentCloseTime",
+        "std::uint32_t nextPaymentDueDate"
+      ],
+      "lineno": 143,
+      "name": "loanLatePaymentInterest"
+    },
+    {
+      "args": [
+        "Number const& principalOutstanding",
+        "Number const& periodicRate",
+        "NetClock::time_point parentCloseTime",
+        "std::uint32_t startDate",
+        "std::uint32_t prevPaymentDate",
+        "std::uint32_t paymentInterval"
+      ],
+      "lineno": 167,
+      "name": "loanAccruedInterest"
+    },
+    {
+      "args": [
+        "ExtendedPaymentComponents const& payment",
+        "NumberProxy& totalValueOutstandingProxy",
+        "NumberProxy& principalOutstandingProxy",
+        "NumberProxy& managementFeeOutstandingProxy",
+        "UInt32Proxy& paymentRemainingProxy",
+        "UInt32Proxy& prevPaymentDateProxy",
+        "UInt32OptionalProxy& nextDueDateProxy",
+        "std::uint32_t paymentInterval"
+      ],
+      "lineno": 191,
+      "name": "doPayment"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "std::int32_t loanScale",
+        "ExtendedPaymentComponents const& overpaymentComponents",
+        "LoanState const& roundedOldState",
+        "Number const& periodicPayment",
+        "Number const& periodicRate",
+        "std::uint32_t paymentRemaining",
+        "TenthBips16 const managementFeeRate",
+        "beast::Journal j"
+      ],
+      "lineno": 266,
+      "name": "tryOverpayment"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "std::int32_t loanScale",
+        "ExtendedPaymentComponents const& overpaymentComponents",
+        "NumberProxy& totalValueOutstandingProxy",
+        "NumberProxy& principalOutstandingProxy",
+        "NumberProxy& managementFeeOutstandingProxy",
+        "NumberProxy& periodicPaymentProxy",
+        "Number const& periodicRate",
+        "std::uint32_t const paymentRemaining",
+        "TenthBips16 const managementFeeRate",
+        "beast::Journal j"
+      ],
+      "lineno": 340,
+      "name": "doOverpayment"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "ApplyView const& view",
+        "Number const& principalOutstanding",
+        "std::int32_t nextDueDate",
+        "ExtendedPaymentComponents const& periodic",
+        "TenthBips32 lateInterestRate",
+        "std::int32_t loanScale",
+        "Number const& latePaymentFee",
+        "STAmount const& amount",
+        "TenthBips16 managementFeeRate",
+        "beast::Journal j"
+      ],
+      "lineno": 393,
+      "name": "computeLatePayment"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "ApplyView& view",
+        "Number const& principalOutstanding",
+        "Number const& managementFeeOutstanding",
+        "Number const& periodicPayment",
+        "std::uint32_t paymentRemaining",
+        "std::uint32_t prevPaymentDate",
+        "std::uint32_t const startDate",
+        "std::uint32_t const paymentInterval",
+        "TenthBips32 const closeInterestRate",
+        "std::int32_t loanScale",
+        "Number const& totalInterestOutstanding",
+        "Number const& periodicRate",
+        "Number const& closePaymentFee",
+        "STAmount const& amount",
+        "TenthBips16 managementFeeRate",
+        "beast::Journal j"
+      ],
+      "lineno": 453,
+      "name": "computeFullPayment"
+    },
+    {
+      "args": [],
+      "lineno": 517,
+      "name": "PaymentComponents::trackedInterestPart"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "std::int32_t scale",
+        "Number const& totalValueOutstanding",
+        "Number const& principalOutstanding",
+        "Number const& managementFeeOutstanding",
+        "Number const& periodicPayment",
+        "Number const& periodicRate",
+        "std::uint32_t paymentRemaining",
+        "TenthBips16 managementFeeRate"
+      ],
+      "lineno": 526,
+      "name": "computePaymentComponents"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "int32_t const loanScale",
+        "Number const& overpayment",
+        "TenthBips32 const overpaymentInterestRate",
+        "TenthBips32 const overpaymentFeeRate",
+        "TenthBips16 const managementFeeRate"
+      ],
+      "lineno": 617,
+      "name": "computeOverpaymentComponents"
+    },
+    {
+      "args": [
+        "LoanState const& lhs",
+        "LoanState const& rhs"
+      ],
+      "lineno": 661,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "LoanState const& lhs",
+        "detail::LoanStateDeltas const& rhs"
+      ],
+      "lineno": 669,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "LoanState const& lhs",
+        "detail::LoanStateDeltas const& rhs"
+      ],
+      "lineno": 678,
+      "name": "operator+"
+    },
+    {
+      "args": [
+        "Asset const& vaultAsset",
+        "Number const& principalRequested",
+        "bool expectInterest",
+        "std::uint32_t paymentTotal",
+        "LoanProperties const& properties",
+        "beast::Journal j"
+      ],
+      "lineno": 687,
+      "name": "checkLoanGuards"
+    },
+    {
+      "args": [
+        "Number const& theoreticalPrincipalOutstanding",
+        "Number const& periodicRate",
+        "NetClock::time_point parentCloseTime",
+        "std::uint32_t paymentInterval",
+        "std::uint32_t prevPaymentDate",
+        "std::uint32_t startDate",
+        "TenthBips32 closeInterestRate"
+      ],
+      "lineno": 735,
+      "name": "computeFullPaymentInterest"
+    },
+    {
+      "args": [
+        "Number const& periodicPayment",
+        "Number const& periodicRate",
+        "std::uint32_t const paymentRemaining",
+        "TenthBips32 const managementFeeRate"
+      ],
+      "lineno": 759,
+      "name": "computeTheoreticalLoanState"
+    },
+    {
+      "args": [
+        "Number const& totalValueOutstanding",
+        "Number const& principalOutstanding",
+        "Number const& managementFeeOutstanding"
+      ],
+      "lineno": 792,
+      "name": "constructLoanState"
+    },
+    {
+      "args": [
+        "SLE::const_ref loan"
+      ],
+      "lineno": 805,
+      "name": "constructRoundedLoanState"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "Number const& value",
+        "TenthBips32 managementFeeRate",
+        "std::int32_t scale"
+      ],
+      "lineno": 818,
+      "name": "computeManagementFee"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "Number const& principalOutstanding",
+        "TenthBips32 interestRate",
+        "std::uint32_t paymentInterval",
+        "std::uint32_t paymentsRemaining",
+        "TenthBips32 managementFeeRate",
+        "std::int32_t minimumScale"
+      ],
+      "lineno": 829,
+      "name": "computeLoanProperties"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "Number const& principalOutstanding",
+        "Number const& periodicRate",
+        "std::uint32_t paymentsRemaining",
+        "TenthBips32 managementFeeRate",
+        "std::int32_t minimumScale"
+      ],
+      "lineno": 849,
+      "name": "computeLoanProperties"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "ApplyView& view",
+        "SLE::ref loan",
+        "SLE::const_ref brokerSle",
+        "STAmount const& amount",
+        "LoanPaymentType const paymentType",
+        "beast::Journal j"
+      ],
+      "lineno": 900,
+      "name": "loanMakePayment"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 59,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for lending and vault creation logic, typically found in files like LendingHelpers_test.cpp, VaultCreate_test.cpp, or broader transaction preflight tests. However, direct validation of negative values for principalPaid, interestPaid, and feePaid in LoanPaymentParts::operator+= may not be exhaustively tested, especially for edge cases (e.g., zero values, large values, or type overflows). The dependency check (featureSingleAssetVault and VaultCreate::checkExtraFeatures) is likely tested in integration or feature-flag tests, but coverage for all rule combinations and error paths should be verified. There is no explicit mention of test files in the provided code, so test coverage for all validation branches should be confirmed.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT, custom logic, protocol rule checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "other.principalPaid",
+      "location": "LoanPaymentParts::operator+=",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that principalPaid is non-negative (>= 0)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "other.interestPaid",
+      "location": "LoanPaymentParts::operator+=",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that interestPaid is non-negative (>= 0)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "other.feePaid",
+      "location": "LoanPaymentParts::operator+=",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that feePaid is non-negative (>= 0)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Returns false (no exception)",
+      "field": "ctx.rules.enabled(featureSingleAssetVault)",
+      "location": "checkLendingProtocolDependencies",
+      "validated_by": "ctx.rules.enabled",
+      "validates": [
+        "Checks if featureSingleAssetVault is enabled in protocol rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Returns false (no exception)",
+      "field": "VaultCreate::checkExtraFeatures(ctx)",
+      "location": "checkLendingProtocolDependencies",
+      "validated_by": "VaultCreate::checkExtraFeatures",
+      "validates": [
+        "Checks extra feature dependencies for VaultCreate"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Field is set to zero (no exception)",
+      "field": "principal, interest, managementFee",
+      "location": "LoanStateDeltas::nonNegative",
+      "validated_by": "if (field < beast::zero)",
+      "validates": [
+        "Ensures principal, interest, and managementFee are not negative; sets to zero if negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Returns boolean (no exception)",
+      "field": "value (rounded to scale)",
+      "location": "isRounded",
+      "validated_by": "isRounded (roundToAsset)",
+      "validates": [
+        "Checks if value is already rounded to the specified scale for the asset"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

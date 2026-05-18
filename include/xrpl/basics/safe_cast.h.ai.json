@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "Src"
+    },
+    {
+      "lineno": 11,
+      "name": "Dest"
+    },
+    {
+      "lineno": 17,
+      "name": "s"
+    }
+  ],
+  "classes": [],
+  "description": "Provides safe and unsafe casting utilities (safe_cast, unsafe_cast, safe_downcast) with compile-time checks for type safety, especially for integral and enum types, as well as pointer/reference downcasting with runtime assertions in debug mode.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/safe_cast.h",
+  "functions": [
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 17,
+      "name": "safe_cast"
+    },
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 32,
+      "name": "safe_cast"
+    },
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 38,
+      "name": "safe_cast"
+    },
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 46,
+      "name": "unsafe_cast"
+    },
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 56,
+      "name": "unsafe_cast"
+    },
+    {
+      "args": [
+        "Src s"
+      ],
+      "lineno": 62,
+      "name": "unsafe_cast"
+    },
+    {
+      "args": [
+        "Src* s"
+      ],
+      "lineno": 69,
+      "name": "safe_downcast"
+    },
+    {
+      "args": [
+        "Src& s"
+      ],
+      "lineno": 81,
+      "name": "safe_downcast"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "TrafficCount"
+    },
+    {
+      "args": [
+        "cat"
+      ],
+      "lineno": 25,
+      "name": "TrafficStats"
+    }
+  ],
+  "description": "Defines the TrafficCount class for tracking and categorizing network traffic (bytes and messages) by message type/category in the XRPL overlay network.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/TrafficCount.h",
+  "functions": [
+    {
+      "args": [
+        "cat",
+        "inbound",
+        "bytes"
+      ],
+      "lineno": 109,
+      "name": "addCount"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "getCounts"
+    },
+    {
+      "args": [
+        "cat"
+      ],
+      "lineno": 139,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

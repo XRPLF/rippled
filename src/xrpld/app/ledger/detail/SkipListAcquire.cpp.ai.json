@@ -1,0 +1,531 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "uint256 const& ledgerHash",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 7,
+      "name": "SkipListAcquire"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SkipListAcquire::init",
+        "SkipListAcquire::trigger",
+        "peerSet_->addPeers (lambda)",
+        "peer->supportsFeature / peer->hasLedger",
+        "peerSet_->sendRequest / fallback logic"
+      ],
+      "entry_point": "SkipListAcquire::init",
+      "purpose": "Initializes skip list acquisition, triggers peer selection and validation, and requests data from peers or falls back to generic ledger acquisition.",
+      "validation_points": [
+        "SkipListAcquire::isDone() (init)",
+        "app_.getLedgerMaster().getLedgerByHash(hash_) (trigger)",
+        "peer->supportsFeature(ProtocolFeature::LedgerReplay) (addPeers lambda)",
+        "peer->hasLedger(hash_, 0) (addPeers lambda)",
+        "noFeaturePeerCount_ >= MAX_NO_FEATURE_PEER_COUNT (addPeers lambda)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SkipListAcquire::onTimer",
+        "SkipListAcquire::trigger"
+      ],
+      "entry_point": "SkipListAcquire::onTimer",
+      "purpose": "Handles timeouts, retries acquisition, or marks as failed after too many timeouts.",
+      "validation_points": [
+        "timeouts_ > SUB_TASK_MAX_TIMEOUTS (onTimer)",
+        "See validations in trigger (as above)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SkipListAcquire::processData",
+        "std::make_shared<SLE>",
+        "sle->getFieldV256(sfHashes)",
+        "onSkipListAcquired"
+      ],
+      "entry_point": "SkipListAcquire::processData",
+      "purpose": "Processes incoming data, validates it, and triggers further processing if valid.",
+      "validation_points": [
+        "XRPL_ASSERT(ledgerSeq != 0 && item) (processData)",
+        "isDone() (processData)",
+        "sle->getFieldV256(sfHashes).value() !empty (processData)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hash_",
+      "flow": [
+        "Constructor",
+        "Stored as member hash_",
+        "Used in trigger() for ledger lookup and peer queries",
+        "Used in processData() for logging and data association"
+      ],
+      "origin": "Constructor argument (ledgerHash)",
+      "transformations": [
+        "None (passed and stored as-is)"
+      ],
+      "validated_at": "app_.getLedgerMaster().getLedgerByHash(hash_) (trigger), peer->hasLedger(hash_, 0) (addPeers lambda)"
+    },
+    {
+      "field": "noFeaturePeerCount_",
+      "flow": [
+        "Incremented in addPeers lambda when peer does not support LedgerReplay",
+        "Compared to MAX_NO_FEATURE_PEER_COUNT to trigger fallback"
+      ],
+      "origin": "Class member, initialized to 0",
+      "transformations": [
+        "Incremented"
+      ],
+      "validated_at": "if (++noFeaturePeerCount_ >= MAX_NO_FEATURE_PEER_COUNT) (addPeers lambda)"
+    },
+    {
+      "field": "peer",
+      "flow": [
+        "Selected by addPeers",
+        "Validated for supportsFeature and hasLedger",
+        "Used to send TMProofPathRequest if valid"
+      ],
+      "origin": "peerSet_->addPeers (lambda parameter)",
+      "transformations": [
+        "Checked for features and ledger possession"
+      ],
+      "validated_at": "peer->supportsFeature(ProtocolFeature::LedgerReplay), peer->hasLedger(hash_, 0) (addPeers lambda)"
+    },
+    {
+      "field": "item (SHAMapItem)",
+      "flow": [
+        "Passed to processData",
+        "Used to construct SLE",
+        "SLE used to extract skip list hashes"
+      ],
+      "origin": "processData argument (from network/peer)",
+      "transformations": [
+        "Deserialized into SLE",
+        "Field extracted via getFieldV256"
+      ],
+      "validated_at": "XRPL_ASSERT(ledgerSeq != 0 && item), sle->getFieldV256(sfHashes).value() !empty (processData)"
+    },
+    {
+      "field": "fallBack_",
+      "flow": [
+        "Set to true if noFeaturePeerCount_ exceeds threshold",
+        "Triggers fallback acquisition via inboundLedgers_.acquire"
+      ],
+      "origin": "Class member, default false",
+      "transformations": [
+        "Set to true"
+      ],
+      "validated_at": "if (++noFeaturePeerCount_ >= MAX_NO_FEATURE_PEER_COUNT) (addPeers lambda)"
+    }
+  ],
+  "description": "Implements the SkipListAcquire class, which manages the acquisition of skip lists (used for ledger replay) from the network or local ledgers in the XRPL system. Handles peer selection, data retrieval, timeouts, and callback notification.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isDone()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isDone() method at SkipListAcquire::init",
+      "issue_pattern": "Missing empty string validation for isDone()",
+      "why_false_positive": "isDone() method validates isDone() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Ledger existence (hash_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "app_.getLedgerMaster().getLedgerByHash(hash_) at SkipListAcquire::trigger",
+      "issue_pattern": "Missing empty string validation for Ledger existence (hash_)",
+      "why_false_positive": "app_.getLedgerMaster().getLedgerByHash(hash_) validates Ledger existence (hash_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer supports LedgerReplay",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peer->supportsFeature(ProtocolFeature::LedgerReplay) at SkipListAcquire::trigger (lambda in addPeers)",
+      "issue_pattern": "Missing empty string validation for peer supports LedgerReplay",
+      "why_false_positive": "peer->supportsFeature(ProtocolFeature::LedgerReplay) validates peer supports LedgerReplay for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer has ledger (hash_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peer->hasLedger(hash_, 0) at SkipListAcquire::trigger (lambda in addPeers)",
+      "issue_pattern": "Missing empty string validation for peer has ledger (hash_)",
+      "why_false_positive": "peer->hasLedger(hash_, 0) validates peer has ledger (hash_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "noFeaturePeerCount_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison with LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT at SkipListAcquire::trigger (lambda in addPeers)",
+      "issue_pattern": "Missing empty string validation for noFeaturePeerCount_",
+      "why_false_positive": "comparison with LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT validates noFeaturePeerCount_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "noFeaturePeerCount_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "comparison with LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT at SkipListAcquire::trigger (lambda in addPeers)",
+      "issue_pattern": "Missing range validation for noFeaturePeerCount_",
+      "why_false_positive": "comparison with LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT validates noFeaturePeerCount_ range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/SkipListAcquire.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "uint256 const& ledgerHash",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 7,
+      "name": "SkipListAcquire"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "~SkipListAcquire"
+    },
+    {
+      "args": [
+        "int numPeers"
+      ],
+      "lineno": 26,
+      "name": "init"
+    },
+    {
+      "args": [
+        "std::size_t limit",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 34,
+      "name": "trigger"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 74,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "pmDowncast"
+    },
+    {
+      "args": [
+        "std::uint32_t ledgerSeq",
+        "boost::intrusive_ptr<SHAMapItem const> const& item"
+      ],
+      "lineno": 92,
+      "name": "processData"
+    },
+    {
+      "args": [
+        "OnSkipListDataCB&& cb"
+      ],
+      "lineno": 115,
+      "name": "addDataCallback"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "getData"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 130,
+      "name": "retrieveSkipList"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& skipList",
+        "std::uint32_t ledgerSeq",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 143,
+      "name": "onSkipListAcquired"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 151,
+      "name": "notify"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is likely tested indirectly via integration tests for ledger replay, inbound ledger acquisition, and peer selection. Look for test files in the test/ledger, test/app/ledger, or test/overlay directories, such as LedgerReplay_test.cpp, InboundLedger_test.cpp, or PeerSet_test.cpp. Direct unit tests for SkipListAcquire may be limited, especially for edge cases like fallback logic, peer feature validation, and error handling in processData. Exception handling and timer-triggered retries may not be fully covered. Manual or integration tests may be required to ensure all validation paths are exercised.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic, no explicit validation framework",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "isDone()",
+      "location": "SkipListAcquire::init",
+      "validated_by": "isDone() method",
+      "validates": [
+        "Checks if the acquisition is already complete before triggering"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "Ledger existence (hash_)",
+      "location": "SkipListAcquire::trigger",
+      "validated_by": "app_.getLedgerMaster().getLedgerByHash(hash_)",
+      "validates": [
+        "Checks if the ledger with hash_ already exists locally before requesting from peers"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (peer is filtered out)",
+      "field": "peer supports LedgerReplay",
+      "location": "SkipListAcquire::trigger (lambda in addPeers)",
+      "validated_by": "peer->supportsFeature(ProtocolFeature::LedgerReplay)",
+      "validates": [
+        "Checks if peer supports the LedgerReplay protocol feature before sending request"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (peer is filtered out)",
+      "field": "peer has ledger (hash_)",
+      "location": "SkipListAcquire::trigger (lambda in addPeers)",
+      "validated_by": "peer->hasLedger(hash_, 0)",
+      "validates": [
+        "Checks if peer has the required ledger before sending request"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets fallBack_ flag and changes timer)",
+      "field": "noFeaturePeerCount_",
+      "location": "SkipListAcquire::trigger (lambda in addPeers)",
+      "validated_by": "comparison with LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT",
+      "validates": [
+        "Checks if the number of peers without LedgerReplay feature exceeds a maximum"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

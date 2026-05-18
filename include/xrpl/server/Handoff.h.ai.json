@@ -1,0 +1,26 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "Handoff"
+    }
+  ],
+  "description": "Defines the Handoff struct used to indicate the result of a server connection handoff in the xrpl namespace, along with HTTP request/response type aliases.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Handoff.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "handled"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "args": [
+    {
+      "lineno": 30,
+      "name": "sle"
+    },
+    {
+      "lineno": 94,
+      "name": "hashes"
+    },
+    {
+      "lineno": 101,
+      "name": "sle"
+    },
+    {
+      "lineno": 106,
+      "name": "value"
+    },
+    {
+      "lineno": 115,
+      "name": "value"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    },
+    {
+      "lineno": 133,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "LedgerHashes"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& hashes",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 89,
+      "name": "LedgerHashesBuilder"
+    }
+  ],
+  "description": "Defines the LedgerHashes ledger entry type for XRPL, providing type-safe accessors and a builder for constructing or copying ledger entries of this type.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/LedgerHashes.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getFirstLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "hasFirstLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getLastLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "hasLastLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getHashes"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 104,
+      "name": "setFirstLedgerSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 113,
+      "name": "setLastLedgerSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 122,
+      "name": "setHashes"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 131,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

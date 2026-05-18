@@ -1,0 +1,167 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "prevLedger"
+    },
+    {
+      "lineno": 39,
+      "name": "seq"
+    },
+    {
+      "lineno": 40,
+      "name": "position"
+    },
+    {
+      "lineno": 41,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 42,
+      "name": "now"
+    },
+    {
+      "lineno": 43,
+      "name": "nodeID"
+    },
+    {
+      "lineno": 106,
+      "name": "newPosition"
+    },
+    {
+      "lineno": 107,
+      "name": "newCloseTime"
+    },
+    {
+      "lineno": 108,
+      "name": "now"
+    },
+    {
+      "lineno": 122,
+      "name": "now"
+    },
+    {
+      "lineno": 98,
+      "name": "cutoff"
+    },
+    {
+      "lineno": 169,
+      "name": "a"
+    },
+    {
+      "lineno": 170,
+      "name": "b"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "prevLedger",
+        "seq",
+        "position",
+        "closeTime",
+        "now",
+        "nodeID"
+      ],
+      "lineno": 22,
+      "name": "ConsensusProposal"
+    }
+  ],
+  "description": "Defines the ConsensusProposal template class, representing a proposed position taken by a node during a round of consensus in the XRPL protocol. It encapsulates proposal metadata, state transitions, and provides utility methods for rendering, JSON output, and signing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/ConsensusProposal.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "nodeID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "position"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "prevLedger"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "proposeSeq"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "closeTime"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "seenTime"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "isInitial"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "isBowOut"
+    },
+    {
+      "args": [
+        "cutoff"
+      ],
+      "lineno": 97,
+      "name": "isStale"
+    },
+    {
+      "args": [
+        "newPosition",
+        "newCloseTime",
+        "now"
+      ],
+      "lineno": 104,
+      "name": "changePosition"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 120,
+      "name": "bowOut"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "render"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "signingHash"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 167,
+      "name": "operator=="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

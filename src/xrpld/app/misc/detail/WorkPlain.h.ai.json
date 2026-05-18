@@ -1,0 +1,96 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "host"
+    },
+    {
+      "lineno": 15,
+      "name": "path"
+    },
+    {
+      "lineno": 15,
+      "name": "port"
+    },
+    {
+      "lineno": 15,
+      "name": "ios"
+    },
+    {
+      "lineno": 15,
+      "name": "lastEndpoint"
+    },
+    {
+      "lineno": 15,
+      "name": "lastStatus"
+    },
+    {
+      "lineno": 15,
+      "name": "cb"
+    },
+    {
+      "lineno": 26,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "host",
+        "path",
+        "port",
+        "ios",
+        "lastEndpoint",
+        "lastStatus",
+        "cb"
+      ],
+      "lineno": 11,
+      "name": "WorkPlain"
+    }
+  ],
+  "description": "Implements WorkPlain, a class for performing asynchronous work over TCP/IP using Boost.Asio, as part of the xrpl::detail namespace. Inherits from WorkBase and manages plain (non-SSL) socket connections.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/WorkPlain.h",
+  "functions": [
+    {
+      "args": [
+        "host",
+        "path",
+        "port",
+        "ios",
+        "lastEndpoint",
+        "lastStatus",
+        "cb"
+      ],
+      "lineno": 15,
+      "name": "WorkPlain"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "~WorkPlain"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 26,
+      "name": "onConnect"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "stream"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "detail"
+    }
+  ]
+}

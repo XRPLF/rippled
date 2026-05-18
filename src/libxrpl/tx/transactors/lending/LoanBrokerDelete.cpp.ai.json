@@ -1,0 +1,406 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanBrokerDelete::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanBrokerDelete::checkExtraFeatures",
+      "purpose": "Checks for protocol-level feature dependencies before transaction processing.",
+      "validation_points": [
+        "checkLendingProtocolDependencies"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerDelete::preflight"
+      ],
+      "entry_point": "LoanBrokerDelete::preflight",
+      "purpose": "Performs initial stateless validation of the transaction.",
+      "validation_points": [
+        "ctx.tx[sfLoanBrokerID] == beast::zero"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerDelete::preclaim"
+      ],
+      "entry_point": "LoanBrokerDelete::preclaim",
+      "purpose": "Performs stateful validation, checking ledger state and permissions.",
+      "validation_points": [
+        "ctx.view.read(keylet::loanbroker(brokerID))",
+        "account != brokerOwner",
+        "sleBroker->at(sfOwnerCount) != 0",
+        "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)))",
+        "sleBroker->at(sfDebtTotal) != beast::zero",
+        "checkDeepFrozen(ctx.view, brokerOwner, asset)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerDelete::doApply"
+      ],
+      "entry_point": "LoanBrokerDelete::doApply",
+      "purpose": "Applies the transaction, deleting the broker and transferring assets.",
+      "validation_points": [
+        "view().peek(keylet::loanbroker(brokerID))",
+        "view().read(keylet::vault(vaultID))",
+        "view().dirRemove(...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "ctx.tx[sfLoanBrokerID]",
+        "preflight: checked for beast::zero",
+        "preclaim: used as brokerID to look up broker",
+        "doApply: used to look up and delete broker"
+      ],
+      "origin": "ctx.tx[sfLoanBrokerID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "preflight, preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "preclaim: compared to brokerOwner",
+        "doApply: used as account_ for asset transfer"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared for equality"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfOwnerCount",
+      "flow": [
+        "ctx.view.read(keylet::loanbroker(brokerID))",
+        "preclaim: checked for nonzero"
+      ],
+      "origin": "sleBroker->at(sfOwnerCount) (ledger state)",
+      "transformations": [
+        "Checked for nonzero (must be zero to proceed)"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "ctx.view.read(keylet::loanbroker(brokerID))",
+        "preclaim: used to look up vault",
+        "doApply: used to look up vault"
+      ],
+      "origin": "sleBroker->at(sfVaultID) (ledger state)",
+      "transformations": [
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "preclaim, doApply"
+    },
+    {
+      "field": "sfDebtTotal",
+      "flow": [
+        "ctx.view.read(keylet::loanbroker(brokerID))",
+        "preclaim: checked for nonzero, rounded, compared to zero"
+      ],
+      "origin": "sleBroker->at(sfDebtTotal) (ledger state)",
+      "transformations": [
+        "Rounded to asset scale",
+        "Checked for nonzero"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfCoverAvailable",
+      "flow": [
+        "ctx.view.read(keylet::loanbroker(brokerID))",
+        "preclaim: checked if > 0, triggers deep freeze check",
+        "doApply: used to transfer assets"
+      ],
+      "origin": "sleBroker->at(sfCoverAvailable) (ledger state)",
+      "transformations": [
+        "Converted to STAmount",
+        "Used in asset transfer"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the LoanBrokerDelete transaction logic for deleting a LoanBroker object in the XRPL lending protocol, including preflight, preclaim, and apply steps with all necessary ledger and permission checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfLoanBrokerID] == beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "explicit check (ctx.tx[sfLoanBrokerID] == beast::zero) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loanbroker(brokerID)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "ctx.view.read(keylet::loanbroker(brokerID)) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account != brokerOwner at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "account != brokerOwner validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwnerCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleBroker->at(sfOwnerCount); ownerCount != 0 at preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwnerCount",
+      "why_false_positive": "sleBroker->at(sfOwnerCount); ownerCount != 0 validates sfOwnerCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID))) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID))) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDebtTotal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleBroker->at(sfDebtTotal); debtTotal != beast::zero at preclaim",
+      "issue_pattern": "Missing empty string validation for sfDebtTotal",
+      "why_false_positive": "sleBroker->at(sfDebtTotal); debtTotal != beast::zero validates sfDebtTotal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCoverAvailable",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "coverAvailable > beast::zero; checkDeepFrozen(ctx.view, brokerOwner, asset) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfCoverAvailable",
+      "why_false_positive": "coverAvailable > beast::zero; checkDeepFrozen(ctx.view, brokerOwner, asset) validates sfCoverAvailable for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Lending Protocol Dependencies",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkLendingProtocolDependencies(ctx) at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for Lending Protocol Dependencies",
+      "why_false_positive": "checkLendingProtocolDependencies(ctx) validates Lending Protocol Dependencies for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanBrokerDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanBrokerDelete::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "LoanBrokerDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "LoanBrokerDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "LoanBrokerDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests for LoanBrokerDelete transactions, typically found in files like 'LoanBrokerDelete_test.cpp', 'LendingTransactor_test.cpp', or more general transaction/ledger tests. The LCOV_EXCL_START/STOP and LCOV_EXCL_LINE comments indicate some error paths (e.g., missing vault, failed dirRemove) are not covered by tests. Defensive checks (e.g., debt rounding, missing vault) may not be directly tested. Permission, existence, and field validation logic should be covered by positive/negative test cases, but edge cases (e.g., deep freeze, rounding errors, ledger corruption) may lack explicit tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanBrokerID",
+      "location": "preflight",
+      "validated_by": "explicit check (ctx.tx[sfLoanBrokerID] == beast::zero)",
+      "validates": [
+        "LoanBrokerID must not be zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfLoanBrokerID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::loanbroker(brokerID))",
+      "validates": [
+        "LoanBroker must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount",
+      "location": "preclaim",
+      "validated_by": "account != brokerOwner",
+      "validates": [
+        "Account must be owner of LoanBroker"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfOwnerCount",
+      "location": "preclaim",
+      "validated_by": "sleBroker->at(sfOwnerCount); ownerCount != 0",
+      "validates": [
+        "LoanBroker must have zero owner count (no obligations)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfVaultID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)))",
+      "validates": [
+        "Vault referenced by LoanBroker must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfDebtTotal",
+      "location": "preclaim",
+      "validated_by": "sleBroker->at(sfDebtTotal); debtTotal != beast::zero",
+      "validates": [
+        "LoanBroker must have zero total debt (after rounding to asset scale)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "return value of checkDeepFrozen (varies)",
+      "field": "sfCoverAvailable",
+      "location": "preclaim",
+      "validated_by": "coverAvailable > beast::zero; checkDeepFrozen(ctx.view, brokerOwner, asset)",
+      "validates": [
+        "If cover assets exist, broker owner must not be deep frozen for that asset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "return value of checkLendingProtocolDependencies (varies)",
+      "field": "Lending Protocol Dependencies",
+      "location": "checkExtraFeatures",
+      "validated_by": "checkLendingProtocolDependencies(ctx)",
+      "validates": [
+        "Lending protocol dependencies must be satisfied"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

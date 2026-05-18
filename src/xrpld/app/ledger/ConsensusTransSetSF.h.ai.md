@@ -1,0 +1,25 @@
+# ConsensusTransSetSF.h — Sync Filter for Consensus Transaction Sets
+
+`ConsensusTransSetSF` is a concrete implementation of the `SHAMapSyncFilter` interface, purpose-built for the transaction-set acquisition phase of XRPL consensus. It bridges the low-level `SHAMap` tree-synchronization machinery with two higher-level application structures: an in-memory node cache and the node's own transaction store.
+
+## Why a Sync Filter Exists
+
+`SHAMap` is a content-addressed Merkle tree used to represent both ledger state and transaction sets. When a validator needs to reconcile a proposed transaction set from its peers, the `SHAMapSync` code walks the tree and identifies missing nodes. But the sync code itself has no knowledge of higher-level caches, the transaction pool, or the job queue — it just knows how to hash nodes and ask for missing ones. The `SHAMapSyncFilter` interface is the designated extension point that lets the application layer hook into this process. `ConsensusTransSetSF` is the filter instance created for every transaction-set acquisition.
+
+## The Two Filter Methods
+
+`getNode()` is called by the `SHAMap` when it needs a node during `getMissingNodes()` traversal. The filter can satisfy the request from local data, avoiding a network round-trip. `ConsensusTransSetSF` tries two sources in priority order: first the `NodeCache` (a `TaggedCache<SHAMapHash, Blob>` of recently seen raw node bytes), then the `TransactionMaster`'s transaction cache. If the `TransactionMaster` has the transaction, the method serializes it on the fly with a `HashPrefix::transactionID` prefix, validates the resulting hash against the requested hash via `XRPL_ASSERT`, and returns the serialized bytes. This two-stage lookup is deliberate: the node cache is a general blob store covering any SHAMap node type, while the transaction master provides a typed lookup only for known transactions.
+
+`gotNode()` is called when the SHAMap successfully acquires a node — either from the filter itself (`fromFilter == true`) or from the peer network. When `fromFilter` is true, the method returns immediately; there is nothing new to learn since the data came from local state. When the node arrived from the network (`fromFilter == false`), two things happen. First, the raw bytes are inserted into the `NodeCache` so subsequent `getNode()` lookups and other map operations can be served from memory. Second, if the node type is `tnTRANSACTION_NM` (a non-metadata transaction leaf) and the data is large enough to be meaningful, the method deserializes the transaction from the node data (skipping the 4-byte `HashPrefix`) and submits it to the network via `app_.getJobQueue().addJob(jtTRANSACTION, ...)`. The job calls `NetworkOPs::submitTransaction()`, which routes the transaction into the node's own transaction pool.
+
+## The Side-Effect Design Decision
+
+Submitting newly discovered transactions to the local pool from within `gotNode()` is a notable design choice. During consensus, a validator must apply every transaction in the agreed-upon transaction set to compute the correct next ledger state. If a transaction is in the consensus set but was never previously seen by this node — perhaps it was submitted to a different peer first — the node might fail to apply it. By opportunistically submitting each newly seen transaction during tree acquisition, `ConsensusTransSetSF` ensures the transaction enters the node's local processing pipeline before consensus closes. The submission happens asynchronously via the job queue rather than inline in the callback, which keeps the SHAMap sync loop from blocking on transaction validation.
+
+## Usage in TransactionAcquire
+
+`ConsensusTransSetSF` is instantiated only in `TransactionAcquire`, the class responsible for fetching a specific transaction set identified by a `uint256` hash. It is created on the stack in two places: `trigger()`, where it is passed to `mMap->getMissingNodes()` so locally cached transactions can satisfy tree gaps without peer requests, and `takeNodes()`, where it is passed to the `SHAMap` as incoming peer data is integrated into the tree. Both call sites supply `app_.getTempNodeCache()` as the node cache, which is the application's shared temporary node cache. The filter's journal is "TransactionAcquire", matching the broader acquisition context.
+
+## Invariant Enforcement
+
+Both `getNode()` and `gotNode()` include `XRPL_ASSERT` checks that the SHA-512 half-hash of the serialized transaction bytes matches the `nodeHash` used as the lookup key. This defends against cache corruption, incorrect serialization, or malicious data from untrusted peers. If the assertion fires, it signals that somewhere a transaction was stored or transmitted with an incorrect hash relationship — an integrity violation that should never occur under correct operation.

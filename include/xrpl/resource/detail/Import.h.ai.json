@@ -1,0 +1,36 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "int"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 9,
+      "name": "Import"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Item"
+    }
+  ],
+  "description": "Defines the Import struct for importing consumer data (with balances and consumers) from a gossip origin, including expiration time and a list of items.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/detail/Import.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "Resource"
+    }
+  ]
+}

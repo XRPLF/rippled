@@ -1,0 +1,84 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Json::to_string",
+        "FastWriter::write"
+      ],
+      "entry_point": "Json::to_string",
+      "purpose": "Serializes a Json::Value to a compact JSON string.",
+      "validation_points": [
+        "Any validation would occur inside FastWriter::write, not in to_string itself."
+      ]
+    },
+    {
+      "call_chain": [
+        "Json::pretty",
+        "StyledWriter::write"
+      ],
+      "entry_point": "Json::pretty",
+      "purpose": "Serializes a Json::Value to a pretty-printed JSON string.",
+      "validation_points": [
+        "Any validation would occur inside StyledWriter::write, not in pretty itself."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value (Json::Value const&)",
+      "flow": [
+        "Caller provides Json::Value",
+        "Passed by const reference to to_string/pretty",
+        "Forwarded to FastWriter::write or StyledWriter::write",
+        "Serialized to std::string and returned"
+      ],
+      "origin": "Caller of Json::to_string or Json::pretty",
+      "transformations": [
+        "No transformation in to_string/pretty; transformation (serialization) occurs in Writer::write"
+      ],
+      "validated_at": "No validation in to_string/pretty; any validation would be inside Writer::write"
+    }
+  ],
+  "description": "Provides utility functions to convert a Json::Value to its string representation, either compact or pretty-printed.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/to_string.cpp",
+  "functions": [
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 7,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 12,
+      "name": "pretty"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "This file contains only thin wrappers around JSON serialization. There is no validation logic in these functions; they delegate to FastWriter and StyledWriter. Test coverage for these wrappers would be minimal and likely indirect, via tests that check JSON output formatting. Tests would exist in higher-level code that uses Json::to_string/pretty, or in unit tests for the JSON writer classes themselves (FastWriter, StyledWriter). There are likely no direct tests for validation in this file, and any validation coverage would depend on the underlying JSON library's tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

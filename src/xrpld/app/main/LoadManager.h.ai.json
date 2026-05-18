@@ -1,0 +1,56 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app, beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "LoadManager"
+    }
+  ],
+  "description": "Defines the LoadManager class, which manages load sources and detects server stalls in the XRPL server, including thread management and stall detection mechanisms.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/LoadManager.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "activateStallDetector"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "heartbeat"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "run"
+    },
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal journal"
+      ],
+      "lineno": 80,
+      "name": "make_LoadManager"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "tx"
+    },
+    {
+      "lineno": 122,
+      "name": "account"
+    },
+    {
+      "lineno": 122,
+      "name": "sequence"
+    },
+    {
+      "lineno": 122,
+      "name": "fee"
+    },
+    {
+      "lineno": 132,
+      "name": "tx"
+    },
+    {
+      "lineno": 139,
+      "name": "value"
+    },
+    {
+      "lineno": 149,
+      "name": "value"
+    },
+    {
+      "lineno": 159,
+      "name": "value"
+    },
+    {
+      "lineno": 169,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 169,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "DIDSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 115,
+      "name": "DIDSetBuilder"
+    }
+  ],
+  "description": "Defines the DIDSet transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing DIDSet transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/DIDSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "DIDSet::getDIDDocument"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "DIDSet::hasDIDDocument"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "DIDSet::getURI"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "DIDSet::hasURI"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "DIDSet::getData"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "DIDSet::hasData"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 137,
+      "name": "DIDSetBuilder::setDIDDocument"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 147,
+      "name": "DIDSetBuilder::setURI"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 157,
+      "name": "DIDSetBuilder::setData"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 167,
+      "name": "DIDSetBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

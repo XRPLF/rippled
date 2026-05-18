@@ -1,0 +1,91 @@
+{
+  "args": [
+    {
+      "lineno": 65,
+      "name": "method"
+    },
+    {
+      "lineno": 65,
+      "name": "requestId"
+    },
+    {
+      "lineno": 77,
+      "name": "type"
+    },
+    {
+      "lineno": 84,
+      "name": "dur"
+    },
+    {
+      "lineno": 84,
+      "name": "startTime"
+    },
+    {
+      "lineno": 84,
+      "name": "instance"
+    },
+    {
+      "lineno": 109,
+      "name": "resize"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "PerfLog"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "PerfLog::Setup"
+    }
+  ],
+  "description": "Defines the PerfLog class and related utilities for performance logging and counters in the XRPL application, including configuration, logging of RPC and job events, and JSON rendering of counters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/PerfLog.h",
+  "functions": [
+    {
+      "args": [
+        "section",
+        "configDir"
+      ],
+      "lineno": 97,
+      "name": "setup_PerfLog"
+    },
+    {
+      "args": [
+        "setup",
+        "app",
+        "journal",
+        "signalStop"
+      ],
+      "lineno": 100,
+      "name": "make_PerfLog"
+    },
+    {
+      "args": [
+        "func",
+        "actionDescription",
+        "maxDelay",
+        "journal"
+      ],
+      "lineno": 107,
+      "name": "measureDurationAndLog"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "beast"
+    },
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 21,
+      "name": "xrpl::perf"
+    }
+  ]
+}

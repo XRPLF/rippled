@@ -1,0 +1,316 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 11,
+      "name": "STCurrency"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 15,
+      "name": "STCurrency"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Currency const& currency"
+      ],
+      "lineno": 19,
+      "name": "STCurrency"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "currencyFromJson"
+      ],
+      "entry_point": "currencyFromJson",
+      "purpose": "Parses a JSON value into an STCurrency object, validating the input.",
+      "validation_points": [
+        "currencyFromJson: v.isString() - Ensures input is a string.",
+        "currencyFromJson: currency == badCurrency() || currency == noCurrency() - Ensures parsed currency is valid."
+      ]
+    },
+    {
+      "call_chain": [
+        "STCurrency::construct",
+        "STCurrency(SerialIter&, SField const&)"
+      ],
+      "entry_point": "STCurrency::construct",
+      "purpose": "Constructs an STCurrency from serialized data.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STCurrency::getJson"
+      ],
+      "entry_point": "STCurrency::getJson",
+      "purpose": "Serializes the currency field to JSON.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STCurrency::add"
+      ],
+      "entry_point": "STCurrency::add",
+      "purpose": "Serializes the currency field to a Serializer.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "currency (in STCurrency)",
+      "flow": [
+        "JSON input (v)",
+        "currencyFromJson: v.asString()",
+        "to_currency(v.asString())",
+        "STCurrency{name, currency}"
+      ],
+      "origin": "JSON input (Json::Value v) to currencyFromJson",
+      "transformations": [
+        "JSON string extracted",
+        "Converted to Currency type via to_currency",
+        "Validated against badCurrency() and noCurrency()"
+      ],
+      "validated_at": "currencyFromJson (isString() and currency validity check)"
+    },
+    {
+      "field": "currency_ (member of STCurrency)",
+      "flow": [
+        "SerialIter",
+        "sit.get160()",
+        "currency_"
+      ],
+      "origin": "SerialIter in STCurrency(SerialIter&, SField const&)",
+      "transformations": [
+        "160-bit value extracted from serialized data"
+      ],
+      "validated_at": "Not explicitly validated in this constructor"
+    }
+  ],
+  "description": "Implements the STCurrency class for representing and serializing currency types in the XRPL protocol, including construction, serialization, JSON conversion, and comparison.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "v (JSON input for currency)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "v.isString() at currencyFromJson",
+      "issue_pattern": "Missing empty string validation for v (JSON input for currency)",
+      "why_false_positive": "v.isString() validates v (JSON input for currency) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "v (JSON input for currency)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "v.isString() at currencyFromJson",
+      "issue_pattern": "Missing type validation for v (JSON input for currency)",
+      "why_false_positive": "v.isString() validates v (JSON input for currency) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency (parsed from JSON string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "currency == badCurrency() || currency == noCurrency() at currencyFromJson",
+      "issue_pattern": "Missing empty string validation for currency (parsed from JSON string)",
+      "why_false_positive": "currency == badCurrency() || currency == noCurrency() validates currency (parsed from JSON string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STCurrency.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "STCurrency::getSType"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "STCurrency::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 32,
+      "name": "STCurrency::getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 37,
+      "name": "STCurrency::add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 42,
+      "name": "STCurrency::isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "STCurrency::isDefault"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 52,
+      "name": "STCurrency::construct"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 57,
+      "name": "STCurrency::copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 62,
+      "name": "STCurrency::move"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 67,
+      "name": "currencyFromJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in currencyFromJson, which expects a JSON string and checks for valid currency values. Typical test coverage would be in unit tests for JSON parsing and currency validation, likely in files such as STCurrency_test.cpp, STObject_test.cpp, or broader transaction/serialization tests. Gaps: No explicit validation for serialized input (SerialIter path); only JSON input is validated. Edge cases for malformed or boundary currency values from serialization may not be covered unless tested elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (Throw<>, to_currency, isString from Json::Value)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "v (JSON input for currency)",
+      "location": "currencyFromJson",
+      "validated_by": "v.isString()",
+      "validates": [
+        "Checks that the JSON value for currency is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "currency (parsed from JSON string)",
+      "location": "currencyFromJson",
+      "validated_by": "currency == badCurrency() || currency == noCurrency()",
+      "validates": [
+        "Checks that the parsed currency is not an invalid or reserved value (badCurrency or noCurrency)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

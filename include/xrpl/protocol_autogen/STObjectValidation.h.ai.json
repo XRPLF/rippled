@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "obj"
+    },
+    {
+      "lineno": 9,
+      "name": "format"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to validate an STObject against a given SOTemplate, ensuring required fields are present and certain field constraints are met.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/STObjectValidation.h",
+  "functions": [
+    {
+      "args": [
+        "obj",
+        "format"
+      ],
+      "lineno": 7,
+      "name": "validateSTObject"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl::protocol_autogen"
+    }
+  ]
+}

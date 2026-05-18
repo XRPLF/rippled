@@ -1,0 +1,79 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "db"
+    },
+    {
+      "lineno": 11,
+      "name": "fp"
+    },
+    {
+      "lineno": 15,
+      "name": "fromFilter"
+    },
+    {
+      "lineno": 16,
+      "name": "nodeHash"
+    },
+    {
+      "lineno": 17,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 18,
+      "name": "nodeData"
+    },
+    {
+      "lineno": 19,
+      "name": "type"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "NodeStore::Database& db",
+        "AbstractFetchPackContainer& fp"
+      ],
+      "lineno": 8,
+      "name": "TransactionStateSF"
+    }
+  ],
+  "description": "Defines the TransactionStateSF class, a sync filter for transaction tree nodes during ledger synchronization in the XRPL, providing methods to handle and fetch transaction state nodes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/TransactionStateSF.h",
+  "functions": [
+    {
+      "args": [
+        "NodeStore::Database& db",
+        "AbstractFetchPackContainer& fp"
+      ],
+      "lineno": 11,
+      "name": "TransactionStateSF"
+    },
+    {
+      "args": [
+        "bool fromFilter",
+        "SHAMapHash const& nodeHash",
+        "std::uint32_t ledgerSeq",
+        "Blob&& nodeData",
+        "SHAMapNodeType type"
+      ],
+      "lineno": 15,
+      "name": "gotNode"
+    },
+    {
+      "args": [
+        "SHAMapHash const& nodeHash"
+      ],
+      "lineno": 22,
+      "name": "getNode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

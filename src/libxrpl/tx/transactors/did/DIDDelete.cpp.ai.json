@@ -1,0 +1,300 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ctx"
+    },
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 13,
+      "name": "sleKeylet"
+    },
+    {
+      "lineno": 13,
+      "name": "owner"
+    },
+    {
+      "lineno": 21,
+      "name": "view"
+    },
+    {
+      "lineno": 21,
+      "name": "sle"
+    },
+    {
+      "lineno": 21,
+      "name": "owner"
+    },
+    {
+      "lineno": 21,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DIDDelete::doApply",
+        "DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID)",
+        "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID, beast::Journal)"
+      ],
+      "entry_point": "DIDDelete::doApply",
+      "purpose": "Deletes a DID ledger entry for a given account, ensuring all references and ownerships are properly removed.",
+      "validation_points": [
+        "DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID): Validates existence of SLE via ctx.view().peek(sleKeylet)",
+        "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID, beast::Journal): Validates owner directory entry via view.dirRemove(...)",
+        "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID, beast::Journal): Validates owner account root via view.peek(keylet::account(owner))"
+      ]
+    },
+    {
+      "call_chain": [
+        "DIDDelete::preflight"
+      ],
+      "entry_point": "DIDDelete::preflight",
+      "purpose": "Preflight check for the transaction. Currently always returns success (no validation).",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sleKeylet",
+      "flow": [
+        "DIDDelete::doApply (calls keylet::did(account_))",
+        "DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID) (receives sleKeylet)",
+        "ctx.view().peek(sleKeylet) (fetches SLE)"
+      ],
+      "origin": "Constructed from keylet::did(account_) in doApply",
+      "transformations": [
+        "Used as a key to fetch the SLE from the ledger view"
+      ],
+      "validated_at": "DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID): if (!sle) return tecNO_ENTRY"
+    },
+    {
+      "field": "owner directory entry",
+      "flow": [
+        "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID, beast::Journal)",
+        "view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true)"
+      ],
+      "origin": "keylet::ownerDir(owner)",
+      "transformations": [
+        "Attempts to remove the SLE from the owner's directory"
+      ],
+      "validated_at": "DIDDelete::deleteSLE(ApplyView&, ...): if (!view.dirRemove(...)) return tefBAD_LEDGER"
+    },
+    {
+      "field": "owner account root",
+      "flow": [
+        "DIDDelete::deleteSLE(ApplyView&, ...)",
+        "view.peek(keylet::account(owner))"
+      ],
+      "origin": "keylet::account(owner)",
+      "transformations": [
+        "Fetched from ledger to adjust owner count"
+      ],
+      "validated_at": "DIDDelete::deleteSLE(ApplyView&, ...): if (!sleOwner) return tecINTERNAL"
+    },
+    {
+      "field": "owner count",
+      "flow": [
+        "DIDDelete::deleteSLE(ApplyView&, ...)",
+        "adjustOwnerCount(view, sleOwner, -1, j)",
+        "view.update(sleOwner)"
+      ],
+      "origin": "(*sleOwner)[sfOwnerCount]",
+      "transformations": [
+        "Decremented by 1 to reflect removal of DID"
+      ],
+      "validated_at": "Implicitly validated by presence of sleOwner"
+    }
+  ],
+  "description": "Implements the logic for deleting a Decentralized Identifier (DID) object from the XRPL ledger, including preflight checks and ledger entry removal.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleKeylet (ledger entry key)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view().peek(sleKeylet) at DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID const)",
+      "issue_pattern": "Missing empty string validation for sleKeylet (ledger entry key)",
+      "why_false_positive": "ctx.view().peek(sleKeylet) validates sleKeylet (ledger entry key) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner directory entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true) at DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID const, beast::Journal)",
+      "issue_pattern": "Missing empty string validation for owner directory entry",
+      "why_false_positive": "view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true) validates owner directory entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner account root",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::account(owner)) at DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID const, beast::Journal)",
+      "issue_pattern": "Missing empty string validation for owner account root",
+      "why_false_positive": "view.peek(keylet::account(owner)) validates owner account root for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/did/DIDDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "DIDDelete::preflight"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx",
+        "Keylet sleKeylet",
+        "AccountID const owner"
+      ],
+      "lineno": 13,
+      "name": "DIDDelete::deleteSLE"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> sle",
+        "AccountID const owner",
+        "beast::Journal j"
+      ],
+      "lineno": 21,
+      "name": "DIDDelete::deleteSLE"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "DIDDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or comments). Typical test files would be in the unit test suite for the DID feature, likely under 'test/tx/did' or similar. The code has LCOV_EXCL annotations, indicating some error paths are not covered by tests (e.g., fatal errors in dirRemove, missing owner account root). The preflight function is a stub and not tested for validation logic. Main validation paths (missing SLE, failed dirRemove, missing owner root) may not be fully covered by tests, especially for rare/failure cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sleKeylet (ledger entry key)",
+      "location": "DIDDelete::deleteSLE(ApplyContext&, Keylet, AccountID const)",
+      "validated_by": "ctx.view().peek(sleKeylet)",
+      "validates": [
+        "Checks if the ledger entry for the given Keylet exists before attempting deletion"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "owner directory entry",
+      "location": "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID const, beast::Journal)",
+      "validated_by": "view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true)",
+      "validates": [
+        "Checks if the DID object can be removed from the owner's directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "owner account root",
+      "location": "DIDDelete::deleteSLE(ApplyView&, std::shared_ptr<SLE>, AccountID const, beast::Journal)",
+      "validated_by": "view.peek(keylet::account(owner))",
+      "validates": [
+        "Checks if the owner's AccountRoot exists before adjusting owner count"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

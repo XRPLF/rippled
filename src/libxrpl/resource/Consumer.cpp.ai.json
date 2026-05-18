@@ -1,0 +1,479 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "logic"
+    },
+    {
+      "lineno": 13,
+      "name": "entry"
+    },
+    {
+      "lineno": 21,
+      "name": "other"
+    },
+    {
+      "lineno": 74,
+      "name": "what"
+    },
+    {
+      "lineno": 74,
+      "name": "context"
+    },
+    {
+      "lineno": 88,
+      "name": "j"
+    },
+    {
+      "lineno": 107,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 111,
+      "name": "os"
+    },
+    {
+      "lineno": 111,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Logic& logic, Entry& entry",
+        "",
+        "Consumer const& other"
+      ],
+      "lineno": 12,
+      "name": "Consumer"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Consumer::warn",
+        "XRPL_ASSERT(m_entry)",
+        "m_logic->warn(*m_entry)"
+      ],
+      "entry_point": "Consumer::warn",
+      "purpose": "Warns the logic about the consumer; asserts m_entry is valid.",
+      "validation_points": [
+        "XRPL_ASSERT(m_entry)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::disconnect",
+        "XRPL_ASSERT(m_entry)",
+        "m_logic->disconnect(*m_entry)",
+        "JLOG(j.debug()) << m_entry->to_string()"
+      ],
+      "entry_point": "Consumer::disconnect",
+      "purpose": "Disconnects the consumer; asserts m_entry is valid.",
+      "validation_points": [
+        "XRPL_ASSERT(m_entry)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::balance",
+        "XRPL_ASSERT(m_entry)",
+        "m_logic->balance(*m_entry)"
+      ],
+      "entry_point": "Consumer::balance",
+      "purpose": "Returns the consumer's balance; asserts m_entry is valid.",
+      "validation_points": [
+        "XRPL_ASSERT(m_entry)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::entry",
+        "XRPL_ASSERT(m_entry)",
+        "return *m_entry"
+      ],
+      "entry_point": "Consumer::entry",
+      "purpose": "Returns a reference to the entry; asserts m_entry is valid.",
+      "validation_points": [
+        "XRPL_ASSERT(m_entry)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::charge",
+        "if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())",
+        "m_logic->charge(*m_entry, what, context)"
+      ],
+      "entry_point": "Consumer::charge",
+      "purpose": "Charges the consumer; checks for null and unlimited before charging.",
+      "validation_points": [
+        "explicit nullptr checks",
+        "m_entry->isUnlimited()"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::disposition",
+        "if ((m_logic != nullptr) && (m_entry != nullptr))",
+        "m_logic->charge(*m_entry, Charge(0))"
+      ],
+      "entry_point": "Consumer::disposition",
+      "purpose": "Gets the disposition of the consumer; checks for null before charging.",
+      "validation_points": [
+        "explicit nullptr checks"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::isUnlimited",
+        "if (m_entry != nullptr)",
+        "m_entry->isUnlimited()"
+      ],
+      "entry_point": "Consumer::isUnlimited",
+      "purpose": "Checks if the consumer is unlimited.",
+      "validation_points": [
+        "explicit nullptr check"
+      ]
+    },
+    {
+      "call_chain": [
+        "Consumer::to_string",
+        "if (m_logic == nullptr)",
+        "return m_entry->to_string()"
+      ],
+      "entry_point": "Consumer::to_string",
+      "purpose": "Returns string representation of the consumer.",
+      "validation_points": [
+        "explicit nullptr check"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_entry",
+      "flow": [
+        "Consumer::Consumer(Logic&, Entry&)",
+        "assigned to m_entry",
+        "used in all member functions (warn, disconnect, balance, entry, charge, etc.)"
+      ],
+      "origin": "Constructor parameter (Entry& entry) or copy from other Consumer",
+      "transformations": [
+        "Acquired/released via m_logic->acquire/release in copy/move/assignment/destructor",
+        "Validated via XRPL_ASSERT or nullptr checks before use"
+      ],
+      "validated_at": "XRPL_ASSERT in warn, disconnect, balance, entry; nullptr checks in charge, disposition, isUnlimited, to_string"
+    },
+    {
+      "field": "m_logic",
+      "flow": [
+        "Consumer::Consumer(Logic&, Entry&)",
+        "assigned to m_logic",
+        "used in all member functions to operate on m_entry"
+      ],
+      "origin": "Constructor parameter (Logic& logic) or copy from other Consumer",
+      "transformations": [
+        "Acquired/released via m_logic->acquire/release in copy/move/assignment/destructor",
+        "Validated via nullptr checks before use"
+      ],
+      "validated_at": "nullptr checks in all functions before dereferencing"
+    },
+    {
+      "field": "publicKey (in m_entry)",
+      "flow": [
+        "Consumer::setPublicKey",
+        "m_entry->publicKey = publicKey"
+      ],
+      "origin": "setPublicKey(PublicKey const& publicKey)",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "No explicit validation in setPublicKey"
+    }
+  ],
+  "description": "Implements the xrpl::Resource::Consumer class, which manages resource consumption tracking and control for clients, including reference counting, charging, warning, disconnecting, and balance management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at warn()",
+      "issue_pattern": "Missing empty string validation for m_entry",
+      "why_false_positive": "XRPL_ASSERT macro validates m_entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at disconnect()",
+      "issue_pattern": "Missing empty string validation for m_entry",
+      "why_false_positive": "XRPL_ASSERT macro validates m_entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at balance()",
+      "issue_pattern": "Missing empty string validation for m_entry",
+      "why_false_positive": "XRPL_ASSERT macro validates m_entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at entry()",
+      "issue_pattern": "Missing empty string validation for m_entry",
+      "why_false_positive": "XRPL_ASSERT macro validates m_entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_logic, m_entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit nullptr checks at Consumer::Consumer(Consumer const& other), Consumer::~Consumer(), Consumer::operator=, Consumer::to_string(), Consumer::isUnlimited(), Consumer::disposition(), Consumer::charge()",
+      "issue_pattern": "Missing empty string validation for m_logic, m_entry",
+      "why_false_positive": "explicit nullptr checks validates m_logic, m_entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_entry->isUnlimited()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check at charge()",
+      "issue_pattern": "Missing empty string validation for m_entry->isUnlimited()",
+      "why_false_positive": "explicit check validates m_entry->isUnlimited() for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/resource/Consumer.cpp",
+  "functions": [
+    {
+      "args": [
+        "Logic& logic",
+        "Entry& entry"
+      ],
+      "lineno": 13,
+      "name": "Consumer"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "Consumer"
+    },
+    {
+      "args": [
+        "Consumer const& other"
+      ],
+      "lineno": 21,
+      "name": "Consumer"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "~Consumer"
+    },
+    {
+      "args": [
+        "Consumer const& other"
+      ],
+      "lineno": 36,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "to_string"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "disposition"
+    },
+    {
+      "args": [
+        "Charge const& what",
+        "std::string const& context"
+      ],
+      "lineno": 74,
+      "name": "charge"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "warn"
+    },
+    {
+      "args": [
+        "beast::Journal const& j"
+      ],
+      "lineno": 88,
+      "name": "disconnect"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "balance"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "entry"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey"
+      ],
+      "lineno": 107,
+      "name": "setPublicKey"
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "Consumer const& v"
+      ],
+      "lineno": 111,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "Resource"
+    }
+  ],
+  "test_coverage_notes": "The validation code paths (XRPL_ASSERT and nullptr checks) are critical for safety. Typical test files would be in the test/resource or test/unit/resource directories, possibly named Consumer_test.cpp or Resource_test.cpp. Tests should cover: construction, copy, assignment, destruction, all public methods (warn, disconnect, balance, entry, charge, disposition, isUnlimited, to_string, setPublicKey), and especially error cases (null m_entry, null m_logic). Gaps may exist if tests do not explicitly check assertion failures (XRPL_ASSERT), or if edge cases (e.g., double release, null logic/entry) are not tested. No test code is shown here, so actual coverage must be verified in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion), explicit nullptr checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "m_entry",
+      "location": "warn()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "m_entry is not nullptr"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "m_entry",
+      "location": "disconnect()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "m_entry is not nullptr"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "m_entry",
+      "location": "balance()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "m_entry is not nullptr"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "m_entry",
+      "location": "entry()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "m_entry is not nullptr"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (skips logic if nullptr)",
+      "field": "m_logic, m_entry",
+      "location": "Consumer::Consumer(Consumer const& other), Consumer::~Consumer(), Consumer::operator=, Consumer::to_string(), Consumer::isUnlimited(), Consumer::disposition(), Consumer::charge()",
+      "validated_by": "explicit nullptr checks",
+      "validates": [
+        "m_logic and/or m_entry are not nullptr before use"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (skips charge if unlimited)",
+      "field": "m_entry->isUnlimited()",
+      "location": "charge()",
+      "validated_by": "explicit check",
+      "validates": [
+        "charge is only applied if not unlimited"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

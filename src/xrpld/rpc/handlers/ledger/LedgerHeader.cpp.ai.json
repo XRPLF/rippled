@@ -1,0 +1,301 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerHeader",
+        "RPC::lookupLedger",
+        "Ledger retrieval and validation"
+      ],
+      "entry_point": "doLedgerHeader",
+      "purpose": "Handles the ledger_header RPC command, validates input, retrieves the requested ledger, serializes and returns its header.",
+      "validation_points": [
+        "RPC::lookupLedger: Validates ledger_hash and ledger_index from context.params",
+        "RPC::JsonContext: Validates the overall request JSON structure and types (via framework and constructor)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger_hash",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger (validation and lookup)",
+        "lpLedger (shared_ptr<ReadView const>)",
+        "lpLedger->header()",
+        "addRaw (serializes header)",
+        "strHex (converts to hex string)",
+        "jvResult[jss::ledger_data] (output JSON)"
+      ],
+      "origin": "context.params (JSON RPC request)",
+      "transformations": [
+        "Validated as a hex string or integer (by lookupLedger)",
+        "Used to look up ledger",
+        "Header serialized to binary",
+        "Binary converted to hex string"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger (validation and lookup)",
+        "lpLedger (shared_ptr<ReadView const>)",
+        "lpLedger->header()",
+        "addRaw (serializes header)",
+        "strHex (converts to hex string)",
+        "jvResult[jss::ledger_data] (output JSON)"
+      ],
+      "origin": "context.params (JSON RPC request)",
+      "transformations": [
+        "Validated as integer or string (by lookupLedger)",
+        "Used to look up ledger",
+        "Header serialized to binary",
+        "Binary converted to hex string"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "context (request JSON)",
+      "flow": [
+        "RPC framework",
+        "RPC::JsonContext (constructor validates structure/types)",
+        "doLedgerHeader (receives validated context)"
+      ],
+      "origin": "RPC framework (incoming HTTP/JSON request)",
+      "transformations": [
+        "Validated for required fields, types, and structure"
+      ],
+      "validated_at": "RPC::JsonContext (constructor and framework)"
+    }
+  ],
+  "description": "Implements the doLedgerHeader function, which retrieves and serializes the header of a specified ledger into JSON format for RPC responses.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by xrpld RPC framework (jss::, RPC::JsonContext, RPC::lookupLedger)",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::JsonContext, RPC::lookupLedger) validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by xrpld RPC framework (jss::, RPC::JsonContext, RPC::lookupLedger)",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::JsonContext, RPC::lookupLedger) validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doLedgerHeader",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "context (request JSON)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::JsonContext (constructor and framework) at doLedgerHeader (indirect, via context parameter)",
+      "issue_pattern": "Missing empty string validation for context (request JSON)",
+      "why_false_positive": "RPC::JsonContext (constructor and framework) validates context (request JSON) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerHeader.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doLedgerHeader"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doLedgerHeader function is typically tested via RPC integration tests that exercise the ledger_header command with various ledger_hash and ledger_index values. Likely test files include rpc/ledger_header_test.cpp, rpc/LedgerHandler_test.cpp, or broader RPC handler test suites. Validation of malformed or missing ledger_hash/ledger_index is usually covered, but edge cases (e.g., invalid types, boundary values, or malicious input) may not be exhaustively tested. Direct unit tests for RPC::lookupLedger and JsonContext validation may exist, but gaps could include fuzzing, deeply nested/invalid JSON, or rare ledger lookup failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger_hash",
+      "ledger_index"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::JsonContext, RPC::lookupLedger)",
+    "validation_layer": "entry_point (RPC handler), middleware (lookupLedger), business_logic (ledger existence)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns error JSON (e.g., rpcLGR_NOT_FOUND, rpcINVALID_PARAMS)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doLedgerHeader",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "ledger_hash: checks if present, correct format (hex), valid length",
+        "ledger_index: checks if present, is integer, within valid range",
+        "at least one of ledger_hash or ledger_index must be provided",
+        "ledger exists in backend"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Returns error JSON (e.g., rpcINVALID_PARAMS)",
+      "field": "context (request JSON)",
+      "location": "doLedgerHeader (indirect, via context parameter)",
+      "validated_by": "RPC::JsonContext (constructor and framework)",
+      "validates": [
+        "request is valid JSON",
+        "fields are correct types (ledger_hash: string, ledger_index: int or string)",
+        "no extraneous fields"
+      ],
+      "validation_type": "type|format"
+    }
+  ]
+}

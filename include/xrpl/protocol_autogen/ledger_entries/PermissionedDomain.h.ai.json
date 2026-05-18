@@ -1,0 +1,171 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "sle"
+    },
+    {
+      "lineno": 104,
+      "name": "owner"
+    },
+    {
+      "lineno": 104,
+      "name": "sequence"
+    },
+    {
+      "lineno": 104,
+      "name": "acceptedCredentials"
+    },
+    {
+      "lineno": 104,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 104,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 104,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 113,
+      "name": "sle"
+    },
+    {
+      "lineno": 118,
+      "name": "value"
+    },
+    {
+      "lineno": 128,
+      "name": "value"
+    },
+    {
+      "lineno": 138,
+      "name": "value"
+    },
+    {
+      "lineno": 148,
+      "name": "value"
+    },
+    {
+      "lineno": 158,
+      "name": "value"
+    },
+    {
+      "lineno": 168,
+      "name": "value"
+    },
+    {
+      "lineno": 178,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "PermissionedDomain"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner, std::decay_t<typename SF_UINT32::type::value_type> const& sequence, STArray const& acceptedCredentials, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 99,
+      "name": "PermissionedDomainBuilder"
+    }
+  ],
+  "description": "Defines the PermissionedDomain ledger entry and its builder for the XRPL, providing type-safe accessors and a fluent builder interface for constructing and manipulating PermissionedDomain ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/PermissionedDomain.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAcceptedCredentials"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 116,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 126,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 136,
+      "name": "setAcceptedCredentials"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 146,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 156,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 166,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 176,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

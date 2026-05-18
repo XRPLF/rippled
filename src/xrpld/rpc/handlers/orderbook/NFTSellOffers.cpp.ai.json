@@ -1,0 +1,192 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doNFTSellOffers",
+        "enumerateNFTOffers"
+      ],
+      "entry_point": "doNFTSellOffers",
+      "purpose": "Handles the NFT sell offers RPC request: validates input, parses NFT ID, and enumerates sell offers for the given NFT.",
+      "validation_points": [
+        "doNFTSellOffers: context.params.isMember(jss::nft_id)",
+        "doNFTSellOffers: nftId.parseHex(context.params[jss::nft_id].asString())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "nft_id",
+      "flow": [
+        "context.params[jss::nft_id]",
+        "asString()",
+        "nftId.parseHex(...)",
+        "nftId (parsed uint256)",
+        "enumerateNFTOffers(context, nftId, keylet::nft_sells(nftId))"
+      ],
+      "origin": "context.params (JSON RPC request body)",
+      "transformations": [
+        "Extracted from JSON as string",
+        "Parsed from hex string to uint256"
+      ],
+      "validated_at": "doNFTSellOffers: presence checked (isMember), format checked (parseHex)"
+    }
+  ],
+  "description": "Implements the doNFTSellOffers RPC handler, which returns sell offers for a given NFT by validating input and invoking enumerateNFTOffers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "nft_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::nft_id) at doNFTSellOffers",
+      "issue_pattern": "Missing empty string validation for nft_id",
+      "why_false_positive": "context.params.isMember(jss::nft_id) validates nft_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "nft_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nftId.parseHex(context.params[jss::nft_id].asString()) at doNFTSellOffers",
+      "issue_pattern": "Missing empty string validation for nft_id",
+      "why_false_positive": "nftId.parseHex(context.params[jss::nft_id].asString()) validates nft_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "nft_id",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "nftId.parseHex(context.params[jss::nft_id].asString()) at doNFTSellOffers",
+      "issue_pattern": "Missing format validation for nft_id",
+      "why_false_positive": "nftId.parseHex(context.params[jss::nft_id].asString()) validates nft_id format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/NFTSellOffers.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doNFTSellOffers"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage likely exists in RPC handler or integration test suites for NFT sell offers (e.g., tests exercising the 'nft_sell_offers' RPC method). Validation for missing or invalid 'nft_id' is directly handled and should be tested. Gaps may exist if there are no explicit negative tests for malformed or missing 'nft_id', or if edge cases (e.g., non-string types, boundary values) are not covered. No unit tests are visible in this file; coverage depends on higher-level RPC tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for JSON field names, RPC::* for error handling)",
+    "validation_layer": "entry_point"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::nft_id)",
+      "field": "nft_id",
+      "location": "doNFTSellOffers",
+      "validated_by": "context.params.isMember(jss::nft_id)",
+      "validates": [
+        "Checks if 'nft_id' field is present in the input JSON parameters"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::nft_id)",
+      "field": "nft_id",
+      "location": "doNFTSellOffers",
+      "validated_by": "nftId.parseHex(context.params[jss::nft_id].asString())",
+      "validates": [
+        "Checks if 'nft_id' is a valid hex string that can be parsed into a uint256"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerStateFix::preflight"
+      ],
+      "entry_point": "LedgerStateFix::preflight",
+      "purpose": "Initial validation of transaction fields before further processing.",
+      "validation_points": [
+        "Validates sfLedgerFixType via switch statement.",
+        "If FixType::nfTokenPageLink, validates presence of sfOwner via isFieldPresent."
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerStateFix::preclaim"
+      ],
+      "entry_point": "LedgerStateFix::preclaim",
+      "purpose": "Performs further validation after preflight, ensuring referenced objects exist.",
+      "validation_points": [
+        "If FixType::nfTokenPageLink, validates that account for sfOwner exists via view.read(keylet::account(owner))."
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerStateFix::doApply"
+      ],
+      "entry_point": "LedgerStateFix::doApply",
+      "purpose": "Executes the fix operation, performing the actual ledger state change.",
+      "validation_points": [
+        "If FixType::nfTokenPageLink, validates/repairs NFT directory links for sfOwner via nft::repairNFTokenDirectoryLinks."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLedgerFixType",
+      "flow": [
+        "ctx.tx[sfLedgerFixType] in preflight",
+        "ctx.tx[sfLedgerFixType] in preclaim",
+        "ctx_.tx[sfLedgerFixType] in doApply"
+      ],
+      "origin": "ctx.tx (STTx) - transaction input",
+      "transformations": [
+        "Read as enum FixType",
+        "Used in switch/case and if statements to select code path"
+      ],
+      "validated_at": "preflight (switch statement)"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfOwner) in preflight",
+        "ctx.tx[sfOwner] in preclaim",
+        "ctx_.tx[sfOwner] in doApply"
+      ],
+      "origin": "ctx.tx (STTx) - transaction input",
+      "transformations": [
+        "Checked for presence (isFieldPresent)",
+        "Extracted as AccountID",
+        "Used as argument to keylet::account and nft::repairNFTokenDirectoryLinks"
+      ],
+      "validated_at": "preflight (isFieldPresent), preclaim (view.read(keylet::account(owner))), doApply (nft::repairNFTokenDirectoryLinks)"
+    }
+  ],
+  "description": "Implements the LedgerStateFix transactor, which applies specific ledger state fixes (such as repairing NFToken directory links) based on the transaction's FixType.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLedgerFixType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit switch statement at LedgerStateFix::preflight",
+      "issue_pattern": "Missing empty string validation for sfLedgerFixType",
+      "why_false_positive": "explicit switch statement validates sfLedgerFixType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent method at LedgerStateFix::preflight",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "isFieldPresent method validates sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "keylet::account(owner) and view.read at LedgerStateFix::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "keylet::account(owner) and view.read validates sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::repairNFTokenDirectoryLinks at LedgerStateFix::doApply",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "nft::repairNFTokenDirectoryLinks validates sfOwner for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/system/LedgerStateFix.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 7,
+      "name": "LedgerStateFix::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 22,
+      "name": "LedgerStateFix::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 31,
+      "name": "LedgerStateFix::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "LedgerStateFix::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit/integration tests for LedgerStateFix transactions, especially for FixType::nfTokenPageLink. Tests should cover: (1) missing/invalid sfLedgerFixType, (2) missing sfOwner, (3) non-existent sfOwner account, (4) successful and failed repairNFTokenDirectoryLinks. However, coverage gaps may exist for: (a) unhandled FixTypes (default case), (b) error paths marked LCOV_EXCL_LINE (tecINTERNAL), (c) edge cases in nft::repairNFTokenDirectoryLinks. Test files would likely be found in the rippled/test or xrplf-rippled/test directories, possibly named LedgerStateFix_test.cpp or similar. No explicit test references are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in transaction processing (no external framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINVALID_LEDGER_FIX_TYPE",
+      "field": "sfLedgerFixType",
+      "location": "LedgerStateFix::preflight",
+      "validated_by": "explicit switch statement",
+      "validates": [
+        "Checks that sfLedgerFixType is a recognized FixType (currently only FixType::nfTokenPageLink is allowed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfOwner",
+      "location": "LedgerStateFix::preflight",
+      "validated_by": "isFieldPresent method",
+      "validates": [
+        "Checks that sfOwner field is present in the transaction when FixType is nfTokenPageLink"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfOwner",
+      "location": "LedgerStateFix::preclaim",
+      "validated_by": "keylet::account(owner) and view.read",
+      "validates": [
+        "Checks that the account specified by sfOwner exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "tecFAILED_PROCESSING",
+      "field": "sfOwner",
+      "location": "LedgerStateFix::doApply",
+      "validated_by": "nft::repairNFTokenDirectoryLinks",
+      "validates": [
+        "Checks that the repair operation on the NFToken directory links for the owner succeeds"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

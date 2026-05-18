@@ -1,0 +1,261 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "DatabasePairValid"
+    }
+  ],
+  "description": "This file provides utility functions and structures for interacting with XRPL ledger and transaction relational databases, including opening databases, querying ledger and transaction information, deleting entries, and paginating account transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/rdb/backend/detail/Node.h",
+  "functions": [
+    {
+      "args": [
+        "config",
+        "setup",
+        "checkpointerSetup",
+        "j"
+      ],
+      "lineno": 23,
+      "name": "makeLedgerDBs"
+    },
+    {
+      "args": [
+        "session",
+        "type"
+      ],
+      "lineno": 36,
+      "name": "getMinLedgerSeq"
+    },
+    {
+      "args": [
+        "session",
+        "type"
+      ],
+      "lineno": 45,
+      "name": "getMaxLedgerSeq"
+    },
+    {
+      "args": [
+        "session",
+        "type",
+        "ledgerSeq"
+      ],
+      "lineno": 54,
+      "name": "deleteByLedgerSeq"
+    },
+    {
+      "args": [
+        "session",
+        "type",
+        "ledgerSeq"
+      ],
+      "lineno": 65,
+      "name": "deleteBeforeLedgerSeq"
+    },
+    {
+      "args": [
+        "session",
+        "type"
+      ],
+      "lineno": 76,
+      "name": "getRows"
+    },
+    {
+      "args": [
+        "session",
+        "type"
+      ],
+      "lineno": 87,
+      "name": "getRowsMinMax"
+    },
+    {
+      "args": [
+        "ldgDB",
+        "txnDB",
+        "app",
+        "ledger",
+        "current"
+      ],
+      "lineno": 100,
+      "name": "saveValidatedLedger"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerSeq",
+        "j"
+      ],
+      "lineno": 113,
+      "name": "getLedgerInfoByIndex"
+    },
+    {
+      "args": [
+        "session",
+        "j"
+      ],
+      "lineno": 122,
+      "name": "getNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerFirstIndex",
+        "j"
+      ],
+      "lineno": 133,
+      "name": "getLimitedOldestLedgerInfo"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerFirstIndex",
+        "j"
+      ],
+      "lineno": 144,
+      "name": "getLimitedNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerHash",
+        "j"
+      ],
+      "lineno": 155,
+      "name": "getLedgerInfoByHash"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerIndex"
+      ],
+      "lineno": 166,
+      "name": "getHashByIndex"
+    },
+    {
+      "args": [
+        "session",
+        "ledgerIndex",
+        "j"
+      ],
+      "lineno": 177,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "session",
+        "minSeq",
+        "maxSeq",
+        "j"
+      ],
+      "lineno": 191,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "startIndex",
+        "quantity"
+      ],
+      "lineno": 208,
+      "name": "getTxHistory"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "ledgerMaster",
+        "options",
+        "j"
+      ],
+      "lineno": 225,
+      "name": "getOldestAccountTxs"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "ledgerMaster",
+        "options",
+        "j"
+      ],
+      "lineno": 247,
+      "name": "getNewestAccountTxs"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "options",
+        "j"
+      ],
+      "lineno": 269,
+      "name": "getOldestAccountTxsB"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "options",
+        "j"
+      ],
+      "lineno": 291,
+      "name": "getNewestAccountTxsB"
+    },
+    {
+      "args": [
+        "session",
+        "onUnsavedLedger",
+        "onTransaction",
+        "options",
+        "page_length"
+      ],
+      "lineno": 313,
+      "name": "oldestAccountTxPage"
+    },
+    {
+      "args": [
+        "session",
+        "onUnsavedLedger",
+        "onTransaction",
+        "options",
+        "page_length"
+      ],
+      "lineno": 336,
+      "name": "newestAccountTxPage"
+    },
+    {
+      "args": [
+        "session",
+        "app",
+        "id",
+        "range",
+        "ec"
+      ],
+      "lineno": 359,
+      "name": "getTransaction"
+    },
+    {
+      "args": [
+        "session",
+        "config",
+        "j"
+      ],
+      "lineno": 382,
+      "name": "dbHasSpace"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ]
+}

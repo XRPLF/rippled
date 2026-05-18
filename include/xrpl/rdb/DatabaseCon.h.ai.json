@@ -1,0 +1,101 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "it"
+    },
+    {
+      "lineno": 25,
+      "name": "m"
+    },
+    {
+      "lineno": 29,
+      "name": "rhs"
+    },
+    {
+      "lineno": 62,
+      "name": "setup"
+    },
+    {
+      "lineno": 63,
+      "name": "dbName"
+    },
+    {
+      "lineno": 64,
+      "name": "pragma"
+    },
+    {
+      "lineno": 65,
+      "name": "initSQL"
+    },
+    {
+      "lineno": 66,
+      "name": "journal"
+    },
+    {
+      "lineno": 74,
+      "name": "checkpointerSetup"
+    },
+    {
+      "lineno": 83,
+      "name": "dataDir"
+    },
+    {
+      "lineno": 120,
+      "name": "pPath"
+    },
+    {
+      "lineno": 121,
+      "name": "commonPragma"
+    },
+    {
+      "lineno": 164,
+      "name": "id"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<soci::session> it, mutex& m",
+        "LockedSociSession&& rhs",
+        "LockedSociSession() = delete",
+        "LockedSociSession const& rhs = delete"
+      ],
+      "lineno": 18,
+      "name": "LockedSociSession"
+    },
+    {
+      "args": [
+        "Setup const& setup, std::string const& dbName, std::array<std::string, N> const& pragma, std::array<char const*, M> const& initSQL, beast::Journal journal",
+        "Setup const& setup, std::string const& dbName, std::array<std::string, N> const& pragma, std::array<char const*, M> const& initSQL, CheckpointerSetup const& checkpointerSetup, beast::Journal journal",
+        "boost::filesystem::path const& dataDir, std::string const& dbName, std::array<std::string, N> const& pragma, std::array<char const*, M> const& initSQL, beast::Journal journal",
+        "boost::filesystem::path const& dataDir, std::string const& dbName, std::array<std::string, N> const& pragma, std::array<char const*, M> const& initSQL, CheckpointerSetup const& checkpointerSetup, beast::Journal journal",
+        "boost::filesystem::path const& pPath, std::vector<std::string> const* commonPragma, std::array<std::string, N> const& pragma, std::array<char const*, M> const& initSQL, beast::Journal journal"
+      ],
+      "lineno": 49,
+      "name": "DatabaseCon"
+    }
+  ],
+  "description": "This file defines classes and utilities for managing SQLite database connections and sessions in the XRPL codebase, including support for checkpointing and thread-safe session access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/rdb/DatabaseCon.h",
+  "functions": [
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 164,
+      "name": "checkpointerFromId"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "soci"
+    },
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ]
+}

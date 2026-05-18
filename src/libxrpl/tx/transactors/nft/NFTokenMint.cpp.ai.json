@@ -1,0 +1,538 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "txFlags"
+    },
+    {
+      "lineno": 14,
+      "name": "ctx"
+    },
+    {
+      "lineno": 91,
+      "name": "flags"
+    },
+    {
+      "lineno": 91,
+      "name": "fee"
+    },
+    {
+      "lineno": 91,
+      "name": "issuer"
+    },
+    {
+      "lineno": 91,
+      "name": "taxon"
+    },
+    {
+      "lineno": 91,
+      "name": "tokenSeq"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenMint::preflight",
+        "hasOfferFields",
+        "nft::tokenOfferCreatePreflight"
+      ],
+      "entry_point": "NFTokenMint::preflight",
+      "purpose": "Performs all preflight validation for NFTokenMint transactions, including field presence, value ranges, and offer field validation.",
+      "validation_points": [
+        "NFTokenMint::preflight: sfTransferFee, tfTransferable, sfIssuer, sfURI, offer fields",
+        "nft::tokenOfferCreatePreflight: offer field validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenMint::preclaim"
+      ],
+      "entry_point": "NFTokenMint::preclaim",
+      "purpose": "Performs additional checks after preflight but before applying the transaction (not shown in provided code, but standard in XRPL transactors).",
+      "validation_points": [
+        "NFTokenMint::preclaim: (not shown, but typically checks ledger state)"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenMint::doApply",
+        "NFTokenMint::createNFTokenID"
+      ],
+      "entry_point": "NFTokenMint::doApply",
+      "purpose": "Applies the transaction to the ledger, creating the NFToken after all validations pass.",
+      "validation_points": [
+        "NFTokenMint::doApply: assumes preflight/preclaim passed"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenMint::checkExtraFeatures",
+        "hasOfferFields"
+      ],
+      "entry_point": "NFTokenMint::checkExtraFeatures",
+      "purpose": "Checks if extra features (like mint offers) are allowed by network rules.",
+      "validation_points": [
+        "NFTokenMint::checkExtraFeatures: feature flag and offer field presence"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfTransferFee",
+      "flow": [
+        "transaction input",
+        "NFTokenMint::preflight",
+        "checked for maxTransferFee and tfTransferable"
+      ],
+      "origin": "ctx.tx[~sfTransferFee] (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Compared to maxTransferFee",
+        "If >0, tfTransferable flag required"
+      ],
+      "validated_at": "NFTokenMint::preflight"
+    },
+    {
+      "field": "tfTransferable (flag)",
+      "flow": [
+        "transaction input",
+        "NFTokenMint::preflight",
+        "checked if sfTransferFee > 0"
+      ],
+      "origin": "ctx.tx.isFlag(tfTransferable)",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "NFTokenMint::preflight"
+    },
+    {
+      "field": "sfIssuer",
+      "flow": [
+        "transaction input",
+        "NFTokenMint::preflight",
+        "compared to ctx.tx[sfAccount]"
+      ],
+      "origin": "ctx.tx[~sfIssuer]",
+      "transformations": [
+        "Checked for presence",
+        "Compared to transaction account"
+      ],
+      "validated_at": "NFTokenMint::preflight"
+    },
+    {
+      "field": "sfURI",
+      "flow": [
+        "transaction input",
+        "NFTokenMint::preflight",
+        "checked for empty or length > maxTokenURILength"
+      ],
+      "origin": "ctx.tx[~sfURI]",
+      "transformations": [
+        "Checked for presence",
+        "Checked for empty string",
+        "Checked for length"
+      ],
+      "validated_at": "NFTokenMint::preflight"
+    },
+    {
+      "field": "Offer fields (sfAmount, sfDestination, sfExpiration)",
+      "flow": [
+        "transaction input",
+        "hasOfferFields",
+        "NFTokenMint::preflight",
+        "nft::tokenOfferCreatePreflight"
+      ],
+      "origin": "ctx.tx.isFieldPresent(sfAmount/sfDestination/sfExpiration)",
+      "transformations": [
+        "Presence checked",
+        "If present, further validated by tokenOfferCreatePreflight"
+      ],
+      "validated_at": "hasOfferFields, NFTokenMint::preflight, nft::tokenOfferCreatePreflight"
+    },
+    {
+      "field": "Transaction Flags",
+      "flow": [
+        "transaction input",
+        "extractNFTokenFlagsFromTxFlags",
+        "used in offer validation"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Masked to 16 bits"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight"
+    }
+  ],
+  "description": "Implements the logic for the NFTokenMint transaction in the XRPL, including preflight checks, preclaim checks, minting logic, and creation of NFT IDs.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransferFee",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransferFee validated by Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+      "issue_pattern": "Missing validation for sfTransferFee",
+      "why_false_positive": "Custom explicit validation (no external framework); uses PreflightContext and feature flags validates sfTransferFee automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfIssuer",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfIssuer validated by Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+      "issue_pattern": "Missing validation for sfIssuer",
+      "why_false_positive": "Custom explicit validation (no external framework); uses PreflightContext and feature flags validates sfIssuer automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfURI",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfURI validated by Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+      "issue_pattern": "Missing validation for sfURI",
+      "why_false_positive": "Custom explicit validation (no external framework); uses PreflightContext and feature flags validates sfURI automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txFlags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txFlags validated by Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+      "issue_pattern": "Missing validation for txFlags",
+      "why_false_positive": "Custom explicit validation (no external framework); uses PreflightContext and feature flags validates txFlags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "offer fields (sfAmount, sfDestination, sfExpiration)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field offer fields (sfAmount, sfDestination, sfExpiration) validated by Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+      "issue_pattern": "Missing validation for offer fields (sfAmount, sfDestination, sfExpiration)",
+      "why_false_positive": "Custom explicit validation (no external framework); uses PreflightContext and feature flags validates offer fields (sfAmount, sfDestination, sfExpiration) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at NFTokenMint::preflight",
+      "issue_pattern": "Missing empty string validation for sfTransferFee",
+      "why_false_positive": "explicit code validates sfTransferFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee + tfTransferable",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at NFTokenMint::preflight",
+      "issue_pattern": "Missing empty string validation for sfTransferFee + tfTransferable",
+      "why_false_positive": "explicit code validates sfTransferFee + tfTransferable for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfIssuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at NFTokenMint::preflight",
+      "issue_pattern": "Missing empty string validation for sfIssuer",
+      "why_false_positive": "explicit code validates sfIssuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfURI",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at NFTokenMint::preflight",
+      "issue_pattern": "Missing empty string validation for sfURI",
+      "why_false_positive": "explicit code validates sfURI for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "offer fields (sfAmount, sfDestination, sfExpiration)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasOfferFields() helper at NFTokenMint::checkExtraFeatures (used in preflight)",
+      "issue_pattern": "Missing empty string validation for offer fields (sfAmount, sfDestination, sfExpiration)",
+      "why_false_positive": "hasOfferFields() helper validates offer fields (sfAmount, sfDestination, sfExpiration) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "txFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "extractNFTokenFlagsFromTxFlags() at extractNFTokenFlagsFromTxFlags (used in business logic)",
+      "issue_pattern": "Missing empty string validation for txFlags",
+      "why_false_positive": "extractNFTokenFlagsFromTxFlags() validates txFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "txFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFlagsMask() at NFTokenMint::getFlagsMask",
+      "issue_pattern": "Missing empty string validation for txFlags",
+      "why_false_positive": "getFlagsMask() validates txFlags for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenMint.cpp",
+  "functions": [
+    {
+      "args": [
+        "txFlags"
+      ],
+      "lineno": 9,
+      "name": "extractNFTokenFlagsFromTxFlags"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 14,
+      "name": "hasOfferFields"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 20,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 25,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 54,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "flags",
+        "fee",
+        "issuer",
+        "taxon",
+        "tokenSeq"
+      ],
+      "lineno": 91,
+      "name": "createNFTokenID"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 126,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "NFTokenMint validation is typically covered by unit/integration tests in the rippled codebase, especially in files like 'test/tx/NFTokenMint_test.cpp', 'test/tx/NFToken_test.cpp', or similar. These tests cover valid/invalid transfer fees, issuer/account mismatches, URI length, and offer field combinations. However, edge cases for new amendments (e.g., featureNFTokenMintOffer, featureDynamicNFT, fixRemoveNFTokenAutoTrustLine) may not be fully covered if tests are not updated for new features. Also, negative tests for malformed combinations (e.g., missing sfAmount when offer fields present) should be checked for completeness.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfTransferFee",
+      "sfIssuer",
+      "sfURI",
+      "txFlags",
+      "offer fields (sfAmount, sfDestination, sfExpiration)"
+    ],
+    "framework": "Custom explicit validation (no external framework); uses PreflightContext and feature flags",
+    "validation_layer": "business_logic (preflight phase of transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_NFTOKEN_TRANSFER_FEE",
+      "field": "sfTransferFee",
+      "location": "NFTokenMint::preflight",
+      "validated_by": "explicit code",
+      "validates": [
+        "Checks if sfTransferFee is present",
+        "Ensures sfTransferFee does not exceed maxTransferFee"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfTransferFee + tfTransferable",
+      "location": "NFTokenMint::preflight",
+      "validated_by": "explicit code",
+      "validates": [
+        "If sfTransferFee is non-zero, tfTransferable flag must be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfIssuer",
+      "location": "NFTokenMint::preflight",
+      "validated_by": "explicit code",
+      "validates": [
+        "Issuer must only be set if tx is not executed by the minter (sfIssuer != sfAccount)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfURI",
+      "location": "NFTokenMint::preflight",
+      "validated_by": "explicit code",
+      "validates": [
+        "If sfURI is present, it must not be empty and must not exceed maxTokenURILength"
+      ],
+      "validation_type": "format|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "implicit (prevents tx if feature not enabled)",
+      "field": "offer fields (sfAmount, sfDestination, sfExpiration)",
+      "location": "NFTokenMint::checkExtraFeatures (used in preflight)",
+      "validated_by": "hasOfferFields() helper",
+      "validates": [
+        "If any offer fields are present, featureNFTokenMintOffer must be enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (used for further validation)",
+      "field": "txFlags",
+      "location": "extractNFTokenFlagsFromTxFlags (used in business logic)",
+      "validated_by": "extractNFTokenFlagsFromTxFlags()",
+      "validates": [
+        "Extracts lower 16 bits of txFlags for NFT flag validation"
+      ],
+      "validation_type": "type|bitmask"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (used for further validation)",
+      "field": "txFlags",
+      "location": "NFTokenMint::getFlagsMask",
+      "validated_by": "getFlagsMask()",
+      "validates": [
+        "Determines allowed flag mask based on enabled amendments/features"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    }
+  ]
+}

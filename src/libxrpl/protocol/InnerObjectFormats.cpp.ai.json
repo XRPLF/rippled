@@ -1,0 +1,886 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STObject::makeInnerObject",
+        "InnerObjectFormats::getInstance",
+        "InnerObjectFormats::findSOTemplateBySField",
+        "SOTemplate::add (during construction)",
+        "SOTemplate::validate (implied, not shown here)"
+      ],
+      "entry_point": "STObject::makeInnerObject",
+      "purpose": "Constructs an inner STObject (e.g., SignerEntry, Majority, etc.) and validates its fields against the template defined in InnerObjectFormats.",
+      "validation_points": [
+        "SOTemplate::validate (called during or after STObject construction to ensure required/optional/default fields are present and correct)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STObject::deserialize",
+        "InnerObjectFormats::getInstance",
+        "InnerObjectFormats::findSOTemplateBySField",
+        "SOTemplate::validate"
+      ],
+      "entry_point": "Deserialization of inner objects (e.g., from JSON or binary)",
+      "purpose": "When an inner object is parsed from input (JSON/binary), its fields are validated against the template.",
+      "validation_points": [
+        "SOTemplate::validate"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Input (e.g., JSON field 'Account')",
+        "STObject field population",
+        "STObject::makeInnerObject or deserialization",
+        "InnerObjectFormats::findSOTemplateBySField",
+        "SOTemplate (template for object type)",
+        "SOTemplate::validate (checks presence/format of sfAccount)"
+      ],
+      "origin": "Input data (JSON, binary, or constructed in code)",
+      "transformations": [
+        "Parsed from input",
+        "Checked for presence and type",
+        "Possibly normalized (e.g., address format)"
+      ],
+      "validated_at": "SOTemplate::validate"
+    },
+    {
+      "field": "sfSignerWeight",
+      "flow": [
+        "Input",
+        "STObject field",
+        "STObject::makeInnerObject",
+        "InnerObjectFormats",
+        "SOTemplate",
+        "SOTemplate::validate"
+      ],
+      "origin": "Input data (e.g., SignerEntry JSON)",
+      "transformations": [
+        "Parsed as integer",
+        "Checked for required presence"
+      ],
+      "validated_at": "SOTemplate::validate"
+    },
+    {
+      "field": "sfSigningPubKey",
+      "flow": [
+        "Input",
+        "STObject field",
+        "STObject::makeInnerObject",
+        "InnerObjectFormats",
+        "SOTemplate",
+        "SOTemplate::validate"
+      ],
+      "origin": "Input data (e.g., Signer JSON)",
+      "transformations": [
+        "Parsed as blob",
+        "Checked for required presence"
+      ],
+      "validated_at": "SOTemplate::validate"
+    },
+    {
+      "field": "sfTxnSignature",
+      "flow": [
+        "Input",
+        "STObject field",
+        "STObject::makeInnerObject",
+        "InnerObjectFormats",
+        "SOTemplate",
+        "SOTemplate::validate"
+      ],
+      "origin": "Input data (e.g., Signer JSON)",
+      "transformations": [
+        "Parsed as blob",
+        "Checked for required presence"
+      ],
+      "validated_at": "SOTemplate::validate"
+    },
+    {
+      "field": "sfWalletLocator",
+      "flow": [
+        "Input",
+        "STObject field",
+        "STObject::makeInnerObject",
+        "InnerObjectFormats",
+        "SOTemplate",
+        "SOTemplate::validate"
+      ],
+      "origin": "Input data (e.g., SignerEntry JSON)",
+      "transformations": [
+        "Parsed as blob",
+        "Checked for optional presence"
+      ],
+      "validated_at": "SOTemplate::validate"
+    }
+  ],
+  "description": "Defines and initializes the InnerObjectFormats class, which manages the formats and templates for various inner objects used in the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "All fields listed in each add() call, with validation type determined by soeREQUIRED, soeOPTIONAL, soeDEFAULT",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field All fields listed in each add() call, with validation type determined by soeREQUIRED, soeOPTIONAL, soeDEFAULT validated by SOTemplate (xrpl/protocol/SOTemplate.h)",
+      "issue_pattern": "Missing validation for All fields listed in each add() call, with validation type determined by soeREQUIRED, soeOPTIONAL, soeDEFAULT",
+      "why_false_positive": "SOTemplate (xrpl/protocol/SOTemplate.h) validates All fields listed in each add() call, with validation type determined by soeREQUIRED, soeOPTIONAL, soeDEFAULT automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "SOTemplate/add validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignerWeight",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfSignerWeight",
+      "why_false_positive": "SOTemplate/add validates sfSignerWeight for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfWalletLocator",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfWalletLocator",
+      "why_false_positive": "SOTemplate/add validates sfWalletLocator for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigningPubKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfSigningPubKey",
+      "why_false_positive": "SOTemplate/add validates sfSigningPubKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTxnSignature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfTxnSignature",
+      "why_false_positive": "SOTemplate/add validates sfTxnSignature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmendment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAmendment",
+      "why_false_positive": "SOTemplate/add validates sfAmendment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCloseTime",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfCloseTime",
+      "why_false_positive": "SOTemplate/add validates sfCloseTime for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPublicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfPublicKey",
+      "why_false_positive": "SOTemplate/add validates sfPublicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFirstLedgerSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfFirstLedgerSequence",
+      "why_false_positive": "SOTemplate/add validates sfFirstLedgerSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "SOTemplate/add validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfURI",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfURI",
+      "why_false_positive": "SOTemplate/add validates sfURI for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfTradingFee",
+      "why_false_positive": "SOTemplate/add validates sfTradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfVoteWeight",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfVoteWeight",
+      "why_false_positive": "SOTemplate/add validates sfVoteWeight for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "SOTemplate/add validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDiscountedFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfDiscountedFee",
+      "why_false_positive": "SOTemplate/add validates sfDiscountedFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPrice",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfPrice",
+      "why_false_positive": "SOTemplate/add validates sfPrice for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAuthAccounts",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAuthAccounts",
+      "why_false_positive": "SOTemplate/add validates sfAuthAccounts for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAttestationSignerAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAttestationSignerAccount",
+      "why_false_positive": "SOTemplate/add validates sfAttestationSignerAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfSignature",
+      "why_false_positive": "SOTemplate/add validates sfSignature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "SOTemplate/add validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAttestationRewardAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfAttestationRewardAccount",
+      "why_false_positive": "SOTemplate/add validates sfAttestationRewardAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfWasLockingChainSend",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfWasLockingChainSend",
+      "why_false_positive": "SOTemplate/add validates sfWasLockingChainSend for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfXChainClaimID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfXChainClaimID",
+      "why_false_positive": "SOTemplate/add validates sfXChainClaimID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "SOTemplate/add validates sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfXChainAccountCreateCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfXChainAccountCreateCount",
+      "why_false_positive": "SOTemplate/add validates sfXChainAccountCreateCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignatureReward",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate/add at InnerObjectFormats::InnerObjectFormats",
+      "issue_pattern": "Missing empty string validation for sfSignatureReward",
+      "why_false_positive": "SOTemplate/add validates sfSignatureReward for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/InnerObjectFormats.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "InnerObjectFormats"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "getInstance"
+    },
+    {
+      "args": [
+        "sField"
+      ],
+      "lineno": 116,
+      "name": "findSOTemplateBySField"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for InnerObjectFormats is typically indirect. Tests for transaction processing, serialization/deserialization, and validation (e.g., SignerLists, Amendments, NFTokens, XChain objects) will exercise these code paths. Look for tests in files like 'STObject_test.cpp', 'InnerObjectFormats_test.cpp', 'SignerListSet_test.cpp', 'AmendmentTable_test.cpp', 'XChainBridge_test.cpp', and transaction validation tests. Gaps may exist if there are no explicit tests for malformed or missing fields in inner objects, or if new inner object types are added without corresponding tests. Direct unit tests for InnerObjectFormats or SOTemplate validation logic may be limited.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "All fields listed in each add() call, with validation type determined by soeREQUIRED, soeOPTIONAL, soeDEFAULT"
+    ],
+    "framework": "SOTemplate (xrpl/protocol/SOTemplate.h)",
+    "validation_layer": "business_logic (object construction/registration)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field (implementation-dependent, e.g., std::runtime_error or custom exception)",
+      "field": "sfAccount",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfSignerWeight",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfWalletLocator",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted"
+      ],
+      "validation_type": "optional field (presence not required)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfSigningPubKey",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfTxnSignature",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfAmendment",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfCloseTime",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfPublicKey",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfFirstLedgerSequence",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfNFTokenID",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfURI",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted"
+      ],
+      "validation_type": "optional field (presence not required)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfTradingFee",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted, default value used"
+      ],
+      "validation_type": "default field (may be omitted, defaulted)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfVoteWeight",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfExpiration",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfDiscountedFee",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted, default value used"
+      ],
+      "validation_type": "default field (may be omitted, defaulted)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfPrice",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfAuthAccounts",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted"
+      ],
+      "validation_type": "optional field (presence not required)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfAttestationSignerAccount",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfSignature",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfAmount",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfAttestationRewardAccount",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfWasLockingChainSend",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfXChainClaimID",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none if missing",
+      "field": "sfDestination",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field may be omitted"
+      ],
+      "validation_type": "optional field (presence not required)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfXChainAccountCreateCount",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws on missing required field",
+      "field": "sfSignatureReward",
+      "location": "InnerObjectFormats::InnerObjectFormats",
+      "validated_by": "SOTemplate/add",
+      "validates": [
+        "field is present in object"
+      ],
+      "validation_type": "presence (required field)"
+    }
+  ]
+}

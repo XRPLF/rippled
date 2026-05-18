@@ -1,0 +1,43 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "newThreadName"
+    },
+    {
+      "lineno": 29,
+      "name": "newThreadName"
+    }
+  ],
+  "classes": [],
+  "description": "Provides functions to set and get the name of the current thread, with special handling for Linux thread name length limits.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/core/CurrentThreadName.h",
+  "functions": [
+    {
+      "args": [
+        "newThreadName"
+      ],
+      "lineno": 13,
+      "name": "setCurrentThreadName"
+    },
+    {
+      "args": [
+        "newThreadName"
+      ],
+      "lineno": 29,
+      "name": "setCurrentThreadName"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getCurrentThreadName"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    }
+  ]
+}

@@ -1,0 +1,523 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "n"
+    },
+    {
+      "lineno": 16,
+      "name": "t"
+    },
+    {
+      "lineno": 26,
+      "name": "t"
+    },
+    {
+      "lineno": 31,
+      "name": "t"
+    },
+    {
+      "lineno": 36,
+      "name": "n"
+    },
+    {
+      "lineno": 36,
+      "name": "buf"
+    },
+    {
+      "lineno": 41,
+      "name": "n"
+    },
+    {
+      "lineno": 41,
+      "name": "buf"
+    },
+    {
+      "lineno": 69,
+      "name": "options"
+    },
+    {
+      "lineno": 74,
+      "name": "s"
+    },
+    {
+      "lineno": 81,
+      "name": "t"
+    },
+    {
+      "lineno": 91,
+      "name": "n"
+    },
+    {
+      "lineno": 101,
+      "name": "s"
+    },
+    {
+      "lineno": 108,
+      "name": "out"
+    },
+    {
+      "lineno": 108,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "STBase"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STBase::STBase(SField const& n)"
+      ],
+      "entry_point": "STBase::STBase(SField const& n)",
+      "purpose": "Constructs an STBase object with a specific SField; ensures fName is set.",
+      "validation_points": [
+        "XRPL_ASSERT(fName, ...) in constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "STBase::operator=(STBase const& t)"
+      ],
+      "entry_point": "STBase::operator=(STBase const& t)",
+      "purpose": "Assignment operator; copies fName if current fName is not useful.",
+      "validation_points": [
+        "if (!fName->isUseful()) ..."
+      ]
+    },
+    {
+      "call_chain": [
+        "STBase::isEquivalent(STBase const& t) const"
+      ],
+      "entry_point": "STBase::isEquivalent(STBase const& t) const",
+      "purpose": "Checks if two STBase objects are equivalent; asserts type is STI_NOTPRESENT.",
+      "validation_points": [
+        "XRPL_ASSERT(getSType() == STI_NOTPRESENT, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STBase::setFName(SField const& n)"
+      ],
+      "entry_point": "STBase::setFName(SField const& n)",
+      "purpose": "Sets the fName pointer to a new SField and validates it.",
+      "validation_points": [
+        "XRPL_ASSERT(fName, ...) in setFName"
+      ]
+    },
+    {
+      "call_chain": [
+        "STBase::addFieldID(Serializer& s) const",
+        "Serializer::addFieldID(...)"
+      ],
+      "entry_point": "STBase::addFieldID(Serializer& s) const",
+      "purpose": "Adds the field ID to a Serializer; validates that fName is binary.",
+      "validation_points": [
+        "XRPL_ASSERT(fName->isBinary(), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "fName (pointer to SField)",
+      "flow": [
+        "STBase::STBase() or STBase::STBase(SField const& n) or setFName()",
+        "fName assigned",
+        "Used in operator=, addFieldID, getFullText, etc."
+      ],
+      "origin": "STBase::STBase() or STBase::STBase(SField const& n) or setFName()",
+      "transformations": [
+        "Assigned from &sfGeneric (default) or &n (parameter)",
+        "Possibly reassigned in operator= or setFName"
+      ],
+      "validated_at": "XRPL_ASSERT in constructors and setFName"
+    },
+    {
+      "field": "fName->isUseful()",
+      "flow": [
+        "operator= checks fName->isUseful()",
+        "If not useful, fName is reassigned"
+      ],
+      "origin": "SField object pointed to by fName",
+      "transformations": [
+        "Boolean check to determine if fName should be replaced"
+      ],
+      "validated_at": "if (!fName->isUseful()) in operator="
+    },
+    {
+      "field": "getSType()",
+      "flow": [
+        "Used in operator==, operator!=, getFullText, isEquivalent"
+      ],
+      "origin": "STBase::getSType() (always returns STI_NOTPRESENT in this base class)",
+      "transformations": [
+        "Compared to other STBase's getSType()",
+        "Used in XRPL_ASSERT in isEquivalent"
+      ],
+      "validated_at": "XRPL_ASSERT(getSType() == STI_NOTPRESENT, ...) in isEquivalent"
+    },
+    {
+      "field": "fName->isBinary()",
+      "flow": [
+        "addFieldID checks fName->isBinary()",
+        "If true, calls Serializer::addFieldID"
+      ],
+      "origin": "SField object pointed to by fName",
+      "transformations": [
+        "Boolean check to ensure field is binary before serialization"
+      ],
+      "validated_at": "XRPL_ASSERT(fName->isBinary(), ...) in addFieldID"
+    }
+  ],
+  "description": "Implements the STBase class, which serves as a base class for serialized types in the XRPL protocol, providing basic serialization, comparison, and field management functionality.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fName (pointer validity, binary property, usefulness)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fName (pointer validity, binary property, usefulness) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for fName (pointer validity, binary property, usefulness)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates fName (pointer validity, binary property, usefulness) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "getSType() (type presence)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field getSType() (type presence) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for getSType() (type presence)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates getSType() (type presence) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fName (pointer to SField)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STBase(SField const& n) constructor",
+      "issue_pattern": "Missing empty string validation for fName (pointer to SField)",
+      "why_false_positive": "XRPL_ASSERT validates fName (pointer to SField) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fName (pointer to SField)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at STBase(SField const& n) constructor",
+      "issue_pattern": "Missing type validation for fName (pointer to SField)",
+      "why_false_positive": "XRPL_ASSERT validates fName (pointer to SField) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fName (pointer to SField)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STBase::setFName",
+      "issue_pattern": "Missing empty string validation for fName (pointer to SField)",
+      "why_false_positive": "XRPL_ASSERT validates fName (pointer to SField) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fName (pointer to SField)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at STBase::setFName",
+      "issue_pattern": "Missing type validation for fName (pointer to SField)",
+      "why_false_positive": "XRPL_ASSERT validates fName (pointer to SField) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "fName->isUseful()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement at STBase::operator=",
+      "issue_pattern": "Missing empty string validation for fName->isUseful()",
+      "why_false_positive": "if statement validates fName->isUseful() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getSType() == STI_NOTPRESENT",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STBase::isEquivalent",
+      "issue_pattern": "Missing empty string validation for getSType() == STI_NOTPRESENT",
+      "why_false_positive": "XRPL_ASSERT validates getSType() == STI_NOTPRESENT for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fName->isBinary()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STBase::addFieldID",
+      "issue_pattern": "Missing empty string validation for fName->isBinary()",
+      "why_false_positive": "XRPL_ASSERT validates fName->isBinary() for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STBase.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "STBase"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 12,
+      "name": "STBase"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 16,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 26,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 31,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 36,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 41,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 69,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 74,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 81,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 91,
+      "name": "setFName"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "getFName"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 101,
+      "name": "addFieldID"
+    },
+    {
+      "args": [
+        "std::ostream& out",
+        "STBase const& t"
+      ],
+      "lineno": 108,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file is a base class with minimal logic and many functions are stubs or default implementations. The main validation points are XRPL_ASSERTs and a few if statements. Test coverage is likely indirect, via derived classes or higher-level serialization/deserialization tests. There may be unit tests for STBase construction, assignment, and field setting in files like test/protocol/STBase_test.cpp or test/protocol/SField_test.cpp, but coverage for error/assertion paths (e.g., invalid fName, non-binary fields) is likely limited or only checked in debug builds. The add() function is marked as unreachable and is not covered by tests (LCOV_EXCL_START).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "fName (pointer validity, binary property, usefulness)",
+      "getSType() (type presence)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws in debug)",
+      "field": "fName (pointer to SField)",
+      "location": "STBase(SField const& n) constructor",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "fName is not null after assignment"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws in debug)",
+      "field": "fName (pointer to SField)",
+      "location": "STBase::setFName",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "fName is not null after assignment"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (conditional logic only)",
+      "field": "fName->isUseful()",
+      "location": "STBase::operator=",
+      "validated_by": "if statement",
+      "validates": [
+        "fName is only overwritten if not useful"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws in debug)",
+      "field": "getSType() == STI_NOTPRESENT",
+      "location": "STBase::isEquivalent",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "STBase is only equivalent if type is STI_NOTPRESENT"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws in debug)",
+      "field": "fName->isBinary()",
+      "location": "STBase::addFieldID",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "fName must be a binary field before adding field ID"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

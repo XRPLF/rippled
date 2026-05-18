@@ -1,0 +1,25 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Header file declaring functions to retrieve git commit hash and build branch information within the xrpl::git namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/git/Git.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "getCommitHash"
+    },
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "getBuildBranch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl::git"
+    }
+  ]
+}

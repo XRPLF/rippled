@@ -1,0 +1,199 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "ErrorInfo"
+    }
+  ],
+  "description": "Defines error and warning codes for XRPL RPC commands, provides structures and utility functions for error handling, and includes helpers for generating and injecting error messages into JSON responses.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/ErrorCodes.h",
+  "functions": [
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 120,
+      "name": "get_error_info"
+    },
+    {
+      "args": [
+        "code",
+        "json"
+      ],
+      "lineno": 123,
+      "name": "inject_error"
+    },
+    {
+      "args": [
+        "code",
+        "message",
+        "json"
+      ],
+      "lineno": 126,
+      "name": "inject_error"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 130,
+      "name": "make_error"
+    },
+    {
+      "args": [
+        "code",
+        "message"
+      ],
+      "lineno": 131,
+      "name": "make_error"
+    },
+    {
+      "args": [
+        "message"
+      ],
+      "lineno": 134,
+      "name": "make_param_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 138,
+      "name": "missing_field_message"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 142,
+      "name": "missing_field_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 146,
+      "name": "missing_field_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 150,
+      "name": "object_field_message"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 154,
+      "name": "object_field_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 158,
+      "name": "object_field_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 162,
+      "name": "invalid_field_message"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 166,
+      "name": "invalid_field_message"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 170,
+      "name": "invalid_field_error"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 174,
+      "name": "invalid_field_error"
+    },
+    {
+      "args": [
+        "name",
+        "type"
+      ],
+      "lineno": 178,
+      "name": "expected_field_message"
+    },
+    {
+      "args": [
+        "name",
+        "type"
+      ],
+      "lineno": 182,
+      "name": "expected_field_message"
+    },
+    {
+      "args": [
+        "name",
+        "type"
+      ],
+      "lineno": 186,
+      "name": "expected_field_error"
+    },
+    {
+      "args": [
+        "name",
+        "type"
+      ],
+      "lineno": 190,
+      "name": "expected_field_error"
+    },
+    {
+      "args": [],
+      "lineno": 194,
+      "name": "not_validator_error"
+    },
+    {
+      "args": [
+        "json"
+      ],
+      "lineno": 200,
+      "name": "contains_error"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 203,
+      "name": "error_code_http_status"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 207,
+      "name": "rpcErrorString"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 106,
+      "name": "RPC"
+    }
+  ]
+}

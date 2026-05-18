@@ -1,0 +1,77 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "in"
+    },
+    {
+      "lineno": 26,
+      "name": "inSize"
+    },
+    {
+      "lineno": 27,
+      "name": "decompressed"
+    },
+    {
+      "lineno": 28,
+      "name": "decompressedSize"
+    },
+    {
+      "lineno": 29,
+      "name": "algorithm"
+    },
+    {
+      "lineno": 62,
+      "name": "in"
+    },
+    {
+      "lineno": 63,
+      "name": "inSize"
+    },
+    {
+      "lineno": 64,
+      "name": "bf"
+    },
+    {
+      "lineno": 65,
+      "name": "algorithm"
+    }
+  ],
+  "classes": [],
+  "description": "Provides compression and decompression utilities for XRPL, supporting LZ4 algorithm, with error handling and logging.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Compression.h",
+  "functions": [
+    {
+      "args": [
+        "in",
+        "inSize",
+        "decompressed",
+        "decompressedSize",
+        "algorithm"
+      ],
+      "lineno": 22,
+      "name": "decompress"
+    },
+    {
+      "args": [
+        "in",
+        "inSize",
+        "bf",
+        "algorithm"
+      ],
+      "lineno": 59,
+      "name": "compress"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "compression"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "buffer"
+    },
+    {
+      "lineno": 27,
+      "name": "count"
+    },
+    {
+      "lineno": 35,
+      "name": "ptr"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "csprng_engine"
+    }
+  ],
+  "description": "Defines a cryptographically secure, thread-safe random number engine (csprng_engine) for use in cryptographic routines, including entropy mixing and random data generation, within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/crypto/csprng.h",
+  "functions": [
+    {
+      "args": [
+        "buffer",
+        "count"
+      ],
+      "lineno": 27,
+      "name": "mix_entropy"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "ptr",
+        "count"
+      ],
+      "lineno": 35,
+      "name": "operator()"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "min"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "max"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "crypto_prng"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

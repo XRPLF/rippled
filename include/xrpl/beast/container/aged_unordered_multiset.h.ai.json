@@ -1,0 +1,35 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "Key"
+    },
+    {
+      "lineno": 10,
+      "name": "Clock"
+    },
+    {
+      "lineno": 11,
+      "name": "Hash"
+    },
+    {
+      "lineno": 12,
+      "name": "KeyEqual"
+    },
+    {
+      "lineno": 13,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the aged_unordered_multiset template alias in the beast namespace, providing an unordered multiset container with aging capabilities using a customizable clock, hash, key equality, and allocator.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_unordered_multiset.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

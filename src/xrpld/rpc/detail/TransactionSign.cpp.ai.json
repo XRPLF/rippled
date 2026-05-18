@@ -1,0 +1,823 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "accountState"
+    },
+    {
+      "lineno": 62,
+      "name": "accountID"
+    },
+    {
+      "lineno": 63,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 85,
+      "name": "params"
+    },
+    {
+      "lineno": 86,
+      "name": "tx_json"
+    },
+    {
+      "lineno": 87,
+      "name": "srcAddressID"
+    },
+    {
+      "lineno": 88,
+      "name": "role"
+    },
+    {
+      "lineno": 89,
+      "name": "app"
+    },
+    {
+      "lineno": 90,
+      "name": "doPath"
+    },
+    {
+      "lineno": 186,
+      "name": "tx_json"
+    },
+    {
+      "lineno": 187,
+      "name": "role"
+    },
+    {
+      "lineno": 188,
+      "name": "verify"
+    },
+    {
+      "lineno": 189,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 190,
+      "name": "config"
+    },
+    {
+      "lineno": 191,
+      "name": "feeTrack"
+    },
+    {
+      "lineno": 192,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 241,
+      "name": "params"
+    },
+    {
+      "lineno": 242,
+      "name": "role"
+    },
+    {
+      "lineno": 243,
+      "name": "signingArgs"
+    },
+    {
+      "lineno": 244,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 245,
+      "name": "app"
+    },
+    {
+      "lineno": 410,
+      "name": "stTx"
+    },
+    {
+      "lineno": 411,
+      "name": "rules"
+    },
+    {
+      "lineno": 412,
+      "name": "app"
+    },
+    {
+      "lineno": 470,
+      "name": "tpTrans"
+    },
+    {
+      "lineno": 471,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 491,
+      "name": "app"
+    },
+    {
+      "lineno": 492,
+      "name": "config"
+    },
+    {
+      "lineno": 493,
+      "name": "tx"
+    },
+    {
+      "lineno": 540,
+      "name": "role"
+    },
+    {
+      "lineno": 541,
+      "name": "config"
+    },
+    {
+      "lineno": 542,
+      "name": "feeTrack"
+    },
+    {
+      "lineno": 543,
+      "name": "txQ"
+    },
+    {
+      "lineno": 544,
+      "name": "app"
+    },
+    {
+      "lineno": 545,
+      "name": "tx"
+    },
+    {
+      "lineno": 546,
+      "name": "mult"
+    },
+    {
+      "lineno": 547,
+      "name": "div"
+    },
+    {
+      "lineno": 567,
+      "name": "request"
+    },
+    {
+      "lineno": 568,
+      "name": "role"
+    },
+    {
+      "lineno": 569,
+      "name": "doAutoFill"
+    },
+    {
+      "lineno": 570,
+      "name": "config"
+    },
+    {
+      "lineno": 571,
+      "name": "feeTrack"
+    },
+    {
+      "lineno": 572,
+      "name": "txQ"
+    },
+    {
+      "lineno": 573,
+      "name": "app"
+    },
+    {
+      "lineno": 617,
+      "name": "jvRequest"
+    },
+    {
+      "lineno": 618,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 619,
+      "name": "failType"
+    },
+    {
+      "lineno": 620,
+      "name": "role"
+    },
+    {
+      "lineno": 621,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 622,
+      "name": "app"
+    },
+    {
+      "lineno": 641,
+      "name": "jvRequest"
+    },
+    {
+      "lineno": 642,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 643,
+      "name": "failType"
+    },
+    {
+      "lineno": 644,
+      "name": "role"
+    },
+    {
+      "lineno": 645,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 646,
+      "name": "app"
+    },
+    {
+      "lineno": 647,
+      "name": "processTransaction"
+    },
+    {
+      "lineno": 684,
+      "name": "jvRequest"
+    },
+    {
+      "lineno": 701,
+      "name": "signers"
+    },
+    {
+      "lineno": 701,
+      "name": "signingForID"
+    },
+    {
+      "lineno": 735,
+      "name": "jvRequest"
+    },
+    {
+      "lineno": 736,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 737,
+      "name": "failType"
+    },
+    {
+      "lineno": 738,
+      "name": "role"
+    },
+    {
+      "lineno": 739,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 740,
+      "name": "app"
+    },
+    {
+      "lineno": 784,
+      "name": "jvRequest"
+    },
+    {
+      "lineno": 785,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 786,
+      "name": "failType"
+    },
+    {
+      "lineno": 787,
+      "name": "role"
+    },
+    {
+      "lineno": 788,
+      "name": "validatedLedgerAge"
+    },
+    {
+      "lineno": 789,
+      "name": "app"
+    },
+    {
+      "lineno": 790,
+      "name": "processTransaction"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "SigningForParams"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "transactionPreProcessResult"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "transactionSign",
+        "transactionPreProcessImpl",
+        "checkTxJsonFields",
+        "SigningForParams::isMultiSigning",
+        "SigningForParams::getSigner",
+        "acctMatchesPubKey"
+      ],
+      "entry_point": "transactionSign",
+      "purpose": "Handles the signing of a transaction, including validation of signing account and public key.",
+      "validation_points": [
+        "checkTxJsonFields (validates tx_json fields)",
+        "SigningForParams::isMultiSigning (validates if multi-signing is active)",
+        "SigningForParams::getSigner (validates multiSigningAcctID_ is set)",
+        "acctMatchesPubKey (validates that the public key matches the account and is enabled)"
+      ]
+    },
+    {
+      "call_chain": [
+        "transactionSign",
+        "transactionPreProcessImpl",
+        "SigningForParams::validMultiSign"
+      ],
+      "entry_point": "transactionSign",
+      "purpose": "Checks if multi-signature parameters are valid before proceeding.",
+      "validation_points": [
+        "SigningForParams::validMultiSign (validates multiSignPublicKey_ and multiSignature_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "transactionSign",
+        "transactionPreProcessImpl",
+        "SigningForParams::getPublicKey"
+      ],
+      "entry_point": "transactionSign",
+      "purpose": "Retrieves and validates the public key for signing.",
+      "validation_points": [
+        "SigningForParams::getPublicKey (throws if multiSignPublicKey_ is not set)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "multiSigningAcctID_",
+      "flow": [
+        "SigningForParams constructor",
+        "SigningForParams::isMultiSigning",
+        "SigningForParams::getSigner",
+        "acctMatchesPubKey"
+      ],
+      "origin": "Set in SigningForParams constructor (from input AccountID)",
+      "transformations": [
+        "Checked for nullptr to determine multi-signing mode",
+        "Dereferenced for account validation"
+      ],
+      "validated_at": "SigningForParams::isMultiSigning, SigningForParams::getSigner"
+    },
+    {
+      "field": "multiSignPublicKey_",
+      "flow": [
+        "SigningForParams::setPublicKey",
+        "SigningForParams::validMultiSign",
+        "SigningForParams::getPublicKey",
+        "acctMatchesPubKey"
+      ],
+      "origin": "Set via SigningForParams::setPublicKey (from input PublicKey)",
+      "transformations": [
+        "Optional: checked for presence",
+        "Dereferenced for validation and signing"
+      ],
+      "validated_at": "SigningForParams::validMultiSign, SigningForParams::getPublicKey"
+    },
+    {
+      "field": "multiSignature_",
+      "flow": [
+        "SigningForParams::moveMultiSignature",
+        "SigningForParams::validMultiSign",
+        "SigningForParams::getSignature"
+      ],
+      "origin": "Set via SigningForParams::moveMultiSignature (from input Buffer)",
+      "transformations": [
+        "Moved into member variable",
+        "Checked for non-empty"
+      ],
+      "validated_at": "SigningForParams::validMultiSign"
+    },
+    {
+      "field": "tx_json fields",
+      "flow": [
+        "transactionSign",
+        "transactionPreProcessImpl",
+        "checkTxJsonFields"
+      ],
+      "origin": "Input JSON from RPC request",
+      "transformations": [
+        "Parsed and validated for required fields"
+      ],
+      "validated_at": "checkTxJsonFields"
+    }
+  ],
+  "description": "Implements transaction signing, submission, and multisigning logic for XRPL RPC, including validation, autofill, fee calculation, and JSON handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "multiSigningAcctID_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isMultiSigning() at SigningForParams::isMultiSigning()",
+      "issue_pattern": "Missing empty string validation for multiSigningAcctID_",
+      "why_false_positive": "isMultiSigning() validates multiSigningAcctID_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "multiSignPublicKey_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getPublicKey() at SigningForParams::getPublicKey()",
+      "issue_pattern": "Missing empty string validation for multiSignPublicKey_",
+      "why_false_positive": "getPublicKey() validates multiSignPublicKey_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "multiSignature_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validMultiSign() at SigningForParams::validMultiSign()",
+      "issue_pattern": "Missing empty string validation for multiSignature_",
+      "why_false_positive": "validMultiSign() validates multiSignature_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "multiSigningAcctID_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getSigner() at SigningForParams::getSigner()",
+      "issue_pattern": "Missing empty string validation for multiSigningAcctID_",
+      "why_false_positive": "getSigner() validates multiSigningAcctID_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/TransactionSign.cpp",
+  "functions": [
+    {
+      "args": [
+        "accountState",
+        "accountID",
+        "publicKey"
+      ],
+      "lineno": 61,
+      "name": "acctMatchesPubKey"
+    },
+    {
+      "args": [
+        "params",
+        "tx_json",
+        "srcAddressID",
+        "role",
+        "app",
+        "doPath"
+      ],
+      "lineno": 85,
+      "name": "checkPayment"
+    },
+    {
+      "args": [
+        "tx_json",
+        "role",
+        "verify",
+        "validatedLedgerAge",
+        "config",
+        "feeTrack",
+        "apiVersion"
+      ],
+      "lineno": 186,
+      "name": "checkTxJsonFields"
+    },
+    {
+      "args": [
+        "params",
+        "role",
+        "signingArgs",
+        "validatedLedgerAge",
+        "app"
+      ],
+      "lineno": 241,
+      "name": "transactionPreProcessImpl"
+    },
+    {
+      "args": [
+        "stTx",
+        "rules",
+        "app"
+      ],
+      "lineno": 410,
+      "name": "transactionConstructImpl"
+    },
+    {
+      "args": [
+        "tpTrans",
+        "apiVersion"
+      ],
+      "lineno": 470,
+      "name": "transactionFormatResultImpl"
+    },
+    {
+      "args": [
+        "app",
+        "config",
+        "tx"
+      ],
+      "lineno": 491,
+      "name": "getTxFee"
+    },
+    {
+      "args": [
+        "role",
+        "config",
+        "feeTrack",
+        "txQ",
+        "app",
+        "tx",
+        "mult",
+        "div"
+      ],
+      "lineno": 540,
+      "name": "getCurrentNetworkFee"
+    },
+    {
+      "args": [
+        "request",
+        "role",
+        "doAutoFill",
+        "config",
+        "feeTrack",
+        "txQ",
+        "app"
+      ],
+      "lineno": 567,
+      "name": "checkFee"
+    },
+    {
+      "args": [
+        "jvRequest",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app"
+      ],
+      "lineno": 617,
+      "name": "transactionSign"
+    },
+    {
+      "args": [
+        "jvRequest",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app",
+        "processTransaction"
+      ],
+      "lineno": 641,
+      "name": "transactionSubmit"
+    },
+    {
+      "args": [
+        "jvRequest"
+      ],
+      "lineno": 684,
+      "name": "checkMultiSignFields"
+    },
+    {
+      "args": [
+        "signers",
+        "signingForID"
+      ],
+      "lineno": 701,
+      "name": "sortAndValidateSigners"
+    },
+    {
+      "args": [
+        "jvRequest",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app"
+      ],
+      "lineno": 735,
+      "name": "transactionSignFor"
+    },
+    {
+      "args": [
+        "jvRequest",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app",
+        "processTransaction"
+      ],
+      "lineno": 784,
+      "name": "transactionSubmitMultiSigned"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 20,
+      "name": "RPC"
+    },
+    {
+      "lineno": 23,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is likely covered by integration and unit tests for transaction signing and multi-signing. Typical test files would be in the 'test' or 'unittest' directories, such as 'test/rpc/TransactionSign_test.cpp' or similar. However, coverage gaps may exist for edge cases: (1) error paths in SigningForParams (e.g., exceptions thrown when accessing unset fields), (2) multi-signature validation failures, (3) malformed or missing tx_json fields. Template-based validation may be harder to test exhaustively unless explicit negative tests exist. Review of test files is needed to confirm coverage of all exception and validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic, with some framework hints (e.g., jss:: for JSON validation elsewhere)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError (if accessed incorrectly)",
+      "field": "multiSigningAcctID_",
+      "location": "SigningForParams::isMultiSigning()",
+      "validated_by": "isMultiSigning()",
+      "validates": [
+        "Checks if multiSigningAcctID_ is not nullptr to determine if multi-signing is active"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError",
+      "field": "multiSignPublicKey_",
+      "location": "SigningForParams::getPublicKey()",
+      "validated_by": "getPublicKey()",
+      "validates": [
+        "Ensures multiSignPublicKey_ is set before access"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns bool)",
+      "field": "multiSignature_",
+      "location": "SigningForParams::validMultiSign()",
+      "validated_by": "validMultiSign()",
+      "validates": [
+        "Checks that multi-signing is active, public key is set, and signature buffer is not empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError",
+      "field": "multiSigningAcctID_",
+      "location": "SigningForParams::getSigner()",
+      "validated_by": "getSigner()",
+      "validates": [
+        "Ensures multiSigningAcctID_ is not nullptr before access"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

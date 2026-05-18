@@ -1,0 +1,200 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "t"
+    },
+    {
+      "lineno": 45,
+      "name": "t"
+    },
+    {
+      "lineno": 53,
+      "name": "t"
+    },
+    {
+      "lineno": 58,
+      "name": "t"
+    },
+    {
+      "lineno": 63,
+      "name": "t"
+    },
+    {
+      "lineno": 68,
+      "name": "t"
+    },
+    {
+      "lineno": 73,
+      "name": "t"
+    },
+    {
+      "lineno": 78,
+      "name": "t"
+    },
+    {
+      "lineno": 84,
+      "name": "t"
+    },
+    {
+      "lineno": 89,
+      "name": "t"
+    },
+    {
+      "lineno": 94,
+      "name": "t"
+    },
+    {
+      "lineno": 99,
+      "name": "t"
+    },
+    {
+      "lineno": 104,
+      "name": "t"
+    },
+    {
+      "lineno": 109,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "Zero"
+    }
+  ],
+  "description": "Provides a Zero struct and related comparison operators to allow efficient and type-safe comparisons to zero for user-defined types, using a signum() method or function.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/Zero.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 36,
+      "name": "signum"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 45,
+      "name": "call_signum"
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 53,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 58,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 63,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 68,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 73,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "t",
+        ""
+      ],
+      "lineno": 78,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 84,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 89,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 94,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 99,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 104,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "",
+        "t"
+      ],
+      "lineno": 109,
+      "name": "operator<="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 31,
+      "name": ""
+    },
+    {
+      "lineno": 42,
+      "name": "detail"
+    },
+    {
+      "lineno": 43,
+      "name": "zero_helper"
+    }
+  ]
+}

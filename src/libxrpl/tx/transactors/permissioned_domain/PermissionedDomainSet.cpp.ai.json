@@ -1,0 +1,321 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PermissionedDomainSet::preflight"
+      ],
+      "entry_point": "PermissionedDomainSet::preflight",
+      "purpose": "Initial stateless validation of transaction fields before further processing.",
+      "validation_points": [
+        "credentials::checkArray (validates sfAcceptedCredentials array size/format)",
+        "Manual check: domain && *domain == beast::zero (validates sfDomainID is not zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PermissionedDomainSet::preclaim"
+      ],
+      "entry_point": "PermissionedDomainSet::preclaim",
+      "purpose": "Stateful validation: checks ledger state for referenced accounts and domain existence/ownership.",
+      "validation_points": [
+        "ctx.view.exists(keylet::account(account)) (validates sfAccount exists)",
+        "ctx.view.exists(keylet::account(credential.getAccountID(sfIssuer))) (validates each sfIssuer exists)",
+        "ctx.view.read(keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID))) (validates sfDomainID exists)",
+        "sleDomain->getAccountID(sfOwner) != account (validates ownership of domain)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PermissionedDomainSet::doApply"
+      ],
+      "entry_point": "PermissionedDomainSet::doApply",
+      "purpose": "Applies the transaction: creates or modifies the Permissioned Domain object in the ledger.",
+      "validation_points": [
+        "view().peek(keylet::account(account_)) (re-checks account exists)",
+        "view().peek(keylet::permissionedDomain(...)) (re-checks domain exists if modifying)",
+        "balance < reserve (checks sufficient reserve for new object)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAcceptedCredentials",
+      "flow": [
+        "Transaction input",
+        "preflight: credentials::checkArray (validates array)",
+        "preclaim: iterated for issuer existence",
+        "doApply: sorted and written to ledger"
+      ],
+      "origin": "ctx.tx.getFieldArray(sfAcceptedCredentials) (transaction input)",
+      "transformations": [
+        "Validated for size/format",
+        "Each credential's sfIssuer checked for existence",
+        "Sorted (credentials::makeSorted)",
+        "Transformed into STArray for ledger storage"
+      ],
+      "validated_at": "preflight (array structure), preclaim (issuer existence)"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for zero value",
+        "preclaim: checked for existence in ledger",
+        "preclaim: checked for ownership",
+        "doApply: used to fetch or create domain ledger entry"
+      ],
+      "origin": "ctx.tx.at(~sfDomainID) or ctx.tx.getFieldH256(sfDomainID) (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key to fetch ledger entry",
+        "Ownership checked"
+      ],
+      "validated_at": "preflight (zero check), preclaim (existence/ownership)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "preclaim: checked for existence in ledger",
+        "doApply: used as owner for new domain"
+      ],
+      "origin": "ctx.tx.getAccountID(sfAccount) (transaction input)",
+      "transformations": [
+        "Checked for existence",
+        "Used as owner in ledger entry"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfIssuer (inside sfAcceptedCredentials)",
+      "flow": [
+        "Extracted from each credential in sfAcceptedCredentials",
+        "preclaim: checked for existence in ledger"
+      ],
+      "origin": "credential.getAccountID(sfIssuer) (from each credential in sfAcceptedCredentials)",
+      "transformations": [
+        "Checked for existence"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the PermissionedDomainSet transactor for the XRPL, handling creation and modification of permissioned domains, including credential validation and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAcceptedCredentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::checkArray at PermissionedDomainSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfAcceptedCredentials",
+      "why_false_positive": "credentials::checkArray validates sfAcceptedCredentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (domain && *domain == beast::zero) at PermissionedDomainSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "manual check (domain && *domain == beast::zero) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.exists(keylet::account(account)) at PermissionedDomainSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.view.exists(keylet::account(account)) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAcceptedCredentials[].sfIssuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.exists(keylet::account(credential.getAccountID(sfIssuer))) at PermissionedDomainSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAcceptedCredentials[].sfIssuer",
+      "why_false_positive": "ctx.view.exists(keylet::account(credential.getAccountID(sfIssuer))) validates sfAcceptedCredentials[].sfIssuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID))) at PermissionedDomainSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.view.read(keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID))) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID ownership",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleDomain->getAccountID(sfOwner) != account at PermissionedDomainSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDomainID ownership",
+      "why_false_positive": "sleDomain->getAccountID(sfOwner) != account validates sfDomainID ownership for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in preflight and preclaim. These are typically tested via transaction unit/integration tests in the rippled codebase, likely in files such as test/tx/PermissionedDomainSet_test.cpp or similar. Coverage gaps may exist for error branches marked LCOV_EXCL_LINE (e.g., tefINTERNAL, tecDIR_FULL), which are hard to trigger in normal operation. Edge cases such as malformed sfAcceptedCredentials, non-existent issuers, insufficient reserve, and domain ownership mismatches should be explicitly tested. If no PermissionedDomainSet-specific test file exists, coverage may be incomplete for these validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl custom validation (ledger view, helper functions, error codes)",
+    "validation_layer": "business_logic (preflight, preclaim, doApply)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "NotTEC error code (non-tesSUCCESS)",
+      "field": "sfAcceptedCredentials",
+      "location": "PermissionedDomainSet::preflight",
+      "validated_by": "credentials::checkArray",
+      "validates": [
+        "Array size does not exceed maxPermissionedDomainCredentialsArraySize",
+        "Array structure/format is correct (as per checkArray implementation)"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID",
+      "location": "PermissionedDomainSet::preflight",
+      "validated_by": "manual check (domain && *domain == beast::zero)",
+      "validates": [
+        "Domain ID is not zero (beast::zero)"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfAccount",
+      "location": "PermissionedDomainSet::preclaim",
+      "validated_by": "ctx.view.exists(keylet::account(account))",
+      "validates": [
+        "Account exists in ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ISSUER",
+      "field": "sfAcceptedCredentials[].sfIssuer",
+      "location": "PermissionedDomainSet::preclaim",
+      "validated_by": "ctx.view.exists(keylet::account(credential.getAccountID(sfIssuer)))",
+      "validates": [
+        "Each credential issuer account exists in ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfDomainID",
+      "location": "PermissionedDomainSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID)))",
+      "validates": [
+        "Permissioned domain entry exists for given DomainID"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfDomainID ownership",
+      "location": "PermissionedDomainSet::preclaim",
+      "validated_by": "sleDomain->getAccountID(sfOwner) != account",
+      "validates": [
+        "Account is owner of the permissioned domain"
+      ],
+      "validation_type": "business_logic|ownership"
+    }
+  ]
+}

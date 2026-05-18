@@ -1,0 +1,125 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "addr"
+    },
+    {
+      "lineno": 17,
+      "name": "port"
+    },
+    {
+      "lineno": 22,
+      "name": "s"
+    },
+    {
+      "lineno": 41,
+      "name": "port"
+    },
+    {
+      "lineno": 47,
+      "name": "port"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Address const& addr, Port port = 0",
+        "std::string const& s"
+      ],
+      "lineno": 13,
+      "name": "Endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "hash<::beast::IP::Endpoint>"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "hash<::beast::IP::Endpoint>"
+    }
+  ],
+  "description": "Defines a version-independent IP endpoint class (address and port), utility functions for endpoint manipulation, and hash support for std and boost.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/net/IPEndpoint.h",
+  "functions": [
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 74,
+      "name": "is_loopback"
+    },
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 80,
+      "name": "is_unspecified"
+    },
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 86,
+      "name": "is_multicast"
+    },
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 92,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 98,
+      "name": "is_public"
+    },
+    {
+      "args": [
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 104,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "OutputStream& os",
+        "Endpoint const& endpoint"
+      ],
+      "lineno": 109,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "std::istream& is",
+        "Endpoint& endpoint"
+      ],
+      "lineno": 116,
+      "name": "operator>>"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    },
+    {
+      "lineno": 9,
+      "name": "IP"
+    },
+    {
+      "lineno": 123,
+      "name": "std"
+    },
+    {
+      "lineno": 133,
+      "name": "boost"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines constants and configuration parameters for the reduce-relay feature in XRPL, which optimizes message routing and reduces gossip flooding among peers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/ReduceRelayCommon.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "reduce_relay"
+    }
+  ]
+}

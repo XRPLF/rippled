@@ -1,0 +1,194 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "tx"
+    },
+    {
+      "lineno": 181,
+      "name": "account"
+    },
+    {
+      "lineno": 181,
+      "name": "sequence"
+    },
+    {
+      "lineno": 181,
+      "name": "fee"
+    },
+    {
+      "lineno": 191,
+      "name": "tx"
+    },
+    {
+      "lineno": 198,
+      "name": "value"
+    },
+    {
+      "lineno": 208,
+      "name": "value"
+    },
+    {
+      "lineno": 218,
+      "name": "value"
+    },
+    {
+      "lineno": 228,
+      "name": "value"
+    },
+    {
+      "lineno": 238,
+      "name": "value"
+    },
+    {
+      "lineno": 248,
+      "name": "value"
+    },
+    {
+      "lineno": 258,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 258,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "MPTokenIssuanceCreate"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 174,
+      "name": "MPTokenIssuanceCreateBuilder"
+    }
+  ],
+  "description": "Defines the MPTokenIssuanceCreate transaction type for XRPL, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/MPTokenIssuanceCreate.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getAssetScale"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "hasAssetScale"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "hasTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "getMaximumAmount"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "hasMaximumAmount"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "getMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "hasMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "getMutableFlags"
+    },
+    {
+      "args": [],
+      "lineno": 162,
+      "name": "hasMutableFlags"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 196,
+      "name": "setAssetScale"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 206,
+      "name": "setTransferFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 216,
+      "name": "setMaximumAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 226,
+      "name": "setMPTokenMetadata"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 236,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 246,
+      "name": "setMutableFlags"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 256,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

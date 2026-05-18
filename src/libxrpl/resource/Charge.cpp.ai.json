@@ -1,0 +1,205 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "cost"
+    },
+    {
+      "lineno": 9,
+      "name": "label"
+    },
+    {
+      "lineno": 31,
+      "name": "os"
+    },
+    {
+      "lineno": 31,
+      "name": "v"
+    },
+    {
+      "lineno": 38,
+      "name": "c"
+    },
+    {
+      "lineno": 43,
+      "name": "c"
+    },
+    {
+      "lineno": 48,
+      "name": "m"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "cost",
+        "label"
+      ],
+      "lineno": 9,
+      "name": "Charge"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Charge::Charge"
+      ],
+      "entry_point": "Charge::Charge(value_type cost, std::string const& label)",
+      "purpose": "Constructs a Charge object with a cost and label.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Charge::operator=="
+      ],
+      "entry_point": "Charge::operator==",
+      "purpose": "Compares two Charge objects for equality based on cost.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Charge::operator<=>"
+      ],
+      "entry_point": "Charge::operator<=>",
+      "purpose": "Compares two Charge objects for ordering based on cost.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Charge::operator*",
+        "Charge::Charge"
+      ],
+      "entry_point": "Charge::operator*",
+      "purpose": "Multiplies the cost of a Charge by a value and returns a new Charge.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "operator<<",
+        "Charge::to_string"
+      ],
+      "entry_point": "operator<<",
+      "purpose": "Serializes a Charge object to an output stream.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_cost",
+      "flow": [
+        "constructor parameter",
+        "m_cost",
+        "cost()",
+        "operator==/operator<=>/operator*/to_string"
+      ],
+      "origin": "Charge::Charge constructor parameter 'cost'",
+      "transformations": [
+        "Assigned directly in constructor",
+        "Returned as-is in cost()",
+        "Compared in operator== and operator<=>",
+        "Multiplied in operator*",
+        "Formatted as string in to_string"
+      ],
+      "validated_at": "No validation occurs"
+    },
+    {
+      "field": "m_label",
+      "flow": [
+        "constructor parameter",
+        "m_label",
+        "label()",
+        "to_string"
+      ],
+      "origin": "Charge::Charge constructor parameter 'label'",
+      "transformations": [
+        "Assigned directly in constructor",
+        "Returned as-is in label()",
+        "Formatted as string in to_string"
+      ],
+      "validated_at": "No validation occurs"
+    }
+  ],
+  "description": "Implements the Charge class in the xrpl::Resource namespace, representing a resource cost with a label and providing comparison, multiplication, and string conversion operations.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/resource/Charge.cpp",
+  "functions": [
+    {
+      "args": [
+        "cost",
+        "label"
+      ],
+      "lineno": 9,
+      "name": "Charge"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "label"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "cost"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "v"
+      ],
+      "lineno": 31,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 38,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 43,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 48,
+      "name": "operator*"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "Resource"
+    }
+  ],
+  "test_coverage_notes": "There is no validation logic in this code (e.g., no range checks, no input sanitization). The code assumes that the inputs to the Charge constructor are valid. Test coverage would likely exist in unit tests for Charge (e.g., Charge_test.cpp or Resource_test.cpp), but these would only test construction, comparison, multiplication, and string formatting, not validation. There are no explicit validation code paths to test. Gaps: No tests for invalid or edge-case inputs (e.g., negative costs, empty labels), but such validation is not present in the code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "notes": "No explicit or implicit input/field validation is present in this code. All fields are assigned directly without checks. No framework or type/range/format/business logic validation is performed in constructors, setters, or methods.",
+    "validation_layer": null
+  },
+  "validations": []
+}

@@ -1,0 +1,62 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "journal"
+    },
+    {
+      "lineno": 25,
+      "name": "validator"
+    },
+    {
+      "lineno": 25,
+      "name": "squelchDuration"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "Squelch"
+    }
+  ],
+  "description": "Implements a Squelch class template for managing and expiring squelch (suppression) of relaying messages from validators in the XRPL overlay network.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Squelch.h",
+  "functions": [
+    {
+      "args": [
+        "validator",
+        "squelchDuration"
+      ],
+      "lineno": 25,
+      "name": "addSquelch"
+    },
+    {
+      "args": [
+        "validator"
+      ],
+      "lineno": 33,
+      "name": "removeSquelch"
+    },
+    {
+      "args": [
+        "validator"
+      ],
+      "lineno": 39,
+      "name": "expireSquelch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "reduce_relay"
+    }
+  ]
+}

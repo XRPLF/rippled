@@ -1,0 +1,169 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "root"
+    },
+    {
+      "lineno": 67,
+      "name": "root"
+    },
+    {
+      "lineno": 115,
+      "name": "out"
+    },
+    {
+      "lineno": 115,
+      "name": "root"
+    },
+    {
+      "lineno": 158,
+      "name": "value"
+    },
+    {
+      "lineno": 158,
+      "name": "write"
+    },
+    {
+      "lineno": 163,
+      "name": "write"
+    },
+    {
+      "lineno": 163,
+      "name": "value"
+    },
+    {
+      "lineno": 222,
+      "name": "jv"
+    },
+    {
+      "lineno": 222,
+      "name": "write"
+    },
+    {
+      "lineno": 237,
+      "name": "jv"
+    },
+    {
+      "lineno": 243,
+      "name": "o"
+    },
+    {
+      "lineno": 243,
+      "name": "cJv"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "WriterBase"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "FastWriter"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "StyledWriter"
+    },
+    {
+      "args": [
+        "std::string indentation = \"\\t\""
+      ],
+      "lineno": 101,
+      "name": "StyledStreamWriter"
+    },
+    {
+      "args": [
+        "Json::Value&& jv"
+      ],
+      "lineno": 236,
+      "name": "Compact"
+    }
+  ],
+  "description": "Provides classes and functions for serializing Json::Value objects to JSON format, both in compact and human-friendly (styled) formats, including streaming support and helper utilities.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/json_writer.h",
+  "functions": [
+    {
+      "args": [
+        "Int value"
+      ],
+      "lineno": 143,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "UInt value"
+      ],
+      "lineno": 144,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "double value"
+      ],
+      "lineno": 145,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "bool value"
+      ],
+      "lineno": 146,
+      "name": "valueToString"
+    },
+    {
+      "args": [
+        "char const* value"
+      ],
+      "lineno": 147,
+      "name": "valueToQuotedString"
+    },
+    {
+      "args": [
+        "std::ostream&",
+        "Value const& root"
+      ],
+      "lineno": 150,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "Write const& write",
+        "std::string const& s"
+      ],
+      "lineno": 158,
+      "name": "write_string"
+    },
+    {
+      "args": [
+        "Write const& write",
+        "Value const& value"
+      ],
+      "lineno": 163,
+      "name": "write_value"
+    },
+    {
+      "args": [
+        "Json::Value const& jv",
+        "Write const& write"
+      ],
+      "lineno": 222,
+      "name": "stream"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "Json"
+    },
+    {
+      "lineno": 155,
+      "name": "detail"
+    }
+  ]
+}

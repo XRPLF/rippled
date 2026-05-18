@@ -1,0 +1,54 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "amt"
+    },
+    {
+      "lineno": 10,
+      "name": "issue"
+    },
+    {
+      "lineno": 21,
+      "name": "all"
+    },
+    {
+      "lineno": 30,
+      "name": "a"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utility functions for handling and converting STAmount values, including determining the largest possible amount for a given asset and checking if an amount represents 'all' of an asset.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/PathfinderUtils.h",
+  "functions": [
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 7,
+      "name": "largestAmount"
+    },
+    {
+      "args": [
+        "amt",
+        "all"
+      ],
+      "lineno": 20,
+      "name": "convertAmount"
+    },
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 29,
+      "name": "convertAllCheck"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

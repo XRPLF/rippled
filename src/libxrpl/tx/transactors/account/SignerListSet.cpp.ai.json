@@ -1,0 +1,415 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SignerListSet::preflight",
+        "SignerListSet::determineOperation",
+        "SignerEntries::deserialize (if needed)",
+        "SignerListSet::validateQuorumAndSignerEntries (if needed)"
+      ],
+      "entry_point": "SignerListSet::preflight",
+      "purpose": "Validates the transaction before it is applied. Checks transaction format, quorum, signer entries, and account.",
+      "validation_points": [
+        "determineOperation: validates sfSignerQuorum and presence of sfSignerEntries",
+        "SignerEntries::deserialize: validates sfSignerEntries structure",
+        "validateQuorumAndSignerEntries: validates sfSignerQuorum, sfSignerEntries, sfAccount"
+      ]
+    },
+    {
+      "call_chain": [
+        "SignerListSet::doApply",
+        "SignerListSet::replaceSignerList OR SignerListSet::destroySignerList"
+      ],
+      "entry_point": "SignerListSet::doApply",
+      "purpose": "Applies the validated operation (set or destroy signer list) to the ledger.",
+      "validation_points": [
+        "No new validation; assumes preflight and preCompute have validated"
+      ]
+    },
+    {
+      "call_chain": [
+        "SignerListSet::preCompute",
+        "SignerListSet::determineOperation"
+      ],
+      "entry_point": "SignerListSet::preCompute",
+      "purpose": "Prepares the operation by extracting and storing the quorum, signers, and operation type.",
+      "validation_points": [
+        "determineOperation: validates transaction structure"
+      ]
+    },
+    {
+      "call_chain": [
+        "SignerListSet::getFlagsMask"
+      ],
+      "entry_point": "SignerListSet::getFlagsMask",
+      "purpose": "Validates transaction flags based on enabled protocol rules.",
+      "validation_points": [
+        "getFlagsMask: validates transaction flags"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfSignerQuorum",
+      "flow": [
+        "ctx.tx[sfSignerQuorum]",
+        "determineOperation (extracts value)",
+        "validateQuorumAndSignerEntries (validates value)",
+        "Stored in quorum_ (SignerListSet member)",
+        "Used in doApply/replaceSignerList"
+      ],
+      "origin": "ctx.tx (STTx)",
+      "transformations": [
+        "Extracted as uint32_t",
+        "Checked for zero/non-zero to determine operation",
+        "Validated for correctness"
+      ],
+      "validated_at": "determineOperation, validateQuorumAndSignerEntries"
+    },
+    {
+      "field": "sfSignerEntries",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfSignerEntries)",
+        "determineOperation (checks presence)",
+        "SignerEntries::deserialize (parses and validates structure)",
+        "validateQuorumAndSignerEntries (validates content)",
+        "Stored in signers_ (SignerListSet member)",
+        "Used in doApply/replaceSignerList"
+      ],
+      "origin": "ctx.tx (STTx)",
+      "transformations": [
+        "Deserialized into vector<SignerEntry>",
+        "Sorted",
+        "Validated for structure and content"
+      ],
+      "validated_at": "SignerEntries::deserialize, validateQuorumAndSignerEntries"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx.getAccountID(sfAccount)",
+        "validateQuorumAndSignerEntries (validates account against signers/quorum)"
+      ],
+      "origin": "ctx.tx (STTx)",
+      "transformations": [
+        "Extracted as AccountID"
+      ],
+      "validated_at": "validateQuorumAndSignerEntries"
+    },
+    {
+      "field": "transaction flags",
+      "flow": [
+        "SignerListSet::getFlagsMask (called from framework)",
+        "Used to mask/validate allowed flags"
+      ],
+      "origin": "ctx.tx (STTx)",
+      "transformations": [
+        "Masked with tfUniversalMask if fixInvalidTxFlags enabled"
+      ],
+      "validated_at": "getFlagsMask"
+    }
+  ],
+  "description": "Implements the SignerListSet transaction logic for the XRPL, handling creation, replacement, and deletion of signer lists for multisignature accounts, including validation, ledger updates, and reserve calculations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignerQuorum",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSignerQuorum validated by Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries)",
+      "issue_pattern": "Missing validation for sfSignerQuorum",
+      "why_false_positive": "Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries) validates sfSignerQuorum automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignerEntries",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSignerEntries validated by Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries)",
+      "issue_pattern": "Missing validation for sfSignerEntries",
+      "why_false_positive": "Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries) validates sfSignerEntries automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction flags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transaction flags validated by Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries)",
+      "issue_pattern": "Missing validation for transaction flags",
+      "why_false_positive": "Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries) validates transaction flags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignerQuorum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "determineOperation at determineOperation",
+      "issue_pattern": "Missing empty string validation for sfSignerQuorum",
+      "why_false_positive": "determineOperation validates sfSignerQuorum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignerEntries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SignerEntries::deserialize at determineOperation",
+      "issue_pattern": "Missing empty string validation for sfSignerEntries",
+      "why_false_positive": "SignerEntries::deserialize validates sfSignerEntries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSignerQuorum, sfSignerEntries, sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validateQuorumAndSignerEntries at preflight",
+      "issue_pattern": "Missing empty string validation for sfSignerQuorum, sfSignerEntries, sfAccount",
+      "why_false_positive": "validateQuorumAndSignerEntries validates sfSignerQuorum, sfSignerEntries, sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "transaction flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFlagsMask at getFlagsMask",
+      "issue_pattern": "Missing empty string validation for transaction flags",
+      "why_false_positive": "getFlagsMask validates transaction flags for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/account/SignerListSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "STTx const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 15,
+      "name": "SignerListSet::determineOperation"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 44,
+      "name": "SignerListSet::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 50,
+      "name": "SignerListSet::preflight"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "SignerListSet::doApply"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "SignerListSet::preCompute"
+    },
+    {
+      "args": [
+        "std::size_t entryCount",
+        "Rules const& rules"
+      ],
+      "lineno": 104,
+      "name": "signerCountBasedOwnerCountDelta"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "ApplyView& view",
+        "Keylet const& accountKeylet",
+        "Keylet const& ownerDirKeylet",
+        "Keylet const& signerListKeylet",
+        "beast::Journal j"
+      ],
+      "lineno": 130,
+      "name": "removeSignersFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "ApplyView& view",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 167,
+      "name": "SignerListSet::removeFromLedger"
+    },
+    {
+      "args": [
+        "std::uint32_t quorum",
+        "std::vector<SignerEntries::SignerEntry> const& signers",
+        "AccountID const& account",
+        "beast::Journal j",
+        "Rules const& rules"
+      ],
+      "lineno": 176,
+      "name": "SignerListSet::validateQuorumAndSignerEntries"
+    },
+    {
+      "args": [],
+      "lineno": 213,
+      "name": "SignerListSet::replaceSignerList"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "SignerListSet::destroySignerList"
+    },
+    {
+      "args": [
+        "SLE::pointer const& ledgerEntry",
+        "std::uint32_t flags"
+      ],
+      "lineno": 277,
+      "name": "SignerListSet::writeSignersToSLE"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "SignerListSet is a core transaction type in rippled. Typical test coverage is found in unit tests under 'src/test/app/SignerListSet_test.cpp', 'src/test/app/SetSignerList_test.cpp', or similar. These tests usually cover valid/invalid quorum, malformed signer entries, duplicate signers, invalid flags, and edge cases (e.g., removing signer list, setting with zero quorum, etc.). Gaps may exist in protocol rule transitions (e.g., fixInvalidTxFlags), malformed STArray structures, or rare edge cases (e.g., maximum signer entries, boundary quorum values). Integration tests may not cover all malformed transaction scenarios or protocol upgrades.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfSignerQuorum",
+      "sfSignerEntries",
+      "sfAccount",
+      "transaction flags"
+    ],
+    "framework": "Custom validation via business logic and helper functions (e.g., SignerEntries::deserialize, validateQuorumAndSignerEntries)",
+    "validation_layer": "business_logic (preflight and operation determination)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code (NotTEC) if invalid",
+      "field": "sfSignerQuorum",
+      "location": "determineOperation",
+      "validated_by": "determineOperation",
+      "validates": [
+        "Checks if quorum is non-zero and sfSignerEntries is present (set operation)",
+        "Checks if quorum is zero and sfSignerEntries is not present (destroy operation)",
+        "If neither, operation is unknown (malformed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code (NotTEC) if deserialization fails",
+      "field": "sfSignerEntries",
+      "location": "determineOperation",
+      "validated_by": "SignerEntries::deserialize",
+      "validates": [
+        "Deserializes signer entries array",
+        "Checks for correct format and types of entries"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code (NotTEC) if validation fails",
+      "field": "sfSignerQuorum, sfSignerEntries, sfAccount",
+      "location": "preflight",
+      "validated_by": "validateQuorumAndSignerEntries",
+      "validates": [
+        "Validates that quorum and signer entries are consistent and valid for the account",
+        "Checks for minimum/maximum values, duplicates, and other business rules"
+      ],
+      "validation_type": "business_logic|range|format"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (returns mask)",
+      "field": "transaction flags",
+      "location": "getFlagsMask",
+      "validated_by": "getFlagsMask",
+      "validates": [
+        "Determines which transaction flags are allowed based on enabled protocol rules"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

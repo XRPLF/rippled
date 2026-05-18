@@ -1,0 +1,471 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 31,
+      "name": "vault"
+    },
+    {
+      "lineno": 31,
+      "name": "maybeAmount"
+    },
+    {
+      "lineno": 31,
+      "name": "account"
+    },
+    {
+      "lineno": 46,
+      "name": "ctx"
+    },
+    {
+      "lineno": 133,
+      "name": "vault"
+    },
+    {
+      "lineno": 133,
+      "name": "sleShareIssuance"
+    },
+    {
+      "lineno": 133,
+      "name": "holder"
+    },
+    {
+      "lineno": 133,
+      "name": "clawbackAmount"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultClawback::preflight"
+      ],
+      "entry_point": "VaultClawback::preflight",
+      "purpose": "Initial stateless validation of the VaultClawback transaction before it is accepted for further processing.",
+      "validation_points": [
+        "ctx.tx[sfVaultID] == beast::zero (rejects zero/empty vault ID)",
+        "*amount < beast::zero (rejects negative amounts)",
+        "isXRP(amount->asset()) (rejects XRP clawback)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultClawback::preclaim",
+        "clawbackAmount"
+      ],
+      "entry_point": "VaultClawback::preclaim",
+      "purpose": "Performs contextual validation using ledger state, including vault existence, asset/issuer checks, and share clawback rules.",
+      "validation_points": [
+        "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) (vault must exist)",
+        "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) (share issuance must exist)",
+        "!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner) (must specify amount if issuer is owner)",
+        "account != vault->at(sfOwner) (only owner can clawback shares)",
+        "sharesTotal == 0 || (assetsTotal != 0 || assetsAvailable != 0) (owner can only clawback shares if no assets remain)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultClawback::doApply",
+        "VaultClawback::preflight",
+        "VaultClawback::preclaim",
+        "clawbackAmount"
+      ],
+      "entry_point": "VaultClawback::doApply",
+      "purpose": "Executes the actual clawback operation after all validations pass.",
+      "validation_points": [
+        "Relies on preflight and preclaim for validation; may have additional runtime checks."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "ctx.tx[sfVaultID]",
+        "VaultClawback::preflight (checked for zero)",
+        "VaultClawback::preclaim (used to look up vault SLE)",
+        "VaultClawback::doApply (used for operation)"
+      ],
+      "origin": "ctx.tx[sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key to fetch vault ledger entry"
+      ],
+      "validated_at": "preflight (zero check), preclaim (vault existence check)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[~sfAmount]",
+        "VaultClawback::preflight (checked for negative, XRP)",
+        "VaultClawback::preclaim (used for asset/issuer logic)",
+        "clawbackAmount (used to determine actual amount to clawback)",
+        "VaultClawback::doApply (used for operation)"
+      ],
+      "origin": "ctx.tx[~sfAmount] (optional transaction input)",
+      "transformations": [
+        "Checked for negative value",
+        "Checked for XRP asset",
+        "If not present, computed based on vault state"
+      ],
+      "validated_at": "preflight (negative/XRP check), preclaim (issuer/owner logic)"
+    },
+    {
+      "field": "sfShareMPTID",
+      "flow": [
+        "vault->at(sfShareMPTID)",
+        "VaultClawback::preclaim (used to look up share issuance SLE)",
+        "ctx.view.read(keylet::mptIssuance(mptIssuanceID))"
+      ],
+      "origin": "vault->at(sfShareMPTID) (from vault SLE)",
+      "transformations": [
+        "Used as key to fetch share issuance ledger entry"
+      ],
+      "validated_at": "preclaim (share issuance existence check)"
+    },
+    {
+      "field": "sfAsset",
+      "flow": [
+        "vault->at(sfAsset)",
+        "VaultClawback::preclaim (used for asset/issuer logic)",
+        "clawbackAmount (used to determine amount to clawback)"
+      ],
+      "origin": "vault->at(sfAsset) (from vault SLE)",
+      "transformations": [
+        "Checked for native/non-native",
+        "Issuer compared to owner"
+      ],
+      "validated_at": "preclaim (issuer/owner logic)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "VaultClawback::preclaim (used for permission checks)",
+        "clawbackAmount (used to determine amount to clawback)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to vault owner for permission"
+      ],
+      "validated_at": "preclaim (permission checks)"
+    }
+  ],
+  "description": "Implements the VaultClawback transaction logic for the XRPL ledger, including preflight, preclaim, asset calculation, and application of clawback operations on vault assets and shares.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfVaultID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultClawback::preflight",
+      "issue_pattern": "Missing format validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (amount < beast::zero) at VaultClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "explicit check (amount < beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (amount < beast::zero) at VaultClawback::preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "explicit check (amount < beast::zero) validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP(amount->asset()) at VaultClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isXRP(amount->asset()) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) at VaultClawback::preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfShareMPTID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) at VaultClawback::preclaim",
+      "issue_pattern": "Missing empty string validation for sfShareMPTID",
+      "why_false_positive": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) validates sfShareMPTID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner)) at VaultClawback::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "(!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner)) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultClawback.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "VaultClawback::preflight"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& vault",
+        "std::optional<STAmount> const& maybeAmount",
+        "AccountID const& account"
+      ],
+      "lineno": 31,
+      "name": "clawbackAmount"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 46,
+      "name": "VaultClawback::preclaim"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& vault",
+        "std::shared_ptr<SLE const> const& sleShareIssuance",
+        "AccountID const& holder",
+        "STAmount const& clawbackAmount"
+      ],
+      "lineno": 133,
+      "name": "VaultClawback::assetsToClawback"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "VaultClawback::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit/integration tests in the rippled codebase, especially in files such as 'test/tx/VaultClawback_test.cpp', 'test/tx/Vault_test.cpp', or similar. The explicit validation branches (zero vault ID, negative amount, XRP asset, missing vault/share issuance, issuer/owner logic, permission checks) should be tested. However, some error branches (e.g., missing share issuance, internal errors) may not be fully covered, as indicated by LCOV_EXCL_START/STOP comments. Edge cases involving ambiguous issuer/owner relationships and share burning logic may require additional targeted tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfVaultID",
+      "location": "VaultClawback::preflight",
+      "validated_by": "explicit check (ctx.tx[sfVaultID] == beast::zero)",
+      "validates": [
+        "Ensures VaultID is not zero/empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "VaultClawback::preflight",
+      "validated_by": "explicit check (amount < beast::zero)",
+      "validates": [
+        "Ensures amount is not negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAmount",
+      "location": "VaultClawback::preflight",
+      "validated_by": "isXRP(amount->asset())",
+      "validates": [
+        "Ensures clawback is not attempted on XRP"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfVaultID",
+      "location": "VaultClawback::preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID]))",
+      "validates": [
+        "Ensures referenced vault exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfShareMPTID",
+      "location": "VaultClawback::preclaim",
+      "validated_by": "ctx.view.read(keylet::mptIssuance(mptIssuanceID))",
+      "validates": [
+        "Ensures share issuance entry exists for vault"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecWRONG_ASSET",
+      "field": "sfAmount",
+      "location": "VaultClawback::preclaim",
+      "validated_by": "(!maybeAmount && !vaultAsset.native() && vaultAsset.getIssuer() == vault->at(sfOwner))",
+      "validates": [
+        "Ensures amount is specified when issuer is owner and asset is not native"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

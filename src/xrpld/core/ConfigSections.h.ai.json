@@ -1,0 +1,31 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "ConfigSection"
+    }
+  ],
+  "description": "Defines configuration section names and a deprecated ConfigSection struct for the XRPL project.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/ConfigSections.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "nodeDatabase"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "importNodeDatabase"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

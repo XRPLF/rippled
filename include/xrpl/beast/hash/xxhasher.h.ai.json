@@ -1,0 +1,60 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "xxhasher(const&)",
+        "operator=(const&)",
+        "xxhasher()",
+        "xxhasher(Seed seed)",
+        "xxhasher(Seed seed, Seed)",
+        "operator()(void const* key, std::size_t len)",
+        "operator result_type()"
+      ],
+      "lineno": 11,
+      "name": "xxhasher"
+    }
+  ],
+  "description": "Implements the beast::xxhasher class, a 64-bit hash function wrapper around XXH3/XXH64, with internal buffering and optional seeding, for efficient hashing in the Beast library.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/hash/xxhasher.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "resetBuffers"
+    },
+    {
+      "args": [
+        "data",
+        "len"
+      ],
+      "lineno": 28,
+      "name": "updateHash"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "allocState"
+    },
+    {
+      "args": [
+        "data",
+        "len"
+      ],
+      "lineno": 50,
+      "name": "flushToState"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "retrieveHash"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "beast"
+    }
+  ]
+}

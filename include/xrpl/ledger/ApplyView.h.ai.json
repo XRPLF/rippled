@@ -1,0 +1,171 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "ApplyView"
+    }
+  ],
+  "description": "Defines the ApplyView interface for writable views to an XRPL ledger, including transaction application flags, directory management, and hooks for credit and owner count changes. Also provides low-level directory helper functions in the xrpl::directory namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/ApplyView.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyFlags const& lhs",
+        "ApplyFlags const& rhs"
+      ],
+      "lineno": 23,
+      "name": "operator|"
+    },
+    {
+      "args": [
+        "ApplyFlags const& lhs",
+        "ApplyFlags const& rhs"
+      ],
+      "lineno": 38,
+      "name": "operator&"
+    },
+    {
+      "args": [
+        "ApplyFlags const& flags"
+      ],
+      "lineno": 48,
+      "name": "operator~"
+    },
+    {
+      "args": [
+        "ApplyFlags& lhs",
+        "ApplyFlags const& rhs"
+      ],
+      "lineno": 54,
+      "name": "operator|="
+    },
+    {
+      "args": [
+        "ApplyFlags& lhs",
+        "ApplyFlags const& rhs"
+      ],
+      "lineno": 59,
+      "name": "operator&="
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "Keylet const& key",
+        "std::function<void(std::shared_ptr<SLE> const&)> const& describe"
+      ],
+      "lineno": 168,
+      "name": "dirAppend"
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "uint256 const& key",
+        "std::function<void(std::shared_ptr<SLE> const&)> const& describe"
+      ],
+      "lineno": 196,
+      "name": "dirInsert"
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "Keylet const& key",
+        "std::function<void(std::shared_ptr<SLE> const&)> const& describe"
+      ],
+      "lineno": 203,
+      "name": "dirInsert"
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "std::uint64_t page",
+        "uint256 const& key",
+        "bool keepRoot"
+      ],
+      "lineno": 217,
+      "name": "dirRemove"
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "std::uint64_t page",
+        "Keylet const& key",
+        "bool keepRoot"
+      ],
+      "lineno": 220,
+      "name": "dirRemove"
+    },
+    {
+      "args": [
+        "Keylet const& directory",
+        "std::function<void(uint256 const&)> const&"
+      ],
+      "lineno": 227,
+      "name": "dirDelete"
+    },
+    {
+      "args": [
+        "Keylet const& directory"
+      ],
+      "lineno": 234,
+      "name": "emptyDirDelete"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "Keylet const& directory",
+        "uint256 const& key",
+        "std::function<void(std::shared_ptr<SLE> const&)> const& describe"
+      ],
+      "lineno": 246,
+      "name": "createRoot"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "Keylet const& directory",
+        "SLE::ref start"
+      ],
+      "lineno": 252,
+      "name": "findPreviousPage"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref node",
+        "std::uint64_t page",
+        "bool preserveOrder",
+        "STVector256& indexes",
+        "uint256 const& key"
+      ],
+      "lineno": 255,
+      "name": "insertKey"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::uint64_t page",
+        "SLE::pointer node",
+        "std::uint64_t nextPage",
+        "SLE::ref next",
+        "uint256 const& key",
+        "Keylet const& directory",
+        "std::function<void(std::shared_ptr<SLE> const&)> const& describe"
+      ],
+      "lineno": 263,
+      "name": "insertPage"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 244,
+      "name": "directory"
+    }
+  ]
+}

@@ -1,0 +1,650 @@
+{
+  "args": [
+    {
+      "lineno": 21,
+      "name": "slice"
+    },
+    {
+      "lineno": 28,
+      "name": "seed"
+    },
+    {
+      "lineno": 45,
+      "name": "passPhrase"
+    },
+    {
+      "lineno": 52,
+      "name": "s"
+    },
+    {
+      "lineno": 60,
+      "name": "str"
+    },
+    {
+      "lineno": 60,
+      "name": "rfc1751"
+    },
+    {
+      "lineno": 89,
+      "name": "seed"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseGenericSeed",
+        "parseBase58<AccountID>",
+        "parseBase58<PublicKey>",
+        "parseBase58<SecretKey>",
+        "seed.parseHex",
+        "parseBase58<Seed>",
+        "RFC1751::getKeyFromEnglish",
+        "generateSeed"
+      ],
+      "entry_point": "parseGenericSeed",
+      "purpose": "Attempts to parse a generic seed string into a Seed object, trying multiple formats and validation steps.",
+      "validation_points": [
+        "if (str.empty()) return std::nullopt;",
+        "parseBase58<Seed>: if (result.empty()) return std::nullopt;",
+        "parseBase58<Seed>: if (result.size() != 16) return std::nullopt;",
+        "Seed::Seed(Slice): if (slice.size() != buf_.size()) LogicError(...)",
+        "Seed::Seed(uint128): if (seed.size() != buf_.size()) LogicError(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseBase58<Seed>",
+        "decodeBase58Token",
+        "Seed::Seed(Slice)"
+      ],
+      "entry_point": "parseBase58<Seed>",
+      "purpose": "Parses a base58-encoded string as a Seed, validating size and content.",
+      "validation_points": [
+        "if (result.empty()) return std::nullopt;",
+        "if (result.size() != 16) return std::nullopt;",
+        "Seed::Seed(Slice): if (slice.size() != buf_.size()) LogicError(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Seed::Seed(Slice)"
+      ],
+      "entry_point": "Seed::Seed(Slice)",
+      "purpose": "Constructs a Seed from a Slice, validating the size.",
+      "validation_points": [
+        "if (slice.size() != buf_.size()) LogicError(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Seed::Seed(uint128)"
+      ],
+      "entry_point": "Seed::Seed(uint128)",
+      "purpose": "Constructs a Seed from a uint128, validating the size.",
+      "validation_points": [
+        "if (seed.size() != buf_.size()) LogicError(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "generateSeed",
+        "sha512_half_hasher_s",
+        "Seed::Seed(Slice)"
+      ],
+      "entry_point": "generateSeed",
+      "purpose": "Generates a Seed from a passphrase using SHA-512/256 hashing.",
+      "validation_points": [
+        "Seed::Seed(Slice): if (slice.size() != buf_.size()) LogicError(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "randomSeed",
+        "beast::rngfill",
+        "Seed::Seed(Slice)"
+      ],
+      "entry_point": "randomSeed",
+      "purpose": "Generates a random Seed using a cryptographically secure PRNG.",
+      "validation_points": [
+        "Seed::Seed(Slice): if (slice.size() != buf_.size()) LogicError(...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "str (input string to parseGenericSeed)",
+      "flow": [
+        "parseGenericSeed(str, rfc1751)",
+        "validation: if (str.empty()) return std::nullopt;",
+        "parseBase58<AccountID>(str), parseBase58<PublicKey>(...), parseBase58<SecretKey>(...)",
+        "seed.parseHex(str)",
+        "parseBase58<Seed>(str)",
+        "RFC1751::getKeyFromEnglish(key, str)",
+        "generateSeed(str)"
+      ],
+      "origin": "User input or caller of parseGenericSeed",
+      "transformations": [
+        "Checked for emptiness",
+        "Attempted base58 decoding",
+        "Attempted hex parsing",
+        "Attempted RFC1751 decoding",
+        "Hashed if all else fails"
+      ],
+      "validated_at": "parseGenericSeed (emptiness), parseBase58<Seed> (size/emptiness), Seed::Seed (size)"
+    },
+    {
+      "field": "result (from decodeBase58Token)",
+      "flow": [
+        "parseBase58<Seed>(s)",
+        "result = decodeBase58Token(s, TokenType::FamilySeed)",
+        "if (result.empty()) return std::nullopt;",
+        "if (result.size() != 16) return std::nullopt;",
+        "Seed(makeSlice(result))"
+      ],
+      "origin": "decodeBase58Token(s, TokenType::FamilySeed)",
+      "transformations": [
+        "Base58 decoding",
+        "Checked for emptiness",
+        "Checked for correct size"
+      ],
+      "validated_at": "parseBase58<Seed> (emptiness, size)"
+    },
+    {
+      "field": "slice (input to Seed::Seed(Slice))",
+      "flow": [
+        "Seed::Seed(Slice)",
+        "if (slice.size() != buf_.size()) LogicError(...)",
+        "std::memcpy(buf_.data(), slice.data(), buf_.size())"
+      ],
+      "origin": "makeSlice(result) or Slice(seed.data(), seed.size())",
+      "transformations": [
+        "Checked for correct size",
+        "Copied into internal buffer"
+      ],
+      "validated_at": "Seed::Seed(Slice) (size)"
+    },
+    {
+      "field": "seed (input to Seed::Seed(uint128))",
+      "flow": [
+        "Seed::Seed(uint128)",
+        "if (seed.size() != buf_.size()) LogicError(...)",
+        "std::memcpy(buf_.data(), seed.data(), buf_.size())"
+      ],
+      "origin": "uint128 parsed from hex or constructed from RFC1751 blob",
+      "transformations": [
+        "Checked for correct size",
+        "Copied into internal buffer"
+      ],
+      "validated_at": "Seed::Seed(uint128) (size)"
+    }
+  ],
+  "description": "Implements the Seed class and related functions for generating, parsing, and handling cryptographic seeds in the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "slice.size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (slice.size() != buf_.size()) LogicError(...) at Seed::Seed(Slice const& slice) constructor",
+      "issue_pattern": "Missing empty string validation for slice.size()",
+      "why_false_positive": "if (slice.size() != buf_.size()) LogicError(...) validates slice.size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "slice.size()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (slice.size() != buf_.size()) LogicError(...) at Seed::Seed(Slice const& slice) constructor",
+      "issue_pattern": "Missing format validation for slice.size()",
+      "why_false_positive": "if (slice.size() != buf_.size()) LogicError(...) validates slice.size() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seed.size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (seed.size() != buf_.size()) LogicError(...) at Seed::Seed(uint128 const& seed) constructor",
+      "issue_pattern": "Missing empty string validation for seed.size()",
+      "why_false_positive": "if (seed.size() != buf_.size()) LogicError(...) validates seed.size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "seed.size()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (seed.size() != buf_.size()) LogicError(...) at Seed::Seed(uint128 const& seed) constructor",
+      "issue_pattern": "Missing format validation for seed.size()",
+      "why_false_positive": "if (seed.size() != buf_.size()) LogicError(...) validates seed.size() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (result.size() != 16) return std::nullopt; at parseBase58<std::optional<Seed>>",
+      "issue_pattern": "Missing empty string validation for result.size()",
+      "why_false_positive": "if (result.size() != 16) return std::nullopt; validates result.size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result.size()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (result.size() != 16) return std::nullopt; at parseBase58<std::optional<Seed>>",
+      "issue_pattern": "Missing format validation for result.size()",
+      "why_false_positive": "if (result.size() != 16) return std::nullopt; validates result.size() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.empty()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (result.empty()) return std::nullopt; at parseBase58<std::optional<Seed>>",
+      "issue_pattern": "Missing empty string validation for result.empty()",
+      "why_false_positive": "if (result.empty()) return std::nullopt; validates result.empty() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result.empty()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (result.empty()) return std::nullopt; at parseBase58<std::optional<Seed>>",
+      "issue_pattern": "Missing format validation for result.empty()",
+      "why_false_positive": "if (result.empty()) return std::nullopt; validates result.empty() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "str.empty()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (str.empty()) return std::nullopt; at parseGenericSeed",
+      "issue_pattern": "Missing empty string validation for str.empty()",
+      "why_false_positive": "if (str.empty()) return std::nullopt; validates str.empty() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "str.empty()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (str.empty()) return std::nullopt; at parseGenericSeed",
+      "issue_pattern": "Missing format validation for str.empty()",
+      "why_false_positive": "if (str.empty()) return std::nullopt; validates str.empty() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "str (AccountID/PublicKey/SecretKey parse)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (parseBase58<AccountID>(str) || ... ) return std::nullopt; at parseGenericSeed",
+      "issue_pattern": "Missing empty string validation for str (AccountID/PublicKey/SecretKey parse)",
+      "why_false_positive": "if (parseBase58<AccountID>(str) || ... ) return std::nullopt; validates str (AccountID/PublicKey/SecretKey parse) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "str (AccountID/PublicKey/SecretKey parse)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (parseBase58<AccountID>(str) || ... ) return std::nullopt; at parseGenericSeed",
+      "issue_pattern": "Missing format validation for str (AccountID/PublicKey/SecretKey parse)",
+      "why_false_positive": "if (parseBase58<AccountID>(str) || ... ) return std::nullopt; validates str (AccountID/PublicKey/SecretKey parse) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "str (hex seed)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (seed.parseHex(str)) return Seed{Slice(seed.data(), seed.size())}; at parseGenericSeed",
+      "issue_pattern": "Missing empty string validation for str (hex seed)",
+      "why_false_positive": "if (seed.parseHex(str)) return Seed{Slice(seed.data(), seed.size())}; validates str (hex seed) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "str (hex seed)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (seed.parseHex(str)) return Seed{Slice(seed.data(), seed.size())}; at parseGenericSeed",
+      "issue_pattern": "Missing format validation for str (hex seed)",
+      "why_false_positive": "if (seed.parseHex(str)) return Seed{Slice(seed.data(), seed.size())}; validates str (hex seed) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "str (base58 seed)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (auto seed = parseBase58<Seed>(str)) return seed; at parseGenericSeed",
+      "issue_pattern": "Missing empty string validation for str (base58 seed)",
+      "why_false_positive": "if (auto seed = parseBase58<Seed>(str)) return seed; validates str (base58 seed) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "str (base58 seed)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (auto seed = parseBase58<Seed>(str)) return seed; at parseGenericSeed",
+      "issue_pattern": "Missing format validation for str (base58 seed)",
+      "why_false_positive": "if (auto seed = parseBase58<Seed>(str)) return seed; validates str (base58 seed) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "str (RFC1751 English phrase)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (RFC1751::getKeyFromEnglish(key, str) == 1) at parseGenericSeed",
+      "issue_pattern": "Missing empty string validation for str (RFC1751 English phrase)",
+      "why_false_positive": "if (RFC1751::getKeyFromEnglish(key, str) == 1) validates str (RFC1751 English phrase) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "str (RFC1751 English phrase)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (RFC1751::getKeyFromEnglish(key, str) == 1) at parseGenericSeed",
+      "issue_pattern": "Missing format validation for str (RFC1751 English phrase)",
+      "why_false_positive": "if (RFC1751::getKeyFromEnglish(key, str) == 1) validates str (RFC1751 English phrase) format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Seed.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "Seed::~Seed"
+    },
+    {
+      "args": [
+        "Slice const& slice"
+      ],
+      "lineno": 21,
+      "name": "Seed::Seed"
+    },
+    {
+      "args": [
+        "uint128 const& seed"
+      ],
+      "lineno": 28,
+      "name": "Seed::Seed"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "randomSeed"
+    },
+    {
+      "args": [
+        "std::string const& passPhrase"
+      ],
+      "lineno": 45,
+      "name": "generateSeed"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 52,
+      "name": "parseBase58<std::optional<Seed>>"
+    },
+    {
+      "args": [
+        "std::string const& str",
+        "bool rfc1751"
+      ],
+      "lineno": 60,
+      "name": "parseGenericSeed"
+    },
+    {
+      "args": [
+        "Seed const& seed"
+      ],
+      "lineno": 89,
+      "name": "seedAs1751"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested in unit tests for Seed parsing and generation, typically found in files like Seed_test.cpp, Protocol_test.cpp, or tests under workflow/XRPLF-rippled-develop/test/unit/protocol/ or similar. The validation paths (size checks, emptiness checks) are critical for security and correctness, so they are likely covered by tests for valid and invalid seed strings, base58 decoding, and RFC1751 parsing. However, edge cases such as oversized/undersized input, empty strings, and malformed base58/hex/RFC1751 inputs should be explicitly tested. Gaps may exist if tests do not cover all error branches (e.g., LogicError throws, all std::nullopt returns), or if fuzzing is not performed on all input paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation logic, no external validation framework detected",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError exception",
+      "field": "slice.size()",
+      "location": "Seed::Seed(Slice const& slice) constructor",
+      "validated_by": "if (slice.size() != buf_.size()) LogicError(...)",
+      "validates": [
+        "Checks that the input Slice is exactly 16 bytes (seed size)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError exception",
+      "field": "seed.size()",
+      "location": "Seed::Seed(uint128 const& seed) constructor",
+      "validated_by": "if (seed.size() != buf_.size()) LogicError(...)",
+      "validates": [
+        "Checks that the input uint128 is exactly 16 bytes (seed size)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns std::nullopt (no exception)",
+      "field": "result.size()",
+      "location": "parseBase58<std::optional<Seed>>",
+      "validated_by": "if (result.size() != 16) return std::nullopt;",
+      "validates": [
+        "Checks that the decoded base58 result is exactly 16 bytes"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns std::nullopt (no exception)",
+      "field": "result.empty()",
+      "location": "parseBase58<std::optional<Seed>>",
+      "validated_by": "if (result.empty()) return std::nullopt;",
+      "validates": [
+        "Checks that the decoded base58 result is not empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns std::nullopt (no exception)",
+      "field": "str.empty()",
+      "location": "parseGenericSeed",
+      "validated_by": "if (str.empty()) return std::nullopt;",
+      "validates": [
+        "Checks that the input string is not empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Returns std::nullopt (no exception)",
+      "field": "str (AccountID/PublicKey/SecretKey parse)",
+      "location": "parseGenericSeed",
+      "validated_by": "if (parseBase58<AccountID>(str) || ... ) return std::nullopt;",
+      "validates": [
+        "Checks that the input string is not a valid AccountID, NodePublic, AccountPublic, NodePrivate, or AccountSecret base58 encoding"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns Seed if valid, continues otherwise)",
+      "field": "str (hex seed)",
+      "location": "parseGenericSeed",
+      "validated_by": "if (seed.parseHex(str)) return Seed{Slice(seed.data(), seed.size())};",
+      "validates": [
+        "Checks if the input string is a valid hex-encoded 128-bit value"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns std::nullopt if invalid)",
+      "field": "str (base58 seed)",
+      "location": "parseGenericSeed",
+      "validated_by": "if (auto seed = parseBase58<Seed>(str)) return seed;",
+      "validates": [
+        "Checks if the input string is a valid base58-encoded seed"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns Seed if valid, continues otherwise)",
+      "field": "str (RFC1751 English phrase)",
+      "location": "parseGenericSeed",
+      "validated_by": "if (RFC1751::getKeyFromEnglish(key, str) == 1)",
+      "validates": [
+        "Checks if the input string is a valid RFC1751 English phrase"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

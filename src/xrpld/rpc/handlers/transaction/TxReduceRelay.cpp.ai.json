@@ -1,0 +1,83 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doTxReduceRelay",
+        "context.app.getOverlay()",
+        "Overlay::txMetrics()"
+      ],
+      "entry_point": "doTxReduceRelay",
+      "purpose": "Handles the 'tx_reduce_relay' RPC command, returning transaction relay metrics from the overlay subsystem.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC request arrives",
+        "RPC framework constructs JsonContext",
+        "doTxReduceRelay receives context",
+        "context.app.getOverlay()",
+        "Overlay::txMetrics()"
+      ],
+      "origin": "RPC::JsonContext& context (function parameter, populated by RPC framework from incoming HTTP/JSON-RPC request)",
+      "transformations": [
+        "No transformation; context is passed directly to app.getOverlay()"
+      ],
+      "validated_at": "No explicit validation in this function"
+    },
+    {
+      "field": "txMetrics() result",
+      "flow": [
+        "Overlay::txMetrics()",
+        "doTxReduceRelay returns value"
+      ],
+      "origin": "Overlay::txMetrics() (returns Json::Value)",
+      "transformations": [
+        "No transformation; value is returned as-is"
+      ],
+      "validated_at": "Assumed to be validated within Overlay::txMetrics(), but not in this function"
+    }
+  ],
+  "description": "Implements the doTxReduceRelay RPC handler, which returns transaction metrics from the application's overlay.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/transaction/TxReduceRelay.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doTxReduceRelay"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no validation or input processing in doTxReduceRelay; it simply returns internal metrics. Test coverage would likely be in integration or RPC handler tests, possibly in files like 'rpc/handlers/TxReduceRelay_test.cpp' or broader RPC handler test suites. However, since there is no input validation or transformation, coverage is limited to ensuring the handler returns the expected metrics structure. There are no explicit validation code paths to test here. Gaps: No field-level or input validation is present or needed in this handler.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected in this file",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

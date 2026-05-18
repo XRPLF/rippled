@@ -1,0 +1,104 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 68,
+      "name": "account"
+    },
+    {
+      "lineno": 69,
+      "name": "authorize"
+    },
+    {
+      "lineno": 70,
+      "name": "permissions"
+    },
+    {
+      "lineno": 71,
+      "name": "sequence"
+    },
+    {
+      "lineno": 72,
+      "name": "fee"
+    },
+    {
+      "lineno": 101,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 101,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 83,
+      "name": "value"
+    },
+    {
+      "lineno": 92,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "DelegateSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize, STArray const& permissions, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 59,
+      "name": "DelegateSetBuilder"
+    }
+  ],
+  "description": "Defines the DelegateSet transaction type for XRPL, including a type-safe wrapper and a builder class for constructing and signing DelegateSet transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/DelegateSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAuthorize"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getPermissions"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 81,
+      "name": "setAuthorize"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 90,
+      "name": "setPermissions"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 99,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

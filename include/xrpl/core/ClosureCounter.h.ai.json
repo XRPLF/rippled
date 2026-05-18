@@ -1,0 +1,138 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "Ret_t"
+    },
+    {
+      "lineno": 19,
+      "name": "Args_t"
+    },
+    {
+      "lineno": 51,
+      "name": "Closure"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Ret_t",
+        "Args_t..."
+      ],
+      "lineno": 19,
+      "name": "ClosureCounter"
+    },
+    {
+      "args": [
+        "Closure"
+      ],
+      "lineno": 51,
+      "name": "Substitute"
+    }
+  ],
+  "description": "Implements a template class ClosureCounter to assist in managing and waiting for the completion of asynchronous closures/callbacks, supporting safe shutdown and join semantics.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/ClosureCounter.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "operator--"
+    },
+    {
+      "args": [
+        "Substitute const& rhs"
+      ],
+      "lineno": 59,
+      "name": "Substitute"
+    },
+    {
+      "args": [
+        "Substitute&& rhs"
+      ],
+      "lineno": 63,
+      "name": "Substitute"
+    },
+    {
+      "args": [
+        "ClosureCounter& counter",
+        "Closure&& closure"
+      ],
+      "lineno": 68,
+      "name": "Substitute"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "~Substitute"
+    },
+    {
+      "args": [
+        "Args_t... args"
+      ],
+      "lineno": 82,
+      "name": "operator()"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "ClosureCounter"
+    },
+    {
+      "args": [
+        "ClosureCounter const&"
+      ],
+      "lineno": 91,
+      "name": "ClosureCounter"
+    },
+    {
+      "args": [
+        "ClosureCounter const&"
+      ],
+      "lineno": 93,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "~ClosureCounter"
+    },
+    {
+      "args": [
+        "char const* name",
+        "std::chrono::milliseconds wait",
+        "beast::Journal j"
+      ],
+      "lineno": 104,
+      "name": "join"
+    },
+    {
+      "args": [
+        "Closure&& closure"
+      ],
+      "lineno": 120,
+      "name": "wrap"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "count"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "joined"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

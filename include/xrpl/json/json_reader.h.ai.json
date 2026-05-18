@@ -1,0 +1,114 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "document"
+    },
+    {
+      "lineno": 22,
+      "name": "root"
+    },
+    {
+      "lineno": 31,
+      "name": "beginDoc"
+    },
+    {
+      "lineno": 31,
+      "name": "endDoc"
+    },
+    {
+      "lineno": 39,
+      "name": "is"
+    },
+    {
+      "lineno": 48,
+      "name": "bs"
+    },
+    {
+      "lineno": 48,
+      "name": "root"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Reader"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "Token"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "ErrorInfo"
+    }
+  ],
+  "description": "Defines the Json::Reader class for parsing JSON documents into Json::Value objects, supporting multiple input types and error reporting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/json_reader.h",
+  "functions": [
+    {
+      "args": [
+        "document",
+        "root"
+      ],
+      "lineno": 22,
+      "name": "parse"
+    },
+    {
+      "args": [
+        "beginDoc",
+        "endDoc",
+        "root"
+      ],
+      "lineno": 31,
+      "name": "parse"
+    },
+    {
+      "args": [
+        "is",
+        "root"
+      ],
+      "lineno": 39,
+      "name": "parse"
+    },
+    {
+      "args": [
+        "root",
+        "bs"
+      ],
+      "lineno": 48,
+      "name": "parse"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getFormattedErrorMessages"
+    },
+    {
+      "args": [
+        "root",
+        "bs"
+      ],
+      "lineno": 120,
+      "name": "parse"
+    },
+    {
+      "args": [
+        "std::istream&",
+        "Value&"
+      ],
+      "lineno": 143,
+      "name": "operator>>"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "Json"
+    }
+  ]
+}

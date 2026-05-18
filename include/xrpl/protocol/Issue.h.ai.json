@@ -1,0 +1,111 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "c"
+    },
+    {
+      "lineno": 15,
+      "name": "a"
+    },
+    {
+      "lineno": 27,
+      "name": "jv"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "Issue"
+    }
+  ],
+  "description": "Defines the Issue class representing a currency issued by an account in the XRPL protocol, along with related functions and operators for comparison, hashing, and JSON conversion.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Issue.h",
+  "functions": [
+    {
+      "args": [
+        "ac"
+      ],
+      "lineno": 38,
+      "name": "isConsistent"
+    },
+    {
+      "args": [
+        "ac"
+      ],
+      "lineno": 40,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "is"
+      ],
+      "lineno": 42,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 44,
+      "name": "issueFromJson"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 46,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "h",
+        "r"
+      ],
+      "lineno": 49,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 58,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 65,
+      "name": "operator<=>"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "xrpIssue"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "noIssue"
+    },
+    {
+      "args": [
+        "issue"
+      ],
+      "lineno": 90,
+      "name": "isXRP"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "address"
+    },
+    {
+      "lineno": 13,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 18,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 23,
+      "name": "endpoint"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "from_asio(boost::asio::ip::address const& address)",
+        "Endpoint{address}"
+      ],
+      "entry_point": "from_asio(boost::asio::ip::address const& address)",
+      "purpose": "Converts a Boost.Asio IP address to a beast::IP::Endpoint.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "from_asio(boost::asio::ip::tcp::endpoint const& endpoint)",
+        "endpoint.address(), endpoint.port()",
+        "Endpoint{address, port}"
+      ],
+      "entry_point": "from_asio(boost::asio::ip::tcp::endpoint const& endpoint)",
+      "purpose": "Converts a Boost.Asio TCP endpoint to a beast::IP::Endpoint.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "to_asio_address(Endpoint const& endpoint)",
+        "endpoint.address()"
+      ],
+      "entry_point": "to_asio_address(Endpoint const& endpoint)",
+      "purpose": "Extracts the Boost.Asio IP address from a beast::IP::Endpoint.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "to_asio_endpoint(Endpoint const& endpoint)",
+        "endpoint.address(), endpoint.port()",
+        "boost::asio::ip::tcp::endpoint{address, port}"
+      ],
+      "entry_point": "to_asio_endpoint(Endpoint const& endpoint)",
+      "purpose": "Converts a beast::IP::Endpoint to a Boost.Asio TCP endpoint.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "address (boost::asio::ip::address)",
+      "flow": [
+        "from_asio(address) input",
+        "Endpoint{address} constructor",
+        "Endpoint instance"
+      ],
+      "origin": "Input parameter to from_asio(address)",
+      "transformations": [
+        "Wrapped in Endpoint"
+      ],
+      "validated_at": null
+    },
+    {
+      "field": "endpoint (boost::asio::ip::tcp::endpoint)",
+      "flow": [
+        "from_asio(endpoint) input",
+        "endpoint.address(), endpoint.port()",
+        "Endpoint{address, port} constructor",
+        "Endpoint instance"
+      ],
+      "origin": "Input parameter to from_asio(endpoint)",
+      "transformations": [
+        "Extract address and port, wrap in Endpoint"
+      ],
+      "validated_at": null
+    },
+    {
+      "field": "Endpoint",
+      "flow": [
+        "Endpoint instance",
+        "endpoint.address() or endpoint.port()",
+        "Used to construct boost::asio::ip::address or boost::asio::ip::tcp::endpoint"
+      ],
+      "origin": "Output of from_asio() or input to to_asio_*()",
+      "transformations": [
+        "Unwrapped to get address/port"
+      ],
+      "validated_at": null
+    }
+  ],
+  "description": "Provides conversion utilities between Boost.Asio IP address/endpoint types and the beast::IP::Endpoint type.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/net/IPAddressConversion.cpp",
+  "functions": [
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 8,
+      "name": "from_asio"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 13,
+      "name": "from_asio"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 18,
+      "name": "to_asio_address"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 23,
+      "name": "to_asio_endpoint"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "IP"
+    }
+  ],
+  "test_coverage_notes": "There is no validation logic in this file; all functions are simple wrappers or converters with no input checking or error handling. Validation (if any) would occur in the Endpoint constructor or in upstream code. Test coverage for this file would likely be in unit tests for Endpoint or integration tests for networking code, but this file itself does not contain logic that can fail or be validated. If Endpoint performs validation, it is not visible here. There are likely no direct tests for these conversion functions unless Endpoint or higher-level networking code is tested for address/endpoint conversion correctness. Gaps: No validation of input data, no error handling, and no explicit tests for invalid input.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

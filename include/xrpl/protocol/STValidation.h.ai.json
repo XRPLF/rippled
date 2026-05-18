@@ -1,0 +1,102 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature",
+        "NetClock::time_point signTime, PublicKey const& pk, SecretKey const& sk, NodeID const& nodeID, F&& f"
+      ],
+      "lineno": 19,
+      "name": "STValidation"
+    }
+  ],
+  "description": "Defines the STValidation class for representing and handling ledger validations in the XRPL protocol, including construction, signing, verification, and metadata access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STValidation.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "STValidation::render"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "STValidation::validationFormat"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 94,
+      "name": "STValidation::copy"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 96,
+      "name": "STValidation::move"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "LookupNodeID&& lookupNodeID",
+        "bool checkSignature"
+      ],
+      "lineno": 101,
+      "name": "STValidation::STValidation"
+    },
+    {
+      "args": [
+        "NetClock::time_point signTime",
+        "PublicKey const& pk",
+        "SecretKey const& sk",
+        "NodeID const& nodeID",
+        "F&& f"
+      ],
+      "lineno": 126,
+      "name": "STValidation::STValidation"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "STValidation::getSignerPublic"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "STValidation::getNodeID"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "STValidation::isTrusted"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "STValidation::setTrusted"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "STValidation::setUntrusted"
+    },
+    {
+      "args": [
+        "NetClock::time_point s"
+      ],
+      "lineno": 179,
+      "name": "STValidation::setSeen"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

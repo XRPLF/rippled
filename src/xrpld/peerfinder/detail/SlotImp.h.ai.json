@@ -1,0 +1,211 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "local_endpoint"
+    },
+    {
+      "lineno": 16,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 17,
+      "name": "fixed"
+    },
+    {
+      "lineno": 18,
+      "name": "clock"
+    },
+    {
+      "lineno": 21,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 21,
+      "name": "fixed"
+    },
+    {
+      "lineno": 21,
+      "name": "clock"
+    },
+    {
+      "lineno": 70,
+      "name": "port"
+    },
+    {
+      "lineno": 74,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 78,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 82,
+      "name": "key"
+    },
+    {
+      "lineno": 86,
+      "name": "reserved_"
+    },
+    {
+      "lineno": 94,
+      "name": "state_"
+    },
+    {
+      "lineno": 96,
+      "name": "now"
+    },
+    {
+      "lineno": 105,
+      "name": "clock"
+    },
+    {
+      "lineno": 110,
+      "name": "ep"
+    },
+    {
+      "lineno": 110,
+      "name": "hops"
+    },
+    {
+      "lineno": 115,
+      "name": "ep"
+    },
+    {
+      "lineno": 115,
+      "name": "hops"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::IP::Endpoint const& local_endpoint, beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock",
+        "beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock"
+      ],
+      "lineno": 11,
+      "name": "SlotImp"
+    },
+    {
+      "args": [
+        "clock_type& clock"
+      ],
+      "lineno": 104,
+      "name": "recent_t"
+    }
+  ],
+  "description": "Defines the SlotImp class, an implementation of the Slot interface for managing peer connection slots in the XRPL PeerFinder subsystem, including metadata, state, and recent address tracking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/SlotImp.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "inbound"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "fixed"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "reserved"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "state"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "remote_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "local_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "public_key"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "prefix"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "listening_port"
+    },
+    {
+      "args": [
+        "port"
+      ],
+      "lineno": 70,
+      "name": "set_listening_port"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 74,
+      "name": "local_endpoint"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 78,
+      "name": "remote_endpoint"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 82,
+      "name": "public_key"
+    },
+    {
+      "args": [
+        "reserved_"
+      ],
+      "lineno": 86,
+      "name": "reserved"
+    },
+    {
+      "args": [
+        "state_"
+      ],
+      "lineno": 94,
+      "name": "state"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 96,
+      "name": "activate"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "expire"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "PeerFinder"
+    }
+  ]
+}

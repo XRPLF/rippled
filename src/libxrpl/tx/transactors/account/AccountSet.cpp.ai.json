@@ -1,0 +1,315 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Transactor::apply",
+        "AccountSet::preflight",
+        "AccountSet::preclaim",
+        "AccountSet::doApply"
+      ],
+      "entry_point": "Transactor::apply (via AccountSet)",
+      "purpose": "Processes an AccountSet transaction, validating and applying changes to an account.",
+      "validation_points": [
+        "AccountSet::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "AccountSet::makeTxConsequences"
+      ],
+      "entry_point": "AccountSet::makeTxConsequences",
+      "purpose": "Determines the consequences category of the transaction (e.g., blocker or normal) based on flags.",
+      "validation_points": [
+        "AccountSet::makeTxConsequences (flag checks)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfSetFlag",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.getFieldU32(sfSetFlag))",
+        "Validation logic (compared to sfClearFlag, asfRequireAuth, asfRequireDest, asfDisallowXRP, etc.)",
+        "Used to determine which account flags to set"
+      ],
+      "origin": "STTx (transaction input)",
+      "transformations": [
+        "Read as uint32_t",
+        "Compared for equality/contradiction with sfClearFlag",
+        "Mapped to specific account flags"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "sfClearFlag",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.getFieldU32(sfClearFlag))",
+        "Validation logic (compared to sfSetFlag, asfRequireAuth, asfRequireDest, asfDisallowXRP, etc.)",
+        "Used to determine which account flags to clear"
+      ],
+      "origin": "STTx (transaction input)",
+      "transformations": [
+        "Read as uint32_t",
+        "Compared for equality/contradiction with sfSetFlag",
+        "Mapped to specific account flags"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "tfRequireAuth / tfOptionalAuth / asfRequireAuth",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.getFlags(), tx.getFieldU32(sfSetFlag), tx.getFieldU32(sfClearFlag))",
+        "Validation logic (checks for contradictory set/clear)",
+        "Used to set/clear RequireAuth flag on account"
+      ],
+      "origin": "STTx flags and fields",
+      "transformations": [
+        "Bitwise checks",
+        "Boolean logic for contradiction"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "tfRequireDestTag / tfOptionalDestTag / asfRequireDest",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.getFlags(), tx.getFieldU32(sfSetFlag), tx.getFieldU32(sfClearFlag))",
+        "Validation logic (checks for contradictory set/clear)",
+        "Used to set/clear RequireDestTag flag on account"
+      ],
+      "origin": "STTx flags and fields",
+      "transformations": [
+        "Bitwise checks",
+        "Boolean logic for contradiction"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "tfDisallowXRP / tfAllowXRP / asfDisallowXRP",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.getFlags(), tx.getFieldU32(sfSetFlag), tx.getFieldU32(sfClearFlag))",
+        "Validation logic (checks for contradictory set/clear)",
+        "Used to set/clear DisallowXRP flag on account"
+      ],
+      "origin": "STTx flags and fields",
+      "transformations": [
+        "Bitwise checks",
+        "Boolean logic for contradiction"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "sfTransferRate",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.isFieldPresent(sfTransferRate), tx.getFieldU32(sfTransferRate))",
+        "Validation logic (range checks: != 0, >= QUALITY_ONE, <= 2*QUALITY_ONE)",
+        "Used to set TransferRate on account"
+      ],
+      "origin": "STTx (transaction input)",
+      "transformations": [
+        "Read as uint32_t",
+        "Range checked"
+      ],
+      "validated_at": "AccountSet::preflight"
+    },
+    {
+      "field": "sfTickSize",
+      "flow": [
+        "STTx (tx)",
+        "AccountSet::preflight (tx.isFieldPresent(sfTickSize), tx[sfTickSize])",
+        "Validation logic (range checks: == 0 or minTickSize <= value <= maxTickSize)",
+        "Used to set TickSize on account"
+      ],
+      "origin": "STTx (transaction input)",
+      "transformations": [
+        "Read as uint32_t",
+        "Range checked"
+      ],
+      "validated_at": "AccountSet::preflight"
+    }
+  ],
+  "description": "Implements the AccountSet transaction logic for the XRPL ledger, including preflight checks, permission checks, preclaim logic, and application of account settings and flags.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSetFlag and sfClearFlag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfSetFlag and sfClearFlag",
+      "why_false_positive": "explicit check in code validates sfSetFlag and sfClearFlag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfRequireAuth, tfOptionalAuth, asfRequireAuth",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for tfRequireAuth, tfOptionalAuth, asfRequireAuth",
+      "why_false_positive": "explicit check in code validates tfRequireAuth, tfOptionalAuth, asfRequireAuth for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfRequireDestTag, tfOptionalDestTag, asfRequireDest",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for tfRequireDestTag, tfOptionalDestTag, asfRequireDest",
+      "why_false_positive": "explicit check in code validates tfRequireDestTag, tfOptionalDestTag, asfRequireDest for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "tfDisallowXRP, tfAllowXRP, asfDisallowXRP",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code (partial, code cut off) at preflight",
+      "issue_pattern": "Missing empty string validation for tfDisallowXRP, tfAllowXRP, asfDisallowXRP",
+      "why_false_positive": "explicit check in code (partial, code cut off) validates tfDisallowXRP, tfAllowXRP, asfDisallowXRP for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/account/AccountSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 12,
+      "name": "AccountSet::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "AccountSet::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 36,
+      "name": "AccountSet::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 109,
+      "name": "AccountSet::checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 146,
+      "name": "AccountSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "AccountSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AccountSet transaction validation is typically covered in unit/integration tests under the rippled repository, especially in files like 'AccountSet_test.cpp', 'Transactor_test.cpp', or 'Tx_test.cpp'. These tests cover valid/invalid flag combinations, contradictory flags, and field value ranges (e.g., TransferRate, TickSize). Gaps may exist for edge cases involving simultaneous set/clear of the same flag, or for new flags/features not yet covered by tests. Fuzzing or property-based tests may be limited for complex flag interactions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in preflight function (no external framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "sfSetFlag and sfClearFlag",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "SetFlag and ClearFlag are not both set to the same value (cannot set and clear the same flag in one transaction)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfRequireAuth, tfOptionalAuth, asfRequireAuth",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "RequireAuth is not both set and cleared in the same transaction (contradictory flags not allowed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfRequireDestTag, tfOptionalDestTag, asfRequireDest",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "RequireDestTag is not both set and cleared in the same transaction (contradictory flags not allowed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "temINVALID_FLAG (presumed, based on pattern)",
+      "field": "tfDisallowXRP, tfAllowXRP, asfDisallowXRP",
+      "location": "preflight",
+      "validated_by": "explicit check in code (partial, code cut off)",
+      "validates": [
+        "DisallowXRP is not both set and cleared in the same transaction (contradictory flags not allowed)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

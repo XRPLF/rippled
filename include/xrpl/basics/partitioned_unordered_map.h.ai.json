@@ -1,0 +1,60 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "key"
+    },
+    {
+      "lineno": 16,
+      "name": "key"
+    },
+    {
+      "lineno": 137,
+      "name": "partitions"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::optional<std::size_t> partitions = std::nullopt"
+      ],
+      "lineno": 23,
+      "name": "partitioned_unordered_map"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "iterator"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "const_iterator"
+    }
+  ],
+  "description": "This file defines a thread-partitioned unordered map container template (partitioned_unordered_map) for concurrent or partitioned access, along with supporting iterator types and utility functions for key extraction and partitioning.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/partitioned_unordered_map.h",
+  "functions": [
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 11,
+      "name": "extract"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 16,
+      "name": "extract"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

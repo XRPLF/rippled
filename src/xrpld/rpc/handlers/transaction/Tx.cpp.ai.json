@@ -1,0 +1,414 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "args"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "TxResult"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "TxArgs"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doTxJson",
+        "doTxHelp",
+        "isValidated"
+      ],
+      "entry_point": "doTxJson",
+      "purpose": "Handles the main transaction lookup and response formatting for the RPC 'tx' endpoint.",
+      "validation_points": [
+        "doTxHelp: ledgerRange validated by explicit if-checks",
+        "doTxHelp: ctid validated by context.app.getLedgerMaster().txnIdFromIndex",
+        "doTxHelp: hash validated by explicit if-check",
+        "doTxHelp: hash (in ledger range) validated by context.app.getMasterTransaction().fetch",
+        "isValidated: checks if ledger exists and hash matches"
+      ]
+    },
+    {
+      "call_chain": [
+        "doTxHelp",
+        "context.app.getLedgerMaster().txnIdFromIndex",
+        "context.app.getMasterTransaction().fetch",
+        "isValidated"
+      ],
+      "entry_point": "doTxHelp",
+      "purpose": "Performs the core transaction lookup, validation, and result population.",
+      "validation_points": [
+        "doTxHelp: ledgerRange explicit checks",
+        "doTxHelp: ctid to hash conversion and validation",
+        "doTxHelp: hash presence check",
+        "doTxHelp: fetch validates hash in ledger range",
+        "isValidated: ledger existence and hash match"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledgerRange",
+      "flow": [
+        "TxArgs.ledgerRange",
+        "doTxHelp: explicit if-checks for range validity",
+        "range variable for fetch",
+        "context.app.getMasterTransaction().fetch"
+      ],
+      "origin": "TxArgs (input from RPC request)",
+      "transformations": [
+        "Checked for min/max order",
+        "Checked for excessive range",
+        "Converted to ClosedInterval<uint32_t>"
+      ],
+      "validated_at": "doTxHelp (explicit if-checks)"
+    },
+    {
+      "field": "ctid",
+      "flow": [
+        "TxArgs.ctid",
+        "doTxHelp: context.app.getLedgerMaster().txnIdFromIndex",
+        "If valid, sets args.hash and range"
+      ],
+      "origin": "TxArgs (input from RPC request)",
+      "transformations": [
+        "Converted to hash via txnIdFromIndex",
+        "If valid, sets hash and range"
+      ],
+      "validated_at": "doTxHelp (txnIdFromIndex result checked)"
+    },
+    {
+      "field": "hash",
+      "flow": [
+        "TxArgs.hash",
+        "doTxHelp: checked for presence",
+        "doTxHelp: used in context.app.getMasterTransaction().fetch",
+        "doTxHelp: result used for further processing"
+      ],
+      "origin": "TxArgs (input from RPC request, or derived from ctid)",
+      "transformations": [
+        "May be set from ctid",
+        "Checked for presence",
+        "Used as key for fetch"
+      ],
+      "validated_at": "doTxHelp (explicit if-check for presence)"
+    },
+    {
+      "field": "hash (in ledger range)",
+      "flow": [
+        "TxArgs.hash",
+        "doTxHelp: context.app.getMasterTransaction().fetch",
+        "fetch returns TxPair or TxSearched"
+      ],
+      "origin": "TxArgs.hash",
+      "transformations": [
+        "Checked for existence in specified ledger range"
+      ],
+      "validated_at": "doTxHelp (fetch result checked)"
+    },
+    {
+      "field": "validated",
+      "flow": [
+        "doTxHelp: isValidated called with ledger seq/hash",
+        "Result stored in TxResult.validated"
+      ],
+      "origin": "Result of isValidated",
+      "transformations": [
+        "Boolean set based on ledger existence and hash match"
+      ],
+      "validated_at": "isValidated"
+    }
+  ],
+  "description": "Implements transaction lookup and response formatting for XRPL RPC, supporting queries by transaction hash or CTID, with optional binary output and ledger range filtering.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledgerRange",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-checks at doTxHelp",
+      "issue_pattern": "Missing empty string validation for ledgerRange",
+      "why_false_positive": "explicit if-checks validates ledgerRange for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledgerRange",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit if-checks at doTxHelp",
+      "issue_pattern": "Missing range validation for ledgerRange",
+      "why_false_positive": "explicit if-checks validates ledgerRange range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ctid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.getLedgerMaster().txnIdFromIndex at doTxHelp",
+      "issue_pattern": "Missing empty string validation for ctid",
+      "why_false_positive": "context.app.getLedgerMaster().txnIdFromIndex validates ctid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at doTxHelp",
+      "issue_pattern": "Missing empty string validation for hash",
+      "why_false_positive": "explicit if-check validates hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hash (in ledger range)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.getMasterTransaction().fetch at doTxHelp",
+      "issue_pattern": "Missing empty string validation for hash (in ledger range)",
+      "why_false_positive": "context.app.getMasterTransaction().fetch validates hash (in ledger range) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/transaction/Tx.cpp",
+  "functions": [
+    {
+      "args": [
+        "LedgerMaster& ledgerMaster",
+        "std::uint32_t seq",
+        "uint256 const& hash"
+      ],
+      "lineno": 13,
+      "name": "isValidated"
+    },
+    {
+      "args": [
+        "RPC::Context& context",
+        "TxArgs args"
+      ],
+      "lineno": 49,
+      "name": "doTxHelp"
+    },
+    {
+      "args": [
+        "std::pair<TxResult, RPC::Status> const& res",
+        "TxArgs const& args",
+        "RPC::JsonContext const& context"
+      ],
+      "lineno": 143,
+      "name": "populateJsonResponse"
+    },
+    {
+      "args": [
+        "RPC::JsonContext& context"
+      ],
+      "lineno": 232,
+      "name": "doTxJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is likely covered by integration and unit tests for the 'tx' RPC endpoint. Look for test files such as 'test/rpc/Tx_test.cpp', 'test/rpc/Transaction_test.cpp', or similar. These should cover valid/invalid ledger ranges, CTID lookups, hash lookups, and binary/non-binary responses. Gaps may exist in edge cases for CTID conversion, excessive ledger ranges, and malformed input. Exception handling paths (e.g., rpcDB_DESERIALIZATION) may not be fully covered unless explicitly tested for database corruption or deserialization errors.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc (jss::, RPC::Status), explicit C++ logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcINVALID_LGR_RANGE or rpcEXCESSIVE_LGR_RANGE",
+      "field": "ledgerRange",
+      "location": "doTxHelp",
+      "validated_by": "explicit if-checks",
+      "validates": [
+        "ledgerRange->second >= ledgerRange->first",
+        "ledgerRange->second - ledgerRange->first <= MAX_RANGE (1000)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "rpcTXN_NOT_FOUND",
+      "field": "ctid",
+      "location": "doTxHelp",
+      "validated_by": "context.app.getLedgerMaster().txnIdFromIndex",
+      "validates": [
+        "ctid is mapped to a valid transaction hash"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcTXN_NOT_FOUND",
+      "field": "hash",
+      "location": "doTxHelp",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "hash is present (not nullopt) after ctid mapping"
+      ],
+      "validation_type": "type/presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "rpcTXN_NOT_FOUND",
+      "field": "hash (in ledger range)",
+      "location": "doTxHelp",
+      "validated_by": "context.app.getMasterTransaction().fetch",
+      "validates": [
+        "transaction with hash exists in specified ledger range"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

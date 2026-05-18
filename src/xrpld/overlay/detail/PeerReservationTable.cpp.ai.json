@@ -1,0 +1,456 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PeerReservationTable::insert_or_assign",
+        "table_.find",
+        "table_.erase",
+        "table_.insert",
+        "connection_->checkoutDb",
+        "insertPeerReservation"
+      ],
+      "entry_point": "PeerReservationTable::insert_or_assign",
+      "purpose": "Insert or update a peer reservation in the table and persist it to the database.",
+      "validation_points": [
+        "table_.find (checks if reservation exists)",
+        "table_.insert (validates uniqueness in unordered_set)",
+        "insertPeerReservation (validates nodeId and description)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerReservationTable::erase",
+        "table_.find",
+        "table_.erase",
+        "connection_->checkoutDb",
+        "deletePeerReservation"
+      ],
+      "entry_point": "PeerReservationTable::erase",
+      "purpose": "Remove a peer reservation from the table and database.",
+      "validation_points": [
+        "table_.find (checks if reservation exists before erasing)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerReservationTable::load",
+        "connection.checkoutDb",
+        "getPeerReservationTable",
+        "table_.insert"
+      ],
+      "entry_point": "PeerReservationTable::load",
+      "purpose": "Load all peer reservations from the database into the in-memory table.",
+      "validation_points": [
+        "table_.insert (validates uniqueness in unordered_set)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerReservation::toJson",
+        "toBase58(TokenType::NodePublic, nodeId)",
+        "description.empty()"
+      ],
+      "entry_point": "PeerReservation::toJson",
+      "purpose": "Serialize a peer reservation to JSON.",
+      "validation_points": [
+        "description.empty() (validates description is non-empty before adding to JSON)",
+        "toBase58 (validates nodeId format)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "description",
+      "flow": [
+        "PeerReservation.description",
+        "PeerReservationTable::insert_or_assign",
+        "insertPeerReservation",
+        "PeerReservation::toJson"
+      ],
+      "origin": "PeerReservation object (constructor or database load)",
+      "transformations": [
+        "Checked for emptiness before adding to JSON",
+        "Passed to insertPeerReservation for DB persistence"
+      ],
+      "validated_at": "PeerReservation::toJson (description.empty()), insertPeerReservation"
+    },
+    {
+      "field": "nodeId",
+      "flow": [
+        "PeerReservation.nodeId",
+        "PeerReservationTable::insert_or_assign",
+        "insertPeerReservation",
+        "PeerReservation::toJson"
+      ],
+      "origin": "PeerReservation object (constructor or database load)",
+      "transformations": [
+        "Converted to base58 string for JSON",
+        "Passed to insertPeerReservation for DB persistence"
+      ],
+      "validated_at": "toBase58(TokenType::NodePublic, nodeId), insertPeerReservation"
+    },
+    {
+      "field": "reservation (PeerReservation)",
+      "flow": [
+        "insert_or_assign argument",
+        "table_.find",
+        "table_.erase (if exists)",
+        "table_.insert",
+        "insertPeerReservation"
+      ],
+      "origin": "Function argument to insert_or_assign",
+      "transformations": [
+        "Checked for existence in table_",
+        "Inserted or replaced in table_",
+        "Persisted to DB"
+      ],
+      "validated_at": "table_.find, table_.insert, insertPeerReservation"
+    },
+    {
+      "field": "table_ (std::unordered_set<PeerReservation>)",
+      "flow": [
+        "table_",
+        "insert_or_assign / erase / load",
+        "table_.insert / table_.erase / table_.find"
+      ],
+      "origin": "In-memory data member of PeerReservationTable",
+      "transformations": [
+        "Ensures uniqueness of PeerReservation objects"
+      ],
+      "validated_at": "table_.insert (enforces uniqueness), table_.find"
+    }
+  ],
+  "description": "Implements the PeerReservationTable and PeerReservation logic for managing peer reservations in the XRPL network, including JSON serialization, insertion, deletion, and database loading.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "nodeId (via toBase58 and DB layer)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field nodeId (via toBase58 and DB layer) validated by jss:: (JSON field naming), toBase58 (key encoding), DB layer (insertPeerReservation)",
+      "issue_pattern": "Missing validation for nodeId (via toBase58 and DB layer)",
+      "why_false_positive": "jss:: (JSON field naming), toBase58 (key encoding), DB layer (insertPeerReservation) validates nodeId (via toBase58 and DB layer) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "description (via DB layer and empty check)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field description (via DB layer and empty check) validated by jss:: (JSON field naming), toBase58 (key encoding), DB layer (insertPeerReservation)",
+      "issue_pattern": "Missing validation for description (via DB layer and empty check)",
+      "why_false_positive": "jss:: (JSON field naming), toBase58 (key encoding), DB layer (insertPeerReservation) validates description (via DB layer and empty check) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "description",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::string::empty() at PeerReservation::toJson",
+      "issue_pattern": "Missing empty string validation for description",
+      "why_false_positive": "std::string::empty() validates description for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "nodeId",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "toBase58(TokenType::NodePublic, nodeId) at PeerReservation::toJson",
+      "issue_pattern": "Missing empty string validation for nodeId",
+      "why_false_positive": "toBase58(TokenType::NodePublic, nodeId) validates nodeId for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "nodeId",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "toBase58(TokenType::NodePublic, nodeId) at PeerReservation::toJson",
+      "issue_pattern": "Missing format validation for nodeId",
+      "why_false_positive": "toBase58(TokenType::NodePublic, nodeId) validates nodeId format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "reservation (PeerReservation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_set::find at PeerReservationTable::insert_or_assign",
+      "issue_pattern": "Missing empty string validation for reservation (PeerReservation)",
+      "why_false_positive": "std::unordered_set::find validates reservation (PeerReservation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "table_ (PeerReservation set)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_set::insert at PeerReservationTable::insert_or_assign",
+      "issue_pattern": "Missing empty string validation for table_ (PeerReservation set)",
+      "why_false_positive": "std::unordered_set::insert validates table_ (PeerReservation set) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "table_ (PeerReservation set)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::unordered_set::insert at PeerReservationTable::insert_or_assign",
+      "issue_pattern": "Missing type validation for table_ (PeerReservation set)",
+      "why_false_positive": "std::unordered_set::insert validates table_ (PeerReservation set) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "reservation.nodeId, reservation.description",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "insertPeerReservation at PeerReservationTable::insert_or_assign",
+      "issue_pattern": "Missing empty string validation for reservation.nodeId, reservation.description",
+      "why_false_positive": "insertPeerReservation validates reservation.nodeId, reservation.description for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/PeerReservationTable.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "PeerReservation::toJson"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "PeerReservationTable::list"
+    },
+    {
+      "args": [
+        "connection"
+      ],
+      "lineno": 38,
+      "name": "PeerReservationTable::load"
+    },
+    {
+      "args": [
+        "reservation"
+      ],
+      "lineno": 54,
+      "name": "PeerReservationTable::insert_or_assign"
+    },
+    {
+      "args": [
+        "nodeId"
+      ],
+      "lineno": 84,
+      "name": "PeerReservationTable::erase"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Likely test coverage would be in integration or unit tests for PeerReservationTable, possibly in files like test_overlay.cpp, test_PeerReservationTable.cpp, or higher-level application setup tests. Validation of description, nodeId, and reservation uniqueness should be tested, but coverage for edge cases (e.g., empty description, duplicate nodeId, concurrent access) is not visible here and may be missing if not explicitly tested elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "nodeId (via toBase58 and DB layer)",
+      "description (via DB layer and empty check)"
+    ],
+    "framework": "jss:: (JSON field naming), toBase58 (key encoding), DB layer (insertPeerReservation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "description",
+      "location": "PeerReservation::toJson",
+      "validated_by": "std::string::empty()",
+      "validates": [
+        "Checks if description is non-empty before adding to JSON output"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Exception if nodeId is invalid (depends on toBase58 implementation)",
+      "field": "nodeId",
+      "location": "PeerReservation::toJson",
+      "validated_by": "toBase58(TokenType::NodePublic, nodeId)",
+      "validates": [
+        "Ensures nodeId is a valid NodePublic key and can be encoded as Base58"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "reservation (PeerReservation)",
+      "location": "PeerReservationTable::insert_or_assign",
+      "validated_by": "std::unordered_set::find",
+      "validates": [
+        "Checks if reservation already exists before inserting"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (unless memory allocation fails)",
+      "field": "table_ (PeerReservation set)",
+      "location": "PeerReservationTable::insert_or_assign",
+      "validated_by": "std::unordered_set::insert",
+      "validates": [
+        "Ensures only valid PeerReservation objects are stored"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "Depends on insertPeerReservation (likely exception or error code on DB constraint violation)",
+      "field": "reservation.nodeId, reservation.description",
+      "location": "PeerReservationTable::insert_or_assign",
+      "validated_by": "insertPeerReservation",
+      "validates": [
+        "Validates DB constraints for nodeId and description"
+      ],
+      "validation_type": "format|type|business_logic (depends on insertPeerReservation implementation)"
+    }
+  ]
+}

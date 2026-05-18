@@ -1,0 +1,62 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "k"
+    },
+    {
+      "lineno": 13,
+      "name": "addr"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Kind k",
+        "beast::IP::Endpoint const& addr"
+      ],
+      "lineno": 8,
+      "name": "Key"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "Key::hasher"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "Key::key_equal"
+    }
+  ],
+  "description": "Defines the Key struct used as a consumer key in the XRPL resource management system, including hashing and equality comparison logic based on kind and IP endpoint.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/detail/Key.h",
+  "functions": [
+    {
+      "args": [
+        "Key const& v"
+      ],
+      "lineno": 22,
+      "name": "Key::hasher::operator()"
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 33,
+      "name": "Key::key_equal::operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "Resource"
+    }
+  ]
+}

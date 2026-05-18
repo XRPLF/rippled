@@ -1,0 +1,130 @@
+{
+  "args": [
+    {
+      "lineno": 30,
+      "name": "tx"
+    },
+    {
+      "lineno": 98,
+      "name": "account"
+    },
+    {
+      "lineno": 99,
+      "name": "checkID"
+    },
+    {
+      "lineno": 100,
+      "name": "sequence"
+    },
+    {
+      "lineno": 101,
+      "name": "fee"
+    },
+    {
+      "lineno": 109,
+      "name": "tx"
+    },
+    {
+      "lineno": 113,
+      "name": "value"
+    },
+    {
+      "lineno": 122,
+      "name": "value"
+    },
+    {
+      "lineno": 131,
+      "name": "value"
+    },
+    {
+      "lineno": 140,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 140,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "CheckCash"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& checkID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 93,
+      "name": "CheckCashBuilder"
+    }
+  ],
+  "description": "Defines the CheckCash transaction type for the XRPL protocol, providing a type-safe wrapper and a builder class for constructing and signing CheckCash transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/CheckCash.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "CheckCash::getCheckID"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "CheckCash::getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "CheckCash::hasAmount"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "CheckCash::getDeliverMin"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "CheckCash::hasDeliverMin"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 112,
+      "name": "CheckCashBuilder::setCheckID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 121,
+      "name": "CheckCashBuilder::setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 130,
+      "name": "CheckCashBuilder::setDeliverMin"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 139,
+      "name": "CheckCashBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

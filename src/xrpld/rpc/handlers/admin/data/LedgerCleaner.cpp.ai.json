@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerCleaner",
+        "Application::getLedgerCleaner",
+        "LedgerCleaner::clean"
+      ],
+      "entry_point": "doLedgerCleaner",
+      "purpose": "Handles the 'ledger_cleaner' RPC command, passing parameters to the LedgerCleaner subsystem to configure or trigger cleaning.",
+      "validation_points": [
+        "Potentially in LedgerCleaner::clean (not shown in this file); no validation in doLedgerCleaner itself."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.params",
+      "flow": [
+        "RPC JSON request",
+        "context.params",
+        "LedgerCleaner::clean"
+      ],
+      "origin": "RPC::JsonContext (populated from incoming RPC JSON request)",
+      "transformations": [
+        "No transformation in doLedgerCleaner; params passed directly to clean()"
+      ],
+      "validated_at": "Not validated in doLedgerCleaner; presumed to be validated (if at all) inside LedgerCleaner::clean"
+    }
+  ],
+  "description": "Implements the doLedgerCleaner RPC handler, which configures and triggers the ledger cleaning process in the XRPL application.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/data/LedgerCleaner.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doLedgerCleaner"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is a thin wrapper and does not perform validation itself. Test coverage would need to exist for both the RPC handler (ensuring correct routing and response) and for LedgerCleaner::clean (where validation should occur). Likely test files: rpc/handlers/LedgerCleaner_test.cpp, app/ledger/LedgerCleaner_test.cpp, or integration tests for the 'ledger_cleaner' RPC command. If LedgerCleaner::clean lacks input validation, this is a gap. No validation is present in this handler, so input validation coverage depends entirely on the implementation and tests of LedgerCleaner::clean.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected in this file",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

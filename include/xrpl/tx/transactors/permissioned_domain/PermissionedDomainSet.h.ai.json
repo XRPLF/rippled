@@ -1,0 +1,73 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "PermissionedDomainSet"
+    }
+  ],
+  "description": "Defines the PermissionedDomainSet transactor class for creating a Permissioned Domain in the XRPL, including its interface and lifecycle methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "PermissionedDomainSet"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::ostream& os = std::cout"
+      ],
+      "lineno": 18,
+      "name": "reporter"
+    },
+    {
+      "args": [
+        "std::string name_ = \"\""
+      ],
+      "lineno": 23,
+      "name": "case_results"
+    },
+    {
+      "args": [
+        "std::string name_ = \"\""
+      ],
+      "lineno": 30,
+      "name": "suite_results"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "results"
+    }
+  ],
+  "description": "Implements a real-time test reporter for the Beast unit test framework, which outputs test progress and results to a stream, including timing and failure information.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/reporter.h",
+  "functions": [
+    {
+      "args": [
+        "case_results const& r"
+      ],
+      "lineno": 70,
+      "name": "reporter<_>::suite_results::add"
+    },
+    {
+      "args": [
+        "suite_results const& r"
+      ],
+      "lineno": 80,
+      "name": "reporter<_>::results::add"
+    },
+    {
+      "args": [
+        "std::ostream& os"
+      ],
+      "lineno": 104,
+      "name": "reporter<_>::reporter"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "reporter<_>::~reporter"
+    },
+    {
+      "args": [
+        "typename clock_type::duration const& d"
+      ],
+      "lineno": 120,
+      "name": "reporter<_>::fmtdur"
+    },
+    {
+      "args": [
+        "suite_info const& info"
+      ],
+      "lineno": 132,
+      "name": "reporter<_>::on_suite_begin"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "reporter<_>::on_suite_end"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 141,
+      "name": "reporter<_>::on_case_begin"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "reporter<_>::on_case_end"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "reporter<_>::on_pass"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 155,
+      "name": "reporter<_>::on_fail"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 162,
+      "name": "reporter<_>::on_log"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "beast"
+    },
+    {
+      "lineno": 16,
+      "name": "unit_test"
+    },
+    {
+      "lineno": 18,
+      "name": "detail"
+    }
+  ]
+}

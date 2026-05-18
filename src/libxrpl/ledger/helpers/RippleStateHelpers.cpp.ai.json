@@ -1,0 +1,683 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "view"
+    },
+    {
+      "lineno": 16,
+      "name": "account"
+    },
+    {
+      "lineno": 17,
+      "name": "issuer"
+    },
+    {
+      "lineno": 18,
+      "name": "currency"
+    },
+    {
+      "lineno": 32,
+      "name": "v"
+    },
+    {
+      "lineno": 32,
+      "name": "acc"
+    },
+    {
+      "lineno": 32,
+      "name": "iss"
+    },
+    {
+      "lineno": 32,
+      "name": "cur"
+    },
+    {
+      "lineno": 111,
+      "name": "bSrcHigh"
+    },
+    {
+      "lineno": 112,
+      "name": "uSrcAccountID"
+    },
+    {
+      "lineno": 113,
+      "name": "uDstAccountID"
+    },
+    {
+      "lineno": 114,
+      "name": "uIndex"
+    },
+    {
+      "lineno": 115,
+      "name": "sleAccount"
+    },
+    {
+      "lineno": 116,
+      "name": "bAuth"
+    },
+    {
+      "lineno": 117,
+      "name": "bNoRipple"
+    },
+    {
+      "lineno": 118,
+      "name": "bFreeze"
+    },
+    {
+      "lineno": 119,
+      "name": "bDeepFreeze"
+    },
+    {
+      "lineno": 120,
+      "name": "saBalance"
+    },
+    {
+      "lineno": 122,
+      "name": "saLimit"
+    },
+    {
+      "lineno": 124,
+      "name": "uQualityIn"
+    },
+    {
+      "lineno": 125,
+      "name": "uQualityOut"
+    },
+    {
+      "lineno": 126,
+      "name": "j"
+    },
+    {
+      "lineno": 177,
+      "name": "sleRippleState"
+    },
+    {
+      "lineno": 178,
+      "name": "uLowAccountID"
+    },
+    {
+      "lineno": 179,
+      "name": "uHighAccountID"
+    },
+    {
+      "lineno": 206,
+      "name": "state"
+    },
+    {
+      "lineno": 207,
+      "name": "bSenderHigh"
+    },
+    {
+      "lineno": 208,
+      "name": "sender"
+    },
+    {
+      "lineno": 209,
+      "name": "before"
+    },
+    {
+      "lineno": 210,
+      "name": "after"
+    },
+    {
+      "lineno": 237,
+      "name": "amount"
+    },
+    {
+      "lineno": 238,
+      "name": "issue"
+    },
+    {
+      "lineno": 365,
+      "name": "from"
+    },
+    {
+      "lineno": 365,
+      "name": "to"
+    },
+    {
+      "lineno": 390,
+      "name": "accountID"
+    },
+    {
+      "lineno": 391,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 392,
+      "name": "journal"
+    },
+    {
+      "lineno": 471,
+      "name": "sleState"
+    },
+    {
+      "lineno": 472,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 500,
+      "name": "sleMpt"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "creditLimit"
+      ],
+      "entry_point": "creditLimit",
+      "purpose": "Fetches the credit limit for an account/issuer/currency triple from the ledger.",
+      "validation_points": [
+        "XRPL_ASSERT(result.getIssuer() == account)",
+        "XRPL_ASSERT(result.get<Issue>().currency == currency)"
+      ]
+    },
+    {
+      "call_chain": [
+        "creditLimit2",
+        "creditLimit"
+      ],
+      "entry_point": "creditLimit2",
+      "purpose": "Fetches the credit limit and converts it to IOUAmount.",
+      "validation_points": [
+        "XRPL_ASSERT(result.getIssuer() == account) in creditLimit",
+        "XRPL_ASSERT(result.get<Issue>().currency == currency) in creditLimit"
+      ]
+    },
+    {
+      "call_chain": [
+        "creditBalance"
+      ],
+      "entry_point": "creditBalance",
+      "purpose": "Fetches the credit balance for an account/issuer/currency triple from the ledger.",
+      "validation_points": [
+        "XRPL_ASSERT(result.getIssuer() == account)",
+        "XRPL_ASSERT(result.get<Issue>().currency == currency)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isIndividualFrozen"
+      ],
+      "entry_point": "isIndividualFrozen",
+      "purpose": "Checks if a trust line is individually frozen by the issuer.",
+      "validation_points": [
+        "currency validated by isXRP"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFrozen"
+      ],
+      "entry_point": "isFrozen",
+      "purpose": "Checks if a trust line is globally or individually frozen.",
+      "validation_points": [
+        "currency validated by isXRP"
+      ]
+    },
+    {
+      "call_chain": [
+        "isDeepFrozen"
+      ],
+      "entry_point": "isDeepFrozen",
+      "purpose": "Checks if a trust line is deeply frozen (not XRP, not self-issued, and trust line exists).",
+      "validation_points": [
+        "currency validated by isXRP"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "result.getIssuer()",
+      "flow": [
+        "Constructed with account as issuer",
+        "Possibly overwritten by sleRippleState->getFieldAmount",
+        "Explicitly set to account after fetch",
+        "Validated by XRPL_ASSERT"
+      ],
+      "origin": "Constructed as Issue{currency, account} in creditLimit/creditBalance",
+      "transformations": [
+        "May be replaced by ledger value, then forcibly set to account"
+      ],
+      "validated_at": "XRPL_ASSERT in creditLimit and creditBalance"
+    },
+    {
+      "field": "result.get<Issue>().currency",
+      "flow": [
+        "Used to construct Issue",
+        "May be replaced by ledger value",
+        "Validated by XRPL_ASSERT"
+      ],
+      "origin": "Passed as argument to creditLimit/creditBalance",
+      "transformations": [
+        "May be replaced by ledger value, but expected to match input"
+      ],
+      "validated_at": "XRPL_ASSERT in creditLimit and creditBalance"
+    },
+    {
+      "field": "currency",
+      "flow": [
+        "Passed as argument",
+        "Checked by isXRP",
+        "If XRP, returns false (not frozen)"
+      ],
+      "origin": "Function argument to isIndividualFrozen, isFrozen, isDeepFrozen",
+      "transformations": [
+        "None, just checked"
+      ],
+      "validated_at": "isXRP check at function start"
+    },
+    {
+      "field": "sleRippleState",
+      "flow": [
+        "Fetched from ledger",
+        "Used to get field amounts or flags"
+      ],
+      "origin": "view.read(keylet::line(account, issuer, currency))",
+      "transformations": [
+        "None, just used for field access"
+      ],
+      "validated_at": "Indirectly, via field checks and asserts"
+    }
+  ],
+  "description": "Implements helper functions for managing trust lines, IOU issuance/redemption, freeze checks, and related operations in the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.getIssuer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at creditLimit",
+      "issue_pattern": "Missing empty string validation for result.getIssuer()",
+      "why_false_positive": "XRPL_ASSERT validates result.getIssuer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.get<Issue>().currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at creditLimit",
+      "issue_pattern": "Missing empty string validation for result.get<Issue>().currency",
+      "why_false_positive": "XRPL_ASSERT validates result.get<Issue>().currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.getIssuer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at creditBalance",
+      "issue_pattern": "Missing empty string validation for result.getIssuer()",
+      "why_false_positive": "XRPL_ASSERT validates result.getIssuer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result.get<Issue>().currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at creditBalance",
+      "issue_pattern": "Missing empty string validation for result.get<Issue>().currency",
+      "why_false_positive": "XRPL_ASSERT validates result.get<Issue>().currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP at isIndividualFrozen",
+      "issue_pattern": "Missing empty string validation for currency",
+      "why_false_positive": "isXRP validates currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/RippleStateHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "account",
+        "issuer",
+        "currency"
+      ],
+      "lineno": 15,
+      "name": "creditLimit"
+    },
+    {
+      "args": [
+        "v",
+        "acc",
+        "iss",
+        "cur"
+      ],
+      "lineno": 32,
+      "name": "creditLimit2"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issuer",
+        "currency"
+      ],
+      "lineno": 36,
+      "name": "creditBalance"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 56,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 70,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer"
+      ],
+      "lineno": 87,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "bSrcHigh",
+        "uSrcAccountID",
+        "uDstAccountID",
+        "uIndex",
+        "sleAccount",
+        "bAuth",
+        "bNoRipple",
+        "bFreeze",
+        "bDeepFreeze",
+        "saBalance",
+        "saLimit",
+        "uQualityIn",
+        "uQualityOut",
+        "j"
+      ],
+      "lineno": 110,
+      "name": "trustCreate"
+    },
+    {
+      "args": [
+        "view",
+        "sleRippleState",
+        "uLowAccountID",
+        "uHighAccountID",
+        "j"
+      ],
+      "lineno": 176,
+      "name": "trustDelete"
+    },
+    {
+      "args": [
+        "view",
+        "state",
+        "bSenderHigh",
+        "sender",
+        "before",
+        "after",
+        "j"
+      ],
+      "lineno": 205,
+      "name": "updateTrustLine"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "amount",
+        "issue",
+        "j"
+      ],
+      "lineno": 236,
+      "name": "issueIOU"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "amount",
+        "issue",
+        "j"
+      ],
+      "lineno": 288,
+      "name": "redeemIOU"
+    },
+    {
+      "args": [
+        "view",
+        "issue",
+        "account",
+        "authType"
+      ],
+      "lineno": 340,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "view",
+        "issue",
+        "from",
+        "to"
+      ],
+      "lineno": 364,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "priorBalance",
+        "issue",
+        "journal"
+      ],
+      "lineno": 389,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "issue",
+        "journal"
+      ],
+      "lineno": 426,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "sleState",
+        "ammAccountID",
+        "j"
+      ],
+      "lineno": 470,
+      "name": "deleteAMMTrustLine"
+    },
+    {
+      "args": [
+        "view",
+        "sleMpt",
+        "ammAccountID",
+        "j"
+      ],
+      "lineno": 499,
+      "name": "deleteAMMMPToken"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These helpers are core to trust line and IOU logic. They are likely tested indirectly via higher-level transaction tests (e.g., trust set, payment, freeze/unfreeze). Direct unit tests for these helpers may exist in files like 'RippleState_test.cpp', 'TrustSet_test.cpp', or 'Credit_test.cpp' in the rippled/test or xrpl/test directories. However, the XRPL_ASSERTs are runtime checks and may not be directly tested for failure cases unless assertions are specifically tested. The isXRP validation is simple and likely covered by tests involving XRP and IOU trust lines. Gaps may exist in testing assertion failures or edge cases where ledger data is malformed.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), isXRP (utility function)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "result.getIssuer()",
+      "location": "creditLimit",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the issuer of the result STAmount matches the input account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "result.get<Issue>().currency",
+      "location": "creditLimit",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the currency of the result STAmount matches the input currency"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "result.getIssuer()",
+      "location": "creditBalance",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the issuer of the result STAmount matches the input account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "result.get<Issue>().currency",
+      "location": "creditBalance",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the currency of the result STAmount matches the input currency"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "currency",
+      "location": "isIndividualFrozen",
+      "validated_by": "isXRP",
+      "validates": [
+        "Checks if the currency is XRP, in which case freezing is not possible"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

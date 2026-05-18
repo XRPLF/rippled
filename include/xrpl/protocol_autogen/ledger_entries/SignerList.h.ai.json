@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 120,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 120,
+      "name": "signerQuorum"
+    },
+    {
+      "lineno": 120,
+      "name": "signerEntries"
+    },
+    {
+      "lineno": 120,
+      "name": "signerListID"
+    },
+    {
+      "lineno": 120,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 120,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 130,
+      "name": "sle"
+    },
+    {
+      "lineno": 134,
+      "name": "value"
+    },
+    {
+      "lineno": 144,
+      "name": "value"
+    },
+    {
+      "lineno": 154,
+      "name": "value"
+    },
+    {
+      "lineno": 164,
+      "name": "value"
+    },
+    {
+      "lineno": 174,
+      "name": "value"
+    },
+    {
+      "lineno": 184,
+      "name": "value"
+    },
+    {
+      "lineno": 194,
+      "name": "value"
+    },
+    {
+      "lineno": 204,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 23,
+      "name": "SignerList"
+    },
+    {
+      "args": [
+        "ownerNode",
+        "signerQuorum",
+        "signerEntries",
+        "signerListID",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 115,
+      "name": "SignerListBuilder"
+    }
+  ],
+  "description": "Defines the SignerList ledger entry wrapper and builder for XRPL, providing type-safe field access and a fluent builder interface for constructing SignerList ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/SignerList.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "hasOwner"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "getSignerQuorum"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "getSignerEntries"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getSignerListID"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 132,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 142,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 152,
+      "name": "setSignerQuorum"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 162,
+      "name": "setSignerEntries"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 172,
+      "name": "setSignerListID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 182,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 192,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 202,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

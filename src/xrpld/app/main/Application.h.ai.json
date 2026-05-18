@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 33,
+      "name": "Key"
+    },
+    {
+      "lineno": 34,
+      "name": "T"
+    },
+    {
+      "lineno": 35,
+      "name": "IsKeyCache"
+    },
+    {
+      "lineno": 36,
+      "name": "SharedWeakUnionPointer"
+    },
+    {
+      "lineno": 37,
+      "name": "SharedPointerType"
+    },
+    {
+      "lineno": 38,
+      "name": "Hash"
+    },
+    {
+      "lineno": 39,
+      "name": "KeyEqual"
+    },
+    {
+      "lineno": 40,
+      "name": "Mutex"
+    },
+    {
+      "lineno": 109,
+      "name": "Adaptor"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "TaggedCache"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "Application"
+    }
+  ],
+  "description": "This header file defines the Application class and related forward declarations for the XRPL (XRP Ledger) server application, including interfaces for configuration, networking, ledger management, and other core components. It also provides the factory function to create an Application instance.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/Application.h",
+  "functions": [
+    {
+      "args": [
+        "std::unique_ptr<Config> config",
+        "std::unique_ptr<Logs> logs",
+        "std::unique_ptr<TimeKeeper> timeKeeper"
+      ],
+      "lineno": 120,
+      "name": "make_Application"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 16,
+      "name": "unl"
+    },
+    {
+      "lineno": 19,
+      "name": "Resource"
+    },
+    {
+      "lineno": 22,
+      "name": "NodeStore"
+    },
+    {
+      "lineno": 25,
+      "name": "perf"
+    }
+  ]
+}

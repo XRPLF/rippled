@@ -1,0 +1,183 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "Handler"
+    },
+    {
+      "lineno": 13,
+      "name": "Impl"
+    },
+    {
+      "lineno": 37,
+      "name": "ConstBufferSequence"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "executor",
+        "journal",
+        "remote_address",
+        "buffers"
+      ],
+      "lineno": 13,
+      "name": "BaseHTTPPeer"
+    }
+  ],
+  "description": "Defines the BaseHTTPPeer template class, which represents an active HTTP connection/session in the xrpl server, handling asynchronous read/write operations, timeouts, and session lifecycle management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/BaseHTTPPeer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "session"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "impl"
+    },
+    {
+      "args": [
+        "ec",
+        "what"
+      ],
+      "lineno": 70,
+      "name": "fail"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "start_timer"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "cancel_timer"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "on_timer"
+    },
+    {
+      "args": [
+        "do_yield"
+      ],
+      "lineno": 82,
+      "name": "do_read"
+    },
+    {
+      "args": [
+        "ec",
+        "bytes_transferred"
+      ],
+      "lineno": 85,
+      "name": "on_write"
+    },
+    {
+      "args": [
+        "writer",
+        "keep_alive",
+        "do_yield"
+      ],
+      "lineno": 88,
+      "name": "do_writer"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "do_request"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "do_close"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "journal"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "port"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "remoteAddress"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "request"
+    },
+    {
+      "args": [
+        "buffer",
+        "bytes"
+      ],
+      "lineno": 118,
+      "name": "write"
+    },
+    {
+      "args": [
+        "writer",
+        "keep_alive"
+      ],
+      "lineno": 121,
+      "name": "write"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "detach"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "complete"
+    },
+    {
+      "args": [
+        "graceful"
+      ],
+      "lineno": 130,
+      "name": "close"
+    },
+    {
+      "args": [
+        "port",
+        "handler",
+        "executor",
+        "journal",
+        "remote_address",
+        "buffers"
+      ],
+      "lineno": 137,
+      "name": "BaseHTTPPeer"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "~BaseHTTPPeer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

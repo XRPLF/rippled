@@ -1,0 +1,9 @@
+# `include/xrpl/nodestore/Types.h`
+
+This header is the shared vocabulary file for the `xrpl::NodeStore` subsystem. It sits at the bottom of the NodeStore include hierarchy — `Backend.h` and every other interface header pull it in — so it deliberately contains only the primitives that all participants need to agree on.
+
+**`Status`** is the return code enum used by every `Backend` operation. The five named values (`ok`, `notFound`, `dataCorrupt`, `unknown`, `backendError`) cover the expected outcomes of a key–value store lookup or write. The `customCode = 100` sentinel reserves the range 0–99 for the standard codes while letting any backend implementation define its own extended error values starting at 100, without risking collision.
+
+**`Batch`** is a type alias for `std::vector<std::shared_ptr<NodeObject>>`. Grouping objects under a shared alias rather than spelling out the type everywhere ensures that if the container or ownership model changes, callsites — including `Backend::storeBatch()` — update from a single definition. The shared-pointer element type reflects that `NodeObject` instances may be concurrently referenced by in-memory caches and the write pipeline at the same time.
+
+The two anonymous enum constants establish the batch write policy. `batchWritePreallocationSize` (256) is purely a performance hint for `vector::reserve` and does not constrain correctness. `batchWriteLimitSize` (65536) caps a single batch flush, but the inline comment is worth noting: because a new batch can accumulate while the previous one is being written to disk, peak memory for pending objects can reach twice this limit. This double-buffer pattern is a deliberate throughput tradeoff — writers are never blocked waiting for the flush to complete.

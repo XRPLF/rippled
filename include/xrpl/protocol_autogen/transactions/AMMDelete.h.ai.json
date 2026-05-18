@@ -1,0 +1,114 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "tx"
+    },
+    {
+      "lineno": 63,
+      "name": "account"
+    },
+    {
+      "lineno": 64,
+      "name": "asset"
+    },
+    {
+      "lineno": 64,
+      "name": "asset2"
+    },
+    {
+      "lineno": 65,
+      "name": "sequence"
+    },
+    {
+      "lineno": 66,
+      "name": "fee"
+    },
+    {
+      "lineno": 74,
+      "name": "tx"
+    },
+    {
+      "lineno": 82,
+      "name": "value"
+    },
+    {
+      "lineno": 92,
+      "name": "value"
+    },
+    {
+      "lineno": 102,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 102,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 23,
+      "name": "AMMDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::decay_t<typename SF_ISSUE::type::value_type> const& asset2, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 62,
+      "name": "AMMDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 73,
+      "name": "AMMDeleteBuilder"
+    }
+  ],
+  "description": "Defines the AMMDelete transaction type for XRPL, providing an immutable wrapper for type-safe field access and a builder class for constructing and signing AMMDelete transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMDelete.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "AMMDelete::getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "AMMDelete::getAsset2"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 81,
+      "name": "AMMDeleteBuilder::setAsset"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 91,
+      "name": "AMMDeleteBuilder::setAsset2"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 101,
+      "name": "AMMDeleteBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

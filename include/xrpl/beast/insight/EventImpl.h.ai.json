@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "EventImpl"
+    }
+  ],
+  "description": "Defines the EventImpl abstract base class for event timing metrics in the beast::insight namespace, providing an interface for notifying event occurrences with millisecond precision.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/EventImpl.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~EventImpl"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 14,
+      "name": "notify"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 6,
+      "name": "insight"
+    }
+  ]
+}

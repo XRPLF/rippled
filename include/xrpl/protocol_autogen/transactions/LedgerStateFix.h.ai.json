@@ -1,0 +1,109 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "tx"
+    },
+    {
+      "lineno": 87,
+      "name": "account"
+    },
+    {
+      "lineno": 88,
+      "name": "ledgerFixType"
+    },
+    {
+      "lineno": 89,
+      "name": "sequence"
+    },
+    {
+      "lineno": 90,
+      "name": "fee"
+    },
+    {
+      "lineno": 97,
+      "name": "tx"
+    },
+    {
+      "lineno": 102,
+      "name": "value"
+    },
+    {
+      "lineno": 111,
+      "name": "value"
+    },
+    {
+      "lineno": 121,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 121,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 33,
+      "name": "LedgerStateFix"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT16::type::value_type> const& ledgerFixType, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 80,
+      "name": "LedgerStateFixBuilder"
+    }
+  ],
+  "description": "Defines the LedgerStateFix transaction type for XRPL, including its immutable wrapper and builder class for constructing and signing transactions with type-safe field access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LedgerStateFix.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "LedgerStateFix::getLedgerFixType"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "LedgerStateFix::getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "LedgerStateFix::hasOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 101,
+      "name": "LedgerStateFixBuilder::setLedgerFixType"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 110,
+      "name": "LedgerStateFixBuilder::setOwner"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 119,
+      "name": "LedgerStateFixBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

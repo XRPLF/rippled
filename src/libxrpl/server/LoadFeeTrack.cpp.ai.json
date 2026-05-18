@@ -1,0 +1,421 @@
+{
+  "args": [
+    {
+      "lineno": 49,
+      "name": "fee"
+    },
+    {
+      "lineno": 49,
+      "name": "feeTrack"
+    },
+    {
+      "lineno": 49,
+      "name": "fees"
+    },
+    {
+      "lineno": 49,
+      "name": "bUnlimited"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoadFeeTrack::raiseLocalFee"
+      ],
+      "entry_point": "LoadFeeTrack::raiseLocalFee",
+      "purpose": "Raises the local transaction load fee if certain conditions are met, to manage server load.",
+      "validation_points": [
+        "if (++raiseCount_ < 2) // Ensures fee is not raised too frequently",
+        "localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_) // Ensures local fee is at least remote fee",
+        "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax) // Caps the fee at a maximum"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadFeeTrack::lowerLocalFee"
+      ],
+      "entry_point": "LoadFeeTrack::lowerLocalFee",
+      "purpose": "Lowers the local transaction load fee, typically when load decreases.",
+      "validation_points": [
+        "localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction) // Reduces fee slowly",
+        "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee) // Ensures fee does not go below normal"
+      ]
+    },
+    {
+      "call_chain": [
+        "scaleFeeLoad"
+      ],
+      "entry_point": "scaleFeeLoad",
+      "purpose": "Scales a transaction fee based on current load and user privileges.",
+      "validation_points": [
+        "if (fee == 0) return fee; // Validates input fee",
+        "feeTrack.getScalingFactors() // Gets current scaling factors (validated in LoadFeeTrack)",
+        "if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee))) feeFactor = uRemFee; // Privilege check",
+        "mulDiv(fee, feeFactor, safe_cast<std::uint64_t>(feeTrack.getLoadBase())) // Validates against overflow"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "raiseCount_",
+      "flow": [
+        "initialized to 0",
+        "incremented in raiseLocalFee",
+        "reset to 0 in lowerLocalFee"
+      ],
+      "origin": "LoadFeeTrack class member, initialized to 0",
+      "transformations": [
+        "Incremented (++raiseCount_) in raiseLocalFee",
+        "Reset (raiseCount_ = 0) in lowerLocalFee"
+      ],
+      "validated_at": "if (++raiseCount_ < 2) in raiseLocalFee"
+    },
+    {
+      "field": "localTxnLoadFee_",
+      "flow": [
+        "initialized",
+        "compared and set to max(localTxnLoadFee_, remoteTxnLoadFee_) in raiseLocalFee",
+        "incremented by (localTxnLoadFee_ / lftFeeIncFraction) in raiseLocalFee",
+        "capped at lftFeeMax in raiseLocalFee",
+        "decremented by (localTxnLoadFee_ / lftFeeDecFraction) in lowerLocalFee",
+        "floored at lftNormalFee in lowerLocalFee"
+      ],
+      "origin": "LoadFeeTrack class member, set at construction or via config",
+      "transformations": [
+        "max(localTxnLoadFee_, remoteTxnLoadFee_)",
+        "add (localTxnLoadFee_ / lftFeeIncFraction)",
+        "min(localTxnLoadFee_, lftFeeMax)",
+        "subtract (localTxnLoadFee_ / lftFeeDecFraction)",
+        "max(localTxnLoadFee_, lftNormalFee)"
+      ],
+      "validated_at": [
+        "std::max(localTxnLoadFee_, remoteTxnLoadFee_) in raiseLocalFee",
+        "std::min(localTxnLoadFee_, lftFeeMax) in raiseLocalFee",
+        "std::max(localTxnLoadFee_, lftNormalFee) in lowerLocalFee"
+      ]
+    },
+    {
+      "field": "remoteTxnLoadFee_",
+      "flow": [
+        "set from network",
+        "used in std::max(localTxnLoadFee_, remoteTxnLoadFee_) in raiseLocalFee"
+      ],
+      "origin": "LoadFeeTrack class member, updated from network peers",
+      "transformations": [
+        "Compared to localTxnLoadFee_"
+      ],
+      "validated_at": "std::max(localTxnLoadFee_, remoteTxnLoadFee_) in raiseLocalFee"
+    },
+    {
+      "field": "fee (parameter to scaleFeeLoad)",
+      "flow": [
+        "passed to scaleFeeLoad",
+        "checked for zero",
+        "multiplied by feeFactor",
+        "divided by loadBase"
+      ],
+      "origin": "Caller of scaleFeeLoad (transaction fee calculation)",
+      "transformations": [
+        "mulDiv(fee, feeFactor, loadBase)"
+      ],
+      "validated_at": [
+        "if (fee == 0)",
+        "mulDiv result checked for overflow"
+      ]
+    }
+  ],
+  "description": "Implements fee scaling and adjustment logic for transaction fees in the XRPL server, including methods to raise or lower local fees and to scale fees based on network load.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "raiseCount_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (++raiseCount_ < 2) at raiseLocalFee",
+      "issue_pattern": "Missing empty string validation for raiseCount_",
+      "why_false_positive": "if (++raiseCount_ < 2) validates raiseCount_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_) at raiseLocalFee",
+      "issue_pattern": "Missing empty string validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_) validates localTxnLoadFee_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax) at raiseLocalFee",
+      "issue_pattern": "Missing empty string validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax) validates localTxnLoadFee_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax) at raiseLocalFee",
+      "issue_pattern": "Missing range validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax) validates localTxnLoadFee_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction) at lowerLocalFee",
+      "issue_pattern": "Missing empty string validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction) validates localTxnLoadFee_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee) at lowerLocalFee",
+      "issue_pattern": "Missing empty string validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee) validates localTxnLoadFee_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "localTxnLoadFee_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee) at lowerLocalFee",
+      "issue_pattern": "Missing range validation for localTxnLoadFee_",
+      "why_false_positive": "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee) validates localTxnLoadFee_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (fee == 0) return fee; at scaleFeeLoad",
+      "issue_pattern": "Missing empty string validation for fee",
+      "why_false_positive": "if (fee == 0) return fee; validates fee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mulDiv result (fee, feeFactor, feeTrack.getLoadBase())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!result) Throw<std::overflow_error>(...) at scaleFeeLoad",
+      "issue_pattern": "Missing empty string validation for mulDiv result (fee, feeFactor, feeTrack.getLoadBase())",
+      "why_false_positive": "if (!result) Throw<std::overflow_error>(...) validates mulDiv result (fee, feeFactor, feeTrack.getLoadBase()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/LoadFeeTrack.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "LoadFeeTrack::raiseLocalFee"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "LoadFeeTrack::lowerLocalFee"
+    },
+    {
+      "args": [
+        "fee",
+        "feeTrack",
+        "fees",
+        "bUnlimited"
+      ],
+      "lineno": 48,
+      "name": "scaleFeeLoad"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core logic is likely tested in unit tests under 'src/test/server/LoadFeeTrack_test.cpp' or similar files. These tests should cover raising and lowering fees, boundary conditions (max/min), and scaling logic. However, integration with network-updated remoteTxnLoadFee_ and privilege logic in scaleFeeLoad may not be fully covered. Edge cases such as overflow in mulDiv or concurrent access to LoadFeeTrack may not be exhaustively tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, C++ std::max/min, custom Throw)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "raiseCount_",
+      "location": "raiseLocalFee",
+      "validated_by": "if (++raiseCount_ < 2)",
+      "validates": [
+        "raiseCount_ must be >= 2 to proceed with raising fee"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "localTxnLoadFee_",
+      "location": "raiseLocalFee",
+      "validated_by": "localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_)",
+      "validates": [
+        "localTxnLoadFee_ is set to at least remoteTxnLoadFee_"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "localTxnLoadFee_",
+      "location": "raiseLocalFee",
+      "validated_by": "localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax)",
+      "validates": [
+        "localTxnLoadFee_ does not exceed lftFeeMax"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "localTxnLoadFee_",
+      "location": "lowerLocalFee",
+      "validated_by": "localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction)",
+      "validates": [
+        "localTxnLoadFee_ is reduced by a fraction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "localTxnLoadFee_",
+      "location": "lowerLocalFee",
+      "validated_by": "localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee)",
+      "validates": [
+        "localTxnLoadFee_ does not go below lftNormalFee"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "fee",
+      "location": "scaleFeeLoad",
+      "validated_by": "if (fee == 0) return fee;",
+      "validates": [
+        "fee of 0 is a no-op and returned immediately"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::overflow_error",
+      "field": "mulDiv result (fee, feeFactor, feeTrack.getLoadBase())",
+      "location": "scaleFeeLoad",
+      "validated_by": "if (!result) Throw<std::overflow_error>(...)",
+      "validates": [
+        "checks for overflow in fee calculation"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

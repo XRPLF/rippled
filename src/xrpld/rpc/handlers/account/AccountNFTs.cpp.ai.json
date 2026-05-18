@@ -1,0 +1,602 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountNFTs",
+        "parseBase58<AccountID>",
+        "RPC::lookupLedger",
+        "ledger->exists(keylet::account(accountID))",
+        "readLimitField"
+      ],
+      "entry_point": "doAccountNFTs",
+      "purpose": "Handles the 'account_nfts' RPC command, validating input, resolving the ledger, checking account existence, and paginating NFT results.",
+      "validation_points": [
+        "params.isMember(jss::account) // required field check",
+        "params[jss::account].isString() // type check",
+        "parseBase58<AccountID>(params[jss::account].asString()) // format check",
+        "RPC::lookupLedger(ledger, context) // ledger existence/validity",
+        "ledger->exists(keylet::account(accountID)) // account existence",
+        "readLimitField(limit, RPC::Tuning::accountNFTokens, context) // limit field validation",
+        "params.isMember(jss::marker) // marker presence",
+        "params[jss::marker].isString() // marker type",
+        "marker.parseHex(m.asString()) // marker format"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "context.params[jss::account]",
+        "params.isMember(jss::account) // presence check",
+        "params[jss::account].isString() // type check",
+        "parseBase58<AccountID>(params[jss::account].asString()) // decode",
+        "accountID = id.value()",
+        "ledger->exists(keylet::account(accountID)) // existence check",
+        "used for NFT page keylets"
+      ],
+      "origin": "context.params[jss::account] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for string type",
+        "Parsed from base58 to AccountID"
+      ],
+      "validated_at": "params.isMember, params.isString, parseBase58, ledger->exists"
+    },
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "context.params[ledger_hash or ledger_index]",
+        "RPC::lookupLedger(ledger, context)",
+        "ledger used for further queries"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Validated and resolved to a ledger pointer"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "context.params[jss::limit]",
+        "readLimitField(limit, RPC::Tuning::accountNFTokens, context)",
+        "limit used to control NFT pagination"
+      ],
+      "origin": "context.params[jss::limit] (JSON RPC input, optional)",
+      "transformations": [
+        "Checked for integer type, range, and capped to max"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "marker",
+      "flow": [
+        "context.params[jss::marker]",
+        "params.isMember(jss::marker)",
+        "params[jss::marker].isString()",
+        "marker.parseHex(m.asString())",
+        "used to resume NFT pagination"
+      ],
+      "origin": "context.params[jss::marker] (JSON RPC input, optional)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for string type",
+        "Parsed from hex string to uint256"
+      ],
+      "validated_at": "params.isMember, params.isString, marker.parseHex"
+    }
+  ],
+  "description": "Implements the doAccountNFTs RPC command, which retrieves NFT objects owned by a specified account from the ledger, supporting pagination, limits, and marker-based continuation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account (presence, type, format)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account (presence, type, format) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for account (presence, type, format)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates account (presence, type, format) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "limit (type, range)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field limit (type, range) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for limit (type, range)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates limit (type, range) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "marker (type, format, optional)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field marker (type, format, optional) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for marker (type, format, optional)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates marker (type, format, optional) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index (existence, business logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash / ledger_index (existence, business logic) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for ledger_hash / ledger_index (existence, business logic)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates ledger_hash / ledger_index (existence, business logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::account) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params.isMember(jss::account) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountNFTs",
+      "issue_pattern": "Missing type validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::account].asString()) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::account].asString()) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::account].asString()) at doAccountNFTs",
+      "issue_pattern": "Missing format validation for account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::account].asString()) validates account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger(ledger, context) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger(ledger, context) validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->exists(keylet::account(accountID)) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "ledger->exists(keylet::account(accountID)) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "readLimitField(limit, RPC::Tuning::accountNFTokens, context) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "readLimitField(limit, RPC::Tuning::accountNFTokens, context) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::marker) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "params.isMember(jss::marker) validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::marker].isString() at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "params[jss::marker].isString() validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "marker",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::marker].isString() at doAccountNFTs",
+      "issue_pattern": "Missing type validation for marker",
+      "why_false_positive": "params[jss::marker].isString() validates marker type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "marker.parseHex(m.asString()) at doAccountNFTs",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "marker.parseHex(m.asString()) validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "marker",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "marker.parseHex(m.asString()) at doAccountNFTs",
+      "issue_pattern": "Missing format validation for marker",
+      "why_false_positive": "marker.parseHex(m.asString()) validates marker format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountNFTs.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 22,
+      "name": "doAccountNFTs"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doAccountNFTs handler is typically tested via RPC integration tests, likely in files such as 'account_nfts_test.cpp', 'rpc_account_nfts_test.cpp', or similar. These tests should cover valid and invalid 'account' fields, missing fields, malformed account IDs, non-existent accounts, invalid markers, and limit boundaries. Gaps may exist in edge cases for marker handling, malformed marker values, and maximum limit enforcement. Unit tests for parseBase58, readLimitField, and lookupLedger are also relevant. If any of these are missing, especially for negative/invalid input cases, coverage is incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "account (presence, type, format)",
+      "limit (type, range)",
+      "marker (type, format, optional)",
+      "ledger_hash / ledger_index (existence, business logic)"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+    "validation_layer": "entry_point (doAccountNFTs handler)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountNFTs",
+      "validated_by": "params.isMember(jss::account)",
+      "validates": [
+        "Checks that the 'account' field is present in the input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountNFTs",
+      "validated_by": "params[jss::account].isString()",
+      "validates": [
+        "Checks that the 'account' field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "account",
+      "location": "doAccountNFTs",
+      "validated_by": "parseBase58<AccountID>(params[jss::account].asString())",
+      "validates": [
+        "Checks that the 'account' string is a valid Base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result (error JSON from lookupLedger)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doAccountNFTs",
+      "validated_by": "RPC::lookupLedger(ledger, context)",
+      "validates": [
+        "Checks that the specified ledger exists and is accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_NOT_FOUND)",
+      "field": "account",
+      "location": "doAccountNFTs",
+      "validated_by": "ledger->exists(keylet::account(accountID))",
+      "validates": [
+        "Checks that the account exists in the specified ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "*err (error from readLimitField)",
+      "field": "limit",
+      "location": "doAccountNFTs",
+      "validated_by": "readLimitField(limit, RPC::Tuning::accountNFTokens, context)",
+      "validates": [
+        "Checks that the 'limit' field is an integer (if present)",
+        "Checks that the 'limit' is within allowed range (as per RPC::Tuning::accountNFTokens)"
+      ],
+      "validation_type": "range|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (just sets markerSet)",
+      "field": "marker",
+      "location": "doAccountNFTs",
+      "validated_by": "params.isMember(jss::marker)",
+      "validates": [
+        "Checks if the 'marker' field is present (optional)"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::marker, \"string\")",
+      "field": "marker",
+      "location": "doAccountNFTs",
+      "validated_by": "params[jss::marker].isString()",
+      "validates": [
+        "Checks that the 'marker' field is a string if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::marker)",
+      "field": "marker",
+      "location": "doAccountNFTs",
+      "validated_by": "marker.parseHex(m.asString())",
+      "validates": [
+        "Checks that the 'marker' string is a valid hex-encoded uint256"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

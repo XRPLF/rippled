@@ -1,0 +1,440 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doUnsubscribe"
+      ],
+      "entry_point": "doUnsubscribe",
+      "purpose": "Handles unsubscribe requests for various stream types and account notifications in the XRPL server.",
+      "validation_points": [
+        "if (!context.infoSub && !context.params.isMember(jss::url))",
+        "if (context.params.isMember(jss::url)) { ... if (context.role != Role::ADMIN) ... }",
+        "if (!ispSub) return jvResult;",
+        "if (context.params.isMember(jss::streams)) { if (!context.params[jss::streams].isArray()) ... for (auto& it : context.params[jss::streams]) { if (!it.isString()) ... } }",
+        "if (context.params.isMember(accountsProposed)) { if (!context.params[accountsProposed].isArray()) ... }",
+        "if (context.params.isMember(jss::accounts)) { if (!context.params[jss::accounts].isArray()) ... }",
+        "if (context.params.isMember(jss::account_history_tx_stream)) { if (!req.isMember(jss::account) || !req[jss::account].isString()) ... }"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "infoSub",
+      "flow": [
+        "context.infoSub",
+        "checked for presence (if (!context.infoSub && ...))",
+        "assigned to ispSub if url not present",
+        "used in netOps.unsub* calls"
+      ],
+      "origin": "context.infoSub (RPC::JsonContext)",
+      "transformations": [
+        "Pointer assignment to ispSub"
+      ],
+      "validated_at": "First if-check in doUnsubscribe"
+    },
+    {
+      "field": "url",
+      "flow": [
+        "context.params[jss::url]",
+        "checked for presence (isMember)",
+        "role checked for ADMIN",
+        "converted to string (asString)",
+        "passed to context.netOps.findRpcSub",
+        "result assigned to ispSub"
+      ],
+      "origin": "context.params[jss::url]",
+      "transformations": [
+        "String conversion",
+        "Lookup via findRpcSub"
+      ],
+      "validated_at": "isMember, role check, null check on findRpcSub"
+    },
+    {
+      "field": "streams",
+      "flow": [
+        "context.params[jss::streams]",
+        "checked for presence (isMember)",
+        "validated as array (isArray)",
+        "iterated over",
+        "each element validated as string (isString)",
+        "used to select unsub* method"
+      ],
+      "origin": "context.params[jss::streams]",
+      "transformations": [
+        "Array iteration",
+        "String conversion"
+      ],
+      "validated_at": "isArray and isString checks"
+    },
+    {
+      "field": "accounts_proposed / rt_accounts",
+      "flow": [
+        "context.params.isMember(accountsProposed)",
+        "validated as array (isArray)",
+        "parsed via RPC::parseAccountIds",
+        "checked for empty",
+        "used in netOps.unsubAccount"
+      ],
+      "origin": "context.params[jss::accounts_proposed] or context.params[jss::rt_accounts]",
+      "transformations": [
+        "Array to vector<AccountID> via parseAccountIds"
+      ],
+      "validated_at": "isArray, parseAccountIds result checked for empty"
+    },
+    {
+      "field": "accounts",
+      "flow": [
+        "context.params.isMember(jss::accounts)",
+        "validated as array (isArray)",
+        "parsed via RPC::parseAccountIds",
+        "checked for empty",
+        "used in netOps.unsubAccount"
+      ],
+      "origin": "context.params[jss::accounts]",
+      "transformations": [
+        "Array to vector<AccountID> via parseAccountIds"
+      ],
+      "validated_at": "isArray, parseAccountIds result checked for empty"
+    },
+    {
+      "field": "account_history_tx_stream.account",
+      "flow": [
+        "context.params.isMember(jss::account_history_tx_stream)",
+        "req = context.params[jss::account_history_tx_stream]",
+        "req.isMember(jss::account) && req[jss::account].isString()",
+        "parseBase58<AccountID>(req[jss::account].asString())",
+        "checked for valid parse"
+      ],
+      "origin": "context.params[jss::account_history_tx_stream][jss::account]",
+      "transformations": [
+        "String to AccountID via parseBase58"
+      ],
+      "validated_at": "isString check, parseBase58 result checked"
+    }
+  ],
+  "description": "Implements the doUnsubscribe RPC handler for the XRPL server, allowing clients to unsubscribe from various data streams, accounts, books, and other notifications.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "infoSub and url",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at doUnsubscribe (first if block)",
+      "issue_pattern": "Missing empty string validation for infoSub and url",
+      "why_false_positive": "explicit if-check validates infoSub and url for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "url",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at doUnsubscribe (if context.params.isMember(jss::url))",
+      "issue_pattern": "Missing empty string validation for url",
+      "why_false_positive": "explicit if-check validates url for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "url",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "findRpcSub(strUrl) and null check at doUnsubscribe (ispSub = context.netOps.findRpcSub(strUrl); if (!ispSub))",
+      "issue_pattern": "Missing empty string validation for url",
+      "why_false_positive": "findRpcSub(strUrl) and null check validates url for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "streams",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isArray() at doUnsubscribe (if context.params.isMember(jss::streams))",
+      "issue_pattern": "Missing empty string validation for streams",
+      "why_false_positive": "isArray() validates streams for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "streams",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isArray() at doUnsubscribe (if context.params.isMember(jss::streams))",
+      "issue_pattern": "Missing type validation for streams",
+      "why_false_positive": "isArray() validates streams type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "streams[]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isString() at doUnsubscribe (for loop over streams)",
+      "issue_pattern": "Missing empty string validation for streams[]",
+      "why_false_positive": "isString() validates streams[] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "streams[]",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isString() at doUnsubscribe (for loop over streams)",
+      "issue_pattern": "Missing type validation for streams[]",
+      "why_false_positive": "isString() validates streams[] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "streams[]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit string comparison at doUnsubscribe (for loop else branch)",
+      "issue_pattern": "Missing empty string validation for streams[]",
+      "why_false_positive": "explicit string comparison validates streams[] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "accounts_proposed or rt_accounts",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isArray() at doUnsubscribe (if context.params.isMember(accountsProposed))",
+      "issue_pattern": "Missing empty string validation for accounts_proposed or rt_accounts",
+      "why_false_positive": "isArray() validates accounts_proposed or rt_accounts for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "accounts_proposed or rt_accounts",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isArray() at doUnsubscribe (if context.params.isMember(accountsProposed))",
+      "issue_pattern": "Missing type validation for accounts_proposed or rt_accounts",
+      "why_false_positive": "isArray() validates accounts_proposed or rt_accounts type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/subscribe/Unsubscribe.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doUnsubscribe"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in the unit/integration tests for the RPC subscribe/unsubscribe handlers, likely in files such as 'rpc_unsubscribe_test.cpp', 'subscribe_test.cpp', or similar. Tests should cover: missing/invalid infoSub, missing/invalid url, non-admin url access, invalid streams (not array, not string, unknown stream), invalid accounts (not array, malformed), and invalid account_history_tx_stream (missing/invalid account). Gaps may exist if edge cases (e.g., empty arrays, deprecated fields, or malformed JSON) are not explicitly tested. Template-based validation may be tested indirectly via these handler tests, but custom validation logic (e.g., stream name checks) should have explicit negative/positive tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl::jss (JSON field tags), explicit C++ checks, rpcError error handling",
+    "validation_layer": "business_logic (handler function doUnsubscribe)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "infoSub and url",
+      "location": "doUnsubscribe (first if block)",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "At least one of infoSub or params.url must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_PERMISSION)",
+      "field": "url",
+      "location": "doUnsubscribe (if context.params.isMember(jss::url))",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "Only ADMIN role can use url parameter"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns empty result (not error)",
+      "field": "url",
+      "location": "doUnsubscribe (ispSub = context.netOps.findRpcSub(strUrl); if (!ispSub))",
+      "validated_by": "findRpcSub(strUrl) and null check",
+      "validates": [
+        "url must correspond to an existing subscription"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "streams",
+      "location": "doUnsubscribe (if context.params.isMember(jss::streams))",
+      "validated_by": "isArray()",
+      "validates": [
+        "streams must be an array"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcSTREAM_MALFORMED)",
+      "field": "streams[]",
+      "location": "doUnsubscribe (for loop over streams)",
+      "validated_by": "isString()",
+      "validates": [
+        "each element of streams must be a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcSTREAM_MALFORMED)",
+      "field": "streams[]",
+      "location": "doUnsubscribe (for loop else branch)",
+      "validated_by": "explicit string comparison",
+      "validates": [
+        "stream name must be one of the allowed values"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(...)",
+      "field": "accounts_proposed or rt_accounts",
+      "location": "doUnsubscribe (if context.params.isMember(accountsProposed))",
+      "validated_by": "isArray()",
+      "validates": [
+        "accounts_proposed/rt_accounts must be an array"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

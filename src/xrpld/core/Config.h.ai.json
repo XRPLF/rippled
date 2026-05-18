@@ -1,0 +1,161 @@
+{
+  "args": [
+    {
+      "lineno": 170,
+      "name": "strConf"
+    },
+    {
+      "lineno": 170,
+      "name": "bQuiet"
+    },
+    {
+      "lineno": 170,
+      "name": "bSilent"
+    },
+    {
+      "lineno": 170,
+      "name": "bStandalone"
+    },
+    {
+      "lineno": 179,
+      "name": "fileContents"
+    },
+    {
+      "lineno": 210,
+      "name": "item"
+    },
+    {
+      "lineno": 210,
+      "name": "node"
+    },
+    {
+      "lineno": 232,
+      "name": "section"
+    },
+    {
+      "lineno": 234,
+      "name": "c"
+    },
+    {
+      "lineno": 234,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "FeeSetup"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "Config"
+    }
+  ],
+  "description": "This file defines configuration structures and logic for the XRPL server, including fee schedules, network and peer settings, and various tunable parameters. It provides the Config class for managing server configuration, FeeSetup for fee voting, and related setup functions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/Config.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getDebugLogFile"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "load"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "toFees"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "quiet"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "silent"
+    },
+    {
+      "args": [],
+      "lineno": 189,
+      "name": "standalone"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "useTxTables"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "canSign"
+    },
+    {
+      "args": [
+        "item",
+        "node"
+      ],
+      "lineno": 210,
+      "name": "getValueFor"
+    },
+    {
+      "args": [],
+      "lineno": 227,
+      "name": "journal"
+    },
+    {
+      "args": [
+        "strConf",
+        "bQuiet",
+        "bSilent",
+        "bStandalone"
+      ],
+      "lineno": 170,
+      "name": "setup"
+    },
+    {
+      "args": [
+        "bQuiet",
+        "bSilent",
+        "bStandalone"
+      ],
+      "lineno": 175,
+      "name": "setupControl"
+    },
+    {
+      "args": [
+        "fileContents"
+      ],
+      "lineno": 179,
+      "name": "loadFromString"
+    },
+    {
+      "args": [
+        "section"
+      ],
+      "lineno": 232,
+      "name": "setup_FeeVote"
+    },
+    {
+      "args": [
+        "c",
+        "j"
+      ],
+      "lineno": 234,
+      "name": "setup_DatabaseCon"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 20,
+      "name": "xrpl"
+    }
+  ]
+}

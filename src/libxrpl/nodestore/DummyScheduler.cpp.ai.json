@@ -1,0 +1,134 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "task"
+    },
+    {
+      "lineno": 13,
+      "name": "report"
+    },
+    {
+      "lineno": 17,
+      "name": "report"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DummyScheduler::scheduleTask",
+        "Task::performScheduledTask"
+      ],
+      "entry_point": "DummyScheduler::scheduleTask",
+      "purpose": "Schedules a task for execution. In this dummy implementation, the task is executed synchronously by directly calling its performScheduledTask method.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "DummyScheduler::onFetch"
+      ],
+      "entry_point": "DummyScheduler::onFetch",
+      "purpose": "Receives a FetchReport, presumably to report on fetch operations. In this dummy implementation, the function is a no-op.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "DummyScheduler::onBatchWrite"
+      ],
+      "entry_point": "DummyScheduler::onBatchWrite",
+      "purpose": "Receives a BatchWriteReport, presumably to report on batch write operations. In this dummy implementation, the function is a no-op.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Task& task",
+      "flow": [
+        "Caller constructs or obtains Task",
+        "Passes Task to DummyScheduler::scheduleTask",
+        "scheduleTask calls task.performScheduledTask()"
+      ],
+      "origin": "Caller of DummyScheduler::scheduleTask provides a Task reference.",
+      "transformations": [
+        "No transformation; task is passed by reference and executed synchronously."
+      ],
+      "validated_at": "No validation occurs in DummyScheduler::scheduleTask."
+    },
+    {
+      "field": "FetchReport const& report",
+      "flow": [
+        "Caller constructs or obtains FetchReport",
+        "Passes FetchReport to DummyScheduler::onFetch"
+      ],
+      "origin": "Caller of DummyScheduler::onFetch provides a FetchReport reference.",
+      "transformations": [
+        "No transformation; report is ignored."
+      ],
+      "validated_at": "No validation occurs in DummyScheduler::onFetch."
+    },
+    {
+      "field": "BatchWriteReport const& report",
+      "flow": [
+        "Caller constructs or obtains BatchWriteReport",
+        "Passes BatchWriteReport to DummyScheduler::onBatchWrite"
+      ],
+      "origin": "Caller of DummyScheduler::onBatchWrite provides a BatchWriteReport reference.",
+      "transformations": [
+        "No transformation; report is ignored."
+      ],
+      "validated_at": "No validation occurs in DummyScheduler::onBatchWrite."
+    }
+  ],
+  "description": "Implements the DummyScheduler class for the xrpl::NodeStore namespace, providing no-op or synchronous implementations for scheduling and reporting methods.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/DummyScheduler.cpp",
+  "functions": [
+    {
+      "args": [
+        "task"
+      ],
+      "lineno": 6,
+      "name": "DummyScheduler::scheduleTask"
+    },
+    {
+      "args": [
+        "report"
+      ],
+      "lineno": 12,
+      "name": "DummyScheduler::onFetch"
+    },
+    {
+      "args": [
+        "report"
+      ],
+      "lineno": 16,
+      "name": "DummyScheduler::onBatchWrite"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "This dummy implementation contains no validation logic or data transformation. It is likely used as a stub or mock in tests or as a placeholder in configurations where scheduling is not required. There are no validation code paths to test. Test coverage would only verify that the methods can be called without error, and that scheduleTask synchronously executes the provided task. Tests, if any, would be found in files testing the NodeStore::Scheduler interface or its consumers, but there is no evidence of direct validation logic to test. Gaps: No validation, error handling, or data processing is present or tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

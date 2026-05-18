@@ -1,0 +1,601 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "EscrowCreate::preflight",
+        "amountFromValue",
+        "STAmount::isLegalNet",
+        "accountFromStringStrict",
+        "sfCancelAfter field check",
+        "sfFinishAfter field check",
+        "STObject::isFieldPresent (sfCondition)"
+      ],
+      "entry_point": "EscrowCreate::preflight",
+      "purpose": "Performs static validation of EscrowCreate transaction fields before execution.",
+      "validation_points": [
+        "amountFromValue (validates Amount)",
+        "STAmount::isLegalNet (validates Amount legality)",
+        "accountFromStringStrict (validates Destination)",
+        "sfCancelAfter field check (validates CancelAfter)",
+        "sfFinishAfter field check (validates FinishAfter)",
+        "STObject::isFieldPresent (validates Condition presence/format)"
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowFinish::preflight",
+        "STObject::isFieldPresent (sfCondition)",
+        "STObject::isFieldPresent (sfFulfillment)"
+      ],
+      "entry_point": "EscrowFinish::preflight",
+      "purpose": "Validates EscrowFinish transaction fields, especially cryptographic conditions.",
+      "validation_points": [
+        "STObject::isFieldPresent (validates Condition and Fulfillment presence/format)"
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowCancel::preflight"
+      ],
+      "entry_point": "EscrowCancel::preflight",
+      "purpose": "Validates EscrowCancel transaction fields (minimal validation).",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Amount",
+      "flow": [
+        "Transaction JSON",
+        "EscrowCreate::preflight",
+        "amountFromValue",
+        "STAmount::isLegalNet",
+        "EscrowCreate::doApply"
+      ],
+      "origin": "Transaction JSON input",
+      "transformations": [
+        "Parsed from JSON",
+        "Converted to STAmount",
+        "Legality checked (no negative, no XRP drops, etc.)"
+      ],
+      "validated_at": "amountFromValue / STAmount::isLegalNet"
+    },
+    {
+      "field": "Destination",
+      "flow": [
+        "Transaction JSON",
+        "EscrowCreate::preflight",
+        "accountFromStringStrict",
+        "EscrowCreate::doApply"
+      ],
+      "origin": "Transaction JSON input",
+      "transformations": [
+        "Parsed from JSON",
+        "Validated as strict account ID"
+      ],
+      "validated_at": "accountFromStringStrict"
+    },
+    {
+      "field": "CancelAfter",
+      "flow": [
+        "Transaction JSON",
+        "EscrowCreate::preflight",
+        "sfCancelAfter field check",
+        "EscrowCreate::doApply"
+      ],
+      "origin": "Transaction JSON input",
+      "transformations": [
+        "Parsed from JSON",
+        "Checked for presence and correct type (uint32)"
+      ],
+      "validated_at": "sfCancelAfter field check"
+    },
+    {
+      "field": "FinishAfter",
+      "flow": [
+        "Transaction JSON",
+        "EscrowCreate::preflight",
+        "sfFinishAfter field check",
+        "EscrowCreate::doApply"
+      ],
+      "origin": "Transaction JSON input",
+      "transformations": [
+        "Parsed from JSON",
+        "Checked for presence and correct type (uint32)"
+      ],
+      "validated_at": "sfFinishAfter field check"
+    },
+    {
+      "field": "Condition",
+      "flow": [
+        "Transaction JSON",
+        "EscrowCreate::preflight",
+        "STObject::isFieldPresent (sfCondition)",
+        "EscrowCreate::doApply"
+      ],
+      "origin": "Transaction JSON input",
+      "transformations": [
+        "Parsed from JSON",
+        "Checked for presence and correct format (cryptographic condition)"
+      ],
+      "validated_at": "STObject::isFieldPresent (sfCondition)"
+    }
+  ],
+  "description": "",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Amount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Amount validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for Amount",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates Amount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Destination",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Destination validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for Destination",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates Destination automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Owner",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Owner validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for Owner",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates Owner automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "EscrowID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field EscrowID validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for EscrowID",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates EscrowID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "CancelAfter",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field CancelAfter validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for CancelAfter",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates CancelAfter automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "FinishAfter",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field FinishAfter validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for FinishAfter",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates FinishAfter automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Condition",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Condition validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for Condition",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates Condition automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Fulfillment",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Fulfillment validated by Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+      "issue_pattern": "Missing validation for Fulfillment",
+      "why_false_positive": "Custom validation in preflight functions, STObject field checks, crypto-conditions library validates Fulfillment automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Amount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amountFromValue / STAmount::isLegalNet at EscrowCreate::preflight",
+      "issue_pattern": "Missing empty string validation for Amount",
+      "why_false_positive": "amountFromValue / STAmount::isLegalNet validates Amount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Destination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "accountFromStringStrict at EscrowCreate::preflight",
+      "issue_pattern": "Missing empty string validation for Destination",
+      "why_false_positive": "accountFromStringStrict validates Destination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "CancelAfter",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sfCancelAfter field check at EscrowCreate::preflight",
+      "issue_pattern": "Missing empty string validation for CancelAfter",
+      "why_false_positive": "sfCancelAfter field check validates CancelAfter for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "FinishAfter",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sfFinishAfter field check at EscrowCreate::preflight",
+      "issue_pattern": "Missing empty string validation for FinishAfter",
+      "why_false_positive": "sfFinishAfter field check validates FinishAfter for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Condition",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject::isFieldPresent / condition format check at EscrowCreate::preflight",
+      "issue_pattern": "Missing empty string validation for Condition",
+      "why_false_positive": "STObject::isFieldPresent / condition format check validates Condition for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Condition",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "STObject::isFieldPresent / condition format check at EscrowCreate::preflight",
+      "issue_pattern": "Missing format validation for Condition",
+      "why_false_positive": "STObject::isFieldPresent / condition format check validates Condition format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Owner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "accountFromStringStrict at EscrowFinish::preflight",
+      "issue_pattern": "Missing empty string validation for Owner",
+      "why_false_positive": "accountFromStringStrict validates Owner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "EscrowID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uint256::parseHex at EscrowFinish::preflight",
+      "issue_pattern": "Missing empty string validation for EscrowID",
+      "why_false_positive": "uint256::parseHex validates EscrowID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Condition",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "crypto-condition check at EscrowFinish::preflight",
+      "issue_pattern": "Missing empty string validation for Condition",
+      "why_false_positive": "crypto-condition check validates Condition for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Fulfillment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "crypto-condition fulfillment check at EscrowFinish::preflight",
+      "issue_pattern": "Missing empty string validation for Fulfillment",
+      "why_false_positive": "crypto-condition fulfillment check validates Fulfillment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Owner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "accountFromStringStrict at EscrowCancel::preflight",
+      "issue_pattern": "Missing empty string validation for Owner",
+      "why_false_positive": "accountFromStringStrict validates Owner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "EscrowID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uint256::parseHex at EscrowCancel::preflight",
+      "issue_pattern": "Missing empty string validation for EscrowID",
+      "why_false_positive": "uint256::parseHex validates EscrowID for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/escrow/Escrow.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [],
+  "test_coverage_notes": "Test coverage for Escrow validation is typically found in unit/integration tests such as 'test/tx/Escrow_test.cpp', 'test/tx/Escrow_test.py', or similar files. These tests cover valid and invalid Amounts, Destinations, CancelAfter/FinishAfter logic, and Condition/Fulfillment checks. Gaps may exist in edge cases for malformed fields, boundary timestamps, or rare cryptographic condition formats. Some negative tests (e.g., illegal Amounts, missing required fields) are present, but exhaustive fuzzing or malformed binary field tests may not be fully covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Amount",
+      "Destination",
+      "Owner",
+      "EscrowID",
+      "CancelAfter",
+      "FinishAfter",
+      "Condition",
+      "Fulfillment"
+    ],
+    "framework": "Custom validation in preflight functions, STObject field checks, crypto-conditions library",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "Amount",
+      "location": "EscrowCreate::preflight",
+      "validated_by": "amountFromValue / STAmount::isLegalNet",
+      "validates": [
+        "Amount must be a legal XRP amount",
+        "Amount must be positive",
+        "Amount must not be zero"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_DST_ACCOUNT",
+      "field": "Destination",
+      "location": "EscrowCreate::preflight",
+      "validated_by": "accountFromStringStrict",
+      "validates": [
+        "Destination must be a valid account address"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_EXPIRATION",
+      "field": "CancelAfter",
+      "location": "EscrowCreate::preflight",
+      "validated_by": "sfCancelAfter field check",
+      "validates": [
+        "CancelAfter must be after current close time",
+        "CancelAfter must be greater than FinishAfter if both are present"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_EXPIRATION",
+      "field": "FinishAfter",
+      "location": "EscrowCreate::preflight",
+      "validated_by": "sfFinishAfter field check",
+      "validates": [
+        "FinishAfter must be after current close time"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "temMALFORMED",
+      "field": "Condition",
+      "location": "EscrowCreate::preflight",
+      "validated_by": "STObject::isFieldPresent / condition format check",
+      "validates": [
+        "Condition must be a valid crypto-condition"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_OWNER",
+      "field": "Owner",
+      "location": "EscrowFinish::preflight",
+      "validated_by": "accountFromStringStrict",
+      "validates": [
+        "Owner must be a valid account address"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_ESCROW",
+      "field": "EscrowID",
+      "location": "EscrowFinish::preflight",
+      "validated_by": "uint256::parseHex",
+      "validates": [
+        "EscrowID must be a valid 256-bit hex"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "temMALFORMED",
+      "field": "Condition",
+      "location": "EscrowFinish::preflight",
+      "validated_by": "crypto-condition check",
+      "validates": [
+        "Condition must match escrow's stored condition"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "temMALFORMED",
+      "field": "Fulfillment",
+      "location": "EscrowFinish::preflight",
+      "validated_by": "crypto-condition fulfillment check",
+      "validates": [
+        "Fulfillment must be valid for the escrow's condition"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_OWNER",
+      "field": "Owner",
+      "location": "EscrowCancel::preflight",
+      "validated_by": "accountFromStringStrict",
+      "validates": [
+        "Owner must be a valid account address"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_ESCROW",
+      "field": "EscrowID",
+      "location": "EscrowCancel::preflight",
+      "validated_by": "uint256::parseHex",
+      "validates": [
+        "EscrowID must be a valid 256-bit hex"
+      ],
+      "validation_type": "format|type"
+    }
+  ]
+}

@@ -1,0 +1,259 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "sle"
+    },
+    {
+      "lineno": 174,
+      "name": "owner"
+    },
+    {
+      "lineno": 174,
+      "name": "provider"
+    },
+    {
+      "lineno": 174,
+      "name": "priceDataSeries"
+    },
+    {
+      "lineno": 174,
+      "name": "assetClass"
+    },
+    {
+      "lineno": 174,
+      "name": "lastUpdateTime"
+    },
+    {
+      "lineno": 174,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 174,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 174,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 185,
+      "name": "sle"
+    },
+    {
+      "lineno": 192,
+      "name": "value"
+    },
+    {
+      "lineno": 202,
+      "name": "value"
+    },
+    {
+      "lineno": 212,
+      "name": "value"
+    },
+    {
+      "lineno": 222,
+      "name": "value"
+    },
+    {
+      "lineno": 232,
+      "name": "value"
+    },
+    {
+      "lineno": 242,
+      "name": "value"
+    },
+    {
+      "lineno": 252,
+      "name": "value"
+    },
+    {
+      "lineno": 262,
+      "name": "value"
+    },
+    {
+      "lineno": 272,
+      "name": "value"
+    },
+    {
+      "lineno": 282,
+      "name": "value"
+    },
+    {
+      "lineno": 292,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 33,
+      "name": "Oracle"
+    },
+    {
+      "args": [
+        "owner",
+        "provider",
+        "priceDataSeries",
+        "assetClass",
+        "lastUpdateTime",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 170,
+      "name": "OracleBuilder"
+    }
+  ],
+  "description": "Defines the Oracle ledger entry and its builder for XRPL, providing type-safe accessors and a fluent builder interface for constructing Oracle ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Oracle.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getOracleDocumentID"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "hasOracleDocumentID"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getProvider"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "getPriceDataSeries"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "getAssetClass"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "getLastUpdateTime"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "getURI"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "hasURI"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 191,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 201,
+      "name": "setOracleDocumentID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 211,
+      "name": "setProvider"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 221,
+      "name": "setPriceDataSeries"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 231,
+      "name": "setAssetClass"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 241,
+      "name": "setLastUpdateTime"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 251,
+      "name": "setURI"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 261,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 271,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 281,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 291,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

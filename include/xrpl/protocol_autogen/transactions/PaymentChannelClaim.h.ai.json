@@ -1,0 +1,213 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 163,
+      "name": "account"
+    },
+    {
+      "lineno": 164,
+      "name": "channel"
+    },
+    {
+      "lineno": 165,
+      "name": "sequence"
+    },
+    {
+      "lineno": 166,
+      "name": "fee"
+    },
+    {
+      "lineno": 184,
+      "name": "value"
+    },
+    {
+      "lineno": 193,
+      "name": "value"
+    },
+    {
+      "lineno": 202,
+      "name": "value"
+    },
+    {
+      "lineno": 211,
+      "name": "value"
+    },
+    {
+      "lineno": 220,
+      "name": "value"
+    },
+    {
+      "lineno": 229,
+      "name": "value"
+    },
+    {
+      "lineno": 238,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 238,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "PaymentChannelClaim"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& channel, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 153,
+      "name": "PaymentChannelClaimBuilder"
+    }
+  ],
+  "description": "Defines the PaymentChannelClaim transaction type for the XRPL protocol, providing an immutable wrapper for type-safe field access and a builder class for constructing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/PaymentChannelClaim.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "PaymentChannelClaim"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getChannel"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "hasAmount"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "getBalance"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "hasBalance"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "getSignature"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "hasSignature"
+    },
+    {
+      "args": [],
+      "lineno": 114,
+      "name": "getPublicKey"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "hasPublicKey"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "getCredentialIDs"
+    },
+    {
+      "args": [],
+      "lineno": 145,
+      "name": "hasCredentialIDs"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& channel",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 163,
+      "name": "PaymentChannelClaimBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 172,
+      "name": "PaymentChannelClaimBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 183,
+      "name": "setChannel"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 192,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 201,
+      "name": "setBalance"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 210,
+      "name": "setSignature"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 219,
+      "name": "setPublicKey"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& value"
+      ],
+      "lineno": 228,
+      "name": "setCredentialIDs"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 237,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# `include/xrpl/protocol/NFTokenID.h`
+
+This header declares a small cluster of helper functions whose sole purpose is to enrich NFT-related transaction metadata JSON responses with the token IDs that were affected — information not directly encoded in the raw ledger metadata. The sibling file `NFTokenOfferID.h` applies the same pattern for extracting created offer IDs, and the two files form a matched pair of post-processing utilities for the NFT subsystem.
+
+## Why this file exists
+
+XRPL's ledger metadata records the full before/after state of every modified ledger object, but it does not explicitly annotate *which* NFToken was created or consumed by a transaction. Applications like Clio and the rippled API server both need to surface a `nftoken_id` (or `nftoken_ids`) field in their JSON responses without forcing every consumer to re-derive it themselves. This file centralizes that derivation logic and keeps it shareable across codebases — hence the header comment that the helpers are deliberately non-static so Clio can link against them directly.
+
+## The four functions
+
+`canHaveNFTokenID()` acts as a cheap early-exit guard: it rejects any transaction that is not one of the three relevant types (`ttNFTOKEN_MINT`, `ttNFTOKEN_ACCEPT_OFFER`, `ttNFTOKEN_CANCEL_OFFER`) and also rejects any that did not succeed. Because all three extraction paths proceed from the same entry point `insertNFTokenID()`, centralising the eligibility check here prevents redundant checks and ensures the heavier diffing logic is never called on irrelevant transactions.
+
+`getNFTokenIDFromPage()` handles the `NFTokenMint` case, where the newly created token has been inserted into an `NFTokenPage` ledger object. The metadata does not tag the new token directly; instead the function must *derive* it by comparing the previous and final token lists across all affected `NFTokenPage` nodes. It collects `finalIDs` from both newly created pages (where the entire `NewFields` array is the final state) and modified pages (where `PreviousFields` and `FinalFields` contain before/after arrays), then finds the single element present in `finalIDs` but absent from `prevIDs` using `std::mismatch`. There is an important edge case handled explicitly: when a mint causes an existing page to split, the new page creation may also cause a *third* page's `PreviousPageMin` or `NextPageMin` pointer to be updated — that page will appear as a `ModifiedNode` but will have no `sfNFTokens` in its `PreviousFields`. The code skips such nodes with a `continue`, preventing false positives in the comparison. The function returns `std::nullopt` if the final ID count is not exactly one greater than the previous count, guarding against malformed or unexpected metadata.
+
+`getNFTokenIDFromDeletedOffer()` handles both `NFTokenAcceptOffer` and `NFTokenCancelOffer`. For these transactions the token ID is not inferred by diffing page state; instead it is read directly from the `sfNFTokenID` field on each deleted `NFTokenOffer` node. Since `NFTokenCancelOffer` can cancel multiple offers, and multiple cancelled offers could reference the same underlying NFT, the results are sorted and deduplicated before returning.
+
+`insertNFTokenID()` is the public entry point that coordinates the above. After confirming eligibility it dispatches by transaction type: mint emits `nftoken_id` (singular) from the page diff; accept offer also emits `nftoken_id` using only `result.front()` because accepting a single offer transfers exactly one NFT; cancel offer emits `nftoken_ids` (plural JSON array) because a single transaction can cancel many offers across multiple NFTs. The different field names — singular vs. plural — reflect meaningful semantic differences in the protocol, not inconsistency.
+
+## Design notes
+
+The functions take `std::shared_ptr<STTx const>` and `TxMeta const&` as separate parameters rather than a combined transaction-with-metadata type. This mirrors how the rest of the rippled codebase treats transactions and their metadata as independent objects that are only paired at the application layer, making the helpers composable with both the local node's processing pipeline and Clio's remote-fetch path.
+
+The extraction logic for `getNFTokenIDFromPage()` is inherently a set-difference operation but the implementation avoids sorting or hashing the IDs. It relies on the fact that `NFTokenPage` entries in XRPL are stored in sorted order by `NFTokenID`, so `finalIDs` and `prevIDs` are already ordered and `std::mismatch` on the parallel sequences directly finds the insertion point in linear time.

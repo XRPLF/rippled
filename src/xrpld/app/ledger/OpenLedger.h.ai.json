@@ -1,0 +1,118 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "CachedSLEs& cache",
+        "beast::Journal journal"
+      ],
+      "lineno": 27,
+      "name": "OpenLedger"
+    }
+  ],
+  "description": "Defines the OpenLedger class, which represents and manages the open ledger in the XRPL system, including transaction application, modification, and acceptance logic with thread safety and retry mechanisms.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/OpenLedger.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "current"
+    },
+    {
+      "args": [
+        "modify_type const& f"
+      ],
+      "lineno": 83,
+      "name": "modify"
+    },
+    {
+      "args": [
+        "Application& app",
+        "Rules const& rules",
+        "std::shared_ptr<Ledger const> const& ledger",
+        "OrderedTxs const& locals",
+        "bool retriesFirst",
+        "OrderedTxs& retries",
+        "ApplyFlags flags",
+        "std::string const& suffix",
+        "modify_type const& f"
+      ],
+      "lineno": 98,
+      "name": "accept"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "ReadView const& check",
+        "FwdRange const& txs",
+        "OrderedTxs& retries",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 130,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "Rules const& rules",
+        "std::shared_ptr<Ledger const> const& ledger"
+      ],
+      "lineno": 170,
+      "name": "create"
+    },
+    {
+      "args": [
+        "Application& app",
+        "OpenView& view",
+        "std::shared_ptr<STTx const> const& tx",
+        "bool retry",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 173,
+      "name": "apply_one"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& tx"
+      ],
+      "lineno": 210,
+      "name": "debugTxstr"
+    },
+    {
+      "args": [
+        "OrderedTxs const& set"
+      ],
+      "lineno": 212,
+      "name": "debugTostr"
+    },
+    {
+      "args": [
+        "SHAMap const& set"
+      ],
+      "lineno": 214,
+      "name": "debugTostr"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& view"
+      ],
+      "lineno": 216,
+      "name": "debugTostr"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

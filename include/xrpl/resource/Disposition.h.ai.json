@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines the Disposition enum representing the possible outcomes for a consumer after applying a load charge in the xrpl::Resource namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Disposition.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "Resource"
+    }
+  ]
+}

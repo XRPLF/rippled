@@ -1,0 +1,35 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This header file declares utility functions for processing account transaction data and saving ledger information asynchronously within the xrpl namespace, likely for use in the XRPL (XRP Ledger) server application.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/AccountTxPaging.h",
+  "functions": [
+    {
+      "args": [
+        "RelationalDatabase::AccountTxs& to",
+        "std::uint32_t ledger_index",
+        "std::string const& status",
+        "Blob const& rawTxn",
+        "Blob const& rawMeta",
+        "Application& app"
+      ],
+      "lineno": 10,
+      "name": "convertBlobsToTxResult"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::uint32_t seq"
+      ],
+      "lineno": 18,
+      "name": "saveLedgerAsync"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

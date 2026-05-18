@@ -1,0 +1,644 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doDepositAuthorized",
+        "parseBase58<AccountID>",
+        "RPC::lookupLedger",
+        "ledger->exists",
+        "ledger->read",
+        "uint256::parseHex",
+        "ledger->read (credential)"
+      ],
+      "entry_point": "doDepositAuthorized",
+      "purpose": "Handles the DepositAuthorized RPC request, validating input fields, checking ledger state, and verifying credentials if present.",
+      "validation_points": [
+        "params.isMember(jss::source_account)",
+        "params[jss::source_account].isString()",
+        "parseBase58<AccountID>(params[jss::source_account].asString())",
+        "params.isMember(jss::destination_account)",
+        "params[jss::destination_account].isString()",
+        "parseBase58<AccountID>(params[jss::destination_account].asString())",
+        "RPC::lookupLedger",
+        "ledger->exists(keylet::account(srcAcct))",
+        "ledger->read(keylet::account(dstAcct))",
+        "params.isMember(jss::credentials)",
+        "creds.isArray() && creds",
+        "creds.size() <= maxCredentialsArraySize",
+        "jo.isString() (for each credential)",
+        "credH.parseHex(credS) (for each credential)",
+        "ledger->read(keylet::credential(credH)) (for each credential)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "source_account",
+      "flow": [
+        "context.params",
+        "params[jss::source_account]",
+        "parseBase58<AccountID>(...)",
+        "srcAcct",
+        "ledger->exists(keylet::account(srcAcct))"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for type (isString)",
+        "Parsed from base58 to AccountID"
+      ],
+      "validated_at": "Immediately upon entry in doDepositAuthorized"
+    },
+    {
+      "field": "destination_account",
+      "flow": [
+        "context.params",
+        "params[jss::destination_account]",
+        "parseBase58<AccountID>(...)",
+        "dstAcct",
+        "ledger->read(keylet::account(dstAcct))"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for type (isString)",
+        "Parsed from base58 to AccountID"
+      ],
+      "validated_at": "Immediately after source_account validation"
+    },
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger(ledger, context)",
+        "ledger"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Validated and resolved to a ledger pointer"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "credentials",
+      "flow": [
+        "context.params",
+        "params[jss::credentials]",
+        "creds (local variable)",
+        "for each jo in creds",
+        "jo.asString()",
+        "uint256 credH.parseHex(credS)",
+        "ledger->read(keylet::credential(credH))"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for type (isArray)",
+        "Checked for non-empty",
+        "Checked for max array size",
+        "Each element checked for type (isString)",
+        "Each string parsed as hex to uint256"
+      ],
+      "validated_at": "If present, validated in credentialsPresent block"
+    }
+  ],
+  "description": "Implements the doDepositAuthorized RPC handler, which checks if a deposit from a source account to a destination account is authorized, optionally using credentials, in the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "source_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::source_account) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for source_account",
+      "why_false_positive": "params.isMember(jss::source_account) validates source_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "source_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::source_account].isString() at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for source_account",
+      "why_false_positive": "params[jss::source_account].isString() validates source_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "source_account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::source_account].isString() at doDepositAuthorized",
+      "issue_pattern": "Missing type validation for source_account",
+      "why_false_positive": "params[jss::source_account].isString() validates source_account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "source_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::source_account].asString()) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for source_account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::source_account].asString()) validates source_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "source_account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::source_account].asString()) at doDepositAuthorized",
+      "issue_pattern": "Missing format validation for source_account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::source_account].asString()) validates source_account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destination_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::destination_account) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for destination_account",
+      "why_false_positive": "params.isMember(jss::destination_account) validates destination_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destination_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::destination_account].isString() at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for destination_account",
+      "why_false_positive": "params[jss::destination_account].isString() validates destination_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "destination_account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::destination_account].isString() at doDepositAuthorized",
+      "issue_pattern": "Missing type validation for destination_account",
+      "why_false_positive": "params[jss::destination_account].isString() validates destination_account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destination_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::destination_account].asString()) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for destination_account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::destination_account].asString()) validates destination_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "destination_account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::destination_account].asString()) at doDepositAuthorized",
+      "issue_pattern": "Missing format validation for destination_account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::destination_account].asString()) validates destination_account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger(ledger, context) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger(ledger, context) validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "source_account (ledger existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->exists(keylet::account(srcAcct)) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for source_account (ledger existence)",
+      "why_false_positive": "ledger->exists(keylet::account(srcAcct)) validates source_account (ledger existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destination_account (ledger existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->read(keylet::account(dstAcct)) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for destination_account (ledger existence)",
+      "why_false_positive": "ledger->read(keylet::account(dstAcct)) validates destination_account (ledger existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "credentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::credentials) at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for credentials",
+      "why_false_positive": "params.isMember(jss::credentials) validates credentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "credentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "creds.isArray() && creds at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for credentials",
+      "why_false_positive": "creds.isArray() && creds validates credentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "credentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "creds.size() > maxCredentialsArraySize at doDepositAuthorized",
+      "issue_pattern": "Missing empty string validation for credentials",
+      "why_false_positive": "creds.size() > maxCredentialsArraySize validates credentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "credentials",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "creds.size() > maxCredentialsArraySize at doDepositAuthorized",
+      "issue_pattern": "Missing range validation for credentials",
+      "why_false_positive": "creds.size() > maxCredentialsArraySize validates credentials range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/DepositAuthorized.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 16,
+      "name": "doDepositAuthorized"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is tightly coupled to the doDepositAuthorized function. Typical test coverage would be found in RPC handler tests, likely in files such as 'test/rpc/DepositAuthorized_test.cpp' or similar. Tests should cover: missing/invalid source_account, missing/invalid destination_account, malformed account IDs, missing/invalid credentials array, credentials array too long, invalid credential strings, and non-existent accounts in the ledger. Gaps may exist if there are no tests for edge cases like empty credentials arrays, credentials with invalid hex, or credentials that do not exist in the ledger. Also, negative tests for malformed JSON types (e.g., integer instead of string) should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58, etc.)",
+    "validation_layer": "entry_point (doDepositAuthorized handler)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::source_account)",
+      "field": "source_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "params.isMember(jss::source_account)",
+      "validates": [
+        "field is present in input"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcINVALID_PARAMS, ...)",
+      "field": "source_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "params[jss::source_account].isString()",
+      "validates": [
+        "field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "source_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "parseBase58<AccountID>(params[jss::source_account].asString())",
+      "validates": [
+        "field is valid base58 AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::destination_account)",
+      "field": "destination_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "params.isMember(jss::destination_account)",
+      "validates": [
+        "field is present in input"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcINVALID_PARAMS, ...)",
+      "field": "destination_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "params[jss::destination_account].isString()",
+      "validates": [
+        "field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "destination_account",
+      "location": "doDepositAuthorized",
+      "validated_by": "parseBase58<AccountID>(params[jss::destination_account].asString())",
+      "validates": [
+        "field is valid base58 AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result from lookupLedger (various errors)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doDepositAuthorized",
+      "validated_by": "RPC::lookupLedger(ledger, context)",
+      "validates": [
+        "ledger exists and is accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcSRC_ACT_NOT_FOUND, result)",
+      "field": "source_account (ledger existence)",
+      "location": "doDepositAuthorized",
+      "validated_by": "ledger->exists(keylet::account(srcAcct))",
+      "validates": [
+        "source account exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcDST_ACT_NOT_FOUND, result)",
+      "field": "destination_account (ledger existence)",
+      "location": "doDepositAuthorized",
+      "validated_by": "ledger->read(keylet::account(dstAcct))",
+      "validates": [
+        "destination account exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (flag only, not error)",
+      "field": "credentials",
+      "location": "doDepositAuthorized",
+      "validated_by": "params.isMember(jss::credentials)",
+      "validates": [
+        "credentials field is present (optional)"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcINVALID_PARAMS, ...)",
+      "field": "credentials",
+      "location": "doDepositAuthorized",
+      "validated_by": "creds.isArray() && creds",
+      "validates": [
+        "credentials is a non-empty array"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "not shown in snippet, but likely error/exception",
+      "field": "credentials",
+      "location": "doDepositAuthorized",
+      "validated_by": "creds.size() > maxCredentialsArraySize",
+      "validates": [
+        "credentials array does not exceed max size"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

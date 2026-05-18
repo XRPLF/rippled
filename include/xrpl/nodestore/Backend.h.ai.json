@@ -1,0 +1,173 @@
+{
+  "args": [
+    {
+      "lineno": 41,
+      "name": "createIfMissing"
+    },
+    {
+      "lineno": 52,
+      "name": "createIfMissing"
+    },
+    {
+      "lineno": 52,
+      "name": "appType"
+    },
+    {
+      "lineno": 52,
+      "name": "uid"
+    },
+    {
+      "lineno": 52,
+      "name": "salt"
+    },
+    {
+      "lineno": 68,
+      "name": "hash"
+    },
+    {
+      "lineno": 68,
+      "name": "pObject"
+    },
+    {
+      "lineno": 76,
+      "name": "hashes"
+    },
+    {
+      "lineno": 80,
+      "name": "object"
+    },
+    {
+      "lineno": 87,
+      "name": "batch"
+    },
+    {
+      "lineno": 97,
+      "name": "f"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "Backend"
+    }
+  ],
+  "description": "Defines the Backend abstract class for the xrpl NodeStore, providing an interface for pluggable database backends with methods for opening, closing, storing, fetching, and managing NodeObjects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Backend.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "~Backend"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "getBlockSize"
+    },
+    {
+      "args": [
+        "createIfMissing"
+      ],
+      "lineno": 41,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "isOpen"
+    },
+    {
+      "args": [
+        "createIfMissing",
+        "appType",
+        "uid",
+        "salt"
+      ],
+      "lineno": 52,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "close"
+    },
+    {
+      "args": [
+        "hash",
+        "pObject"
+      ],
+      "lineno": 68,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "hashes"
+      ],
+      "lineno": 76,
+      "name": "fetchBatch"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 80,
+      "name": "store"
+    },
+    {
+      "args": [
+        "batch"
+      ],
+      "lineno": 87,
+      "name": "storeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 97,
+      "name": "for_each"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "setDeletePath"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "verify"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "fdRequired"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "NodeStore"
+    }
+  ]
+}

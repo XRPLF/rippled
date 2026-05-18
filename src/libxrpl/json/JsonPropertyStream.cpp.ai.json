@@ -1,0 +1,403 @@
+{
+  "args": [
+    {
+      "lineno": 24,
+      "name": "key"
+    },
+    {
+      "lineno": 33,
+      "name": "key"
+    },
+    {
+      "lineno": 33,
+      "name": "v"
+    },
+    {
+      "lineno": 37,
+      "name": "key"
+    },
+    {
+      "lineno": 37,
+      "name": "v"
+    },
+    {
+      "lineno": 41,
+      "name": "key"
+    },
+    {
+      "lineno": 41,
+      "name": "v"
+    },
+    {
+      "lineno": 45,
+      "name": "key"
+    },
+    {
+      "lineno": 45,
+      "name": "v"
+    },
+    {
+      "lineno": 49,
+      "name": "key"
+    },
+    {
+      "lineno": 49,
+      "name": "v"
+    },
+    {
+      "lineno": 53,
+      "name": "key"
+    },
+    {
+      "lineno": 53,
+      "name": "v"
+    },
+    {
+      "lineno": 57,
+      "name": "key"
+    },
+    {
+      "lineno": 57,
+      "name": "v"
+    },
+    {
+      "lineno": 61,
+      "name": "key"
+    },
+    {
+      "lineno": 61,
+      "name": "v"
+    },
+    {
+      "lineno": 71,
+      "name": "key"
+    },
+    {
+      "lineno": 80,
+      "name": "v"
+    },
+    {
+      "lineno": 84,
+      "name": "v"
+    },
+    {
+      "lineno": 88,
+      "name": "v"
+    },
+    {
+      "lineno": 92,
+      "name": "v"
+    },
+    {
+      "lineno": 96,
+      "name": "v"
+    },
+    {
+      "lineno": 100,
+      "name": "v"
+    },
+    {
+      "lineno": 104,
+      "name": "v"
+    },
+    {
+      "lineno": 108,
+      "name": "v"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "JsonPropertyStream::add(std::string const& key, T v)",
+        "(*m_stack.back())[key] = v"
+      ],
+      "entry_point": "JsonPropertyStream::add(std::string const& key, T v)",
+      "purpose": "Adds a key-value pair to the current JSON object on the stack.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JsonPropertyStream::add(T v)",
+        "m_stack.back()->append(v)"
+      ],
+      "entry_point": "JsonPropertyStream::add(T v)",
+      "purpose": "Appends a value to the current JSON array on the stack.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JsonPropertyStream::map_begin() or map_begin(key)",
+        "Json::Value& top = *m_stack.back()",
+        "Json::Value& map = ...",
+        "m_stack.push_back(&map)"
+      ],
+      "entry_point": "JsonPropertyStream::map_begin() / map_begin(key)",
+      "purpose": "Begins a new JSON object (map) in the current context (array or object).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JsonPropertyStream::array_begin() or array_begin(key)",
+        "Json::Value& top = *m_stack.back()",
+        "Json::Value& vec = ...",
+        "m_stack.push_back(&vec)"
+      ],
+      "entry_point": "JsonPropertyStream::array_begin() / array_begin(key)",
+      "purpose": "Begins a new JSON array in the current context (array or object).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "JsonPropertyStream::map_end() or array_end()",
+        "m_stack.pop_back()"
+      ],
+      "entry_point": "JsonPropertyStream::map_end() / array_end()",
+      "purpose": "Ends the current JSON object or array context.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_stack",
+      "flow": [
+        "constructor: m_stack.push_back(&m_top)",
+        "map_begin/array_begin: m_stack.push_back(&new_value)",
+        "map_end/array_end: m_stack.pop_back()"
+      ],
+      "origin": "Initialized in JsonPropertyStream constructor with m_top (a Json::Value objectValue)",
+      "transformations": [
+        "Stack of pointers to current JSON context (object or array) is maintained as the structure is built."
+      ],
+      "validated_at": "No explicit validation; assumes correct usage order by caller."
+    },
+    {
+      "field": "key (in add(key, v) and map_begin(key)/array_begin(key))",
+      "flow": [
+        "add(key, v): (*m_stack.back())[key] = v",
+        "map_begin(key): top[key] = Json::objectValue",
+        "array_begin(key): top[key] = Json::arrayValue"
+      ],
+      "origin": "Passed as argument by caller",
+      "transformations": [
+        "Key is used directly as a JSON object key."
+      ],
+      "validated_at": "No validation of key (e.g., for emptiness, duplicates, or invalid characters)."
+    },
+    {
+      "field": "v (value in add)",
+      "flow": [
+        "add(key, v): assigned to JSON object at key",
+        "add(v): appended to JSON array"
+      ],
+      "origin": "Passed as argument by caller",
+      "transformations": [
+        "C++ type is converted to appropriate Json::Value type (int, float, string, etc.)"
+      ],
+      "validated_at": "No validation of value (e.g., range, type safety, or null checks)."
+    },
+    {
+      "field": "m_top",
+      "flow": [
+        "Acts as root JSON object",
+        "Returned by top()",
+        "Built up via stack operations"
+      ],
+      "origin": "Constructed as Json::objectValue in constructor",
+      "transformations": [
+        "Populated via stack operations as JSON structure is built."
+      ],
+      "validated_at": "No validation; assumes correct stack discipline."
+    }
+  ],
+  "description": "Implements the JsonPropertyStream class for building and manipulating JSON objects and arrays using a stack-based approach within the xrpl namespace.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/JsonPropertyStream.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "JsonPropertyStream::JsonPropertyStream"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "JsonPropertyStream::top"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "JsonPropertyStream::map_begin"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 24,
+      "name": "JsonPropertyStream::map_begin"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "JsonPropertyStream::map_end"
+    },
+    {
+      "args": [
+        "key",
+        "short v"
+      ],
+      "lineno": 33,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "unsigned short v"
+      ],
+      "lineno": 37,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "int v"
+      ],
+      "lineno": 41,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "unsigned int v"
+      ],
+      "lineno": 45,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "long v"
+      ],
+      "lineno": 49,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "float v"
+      ],
+      "lineno": 53,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "double v"
+      ],
+      "lineno": 57,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "key",
+        "std::string const& v"
+      ],
+      "lineno": 61,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "JsonPropertyStream::array_begin"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 71,
+      "name": "JsonPropertyStream::array_begin"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "JsonPropertyStream::array_end"
+    },
+    {
+      "args": [
+        "short v"
+      ],
+      "lineno": 80,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned short v"
+      ],
+      "lineno": 84,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "int v"
+      ],
+      "lineno": 88,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned int v"
+      ],
+      "lineno": 92,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "long v"
+      ],
+      "lineno": 96,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "float v"
+      ],
+      "lineno": 100,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "double v"
+      ],
+      "lineno": 104,
+      "name": "JsonPropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& v"
+      ],
+      "lineno": 108,
+      "name": "JsonPropertyStream::add"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains only the implementation of a JSON-building utility. There is no validation logic (e.g., input checking, error handling) in this code. All functions assume correct usage by the caller (e.g., correct stack discipline, valid keys, and values). Test coverage would likely exist in higher-level code that uses JsonPropertyStream, not here. Typical tests would be in files like test/json/JsonPropertyStream_test.cpp or similar, but unless those tests explicitly check for misuse (e.g., popping an empty stack, invalid key usage), validation edge cases are not covered. There is no evidence of defensive programming or validation in this code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

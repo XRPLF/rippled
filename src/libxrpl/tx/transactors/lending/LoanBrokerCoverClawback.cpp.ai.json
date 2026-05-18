@@ -1,0 +1,536 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanBrokerCoverClawback::preflight"
+      ],
+      "entry_point": "LoanBrokerCoverClawback::preflight",
+      "purpose": "Performs initial stateless validation of the transaction fields before further processing.",
+      "validation_points": [
+        "LoanBrokerCoverClawback::preflight (validates sfLoanBrokerID, sfAmount, amount->native(), *amount < beast::zero, isLegalNet(*amount), amount->holds<MPTIssue>(), amount->getIssuer())"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverClawback::preclaim",
+        "preclaimHelper<Issue> or preclaimHelper<MPTIssue>"
+      ],
+      "entry_point": "LoanBrokerCoverClawback::preclaim",
+      "purpose": "Performs contextual validation after preflight, before applying the transaction.",
+      "validation_points": [
+        "preclaimHelper<Issue> or preclaimHelper<MPTIssue> (not shown in provided code, but likely further checks on fields)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverClawback::doApply",
+        "determineBrokerID",
+        "determineAsset",
+        "determineClawAmount"
+      ],
+      "entry_point": "LoanBrokerCoverClawback::doApply",
+      "purpose": "Applies the transaction, using validated and possibly transformed data.",
+      "validation_points": [
+        "determineBrokerID (validates presence and correctness of brokerID, checks for pseudo-account and LoanBrokerID)",
+        "determineAsset (validates asset type and issuer, partial code shown)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverClawback::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanBrokerCoverClawback::checkExtraFeatures",
+      "purpose": "Checks for protocol feature dependencies before transaction processing.",
+      "validation_points": [
+        "checkLendingProtocolDependencies (not shown, but likely validates protocol state)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "ctx.tx[~sfLoanBrokerID]",
+        "LoanBrokerCoverClawback::preflight (checked for presence, zero value)",
+        "determineBrokerID (used if present, otherwise inferred from amount issuer)",
+        "doApply (used for transaction logic)"
+      ],
+      "origin": "ctx.tx[~sfLoanBrokerID] (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for zero value",
+        "If absent, inferred from amount issuer via determineBrokerID"
+      ],
+      "validated_at": "LoanBrokerCoverClawback::preflight, determineBrokerID"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[~sfAmount]",
+        "LoanBrokerCoverClawback::preflight (checked for presence, type, value, legality)",
+        "determineBrokerID (used to infer brokerID if needed)",
+        "determineAsset (used to determine asset type and issuer)",
+        "doApply (used for transaction logic)"
+      ],
+      "origin": "ctx.tx[~sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for native() (XRP) type",
+        "Checked for negative value",
+        "Checked for isLegalNet",
+        "Checked for holds<MPTIssue>",
+        "Issuer extracted for further logic"
+      ],
+      "validated_at": "LoanBrokerCoverClawback::preflight"
+    },
+    {
+      "field": "amount->getIssuer()",
+      "flow": [
+        "amount->getIssuer()",
+        "LoanBrokerCoverClawback::preflight (compared to sfAccount and beast::zero)",
+        "determineBrokerID (used to look up pseudo-account and LoanBrokerID)",
+        "determineAsset (used to determine asset type and holder)"
+      ],
+      "origin": "Extracted from sfAmount",
+      "transformations": [
+        "Issuer extracted from amount",
+        "Used to lookup account in ledger",
+        "Used to infer brokerID if not provided"
+      ],
+      "validated_at": "LoanBrokerCoverClawback::preflight, determineBrokerID"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "LoanBrokerCoverClawback::preflight (compared to amount->getIssuer())",
+        "determineAsset (used to check asset ownership)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Used for comparison with issuer"
+      ],
+      "validated_at": "LoanBrokerCoverClawback::preflight"
+    }
+  ],
+  "description": "Implements the LoanBrokerCoverClawback transaction logic for the XRPL lending protocol, including preflight, preclaim, and application logic for clawing back cover funds from a loan broker's pseudo-account.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID, sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID, sfAmount",
+      "why_false_positive": "explicit if-check validates sfLoanBrokerID, sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "explicit if-check validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amount->native() at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "amount->native() validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "*amount < beast::zero at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "*amount < beast::zero validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "*amount < beast::zero at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "*amount < beast::zero validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet(*amount) at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isLegalNet(*amount) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (when sfLoanBrokerID is not present)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amount->holds<MPTIssue>() at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount (when sfLoanBrokerID is not present)",
+      "why_false_positive": "amount->holds<MPTIssue>() validates sfAmount (when sfLoanBrokerID is not present) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (when sfLoanBrokerID is not present)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "amount->holds<MPTIssue>() at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing type validation for sfAmount (when sfLoanBrokerID is not present)",
+      "why_false_positive": "amount->holds<MPTIssue>() validates sfAmount (when sfLoanBrokerID is not present) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.getIssuer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "holder == account || holder == beast::zero at LoanBrokerCoverClawback::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount.getIssuer()",
+      "why_false_positive": "holder == account || holder == beast::zero validates sfAmount.getIssuer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Lending protocol dependencies",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkLendingProtocolDependencies(ctx) at LoanBrokerCoverClawback::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for Lending protocol dependencies",
+      "why_false_positive": "checkLendingProtocolDependencies(ctx) validates Lending protocol dependencies for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (in determineBrokerID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!dstAmount || !dstAmount->holds<Issue>() at determineBrokerID",
+      "issue_pattern": "Missing empty string validation for sfAmount (in determineBrokerID)",
+      "why_false_positive": "!dstAmount || !dstAmount->holds<Issue>() validates sfAmount (in determineBrokerID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (in determineBrokerID)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "!dstAmount || !dstAmount->holds<Issue>() at determineBrokerID",
+      "issue_pattern": "Missing type validation for sfAmount (in determineBrokerID)",
+      "why_false_positive": "!dstAmount || !dstAmount->holds<Issue>() validates sfAmount (in determineBrokerID) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "maybePseudo (issuer account existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sle at determineBrokerID",
+      "issue_pattern": "Missing empty string validation for maybePseudo (issuer account existence)",
+      "why_false_positive": "!sle validates maybePseudo (issuer account existence) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanBrokerCoverClawback.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanBrokerCoverClawback::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 12,
+      "name": "LoanBrokerCoverClawback::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 41,
+      "name": "determineBrokerID"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "AccountID const& brokerPseudoAccountID",
+        "STAmount const& amount"
+      ],
+      "lineno": 67,
+      "name": "determineAsset"
+    },
+    {
+      "args": [
+        "SLE const& sleBroker",
+        "Asset const& vaultAsset",
+        "std::optional<STAmount> const& amount"
+      ],
+      "lineno": 89,
+      "name": "determineClawAmount"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "SLE const& sleIssuer",
+        "STAmount const& clawAmount"
+      ],
+      "lineno": 112,
+      "name": "preclaimHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "SLE const& sleIssuer",
+        "STAmount const& clawAmount"
+      ],
+      "lineno": 120,
+      "name": "preclaimHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 134,
+      "name": "LoanBrokerCoverClawback::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "LoanBrokerCoverClawback::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in preflight is likely covered by unit/integration tests for transaction preflight checks, especially for malformed or invalid transactions (e.g., missing fields, invalid amounts, wrong issuers). Test files may include those under 'test/tx/lending/' or similar directories, such as 'LoanBrokerCoverClawback_test.cpp' or generic transaction validation suites. However, some code paths (e.g., LCOV_EXCL_LINE for isLegalNet failure, tecINTERNAL in determineBrokerID) are marked as unreachable or redundant, suggesting they may not be directly tested. There may be gaps in coverage for edge cases where brokerID is inferred from the issuer, or for pseudo-accounts without LoanBrokerID. Full coverage would require tests for all validation branches, including negative and boundary cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation via explicit checks and helper functions (e.g., isLegalNet, checkLendingProtocolDependencies)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanBrokerID, sfAmount",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "At least one of sfLoanBrokerID or sfAmount must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanBrokerID",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "sfLoanBrokerID must not be beast::zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "amount->native()",
+      "validates": [
+        "sfAmount must not be native (XRP) for clawback"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "*amount < beast::zero",
+      "validates": [
+        "sfAmount must not be negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "isLegalNet(*amount)",
+      "validates": [
+        "sfAmount must be a legal net amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfAmount (when sfLoanBrokerID is not present)",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "amount->holds<MPTIssue>()",
+      "validates": [
+        "sfAmount must not hold MPTIssue if sfLoanBrokerID is not present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfAmount.getIssuer()",
+      "location": "LoanBrokerCoverClawback::preflight",
+      "validated_by": "holder == account || holder == beast::zero",
+      "validates": [
+        "Issuer of sfAmount must not be the same as sfAccount or beast::zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "unknown (depends on checkLendingProtocolDependencies)",
+      "field": "Lending protocol dependencies",
+      "location": "LoanBrokerCoverClawback::checkExtraFeatures",
+      "validated_by": "checkLendingProtocolDependencies(ctx)",
+      "validates": [
+        "Lending protocol dependencies are satisfied"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfAmount (in determineBrokerID)",
+      "location": "determineBrokerID",
+      "validated_by": "!dstAmount || !dstAmount->holds<Issue>()",
+      "validates": [
+        "sfAmount must be present and must hold Issue type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Unexpect (incomplete in snippet)",
+      "field": "maybePseudo (issuer account existence)",
+      "location": "determineBrokerID",
+      "validated_by": "!sle",
+      "validates": [
+        "Issuer account for sfAmount must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

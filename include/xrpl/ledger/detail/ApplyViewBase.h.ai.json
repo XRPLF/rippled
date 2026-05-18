@@ -1,0 +1,180 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 8,
+      "name": "ApplyViewBase"
+    }
+  ],
+  "description": "Defines the ApplyViewBase class, which implements ApplyView and RawView interfaces for managing and applying ledger state changes in the XRPL ledger system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/detail/ApplyViewBase.h",
+  "functions": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 20,
+      "name": "ApplyViewBase"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "header"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "rules"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 39,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 42,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 46,
+      "name": "read"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 55,
+      "name": "slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "txsEnd"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 64,
+      "name": "txExists"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 67,
+      "name": "txRead"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "flags"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 74,
+      "name": "peek"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 77,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 80,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 83,
+      "name": "update"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 87,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 90,
+      "name": "rawInsert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 93,
+      "name": "rawReplace"
+    },
+    {
+      "args": [
+        "XRPAmount const& feeDrops"
+      ],
+      "lineno": 96,
+      "name": "rawDestroyXRP"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "detail"
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "sle"
+    },
+    {
+      "lineno": 269,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 269,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 269,
+      "name": "sequence"
+    },
+    {
+      "lineno": 269,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 269,
+      "name": "owner"
+    },
+    {
+      "lineno": 269,
+      "name": "account"
+    },
+    {
+      "lineno": 269,
+      "name": "asset"
+    },
+    {
+      "lineno": 269,
+      "name": "shareMPTID"
+    },
+    {
+      "lineno": 269,
+      "name": "withdrawalPolicy"
+    },
+    {
+      "lineno": 281,
+      "name": "sle"
+    },
+    {
+      "lineno": 294,
+      "name": "value"
+    },
+    {
+      "lineno": 304,
+      "name": "value"
+    },
+    {
+      "lineno": 314,
+      "name": "value"
+    },
+    {
+      "lineno": 324,
+      "name": "value"
+    },
+    {
+      "lineno": 334,
+      "name": "value"
+    },
+    {
+      "lineno": 344,
+      "name": "value"
+    },
+    {
+      "lineno": 354,
+      "name": "value"
+    },
+    {
+      "lineno": 364,
+      "name": "value"
+    },
+    {
+      "lineno": 374,
+      "name": "value"
+    },
+    {
+      "lineno": 384,
+      "name": "value"
+    },
+    {
+      "lineno": 394,
+      "name": "value"
+    },
+    {
+      "lineno": 404,
+      "name": "value"
+    },
+    {
+      "lineno": 414,
+      "name": "value"
+    },
+    {
+      "lineno": 424,
+      "name": "value"
+    },
+    {
+      "lineno": 434,
+      "name": "value"
+    },
+    {
+      "lineno": 444,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 32,
+      "name": "Vault"
+    },
+    {
+      "args": [
+        "previousTxnID",
+        "previousTxnLgrSeq",
+        "sequence",
+        "ownerNode",
+        "owner",
+        "account",
+        "asset",
+        "shareMPTID",
+        "withdrawalPolicy"
+      ],
+      "lineno": 267,
+      "name": "VaultBuilder"
+    }
+  ],
+  "description": "Defines the Vault ledger entry type for the XRPL, providing a type-safe wrapper (Vault) for accessing fields of a Vault ledger entry and a builder class (VaultBuilder) for constructing such entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Vault.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "getData"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "hasData"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "getAssetsTotal"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "hasAssetsTotal"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "getAssetsAvailable"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "hasAssetsAvailable"
+    },
+    {
+      "args": [],
+      "lineno": 180,
+      "name": "getAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 192,
+      "name": "hasAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "getLossUnrealized"
+    },
+    {
+      "args": [],
+      "lineno": 214,
+      "name": "hasLossUnrealized"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "getShareMPTID"
+    },
+    {
+      "args": [],
+      "lineno": 234,
+      "name": "getWithdrawalPolicy"
+    },
+    {
+      "args": [],
+      "lineno": 244,
+      "name": "getScale"
+    },
+    {
+      "args": [],
+      "lineno": 256,
+      "name": "hasScale"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 292,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 302,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 312,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 322,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 332,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 342,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 352,
+      "name": "setData"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 362,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 372,
+      "name": "setAssetsTotal"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 382,
+      "name": "setAssetsAvailable"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 392,
+      "name": "setAssetsMaximum"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 402,
+      "name": "setLossUnrealized"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 412,
+      "name": "setShareMPTID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 422,
+      "name": "setWithdrawalPolicy"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 432,
+      "name": "setScale"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 442,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

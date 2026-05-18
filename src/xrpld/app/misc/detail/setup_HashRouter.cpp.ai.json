@@ -1,0 +1,234 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "config"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "setup_HashRouter",
+        "set(tmp, \"hold_time\", section)",
+        "set(tmp, \"relay_time\", section)"
+      ],
+      "entry_point": "setup_HashRouter",
+      "purpose": "Reads configuration values for HashRouter, validates them, and constructs a Setup object.",
+      "validation_points": [
+        "After set() for hold_time: range check (tmp < 12)",
+        "After set() for relay_time: range check (tmp < 8)",
+        "After both: relay_time vs hold_time comparison"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hold_time",
+      "flow": [
+        "Config.section(\"hashrouter\")",
+        "set(tmp, \"hold_time\", section)",
+        "tmp (int)",
+        "range check (tmp < 12)",
+        "setup.holdTime = seconds(tmp)",
+        "HashRouter::Setup.holdTime"
+      ],
+      "origin": "Config.section(\"hashrouter\")",
+      "transformations": [
+        "String/int value from config parsed into tmp (int)",
+        "Range checked (must be >= 12)",
+        "Converted to std::chrono::seconds",
+        "Assigned to setup.holdTime"
+      ],
+      "validated_at": "Immediately after set() call for hold_time"
+    },
+    {
+      "field": "relay_time",
+      "flow": [
+        "Config.section(\"hashrouter\")",
+        "set(tmp, \"relay_time\", section)",
+        "tmp (int)",
+        "range check (tmp < 8)",
+        "setup.relayTime = seconds(tmp)",
+        "HashRouter::Setup.relayTime"
+      ],
+      "origin": "Config.section(\"hashrouter\")",
+      "transformations": [
+        "String/int value from config parsed into tmp (int)",
+        "Range checked (must be >= 8)",
+        "Converted to std::chrono::seconds",
+        "Assigned to setup.relayTime"
+      ],
+      "validated_at": "Immediately after set() call for relay_time"
+    },
+    {
+      "field": "relay_time vs hold_time",
+      "flow": [
+        "setup.holdTime and setup.relayTime assigned",
+        "if (setup.relayTime > setup.holdTime)",
+        "Throw if invalid"
+      ],
+      "origin": "setup.holdTime and setup.relayTime (after assignment)",
+      "transformations": [
+        "Comparison between two std::chrono::seconds values"
+      ],
+      "validated_at": "After both holdTime and relayTime are set"
+    }
+  ],
+  "description": "Configures and validates the setup parameters for the HashRouter component based on configuration input, ensuring timing constraints are met.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hold_time",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "set() function and explicit range check at setup_HashRouter",
+      "issue_pattern": "Missing empty string validation for hold_time",
+      "why_false_positive": "set() function and explicit range check validates hold_time for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "hold_time",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "set() function and explicit range check at setup_HashRouter",
+      "issue_pattern": "Missing range validation for hold_time",
+      "why_false_positive": "set() function and explicit range check validates hold_time range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "relay_time",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "set() function and explicit range check at setup_HashRouter",
+      "issue_pattern": "Missing empty string validation for relay_time",
+      "why_false_positive": "set() function and explicit range check validates relay_time for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "relay_time",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "set() function and explicit range check at setup_HashRouter",
+      "issue_pattern": "Missing range validation for relay_time",
+      "why_false_positive": "set() function and explicit range check validates relay_time range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "relay_time vs hold_time",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison at setup_HashRouter",
+      "issue_pattern": "Missing empty string validation for relay_time vs hold_time",
+      "why_false_positive": "explicit comparison validates relay_time vs hold_time for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/setup_HashRouter.cpp",
+  "functions": [
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 6,
+      "name": "setup_HashRouter"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in unit tests for configuration and HashRouter setup, likely in files such as 'test_hashrouter.cpp', 'test_config.cpp', or similar. Tests should cover: (1) valid config values, (2) hold_time < 12 triggers error, (3) relay_time < 8 triggers error, (4) relay_time > hold_time triggers error, (5) missing values. Gaps may exist if there are no negative tests for each validation branch, or if config parsing is not mocked/fuzzed for edge cases. No test files are referenced in this code, so actual coverage must be checked in the test directory.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (set() function, manual checks)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "hold_time",
+      "location": "setup_HashRouter",
+      "validated_by": "set() function and explicit range check",
+      "validates": [
+        "Ensures hold_time is present in config (via set())",
+        "Ensures hold_time >= 12"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "relay_time",
+      "location": "setup_HashRouter",
+      "validated_by": "set() function and explicit range check",
+      "validates": [
+        "Ensures relay_time is present in config (via set())",
+        "Ensures relay_time >= 8"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "relay_time vs hold_time",
+      "location": "setup_HashRouter",
+      "validated_by": "explicit comparison",
+      "validates": [
+        "Ensures relay_time <= hold_time"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

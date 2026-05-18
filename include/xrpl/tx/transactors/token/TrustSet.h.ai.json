@@ -1,0 +1,82 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "view"
+    },
+    {
+      "lineno": 21,
+      "name": "tx"
+    },
+    {
+      "lineno": 24,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "TrustSet"
+    }
+  ],
+  "description": "Defines the TrustSet transaction transactor class for handling trust line settings in the XRPL, including preflight, preclaim, and application logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/token/TrustSet.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 21,
+      "name": "checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

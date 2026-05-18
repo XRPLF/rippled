@@ -1,0 +1,508 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doBookOffers",
+        "validateTakerJSON",
+        "parseTakerAssetJSON",
+        "parseTakerIssuerJSON"
+      ],
+      "entry_point": "doBookOffers",
+      "purpose": "Handles the 'book_offers' RPC request, validates and parses taker fields, constructs asset/issuer objects for order book querying.",
+      "validation_points": [
+        "validateTakerJSON (validates presence, exclusivity, and type of taker.currency and taker.mpt_issuance_id)",
+        "parseTakerAssetJSON (validates format of taker.currency and taker.mpt_issuance_id)",
+        "parseTakerIssuerJSON (validates format and presence of taker.issuer if currency is present)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "taker.currency",
+      "flow": [
+        "RPC request",
+        "doBookOffers extracts taker",
+        "validateTakerJSON checks presence/type",
+        "parseTakerAssetJSON validates format and parses to Issue",
+        "parseTakerIssuerJSON validates issuer if present",
+        "Used to construct Asset/Issue for order book lookup"
+      ],
+      "origin": "JSON RPC request (input parameter)",
+      "transformations": [
+        "Checked for presence and type (string)",
+        "Parsed to Issue.currency via to_currency",
+        "Combined with issuer to form Issue"
+      ],
+      "validated_at": "validateTakerJSON (presence/type), parseTakerAssetJSON (format)"
+    },
+    {
+      "field": "taker.mpt_issuance_id",
+      "flow": [
+        "RPC request",
+        "doBookOffers extracts taker",
+        "validateTakerJSON checks presence/type/exclusivity",
+        "parseTakerAssetJSON validates format and parses to MPTID",
+        "Used to construct Asset for order book lookup"
+      ],
+      "origin": "JSON RPC request (input parameter)",
+      "transformations": [
+        "Checked for presence and type (string)",
+        "Parsed to MPTID via parseHex"
+      ],
+      "validated_at": "validateTakerJSON (presence/type/exclusivity), parseTakerAssetJSON (format)"
+    },
+    {
+      "field": "taker.issuer",
+      "flow": [
+        "RPC request",
+        "doBookOffers extracts taker",
+        "validateTakerJSON checks exclusivity (cannot be present with mpt_issuance_id)",
+        "parseTakerIssuerJSON validates presence/type/format",
+        "Used to set Issue.account"
+      ],
+      "origin": "JSON RPC request (input parameter)",
+      "transformations": [
+        "Checked for presence and type (string)",
+        "Parsed to Issue.account via to_issuer"
+      ],
+      "validated_at": "validateTakerJSON (exclusivity), parseTakerIssuerJSON (presence/type/format)"
+    }
+  ],
+  "description": "Implements the core logic for the XRPL 'book_offers' RPC handler, including validation and parsing of taker assets/issuers, and fetching order book offers from the ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "taker.currency",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field taker.currency validated by xrpl RPC framework (jss::, RPC::, Json::Value)",
+      "issue_pattern": "Missing validation for taker.currency",
+      "why_false_positive": "xrpl RPC framework (jss::, RPC::, Json::Value) validates taker.currency automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "taker.mpt_issuance_id",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field taker.mpt_issuance_id validated by xrpl RPC framework (jss::, RPC::, Json::Value)",
+      "issue_pattern": "Missing validation for taker.mpt_issuance_id",
+      "why_false_positive": "xrpl RPC framework (jss::, RPC::, Json::Value) validates taker.mpt_issuance_id automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "taker.issuer",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field taker.issuer validated by xrpl RPC framework (jss::, RPC::, Json::Value)",
+      "issue_pattern": "Missing validation for taker.issuer",
+      "why_false_positive": "xrpl RPC framework (jss::, RPC::, Json::Value) validates taker.issuer automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "taker.currency and taker.mpt_issuance_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validateTakerJSON at validateTakerJSON",
+      "issue_pattern": "Missing empty string validation for taker.currency and taker.mpt_issuance_id",
+      "why_false_positive": "validateTakerJSON validates taker.currency and taker.mpt_issuance_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "taker.mpt_issuance_id with taker.currency or taker.issuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validateTakerJSON at validateTakerJSON",
+      "issue_pattern": "Missing empty string validation for taker.mpt_issuance_id with taker.currency or taker.issuer",
+      "why_false_positive": "validateTakerJSON validates taker.mpt_issuance_id with taker.currency or taker.issuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "taker.currency and taker.mpt_issuance_id types",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validateTakerJSON at validateTakerJSON",
+      "issue_pattern": "Missing empty string validation for taker.currency and taker.mpt_issuance_id types",
+      "why_false_positive": "validateTakerJSON validates taker.currency and taker.mpt_issuance_id types for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "taker.currency and taker.mpt_issuance_id types",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "validateTakerJSON at validateTakerJSON",
+      "issue_pattern": "Missing type validation for taker.currency and taker.mpt_issuance_id types",
+      "why_false_positive": "validateTakerJSON validates taker.currency and taker.mpt_issuance_id types type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "taker.currency format",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseTakerAssetJSON at parseTakerAssetJSON",
+      "issue_pattern": "Missing empty string validation for taker.currency format",
+      "why_false_positive": "parseTakerAssetJSON validates taker.currency format for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "taker.currency format",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseTakerAssetJSON at parseTakerAssetJSON",
+      "issue_pattern": "Missing format validation for taker.currency format",
+      "why_false_positive": "parseTakerAssetJSON validates taker.currency format format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "taker.mpt_issuance_id format",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseTakerAssetJSON at parseTakerAssetJSON",
+      "issue_pattern": "Missing empty string validation for taker.mpt_issuance_id format",
+      "why_false_positive": "parseTakerAssetJSON validates taker.mpt_issuance_id format for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "taker.mpt_issuance_id format",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseTakerAssetJSON at parseTakerAssetJSON",
+      "issue_pattern": "Missing format validation for taker.mpt_issuance_id format",
+      "why_false_positive": "parseTakerAssetJSON validates taker.mpt_issuance_id format format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "taker.issuer type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseTakerIssuerJSON at parseTakerIssuerJSON",
+      "issue_pattern": "Missing empty string validation for taker.issuer type",
+      "why_false_positive": "parseTakerIssuerJSON validates taker.issuer type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "taker.issuer type",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "parseTakerIssuerJSON at parseTakerIssuerJSON",
+      "issue_pattern": "Missing type validation for taker.issuer type",
+      "why_false_positive": "parseTakerIssuerJSON validates taker.issuer type type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/BookOffers.cpp",
+  "functions": [
+    {
+      "args": [
+        "taker",
+        "name"
+      ],
+      "lineno": 12,
+      "name": "validateTakerJSON"
+    },
+    {
+      "args": [
+        "asset",
+        "taker",
+        "name",
+        "j"
+      ],
+      "lineno": 32,
+      "name": "parseTakerAssetJSON"
+    },
+    {
+      "args": [
+        "asset",
+        "taker",
+        "name",
+        "j"
+      ],
+      "lineno": 67,
+      "name": "parseTakerIssuerJSON"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 110,
+      "name": "doBookOffers"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in the RPC handler tests, likely in files such as 'test/rpc/BookOffers_test.cpp' or similar. These tests should cover valid and invalid combinations of taker.currency, taker.mpt_issuance_id, and taker.issuer, including type errors, missing fields, and malformed values. Gaps may exist if there are no tests for edge cases (e.g., both currency and mpt_issuance_id present, non-string types, invalid hex for mpt_issuance_id, or issuer present with mpt_issuance_id). Template-based validation may not be fully exercised if tests only cover happy paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "taker.currency",
+      "taker.mpt_issuance_id",
+      "taker.issuer"
+    ],
+    "framework": "xrpl RPC framework (jss::, RPC::, Json::Value)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error",
+      "field": "taker.currency and taker.mpt_issuance_id",
+      "location": "validateTakerJSON",
+      "validated_by": "validateTakerJSON",
+      "validates": [
+        "At least one of taker.currency or taker.mpt_issuance_id must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error",
+      "field": "taker.mpt_issuance_id with taker.currency or taker.issuer",
+      "location": "validateTakerJSON",
+      "validated_by": "validateTakerJSON",
+      "validates": [
+        "If taker.mpt_issuance_id is present, taker.currency and taker.issuer must NOT be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error",
+      "field": "taker.currency and taker.mpt_issuance_id types",
+      "location": "validateTakerJSON",
+      "validated_by": "validateTakerJSON",
+      "validates": [
+        "taker.currency (if present) must be a string",
+        "taker.mpt_issuance_id (if present) must be a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error (rpcSRC_CUR_MALFORMED or rpcDST_AMT_MALFORMED)",
+      "field": "taker.currency format",
+      "location": "parseTakerAssetJSON",
+      "validated_by": "parseTakerAssetJSON",
+      "validates": [
+        "taker.currency must be a valid currency string (checked by to_currency)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error (rpcSRC_CUR_MALFORMED or rpcDST_AMT_MALFORMED)",
+      "field": "taker.mpt_issuance_id format",
+      "location": "parseTakerAssetJSON",
+      "validated_by": "parseTakerAssetJSON",
+      "validates": [
+        "taker.mpt_issuance_id must be a valid hex string (checked by MPTID::parseHex)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "RPC::expected_field",
+      "field": "taker.issuer type",
+      "location": "parseTakerIssuerJSON",
+      "validated_by": "parseTakerIssuerJSON",
+      "validates": [
+        "taker.issuer (if present) must be a string"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "TIn"
+    },
+    {
+      "lineno": 27,
+      "name": "TOut"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "AMMOffer"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& ammAccountID",
+        "std::uint32_t tradingFee",
+        "Asset const& in",
+        "Asset const& out",
+        "AMMContext& ammContext",
+        "beast::Journal j"
+      ],
+      "lineno": 27,
+      "name": "AMMLiquidity"
+    }
+  ],
+  "description": "Defines the AMMLiquidity class, which generates AMM offers for the BookStep class in the XRPL codebase, supporting both multi-path and single-path payment transactions with logic for offer sizing and quality.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/AMMLiquidity.h",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& ammAccountID",
+        "std::uint32_t tradingFee",
+        "Asset const& in",
+        "Asset const& out",
+        "AMMContext& ammContext",
+        "beast::Journal j"
+      ],
+      "lineno": 32,
+      "name": "AMMLiquidity"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "~AMMLiquidity"
+    },
+    {
+      "args": [
+        "AMMLiquidity const&"
+      ],
+      "lineno": 41,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "std::optional<Quality> const& clobQuality"
+      ],
+      "lineno": 48,
+      "name": "getOffer"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "ammAccount"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "multiPath"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "tradingFee"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "context"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "assetIn"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "assetOut"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 83,
+      "name": "fetchBalances"
+    },
+    {
+      "args": [
+        "TAmounts<TIn, TOut> const& balances"
+      ],
+      "lineno": 90,
+      "name": "generateFibSeqOffer"
+    },
+    {
+      "args": [
+        "TAmounts<TIn, TOut> const& balances",
+        "Rules const& rules"
+      ],
+      "lineno": 102,
+      "name": "maxOffer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

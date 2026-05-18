@@ -1,0 +1,9 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a macro to disable AddressSanitizer (ASan) and Hardware AddressSanitizer (HwASan) instrumentation for specific functions, mainly to avoid false positives in certain control flow scenarios.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/sanitizers.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": []
+}

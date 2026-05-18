@@ -1,0 +1,59 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "bytes"
+    },
+    {
+      "lineno": 24,
+      "name": "bytes"
+    },
+    {
+      "lineno": 24,
+      "name": "resume"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "Writer"
+    }
+  ],
+  "description": "Defines the abstract Writer class in the xrpl namespace, which provides an interface for managing and serializing data buffers, typically for network communication.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Writer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "complete"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 17,
+      "name": "consume"
+    },
+    {
+      "args": [
+        "bytes",
+        "resume"
+      ],
+      "lineno": 24,
+      "name": "prepare"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "data"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

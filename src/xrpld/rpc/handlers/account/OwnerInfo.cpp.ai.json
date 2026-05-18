@@ -1,0 +1,204 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doOwnerInfo"
+      ],
+      "entry_point": "doOwnerInfo",
+      "purpose": "Handles the RPC request for owner info, validates input, parses account, and fetches owner info from ledgers.",
+      "validation_points": [
+        "Manual check for presence of 'account' or 'ident' field (isMember)",
+        "parseBase58<AccountID> for syntactic/semantic validation of account identifier"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account / ident",
+      "flow": [
+        "context.params",
+        "Manual check: isMember(jss::account) || isMember(jss::ident)",
+        "strIdent = params[account] or params[ident]",
+        "parseBase58<AccountID>(strIdent)",
+        "accountID (optional<AccountID>)",
+        "context.netOps.getOwnerInfo(ledger, accountID)"
+      ],
+      "origin": "context.params (JSON RPC request parameters)",
+      "transformations": [
+        "String extraction from JSON",
+        "Base58 parsing and validation to AccountID"
+      ],
+      "validated_at": "Manual isMember check (required field), then parseBase58<AccountID> (format/semantic validation)"
+    },
+    {
+      "field": "ret[jss::accepted], ret[jss::current]",
+      "flow": [
+        "accountID.has_value() ? getOwnerInfo(ledger, accountID) : rpcError(rpcACT_MALFORMED)",
+        "ret[jss::accepted] and ret[jss::current]"
+      ],
+      "origin": "Result of getOwnerInfo or rpcError",
+      "transformations": [
+        "Conditional: If accountID is valid, fetch info; else, return error"
+      ],
+      "validated_at": "accountID.has_value() check (result of parseBase58 validation)"
+    }
+  ],
+  "description": "Implements the doOwnerInfo RPC handler, which retrieves owner information for a given account from both the closed and current ledgers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account / ident",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (isMember) at doOwnerInfo",
+      "issue_pattern": "Missing empty string validation for account / ident",
+      "why_false_positive": "manual check (isMember) validates account / ident for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account / ident",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at doOwnerInfo",
+      "issue_pattern": "Missing empty string validation for account / ident",
+      "why_false_positive": "parseBase58<AccountID> validates account / ident for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account / ident",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at doOwnerInfo",
+      "issue_pattern": "Missing format validation for account / ident",
+      "why_false_positive": "parseBase58<AccountID> validates account / ident format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/OwnerInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doOwnerInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in RPC handler or integration test suites, e.g., tests exercising the /account_owner_info or similar endpoint. Tests should cover: missing 'account'/'ident' field (missing_field_error), malformed account (rpcACT_MALFORMED), valid account (returns owner info). Gaps may exist if there are no negative tests for malformed Base58 or missing fields, or if edge cases (e.g., both fields present, empty string) are not tested. Look for test files like 'rpc_account_owner_info_test.cpp', 'Account_test.cpp', or integration tests in the RPC suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC + jss:: (JSON field tags)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::account)",
+      "field": "account / ident",
+      "location": "doOwnerInfo",
+      "validated_by": "manual check (isMember)",
+      "validates": [
+        "at least one of 'account' or 'ident' must be present in params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "account / ident",
+      "location": "doOwnerInfo",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "string must be valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

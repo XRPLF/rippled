@@ -1,0 +1,44 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Store"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "Entry"
+    }
+  ],
+  "description": "Defines an abstract interface (Store) for persisting PeerFinder data, including loading and saving a bootstrap cache of peer endpoints and their valence.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Store.h",
+  "functions": [
+    {
+      "args": [
+        "load_callback const& cb"
+      ],
+      "lineno": 15,
+      "name": "load"
+    },
+    {
+      "args": [
+        "std::vector<Entry> const& v"
+      ],
+      "lineno": 26,
+      "name": "save"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "PeerFinder"
+    }
+  ]
+}

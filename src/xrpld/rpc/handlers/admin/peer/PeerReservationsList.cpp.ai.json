@@ -1,0 +1,128 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC::handleRequest (generic handler, not shown here)",
+        "doPeerReservationsList"
+      ],
+      "entry_point": "doPeerReservationsList",
+      "purpose": "Handles the 'peer_reservations_list' RPC command, returning a list of peer reservations as JSON.",
+      "validation_points": [
+        "Template-based validation likely occurs in the generic RPC handler before doPeerReservationsList is called. No explicit validation in doPeerReservationsList itself."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "reservations",
+      "flow": [
+        "context (RPC::JsonContext)",
+        "context.app (Application instance)",
+        "context.app.getPeerReservations() (PeerReservations manager)",
+        "list() (returns vector/list of Reservation objects)",
+        "for loop over reservations",
+        "reservation.toJson() (serializes each reservation)",
+        "jaReservations.append(...) (adds to JSON array)",
+        "result[jss::reservations] (final JSON output)"
+      ],
+      "origin": "context.app.getPeerReservations().list()",
+      "transformations": [
+        "Reservation objects are serialized to JSON via toJson()"
+      ],
+      "validated_at": "No explicit validation in this function; assumes upstream validation in RPC handler"
+    }
+  ],
+  "description": "Implements a function to list peer reservations in the XRPL application, returning them as a JSON array.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/peer/PeerReservationsList.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doPeerReservationsList"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test coverage in this file. Testing is likely handled at a higher level (integration or RPC handler tests). Template-based validation is assumed to be tested via generic RPC handler tests, not specifically for this handler. There is no field-level or input validation in doPeerReservationsList, so edge cases (e.g., malformed reservations) are not tested here. Test files to check: rpc/PeerReservations_test.cpp, rpc/PeerReservationsList_test.cpp, or generic RPC handler tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc + jss:: (JSON field naming)",
+    "notes": [
+      "No explicit input or field validation is performed in doPeerReservationsList.",
+      "The function does not accept or process user input; it only enumerates internal state.",
+      "jss:: is used for JSON field naming, not validation.",
+      "Any validation of PeerReservation objects or their toJson() output would occur elsewhere (e.g., in PeerReservations::list() or PeerReservation::toJson()), but is not visible in this code."
+    ],
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

@@ -1,0 +1,673 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "name"
+    },
+    {
+      "lineno": 17,
+      "name": "dir"
+    },
+    {
+      "lineno": 17,
+      "name": "ext"
+    },
+    {
+      "lineno": 28,
+      "name": "config"
+    },
+    {
+      "lineno": 28,
+      "name": "dbName"
+    },
+    {
+      "lineno": 39,
+      "name": "dbPath"
+    },
+    {
+      "lineno": 52,
+      "name": "s"
+    },
+    {
+      "lineno": 62,
+      "name": "beName"
+    },
+    {
+      "lineno": 62,
+      "name": "connectionString"
+    },
+    {
+      "lineno": 98,
+      "name": "from"
+    },
+    {
+      "lineno": 98,
+      "name": "to"
+    },
+    {
+      "lineno": 186,
+      "name": "id"
+    },
+    {
+      "lineno": 186,
+      "name": "session"
+    },
+    {
+      "lineno": 186,
+      "name": "queue"
+    },
+    {
+      "lineno": 186,
+      "name": "registry"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "id",
+        "session",
+        "q",
+        "registry"
+      ],
+      "lineno": 132,
+      "name": "WALCheckpointer"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DBConfig(BasicConfig const&, std::string const&)",
+        "detail::getSociInit",
+        "detail::getSociSqliteInit"
+      ],
+      "entry_point": "DBConfig(BasicConfig const&, std::string const&)",
+      "purpose": "Constructs a DBConfig object from config and dbName, resolving the backend and database file path.",
+      "validation_points": [
+        "detail::getSociSqliteInit (validates name non-empty)",
+        "detail::getSociInit (validates backendName == 'sqlite')"
+      ]
+    },
+    {
+      "call_chain": [
+        "open(soci::session&, BasicConfig const&, std::string const&)",
+        "DBConfig(BasicConfig const&, std::string const&)",
+        "DBConfig::open(soci::session&)"
+      ],
+      "entry_point": "open(soci::session&, BasicConfig const&, std::string const&)",
+      "purpose": "Opens a soci session using config and dbName, validating backend and db name.",
+      "validation_points": [
+        "detail::getSociSqliteInit (name validation)",
+        "detail::getSociInit (backendName validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "open(soci::session&, std::string const&, std::string const&)"
+      ],
+      "entry_point": "open(soci::session&, std::string const&, std::string const&)",
+      "purpose": "Opens a soci session with explicit backend and connection string.",
+      "validation_points": [
+        "open (validates beName == 'sqlite')"
+      ]
+    },
+    {
+      "call_chain": [
+        "getConnection(soci::session&)"
+      ],
+      "entry_point": "getConnection(soci::session&)",
+      "purpose": "Retrieves the raw sqlite3 connection from a soci session.",
+      "validation_points": [
+        "getConnection (dynamic_cast and nullptr check on backend pointer)"
+      ]
+    },
+    {
+      "call_chain": [
+        "getKBUsedAll(soci::session&)",
+        "getConnection(soci::session&)"
+      ],
+      "entry_point": "getKBUsedAll(soci::session&)",
+      "purpose": "Returns total SQLite memory usage, validating connection.",
+      "validation_points": [
+        "getConnection (dynamic_cast and nullptr check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "getKBUsedDB(soci::session&)",
+        "getConnection(soci::session&)"
+      ],
+      "entry_point": "getKBUsedDB(soci::session&)",
+      "purpose": "Returns per-DB SQLite cache usage, validating connection.",
+      "validation_points": [
+        "getConnection (dynamic_cast and nullptr check)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "name (database name)",
+      "flow": [
+        "detail::getSociInit (dbName param)",
+        "detail::getSociSqliteInit (name param)",
+        "boost::filesystem::path file(dir)",
+        "file /= name + ext",
+        "file.string()"
+      ],
+      "origin": "Passed to detail::getSociSqliteInit from detail::getSociInit",
+      "transformations": [
+        "Appended to directory and extension to form file path"
+      ],
+      "validated_at": "detail::getSociSqliteInit (if name.empty() Throw)"
+    },
+    {
+      "field": "backendName (database backend type)",
+      "flow": [
+        "detail::getSociInit",
+        "get(section, 'backend', 'sqlite')",
+        "if (backendName != 'sqlite') Throw"
+      ],
+      "origin": "Read from config.section('sqdb')",
+      "transformations": [
+        "Checked for supported backend"
+      ],
+      "validated_at": "detail::getSociInit"
+    },
+    {
+      "field": "beName (database backend type, explicit)",
+      "flow": [
+        "open(soci::session&, std::string const&, std::string const&)",
+        "if (beName == 'sqlite') s.open(soci::sqlite3, connectionString)",
+        "else Throw"
+      ],
+      "origin": "Passed to open(soci::session&, std::string const&, std::string const&)",
+      "transformations": [
+        "Checked for supported backend"
+      ],
+      "validated_at": "open(soci::session&, std::string const&, std::string const&)"
+    },
+    {
+      "field": "s.get_backend() (soci session backend pointer)",
+      "flow": [
+        "getConnection(soci::session&)",
+        "auto be = s.get_backend()",
+        "dynamic_cast<soci::sqlite3_session_backend*>(be)",
+        "if (result == nullptr) Throw"
+      ],
+      "origin": "soci::session object",
+      "transformations": [
+        "Casted to sqlite3_session_backend, pointer extracted"
+      ],
+      "validated_at": "getConnection(soci::session&)"
+    },
+    {
+      "field": "sqlite3 connection pointer",
+      "flow": [
+        "getConnection(soci::session&)",
+        "used in getKBUsedAll/getKBUsedDB"
+      ],
+      "origin": "getConnection(soci::session&)",
+      "transformations": [
+        "Checked for nullptr"
+      ],
+      "validated_at": "getConnection(soci::session&)"
+    }
+  ],
+  "description": "Implements database connection utilities and a write-ahead log (WAL) checkpointer for SQLite databases in the XRPL codebase, including conversion helpers and configuration logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "name (database name)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at detail::getSociSqliteInit",
+      "issue_pattern": "Missing empty string validation for name (database name)",
+      "why_false_positive": "manual if-check validates name (database name) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "name (database name)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual if-check at detail::getSociSqliteInit",
+      "issue_pattern": "Missing format validation for name (database name)",
+      "why_false_positive": "manual if-check validates name (database name) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "backendName (database backend type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at detail::getSociInit",
+      "issue_pattern": "Missing empty string validation for backendName (database backend type)",
+      "why_false_positive": "manual if-check validates backendName (database backend type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "beName (database backend type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at open(soci::session&, std::string const&, std::string const&)",
+      "issue_pattern": "Missing empty string validation for beName (database backend type)",
+      "why_false_positive": "manual if-check validates beName (database backend type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "s.get_backend() (soci session backend pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dynamic_cast and nullptr check at getConnection",
+      "issue_pattern": "Missing empty string validation for s.get_backend() (soci session backend pointer)",
+      "why_false_positive": "dynamic_cast and nullptr check validates s.get_backend() (soci session backend pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "s.get_backend() (soci session backend pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "dynamic_cast and nullptr check at getConnection",
+      "issue_pattern": "Missing type validation for s.get_backend() (soci session backend pointer)",
+      "why_false_positive": "dynamic_cast and nullptr check validates s.get_backend() (soci session backend pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getConnection(s) (sqlite3 connection pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at getKBUsedAll",
+      "issue_pattern": "Missing empty string validation for getConnection(s) (sqlite3 connection pointer)",
+      "why_false_positive": "nullptr check validates getConnection(s) (sqlite3 connection pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "getConnection(s) (sqlite3 connection pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "nullptr check at getKBUsedAll",
+      "issue_pattern": "Missing type validation for getConnection(s) (sqlite3 connection pointer)",
+      "why_false_positive": "nullptr check validates getConnection(s) (sqlite3 connection pointer) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/rdb/SociDB.cpp",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "dir",
+        "ext"
+      ],
+      "lineno": 17,
+      "name": "getSociSqliteInit"
+    },
+    {
+      "args": [
+        "config",
+        "dbName"
+      ],
+      "lineno": 28,
+      "name": "getSociInit"
+    },
+    {
+      "args": [
+        "dbPath"
+      ],
+      "lineno": 39,
+      "name": "DBConfig"
+    },
+    {
+      "args": [
+        "config",
+        "dbName"
+      ],
+      "lineno": 42,
+      "name": "DBConfig"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "connectionString"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 52,
+      "name": "open"
+    },
+    {
+      "args": [
+        "s",
+        "config",
+        "dbName"
+      ],
+      "lineno": 57,
+      "name": "open"
+    },
+    {
+      "args": [
+        "s",
+        "beName",
+        "connectionString"
+      ],
+      "lineno": 62,
+      "name": "open"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 71,
+      "name": "getConnection"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 81,
+      "name": "getKBUsedAll"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 87,
+      "name": "getKBUsedDB"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 98,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 105,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 112,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "from",
+        "to"
+      ],
+      "lineno": 120,
+      "name": "convert"
+    },
+    {
+      "args": [
+        "id",
+        "session",
+        "queue",
+        "registry"
+      ],
+      "lineno": 186,
+      "name": "makeCheckpointer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::logic_error for error reporting",
+        "exception_type": "std::logic_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 15,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file is low-level and likely tested indirectly via higher-level database and configuration tests. Direct unit tests for validation (e.g., empty name, unsupported backend, invalid session) are not visible here. Tests may exist in files like DatabaseCon_test.cpp, SociDB_test.cpp, or integration tests that exercise database opening and error handling. Gaps: No evidence of explicit tests for all validation branches (e.g., passing empty name, wrong backend, or invalid session). Exception paths may not be fully covered unless negative tests are written.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Manual validation (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "name (database name)",
+      "location": "detail::getSociSqliteInit",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Checks that the database name is not empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "backendName (database backend type)",
+      "location": "detail::getSociInit",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Checks that the backend is 'sqlite' (no other backends supported)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "beName (database backend type)",
+      "location": "open(soci::session&, std::string const&, std::string const&)",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Checks that the backend is 'sqlite' (no other backends supported)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error",
+      "field": "s.get_backend() (soci session backend pointer)",
+      "location": "getConnection",
+      "validated_by": "dynamic_cast and nullptr check",
+      "validates": [
+        "Checks that the soci session backend is a sqlite3_session_backend and not null"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error",
+      "field": "getConnection(s) (sqlite3 connection pointer)",
+      "location": "getKBUsedAll",
+      "validated_by": "nullptr check",
+      "validates": [
+        "Checks that a valid sqlite3 connection is present before querying memory usage"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

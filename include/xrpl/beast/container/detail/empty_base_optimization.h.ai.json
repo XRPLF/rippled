@@ -1,0 +1,102 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "T"
+    },
+    {
+      "lineno": 16,
+      "name": "T"
+    },
+    {
+      "lineno": 16,
+      "name": "UniqueID"
+    },
+    {
+      "lineno": 16,
+      "name": "isDerived"
+    },
+    {
+      "lineno": 25,
+      "name": "Arg1"
+    },
+    {
+      "lineno": 25,
+      "name": "ArgN"
+    },
+    {
+      "lineno": 43,
+      "name": "T"
+    },
+    {
+      "lineno": 43,
+      "name": "UniqueID"
+    },
+    {
+      "lineno": 56,
+      "name": "Arg1"
+    },
+    {
+      "lineno": 56,
+      "name": "ArgN"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "is_empty_base_optimization_derived"
+    },
+    {
+      "args": [
+        "Arg1",
+        "ArgN"
+      ],
+      "lineno": 17,
+      "name": "empty_base_optimization"
+    },
+    {
+      "args": [
+        "Arg1",
+        "ArgN"
+      ],
+      "lineno": 44,
+      "name": "empty_base_optimization<T, UniqueID, false>"
+    }
+  ],
+  "description": "Implements the empty base optimization utility for efficient storage of empty types, with specializations for when the type is or isn't suitable for EBO.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/detail/empty_base_optimization.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "empty_base_optimization::member"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "empty_base_optimization::member"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "empty_base_optimization::member"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "empty_base_optimization::member"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "beast"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

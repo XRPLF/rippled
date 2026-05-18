@@ -1,0 +1,236 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "RPCErr"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "rpcError",
+        "RPC::inject_error"
+      ],
+      "entry_point": "rpcError",
+      "purpose": "Creates a JSON object representing an RPC error, injecting error details into the object.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "isRpcError"
+      ],
+      "entry_point": "isRpcError",
+      "purpose": "Checks if a given Json::Value represents an RPC error object by validating its structure.",
+      "validation_points": [
+        "jvResult.isObject()",
+        "jvResult.isMember(jss::error)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "jvResult",
+      "flow": [
+        "rpcError: jvResult created",
+        "RPC::inject_error: error fields injected into jvResult",
+        "rpcError: jvResult returned"
+      ],
+      "origin": "Created as Json::Value(Json::objectValue) in rpcError",
+      "transformations": [
+        "Initialized as empty JSON object",
+        "Populated with error fields by RPC::inject_error"
+      ],
+      "validated_at": "isRpcError: validated by isObject() and isMember(jss::error)"
+    },
+    {
+      "field": "jvResult (input to isRpcError)",
+      "flow": [
+        "Produced by rpcError or similar",
+        "Passed to isRpcError for validation"
+      ],
+      "origin": "Typically output of rpcError or similar error-producing function",
+      "transformations": [
+        "No transformation in isRpcError; only validation"
+      ],
+      "validated_at": "isRpcError: isObject() and isMember(jss::error)"
+    }
+  ],
+  "description": "Provides deprecated utility functions for handling and identifying RPC errors in XRPL, using JSON values.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "error (via jss::error)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field error (via jss::error) validated by JsonCpp (Json::Value), jss:: (field name constants)",
+      "issue_pattern": "Missing validation for error (via jss::error)",
+      "why_false_positive": "JsonCpp (Json::Value), jss:: (field name constants) validates error (via jss::error) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jvResult",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isObject() at isRpcError",
+      "issue_pattern": "Missing empty string validation for jvResult",
+      "why_false_positive": "Json::Value::isObject() validates jvResult for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jvResult",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::Value::isObject() at isRpcError",
+      "issue_pattern": "Missing type validation for jvResult",
+      "why_false_positive": "Json::Value::isObject() validates jvResult type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jvResult",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember(jss::error) at isRpcError",
+      "issue_pattern": "Missing empty string validation for jvResult",
+      "why_false_positive": "Json::Value::isMember(jss::error) validates jvResult for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/RPCErr.cpp",
+  "functions": [
+    {
+      "args": [
+        "iError"
+      ],
+      "lineno": 9,
+      "name": "rpcError"
+    },
+    {
+      "args": [
+        "jvResult"
+      ],
+      "lineno": 16,
+      "name": "isRpcError"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is marked as deprecated and is a thin wrapper around error object creation and validation. Direct unit tests for rpcError and isRpcError may not exist, but their behavior is likely covered indirectly by higher-level RPC error handling tests. Look for tests in files like 'test/rpc/ErrorHandling_test.cpp', 'test/rpc/JsonRpc_test.cpp', or similar. Gaps: No explicit tests for deprecated wrappers; edge cases (e.g., malformed JSON, missing error fields) may not be directly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "error (via jss::error)"
+    ],
+    "framework": "JsonCpp (Json::Value), jss:: (field name constants)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "jvResult",
+      "location": "isRpcError",
+      "validated_by": "Json::Value::isObject()",
+      "validates": [
+        "Checks if jvResult is a JSON object"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "jvResult",
+      "location": "isRpcError",
+      "validated_by": "Json::Value::isMember(jss::error)",
+      "validates": [
+        "Checks if jvResult contains the 'error' field (using jss::error for field name)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

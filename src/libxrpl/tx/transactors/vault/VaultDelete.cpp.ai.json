@@ -1,0 +1,484 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultDelete::preflight"
+      ],
+      "entry_point": "VaultDelete::preflight",
+      "purpose": "Initial stateless validation of the VaultDelete transaction. Checks for malformed or missing fields.",
+      "validation_points": [
+        "ctx.tx[sfVaultID] == beast::zero"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultDelete::preclaim"
+      ],
+      "entry_point": "VaultDelete::preclaim",
+      "purpose": "Stateful validation: checks ledger state for existence, ownership, and obligations before allowing deletion.",
+      "validation_points": [
+        "ctx.view.read(keylet::vault(ctx.tx[sfVaultID]))",
+        "vault->at(sfOwner) != ctx.tx[sfAccount]",
+        "vault->at(sfAssetsAvailable) != 0",
+        "vault->at(sfAssetsTotal) != 0",
+        "ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)))",
+        "sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount)",
+        "sleMPT->at(sfOutstandingAmount) != 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultDelete::doApply",
+        "removeEmptyHolding",
+        "view().peek(keylet::account(...))",
+        "view().peek(keylet::mptIssuance(...))",
+        "removeEmptyHolding (for MPToken)",
+        "view().dirRemove(...)"
+      ],
+      "entry_point": "VaultDelete::doApply",
+      "purpose": "Applies the transaction: removes vault, asset holdings, and share issuance after all validations pass.",
+      "validation_points": [
+        "Redundant checks for existence of vault, pseudo-account, mptIssuance, and MPToken"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "ctx.tx[sfVaultID]",
+        "preflight: checked for zero",
+        "preclaim: used to look up vault in ledger",
+        "doApply: used to look up vault in ledger"
+      ],
+      "origin": "ctx.tx[sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "preflight, preclaim"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "vault->at(sfOwner)",
+        "preclaim: compared to ctx.tx[sfAccount]"
+      ],
+      "origin": "vault->at(sfOwner) (ledger vault entry)",
+      "transformations": [
+        "Compared for equality"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfAssetsAvailable",
+      "flow": [
+        "vault->at(sfAssetsAvailable)",
+        "preclaim: checked for nonzero"
+      ],
+      "origin": "vault->at(sfAssetsAvailable) (ledger vault entry)",
+      "transformations": [
+        "Checked for nonzero"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfAssetsTotal",
+      "flow": [
+        "vault->at(sfAssetsTotal)",
+        "preclaim: checked for nonzero"
+      ],
+      "origin": "vault->at(sfAssetsTotal) (ledger vault entry)",
+      "transformations": [
+        "Checked for nonzero"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfShareMPTID",
+      "flow": [
+        "vault->at(sfShareMPTID)",
+        "preclaim: used to look up mptIssuance",
+        "doApply: used to look up mptIssuance and mptoken"
+      ],
+      "origin": "vault->at(sfShareMPTID) (ledger vault entry)",
+      "transformations": [
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "preclaim, doApply"
+    },
+    {
+      "field": "sfIssuer",
+      "flow": [
+        "sleMPT->at(sfIssuer)",
+        "preclaim: compared to vault->getAccountID(sfAccount)"
+      ],
+      "origin": "sleMPT->at(sfIssuer) (ledger mptIssuance entry)",
+      "transformations": [
+        "Compared for equality"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfOutstandingAmount",
+      "flow": [
+        "sleMPT->at(sfOutstandingAmount)",
+        "preclaim: checked for nonzero"
+      ],
+      "origin": "sleMPT->at(sfOutstandingAmount) (ledger mptIssuance entry)",
+      "transformations": [
+        "Checked for nonzero"
+      ],
+      "validated_at": "preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "preclaim: compared to vault->at(sfOwner)",
+        "doApply: used as account_ for MPToken removal"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared for equality",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the VaultDelete transaction logic for deleting a vault in the XRPL ledger, including preflight, preclaim, and apply steps with all necessary checks and ledger modifications.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultDelete::preflight",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfVaultID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultDelete::preflight",
+      "issue_pattern": "Missing format validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "vault->at(sfOwner) != ctx.tx[sfAccount] at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwner",
+      "why_false_positive": "vault->at(sfOwner) != ctx.tx[sfAccount] validates sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAssetsAvailable",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "vault->at(sfAssetsAvailable) != 0 at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAssetsAvailable",
+      "why_false_positive": "vault->at(sfAssetsAvailable) != 0 validates sfAssetsAvailable for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAssetsTotal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "vault->at(sfAssetsTotal) != 0 at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAssetsTotal",
+      "why_false_positive": "vault->at(sfAssetsTotal) != 0 validates sfAssetsTotal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfShareMPTID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID))) at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfShareMPTID",
+      "why_false_positive": "ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID))) validates sfShareMPTID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfIssuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount) at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfIssuer",
+      "why_false_positive": "sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount) validates sfIssuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOutstandingAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleMPT->at(sfOutstandingAmount) != 0 at VaultDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOutstandingAmount",
+      "why_false_positive": "sleMPT->at(sfOutstandingAmount) != 0 validates sfOutstandingAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view().peek(keylet::vault(ctx_.tx[sfVaultID])) at VaultDelete::doApply",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "view().peek(keylet::vault(ctx_.tx[sfVaultID])) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view().peek(keylet::account(pseudoID)) at VaultDelete::doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "view().peek(keylet::account(pseudoID)) validates sfAccount for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "VaultDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 23,
+      "name": "VaultDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "VaultDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is likely covered by unit/integration tests for VaultDelete transactions. Typical test files would be in the rippled repo under `src/test/tx/` or `src/test/vault/` (e.g., VaultDelete_test.cpp, VaultTransactor_test.cpp). Tests should cover: zero/empty vault ID, non-existent vault, wrong owner, nonzero assets, missing or mismatched mptIssuance, nonzero outstanding shares, and successful deletion. However, some error branches (marked LCOV_EXCL_START/STOP) are likely not covered by tests, such as internal errors or missing pseudo-accounts, as these are considered unreachable in normal operation. Test coverage for these rare branches is likely missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in transaction preflight/preclaim/apply pattern (xrpld transaction engine)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfVaultID",
+      "location": "VaultDelete::preflight",
+      "validated_by": "explicit check (ctx.tx[sfVaultID] == beast::zero)",
+      "validates": [
+        "vault ID must not be zero/empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfVaultID",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID]))",
+      "validates": [
+        "vault must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfOwner",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "vault->at(sfOwner) != ctx.tx[sfAccount]",
+      "validates": [
+        "transaction account must be vault owner"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfAssetsAvailable",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "vault->at(sfAssetsAvailable) != 0",
+      "validates": [
+        "vault must have zero assets available"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfAssetsTotal",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "vault->at(sfAssetsTotal) != 0",
+      "validates": [
+        "vault must have zero assets total"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfShareMPTID",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)))",
+      "validates": [
+        "MPTokenIssuance object for vault shares must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfIssuer",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount)",
+      "validates": [
+        "vault share issuer must match vault account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfOutstandingAmount",
+      "location": "VaultDelete::preclaim",
+      "validated_by": "sleMPT->at(sfOutstandingAmount) != 0",
+      "validates": [
+        "vault shares must have zero outstanding amount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfVaultID",
+      "location": "VaultDelete::doApply",
+      "validated_by": "view().peek(keylet::vault(ctx_.tx[sfVaultID]))",
+      "validates": [
+        "vault must exist in ledger (again, for safety)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfAccount",
+      "location": "VaultDelete::doApply",
+      "validated_by": "view().peek(keylet::account(pseudoID))",
+      "validates": [
+        "vault pseudo-account must exist"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

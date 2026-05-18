@@ -1,0 +1,148 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Counts"
+    }
+  ],
+  "description": "Manages and tracks the counts of various peer connection slots (inbound, outbound, fixed, reserved, etc.) for the XRPL PeerFinder subsystem.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Counts.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 15,
+      "name": "add"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 21,
+      "name": "remove"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 27,
+      "name": "can_activate"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "attempts_needed"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "attempts"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "out_max"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "out_active"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "fixed"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "fixed_active"
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 78,
+      "name": "onConfig"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "acceptCount"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "connectCount"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "closingCount"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "in_max"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "inboundActive"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "totalActive"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "inboundSlotsFree"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "outboundSlotsFree"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "isConnectedToNetwork"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 146,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "state_string"
+    },
+    {
+      "args": [
+        "s",
+        "n"
+      ],
+      "lineno": 167,
+      "name": "adjust"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "PeerFinder"
+    }
+  ]
+}

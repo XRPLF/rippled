@@ -1,0 +1,101 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "cost"
+    },
+    {
+      "lineno": 15,
+      "name": "label"
+    },
+    {
+      "lineno": 35,
+      "name": "m"
+    },
+    {
+      "lineno": 41,
+      "name": "os"
+    },
+    {
+      "lineno": 41,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "value_type cost",
+        "std::string const& label"
+      ],
+      "lineno": 10,
+      "name": "Charge"
+    }
+  ],
+  "description": "Defines the Charge class representing a consumption charge in the xrpl::Resource namespace, including its interface and related operators.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Charge.h",
+  "functions": [
+    {
+      "args": [
+        "value_type cost",
+        "std::string const& label"
+      ],
+      "lineno": 15,
+      "name": "Charge"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "label"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "cost"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Charge const&"
+      ],
+      "lineno": 29,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Charge const&"
+      ],
+      "lineno": 32,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "value_type m"
+      ],
+      "lineno": 35,
+      "name": "operator*"
+    },
+    {
+      "args": [
+        "std::ostream& os",
+        "Charge const& v"
+      ],
+      "lineno": 41,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "Resource"
+    }
+  ]
+}

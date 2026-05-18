@@ -1,0 +1,519 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "vault"
+    },
+    {
+      "lineno": 10,
+      "name": "issuance"
+    },
+    {
+      "lineno": 11,
+      "name": "assets"
+    },
+    {
+      "lineno": 35,
+      "name": "shares"
+    },
+    {
+      "lineno": 63,
+      "name": "truncate"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "assetsToSharesDeposit"
+      ],
+      "entry_point": "assetsToSharesDeposit",
+      "purpose": "Converts an asset amount to a share amount for deposit into a vault.",
+      "validation_points": [
+        "XRPL_ASSERT(!assets.negative(), ...)",
+        "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...)",
+        "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt;"
+      ]
+    },
+    {
+      "call_chain": [
+        "sharesToAssetsDeposit"
+      ],
+      "entry_point": "sharesToAssetsDeposit",
+      "purpose": "Converts a share amount to an asset amount for deposit into a vault.",
+      "validation_points": [
+        "XRPL_ASSERT(!shares.negative(), ...)",
+        "XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), ...)",
+        "if (shares.negative() || shares.asset() != vault->at(sfShareMPTID)) return std::nullopt;"
+      ]
+    },
+    {
+      "call_chain": [
+        "assetsToSharesWithdraw"
+      ],
+      "entry_point": "assetsToSharesWithdraw",
+      "purpose": "Converts an asset amount to a share amount for withdrawal from a vault.",
+      "validation_points": [
+        "XRPL_ASSERT(!assets.negative(), ...)",
+        "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...)",
+        "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt;"
+      ]
+    },
+    {
+      "call_chain": [
+        "sharesToAssetsWithdraw"
+      ],
+      "entry_point": "sharesToAssetsWithdraw",
+      "purpose": "Converts a share amount to an asset amount for withdrawal from a vault.",
+      "validation_points": [
+        "XRPL_ASSERT(!shares.negative(), ...)",
+        "XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), ...)",
+        "if (shares.negative() || shares.asset() != vault->at(sfShareMPTID)) return std::nullopt;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "assets (STAmount)",
+      "flow": [
+        "Function argument",
+        "Validated for non-negativity and correct asset type",
+        "Used in calculation with vault->at(sfAssetsTotal) and issuance->at(sfOutstandingAmount)",
+        "Result returned as shares (STAmount)"
+      ],
+      "origin": "Function argument (assetsToSharesDeposit, assetsToSharesWithdraw)",
+      "transformations": [
+        "Checked for negative value",
+        "Checked for asset type match",
+        "Used in arithmetic to compute shares"
+      ],
+      "validated_at": "Immediately at function entry (asserts and if-check)"
+    },
+    {
+      "field": "shares (STAmount)",
+      "flow": [
+        "Function argument",
+        "Validated for non-negativity and correct share asset type",
+        "Used in calculation with vault->at(sfAssetsTotal) and issuance->at(sfOutstandingAmount)",
+        "Result returned as assets (STAmount)"
+      ],
+      "origin": "Function argument (sharesToAssetsDeposit, sharesToAssetsWithdraw)",
+      "transformations": [
+        "Checked for negative value",
+        "Checked for asset type match",
+        "Used in arithmetic to compute assets"
+      ],
+      "validated_at": "Immediately at function entry (asserts and if-check)"
+    },
+    {
+      "field": "vault->at(sfAsset)",
+      "flow": [
+        "vault SLE",
+        "Used to validate assets.asset()",
+        "Used to construct STAmount for shares"
+      ],
+      "origin": "vault SLE field",
+      "transformations": [
+        "Compared to assets.asset()",
+        "Used as asset type for STAmount"
+      ],
+      "validated_at": "At function entry (asserts and if-check)"
+    },
+    {
+      "field": "vault->at(sfShareMPTID)",
+      "flow": [
+        "vault SLE",
+        "Used to validate shares.asset()",
+        "Used to construct STAmount for assets"
+      ],
+      "origin": "vault SLE field",
+      "transformations": [
+        "Compared to shares.asset()",
+        "Used as asset type for STAmount"
+      ],
+      "validated_at": "At function entry (asserts and if-check)"
+    },
+    {
+      "field": "vault->at(sfAssetsTotal)",
+      "flow": [
+        "vault SLE",
+        "Used in arithmetic to determine proportional shares/assets"
+      ],
+      "origin": "vault SLE field",
+      "transformations": [
+        "Used directly or adjusted by subtracting vault->at(sfLossUnrealized) in withdraw functions"
+      ],
+      "validated_at": "Not directly validated in these functions"
+    },
+    {
+      "field": "issuance->at(sfOutstandingAmount)",
+      "flow": [
+        "issuance SLE",
+        "Used in arithmetic to determine proportional shares/assets"
+      ],
+      "origin": "issuance SLE field",
+      "transformations": [
+        "Used directly in division/multiplication"
+      ],
+      "validated_at": "Not directly validated in these functions"
+    }
+  ],
+  "description": "This file provides helper functions for converting between assets and shares in the context of XRPL vaults, handling both deposit and withdrawal scenarios with appropriate checks and calculations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(!assets.negative(), ...) at assetsToSharesDeposit",
+      "issue_pattern": "Missing empty string validation for assets (STAmount)",
+      "why_false_positive": "XRPL_ASSERT(!assets.negative(), ...) validates assets (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets.asset() vs vault->at(sfAsset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...) at assetsToSharesDeposit",
+      "issue_pattern": "Missing empty string validation for assets.asset() vs vault->at(sfAsset)",
+      "why_false_positive": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...) validates assets.asset() vs vault->at(sfAsset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt; at assetsToSharesDeposit",
+      "issue_pattern": "Missing empty string validation for assets (STAmount)",
+      "why_false_positive": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt; validates assets (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "shares (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(!shares.negative(), ...) at sharesToAssetsDeposit",
+      "issue_pattern": "Missing empty string validation for shares (STAmount)",
+      "why_false_positive": "XRPL_ASSERT(!shares.negative(), ...) validates shares (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "shares.asset() vs vault->at(sfShareMPTID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), ...) at sharesToAssetsDeposit",
+      "issue_pattern": "Missing empty string validation for shares.asset() vs vault->at(sfShareMPTID)",
+      "why_false_positive": "XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), ...) validates shares.asset() vs vault->at(sfShareMPTID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "shares (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (shares.negative() || shares.asset() != vault->at(sfShareMPTID)) return std::nullopt; at sharesToAssetsDeposit",
+      "issue_pattern": "Missing empty string validation for shares (STAmount)",
+      "why_false_positive": "if (shares.negative() || shares.asset() != vault->at(sfShareMPTID)) return std::nullopt; validates shares (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(!assets.negative(), ...) at assetsToSharesWithdraw",
+      "issue_pattern": "Missing empty string validation for assets (STAmount)",
+      "why_false_positive": "XRPL_ASSERT(!assets.negative(), ...) validates assets (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets.asset() vs vault->at(sfAsset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...) at assetsToSharesWithdraw",
+      "issue_pattern": "Missing empty string validation for assets.asset() vs vault->at(sfAsset)",
+      "why_false_positive": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...) validates assets.asset() vs vault->at(sfAsset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "assets (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt; at assetsToSharesWithdraw",
+      "issue_pattern": "Missing empty string validation for assets (STAmount)",
+      "why_false_positive": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt; validates assets (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/VaultHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "assets"
+      ],
+      "lineno": 8,
+      "name": "assetsToSharesDeposit"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "shares"
+      ],
+      "lineno": 34,
+      "name": "sharesToAssetsDeposit"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "assets",
+        "truncate"
+      ],
+      "lineno": 60,
+      "name": "assetsToSharesWithdraw"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "shares"
+      ],
+      "lineno": 91,
+      "name": "sharesToAssetsWithdraw"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These helpers are likely tested indirectly via higher-level vault/AMM/DeFi logic. Direct unit tests for these helpers may exist in files like 'VaultHelpers_test.cpp', 'Vault_test.cpp', or 'AMM_test.cpp' in the test directory. The validation paths (negative values, asset mismatches) are guarded by both XRPL_ASSERT (debug) and runtime checks (returning std::nullopt), but code coverage tools may not cover the assert-only lines (LCOV_EXCL_LINE). Gaps: If tests do not explicitly pass negative or mismatched asset types, those validation branches may not be covered. There is no evidence in this file of explicit test hooks or test-only code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), std::optional for soft validation",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "assets (STAmount)",
+      "location": "assetsToSharesDeposit",
+      "validated_by": "XRPL_ASSERT(!assets.negative(), ...)",
+      "validates": [
+        "assets must not be negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "assets.asset() vs vault->at(sfAsset)",
+      "location": "assetsToSharesDeposit",
+      "validated_by": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...)",
+      "validates": [
+        "assets asset type must match vault asset type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "assets (STAmount)",
+      "location": "assetsToSharesDeposit",
+      "validated_by": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt;",
+      "validates": [
+        "assets must not be negative",
+        "assets asset type must match vault asset type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "shares (STAmount)",
+      "location": "sharesToAssetsDeposit",
+      "validated_by": "XRPL_ASSERT(!shares.negative(), ...)",
+      "validates": [
+        "shares must not be negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "shares.asset() vs vault->at(sfShareMPTID)",
+      "location": "sharesToAssetsDeposit",
+      "validated_by": "XRPL_ASSERT(shares.asset() == vault->at(sfShareMPTID), ...)",
+      "validates": [
+        "shares asset type must match vault share type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "shares (STAmount)",
+      "location": "sharesToAssetsDeposit",
+      "validated_by": "if (shares.negative() || shares.asset() != vault->at(sfShareMPTID)) return std::nullopt;",
+      "validates": [
+        "shares must not be negative",
+        "shares asset type must match vault share type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "assets (STAmount)",
+      "location": "assetsToSharesWithdraw",
+      "validated_by": "XRPL_ASSERT(!assets.negative(), ...)",
+      "validates": [
+        "assets must not be negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely assertion failure/exception)",
+      "field": "assets.asset() vs vault->at(sfAsset)",
+      "location": "assetsToSharesWithdraw",
+      "validated_by": "XRPL_ASSERT(assets.asset() == vault->at(sfAsset), ...)",
+      "validates": [
+        "assets asset type must match vault asset type"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "assets (STAmount)",
+      "location": "assetsToSharesWithdraw",
+      "validated_by": "if (assets.negative() || assets.asset() != vault->at(sfAsset)) return std::nullopt;",
+      "validates": [
+        "assets must not be negative",
+        "assets asset type must match vault asset type"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

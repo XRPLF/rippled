@@ -1,0 +1,184 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "ReadViewFwdIter"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "ReadViewFwdRange"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "iterator"
+    }
+  ],
+  "description": "Defines type-erased forward iterator and range classes for iterating over ReadView objects in the xrpl ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/detail/ReadViewFwdRange.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "ReadViewFwdIter"
+    },
+    {
+      "args": [
+        "ReadViewFwdIter const&"
+      ],
+      "lineno": 16,
+      "name": "ReadViewFwdIter"
+    },
+    {
+      "args": [
+        "ReadViewFwdIter const&"
+      ],
+      "lineno": 17,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "~ReadViewFwdIter"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "ReadViewFwdIter const&"
+      ],
+      "lineno": 24,
+      "name": "equal"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "increment"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "dereference"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "iterator"
+    },
+    {
+      "args": [
+        "iterator const&"
+      ],
+      "lineno": 45,
+      "name": "iterator"
+    },
+    {
+      "args": [
+        "iterator&&"
+      ],
+      "lineno": 46,
+      "name": "iterator"
+    },
+    {
+      "args": [
+        "ReadView const*",
+        "std::unique_ptr<iter_base>"
+      ],
+      "lineno": 49,
+      "name": "iterator"
+    },
+    {
+      "args": [
+        "iterator const&"
+      ],
+      "lineno": 51,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "iterator&&"
+      ],
+      "lineno": 54,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "iterator const&"
+      ],
+      "lineno": 57,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "iterator const&"
+      ],
+      "lineno": 60,
+      "name": "operator!="
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 72,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "ReadViewFwdRange"
+    },
+    {
+      "args": [
+        "ReadViewFwdRange const&"
+      ],
+      "lineno": 85,
+      "name": "ReadViewFwdRange"
+    },
+    {
+      "args": [
+        "ReadViewFwdRange const&"
+      ],
+      "lineno": 86,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "ReadView const&"
+      ],
+      "lineno": 88,
+      "name": "ReadViewFwdRange"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ]
+}

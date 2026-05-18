@@ -1,0 +1,96 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "percentage"
+    },
+    {
+      "lineno": 66,
+      "name": "percentage"
+    },
+    {
+      "lineno": 71,
+      "name": "value"
+    },
+    {
+      "lineno": 71,
+      "name": "bips"
+    },
+    {
+      "lineno": 77,
+      "name": "value"
+    },
+    {
+      "lineno": 77,
+      "name": "bips"
+    },
+    {
+      "lineno": 196,
+      "name": "seq"
+    },
+    {
+      "lineno": 199,
+      "name": "seq"
+    }
+  ],
+  "classes": [],
+  "description": "Defines protocol-specific constants and utility functions for the XRPL (XRP Ledger) protocol, including transaction size limits, directory limits, NFT and DID field limits, lending parameters, and various helper functions for basis points calculations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Protocol.h",
+  "functions": [
+    {
+      "args": [
+        "percentage"
+      ],
+      "lineno": 61,
+      "name": "percentageToBips"
+    },
+    {
+      "args": [
+        "percentage"
+      ],
+      "lineno": 66,
+      "name": "percentageToTenthBips"
+    },
+    {
+      "args": [
+        "value",
+        "bips"
+      ],
+      "lineno": 71,
+      "name": "bipsOfValue"
+    },
+    {
+      "args": [
+        "value",
+        "bips"
+      ],
+      "lineno": 77,
+      "name": "tenthBipsOfValue"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 196,
+      "name": "isVotingLedger"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 199,
+      "name": "isFlagLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 86,
+      "name": "Lending"
+    }
+  ]
+}

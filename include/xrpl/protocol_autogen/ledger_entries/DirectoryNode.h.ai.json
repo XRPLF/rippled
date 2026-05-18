@@ -1,0 +1,407 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 349,
+      "name": "indexes"
+    },
+    {
+      "lineno": 349,
+      "name": "rootIndex"
+    },
+    {
+      "lineno": 359,
+      "name": "sle"
+    },
+    {
+      "lineno": 370,
+      "name": "value"
+    },
+    {
+      "lineno": 380,
+      "name": "value"
+    },
+    {
+      "lineno": 390,
+      "name": "value"
+    },
+    {
+      "lineno": 400,
+      "name": "value"
+    },
+    {
+      "lineno": 410,
+      "name": "value"
+    },
+    {
+      "lineno": 420,
+      "name": "value"
+    },
+    {
+      "lineno": 430,
+      "name": "value"
+    },
+    {
+      "lineno": 440,
+      "name": "value"
+    },
+    {
+      "lineno": 450,
+      "name": "value"
+    },
+    {
+      "lineno": 460,
+      "name": "value"
+    },
+    {
+      "lineno": 470,
+      "name": "value"
+    },
+    {
+      "lineno": 480,
+      "name": "value"
+    },
+    {
+      "lineno": 490,
+      "name": "value"
+    },
+    {
+      "lineno": 500,
+      "name": "value"
+    },
+    {
+      "lineno": 510,
+      "name": "value"
+    },
+    {
+      "lineno": 520,
+      "name": "value"
+    },
+    {
+      "lineno": 530,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 24,
+      "name": "DirectoryNode"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex"
+      ],
+      "lineno": 344,
+      "name": "DirectoryNodeBuilder"
+    }
+  ],
+  "description": "Provides an immutable wrapper and builder for the DirectoryNode ledger entry type in the XRPL, enabling type-safe field access and fluent construction of DirectoryNode ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/DirectoryNode.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "DirectoryNode"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "hasOwner"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getTakerPaysCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "hasTakerPaysCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getTakerPaysIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "hasTakerPaysIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getTakerPaysMPT"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "hasTakerPaysMPT"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "getTakerGetsCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "hasTakerGetsCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "getTakerGetsIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "hasTakerGetsIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "getTakerGetsMPT"
+    },
+    {
+      "args": [],
+      "lineno": 171,
+      "name": "hasTakerGetsMPT"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "getExchangeRate"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "hasExchangeRate"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "getIndexes"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "getRootIndex"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "getIndexNext"
+    },
+    {
+      "args": [],
+      "lineno": 231,
+      "name": "hasIndexNext"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "getIndexPrevious"
+    },
+    {
+      "args": [],
+      "lineno": 251,
+      "name": "hasIndexPrevious"
+    },
+    {
+      "args": [],
+      "lineno": 261,
+      "name": "getNFTokenID"
+    },
+    {
+      "args": [],
+      "lineno": 271,
+      "name": "hasNFTokenID"
+    },
+    {
+      "args": [],
+      "lineno": 281,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 291,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 301,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 311,
+      "name": "hasPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 321,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 331,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& indexes",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& rootIndex"
+      ],
+      "lineno": 349,
+      "name": "DirectoryNodeBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 359,
+      "name": "DirectoryNodeBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 370,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT160::type::value_type> const& value"
+      ],
+      "lineno": 380,
+      "name": "setTakerPaysCurrency"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT160::type::value_type> const& value"
+      ],
+      "lineno": 390,
+      "name": "setTakerPaysIssuer"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT192::type::value_type> const& value"
+      ],
+      "lineno": 400,
+      "name": "setTakerPaysMPT"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT160::type::value_type> const& value"
+      ],
+      "lineno": 410,
+      "name": "setTakerGetsCurrency"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT160::type::value_type> const& value"
+      ],
+      "lineno": 420,
+      "name": "setTakerGetsIssuer"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT192::type::value_type> const& value"
+      ],
+      "lineno": 430,
+      "name": "setTakerGetsMPT"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 440,
+      "name": "setExchangeRate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& value"
+      ],
+      "lineno": 450,
+      "name": "setIndexes"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 460,
+      "name": "setRootIndex"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 470,
+      "name": "setIndexNext"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 480,
+      "name": "setIndexPrevious"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 490,
+      "name": "setNFTokenID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 500,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 510,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 520,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "uint256 const& index"
+      ],
+      "lineno": 530,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

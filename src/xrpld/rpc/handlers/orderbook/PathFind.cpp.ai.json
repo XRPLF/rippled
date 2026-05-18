@@ -1,0 +1,369 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doPathFind"
+      ],
+      "entry_point": "doPathFind",
+      "purpose": "Handles the 'path_find' RPC command, dispatching subcommands (create, close, status) and performing validation on input and context.",
+      "validation_points": [
+        "if (context.app.config().PATH_SEARCH_MAX == 0)",
+        "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())",
+        "if (!context.infoSub)",
+        "if (sSubCommand == ...)",
+        "if (!request)"
+      ]
+    },
+    {
+      "call_chain": [
+        "doPathFind",
+        "context.app.getPathRequestManager().makePathRequest"
+      ],
+      "entry_point": "doPathFind (subcommand == 'create')",
+      "purpose": "Handles creation of a new path find request, after validation.",
+      "validation_points": [
+        "if (context.app.config().PATH_SEARCH_MAX == 0)",
+        "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())",
+        "if (!context.infoSub)"
+      ]
+    },
+    {
+      "call_chain": [
+        "doPathFind",
+        "context.infoSub->getRequest",
+        "request->doClose or request->doStatus"
+      ],
+      "entry_point": "doPathFind (subcommand == 'close' or 'status')",
+      "purpose": "Handles closing or status querying of an existing path find request.",
+      "validation_points": [
+        "if (!request)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.app.config().PATH_SEARCH_MAX",
+      "flow": [
+        "config file/env",
+        "context.app.config()",
+        "doPathFind validation"
+      ],
+      "origin": "Application configuration (config file/env)",
+      "transformations": [],
+      "validated_at": "if (context.app.config().PATH_SEARCH_MAX == 0)"
+    },
+    {
+      "field": "context.params[jss::subcommand]",
+      "flow": [
+        "RPC JSON input",
+        "context.params",
+        "doPathFind validation",
+        "sSubCommand assignment",
+        "subcommand dispatch"
+      ],
+      "origin": "RPC JSON request input",
+      "transformations": [
+        "Checked for presence and type (isString)",
+        "Converted to std::string (asString)"
+      ],
+      "validated_at": "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())"
+    },
+    {
+      "field": "context.infoSub",
+      "flow": [
+        "RPC session setup",
+        "context.infoSub",
+        "doPathFind validation",
+        "used for setApiVersion, clearRequest, getRequest"
+      ],
+      "origin": "Session/subscription context (set up by RPC framework)",
+      "transformations": [],
+      "validated_at": "if (!context.infoSub)"
+    },
+    {
+      "field": "sSubCommand",
+      "flow": [
+        "context.params[jss::subcommand]",
+        "asString()",
+        "sSubCommand",
+        "if/else dispatch"
+      ],
+      "origin": "context.params[jss::subcommand].asString()",
+      "transformations": [
+        "String conversion"
+      ],
+      "validated_at": "if (sSubCommand == ...)"
+    },
+    {
+      "field": "request (InfoSubRequest::pointer)",
+      "flow": [
+        "context.infoSub",
+        "getRequest()",
+        "request",
+        "doClose/doStatus"
+      ],
+      "origin": "context.infoSub->getRequest()",
+      "transformations": [],
+      "validated_at": "if (!request)"
+    }
+  ],
+  "description": "Implements the doPathFind RPC handler for XRPL, handling pathfinding subcommands ('create', 'close', 'status') for payment routing, using the application's PathRequestManager and InfoSub system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "subcommand (via jss::subcommand and isString)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field subcommand (via jss::subcommand and isString) validated by jss:: (JSON field tags), rpcError (error handling), Json::Value (JSON parsing)",
+      "issue_pattern": "Missing validation for subcommand (via jss::subcommand and isString)",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), Json::Value (JSON parsing) validates subcommand (via jss::subcommand and isString) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "infoSub (presence checked before use)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field infoSub (presence checked before use) validated by jss:: (JSON field tags), rpcError (error handling), Json::Value (JSON parsing)",
+      "issue_pattern": "Missing validation for infoSub (presence checked before use)",
+      "why_false_positive": "jss:: (JSON field tags), rpcError (error handling), Json::Value (JSON parsing) validates infoSub (presence checked before use) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "PATH_SEARCH_MAX (config parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (context.app.config().PATH_SEARCH_MAX == 0) at doPathFind",
+      "issue_pattern": "Missing empty string validation for PATH_SEARCH_MAX (config parameter)",
+      "why_false_positive": "if (context.app.config().PATH_SEARCH_MAX == 0) validates PATH_SEARCH_MAX (config parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "subcommand (context.params[jss::subcommand])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString()) at doPathFind",
+      "issue_pattern": "Missing empty string validation for subcommand (context.params[jss::subcommand])",
+      "why_false_positive": "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString()) validates subcommand (context.params[jss::subcommand]) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "infoSub (context.infoSub)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!context.infoSub) at doPathFind",
+      "issue_pattern": "Missing empty string validation for infoSub (context.infoSub)",
+      "why_false_positive": "if (!context.infoSub) validates infoSub (context.infoSub) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "subcommand value (context.params[jss::subcommand])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (sSubCommand == ...) at doPathFind",
+      "issue_pattern": "Missing empty string validation for subcommand value (context.params[jss::subcommand])",
+      "why_false_positive": "if (sSubCommand == ...) validates subcommand value (context.params[jss::subcommand]) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "InfoSubRequest (context.infoSub->getRequest())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!request) at doPathFind (in 'close' and 'status' subcommands)",
+      "issue_pattern": "Missing empty string validation for InfoSubRequest (context.infoSub->getRequest())",
+      "why_false_positive": "if (!request) validates InfoSubRequest (context.infoSub->getRequest()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/PathFind.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 10,
+      "name": "doPathFind"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this handler is likely found in integration or functional test suites for the RPC interface, such as 'rpc_path_find_test.cpp', 'PathRequest_test.cpp', or similar files in the test/rpc or test/app directories. These tests should cover valid/invalid subcommands, missing/invalid parameters, and subscription context. However, edge cases such as missing InfoSub, invalid config, or malformed subcommands may not be exhaustively tested. There may be limited or no unit tests for the validation logic itself, as it is tightly coupled to the RPC context and session management.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "subcommand (via jss::subcommand and isString)",
+      "infoSub (presence checked before use)"
+    ],
+    "framework": "jss:: (JSON field tags), rpcError (error handling), Json::Value (JSON parsing)",
+    "validation_layer": "entry_point (doPathFind is the RPC handler entry)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNOT_SUPPORTED)",
+      "field": "PATH_SEARCH_MAX (config parameter)",
+      "location": "doPathFind",
+      "validated_by": "if (context.app.config().PATH_SEARCH_MAX == 0)",
+      "validates": [
+        "Ensures pathfinding is enabled in config"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "subcommand (context.params[jss::subcommand])",
+      "location": "doPathFind",
+      "validated_by": "if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())",
+      "validates": [
+        "Checks that 'subcommand' field exists in params",
+        "Checks that 'subcommand' is a string"
+      ],
+      "validation_type": "presence|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_EVENTS)",
+      "field": "infoSub (context.infoSub)",
+      "location": "doPathFind",
+      "validated_by": "if (!context.infoSub)",
+      "validates": [
+        "Checks that infoSub subscription object is present"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "subcommand value (context.params[jss::subcommand])",
+      "location": "doPathFind",
+      "validated_by": "if (sSubCommand == ...)",
+      "validates": [
+        "Checks that subcommand is one of: 'create', 'close', 'status'"
+      ],
+      "validation_type": "business_logic|enum"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_PF_REQUEST)",
+      "field": "InfoSubRequest (context.infoSub->getRequest())",
+      "location": "doPathFind (in 'close' and 'status' subcommands)",
+      "validated_by": "if (!request)",
+      "validates": [
+        "Checks that a path find request exists for the subscription"
+      ],
+      "validation_type": "presence"
+    }
+  ]
+}

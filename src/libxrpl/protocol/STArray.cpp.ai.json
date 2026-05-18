@@ -1,0 +1,497 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "other"
+    },
+    {
+      "lineno": 17,
+      "name": "other"
+    },
+    {
+      "lineno": 23,
+      "name": "n"
+    },
+    {
+      "lineno": 27,
+      "name": "f"
+    },
+    {
+      "lineno": 31,
+      "name": "f"
+    },
+    {
+      "lineno": 31,
+      "name": "n"
+    },
+    {
+      "lineno": 35,
+      "name": "sit"
+    },
+    {
+      "lineno": 35,
+      "name": "f"
+    },
+    {
+      "lineno": 35,
+      "name": "depth"
+    },
+    {
+      "lineno": 65,
+      "name": "n"
+    },
+    {
+      "lineno": 65,
+      "name": "buf"
+    },
+    {
+      "lineno": 70,
+      "name": "n"
+    },
+    {
+      "lineno": 70,
+      "name": "buf"
+    },
+    {
+      "lineno": 107,
+      "name": "p"
+    },
+    {
+      "lineno": 120,
+      "name": "s"
+    },
+    {
+      "lineno": 133,
+      "name": "t"
+    },
+    {
+      "lineno": 143,
+      "name": "compare"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "STArray"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STArray::STArray(SerialIter&, SField const&, int)",
+        "sit.getFieldID(type, field)",
+        "SField::getField(type, field)",
+        "fn.isInvalid()",
+        "v_.emplace_back(sit, fn, depth + 1)",
+        "v_.back().applyTemplateFromSField(fn)"
+      ],
+      "entry_point": "STArray::STArray(SerialIter&, SField const&, int)",
+      "purpose": "Deserializes an array from a serialized stream, validating each element's type and field before constructing STObject instances.",
+      "validation_points": [
+        "if ((type == STI_ARRAY) && (field == 1)) break;",
+        "if ((type == STI_OBJECT) && (field == 1)) Throw",
+        "if (fn.isInvalid()) Throw",
+        "if (fn.fieldType != STI_OBJECT) Throw"
+      ]
+    },
+    {
+      "call_chain": [
+        "STArray::add(Serializer&)",
+        "object.addFieldID(s)",
+        "object.add(s)",
+        "s.addFieldID(STI_OBJECT, 1)"
+      ],
+      "entry_point": "STArray::add(Serializer&)",
+      "purpose": "Serializes the array and its objects back into a Serializer stream.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STArray::getJson(JsonOptions)",
+        "object.getSType()",
+        "object.getFName().getJsonName()",
+        "object.getJson(p)"
+      ],
+      "entry_point": "STArray::getJson(JsonOptions)",
+      "purpose": "Converts the array and its objects into a JSON representation.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type/field (from SerialIter)",
+      "flow": [
+        "SerialIter::getFieldID(type, field)",
+        "manual checks for STI_ARRAY/STI_OBJECT terminators",
+        "SField::getField(type, field)",
+        "fn.isInvalid()",
+        "fn.fieldType != STI_OBJECT",
+        "v_.emplace_back(sit, fn, depth + 1)"
+      ],
+      "origin": "SerialIter::getFieldID(type, field)",
+      "transformations": [
+        "type/field extracted from serialized data",
+        "checked for array/object terminators",
+        "looked up as SField",
+        "validated for known/valid field",
+        "validated for correct type (must be STI_OBJECT)",
+        "used to construct STObject"
+      ],
+      "validated_at": "STArray::STArray(SerialIter&, SField const&, int) (multiple points)"
+    },
+    {
+      "field": "fn (SField)",
+      "flow": [
+        "SField::getField(type, field)",
+        "fn.isInvalid()",
+        "fn.fieldType != STI_OBJECT",
+        "v_.emplace_back(sit, fn, depth + 1)",
+        "v_.back().applyTemplateFromSField(fn)"
+      ],
+      "origin": "SField::getField(type, field)",
+      "transformations": [
+        "SField instance created from type/field",
+        "checked for validity",
+        "checked for correct type",
+        "used to construct and template STObject"
+      ],
+      "validated_at": "Immediately after SField::getField"
+    },
+    {
+      "field": "v_ (vector<STObject>)",
+      "flow": [
+        "v_.emplace_back(sit, fn, depth + 1)",
+        "v_.back().applyTemplateFromSField(fn)",
+        "used in getFullText/getText/getJson/add"
+      ],
+      "origin": "Constructed in STArray::STArray(SerialIter&, SField const&, int)",
+      "transformations": [
+        "STObject constructed from validated input",
+        "template applied",
+        "used for serialization, JSON, text output"
+      ],
+      "validated_at": "Before emplace_back (all validation must pass)"
+    }
+  ],
+  "description": "Implements the STArray class for the XRPL protocol, representing an array of STObject instances with serialization, deserialization, JSON conversion, and utility methods.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type/field (from SerialIter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if ((type == STI_ARRAY) && (field == 1))) at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing empty string validation for type/field (from SerialIter)",
+      "why_false_positive": "manual check (if ((type == STI_ARRAY) && (field == 1))) validates type/field (from SerialIter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type/field (from SerialIter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if ((type == STI_OBJECT) && (field == 1))) at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing empty string validation for type/field (from SerialIter)",
+      "why_false_positive": "manual check (if ((type == STI_OBJECT) && (field == 1))) validates type/field (from SerialIter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type/field (from SerialIter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SField::getField(type, field) + fn.isInvalid() at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing empty string validation for type/field (from SerialIter)",
+      "why_false_positive": "SField::getField(type, field) + fn.isInvalid() validates type/field (from SerialIter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type/field (from SerialIter)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "SField::getField(type, field) + fn.isInvalid() at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing type validation for type/field (from SerialIter)",
+      "why_false_positive": "SField::getField(type, field) + fn.isInvalid() validates type/field (from SerialIter) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fn.fieldType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (fn.fieldType != STI_OBJECT) at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing empty string validation for fn.fieldType",
+      "why_false_positive": "if (fn.fieldType != STI_OBJECT) validates fn.fieldType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fn.fieldType",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (fn.fieldType != STI_OBJECT) at STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "issue_pattern": "Missing type validation for fn.fieldType",
+      "why_false_positive": "if (fn.fieldType != STI_OBJECT) validates fn.fieldType type"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STArray.cpp",
+  "functions": [
+    {
+      "args": [
+        "STArray&& other"
+      ],
+      "lineno": 13,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "STArray&& other"
+      ],
+      "lineno": 17,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "int n"
+      ],
+      "lineno": 23,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SField const& f"
+      ],
+      "lineno": 27,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SField const& f",
+        "std::size_t n"
+      ],
+      "lineno": 31,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& f",
+        "int depth"
+      ],
+      "lineno": 35,
+      "name": "STArray"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 65,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 70,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions p"
+      ],
+      "lineno": 107,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 120,
+      "name": "add"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 133,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "bool (*compare)(STObject const&, STObject const&)"
+      ],
+      "lineno": 143,
+      "name": "sort"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STArray deserialization and validation logic is typically tested in protocol-level or serialization/deserialization unit tests. Look for test files such as 'test/protocol/STArray_test.cpp', 'test/protocol/STObject_test.cpp', or integration tests that exercise transaction or ledger serialization. Gaps may exist if tests do not cover malformed input (e.g., arrays with non-object fields, unknown fields, or illegal terminators). Exception paths (Throw) should be explicitly tested for coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Manual validation, SField class",
+    "validation_layer": "business_logic (constructor parsing input stream)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (breaks loop)",
+      "field": "type/field (from SerialIter)",
+      "location": "STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "validated_by": "manual check (if ((type == STI_ARRAY) && (field == 1)))",
+      "validates": [
+        "Checks for end-of-array marker (STI_ARRAY, field 1) to terminate parsing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Illegal terminator in array\")",
+      "field": "type/field (from SerialIter)",
+      "location": "STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "validated_by": "manual check (if ((type == STI_OBJECT) && (field == 1)))",
+      "validates": [
+        "Checks for illegal end-of-object marker inside array"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Unknown field\")",
+      "field": "type/field (from SerialIter)",
+      "location": "STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "validated_by": "SField::getField(type, field) + fn.isInvalid()",
+      "validates": [
+        "Checks that the field type/field pair is a known SField"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Non-object in array\")",
+      "field": "fn.fieldType",
+      "location": "STArray(SerialIter& sit, SField const& f, int depth) constructor",
+      "validated_by": "if (fn.fieldType != STI_OBJECT)",
+      "validates": [
+        "Checks that each array element is an object (STI_OBJECT)"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

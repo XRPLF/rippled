@@ -1,0 +1,597 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+        "obj.getFieldArray(sfAffectedNodes)",
+        "obj.getFieldU8(sfTransactionResult)",
+        "obj.getFieldU32(sfTransactionIndex)",
+        "dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes))",
+        "XRPL_ASSERT(affectedNodes, ...)",
+        "setAdditionalFields(obj)"
+      ],
+      "entry_point": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "purpose": "Constructs TxMeta from an STObject, extracting and validating transaction metadata fields.",
+      "validation_points": [
+        "dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes))",
+        "XRPL_ASSERT(affectedNodes, ...)",
+        "obj.getFieldU8(sfTransactionResult)",
+        "obj.getFieldU32(sfTransactionIndex)",
+        "obj.getFieldArray(sfAffectedNodes)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+        "SerialIter sit(makeSlice(vec))",
+        "STObject obj(sit, sfMetadata)",
+        "obj.getFieldU8(sfTransactionResult)",
+        "obj.getFieldU32(sfTransactionIndex)",
+        "obj.getFieldArray(sfAffectedNodes)",
+        "setAdditionalFields(obj)"
+      ],
+      "entry_point": "TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "purpose": "Constructs TxMeta from a serialized Blob, deserializing and validating fields.",
+      "validation_points": [
+        "obj.getFieldU8(sfTransactionResult)",
+        "obj.getFieldU32(sfTransactionIndex)",
+        "obj.getFieldArray(sfAffectedNodes)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxMeta::getAffectedAccounts()",
+        "for (auto const& node : nodes_)",
+        "node.getFieldIndex(...)",
+        "dynamic_cast<STObject const*>(&node.peekAtIndex(index))",
+        "XRPL_ASSERT(inner, ...)",
+        "for (auto const& field : *inner)",
+        "dynamic_cast<STAccount const*>(&field)",
+        "XRPL_ASSERT(!sa->isDefault(), ...)",
+        "dynamic_cast<STAmount const*>(&field)",
+        "XRPL_ASSERT(lim, ...)"
+      ],
+      "entry_point": "TxMeta::getAffectedAccounts()",
+      "purpose": "Extracts all affected accounts from the transaction metadata, validating types and presence.",
+      "validation_points": [
+        "dynamic_cast<STObject const*>(&node.peekAtIndex(index))",
+        "XRPL_ASSERT(inner, ...)",
+        "dynamic_cast<STAccount const*>(&field)",
+        "XRPL_ASSERT(!sa->isDefault(), ...)",
+        "dynamic_cast<STAmount const*>(&field)",
+        "XRPL_ASSERT(lim, ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAffectedNodes",
+      "flow": [
+        "obj (STObject)",
+        "obj.getFieldArray(sfAffectedNodes)",
+        "nodes_ (TxMeta member)",
+        "used in getAffectedAccounts(), setAffectedNode(), etc."
+      ],
+      "origin": "STObject input parameter (obj)",
+      "transformations": [
+        "dynamic_cast<STArray const*> for type validation",
+        "XRPL_ASSERT to ensure cast succeeded",
+        "Assignment to nodes_"
+      ],
+      "validated_at": "dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes)), XRPL_ASSERT"
+    },
+    {
+      "field": "sfTransactionResult",
+      "flow": [
+        "obj (STObject)",
+        "obj.getFieldU8(sfTransactionResult)",
+        "result_ (TxMeta member)"
+      ],
+      "origin": "STObject input parameter (obj)",
+      "transformations": [
+        "getFieldU8 validates presence and type"
+      ],
+      "validated_at": "obj.getFieldU8(sfTransactionResult)"
+    },
+    {
+      "field": "sfTransactionIndex",
+      "flow": [
+        "obj (STObject)",
+        "obj.getFieldU32(sfTransactionIndex)",
+        "index_ (TxMeta member)"
+      ],
+      "origin": "STObject input parameter (obj)",
+      "transformations": [
+        "getFieldU32 validates presence and type"
+      ],
+      "validated_at": "obj.getFieldU32(sfTransactionIndex)"
+    },
+    {
+      "field": "nodes_",
+      "flow": [
+        "obj.getFieldArray(sfAffectedNodes) or deserialized from Blob",
+        "assigned to nodes_",
+        "used in getAffectedAccounts(), setAffectedNode(), etc."
+      ],
+      "origin": "Constructed from sfAffectedNodes field of STObject or Blob",
+      "transformations": [
+        "Type checked via dynamic_cast and XRPL_ASSERT",
+        "May be replaced by *affectedNodes if cast succeeds"
+      ],
+      "validated_at": "dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes)), XRPL_ASSERT"
+    }
+  ],
+  "description": "Implements the TxMeta class, which represents transaction metadata in the XRPL, including affected nodes, result codes, and utility methods for manipulating and serializing transaction metadata.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionResult",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionResult validated by XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast",
+      "issue_pattern": "Missing validation for sfTransactionResult",
+      "why_false_positive": "XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast validates sfTransactionResult automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionIndex",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionIndex validated by XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast",
+      "issue_pattern": "Missing validation for sfTransactionIndex",
+      "why_false_positive": "XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast validates sfTransactionIndex automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAffectedNodes",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAffectedNodes validated by XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast",
+      "issue_pattern": "Missing validation for sfAffectedNodes",
+      "why_false_positive": "XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast validates sfAffectedNodes automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAffectedNodes (STArray)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dynamic_cast<STArray const*> at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing empty string validation for sfAffectedNodes (STArray)",
+      "why_false_positive": "dynamic_cast<STArray const*> validates sfAffectedNodes (STArray) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAffectedNodes (STArray)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "dynamic_cast<STArray const*> at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing type validation for sfAffectedNodes (STArray)",
+      "why_false_positive": "dynamic_cast<STArray const*> validates sfAffectedNodes (STArray) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAffectedNodes (STArray)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(affectedNodes, ...) at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing empty string validation for sfAffectedNodes (STArray)",
+      "why_false_positive": "XRPL_ASSERT(affectedNodes, ...) validates sfAffectedNodes (STArray) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAffectedNodes (STArray)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT(affectedNodes, ...) at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing type validation for sfAffectedNodes (STArray)",
+      "why_false_positive": "XRPL_ASSERT(affectedNodes, ...) validates sfAffectedNodes (STArray) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldU8(sfTransactionResult)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU8 at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldU8(sfTransactionResult)",
+      "why_false_positive": "getFieldU8 validates obj.getFieldU8(sfTransactionResult) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldU32(sfTransactionIndex)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU32 at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldU32(sfTransactionIndex)",
+      "why_false_positive": "getFieldU32 validates obj.getFieldU32(sfTransactionIndex) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldArray(sfAffectedNodes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldArray at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldArray(sfAffectedNodes)",
+      "why_false_positive": "getFieldArray validates obj.getFieldArray(sfAffectedNodes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "obj.getFieldArray(sfAffectedNodes)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "getFieldArray at TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "issue_pattern": "Missing type validation for obj.getFieldArray(sfAffectedNodes)",
+      "why_false_positive": "getFieldArray validates obj.getFieldArray(sfAffectedNodes) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldU8(sfTransactionResult)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU8 at TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldU8(sfTransactionResult)",
+      "why_false_positive": "getFieldU8 validates obj.getFieldU8(sfTransactionResult) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldU32(sfTransactionIndex)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU32 at TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldU32(sfTransactionIndex)",
+      "why_false_positive": "getFieldU32 validates obj.getFieldU32(sfTransactionIndex) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "obj.getFieldArray(sfAffectedNodes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldArray at TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "issue_pattern": "Missing empty string validation for obj.getFieldArray(sfAffectedNodes)",
+      "why_false_positive": "getFieldArray validates obj.getFieldArray(sfAffectedNodes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "obj.getFieldArray(sfAffectedNodes)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "getFieldArray at TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "issue_pattern": "Missing type validation for obj.getFieldArray(sfAffectedNodes)",
+      "why_false_positive": "getFieldArray validates obj.getFieldArray(sfAffectedNodes) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "obj.getFName() == type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at TxMeta::setAffectedNode",
+      "issue_pattern": "Missing empty string validation for obj.getFName() == type",
+      "why_false_positive": "XRPL_ASSERT validates obj.getFName() == type for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/TxMeta.cpp",
+  "functions": [
+    {
+      "args": [
+        "uint256 const& txid",
+        "std::uint32_t ledger",
+        "STObject const& obj"
+      ],
+      "lineno": 13,
+      "name": "TxMeta"
+    },
+    {
+      "args": [
+        "uint256 const& txid",
+        "std::uint32_t ledger",
+        "Blob const& vec"
+      ],
+      "lineno": 25,
+      "name": "TxMeta"
+    },
+    {
+      "args": [
+        "uint256 const& transactionID",
+        "std::uint32_t ledger"
+      ],
+      "lineno": 36,
+      "name": "TxMeta"
+    },
+    {
+      "args": [
+        "uint256 const& node",
+        "SField const& type",
+        "std::uint16_t nodeType"
+      ],
+      "lineno": 45,
+      "name": "setAffectedNode"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getAffectedAccounts"
+    },
+    {
+      "args": [
+        "SLE::ref node",
+        "SField const& type"
+      ],
+      "lineno": 108,
+      "name": "getAffectedNode"
+    },
+    {
+      "args": [
+        "uint256 const& node"
+      ],
+      "lineno": 123,
+      "name": "getAffectedNode"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "getAsObject"
+    },
+    {
+      "args": [
+        "Serializer& s",
+        "TER result",
+        "std::uint32_t index"
+      ],
+      "lineno": 151,
+      "name": "addRaw"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "TxMeta is a core protocol class, so it is likely tested in protocol-level and transaction-processing tests. Look for tests in files like 'test/TxMeta_test.cpp', 'test/Transaction_test.cpp', or integration tests that exercise transaction application and metadata. However, direct validation of error paths (e.g., failed dynamic_cast, missing fields) may not be fully covered unless there are explicit negative tests. Template-based validation and XRPL_ASSERTs may not be directly tested unless assertions are enabled in test builds. There may be gaps in coverage for malformed or incomplete STObject/Blob inputs.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfTransactionResult",
+      "sfTransactionIndex",
+      "sfAffectedNodes"
+    ],
+    "framework": "XRPL_ASSERT, STObject field accessors (getFieldU8, getFieldU32, getFieldArray), dynamic_cast",
+    "validation_layer": "constructor (input validation), business_logic (setAffectedNode)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely throws std::logic_error or aborts)",
+      "field": "sfAffectedNodes (STArray)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "validated_by": "dynamic_cast<STArray const*>",
+      "validates": [
+        "Ensures sfAffectedNodes field is of type STArray"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely throws std::logic_error or aborts)",
+      "field": "sfAffectedNodes (STArray)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "validated_by": "XRPL_ASSERT(affectedNodes, ...)",
+      "validates": [
+        "Ensures affectedNodes pointer is not null after dynamic_cast"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not uint8_t (likely std::runtime_error or custom)",
+      "field": "obj.getFieldU8(sfTransactionResult)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "validated_by": "getFieldU8",
+      "validates": [
+        "Ensures sfTransactionResult exists and is uint8_t"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not uint32_t (likely std::runtime_error or custom)",
+      "field": "obj.getFieldU32(sfTransactionIndex)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "validated_by": "getFieldU32",
+      "validates": [
+        "Ensures sfTransactionIndex exists and is uint32_t"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not array (likely std::runtime_error or custom)",
+      "field": "obj.getFieldArray(sfAffectedNodes)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, STObject const&)",
+      "validated_by": "getFieldArray",
+      "validates": [
+        "Ensures sfAffectedNodes exists and is an array"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not uint8_t (likely std::runtime_error or custom)",
+      "field": "obj.getFieldU8(sfTransactionResult)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "validated_by": "getFieldU8",
+      "validates": [
+        "Ensures sfTransactionResult exists and is uint8_t"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not uint32_t (likely std::runtime_error or custom)",
+      "field": "obj.getFieldU32(sfTransactionIndex)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "validated_by": "getFieldU32",
+      "validates": [
+        "Ensures sfTransactionIndex exists and is uint32_t"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Throws if field missing or not array (likely std::runtime_error or custom)",
+      "field": "obj.getFieldArray(sfAffectedNodes)",
+      "location": "TxMeta::TxMeta(uint256 const&, std::uint32_t, Blob const&)",
+      "validated_by": "getFieldArray",
+      "validates": [
+        "Ensures sfAffectedNodes exists and is an array"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely throws std::logic_error or aborts)",
+      "field": "obj.getFName() == type",
+      "location": "TxMeta::setAffectedNode",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the field name of the object matches the expected type after insertion"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

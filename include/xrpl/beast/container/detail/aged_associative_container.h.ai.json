@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "maybe_map"
+    },
+    {
+      "lineno": 10,
+      "name": "Value"
+    },
+    {
+      "lineno": 23,
+      "name": "Value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "aged_associative_container_extract_t()"
+      ],
+      "lineno": 6,
+      "name": "aged_associative_container_extract_t<maybe_map>"
+    },
+    {
+      "args": [
+        "aged_associative_container_extract_t()"
+      ],
+      "lineno": 19,
+      "name": "aged_associative_container_extract_t<false>"
+    }
+  ],
+  "description": "Provides templates for extracting the key or value from elements in an associative container, with specialization for map-like and non-map-like containers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/detail/aged_associative_container.h",
+  "functions": [
+    {
+      "args": [
+        "Value const& value"
+      ],
+      "lineno": 10,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "Value const& value"
+      ],
+      "lineno": 23,
+      "name": "operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "beast"
+    },
+    {
+      "lineno": 4,
+      "name": "detail"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC::Handler (dispatches based on RPC command)",
+        "doStop"
+      ],
+      "entry_point": "doStop",
+      "purpose": "Handles the 'stop' RPC command, signaling the server to stop.",
+      "validation_points": [
+        "RPC::Handler (likely validates permissions and command legitimacy before calling doStop)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC request arrives (JSON-RPC or WebSocket)",
+        "RPC::JsonContext is constructed with request data and application context",
+        "doStop receives context",
+        "context.app.signalStop(\"RPC\") is called",
+        "RPC::makeObjectValue(systemName() + \" server stopping\") is returned"
+      ],
+      "origin": "RPC::JsonContext (constructed by RPC framework from incoming HTTP/WebSocket request)",
+      "transformations": [
+        "No transformation of input data; context is passed as-is",
+        "No user input is parsed or used in doStop"
+      ],
+      "validated_at": "Validation (such as admin permission checks) is expected to occur before doStop is called, likely in the RPC::Handler dispatch logic"
+    }
+  ],
+  "description": "Implements the doStop RPC handler, which signals the application to stop and returns a JSON message indicating the server is stopping.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/server_control/Stop.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doStop"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The doStop function itself contains no input validation or branching logic; it simply signals the application to stop and returns a static message. Validation (such as admin checks) is expected to occur in the RPC handler dispatch code, not shown here. Test coverage for doStop would likely be indirect, via integration or functional tests that issue the 'stop' RPC command and verify server shutdown behavior. Unit tests for doStop are unlikely or unnecessary due to its trivial logic. Gaps: No direct validation or error handling is present in doStop; if the RPC handler dispatch code does not properly restrict access, unauthorized users could potentially trigger a server stop.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

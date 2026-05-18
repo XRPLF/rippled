@@ -1,0 +1,430 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountCurrencies",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "RPCTrustLine::getItems"
+      ],
+      "entry_point": "doAccountCurrencies",
+      "purpose": "Handles the account_currencies RPC request, validates input, fetches ledger and account, computes send/receive currencies.",
+      "validation_points": [
+        "doAccountCurrencies: params.isMember(jss::account) || params.isMember(jss::ident)",
+        "doAccountCurrencies: params[jss::account].isString() / params[jss::ident].isString()",
+        "RPC::lookupLedger: validates ledger existence and parameters",
+        "doAccountCurrencies: parseBase58<AccountID>(strIdent) validates account identifier"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account / ident",
+      "flow": [
+        "context.params",
+        "doAccountCurrencies: checked for presence (isMember)",
+        "doAccountCurrencies: checked for type (isString)",
+        "doAccountCurrencies: value assigned to strIdent",
+        "parseBase58<AccountID>(strIdent)",
+        "accountID (used for ledger lookup and trust line queries)"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "String extraction from JSON",
+        "Base58 parsing to AccountID"
+      ],
+      "validated_at": "doAccountCurrencies: explicit if-checks and parseBase58"
+    },
+    {
+      "field": "ledger",
+      "flow": [
+        "doAccountCurrencies: calls RPC::lookupLedger",
+        "RPC::lookupLedger: validates and assigns ledger pointer",
+        "ledger used for account existence check and trust line queries"
+      ],
+      "origin": "context (via RPC::lookupLedger)",
+      "transformations": [
+        "Pointer assignment",
+        "Validation of ledger existence"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "accountID",
+      "flow": [
+        "strIdent",
+        "parseBase58<AccountID>(strIdent)",
+        "accountID",
+        "ledger->exists(keylet::account(accountID))",
+        "RPCTrustLine::getItems(accountID, *ledger)"
+      ],
+      "origin": "parseBase58<AccountID>(strIdent)",
+      "transformations": [
+        "Base58 string to AccountID"
+      ],
+      "validated_at": "parseBase58<AccountID>(strIdent)"
+    },
+    {
+      "field": "send/receive currencies",
+      "flow": [
+        "RPCTrustLine::getItems",
+        "for-loop over trust lines",
+        "insert into send/receive sets",
+        "erase badCurrency",
+        "to_string for JSON output"
+      ],
+      "origin": "RPCTrustLine::getItems(accountID, *ledger)",
+      "transformations": [
+        "Set insertion",
+        "Filtering (badCurrency)",
+        "String conversion"
+      ],
+      "validated_at": "No explicit validation; relies on trust line data integrity"
+    }
+  ],
+  "description": "Implements the doAccountCurrencies RPC handler, which returns the currencies an account can send or receive based on its trust lines in the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account / ident",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for account / ident",
+      "why_false_positive": "explicit if-check validates account / ident for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountCurrencies",
+      "issue_pattern": "Missing type validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ident",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::ident].isString() at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for ident",
+      "why_false_positive": "params[jss::ident].isString() validates ident for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ident",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::ident].isString() at doAccountCurrencies",
+      "issue_pattern": "Missing type validation for ident",
+      "why_false_positive": "params[jss::ident].isString() validates ident type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "RPC::lookupLedger validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account identifier (strIdent)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for account identifier (strIdent)",
+      "why_false_positive": "parseBase58<AccountID> validates account identifier (strIdent) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account identifier (strIdent)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at doAccountCurrencies",
+      "issue_pattern": "Missing format validation for account identifier (strIdent)",
+      "why_false_positive": "parseBase58<AccountID> validates account identifier (strIdent) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->exists(keylet::account(accountID)) at doAccountCurrencies",
+      "issue_pattern": "Missing empty string validation for account existence",
+      "why_false_positive": "ledger->exists(keylet::account(accountID)) validates account existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountCurrencies.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 10,
+      "name": "doAccountCurrencies"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in RPC-level integration tests, e.g., 'account_currencies' tests in test/rpc/AccountCurrencies_test.cpp or similar. Tests should cover: missing/invalid account/ident fields, malformed account IDs, non-existent accounts, and correct send/receive currency computation. Gaps may exist if edge cases (e.g., non-string types, malformed Base58, missing ledger) are not explicitly tested. No evidence in this file of unit tests for parseBase58 or ledger lookup error paths; these may rely on upstream component tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58, etc.)",
+    "validation_layer": "entry_point (handler function doAccountCurrencies)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::account)",
+      "field": "account / ident",
+      "location": "doAccountCurrencies",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "At least one of 'account' or 'ident' must be present in params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountCurrencies",
+      "validated_by": "params[jss::account].isString()",
+      "validates": [
+        "'account' field must be a string if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::ident)",
+      "field": "ident",
+      "location": "doAccountCurrencies",
+      "validated_by": "params[jss::ident].isString()",
+      "validates": [
+        "'ident' field must be a string if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result (error from lookupLedger)",
+      "field": "ledger",
+      "location": "doAccountCurrencies",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "Ledger must exist and be accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcACT_MALFORMED, result)",
+      "field": "account identifier (strIdent)",
+      "location": "doAccountCurrencies",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "'account' or 'ident' must be a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_NOT_FOUND)",
+      "field": "account existence",
+      "location": "doAccountCurrencies",
+      "validated_by": "ledger->exists(keylet::account(accountID))",
+      "validates": [
+        "Account must exist in the ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

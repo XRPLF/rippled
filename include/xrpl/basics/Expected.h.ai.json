@@ -1,0 +1,109 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "Impl"
+    },
+    {
+      "lineno": 36,
+      "name": "Impl"
+    },
+    {
+      "lineno": 43,
+      "name": "Impl"
+    },
+    {
+      "lineno": 53,
+      "name": "E"
+    },
+    {
+      "lineno": 80,
+      "name": "U"
+    },
+    {
+      "lineno": 87,
+      "name": "U"
+    },
+    {
+      "lineno": 128,
+      "name": "U"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "bad_expected_access"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "throw_policy"
+    },
+    {
+      "args": [
+        "E const& e",
+        "E&& e"
+      ],
+      "lineno": 53,
+      "name": "Unexpected"
+    },
+    {
+      "args": [
+        "U&& r",
+        "Unexpected<U> e"
+      ],
+      "lineno": 77,
+      "name": "Expected"
+    },
+    {
+      "args": [
+        "Expected()",
+        "Unexpected<U> e"
+      ],
+      "lineno": 120,
+      "name": "Expected<void, E>"
+    }
+  ],
+  "description": "This file provides an approximation of std::expected (proposed for C++23) using boost::outcome_v2::result, including custom error handling and policies for expected/unexpected result types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Expected.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "bad_expected_access"
+    },
+    {
+      "args": [
+        "Impl&& self"
+      ],
+      "lineno": 29,
+      "name": "wide_value_check"
+    },
+    {
+      "args": [
+        "Impl&& self"
+      ],
+      "lineno": 36,
+      "name": "wide_error_check"
+    },
+    {
+      "args": [
+        "Impl&& self"
+      ],
+      "lineno": 43,
+      "name": "wide_exception_check"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 25,
+      "name": "detail"
+    }
+  ]
+}

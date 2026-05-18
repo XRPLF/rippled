@@ -1,0 +1,86 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "HTTPClient"
+    }
+  ],
+  "description": "Provides an asynchronous HTTP client implementation with optional SSL for the XRPL project, including methods for HTTP GET and custom requests, as well as SSL context management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/net/HTTPClient.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "HTTPClient"
+    },
+    {
+      "args": [
+        "sslVerifyDir",
+        "sslVerifyFile",
+        "sslVerify",
+        "j"
+      ],
+      "lineno": 18,
+      "name": "initializeSSLContext"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "cleanupSSLContext"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "deqSites",
+        "port",
+        "strPath",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 44,
+      "name": "get"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "strSite",
+        "port",
+        "strPath",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 58,
+      "name": "get"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "strSite",
+        "port",
+        "build",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 72,
+      "name": "request"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

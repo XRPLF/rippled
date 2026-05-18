@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    },
+    {
+      "lineno": 24,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "PaymentChannelClaim"
+    }
+  ],
+  "description": "Defines the PaymentChannelClaim transaction handler class for the XRPL, including its interface and key methods for transaction processing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "PaymentChannelClaim"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

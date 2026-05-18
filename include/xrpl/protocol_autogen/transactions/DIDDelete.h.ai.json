@@ -1,0 +1,92 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 54,
+      "name": "account"
+    },
+    {
+      "lineno": 54,
+      "name": "sequence"
+    },
+    {
+      "lineno": 54,
+      "name": "fee"
+    },
+    {
+      "lineno": 65,
+      "name": "tx"
+    },
+    {
+      "lineno": 76,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 76,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "DIDDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 51,
+      "name": "DIDDeleteBuilder"
+    }
+  ],
+  "description": "Defines the DIDDelete transaction type and its builder for the XRPL protocol, providing type-safe access and construction for DIDDelete transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/DIDDelete.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "DIDDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 54,
+      "name": "DIDDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 65,
+      "name": "DIDDeleteBuilder"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 76,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "app"
+    },
+    {
+      "lineno": 101,
+      "name": "service"
+    },
+    {
+      "lineno": 102,
+      "name": "cq"
+    },
+    {
+      "lineno": 103,
+      "name": "app"
+    },
+    {
+      "lineno": 104,
+      "name": "bindListener"
+    },
+    {
+      "lineno": 105,
+      "name": "handler"
+    },
+    {
+      "lineno": 106,
+      "name": "forward"
+    },
+    {
+      "lineno": 107,
+      "name": "requiredCondition"
+    },
+    {
+      "lineno": 108,
+      "name": "loadType"
+    },
+    {
+      "lineno": 109,
+      "name": "secureGatewayIPs"
+    },
+    {
+      "lineno": 163,
+      "name": "isUnlimited"
+    },
+    {
+      "lineno": 198,
+      "name": "response"
+    },
+    {
+      "lineno": 198,
+      "name": "isUnlimited"
+    },
+    {
+      "lineno": 211,
+      "name": "context"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "Processor"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 34,
+      "name": "GRPCServerImpl"
+    },
+    {
+      "args": [
+        "org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService& service, grpc::ServerCompletionQueue& cq, Application& app, BindListener<Request, Response> bindListener, Handler<Request, Response> handler, Forward<Request, Response> forward, RPC::Condition requiredCondition, Resource::Charge loadType, std::vector<boost::asio::ip::address> const& secureGatewayIPs"
+      ],
+      "lineno": 97,
+      "name": "CallData"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 216,
+      "name": "GRPCServer"
+    }
+  ],
+  "description": "Defines the gRPC server implementation for XRPL, including request processing, listener setup, and client endpoint handling. Provides classes for managing asynchronous gRPC requests and server lifecycle.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/GRPCServer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "process"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "isFinished"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "shutdown"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "handleRpcs"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "setupListeners"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "process"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "isFinished"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "clone"
+    },
+    {
+      "args": [
+        "coro"
+      ],
+      "lineno": 154,
+      "name": "process"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "getLoadType"
+    },
+    {
+      "args": [
+        "isUnlimited"
+      ],
+      "lineno": 162,
+      "name": "getRole"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "getUsage"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "getClientIpAddress"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "getClientEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "getProxiedClientIpAddress"
+    },
+    {
+      "args": [],
+      "lineno": 187,
+      "name": "getProxiedClientEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "getUser"
+    },
+    {
+      "args": [
+        "response",
+        "isUnlimited"
+      ],
+      "lineno": 197,
+      "name": "setIsUnlimited"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "clientIsUnlimited"
+    },
+    {
+      "args": [],
+      "lineno": 206,
+      "name": "wasForwarded"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 210,
+      "name": "forwardToP2p"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 227,
+      "name": "~GRPCServer"
+    },
+    {
+      "args": [],
+      "lineno": 229,
+      "name": "getEndpoint"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

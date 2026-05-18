@@ -1,0 +1,496 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanBrokerCoverWithdraw::preflight"
+      ],
+      "entry_point": "LoanBrokerCoverWithdraw::preflight",
+      "purpose": "Performs initial stateless validation of the transaction fields before any ledger access.",
+      "validation_points": [
+        "sfLoanBrokerID checked for nonzero",
+        "sfAmount checked for > 0",
+        "sfAmount checked by isLegalNet",
+        "sfDestination (if present) checked for nonzero"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverWithdraw::preclaim",
+        "canTransfer",
+        "canWithdraw (if destination != account)",
+        "requireAuth",
+        "checkFrozen",
+        "checkDeepFrozen"
+      ],
+      "entry_point": "LoanBrokerCoverWithdraw::preclaim",
+      "purpose": "Performs stateful validation using ledger data, including permissions, asset checks, and destination checks.",
+      "validation_points": [
+        "isPseudoAccount(ctx.view, dstAcct)",
+        "LoanBroker existence (ctx.view.read(keylet::loanbroker))",
+        "Account is owner of LoanBroker",
+        "Vault existence (ctx.view.read(keylet::vault))",
+        "Asset matches vault asset",
+        "canTransfer",
+        "canWithdraw (if destination != account)",
+        "requireAuth",
+        "checkFrozen (unless sending to issuer)",
+        "checkDeepFrozen (unless sending to issuer)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverWithdraw::doApply"
+      ],
+      "entry_point": "LoanBrokerCoverWithdraw::doApply",
+      "purpose": "Executes the transaction after all validations pass (not shown in provided code, but standard in XRPL transactors).",
+      "validation_points": [
+        "Assumes all validation already performed in preflight and preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerCoverWithdraw::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanBrokerCoverWithdraw::checkExtraFeatures",
+      "purpose": "Checks for protocol feature dependencies before transaction is allowed.",
+      "validation_points": [
+        "checkLendingProtocolDependencies"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "ctx.tx[sfLoanBrokerID]",
+        "preflight: checked for nonzero",
+        "preclaim: used to look up LoanBroker SLE"
+      ],
+      "origin": "ctx.tx[sfLoanBrokerID] (transaction input)",
+      "transformations": [
+        "None (direct usage)"
+      ],
+      "validated_at": "preflight (nonzero), preclaim (LoanBroker existence)"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "preflight: checked for > 0 and isLegalNet",
+        "preclaim: compared to vault asset, used in further checks"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for legality and positivity"
+      ],
+      "validated_at": "preflight (<= 0, isLegalNet), preclaim (asset match)"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "ctx.tx[~sfDestination]",
+        "preflight: checked for nonzero if present",
+        "preclaim: defaulted to account if not present, checked for pseudo-account, used in asset transfer checks"
+      ],
+      "origin": "ctx.tx[~sfDestination] (optional transaction input)",
+      "transformations": [
+        "Optional, defaulted to sfAccount if not present"
+      ],
+      "validated_at": "preflight (nonzero), preclaim (isPseudoAccount, canWithdraw, requireAuth, checkFrozen, checkDeepFrozen)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "preclaim: used as default destination, checked as owner of LoanBroker"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "preclaim (ownership check)"
+    },
+    {
+      "field": "vaultAsset",
+      "flow": [
+        "vault->at(sfAsset)",
+        "preclaim: compared to amount.asset(), used in canTransfer, requireAuth, checkFrozen, checkDeepFrozen"
+      ],
+      "origin": "vault->at(sfAsset) (ledger state)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "preclaim (asset match, transferability, freezes)"
+    }
+  ],
+  "description": "Implements the LoanBrokerCoverWithdraw transaction logic for the XRPL lending protocol, including preflight, preclaim, and apply steps for withdrawing cover from a loan broker's vault.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (== beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "explicit check (== beast::zero) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (<= beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "explicit check (<= beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (<= beast::zero) at preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "explicit check (<= beast::zero) validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet(dstAmount) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isLegalNet(dstAmount) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (*destination == beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "explicit check (*destination == beast::zero) validates sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isPseudoAccount(ctx.view, dstAcct) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "isPseudoAccount(ctx.view, dstAcct) validates sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loanbroker(brokerID)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "ctx.view.read(keylet::loanbroker(brokerID)) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account != sleBroker->at(sfOwner) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "account != sleBroker->at(sfOwner) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID (from sleBroker)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID))) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID (from sleBroker)",
+      "why_false_positive": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID))) validates sfVaultID (from sleBroker) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.asset()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amount.asset() != vaultAsset at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAmount.asset()",
+      "why_false_positive": "amount.asset() != vaultAsset validates sfAmount.asset() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vaultAsset, pseudoAccountID, dstAcct",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct) at preclaim",
+      "issue_pattern": "Missing empty string validation for vaultAsset, pseudoAccountID, dstAcct",
+      "why_false_positive": "canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct) validates vaultAsset, pseudoAccountID, dstAcct for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount, sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canWithdraw(ctx.view, tx) at preclaim (if account != dstAcct)",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfDestination",
+      "why_false_positive": "canWithdraw(ctx.view, tx) validates sfAccount, sfDestination for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "LoanBrokerCoverWithdraw::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "LoanBrokerCoverWithdraw::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "LoanBrokerCoverWithdraw::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "LoanBrokerCoverWithdraw::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test files for this code would be in the unit test suite for lending transactions, e.g., LoanBrokerCoverWithdraw_test.cpp or LendingTransactor_test.cpp. Tests should cover: invalid LoanBrokerID, zero/negative/illegal amounts, missing or pseudo destination, non-owner attempts, wrong asset, frozen assets, and destination consent. Gaps may exist if there are no tests for edge cases like deep frozen assets, missing vaults (which is marked LCOV_EXCL_START), or protocol feature dependencies. Coverage for all validation branches should be confirmed in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation logic, Ripple/XRPL transaction processing",
+    "validation_layer": "business_logic (preflight and preclaim transaction hooks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanBrokerID",
+      "location": "preflight",
+      "validated_by": "explicit check (== beast::zero)",
+      "validates": [
+        "LoanBrokerID must not be zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "explicit check (<= beast::zero)",
+      "validates": [
+        "Amount must be greater than zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "isLegalNet(dstAmount)",
+      "validates": [
+        "Amount must be a legal net amount (asset/format check)"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDestination",
+      "location": "preflight",
+      "validated_by": "explicit check (*destination == beast::zero)",
+      "validates": [
+        "Destination, if present, must not be zero"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecPSEUDO_ACCOUNT",
+      "field": "sfDestination",
+      "location": "preclaim",
+      "validated_by": "isPseudoAccount(ctx.view, dstAcct)",
+      "validates": [
+        "Destination account must not be a pseudo-account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfLoanBrokerID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::loanbroker(brokerID))",
+      "validates": [
+        "LoanBroker must exist in ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount",
+      "location": "preclaim",
+      "validated_by": "account != sleBroker->at(sfOwner)",
+      "validates": [
+        "Transaction account must be owner of LoanBroker"
+      ],
+      "validation_type": "business_logic|ownership"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfVaultID (from sleBroker)",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)))",
+      "validates": [
+        "Vault referenced by LoanBroker must exist"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecWRONG_ASSET",
+      "field": "sfAmount.asset()",
+      "location": "preclaim",
+      "validated_by": "amount.asset() != vaultAsset",
+      "validates": [
+        "Withdrawal asset must match vault asset"
+      ],
+      "validation_type": "business_logic|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "return value of canTransfer (various TERs)",
+      "field": "vaultAsset, pseudoAccountID, dstAcct",
+      "location": "preclaim",
+      "validated_by": "canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct)",
+      "validates": [
+        "Asset must be transferable from pseudo-account to destination"
+      ],
+      "validation_type": "business_logic|transferability"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "return value of canWithdraw (various TERs)",
+      "field": "sfAccount, sfDestination",
+      "location": "preclaim (if account != dstAcct)",
+      "validated_by": "canWithdraw(ctx.view, tx)",
+      "validates": [
+        "Withdrawal to third party must pass withdrawal checks"
+      ],
+      "validation_type": "business_logic|authorization"
+    }
+  ]
+}

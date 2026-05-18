@@ -1,0 +1,56 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides functions and enums for validating and applying transactions to an XRPL ledger, including signature and local checks, caching validity, and applying transactions with error handling.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/apply.h",
+  "functions": [
+    {
+      "args": [
+        "router",
+        "tx",
+        "rules"
+      ],
+      "lineno": 27,
+      "name": "checkValidity"
+    },
+    {
+      "args": [
+        "router",
+        "txid",
+        "validity"
+      ],
+      "lineno": 44,
+      "name": "forceValidity"
+    },
+    {
+      "args": [
+        "registry",
+        "view",
+        "tx",
+        "flags",
+        "journal"
+      ],
+      "lineno": 62,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "registry",
+        "view",
+        "tx",
+        "retryAssured",
+        "flags",
+        "journal"
+      ],
+      "lineno": 101,
+      "name": "applyTransaction"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "a"
+    },
+    {
+      "lineno": 54,
+      "name": "sle"
+    },
+    {
+      "lineno": 54,
+      "name": "asset"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "STTakesAsset"
+    }
+  ],
+  "description": "Defines an intermediate class STTakesAsset for STBase-derived classes to store an Asset at runtime (not serialized), and provides a function to associate an Asset with relevant fields in a ledger entry.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STTakesAsset.h",
+  "functions": [
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 32,
+      "name": "STTakesAsset::associateAsset"
+    },
+    {
+      "args": [
+        "sle",
+        "asset"
+      ],
+      "lineno": 54,
+      "name": "associateAsset"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

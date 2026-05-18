@@ -1,0 +1,347 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 5,
+      "name": "Permission"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Permission::Permission"
+      ],
+      "entry_point": "Permission::Permission (constructor)",
+      "purpose": "Initializes all internal maps (txFeatureMap_, delegableTx_, granularPermissionMap_, etc.) and validates their sizes and values.",
+      "validation_points": [
+        "XRPL_ASSERT(txFeatureMap_.size() == delegableTx_.size())",
+        "XRPL_ASSERT(permission.second > UINT16_MAX) [for each granularPermissionMap_ entry]"
+      ]
+    },
+    {
+      "call_chain": [
+        "Permission::getTxFeature"
+      ],
+      "entry_point": "Permission::getTxFeature",
+      "purpose": "Retrieves the feature (amendment) associated with a transaction type, asserts that the txType exists in the map.",
+      "validation_points": [
+        "XRPL_ASSERT(txFeaturesIt != txFeatureMap_.end())"
+      ]
+    },
+    {
+      "call_chain": [
+        "Permission::isDelegable",
+        "Permission::getGranularName",
+        "Permission::getGranularTxType"
+      ],
+      "entry_point": "Permission::isDelegable",
+      "purpose": "Checks if a permission value is delegable, using granular and transaction type maps.",
+      "validation_points": [
+        "Indirect: relies on maps built and validated in constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "Permission::getPermissionName",
+        "Permission::getGranularName",
+        "Permission::permissionToTxType",
+        "TxFormats::getInstance().findByType"
+      ],
+      "entry_point": "Permission::getPermissionName",
+      "purpose": "Maps a permission value to its name, either as a granular permission or as a transaction type.",
+      "validation_points": [
+        "Indirect: relies on maps built and validated in constructor"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "txFeatureMap_",
+      "flow": [
+        "Permission::Permission",
+        "txFeatureMap_ initialized",
+        "Used in getTxFeature"
+      ],
+      "origin": "Constructed in Permission::Permission from transactions.macro",
+      "transformations": [
+        "Populated from macro expansion",
+        "Queried by txType"
+      ],
+      "validated_at": "Permission::Permission (XRPL_ASSERT on size with delegableTx_)"
+    },
+    {
+      "field": "delegableTx_",
+      "flow": [
+        "Permission::Permission",
+        "delegableTx_ initialized",
+        "Used in isDelegable"
+      ],
+      "origin": "Constructed in Permission::Permission from transactions.macro",
+      "transformations": [
+        "Populated from macro expansion",
+        "Queried by txType"
+      ],
+      "validated_at": "Permission::Permission (XRPL_ASSERT on size with txFeatureMap_)"
+    },
+    {
+      "field": "granularPermissionMap_",
+      "flow": [
+        "Permission::Permission",
+        "granularPermissionMap_ initialized",
+        "Used in getGranularValue"
+      ],
+      "origin": "Constructed in Permission::Permission from permissions.macro",
+      "transformations": [
+        "Populated from macro expansion",
+        "Queried by name"
+      ],
+      "validated_at": "Permission::Permission (XRPL_ASSERT on value range for each entry)"
+    },
+    {
+      "field": "granularNameMap_",
+      "flow": [
+        "Permission::Permission",
+        "granularNameMap_ initialized",
+        "Used in getGranularName"
+      ],
+      "origin": "Constructed in Permission::Permission from permissions.macro",
+      "transformations": [
+        "Populated from macro expansion",
+        "Queried by value"
+      ],
+      "validated_at": "Indirectly validated by correctness of macro and constructor"
+    },
+    {
+      "field": "granularTxTypeMap_",
+      "flow": [
+        "Permission::Permission",
+        "granularTxTypeMap_ initialized",
+        "Used in getGranularTxType"
+      ],
+      "origin": "Constructed in Permission::Permission from permissions.macro",
+      "transformations": [
+        "Populated from macro expansion",
+        "Queried by permission type"
+      ],
+      "validated_at": "Indirectly validated by correctness of macro and constructor"
+    }
+  ],
+  "description": "Implements the xrpl::Permission class, which manages transaction and granular permissions, their mappings, and delegation logic for the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txFeatureMap_ size",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txFeatureMap_ size validated by XRPL_ASSERT macro (custom assertion, not a standard framework)",
+      "issue_pattern": "Missing validation for txFeatureMap_ size",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a standard framework) validates txFeatureMap_ size automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "delegableTx_ size",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field delegableTx_ size validated by XRPL_ASSERT macro (custom assertion, not a standard framework)",
+      "issue_pattern": "Missing validation for delegableTx_ size",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a standard framework) validates delegableTx_ size automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "granularPermissionMap_ values",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field granularPermissionMap_ values validated by XRPL_ASSERT macro (custom assertion, not a standard framework)",
+      "issue_pattern": "Missing validation for granularPermissionMap_ values",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a standard framework) validates granularPermissionMap_ values automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "txFeatureMap_ and delegableTx_ size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Permission constructor",
+      "issue_pattern": "Missing empty string validation for txFeatureMap_ and delegableTx_ size",
+      "why_false_positive": "XRPL_ASSERT macro validates txFeatureMap_ and delegableTx_ size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "granularPermissionMap_ values",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Permission constructor (for loop over granularPermissionMap_)",
+      "issue_pattern": "Missing empty string validation for granularPermissionMap_ values",
+      "why_false_positive": "XRPL_ASSERT macro validates granularPermissionMap_ values for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "granularPermissionMap_ values",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Permission constructor (for loop over granularPermissionMap_)",
+      "issue_pattern": "Missing range validation for granularPermissionMap_ values",
+      "why_false_positive": "XRPL_ASSERT macro validates granularPermissionMap_ values range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Permissions.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "Permission"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getInstance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 68,
+      "name": "getPermissionName"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 81,
+      "name": "getGranularValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 89,
+      "name": "getGranularName"
+    },
+    {
+      "args": [
+        "gpType"
+      ],
+      "lineno": 97,
+      "name": "getGranularTxType"
+    },
+    {
+      "args": [
+        "txType"
+      ],
+      "lineno": 105,
+      "name": "getTxFeature"
+    },
+    {
+      "args": [
+        "permissionValue",
+        "rules"
+      ],
+      "lineno": 117,
+      "name": "isDelegable"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 146,
+      "name": "txToPermissionType"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 150,
+      "name": "permissionToTxType"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for this code is likely to be indirect, as the validation logic is in the constructor and relies on macro-generated data. Unit tests may exist for Permission methods (getPermissionName, getGranularValue, getTxFeature, isDelegable), but explicit tests for the XRPL_ASSERT validations in the constructor are unlikely unless there are tests that intentionally break macro invariants. Tests may be found in files like test/protocol/Permissions_test.cpp or similar, but coverage for constructor validation is typically only exercised if the macro data is faulty. There may be a gap in explicit negative tests for these assertions.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "txFeatureMap_ size",
+      "delegableTx_ size",
+      "granularPermissionMap_ values"
+    ],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a standard framework)",
+    "validation_layer": "business_logic (constructor-level, not input API)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "txFeatureMap_ and delegableTx_ size",
+      "location": "Permission constructor",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures txFeatureMap_ and delegableTx_ have the same number of entries"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "granularPermissionMap_ values",
+      "location": "Permission constructor (for loop over granularPermissionMap_)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures each granular permission value is greater than UINT16_MAX"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

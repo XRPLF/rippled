@@ -1,0 +1,36 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides setup and factory functions for creating and configuring the Overlay network component in the XRPL server.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/make_Overlay.h",
+  "functions": [
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 9,
+      "name": "setup_Overlay"
+    },
+    {
+      "args": [
+        "app",
+        "setup",
+        "serverHandler",
+        "resourceManager",
+        "resolver",
+        "io_context",
+        "config",
+        "collector"
+      ],
+      "lineno": 13,
+      "name": "make_Overlay"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

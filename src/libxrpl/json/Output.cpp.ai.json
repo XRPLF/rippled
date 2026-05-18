@@ -1,0 +1,160 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "outputJson(Json::Value const& value, Output const& out)",
+        "Writer writer(out)",
+        "outputJson(Json::Value const& value, Writer& writer)",
+        "switch (value.type())"
+      ],
+      "entry_point": "outputJson(Json::Value const& value, Output const& out)",
+      "purpose": "Serializes a Json::Value to an Output sink, dispatching on the value's type.",
+      "validation_points": [
+        "switch (value.type()) in outputJson(Json::Value const&, Writer&)"
+      ]
+    },
+    {
+      "call_chain": [
+        "jsonAsString(Json::Value const& value)",
+        "Writer writer(stringOutput(s))",
+        "outputJson(Json::Value const& value, Writer& writer)",
+        "switch (value.type())"
+      ],
+      "entry_point": "jsonAsString(Json::Value const& value)",
+      "purpose": "Serializes a Json::Value to a std::string, dispatching on the value's type.",
+      "validation_points": [
+        "switch (value.type()) in outputJson(Json::Value const&, Writer&)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Json::Value value",
+      "flow": [
+        "external caller",
+        "outputJson(Json::Value const&, Output const&)/jsonAsString(Json::Value const&)",
+        "outputJson(Json::Value const&, Writer&)",
+        "switch (value.type())",
+        "writer.output()/writer.startRoot()/writer.rawAppend()/writer.rawSet()/writer.finish()"
+      ],
+      "origin": "Passed as argument to outputJson or jsonAsString (external caller)",
+      "transformations": [
+        "Type-checked via value.type()",
+        "Depending on type, converted to int, uint, double, string, bool, or iterated as array/object",
+        "Written to output via Writer"
+      ],
+      "validated_at": "switch (value.type()) in outputJson(Json::Value const&, Writer&)"
+    },
+    {
+      "field": "Json::Value array/object elements",
+      "flow": [
+        "parent Json::Value",
+        "for (auto const& i : value) / for (auto const& tag : members)",
+        "outputJson(i, writer) / outputJson(value[tag], writer)",
+        "switch (value.type()) (recursive)"
+      ],
+      "origin": "Contained within parent Json::Value passed to outputJson",
+      "transformations": [
+        "Recursively type-checked and serialized"
+      ],
+      "validated_at": "Each recursive call to outputJson, at switch (value.type())"
+    }
+  ],
+  "description": "Provides functions to serialize a Json::Value to an output stream or string using a Writer, handling all JSON types recursively.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Json::Value (input value)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "value.type() (enum type check) at outputJson(Json::Value const& value, Writer& writer)",
+      "issue_pattern": "Missing empty string validation for Json::Value (input value)",
+      "why_false_positive": "value.type() (enum type check) validates Json::Value (input value) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Json::Value (input value)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "value.type() (enum type check) at outputJson(Json::Value const& value, Writer& writer)",
+      "issue_pattern": "Missing type validation for Json::Value (input value)",
+      "why_false_positive": "value.type() (enum type check) validates Json::Value (input value) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/Output.cpp",
+  "functions": [
+    {
+      "args": [
+        "Json::Value const& value",
+        "Writer& writer"
+      ],
+      "lineno": 8,
+      "name": "outputJson"
+    },
+    {
+      "args": [
+        "Json::Value const& value",
+        "Output const& out"
+      ],
+      "lineno": 56,
+      "name": "outputJson"
+    },
+    {
+      "args": [
+        "Json::Value const& value"
+      ],
+      "lineno": 62,
+      "name": "jsonAsString"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "This file is a serialization utility; direct tests may exist in unit tests for JSON serialization or Writer. Validation is limited to type dispatch (value.type()), so tests should cover all Json::Value types (null, int, uint, real, string, bool, array, object). Gaps: No explicit error handling for unknown types; no validation of value contents beyond type. Test files likely: test/json/Json_test.cpp, test/json/Writer_test.cpp, or similar. If these do not exist, coverage may be lacking for edge cases (e.g., deeply nested structures, unusual types).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual type dispatch via switch on Json::Value::type())",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (no exception thrown, default switch covers all types)",
+      "field": "Json::Value (input value)",
+      "location": "outputJson(Json::Value const& value, Writer& writer)",
+      "validated_by": "value.type() (enum type check)",
+      "validates": [
+        "Checks the type of Json::Value (null, int, uint, real, string, bool, array, object)",
+        "Dispatches to appropriate Writer::output overload based on type"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

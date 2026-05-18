@@ -1,0 +1,48 @@
+{
+  "args": [
+    {
+      "lineno": 46,
+      "name": "name"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "temp_dir"
+    }
+  ],
+  "description": "Defines a RAII-style temporary directory class that creates a unique temporary directory on construction and deletes it (with all contents) on destruction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/temp_dir.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "temp_dir"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "~temp_dir"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "path"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 45,
+      "name": "file"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

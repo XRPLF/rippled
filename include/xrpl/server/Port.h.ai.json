@@ -1,0 +1,91 @@
+{
+  "args": [
+    {
+      "lineno": 58,
+      "name": "os"
+    },
+    {
+      "lineno": 58,
+      "name": "p"
+    },
+    {
+      "lineno": 84,
+      "name": "port"
+    },
+    {
+      "lineno": 84,
+      "name": "section"
+    },
+    {
+      "lineno": 84,
+      "name": "log"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Port"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "ParsedPort"
+    }
+  ],
+  "description": "Defines configuration structures and functions for server listening ports in the XRPL server, including SSL, protocol, and admin network settings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Port.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "Port::websockets"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "Port::secure"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Port::protocols"
+    },
+    {
+      "args": [
+        "os",
+        "p"
+      ],
+      "lineno": 58,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "port",
+        "section",
+        "log"
+      ],
+      "lineno": 84,
+      "name": "parse_Port"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "boost"
+    },
+    {
+      "lineno": 12,
+      "name": "asio"
+    },
+    {
+      "lineno": 13,
+      "name": "ssl"
+    },
+    {
+      "lineno": 22,
+      "name": "xrpl"
+    }
+  ]
+}

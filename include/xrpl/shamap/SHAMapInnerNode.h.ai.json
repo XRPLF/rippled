@@ -1,0 +1,337 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "toAllocate"
+    },
+    {
+      "lineno": 52,
+      "name": "i"
+    },
+    {
+      "lineno": 65,
+      "name": "f"
+    },
+    {
+      "lineno": 75,
+      "name": "f"
+    },
+    {
+      "lineno": 94,
+      "name": "cowid"
+    },
+    {
+      "lineno": 94,
+      "name": "numAllocatedChildren"
+    },
+    {
+      "lineno": 124,
+      "name": "m"
+    },
+    {
+      "lineno": 128,
+      "name": "m"
+    },
+    {
+      "lineno": 130,
+      "name": "child"
+    },
+    {
+      "lineno": 132,
+      "name": "child"
+    },
+    {
+      "lineno": 134,
+      "name": "branch"
+    },
+    {
+      "lineno": 137,
+      "name": "branch"
+    },
+    {
+      "lineno": 140,
+      "name": "branch"
+    },
+    {
+      "lineno": 140,
+      "name": "node"
+    },
+    {
+      "lineno": 143,
+      "name": "generation"
+    },
+    {
+      "lineno": 145,
+      "name": "gen"
+    },
+    {
+      "lineno": 153,
+      "name": "Serializer&"
+    },
+    {
+      "lineno": 155,
+      "name": "Serializer&"
+    },
+    {
+      "lineno": 157,
+      "name": "SHAMapNodeID const&"
+    },
+    {
+      "lineno": 159,
+      "name": "is_root"
+    },
+    {
+      "lineno": 162,
+      "name": "data"
+    },
+    {
+      "lineno": 162,
+      "name": "hash"
+    },
+    {
+      "lineno": 162,
+      "name": "hashValid"
+    },
+    {
+      "lineno": 166,
+      "name": "data"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "cowid",
+        "numAllocatedChildren"
+      ],
+      "lineno": 10,
+      "name": "SHAMapInnerNode"
+    }
+  ],
+  "description": "Defines the SHAMapInnerNode class, representing an inner node in a SHAMap radix tree structure, including its children management, hash calculation, serialization, and related operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapInnerNode.h",
+  "functions": [
+    {
+      "args": [
+        "toAllocate"
+      ],
+      "lineno": 38,
+      "name": "resizeChildArrays"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 52,
+      "name": "getChildIndex"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 65,
+      "name": "iterChildren"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 75,
+      "name": "iterNonEmptyChildIndexes"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "partialDestructor"
+    },
+    {
+      "args": [
+        "cowid"
+      ],
+      "lineno": 104,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "isLeaf"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "isInner"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "isEmpty"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 124,
+      "name": "isEmptyBranch"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "getBranchCount"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 128,
+      "name": "getChildHash"
+    },
+    {
+      "args": [
+        "m",
+        "child"
+      ],
+      "lineno": 130,
+      "name": "setChild"
+    },
+    {
+      "args": [
+        "m",
+        "child"
+      ],
+      "lineno": 132,
+      "name": "shareChild"
+    },
+    {
+      "args": [
+        "branch"
+      ],
+      "lineno": 134,
+      "name": "getChildPointer"
+    },
+    {
+      "args": [
+        "branch"
+      ],
+      "lineno": 137,
+      "name": "getChild"
+    },
+    {
+      "args": [
+        "branch",
+        "node"
+      ],
+      "lineno": 140,
+      "name": "canonicalizeChild"
+    },
+    {
+      "args": [
+        "generation"
+      ],
+      "lineno": 143,
+      "name": "isFullBelow"
+    },
+    {
+      "args": [
+        "gen"
+      ],
+      "lineno": 145,
+      "name": "setFullBelowGen"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "updateHash"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "updateHashDeep"
+    },
+    {
+      "args": [
+        "Serializer&"
+      ],
+      "lineno": 153,
+      "name": "serializeForWire"
+    },
+    {
+      "args": [
+        "Serializer&"
+      ],
+      "lineno": 155,
+      "name": "serializeWithPrefix"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const&"
+      ],
+      "lineno": 157,
+      "name": "getString"
+    },
+    {
+      "args": [
+        "is_root"
+      ],
+      "lineno": 159,
+      "name": "invariants"
+    },
+    {
+      "args": [
+        "data",
+        "hash",
+        "hashValid"
+      ],
+      "lineno": 162,
+      "name": "makeFullInner"
+    },
+    {
+      "args": [
+        "data"
+      ],
+      "lineno": 166,
+      "name": "makeCompressedInner"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "isEmpty"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 175,
+      "name": "isEmptyBranch"
+    },
+    {
+      "args": [],
+      "lineno": 180,
+      "name": "getBranchCount"
+    },
+    {
+      "args": [
+        "generation"
+      ],
+      "lineno": 185,
+      "name": "isFullBelow"
+    },
+    {
+      "args": [
+        "gen"
+      ],
+      "lineno": 190,
+      "name": "setFullBelowGen"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

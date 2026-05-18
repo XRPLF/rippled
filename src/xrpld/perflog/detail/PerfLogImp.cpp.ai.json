@@ -1,0 +1,704 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "labels"
+    },
+    {
+      "lineno": 15,
+      "name": "jobTypes"
+    },
+    {
+      "lineno": 217,
+      "name": "setup"
+    },
+    {
+      "lineno": 217,
+      "name": "app"
+    },
+    {
+      "lineno": 217,
+      "name": "journal"
+    },
+    {
+      "lineno": 217,
+      "name": "signalStop"
+    },
+    {
+      "lineno": 228,
+      "name": "method"
+    },
+    {
+      "lineno": 228,
+      "name": "requestId"
+    },
+    {
+      "lineno": 245,
+      "name": "finish"
+    },
+    {
+      "lineno": 273,
+      "name": "type"
+    },
+    {
+      "lineno": 285,
+      "name": "dur"
+    },
+    {
+      "lineno": 285,
+      "name": "startTime"
+    },
+    {
+      "lineno": 285,
+      "name": "instance"
+    },
+    {
+      "lineno": 320,
+      "name": "resize"
+    },
+    {
+      "lineno": 355,
+      "name": "section"
+    },
+    {
+      "lineno": 355,
+      "name": "configDir"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "labels",
+        "jobTypes"
+      ],
+      "lineno": 15,
+      "name": "PerfLogImp::Counters"
+    },
+    {
+      "args": [
+        "setup",
+        "app",
+        "journal",
+        "signalStop"
+      ],
+      "lineno": 217,
+      "name": "PerfLogImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PerfLogImp::Counters::Counters"
+      ],
+      "entry_point": "PerfLogImp::Counters::Counters",
+      "purpose": "Constructor for Counters, initializes internal maps for RPC and JobQueue counters using provided labels and jobTypes.",
+      "validation_points": [
+        "rpc_.emplace(label, Rpc()) - validates label uniqueness",
+        "jq_.emplace(jobType, Jq()) - validates jobType uniqueness"
+      ]
+    },
+    {
+      "call_chain": [
+        "PerfLogImp::Counters::countersJson"
+      ],
+      "entry_point": "PerfLogImp::Counters::countersJson",
+      "purpose": "Serializes the current state of counters to JSON, including only non-zero counters.",
+      "validation_points": [
+        "if ((proc.second.value.started == 0u) && (proc.second.value.finished == 0u) && (proc.second.value.errored == 0u)) continue; // validates non-zero counters",
+        "jss::started, jss::finished, etc. - field name validation via jss:: namespace"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "labels (set<char const*>)",
+      "flow": [
+        "Constructor argument",
+        "for loop over labels",
+        "rpc_.emplace(label, Rpc())",
+        "rpc_ map"
+      ],
+      "origin": "Constructor argument to PerfLogImp::Counters",
+      "transformations": [
+        "Inserted as key into rpc_ map"
+      ],
+      "validated_at": "rpc_.emplace(label, Rpc()) - ensures uniqueness, else UNREACHABLE"
+    },
+    {
+      "field": "jobTypes (JobTypes map)",
+      "flow": [
+        "Constructor argument",
+        "for loop over jobTypes",
+        "jq_.emplace(jobType, Jq())",
+        "jq_ map"
+      ],
+      "origin": "Constructor argument to PerfLogImp::Counters",
+      "transformations": [
+        "Inserted as key into jq_ map"
+      ],
+      "validated_at": "jq_.emplace(jobType, Jq()) - ensures uniqueness, else UNREACHABLE"
+    },
+    {
+      "field": "proc.second.value.started, finished, errored (uint32_t counters)",
+      "flow": [
+        "rpc_ or jq_ map",
+        "for loop in countersJson",
+        "std::lock_guard lock",
+        "if ((started == 0u) && (finished == 0u) && (errored == 0u)) continue",
+        "JSON serialization"
+      ],
+      "origin": "rpc_ and jq_ maps (populated in constructor)",
+      "transformations": [
+        "Checked for non-zero before inclusion in JSON"
+      ],
+      "validated_at": "Explicit check in for loop in countersJson"
+    },
+    {
+      "field": "Json field names (jss::started, jss::finished, etc.)",
+      "flow": [
+        "Used as keys in JSON objects in countersJson"
+      ],
+      "origin": "jss:: namespace (likely macro or constant)",
+      "transformations": [
+        "None (constant field names)"
+      ],
+      "validated_at": "Compile-time via jss:: namespace"
+    },
+    {
+      "field": "rpcobj[proc.first] (label as JSON key)",
+      "flow": [
+        "rpc_ map key",
+        "used as key in rpcobj JSON object"
+      ],
+      "origin": "proc.first from rpc_ map",
+      "transformations": [
+        "Converted to std::string if necessary"
+      ],
+      "validated_at": "std::unordered_map key type (std::string)"
+    }
+  ],
+  "description": "Implements performance logging for the XRPL server, including tracking and reporting of RPC and job queue statistics, log file management, and integration with application state.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "JSON field names via jss::",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field JSON field names via jss:: validated by jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement)",
+      "issue_pattern": "Missing validation for JSON field names via jss::",
+      "why_false_positive": "jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement) validates JSON field names via jss:: automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Map key uniqueness via std::unordered_map",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Map key uniqueness via std::unordered_map validated by jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement)",
+      "issue_pattern": "Missing validation for Map key uniqueness via std::unordered_map",
+      "why_false_positive": "jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement) validates Map key uniqueness via std::unordered_map automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Type correctness via C++ type system",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Type correctness via C++ type system validated by jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement)",
+      "issue_pattern": "Missing validation for Type correctness via C++ type system",
+      "why_false_positive": "jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement) validates Type correctness via C++ type system automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "labels (set of char const*)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_map::emplace + UNREACHABLE macro at PerfLogImp::Counters::Counters (constructor)",
+      "issue_pattern": "Missing empty string validation for labels (set of char const*)",
+      "why_false_positive": "std::unordered_map::emplace + UNREACHABLE macro validates labels (set of char const*) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "jobTypes (JobTypes map)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_map::emplace + UNREACHABLE macro at PerfLogImp::Counters::Counters (constructor)",
+      "issue_pattern": "Missing empty string validation for jobTypes (JobTypes map)",
+      "why_false_positive": "std::unordered_map::emplace + UNREACHABLE macro validates jobTypes (JobTypes map) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "proc.second.value.started, finished, errored (uint32_t counters)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in for loop at PerfLogImp::Counters::countersJson",
+      "issue_pattern": "Missing empty string validation for proc.second.value.started, finished, errored (uint32_t counters)",
+      "why_false_positive": "explicit check in for loop validates proc.second.value.started, finished, errored (uint32_t counters) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Json field names (jss::started, jss::finished, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss:: namespace (likely macro or constant validation) at PerfLogImp::Counters::countersJson",
+      "issue_pattern": "Missing empty string validation for Json field names (jss::started, jss::finished, etc.)",
+      "why_false_positive": "jss:: namespace (likely macro or constant validation) validates Json field names (jss::started, jss::finished, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Json field names (jss::started, jss::finished, etc.)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "jss:: namespace (likely macro or constant validation) at PerfLogImp::Counters::countersJson",
+      "issue_pattern": "Missing format validation for Json field names (jss::started, jss::finished, etc.)",
+      "why_false_positive": "jss:: namespace (likely macro or constant validation) validates Json field names (jss::started, jss::finished, etc.) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "rpcobj[proc.first] (label as JSON key)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_map key type (std::string) at PerfLogImp::Counters::countersJson",
+      "issue_pattern": "Missing empty string validation for rpcobj[proc.first] (label as JSON key)",
+      "why_false_positive": "std::unordered_map key type (std::string) validates rpcobj[proc.first] (label as JSON key) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "rpcobj[proc.first] (label as JSON key)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::unordered_map key type (std::string) at PerfLogImp::Counters::countersJson",
+      "issue_pattern": "Missing type validation for rpcobj[proc.first] (label as JSON key)",
+      "why_false_positive": "std::unordered_map key type (std::string) validates rpcobj[proc.first] (label as JSON key) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/perflog/detail/PerfLogImp.cpp",
+  "functions": [
+    {
+      "args": [
+        "labels",
+        "jobTypes"
+      ],
+      "lineno": 15,
+      "name": "PerfLogImp::Counters::Counters"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "PerfLogImp::Counters::countersJson"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "PerfLogImp::Counters::currentJson"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "PerfLogImp::openLog"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "PerfLogImp::run"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "PerfLogImp::report"
+    },
+    {
+      "args": [
+        "setup",
+        "app",
+        "journal",
+        "signalStop"
+      ],
+      "lineno": 217,
+      "name": "PerfLogImp::PerfLogImp"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "PerfLogImp::~PerfLogImp"
+    },
+    {
+      "args": [
+        "method",
+        "requestId"
+      ],
+      "lineno": 228,
+      "name": "PerfLogImp::rpcStart"
+    },
+    {
+      "args": [
+        "method",
+        "requestId",
+        "finish"
+      ],
+      "lineno": 245,
+      "name": "PerfLogImp::rpcEnd"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 273,
+      "name": "PerfLogImp::jobQueue"
+    },
+    {
+      "args": [
+        "type",
+        "dur",
+        "startTime",
+        "instance"
+      ],
+      "lineno": 285,
+      "name": "PerfLogImp::jobStart"
+    },
+    {
+      "args": [
+        "type",
+        "dur",
+        "instance"
+      ],
+      "lineno": 304,
+      "name": "PerfLogImp::jobFinish"
+    },
+    {
+      "args": [
+        "resize"
+      ],
+      "lineno": 320,
+      "name": "PerfLogImp::resizeJobs"
+    },
+    {
+      "args": [],
+      "lineno": 327,
+      "name": "PerfLogImp::rotate"
+    },
+    {
+      "args": [],
+      "lineno": 335,
+      "name": "PerfLogImp::start"
+    },
+    {
+      "args": [],
+      "lineno": 341,
+      "name": "PerfLogImp::stop"
+    },
+    {
+      "args": [
+        "section",
+        "configDir"
+      ],
+      "lineno": 355,
+      "name": "setup_PerfLog"
+    },
+    {
+      "args": [
+        "setup",
+        "app",
+        "journal",
+        "signalStop"
+      ],
+      "lineno": 372,
+      "name": "make_PerfLog"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "perf"
+    }
+  ],
+  "test_coverage_notes": "The code uses UNREACHABLE macros for validation failures, which are typically excluded from coverage (LCOV_EXCL_START/STOP). The explicit checks for non-zero counters are likely covered by tests that exercise RPC/job queue activity. However, edge cases such as duplicate labels/jobTypes or empty input sets may not be directly tested unless there are negative/exception tests. Test files likely to cover this code would be in the perflog or rpc subsystem, e.g., test_perflog.cpp, test_PerfLogImp.cpp, or integration tests that exercise performance logging. There may be gaps in testing for the UNREACHABLE paths and for malformed/invalid input sets.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "JSON field names via jss::",
+      "Map key uniqueness via std::unordered_map",
+      "Type correctness via C++ type system"
+    ],
+    "framework": "jss:: (JSON field name validation), std::unordered_map (type/uniqueness), UNREACHABLE macro (error enforcement)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE macro (likely aborts or throws)",
+      "field": "labels (set of char const*)",
+      "location": "PerfLogImp::Counters::Counters (constructor)",
+      "validated_by": "std::unordered_map::emplace + UNREACHABLE macro",
+      "validates": [
+        "Ensures each label is unique in the rpc_ map",
+        "Prevents duplicate insertion of labels"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE macro (likely aborts or throws)",
+      "field": "jobTypes (JobTypes map)",
+      "location": "PerfLogImp::Counters::Counters (constructor)",
+      "validated_by": "std::unordered_map::emplace + UNREACHABLE macro",
+      "validates": [
+        "Ensures each jobType is unique in the jq_ map",
+        "Prevents duplicate insertion of jobTypes"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "continue (skips entry, no exception)",
+      "field": "proc.second.value.started, finished, errored (uint32_t counters)",
+      "location": "PerfLogImp::Counters::countersJson",
+      "validated_by": "explicit check in for loop",
+      "validates": [
+        "Skips entries where all counters are zero",
+        "Prevents empty/irrelevant data from being serialized"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (compile-time constant enforcement)",
+      "field": "Json field names (jss::started, jss::finished, etc.)",
+      "location": "PerfLogImp::Counters::countersJson",
+      "validated_by": "jss:: namespace (likely macro or constant validation)",
+      "validates": [
+        "Ensures only valid/expected JSON field names are used"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "N/A (compile-time type enforcement)",
+      "field": "rpcobj[proc.first] (label as JSON key)",
+      "location": "PerfLogImp::Counters::countersJson",
+      "validated_by": "std::unordered_map key type (std::string)",
+      "validates": [
+        "Ensures label is a string suitable for JSON key"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "setup"
+    },
+    {
+      "lineno": 15,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to perform vacuum (cleanup and optimization) operations on a database within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Vacuum.h",
+  "functions": [
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 13,
+      "name": "doVacuumDB"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

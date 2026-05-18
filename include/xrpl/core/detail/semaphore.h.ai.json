@@ -1,0 +1,43 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "count"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "size_type count = 0"
+      ],
+      "lineno": 18,
+      "name": "basic_semaphore"
+    }
+  ],
+  "description": "Implements a basic semaphore class template for synchronization, as a workaround for compiler bugs in std::counting_semaphore. Provides notify, wait, and try_wait methods. Intended for removal once minimum compiler versions are updated.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/detail/semaphore.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "notify"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "wait"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "try_wait"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

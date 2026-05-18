@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "l"
+    },
+    {
+      "lineno": 12,
+      "name": "j"
+    },
+    {
+      "lineno": 33,
+      "name": "accountID"
+    },
+    {
+      "lineno": 33,
+      "name": "direction"
+    },
+    {
+      "lineno": 45,
+      "name": "account"
+    },
+    {
+      "lineno": 57,
+      "name": "account"
+    },
+    {
+      "lineno": 57,
+      "name": "direction"
+    },
+    {
+      "lineno": 57,
+      "name": "hash"
+    },
+    {
+      "lineno": 62,
+      "name": "other"
+    },
+    {
+      "lineno": 65,
+      "name": "other"
+    },
+    {
+      "lineno": 69,
+      "name": "lhs"
+    },
+    {
+      "lineno": 84,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& l",
+        "beast::Journal j"
+      ],
+      "lineno": 10,
+      "name": "AssetCache"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "LineDirection direction",
+        "std::size_t hash"
+      ],
+      "lineno": 54,
+      "name": "AccountKey"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "Hash"
+    }
+  ],
+  "description": "Defines the AssetCache class, which caches trust lines and multipath tokens (MPTs) for accounts in an XRPL ledger to optimize pathfinding operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/AssetCache.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "accountID",
+        "direction"
+      ],
+      "lineno": 32,
+      "name": "getRippleLines"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 44,
+      "name": "getMPTs"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "get_hash"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

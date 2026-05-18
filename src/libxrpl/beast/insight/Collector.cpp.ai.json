@@ -1,0 +1,58 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "beast::insight::Collector::~Collector"
+      ],
+      "entry_point": "beast::insight::Collector::~Collector",
+      "purpose": "Destructor for the Collector class; cleans up resources when a Collector object is destroyed.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "N/A",
+      "flow": [],
+      "origin": "N/A",
+      "transformations": [],
+      "validated_at": "N/A"
+    }
+  ],
+  "description": "Defines the destructor implementation for the Collector class within the beast::insight namespace.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/insight/Collector.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "~Collector"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "beast"
+    },
+    {
+      "lineno": 4,
+      "name": "insight"
+    }
+  ],
+  "test_coverage_notes": "The provided code only contains the default destructor for the Collector class, with no logic, validation, or data manipulation. There are no validation code paths or data flows present in this snippet. Test coverage for this destructor would be implicit via object lifecycle tests, but no explicit validation or data handling is present to test. Any validation or data flow would occur in other methods of Collector or its subclasses, not shown here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

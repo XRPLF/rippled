@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "now"
+    },
+    {
+      "lineno": 50,
+      "name": "charge"
+    },
+    {
+      "lineno": 65,
+      "name": "os"
+    },
+    {
+      "lineno": 65,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 14,
+      "name": "Entry"
+    }
+  ],
+  "description": "Defines the xrpl::Resource::Entry struct, representing an entry in a resource management table for tracking resource consumption, with decaying balance and related metadata.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/detail/Entry.h",
+  "functions": [
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 20,
+      "name": "Entry"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "to_string"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 44,
+      "name": "balance"
+    },
+    {
+      "args": [
+        "charge",
+        "now"
+      ],
+      "lineno": 50,
+      "name": "add"
+    },
+    {
+      "args": [
+        "os",
+        "v"
+      ],
+      "lineno": 65,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "Resource"
+    }
+  ]
+}

@@ -1,0 +1,432 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "registry"
+    },
+    {
+      "lineno": 14,
+      "name": "tx"
+    },
+    {
+      "lineno": 15,
+      "name": "rules"
+    },
+    {
+      "lineno": 16,
+      "name": "flags"
+    },
+    {
+      "lineno": 17,
+      "name": "parentBatchId"
+    },
+    {
+      "lineno": 18,
+      "name": "j"
+    },
+    {
+      "lineno": 43,
+      "name": "view"
+    },
+    {
+      "lineno": 44,
+      "name": "preflightResult"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "registry",
+        "tx",
+        "rules",
+        "flags",
+        "parentBatchId",
+        "j"
+      ],
+      "lineno": 9,
+      "name": "PreflightContext"
+    },
+    {
+      "args": [
+        "registry",
+        "view",
+        "preflightResult",
+        "tx",
+        "flags",
+        "parentBatchId",
+        "j"
+      ],
+      "lineno": 38,
+      "name": "PreclaimContext"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "TxConsequences"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "PreflightResult"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "Change"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 75,
+      "name": "Transactor"
+    }
+  ],
+  "description": "Defines core transaction processing context structures and the Transactor base class for XRPL transaction preflight, preclaim, and application logic, including static and virtual methods for transaction validation, fee calculation, and signature checks.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/Transactor.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "Transactor::view"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "Transactor::view"
+    },
+    {
+      "args": [
+        "view",
+        "tx",
+        "j"
+      ],
+      "lineno": 97,
+      "name": "Transactor::checkSeqProxy"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 101,
+      "name": "Transactor::checkPriorTxAndLastLedger"
+    },
+    {
+      "args": [
+        "ctx",
+        "baseFee"
+      ],
+      "lineno": 105,
+      "name": "Transactor::checkFee"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 109,
+      "name": "Transactor::checkSign"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 113,
+      "name": "Transactor::checkBatchSign"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 117,
+      "name": "Transactor::calculateBaseFee"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 146,
+      "name": "Transactor::preclaim"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 152,
+      "name": "Transactor::checkPermission"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "ticketIndex",
+        "j"
+      ],
+      "lineno": 157,
+      "name": "Transactor::ticketDelete"
+    },
+    {
+      "args": [],
+      "lineno": 163,
+      "name": "Transactor::apply"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "Transactor::preCompute"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "Transactor::doApply"
+    },
+    {
+      "args": [
+        "registry",
+        "baseFee",
+        "fees",
+        "flags"
+      ],
+      "lineno": 177,
+      "name": "Transactor::minimumFee"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 183,
+      "name": "Transactor::calculateOwnerReserveFee"
+    },
+    {
+      "args": [
+        "view",
+        "flags",
+        "parentBatchId",
+        "idAccount",
+        "sigObject",
+        "j"
+      ],
+      "lineno": 187,
+      "name": "Transactor::checkSign"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 192,
+      "name": "Transactor::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 195,
+      "name": "Transactor::getFlagsMask"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 198,
+      "name": "Transactor::preflightSigValidated"
+    },
+    {
+      "args": [
+        "slice",
+        "maxLength"
+      ],
+      "lineno": 201,
+      "name": "Transactor::validDataLength"
+    },
+    {
+      "args": [
+        "value",
+        "max",
+        "min"
+      ],
+      "lineno": 204,
+      "name": "Transactor::validNumericRange"
+    },
+    {
+      "args": [
+        "value",
+        "max",
+        "min"
+      ],
+      "lineno": 210,
+      "name": "Transactor::validNumericRange"
+    },
+    {
+      "args": [
+        "value",
+        "min"
+      ],
+      "lineno": 217,
+      "name": "Transactor::validNumericMinimum"
+    },
+    {
+      "args": [
+        "value",
+        "min"
+      ],
+      "lineno": 222,
+      "name": "Transactor::validNumericMinimum"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 227,
+      "name": "Transactor::reset"
+    },
+    {
+      "args": [
+        "sleAccount"
+      ],
+      "lineno": 230,
+      "name": "Transactor::consumeSeqProxy"
+    },
+    {
+      "args": [],
+      "lineno": 231,
+      "name": "Transactor::payFee"
+    },
+    {
+      "args": [
+        "view",
+        "idSigner",
+        "idAccount",
+        "sleAccount",
+        "j"
+      ],
+      "lineno": 232,
+      "name": "Transactor::checkSingleSign"
+    },
+    {
+      "args": [
+        "view",
+        "flags",
+        "id",
+        "sigObject",
+        "j"
+      ],
+      "lineno": 237,
+      "name": "Transactor::checkMultiSign"
+    },
+    {
+      "args": [
+        "uint256"
+      ],
+      "lineno": 239,
+      "name": "Transactor::trapTransaction"
+    },
+    {
+      "args": [
+        "ctx",
+        "flagMask"
+      ],
+      "lineno": 247,
+      "name": "Transactor::preflight1"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 253,
+      "name": "Transactor::preflight2"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 257,
+      "name": "Transactor::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "ctx",
+        "flagMask"
+      ],
+      "lineno": 262,
+      "name": "preflight0"
+    },
+    {
+      "args": [
+        "sigObject",
+        "j"
+      ],
+      "lineno": 268,
+      "name": "detail::preflightCheckSigningKey"
+    },
+    {
+      "args": [
+        "flags",
+        "sigObject",
+        "j"
+      ],
+      "lineno": 273,
+      "name": "detail::preflightCheckSimulateKeys"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 278,
+      "name": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 281,
+      "name": "Transactor::invokePreflight"
+    },
+    {
+      "args": [
+        "value",
+        "max",
+        "min"
+      ],
+      "lineno": 299,
+      "name": "Transactor::validNumericRange"
+    },
+    {
+      "args": [
+        "value",
+        "max",
+        "min"
+      ],
+      "lineno": 307,
+      "name": "Transactor::validNumericRange"
+    },
+    {
+      "args": [
+        "value",
+        "min"
+      ],
+      "lineno": 314,
+      "name": "Transactor::validNumericMinimum"
+    },
+    {
+      "args": [
+        "value",
+        "min"
+      ],
+      "lineno": 320,
+      "name": "Transactor::validNumericMinimum"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 265,
+      "name": "detail"
+    }
+  ]
+}

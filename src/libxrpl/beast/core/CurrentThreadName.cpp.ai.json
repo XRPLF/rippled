@@ -1,0 +1,173 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "name"
+    },
+    {
+      "lineno": 44,
+      "name": "name"
+    },
+    {
+      "lineno": 56,
+      "name": "name"
+    },
+    {
+      "lineno": 86,
+      "name": "name"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "setCurrentThreadName",
+        "detail::setCurrentThreadNameImpl"
+      ],
+      "entry_point": "setCurrentThreadName(std::string_view name)",
+      "purpose": "Sets the current thread's name, both in a thread-local variable and via the OS-specific API.",
+      "validation_points": [
+        "detail::setCurrentThreadNameImpl (on Linux): manual truncation of name using std::snprintf"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "name (thread name)",
+      "flow": [
+        "setCurrentThreadName(name) receives input",
+        "detail::threadName = name (thread-local storage)",
+        "detail::setCurrentThreadNameImpl(name) called",
+        "OS-specific thread name API invoked (with possible transformation)"
+      ],
+      "origin": "Input parameter to setCurrentThreadName(std::string_view name)",
+      "transformations": [
+        "On Linux: name is truncated to maxThreadNameLength using std::snprintf into boundedName",
+        "On Windows: name is passed as-is to THREADNAME_INFO.szName",
+        "On macOS: name.data() is passed as-is to pthread_setname_np"
+      ],
+      "validated_at": "detail::setCurrentThreadNameImpl (on Linux): name is truncated to maxThreadNameLength"
+    }
+  ],
+  "description": "Provides cross-platform utilities to set and get the current thread's name, with platform-specific implementations for Windows, macOS, and Linux.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "name (thread name)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual truncation using std::snprintf at beast::detail::setCurrentThreadNameImpl (Linux implementation)",
+      "issue_pattern": "Missing empty string validation for name (thread name)",
+      "why_false_positive": "manual truncation using std::snprintf validates name (thread name) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "name (thread name)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual truncation using std::snprintf at beast::detail::setCurrentThreadNameImpl (Linux implementation)",
+      "issue_pattern": "Missing range validation for name (thread name)",
+      "why_false_positive": "manual truncation using std::snprintf validates name (thread name) range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/core/CurrentThreadName.cpp",
+  "functions": [
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 13,
+      "name": "setCurrentThreadNameImpl"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 44,
+      "name": "setCurrentThreadNameImpl"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 56,
+      "name": "setCurrentThreadNameImpl"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getCurrentThreadName"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 86,
+      "name": "setCurrentThreadName"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "beast::detail"
+    },
+    {
+      "lineno": 42,
+      "name": "beast::detail"
+    },
+    {
+      "lineno": 54,
+      "name": "beast::detail"
+    },
+    {
+      "lineno": 78,
+      "name": "beast"
+    },
+    {
+      "lineno": 80,
+      "name": "beast::detail"
+    }
+  ],
+  "test_coverage_notes": "There is no evidence of direct test coverage in this file. The code is platform-specific and interacts with OS APIs, making it difficult to unit test directly. Validation (truncation) is only performed on Linux, and there is no explicit error handling or assertion for name length on other platforms. Test coverage would likely exist in higher-level integration or system tests that verify thread naming, but such tests are not referenced or visible here. Edge cases such as overly long names on non-Linux platforms are not validated or tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (name is truncated, warning logged if TRUNCATED_THREAD_NAME_LOGS is defined)",
+      "field": "name (thread name)",
+      "location": "beast::detail::setCurrentThreadNameImpl (Linux implementation)",
+      "validated_by": "manual truncation using std::snprintf",
+      "validates": [
+        "Ensures thread name does not exceed maxThreadNameLength characters",
+        "Truncates name if too long"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

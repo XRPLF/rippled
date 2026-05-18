@@ -1,0 +1,64 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "s"
+    },
+    {
+      "lineno": 44,
+      "name": "buffers"
+    },
+    {
+      "lineno": 51,
+      "name": "buffer"
+    },
+    {
+      "lineno": 51,
+      "name": "bytes"
+    },
+    {
+      "lineno": 54,
+      "name": "writer"
+    },
+    {
+      "lineno": 54,
+      "name": "keep_alive"
+    },
+    {
+      "lineno": 68,
+      "name": "graceful"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "Session"
+    }
+  ],
+  "description": "Defines the xrpl::Session class, representing persistent state and operations for a connection session, including methods for writing data, managing session lifecycle, and upgrading to WebSocket.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Session.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 38,
+      "name": "write"
+    },
+    {
+      "args": [
+        "buffers"
+      ],
+      "lineno": 44,
+      "name": "write"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

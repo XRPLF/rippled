@@ -1,0 +1,83 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "a"
+    },
+    {
+      "lineno": 17,
+      "name": "T"
+    },
+    {
+      "lineno": 23,
+      "name": "T"
+    },
+    {
+      "lineno": 29,
+      "name": "T"
+    },
+    {
+      "lineno": 34,
+      "name": "stream"
+    },
+    {
+      "lineno": 34,
+      "name": "amt"
+    },
+    {
+      "lineno": 35,
+      "name": "a"
+    },
+    {
+      "lineno": 44,
+      "name": "T"
+    },
+    {
+      "lineno": 44,
+      "name": "amt"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "EitherAmount"
+    }
+  ],
+  "description": "Defines the EitherAmount struct in the xrpl namespace, which can hold one of several amount types (XRPAmount, IOUAmount, MPTAmount) and provides type-safe access and utility functions for handling these amounts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/EitherAmount.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "holds"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "get"
+    },
+    {
+      "args": [
+        "stream",
+        "amt"
+      ],
+      "lineno": 33,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 43,
+      "name": "get"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

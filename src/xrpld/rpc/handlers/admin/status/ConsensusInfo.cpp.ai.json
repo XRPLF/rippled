@@ -1,0 +1,130 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC framework dispatches request",
+        "doConsensusInfo"
+      ],
+      "entry_point": "doConsensusInfo",
+      "purpose": "Handles the 'consensus_info' RPC command, returning consensus state information.",
+      "validation_points": [
+        "Template-based validation (not shown in this file, likely handled by RPC framework before doConsensusInfo is called)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC framework receives request",
+        "Constructs JsonContext (parsing/validation may occur here)",
+        "Passes context to doConsensusInfo"
+      ],
+      "origin": "RPC::JsonContext (constructed by RPC framework from incoming HTTP/JSON-RPC request)",
+      "transformations": [
+        "May be validated and normalized by framework before reaching handler"
+      ],
+      "validated_at": "RPC framework (before doConsensusInfo)"
+    },
+    {
+      "field": "ret[jss::info]",
+      "flow": [
+        "doConsensusInfo calls context.netOps.getConsensusInfo()",
+        "Result assigned to ret[jss::info]",
+        "ret returned as JSON response"
+      ],
+      "origin": "context.netOps.getConsensusInfo()",
+      "transformations": [
+        "getConsensusInfo() likely gathers and formats consensus state data"
+      ],
+      "validated_at": "Assumed internal validation in getConsensusInfo() or earlier"
+    }
+  ],
+  "description": "Provides an RPC handler function to retrieve consensus information from the network operations object in the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/ConsensusInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 9,
+      "name": "doConsensusInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is a simple pass-through with no direct input fields to validate. Validation is likely handled by the RPC framework's template-based system before this function is called. There are probably integration or functional tests for the 'consensus_info' RPC command, but unit tests for this function are unlikely or unnecessary due to its trivial logic. Gaps: No direct validation or transformation is performed here, so test coverage would focus on the RPC framework and getConsensusInfo().",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::JsonContext)",
+    "validation_layer": "entry_point"
+  },
+  "validations": []
+}

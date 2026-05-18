@@ -1,0 +1,101 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "UptimeClock::now",
+        "UptimeClock::start_clock (static init)",
+        "UptimeClock::update_thread (constructor)",
+        "lambda thread (updates now_)"
+      ],
+      "entry_point": "UptimeClock::now",
+      "purpose": "Provides the current uptime in seconds since first use of UptimeClock. On first call, starts a background thread that increments the uptime counter every second.",
+      "validation_points": [
+        "No explicit validation in this chain. The only implicit check is thread-safe atomic access to now_ and stop_."
+      ]
+    },
+    {
+      "call_chain": [
+        "UptimeClock::update_thread::~update_thread",
+        "stop_ = true",
+        "join()"
+      ],
+      "entry_point": "UptimeClock::update_thread::~update_thread",
+      "purpose": "Ensures the background update thread is stopped and joined on shutdown.",
+      "validation_points": [
+        "No explicit validation. Ensures thread is joinable before joining."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "UptimeClock::now_",
+      "flow": [
+        "static initialization",
+        "incremented by background thread (lambda in start_clock)",
+        "read by UptimeClock::now",
+        "returned as time_point"
+      ],
+      "origin": "Initialized to 0 at static scope",
+      "transformations": [
+        "Incremented atomically every second by background thread"
+      ],
+      "validated_at": "No explicit validation; atomic operations ensure thread safety"
+    },
+    {
+      "field": "UptimeClock::stop_",
+      "flow": [
+        "static initialization",
+        "set to true in update_thread::~update_thread",
+        "read by background thread loop condition"
+      ],
+      "origin": "Initialized to false at static scope",
+      "transformations": [
+        "Set to true to signal thread to stop"
+      ],
+      "validated_at": "No explicit validation; atomic operations ensure thread safety"
+    }
+  ],
+  "description": "Implements an uptime clock for xrpld, tracking seconds since process start using a background thread that updates an atomic counter every second.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/UptimeClock.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "UptimeClock::update_thread::~update_thread"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "UptimeClock::start_clock"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "UptimeClock::now"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is low-level infrastructure and does not contain explicit validation logic or input handling. It is likely tested indirectly via higher-level tests that depend on uptime reporting (e.g., server info, monitoring, or time-based logic). There are probably no direct unit tests for UptimeClock itself, and edge cases (e.g., thread start/stop races, timing accuracy) may not be directly tested. No validation of external input occurs in this code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

@@ -1,0 +1,358 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BookTip::step",
+        "view_.succ",
+        "dirFirst",
+        "view_.peek",
+        "offerDelete"
+      ],
+      "entry_point": "BookTip::step",
+      "purpose": "Iterates through offers in a book directory, validates and deletes offers as needed, and advances to the next offer.",
+      "validation_points": [
+        "if (m_valid)",
+        "if (m_entry)",
+        "auto const first_page = view_.succ(m_book, m_end)",
+        "if (dirFirst(view_, *first_page, dir, di, m_index))",
+        "m_entry = view_.peek(keylet::offer(m_index))"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookTip::BookTip",
+        "getBookBase",
+        "getQualityNext"
+      ],
+      "entry_point": "BookTip::BookTip",
+      "purpose": "Initializes BookTip with the base book index and the next quality boundary.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_book",
+      "flow": [
+        "BookTip::BookTip",
+        "BookTip::step (used as argument to view_.succ)",
+        "updated in step: m_book = *first_page or --m_book"
+      ],
+      "origin": "BookTip::BookTip (getBookBase(book))",
+      "transformations": [
+        "Initialized from getBookBase(book)",
+        "Updated to *first_page after directory traversal",
+        "Decremented (--m_book) to set up for next query"
+      ],
+      "validated_at": "Indirectly validated by view_.succ(m_book, m_end)"
+    },
+    {
+      "field": "first_page",
+      "flow": [
+        "BookTip::step",
+        "if (!first_page) return false",
+        "used as *first_page in dirFirst"
+      ],
+      "origin": "view_.succ(m_book, m_end)",
+      "transformations": [
+        "Result of ledger directory traversal"
+      ],
+      "validated_at": "if (!first_page) return false"
+    },
+    {
+      "field": "m_index",
+      "flow": [
+        "dirFirst(view_, *first_page, dir, di, m_index)",
+        "used as keylet::offer(m_index) in view_.peek"
+      ],
+      "origin": "Set by dirFirst",
+      "transformations": [
+        "Set to the index of the first offer in the directory"
+      ],
+      "validated_at": "dirFirst returns true if entry exists"
+    },
+    {
+      "field": "m_entry",
+      "flow": [
+        "Set in BookTip::step after dirFirst",
+        "Checked by if (m_entry)",
+        "Passed to offerDelete if m_valid and m_entry",
+        "Set to nullptr after deletion"
+      ],
+      "origin": "view_.peek(keylet::offer(m_index))",
+      "transformations": [
+        "Set to pointer to offer SLE",
+        "Set to nullptr after deletion"
+      ],
+      "validated_at": "if (m_entry)"
+    },
+    {
+      "field": "m_valid",
+      "flow": [
+        "Checked at start of BookTip::step",
+        "Set to true after dirFirst"
+      ],
+      "origin": "Set to true after successful dirFirst",
+      "transformations": [
+        "Boolean flag for internal state"
+      ],
+      "validated_at": "if (m_valid)"
+    },
+    {
+      "field": "dir",
+      "flow": [
+        "dirFirst(view_, *first_page, dir, di, m_index)",
+        "m_dir = dir->key()"
+      ],
+      "origin": "Set by dirFirst",
+      "transformations": [
+        "Pointer to directory SLE"
+      ],
+      "validated_at": "dirFirst returns true if directory entry exists"
+    }
+  ],
+  "description": "Implements the BookTip class, which iterates through offers in a given order book in the XRPL ledger, advancing to the next available offer by quality.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "first_page (directory index)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view_.succ(m_book, m_end) at BookTip::step",
+      "issue_pattern": "Missing empty string validation for first_page (directory index)",
+      "why_false_positive": "view_.succ(m_book, m_end) validates first_page (directory index) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "directory entry existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dirFirst(view_, *first_page, dir, di, m_index) at BookTip::step",
+      "issue_pattern": "Missing empty string validation for directory entry existence",
+      "why_false_positive": "dirFirst(view_, *first_page, dir, di, m_index) validates directory entry existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "m_entry (offer existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view_.peek(keylet::offer(m_index)) at BookTip::step",
+      "issue_pattern": "Missing empty string validation for m_entry (offer existence)",
+      "why_false_positive": "view_.peek(keylet::offer(m_index)) validates m_entry (offer existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "m_valid (internal state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (m_valid) at BookTip::step",
+      "issue_pattern": "Missing empty string validation for m_valid (internal state)",
+      "why_false_positive": "if (m_valid) validates m_valid (internal state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "m_entry (pointer validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (m_entry) at BookTip::step",
+      "issue_pattern": "Missing empty string validation for m_entry (pointer validity)",
+      "why_false_positive": "if (m_entry) validates m_entry (pointer validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m_entry (pointer validity)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (m_entry) at BookTip::step",
+      "issue_pattern": "Missing type validation for m_entry (pointer validity)",
+      "why_false_positive": "if (m_entry) validates m_entry (pointer validity) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/BookTip.cpp",
+  "functions": [
+    {
+      "args": [
+        "ApplyView& view",
+        "Book const& book"
+      ],
+      "lineno": 6,
+      "name": "BookTip::BookTip"
+    },
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 11,
+      "name": "BookTip::step"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "BookTip is a core component of XRPL pathfinding and offer traversal. Typical test coverage would be in integration and unit tests for pathfinding, offer crossing, and order book traversal. Likely test files: 'Path_test.cpp', 'BookTip_test.cpp', 'OfferStream_test.cpp', or similar in the rippled/test or xrpl/test directories. However, the code defensively handles empty directories (which 'should never happen'), and this edge case may not be explicitly tested. Direct validation of m_valid, m_entry, and directory traversal is likely covered indirectly via higher-level pathfinding and offer crossing tests, but explicit unit tests for BookTip edge cases (empty directory, invalid offers, etc.) may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom ledger view and helper functions (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "first_page (directory index)",
+      "location": "BookTip::step",
+      "validated_by": "view_.succ(m_book, m_end)",
+      "validates": [
+        "Checks if there is a next directory page (first_page) at or worse than current quality",
+        "If not found, step() returns false"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (continues loop)",
+      "field": "directory entry existence",
+      "location": "BookTip::step",
+      "validated_by": "dirFirst(view_, *first_page, dir, di, m_index)",
+      "validates": [
+        "Checks if the directory (first_page) contains at least one offer entry",
+        "If not, advances to next directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (m_entry may be nullptr)",
+      "field": "m_entry (offer existence)",
+      "location": "BookTip::step",
+      "validated_by": "view_.peek(keylet::offer(m_index))",
+      "validates": [
+        "Checks if the offer entry exists in the ledger for the given index"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (conditional logic)",
+      "field": "m_valid (internal state)",
+      "location": "BookTip::step",
+      "validated_by": "if (m_valid)",
+      "validates": [
+        "Checks if the current BookTip state is valid before attempting to delete an offer"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (conditional logic)",
+      "field": "m_entry (pointer validity)",
+      "location": "BookTip::step",
+      "validated_by": "if (m_entry)",
+      "validates": [
+        "Checks if m_entry is not nullptr before calling offerDelete"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

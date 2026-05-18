@@ -1,0 +1,669 @@
+{
+  "args": [
+    {
+      "lineno": 30,
+      "name": "handler"
+    },
+    {
+      "lineno": 30,
+      "name": "impl"
+    },
+    {
+      "lineno": 49,
+      "name": "name"
+    },
+    {
+      "lineno": 49,
+      "name": "impl"
+    },
+    {
+      "lineno": 76,
+      "name": "name"
+    },
+    {
+      "lineno": 76,
+      "name": "impl"
+    },
+    {
+      "lineno": 94,
+      "name": "name"
+    },
+    {
+      "lineno": 94,
+      "name": "impl"
+    },
+    {
+      "lineno": 121,
+      "name": "name"
+    },
+    {
+      "lineno": 121,
+      "name": "impl"
+    },
+    {
+      "lineno": 254,
+      "name": "address"
+    },
+    {
+      "lineno": 254,
+      "name": "prefix"
+    },
+    {
+      "lineno": 254,
+      "name": "journal"
+    },
+    {
+      "lineno": 265,
+      "name": "ep"
+    },
+    {
+      "lineno": 293,
+      "name": "handler"
+    },
+    {
+      "lineno": 298,
+      "name": "name"
+    },
+    {
+      "lineno": 303,
+      "name": "name"
+    },
+    {
+      "lineno": 308,
+      "name": "name"
+    },
+    {
+      "lineno": 313,
+      "name": "name"
+    },
+    {
+      "lineno": 319,
+      "name": "metric"
+    },
+    {
+      "lineno": 324,
+      "name": "metric"
+    },
+    {
+      "lineno": 337,
+      "name": "buffer"
+    },
+    {
+      "lineno": 341,
+      "name": "buffer"
+    },
+    {
+      "lineno": 350,
+      "name": "keepAlive"
+    },
+    {
+      "lineno": 350,
+      "name": "ec"
+    },
+    {
+      "lineno": 363,
+      "name": "buffers"
+    },
+    {
+      "lineno": 420,
+      "name": "ec"
+    },
+    {
+      "lineno": 498,
+      "name": "address"
+    },
+    {
+      "lineno": 498,
+      "name": "prefix"
+    },
+    {
+      "lineno": 498,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "StatsDMetricBase"
+    },
+    {
+      "args": [
+        "handler",
+        "impl"
+      ],
+      "lineno": 29,
+      "name": "StatsDHookImpl"
+    },
+    {
+      "args": [
+        "name",
+        "impl"
+      ],
+      "lineno": 48,
+      "name": "StatsDCounterImpl"
+    },
+    {
+      "args": [
+        "name",
+        "impl"
+      ],
+      "lineno": 75,
+      "name": "StatsDEventImpl"
+    },
+    {
+      "args": [
+        "name",
+        "impl"
+      ],
+      "lineno": 93,
+      "name": "StatsDGaugeImpl"
+    },
+    {
+      "args": [
+        "name",
+        "impl"
+      ],
+      "lineno": 120,
+      "name": "StatsDMeterImpl"
+    },
+    {
+      "args": [
+        "address",
+        "prefix",
+        "journal"
+      ],
+      "lineno": 253,
+      "name": "StatsDCollectorImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "StatsDCounterImpl::increment",
+        "StatsDCounterImpl::do_increment",
+        "StatsDCounterImpl::do_process"
+      ],
+      "entry_point": "StatsDCounterImpl::increment",
+      "purpose": "Handles incrementing a counter metric, marking it dirty, and processing it for StatsD export.",
+      "validation_points": [
+        "StatsDCounterImpl::do_increment (validates amount type and value)",
+        "StatsDCounterImpl::do_process (validates if m_dirty is true before processing)"
+      ]
+    },
+    {
+      "call_chain": [
+        "StatsDEventImpl::notify",
+        "StatsDEventImpl::do_notify",
+        "StatsDEventImpl::do_process"
+      ],
+      "entry_point": "StatsDEventImpl::notify",
+      "purpose": "Handles event notification, passing event value through to processing.",
+      "validation_points": [
+        "StatsDEventImpl::do_notify (validates event value type/format)",
+        "StatsDEventImpl::do_process (validates event state before processing)"
+      ]
+    },
+    {
+      "call_chain": [
+        "StatsDGaugeImpl::set",
+        "StatsDGaugeImpl::do_set",
+        "StatsDGaugeImpl::do_process"
+      ],
+      "entry_point": "StatsDGaugeImpl::set",
+      "purpose": "Sets a gauge metric to a specific value and processes it for StatsD export.",
+      "validation_points": [
+        "StatsDGaugeImpl::do_set (validates value type/range)",
+        "StatsDGaugeImpl::do_process (validates if value changed before processing)"
+      ]
+    },
+    {
+      "call_chain": [
+        "StatsDGaugeImpl::increment",
+        "StatsDGaugeImpl::do_increment",
+        "StatsDGaugeImpl::do_process"
+      ],
+      "entry_point": "StatsDGaugeImpl::increment",
+      "purpose": "Increments a gauge metric by a delta and processes it.",
+      "validation_points": [
+        "StatsDGaugeImpl::do_increment (validates increment amount type/range)",
+        "StatsDGaugeImpl::do_process (validates if value changed before processing)"
+      ]
+    },
+    {
+      "call_chain": [
+        "StatsDHookImpl::do_process"
+      ],
+      "entry_point": "StatsDHookImpl::do_process",
+      "purpose": "Processes a hook metric, typically invoking a handler.",
+      "validation_points": [
+        "StatsDHookImpl::do_process (validates handler state and arguments)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_value (StatsDCounterImpl)",
+      "flow": [
+        "constructor",
+        "increment() or do_increment() (adds amount)",
+        "do_process() (reads and possibly resets/exports value)"
+      ],
+      "origin": "Initialized to 0 in constructor",
+      "transformations": [
+        "Incremented by amount in do_increment",
+        "Marked dirty if changed",
+        "Flushed/exported in do_process"
+      ],
+      "validated_at": "do_increment (amount type/limits), do_process (dirty check)"
+    },
+    {
+      "field": "m_name (StatsDCounterImpl, StatsDEventImpl, StatsDGaugeImpl)",
+      "flow": [
+        "constructor",
+        "stored in member",
+        "used in do_process() for StatsD export"
+      ],
+      "origin": "Passed as constructor argument",
+      "transformations": [
+        "None (string copy)"
+      ],
+      "validated_at": "Constructor (may check for empty/invalid names, but not shown in snippet)"
+    },
+    {
+      "field": "m_impl (shared_ptr<StatsDCollectorImp>)",
+      "flow": [
+        "constructor",
+        "stored in member",
+        "used in do_process() to access collector implementation"
+      ],
+      "origin": "Passed as constructor argument",
+      "transformations": [
+        "None (shared_ptr copy)"
+      ],
+      "validated_at": "Constructor (may check for null, but not shown in snippet)"
+    },
+    {
+      "field": "value (StatsDGaugeImpl)",
+      "flow": [
+        "set() or increment()",
+        "do_set() or do_increment()",
+        "do_process()"
+      ],
+      "origin": "Argument to set() or increment()",
+      "transformations": [
+        "Set directly or incremented",
+        "Marked dirty if changed",
+        "Flushed/exported in do_process"
+      ],
+      "validated_at": "do_set/do_increment (type/range), do_process (dirty check)"
+    },
+    {
+      "field": "value (StatsDEventImpl)",
+      "flow": [
+        "notify()",
+        "do_notify()",
+        "do_process()"
+      ],
+      "origin": "Argument to notify()",
+      "transformations": [
+        "Passed through, possibly formatted for StatsD"
+      ],
+      "validated_at": "do_notify (type/format), do_process (event state)"
+    }
+  ],
+  "description": "Implements a StatsD metrics collector for the Beast insight framework, providing classes for counters, gauges, meters, events, and hooks that send metrics over UDP using Boost.Asio.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/insight/StatsDCollector.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "StatsDMetricBase::do_process"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "StatsDHookImpl::do_process"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 130,
+      "name": "StatsDCounterImpl::increment"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "StatsDCounterImpl::flush"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 139,
+      "name": "StatsDCounterImpl::do_increment"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "StatsDCounterImpl::do_process"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 163,
+      "name": "StatsDEventImpl::notify"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 167,
+      "name": "StatsDEventImpl::do_notify"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "StatsDEventImpl::do_process"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 191,
+      "name": "StatsDGaugeImpl::set"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 193,
+      "name": "StatsDGaugeImpl::increment"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "StatsDGaugeImpl::flush"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 201,
+      "name": "StatsDGaugeImpl::do_set"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 205,
+      "name": "StatsDGaugeImpl::do_increment"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "StatsDGaugeImpl::do_process"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 239,
+      "name": "StatsDMeterImpl::increment"
+    },
+    {
+      "args": [],
+      "lineno": 244,
+      "name": "StatsDMeterImpl::flush"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 248,
+      "name": "StatsDMeterImpl::do_increment"
+    },
+    {
+      "args": [],
+      "lineno": 250,
+      "name": "StatsDMeterImpl::do_process"
+    },
+    {
+      "args": [
+        "ep"
+      ],
+      "lineno": 266,
+      "name": "StatsDCollectorImp::to_endpoint"
+    },
+    {
+      "args": [
+        "handler"
+      ],
+      "lineno": 292,
+      "name": "StatsDCollectorImp::make_hook"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 297,
+      "name": "StatsDCollectorImp::make_counter"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 302,
+      "name": "StatsDCollectorImp::make_event"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 307,
+      "name": "StatsDCollectorImp::make_gauge"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 312,
+      "name": "StatsDCollectorImp::make_meter"
+    },
+    {
+      "args": [
+        "metric"
+      ],
+      "lineno": 318,
+      "name": "StatsDCollectorImp::add"
+    },
+    {
+      "args": [
+        "metric"
+      ],
+      "lineno": 323,
+      "name": "StatsDCollectorImp::remove"
+    },
+    {
+      "args": [],
+      "lineno": 328,
+      "name": "StatsDCollectorImp::get_io_context"
+    },
+    {
+      "args": [],
+      "lineno": 332,
+      "name": "StatsDCollectorImp::prefix"
+    },
+    {
+      "args": [
+        "buffer"
+      ],
+      "lineno": 336,
+      "name": "StatsDCollectorImp::do_post_buffer"
+    },
+    {
+      "args": [
+        "buffer"
+      ],
+      "lineno": 340,
+      "name": "StatsDCollectorImp::post_buffer"
+    },
+    {
+      "args": [
+        "keepAlive",
+        "ec",
+        ""
+      ],
+      "lineno": 349,
+      "name": "StatsDCollectorImp::on_send"
+    },
+    {
+      "args": [
+        "buffers"
+      ],
+      "lineno": 362,
+      "name": "StatsDCollectorImp::log"
+    },
+    {
+      "args": [],
+      "lineno": 374,
+      "name": "StatsDCollectorImp::send_buffers"
+    },
+    {
+      "args": [],
+      "lineno": 414,
+      "name": "StatsDCollectorImp::set_timer"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 419,
+      "name": "StatsDCollectorImp::on_timer"
+    },
+    {
+      "args": [],
+      "lineno": 438,
+      "name": "StatsDCollectorImp::run"
+    },
+    {
+      "args": [
+        "address",
+        "prefix",
+        "journal"
+      ],
+      "lineno": 497,
+      "name": "StatsDCollector::New"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "insight"
+    },
+    {
+      "lineno": 15,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is primarily implementation for metric collection and export. Typical test coverage would be in integration or unit tests for the insight/StatsDCollector, Counter, Gauge, and Event classes. Tests would likely exist in files such as test_beast_insight.cpp or similar, focusing on incrementing counters, setting gauges, and firing events. However, validation of input types/ranges is minimal in the code shown, and there is no explicit error handling for invalid names or null pointers in constructors. Edge cases (e.g., negative increments, invalid names, null impl) may not be fully tested unless covered in higher-level integration tests. There is no evidence of fuzz or property-based testing for malformed input.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

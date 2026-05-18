@@ -1,0 +1,46 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "journal"
+    },
+    {
+      "lineno": 27,
+      "name": "f"
+    },
+    {
+      "lineno": 74,
+      "name": "fee"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "journal"
+      ],
+      "lineno": 17,
+      "name": "LoadFeeTrack"
+    }
+  ],
+  "description": "Manages the current fee schedule for XRP transactions, including base, local, remote, and cluster fees, and provides utilities for scaling fees based on server load.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/LoadFeeTrack.h",
+  "functions": [
+    {
+      "args": [
+        "fee",
+        "feeTrack",
+        "fees",
+        "bUnlimited"
+      ],
+      "lineno": 87,
+      "name": "scaleFeeLoad"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

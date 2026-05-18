@@ -1,0 +1,105 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "T"
+    },
+    {
+      "lineno": 39,
+      "name": "Setup"
+    },
+    {
+      "lineno": 40,
+      "name": "Application"
+    },
+    {
+      "lineno": 41,
+      "name": "beast::Journal"
+    },
+    {
+      "lineno": 42,
+      "name": "std::function<void()>"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "T const& value",
+        "T&& value",
+        "Locked const& rhs",
+        "Locked&& rhs"
+      ],
+      "lineno": 13,
+      "name": "Locked"
+    },
+    {
+      "args": [
+        "Setup const& setup",
+        "Application& app",
+        "beast::Journal journal",
+        "std::function<void()>&& signalStop"
+      ],
+      "lineno": 38,
+      "name": "PerfLogImp"
+    },
+    {
+      "args": [
+        "std::set<char const*> const& labels",
+        "JobTypes const& jobTypes"
+      ],
+      "lineno": 44,
+      "name": "Counters"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "Rpc"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "Jq"
+    }
+  ],
+  "description": "Defines the PerfLogImp class, an implementation of PerfLog for tracking and logging performance counters and currently executing tasks in the XRPL application.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/perflog/detail/PerfLogImp.h",
+  "functions": [
+    {
+      "args": [
+        "std::string const& method",
+        "std::uint64_t const requestId"
+      ],
+      "lineno": 97,
+      "name": "rpcFinish"
+    },
+    {
+      "args": [
+        "std::string const& method",
+        "std::uint64_t const requestId"
+      ],
+      "lineno": 102,
+      "name": "rpcError"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "countersJson"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "currentJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "perf"
+    }
+  ]
+}

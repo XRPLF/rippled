@@ -1,0 +1,69 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "names"
+    },
+    {
+      "lineno": 27,
+      "name": "handler"
+    },
+    {
+      "lineno": 32,
+      "name": "names"
+    },
+    {
+      "lineno": 32,
+      "name": "handler"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Resolver"
+    }
+  ],
+  "description": "Defines the xrpl::Resolver abstract class for asynchronous and synchronous DNS resolution, including start/stop and resolve methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Resolver.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "stop_async"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "start"
+    },
+    {
+      "args": [
+        "names",
+        "handler"
+      ],
+      "lineno": 27,
+      "name": "resolve"
+    },
+    {
+      "args": [
+        "names",
+        "handler"
+      ],
+      "lineno": 32,
+      "name": "resolve"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

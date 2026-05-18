@@ -1,0 +1,625 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "amount"
+    },
+    {
+      "lineno": 29,
+      "name": "asset1"
+    },
+    {
+      "lineno": 29,
+      "name": "asset2"
+    },
+    {
+      "lineno": 29,
+      "name": "lptIssue"
+    },
+    {
+      "lineno": 38,
+      "name": "asset1Balance"
+    },
+    {
+      "lineno": 38,
+      "name": "asset1Deposit"
+    },
+    {
+      "lineno": 38,
+      "name": "lptAMMBalance"
+    },
+    {
+      "lineno": 38,
+      "name": "tfee"
+    },
+    {
+      "lineno": 49,
+      "name": "lpTokens"
+    },
+    {
+      "lineno": 61,
+      "name": "asset1Withdraw"
+    },
+    {
+      "lineno": 74,
+      "name": "assetBalance"
+    },
+    {
+      "lineno": 87,
+      "name": "calcQuality"
+    },
+    {
+      "lineno": 87,
+      "name": "reqQuality"
+    },
+    {
+      "lineno": 87,
+      "name": "dist"
+    },
+    {
+      "lineno": 102,
+      "name": "calc"
+    },
+    {
+      "lineno": 102,
+      "name": "req"
+    },
+    {
+      "lineno": 102,
+      "name": "Amt"
+    },
+    {
+      "lineno": 117,
+      "name": "a"
+    },
+    {
+      "lineno": 117,
+      "name": "b"
+    },
+    {
+      "lineno": 117,
+      "name": "c"
+    },
+    {
+      "lineno": 132,
+      "name": "pool"
+    },
+    {
+      "lineno": 132,
+      "name": "targetQuality"
+    },
+    {
+      "lineno": 132,
+      "name": "tfee"
+    },
+    {
+      "lineno": 132,
+      "name": "TIn"
+    },
+    {
+      "lineno": 132,
+      "name": "TOut"
+    },
+    {
+      "lineno": 249,
+      "name": "quality"
+    },
+    {
+      "lineno": 249,
+      "name": "rules"
+    },
+    {
+      "lineno": 249,
+      "name": "j"
+    },
+    {
+      "lineno": 340,
+      "name": "assetIn"
+    },
+    {
+      "lineno": 387,
+      "name": "assetOut"
+    },
+    {
+      "lineno": 434,
+      "name": "n"
+    },
+    {
+      "lineno": 445,
+      "name": "isDeposit"
+    },
+    {
+      "lineno": 457,
+      "name": "amountBalance"
+    },
+    {
+      "lineno": 457,
+      "name": "amount"
+    },
+    {
+      "lineno": 457,
+      "name": "amount2"
+    },
+    {
+      "lineno": 476,
+      "name": "frac"
+    },
+    {
+      "lineno": 476,
+      "name": "rm"
+    },
+    {
+      "lineno": 511,
+      "name": "noRoundCb"
+    },
+    {
+      "lineno": 496,
+      "name": "balance"
+    },
+    {
+      "lineno": 511,
+      "name": "productCb"
+    },
+    {
+      "lineno": 527,
+      "name": "tokens"
+    },
+    {
+      "lineno": 527,
+      "name": "lptAMMBalance"
+    },
+    {
+      "lineno": 576,
+      "name": "view"
+    },
+    {
+      "lineno": 576,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 576,
+      "name": "freezeHandling"
+    },
+    {
+      "lineno": 576,
+      "name": "authHandling"
+    },
+    {
+      "lineno": 587,
+      "name": "optAsset1"
+    },
+    {
+      "lineno": 587,
+      "name": "optAsset2"
+    },
+    {
+      "lineno": 587,
+      "name": "ammSle"
+    },
+    {
+      "lineno": 597,
+      "name": "asset1"
+    },
+    {
+      "lineno": 597,
+      "name": "asset2"
+    },
+    {
+      "lineno": 597,
+      "name": "ammAccount"
+    },
+    {
+      "lineno": 597,
+      "name": "lpAccount"
+    },
+    {
+      "lineno": 610,
+      "name": "account"
+    },
+    {
+      "lineno": 616,
+      "name": "asset"
+    },
+    {
+      "lineno": 646,
+      "name": "sb"
+    },
+    {
+      "lineno": 637,
+      "name": "ammIssue"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides functions and utilities for Automated Market Maker (AMM) operations in the XRPL (XRP Ledger) codebase, including calculations for liquidity pool tokens, asset swaps, rounding, fee handling, and AMM pool state management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/AMMHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 15,
+      "name": "reduceOffer"
+    },
+    {
+      "args": [
+        "asset1",
+        "asset2",
+        "lptIssue"
+      ],
+      "lineno": 29,
+      "name": "ammLPTokens"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "asset1Deposit",
+        "lptAMMBalance",
+        "tfee"
+      ],
+      "lineno": 38,
+      "name": "lpTokensOut"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee"
+      ],
+      "lineno": 49,
+      "name": "ammAssetIn"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "asset1Withdraw",
+        "lptAMMBalance",
+        "tfee"
+      ],
+      "lineno": 61,
+      "name": "lpTokensIn"
+    },
+    {
+      "args": [
+        "assetBalance",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee"
+      ],
+      "lineno": 74,
+      "name": "ammAssetOut"
+    },
+    {
+      "args": [
+        "calcQuality",
+        "reqQuality",
+        "dist"
+      ],
+      "lineno": 87,
+      "name": "withinRelativeDistance"
+    },
+    {
+      "args": [
+        "calc",
+        "req",
+        "dist"
+      ],
+      "lineno": 102,
+      "name": "withinRelativeDistance"
+    },
+    {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lineno": 117,
+      "name": "solveQuadraticEqSmallest"
+    },
+    {
+      "args": [
+        "pool",
+        "targetQuality",
+        "tfee"
+      ],
+      "lineno": 132,
+      "name": "getAMMOfferStartWithTakerGets"
+    },
+    {
+      "args": [
+        "pool",
+        "targetQuality",
+        "tfee"
+      ],
+      "lineno": 191,
+      "name": "getAMMOfferStartWithTakerPays"
+    },
+    {
+      "args": [
+        "pool",
+        "quality",
+        "tfee",
+        "rules",
+        "j"
+      ],
+      "lineno": 249,
+      "name": "changeSpotPriceQuality"
+    },
+    {
+      "args": [
+        "pool",
+        "assetIn",
+        "tfee"
+      ],
+      "lineno": 340,
+      "name": "swapAssetIn"
+    },
+    {
+      "args": [
+        "pool",
+        "assetOut",
+        "tfee"
+      ],
+      "lineno": 387,
+      "name": "swapAssetOut"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 434,
+      "name": "square"
+    },
+    {
+      "args": [
+        "lptAMMBalance",
+        "lpTokens",
+        "isDeposit"
+      ],
+      "lineno": 445,
+      "name": "adjustLPTokens"
+    },
+    {
+      "args": [
+        "amountBalance",
+        "amount",
+        "amount2",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee",
+        "isDeposit"
+      ],
+      "lineno": 457,
+      "name": "adjustAmountsByLPTokens"
+    },
+    {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lineno": 474,
+      "name": "solveQuadraticEq"
+    },
+    {
+      "args": [
+        "amount",
+        "frac",
+        "rm"
+      ],
+      "lineno": 476,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "isDeposit"
+      ],
+      "lineno": 481,
+      "name": "getLPTokenRounding"
+    },
+    {
+      "args": [
+        "isDeposit"
+      ],
+      "lineno": 488,
+      "name": "getAssetRounding"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "frac",
+        "isDeposit"
+      ],
+      "lineno": 496,
+      "name": "getRoundedAsset"
+    },
+    {
+      "args": [
+        "rules",
+        "noRoundCb",
+        "balance",
+        "productCb",
+        "isDeposit"
+      ],
+      "lineno": 511,
+      "name": "getRoundedAsset"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "frac",
+        "isDeposit"
+      ],
+      "lineno": 527,
+      "name": "getRoundedLPTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "noRoundCb",
+        "lptAMMBalance",
+        "productCb",
+        "isDeposit"
+      ],
+      "lineno": 537,
+      "name": "getRoundedLPTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "amount",
+        "lptAMMBalance",
+        "tokens",
+        "tfee"
+      ],
+      "lineno": 553,
+      "name": "adjustAssetInByTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "amount",
+        "lptAMMBalance",
+        "tokens",
+        "tfee"
+      ],
+      "lineno": 560,
+      "name": "adjustAssetOutByTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "lptAMMBalance",
+        "tokens",
+        "frac"
+      ],
+      "lineno": 569,
+      "name": "adjustFracByTokens"
+    },
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "asset1",
+        "asset2",
+        "freezeHandling",
+        "authHandling",
+        "j"
+      ],
+      "lineno": 576,
+      "name": "ammPoolHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "optAsset1",
+        "optAsset2",
+        "freezeHandling",
+        "authHandling",
+        "j"
+      ],
+      "lineno": 587,
+      "name": "ammHolds"
+    },
+    {
+      "args": [
+        "view",
+        "asset1",
+        "asset2",
+        "ammAccount",
+        "lpAccount",
+        "j"
+      ],
+      "lineno": 597,
+      "name": "ammLPHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "lpAccount",
+        "j"
+      ],
+      "lineno": 604,
+      "name": "ammLPHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "account"
+      ],
+      "lineno": 610,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "asset"
+      ],
+      "lineno": 616,
+      "name": "ammAccountHolds"
+    },
+    {
+      "args": [
+        "view",
+        "asset",
+        "asset2",
+        "j"
+      ],
+      "lineno": 622,
+      "name": "deleteAMMAccount"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "account",
+        "lptAsset",
+        "tfee"
+      ],
+      "lineno": 629,
+      "name": "initializeFeeAuctionVote"
+    },
+    {
+      "args": [
+        "view",
+        "ammIssue",
+        "lpAccount"
+      ],
+      "lineno": 637,
+      "name": "isOnlyLiquidityProvider"
+    },
+    {
+      "args": [
+        "sb",
+        "lpTokens",
+        "ammSle",
+        "account"
+      ],
+      "lineno": 646,
+      "name": "verifyAndAdjustLPTokenBalance"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "detail"
+    },
+    {
+      "lineno": 480,
+      "name": "detail"
+    }
+  ]
+}

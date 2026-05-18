@@ -1,0 +1,41 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "fetchType_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "FetchType fetchType_"
+      ],
+      "lineno": 13,
+      "name": "FetchReport"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "BatchWriteReport"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "Scheduler"
+    }
+  ],
+  "description": "Defines scheduling and reporting interfaces and data structures for asynchronous backend activity in the NodeStore, including fetch and batch write reporting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Scheduler.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "NodeStore"
+    }
+  ]
+}

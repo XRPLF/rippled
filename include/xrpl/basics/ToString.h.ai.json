@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "t"
+    },
+    {
+      "lineno": 21,
+      "name": "b"
+    },
+    {
+      "lineno": 26,
+      "name": "c"
+    },
+    {
+      "lineno": 31,
+      "name": "s"
+    },
+    {
+      "lineno": 36,
+      "name": "s"
+    }
+  ],
+  "classes": [],
+  "description": "Provides generalized to_string functions in the xrpl namespace to handle various types (arithmetic, bool, char, std::string, const char*), extending std::to_string.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/ToString.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 15,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "b"
+      ],
+      "lineno": 21,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 26,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 31,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 36,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

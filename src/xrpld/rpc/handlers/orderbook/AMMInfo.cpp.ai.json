@@ -1,0 +1,498 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "v"
+    },
+    {
+      "lineno": 11,
+      "name": "j"
+    },
+    {
+      "lineno": 21,
+      "name": "tp"
+    },
+    {
+      "lineno": 29,
+      "name": "context"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "ValuesFromContextParams"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAMMInfo",
+        "getValuesFromContextParams (lambda)",
+        "getAsset",
+        "assetFromJson"
+      ],
+      "entry_point": "doAMMInfo",
+      "purpose": "Handles the AMM info RPC request, validates and parses input parameters, fetches ledger data, and returns AMM info.",
+      "validation_points": [
+        "invalid lambda (parameter combination validation)",
+        "getAsset (calls assetFromJson, validates asset fields)",
+        "parseBase58<AccountID> (validates amm_account and account fields)",
+        "ledger->read(keylet::account(*id)) (checks existence of accounts in ledger)",
+        "ammID->isZero() (checks AMM existence)",
+        "XRPL_ASSERT (internal consistency check for asset/ammID presence)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "asset",
+      "flow": [
+        "context.params[jss::asset]",
+        "getAsset",
+        "assetFromJson",
+        "asset1 (local variable)",
+        "keylet::amm(*asset1, *asset2) or further logic"
+      ],
+      "origin": "context.params[jss::asset]",
+      "transformations": [
+        "JSON \u2192 Asset object via assetFromJson"
+      ],
+      "validated_at": "getAsset (calls assetFromJson, catches exceptions)"
+    },
+    {
+      "field": "asset2",
+      "flow": [
+        "context.params[jss::asset2]",
+        "getAsset",
+        "assetFromJson",
+        "asset2 (local variable)",
+        "keylet::amm(*asset1, *asset2) or further logic"
+      ],
+      "origin": "context.params[jss::asset2]",
+      "transformations": [
+        "JSON \u2192 Asset object via assetFromJson"
+      ],
+      "validated_at": "getAsset (calls assetFromJson, catches exceptions)"
+    },
+    {
+      "field": "amm_account",
+      "flow": [
+        "context.params[jss::amm_account]",
+        "parseBase58<AccountID>",
+        "ledger->read(keylet::account(*id))",
+        "sle->getFieldH256(sfAMMID)",
+        "ammID"
+      ],
+      "origin": "context.params[jss::amm_account]",
+      "transformations": [
+        "Base58 string \u2192 AccountID",
+        "AccountID \u2192 SLE lookup",
+        "SLE \u2192 AMMID"
+      ],
+      "validated_at": "parseBase58<AccountID> (format), ledger->read (existence), ammID->isZero() (AMM existence)"
+    },
+    {
+      "field": "account",
+      "flow": [
+        "context.params[jss::account]",
+        "parseBase58<AccountID>",
+        "ledger->read(keylet::account(*accountID))"
+      ],
+      "origin": "context.params[jss::account]",
+      "transformations": [
+        "Base58 string \u2192 AccountID",
+        "AccountID \u2192 SLE lookup"
+      ],
+      "validated_at": "parseBase58<AccountID> (format), ledger->read (existence)"
+    },
+    {
+      "field": "params (combination)",
+      "flow": [
+        "context.params",
+        "invalid lambda",
+        "getValuesFromContextParams"
+      ],
+      "origin": "context.params",
+      "transformations": [
+        "Checks for valid combinations of asset/asset2/amm_account"
+      ],
+      "validated_at": "invalid lambda (before and after field extraction, depending on API version)"
+    }
+  ],
+  "description": "Implements the doAMMInfo RPC handler for the XRPL server, providing information about Automated Market Maker (AMM) pools, including asset balances, trading fees, auction slots, and vote slots, based on JSON RPC context parameters.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger (via RPC::lookupLedger)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger (via RPC::lookupLedger) validated by XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger)",
+      "issue_pattern": "Missing validation for ledger (via RPC::lookupLedger)",
+      "why_false_positive": "XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger) validates ledger (via RPC::lookupLedger) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "asset, asset2 (via assetFromJson in getAsset)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field asset, asset2 (via assetFromJson in getAsset) validated by XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger)",
+      "issue_pattern": "Missing validation for asset, asset2 (via assetFromJson in getAsset)",
+      "why_false_positive": "XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger) validates asset, asset2 (via assetFromJson in getAsset) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "amm_account (via parseBase58<AccountID>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field amm_account (via parseBase58<AccountID>) validated by XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger)",
+      "issue_pattern": "Missing validation for amm_account (via parseBase58<AccountID>)",
+      "why_false_positive": "XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger) validates amm_account (via parseBase58<AccountID>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "asset",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getAsset (calls assetFromJson) at getValuesFromContextParams (lambda in doAMMInfo)",
+      "issue_pattern": "Missing empty string validation for asset",
+      "why_false_positive": "getAsset (calls assetFromJson) validates asset for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getAsset (calls assetFromJson) at getValuesFromContextParams (lambda in doAMMInfo)",
+      "issue_pattern": "Missing empty string validation for asset2",
+      "why_false_positive": "getAsset (calls assetFromJson) validates asset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amm_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at getValuesFromContextParams (lambda in doAMMInfo)",
+      "issue_pattern": "Missing empty string validation for amm_account",
+      "why_false_positive": "parseBase58<AccountID> validates amm_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "amm_account (existence in ledger)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->read(keylet::account(*id)) at getValuesFromContextParams (lambda in doAMMInfo)",
+      "issue_pattern": "Missing empty string validation for amm_account (existence in ledger)",
+      "why_false_positive": "ledger->read(keylet::account(*id)) validates amm_account (existence in ledger) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params (combination of asset, asset2, amm_account)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalid lambda at getValuesFromContextParams (lambda in doAMMInfo)",
+      "issue_pattern": "Missing empty string validation for params (combination of asset, asset2, amm_account)",
+      "why_false_positive": "invalid lambda validates params (combination of asset, asset2, amm_account) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doAMMInfo",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "RPC::lookupLedger validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/AMMInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "Json::Value const& v",
+        "beast::Journal j"
+      ],
+      "lineno": 11,
+      "name": "getAsset"
+    },
+    {
+      "args": [
+        "NetClock::time_point tp"
+      ],
+      "lineno": 21,
+      "name": "to_iso8601"
+    },
+    {
+      "args": [
+        "RPC::JsonContext& context"
+      ],
+      "lineno": 29,
+      "name": "doAMMInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in the RPC handler test suites, such as 'test/rpc/AMMInfo_test.cpp', 'test/rpc/Orderbook_test.cpp', or similar files. These tests should cover valid and invalid combinations of asset, asset2, and amm_account, malformed asset/account fields, and missing/extra parameters. Gaps may exist if there are no tests for edge cases (e.g., both asset and amm_account present, malformed base58, non-existent accounts, or AMM not found). Exception handling in getAsset and error propagation from assetFromJson should be explicitly tested. If API versioning logic is not tested (apVersion < 3 vs >= 3), this is a potential gap.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger (via RPC::lookupLedger)",
+      "asset, asset2 (via assetFromJson in getAsset)",
+      "amm_account (via parseBase58<AccountID>)"
+    ],
+    "framework": "XRPL RPC framework (jss::, assetFromJson, parseBase58, RPC::lookupLedger)",
+    "validation_layer": "business_logic (in handler), some framework-level (RPC::lookupLedger, parseBase58)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcISSUE_MALFORMED (via Unexpected), logs std::runtime_error",
+      "field": "asset",
+      "location": "getValuesFromContextParams (lambda in doAMMInfo)",
+      "validated_by": "getAsset (calls assetFromJson)",
+      "validates": [
+        "Checks if 'asset' field is present",
+        "Parses 'asset' JSON to Asset object",
+        "Catches parsing errors (malformed/invalid asset format)"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcISSUE_MALFORMED (via Unexpected), logs std::runtime_error",
+      "field": "asset2",
+      "location": "getValuesFromContextParams (lambda in doAMMInfo)",
+      "validated_by": "getAsset (calls assetFromJson)",
+      "validates": [
+        "Checks if 'asset2' field is present",
+        "Parses 'asset2' JSON to Asset object",
+        "Catches parsing errors (malformed/invalid asset2 format)"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcACT_MALFORMED (via Unexpected)",
+      "field": "amm_account",
+      "location": "getValuesFromContextParams (lambda in doAMMInfo)",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "Checks if 'amm_account' field is present",
+        "Validates 'amm_account' is a valid base58 AccountID"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Not shown in snippet, but likely returns Unexpected or error if not found",
+      "field": "amm_account (existence in ledger)",
+      "location": "getValuesFromContextParams (lambda in doAMMInfo)",
+      "validated_by": "ledger->read(keylet::account(*id))",
+      "validates": [
+        "Checks if 'amm_account' exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcINVALID_PARAMS (via Unexpected)",
+      "field": "params (combination of asset, asset2, amm_account)",
+      "location": "getValuesFromContextParams (lambda in doAMMInfo)",
+      "validated_by": "invalid lambda",
+      "validates": [
+        "Checks that either both 'asset' and 'asset2' are present, or 'amm_account' is present, but not both",
+        "Ensures correct parameter combinations for API version < 3"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Returns error result if ledger not found",
+      "field": "ledger",
+      "location": "doAMMInfo",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "Checks that requested ledger exists and is accessible"
+      ],
+      "validation_type": "business_logic|existence"
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "pendSaveValidated",
+        "saveValidatedLedger"
+      ],
+      "entry_point": "pendSaveValidated",
+      "purpose": "Initiates the process to persist a validated ledger, either synchronously or via the job queue.",
+      "validation_points": [
+        "pendSaveValidated: registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED)",
+        "pendSaveValidated: XRPL_ASSERT(ledger->isImmutable(), ...)",
+        "pendSaveValidated: registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous)",
+        "saveValidatedLedger: registry.getPendingSaves().startWork(seq)"
+      ]
+    },
+    {
+      "call_chain": [
+        "saveValidatedLedger"
+      ],
+      "entry_point": "saveValidatedLedger",
+      "purpose": "Actually persists the ledger to the database if not already being saved.",
+      "validation_points": [
+        "saveValidatedLedger: registry.getPendingSaves().startWork(seq)"
+      ]
+    },
+    {
+      "call_chain": [
+        "loadLedgerHelper"
+      ],
+      "entry_point": "loadLedgerHelper",
+      "purpose": "Constructs a Ledger object from header and other parameters, sets loaded flag.",
+      "validation_points": [
+        "loadLedgerHelper: loaded flag after Ledger constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "getLatestLedger",
+        "loadLedgerHelper"
+      ],
+      "entry_point": "getLatestLedger",
+      "purpose": "Fetches the latest ledger from the database and constructs a Ledger object.",
+      "validation_points": [
+        "loadLedgerHelper: loaded flag after Ledger constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "loadByIndex",
+        "loadLedgerHelper"
+      ],
+      "entry_point": "loadByIndex",
+      "purpose": "Loads a ledger by its index from the database.",
+      "validation_points": [
+        "loadLedgerHelper: loaded flag after Ledger constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "loadByHash",
+        "loadLedgerHelper"
+      ],
+      "entry_point": "loadByHash",
+      "purpose": "Loads a ledger by its hash from the database.",
+      "validation_points": [
+        "loadLedgerHelper: loaded flag after Ledger constructor"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger->header().seq",
+      "flow": [
+        "LedgerHeader",
+        "ledger->header().seq",
+        "pendSaveValidated",
+        "registry.getPendingSaves().shouldWork / startWork / pending",
+        "saveValidatedLedger",
+        "registry.getPendingSaves().finishWork"
+      ],
+      "origin": "LedgerHeader (from database or constructed)",
+      "transformations": [
+        "Checked for pending/shouldWork/startWork to prevent duplicate saves"
+      ],
+      "validated_at": "pendSaveValidated (shouldWork), saveValidatedLedger (startWork)"
+    },
+    {
+      "field": "ledger->header().hash",
+      "flow": [
+        "LedgerHeader",
+        "ledger->header().hash",
+        "pendSaveValidated",
+        "registry.getHashRouter().setFlags"
+      ],
+      "origin": "LedgerHeader (from database or constructed)",
+      "transformations": [
+        "Flagged as SAVED in HashRouter to prevent duplicate saves"
+      ],
+      "validated_at": "pendSaveValidated (setFlags)"
+    },
+    {
+      "field": "ledger (object)",
+      "flow": [
+        "loadLedgerHelper",
+        "Ledger constructor",
+        "loaded flag set",
+        "used in pendSaveValidated/saveValidatedLedger"
+      ],
+      "origin": "Constructed via loadLedgerHelper or passed in",
+      "transformations": [
+        "Constructed, checked for loaded, possibly reset to nullptr"
+      ],
+      "validated_at": "loadLedgerHelper (loaded flag), pendSaveValidated (XRPL_ASSERT(ledger->isImmutable()))"
+    },
+    {
+      "field": "ledger->isImmutable()",
+      "flow": [
+        "Ledger object",
+        "pendSaveValidated",
+        "XRPL_ASSERT(ledger->isImmutable())"
+      ],
+      "origin": "Ledger object",
+      "transformations": [
+        "Checked for immutability before saving"
+      ],
+      "validated_at": "pendSaveValidated"
+    },
+    {
+      "field": "fees (Ledger fees)",
+      "flow": [
+        "LedgerHeader",
+        "loadLedgerHelper",
+        "finishLoadByIndexOrHash",
+        "ledger->read(keylet::fees())"
+      ],
+      "origin": "LedgerHeader or ledger->read(keylet::fees())",
+      "transformations": [
+        "Checked for presence if ledger seq >= XRP_LEDGER_EARLIEST_FEES"
+      ],
+      "validated_at": "finishLoadByIndexOrHash"
+    }
+  ],
+  "description": "Implements functions for saving and loading validated ledgers to and from persistent storage, using a service registry abstraction. Handles synchronous and asynchronous saving, and provides helpers for loading ledgers by index or hash.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger->header().seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "registry.getPendingSaves().startWork(seq) at saveValidatedLedger",
+      "issue_pattern": "Missing empty string validation for ledger->header().seq",
+      "why_false_positive": "registry.getPendingSaves().startWork(seq) validates ledger->header().seq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger->header().hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED) at pendSaveValidated",
+      "issue_pattern": "Missing empty string validation for ledger->header().hash",
+      "why_false_positive": "registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED) validates ledger->header().hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(ledger->isImmutable(), ...) at pendSaveValidated",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "XRPL_ASSERT(ledger->isImmutable(), ...) validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger->header().seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous) at pendSaveValidated",
+      "issue_pattern": "Missing empty string validation for ledger->header().seq",
+      "why_false_positive": "registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous) validates ledger->header().seq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loaded flag after Ledger constructor at loadLedgerHelper",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "loaded flag after Ledger constructor validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerPersistence.cpp",
+  "functions": [
+    {
+      "args": [
+        "registry",
+        "ledger",
+        "current"
+      ],
+      "lineno": 8,
+      "name": "saveValidatedLedger"
+    },
+    {
+      "args": [
+        "registry",
+        "ledger",
+        "isSynchronous",
+        "isCurrent"
+      ],
+      "lineno": 27,
+      "name": "pendSaveValidated"
+    },
+    {
+      "args": [
+        "info",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 62,
+      "name": "loadLedgerHelper"
+    },
+    {
+      "args": [
+        "ledger",
+        "j"
+      ],
+      "lineno": 78,
+      "name": "finishLoadByIndexOrHash"
+    },
+    {
+      "args": [
+        "rules",
+        "fees",
+        "registry"
+      ],
+      "lineno": 91,
+      "name": "getLatestLedger"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 99,
+      "name": "loadByIndex"
+    },
+    {
+      "args": [
+        "ledgerHash",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 113,
+      "name": "loadByHash"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The functions in LedgerPersistence.cpp are typically tested indirectly via higher-level ledger and persistence tests. Likely test files include LedgerPersistence_test.cpp, Ledger_test.cpp, and integration tests in the ledger or app/ledger test suites. Direct validation of the PendingSaves, HashRouter, and immutability checks may not be fully covered unless there are explicit unit tests for pendSaveValidated and saveValidatedLedger. Edge cases such as double saves, job queue failures, and immutability assertion failures may not be exhaustively tested. Test coverage for error paths (e.g., loaded flag false, database save failures) should be reviewed for completeness.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (returns true early, logs 'Save aborted')",
+      "field": "ledger->header().seq",
+      "location": "saveValidatedLedger",
+      "validated_by": "registry.getPendingSaves().startWork(seq)",
+      "validates": [
+        "Checks if work for this ledger sequence has already started or completed"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (returns true early, logs 'Double pend save')",
+      "field": "ledger->header().hash",
+      "location": "pendSaveValidated",
+      "validated_by": "registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED)",
+      "validates": [
+        "Checks if this ledger hash has already been flagged as SAVED"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts process or throws)",
+      "field": "ledger",
+      "location": "pendSaveValidated",
+      "validated_by": "XRPL_ASSERT(ledger->isImmutable(), ...)",
+      "validates": [
+        "Checks that the ledger is immutable before saving"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (returns true early, logs 'Pend save with seq in pending saves')",
+      "field": "ledger->header().seq",
+      "location": "pendSaveValidated",
+      "validated_by": "registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous)",
+      "validates": [
+        "Checks if work should be started for this ledger sequence (prevents duplicate work)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (resets pointer to null if not loaded)",
+      "field": "ledger",
+      "location": "loadLedgerHelper",
+      "validated_by": "loaded flag after Ledger constructor",
+      "validates": [
+        "Checks if ledger was successfully loaded (via loaded flag), resets pointer if not"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

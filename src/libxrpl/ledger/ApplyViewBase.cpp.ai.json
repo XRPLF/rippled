@@ -1,0 +1,454 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "base"
+    },
+    {
+      "lineno": 6,
+      "name": "flags"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 6,
+      "name": "ApplyViewBase"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyViewBase::exists",
+        "items_.exists(*base_, k)"
+      ],
+      "entry_point": "ApplyViewBase::exists",
+      "purpose": "Checks if a ledger entry exists for a given Keylet.",
+      "validation_points": [
+        "items_.exists(*base_, k) - likely validates the existence and possibly the integrity of the ledger entry."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::read",
+        "items_.read(*base_, k)"
+      ],
+      "entry_point": "ApplyViewBase::read",
+      "purpose": "Reads a ledger entry for a given Keylet.",
+      "validation_points": [
+        "items_.read(*base_, k) - likely validates the presence and correctness of the entry before returning."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::peek",
+        "items_.peek(*base_, k)"
+      ],
+      "entry_point": "ApplyViewBase::peek",
+      "purpose": "Peeks at a mutable ledger entry for a given Keylet.",
+      "validation_points": [
+        "items_.peek(*base_, k) - may validate mutability and existence."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::insert",
+        "items_.insert(*base_, sle)"
+      ],
+      "entry_point": "ApplyViewBase::insert",
+      "purpose": "Inserts a new ledger entry.",
+      "validation_points": [
+        "items_.insert(*base_, sle) - likely validates that the entry does not already exist and is well-formed."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::erase",
+        "items_.erase(*base_, sle)"
+      ],
+      "entry_point": "ApplyViewBase::erase",
+      "purpose": "Erases a ledger entry.",
+      "validation_points": [
+        "items_.erase(*base_, sle) - likely validates that the entry exists and can be erased."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::update",
+        "items_.update(*base_, sle)"
+      ],
+      "entry_point": "ApplyViewBase::update",
+      "purpose": "Updates an existing ledger entry.",
+      "validation_points": [
+        "items_.update(*base_, sle) - likely validates that the entry exists and the update is valid."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::rawInsert",
+        "items_.insert(*base_, sle)"
+      ],
+      "entry_point": "ApplyViewBase::rawInsert",
+      "purpose": "Inserts a ledger entry without higher-level checks (raw operation).",
+      "validation_points": [
+        "items_.insert(*base_, sle) - may skip some validation, but still checks for basic consistency."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyViewBase::rawErase",
+        "items_.rawErase(*base_, sle)"
+      ],
+      "entry_point": "ApplyViewBase::rawErase",
+      "purpose": "Erases a ledger entry without higher-level checks (raw operation).",
+      "validation_points": [
+        "items_.rawErase(*base_, sle) - may skip some validation, but still checks for basic consistency."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Keylet k",
+      "flow": [
+        "Function argument",
+        "items_.*(*base_, k)",
+        "Ledger entry lookup or modification"
+      ],
+      "origin": "Passed as argument to functions like exists, read, peek, insert, erase, update",
+      "transformations": [
+        "Used as a key to look up or modify ledger entries in items_"
+      ],
+      "validated_at": "Within items_.* methods (e.g., exists, read, insert, erase, update)"
+    },
+    {
+      "field": "std::shared_ptr<SLE> sle",
+      "flow": [
+        "Function argument",
+        "items_.*(*base_, sle)",
+        "Ledger entry modification"
+      ],
+      "origin": "Passed as argument to insert, erase, update, rawInsert, rawErase, rawReplace",
+      "transformations": [
+        "Inserted, erased, or updated in the ledger view"
+      ],
+      "validated_at": "Within items_.* methods (e.g., insert, erase, update, rawErase, rawReplace)"
+    },
+    {
+      "field": "ApplyFlags flags_",
+      "flow": [
+        "ApplyViewBase::ApplyViewBase",
+        "flags_ member variable",
+        "ApplyViewBase::flags()"
+      ],
+      "origin": "Constructor argument to ApplyViewBase",
+      "transformations": [
+        "Stored as member, returned as-is"
+      ],
+      "validated_at": "Not explicitly validated in this file"
+    },
+    {
+      "field": "ReadView const* base_",
+      "flow": [
+        "ApplyViewBase::ApplyViewBase",
+        "base_ member variable",
+        "Used in all methods as *base_"
+      ],
+      "origin": "Constructor argument to ApplyViewBase",
+      "transformations": [
+        "Used as the underlying ledger view for all operations"
+      ],
+      "validated_at": "Not explicitly validated in this file; assumed to be valid pointer"
+    },
+    {
+      "field": "LedgerHeader, Fees, Rules",
+      "flow": [
+        "ApplyViewBase::{header,fees,rules}()",
+        "base_->header()/fees()/rules()",
+        "Returned to caller"
+      ],
+      "origin": "base_->header(), base_->fees(), base_->rules()",
+      "transformations": [
+        "No transformation, just forwarding"
+      ],
+      "validated_at": "Validation (if any) occurs in base_ implementation"
+    }
+  ],
+  "description": "Implements the ApplyViewBase class, providing a base for ledger view modifications and access in the XRPL ledger, including methods for reading, writing, and iterating over ledger entries and transactions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/ApplyViewBase.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 6,
+      "name": "ApplyViewBase"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "header"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "rules"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 31,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 36,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 42,
+      "name": "read"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 57,
+      "name": "slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "txsEnd"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 72,
+      "name": "txExists"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 77,
+      "name": "txRead"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "flags"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 87,
+      "name": "peek"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 92,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 97,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 102,
+      "name": "update"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 108,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 113,
+      "name": "rawInsert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 118,
+      "name": "rawReplace"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 123,
+      "name": "rawDestroyXRP"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file is a low-level implementation and does not contain explicit validation logic; validation is delegated to the items_ object and the base_ ReadView. Test coverage for these methods is likely indirect, via higher-level ApplyView or transaction application tests. Typical test files would be in the rippled/test/ or xrpl/test/ directories, such as ApplyView_test.cpp, Ledger_test.cpp, or integration tests that exercise ledger modifications. Gaps: There may be limited direct unit tests for ApplyViewBase itself; most validation is tested via higher-level transaction/ledger tests. Direct tests for error handling (e.g., invalid pointers, malformed SLEs) may be missing unless specifically targeted in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

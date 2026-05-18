@@ -1,0 +1,505 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 25,
+      "name": "ctx"
+    },
+    {
+      "lineno": 56,
+      "name": "view"
+    },
+    {
+      "lineno": 56,
+      "name": "journal"
+    },
+    {
+      "lineno": 56,
+      "name": "args"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doApply",
+        "preflight",
+        "checkExtraFeatures",
+        "create"
+      ],
+      "entry_point": "doApply",
+      "purpose": "Processes an MPTokenIssuanceCreate transaction: validates input, checks feature flags, and creates the token issuance ledger entry.",
+      "validation_points": [
+        "preflight",
+        "checkExtraFeatures"
+      ]
+    },
+    {
+      "call_chain": [
+        "preflight"
+      ],
+      "entry_point": "preflight",
+      "purpose": "Performs all field-level and logical validations on the transaction before it is applied.",
+      "validation_points": [
+        "preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "checkExtraFeatures"
+      ],
+      "entry_point": "checkExtraFeatures",
+      "purpose": "Validates that certain fields are only present if the corresponding protocol features are enabled.",
+      "validation_points": [
+        "checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfMutableFlags",
+      "flow": [
+        "transaction input",
+        "preflight (validation: must be present and nonzero, must match mask)",
+        "checkExtraFeatures (validation: featureDynamicMPT must be enabled if present)",
+        "create (written to ledger entry if present)"
+      ],
+      "origin": "ctx.tx[~sfMutableFlags] (transaction input)",
+      "transformations": [
+        "Checked for presence and value",
+        "Masked with tmfMPTokenIssuanceCreateMutableMask"
+      ],
+      "validated_at": "preflight, checkExtraFeatures"
+    },
+    {
+      "field": "sfTransferFee",
+      "flow": [
+        "transaction input",
+        "preflight (validation: must not exceed maxTransferFee, if >0 tfMPTCanTransfer must be set)",
+        "create (written to ledger entry if present)"
+      ],
+      "origin": "ctx.tx[~sfTransferFee] (transaction input)",
+      "transformations": [
+        "Checked for value and flag dependency"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "transaction input",
+        "preflight (validation: must not be zero, tfMPTRequireAuth must be set if present)",
+        "checkExtraFeatures (validation: featurePermissionedDomains and featureSingleAssetVault must be enabled if present)",
+        "create (written to ledger entry if present)"
+      ],
+      "origin": "ctx.tx[~sfDomainID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Checked for flag dependency",
+        "Checked for feature enablement"
+      ],
+      "validated_at": "preflight, checkExtraFeatures"
+    },
+    {
+      "field": "sfMPTokenMetadata",
+      "flow": [
+        "transaction input",
+        "preflight (validation: must not be empty, must not exceed maxMPTokenMetadataLength)",
+        "create (written to ledger entry if present)"
+      ],
+      "origin": "ctx.tx[~sfMPTokenMetadata] (transaction input)",
+      "transformations": [
+        "Checked for length"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfMaximumAmount",
+      "flow": [
+        "transaction input",
+        "preflight (validation: must be >0, must not exceed maxMPTokenAmount, must fit in unsigned 63 bits)",
+        "create (written to ledger entry if present)"
+      ],
+      "origin": "ctx.tx[~sfMaximumAmount] (transaction input)",
+      "transformations": [
+        "Checked for range"
+      ],
+      "validated_at": "preflight"
+    }
+  ],
+  "description": "Implements the MPTokenIssuanceCreate transaction logic for creating multi-party token issuances on the XRPL, including preflight validation, feature checks, and ledger entry creation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMutableFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfMutableFlags",
+      "why_false_positive": "explicit check in code validates sfMutableFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfTransferFee",
+      "why_false_positive": "explicit check in code validates sfTransferFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTransferFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing range validation for sfTransferFee",
+      "why_false_positive": "explicit check in code validates sfTransferFee range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTransferFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfTransferFee",
+      "why_false_positive": "explicit check in code validates sfTransferFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "explicit check in code validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "explicit check in code validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMPTokenMetadata",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfMPTokenMetadata",
+      "why_false_positive": "explicit check in code validates sfMPTokenMetadata for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMaximumAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfMaximumAmount",
+      "why_false_positive": "explicit check in code validates sfMaximumAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfMaximumAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing range validation for sfMaximumAmount",
+      "why_false_positive": "explicit check in code validates sfMaximumAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID, sfMutableFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID, sfMutableFlags",
+      "why_false_positive": "explicit check in code validates sfDomainID, sfMutableFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "args.priorBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at create",
+      "issue_pattern": "Missing empty string validation for args.priorBalance",
+      "why_false_positive": "explicit check in code validates args.priorBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "args.account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at create",
+      "issue_pattern": "Missing empty string validation for args.account",
+      "why_false_positive": "explicit check in code validates args.account for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/MPTokenIssuanceCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "beast::Journal journal",
+        "MPTCreateArgs const& args"
+      ],
+      "lineno": 56,
+      "name": "create"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in preflight and checkExtraFeatures. Typical test coverage would be in unit/integration tests for MPTokenIssuanceCreate, likely found in files such as 'test/tx/MPTokenIssuanceCreate_test.cpp' or similar. These should test all validation branches: invalid/missing flags, excessive transfer fee, missing required flags, invalid domain ID, metadata length, and maximum amount. Gaps may exist if there are no tests for feature flag gating (checkExtraFeatures), or for edge cases like zero/overflow values. Coverage for create is less critical for validation, but should be tested for correct ledger entry creation. If no tests exist for feature flag combinations or for all error codes returned by preflight, those would be coverage gaps.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "sfMutableFlags",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "If sfMutableFlags is present, it must not be zero and must have at least one valid flag set (tmfMPTokenIssuanceCreateMutableMask)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_TRANSFER_FEE",
+      "field": "sfTransferFee",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "sfTransferFee must not exceed maxTransferFee"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfTransferFee",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "If sfTransferFee is non-zero, tfMPTCanTransfer flag must be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "sfDomainID must not be beast::zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "If sfDomainID is present, tfMPTRequireAuth flag must be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfMPTokenMetadata",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "sfMPTokenMetadata must not be empty",
+        "sfMPTokenMetadata length must not exceed maxMPTokenMetadataLength"
+      ],
+      "validation_type": "format|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfMaximumAmount",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "sfMaximumAmount must not be zero",
+        "sfMaximumAmount must not exceed maxMPTokenAmount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents transaction)",
+      "field": "sfDomainID, sfMutableFlags",
+      "location": "checkExtraFeatures",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "If sfDomainID is present, featurePermissionedDomains and featureSingleAssetVault must be enabled",
+        "If sfMutableFlags is present, featureDynamicMPT must be enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "args.priorBalance",
+      "location": "create",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "args.priorBalance must be >= account reserve for (OwnerCount + 1)"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "args.account",
+      "location": "create",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Account must exist in ledger"
+      ],
+      "validation_type": "type|existence"
+    }
+  ]
+}

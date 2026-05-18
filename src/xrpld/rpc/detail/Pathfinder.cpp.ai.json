@@ -1,0 +1,381 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "AccountCandidate"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "CostedPath"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "PathCost"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "findPaths",
+        "getPathLiquidity",
+        "computePathRanks",
+        "amountFromPathAsset",
+        "assetFromPathAsset"
+      ],
+      "entry_point": "findPaths",
+      "purpose": "Main pathfinding entry point. Accepts payment pathfinding requests, validates input, computes possible paths, ranks them, and estimates liquidity.",
+      "validation_points": [
+        "findPaths (input validation: source/destination accounts, amounts, currencies)",
+        "getPathLiquidity (validates path liquidity and drops trivial/no-liquidity paths)",
+        "amountFromPathAsset (validates asset/amount conversion)",
+        "assetFromPathAsset (validates asset structure)"
+      ]
+    },
+    {
+      "call_chain": [
+        "compareAccountCandidate"
+      ],
+      "entry_point": "compareAccountCandidate",
+      "purpose": "Sorts account candidates for pathfinding based on priority and account ID.",
+      "validation_points": [
+        "compareAccountCandidate (validates sort order, but not external input)"
+      ]
+    },
+    {
+      "call_chain": [
+        "pathTypeToString"
+      ],
+      "entry_point": "pathTypeToString",
+      "purpose": "Converts internal path type enum to string for logging/debugging.",
+      "validation_points": [
+        "pathTypeToString (validates enum values, but not external input)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Pathfinder::PathType",
+      "flow": [
+        "findPaths (input parsing)",
+        "pathTypeToString (for logging/debugging)",
+        "CostedPath (used for ranking and sorting paths)",
+        "computePathRanks (used for ranking)"
+      ],
+      "origin": "Constructed in findPaths based on input payment request",
+      "transformations": [
+        "Parsed from input, mapped to enum, converted to string, used for sorting"
+      ],
+      "validated_at": "findPaths (input parsing and enum mapping)"
+    },
+    {
+      "field": "AccountID",
+      "flow": [
+        "findPaths (input parsing)",
+        "AccountCandidate (wrapped for sorting)",
+        "compareAccountCandidate (used for sorting)"
+      ],
+      "origin": "Input from payment request (source/destination)",
+      "transformations": [
+        "Parsed from input, wrapped in AccountCandidate, sorted"
+      ],
+      "validated_at": "findPaths (input validation: checks for valid account IDs)"
+    },
+    {
+      "field": "Amount",
+      "flow": [
+        "findPaths (input parsing)",
+        "amountFromPathAsset (conversion/validation)",
+        "getPathLiquidity (liquidity estimation)",
+        "computePathRanks (ranking based on liquidity)"
+      ],
+      "origin": "Input from payment request",
+      "transformations": [
+        "Parsed from input, converted to internal representation, validated, used for calculations"
+      ],
+      "validated_at": "amountFromPathAsset (validates amount structure and value)"
+    }
+  ],
+  "description": "Implements the core pathfinding engine for the XRPL, providing algorithms to find, rank, and select payment paths between accounts and assets, considering liquidity, quality, and path constraints.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Pathfinder.cpp",
+  "functions": [
+    {
+      "args": [
+        "seq",
+        "first",
+        "second"
+      ],
+      "lineno": 27,
+      "name": "compareAccountCandidate"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 54,
+      "name": "pathTypeToString"
+    },
+    {
+      "args": [
+        "amount",
+        "maxPaths"
+      ],
+      "lineno": 77,
+      "name": "smallestUsefulAmount"
+    },
+    {
+      "args": [
+        "pathAsset",
+        "srcIssuer",
+        "srcAccount"
+      ],
+      "lineno": 82,
+      "name": "amountFromPathAsset"
+    },
+    {
+      "args": [
+        "pathAsset",
+        "account"
+      ],
+      "lineno": 91,
+      "name": "assetFromPathAsset"
+    },
+    {
+      "args": [
+        "searchLevel",
+        "continueCallback"
+      ],
+      "lineno": 120,
+      "name": "findPaths"
+    },
+    {
+      "args": [
+        "path",
+        "minDstAmount",
+        "amountOut",
+        "qualityOut"
+      ],
+      "lineno": 232,
+      "name": "getPathLiquidity"
+    },
+    {
+      "args": [
+        "maxPaths",
+        "continueCallback"
+      ],
+      "lineno": 282,
+      "name": "computePathRanks"
+    },
+    {
+      "args": [
+        "path"
+      ],
+      "lineno": 312,
+      "name": "isDefaultPath"
+    },
+    {
+      "args": [
+        "path"
+      ],
+      "lineno": 326,
+      "name": "removeIssuer"
+    },
+    {
+      "args": [
+        "maxPaths",
+        "paths",
+        "rankedPaths",
+        "continueCallback"
+      ],
+      "lineno": 338,
+      "name": "rankPaths"
+    },
+    {
+      "args": [
+        "maxPaths",
+        "fullLiquidityPath",
+        "extraPaths",
+        "srcIssuer",
+        "continueCallback"
+      ],
+      "lineno": 387,
+      "name": "getBestPaths"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 470,
+      "name": "issueMatchesOrigin"
+    },
+    {
+      "args": [
+        "pathAsset",
+        "account",
+        "direction",
+        "isDstAsset",
+        "dstAccount",
+        "continueCallback"
+      ],
+      "lineno": 478,
+      "name": "getPathsOut"
+    },
+    {
+      "args": [
+        "currentPaths",
+        "incompletePaths",
+        "addFlags",
+        "continueCallback"
+      ],
+      "lineno": 547,
+      "name": "addLinks"
+    },
+    {
+      "args": [
+        "pathType",
+        "continueCallback"
+      ],
+      "lineno": 557,
+      "name": "addPathsForType"
+    },
+    {
+      "args": [
+        "fromAccount",
+        "toAccount",
+        "currency"
+      ],
+      "lineno": 627,
+      "name": "isNoRipple"
+    },
+    {
+      "args": [
+        "currentPath"
+      ],
+      "lineno": 635,
+      "name": "isNoRippleOut"
+    },
+    {
+      "args": [
+        "pathSet",
+        "path"
+      ],
+      "lineno": 654,
+      "name": "addUniquePath"
+    },
+    {
+      "args": [
+        "currentPath",
+        "incompletePaths",
+        "addFlags",
+        "continueCallback"
+      ],
+      "lineno": 662,
+      "name": "addLink"
+    },
+    {
+      "args": [
+        "string"
+      ],
+      "lineno": 1002,
+      "name": "makePath"
+    },
+    {
+      "args": [
+        "type",
+        "costs"
+      ],
+      "lineno": 1027,
+      "name": "fillPaths"
+    },
+    {
+      "args": [],
+      "lineno": 1047,
+      "name": "initPathTable"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 112,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": ""
+    }
+  ],
+  "test_coverage_notes": "Pathfinder is a core component and is likely tested via high-level integration and unit tests. Typical test files would be in test/rpc/Pathfinder_test.cpp or similar, and possibly in test/paths/ or test/app/paths/. Tests likely cover valid/invalid path requests, edge cases (no liquidity, trivial paths), and sorting/ranking logic. Gaps may exist in deep validation of malformed input, rare path types, or error handling for unexpected enum values. Exception handling paths may not be fully covered.",
+  "validation_architecture": {},
+  "validations": []
+}

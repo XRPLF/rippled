@@ -1,0 +1,75 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 22,
+      "name": "LedgerEntryBase"
+    }
+  ],
+  "description": "Defines a base class LedgerEntryBase for type-safe, immutable wrappers around XRPL ledger entries, providing common field accessors and validation for serialized ledger entries (SLE).",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/LedgerEntryBase.h",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 27,
+      "name": "LedgerEntryBase"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "validate"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getKey"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getLedgerIndex"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "hasLedgerIndex"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "getLedgerEntryType"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "getFlags"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "getSle"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

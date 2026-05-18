@@ -1,0 +1,142 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "~CounterImpl"
+      ],
+      "entry_point": "~CounterImpl",
+      "purpose": "Destructor for CounterImpl; cleans up resources associated with a Counter metric.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "~EventImpl"
+      ],
+      "entry_point": "~EventImpl",
+      "purpose": "Destructor for EventImpl; cleans up resources associated with an Event metric.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "~GaugeImpl"
+      ],
+      "entry_point": "~GaugeImpl",
+      "purpose": "Destructor for GaugeImpl; cleans up resources associated with a Gauge metric.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "~MeterImpl"
+      ],
+      "entry_point": "~MeterImpl",
+      "purpose": "Destructor for MeterImpl; cleans up resources associated with a Meter metric.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "CounterImpl internal state",
+      "flow": [
+        "CounterImpl constructor",
+        "CounterImpl usage",
+        "~CounterImpl"
+      ],
+      "origin": "Constructed elsewhere (not in this file)",
+      "transformations": [
+        "May be incremented/decremented during usage; destroyed in destructor"
+      ],
+      "validated_at": null
+    },
+    {
+      "field": "EventImpl internal state",
+      "flow": [
+        "EventImpl constructor",
+        "EventImpl usage",
+        "~EventImpl"
+      ],
+      "origin": "Constructed elsewhere (not in this file)",
+      "transformations": [
+        "May be updated during event recording; destroyed in destructor"
+      ],
+      "validated_at": null
+    },
+    {
+      "field": "GaugeImpl internal state",
+      "flow": [
+        "GaugeImpl constructor",
+        "GaugeImpl usage",
+        "~GaugeImpl"
+      ],
+      "origin": "Constructed elsewhere (not in this file)",
+      "transformations": [
+        "May be set/updated during usage; destroyed in destructor"
+      ],
+      "validated_at": null
+    },
+    {
+      "field": "MeterImpl internal state",
+      "flow": [
+        "MeterImpl constructor",
+        "MeterImpl usage",
+        "~MeterImpl"
+      ],
+      "origin": "Constructed elsewhere (not in this file)",
+      "transformations": [
+        "May be updated during metering; destroyed in destructor"
+      ],
+      "validated_at": null
+    }
+  ],
+  "description": "This file defines default destructors for the CounterImpl, EventImpl, GaugeImpl, and MeterImpl classes within the beast::insight namespace.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/insight/Metric.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "~CounterImpl"
+    },
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "~EventImpl"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "~GaugeImpl"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~MeterImpl"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 6,
+      "name": "insight"
+    }
+  ],
+  "test_coverage_notes": "This file only contains defaulted destructors for metric implementation classes. There are no validation code paths or data transformations in this file. Validation, if any, would occur in the constructors or methods of CounterImpl, EventImpl, GaugeImpl, or MeterImpl, which are not present here. Test coverage for this file specifically is likely minimal or non-existent, as destructors with default implementations are rarely directly tested. Tests for metric behavior would be found in tests for the insight metrics subsystem, possibly in files like 'CounterImpl_test.cpp', 'EventImpl_test.cpp', etc., if they exist. No validation logic is present in this file, so there are no validation code paths or data flows to test here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

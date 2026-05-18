@@ -1,0 +1,748 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "clock",
+        "collector",
+        "peerSetBuilder"
+      ],
+      "lineno": 10,
+      "name": "InboundLedgersImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "acquire",
+        "doAcquire (lambda inside acquire)",
+        "XRPL_ASSERT (hash validation)",
+        "if (reason validation)",
+        "ScopedLockType sl(mLock)",
+        "if (stopping_ validation)",
+        "mLedgers.find(hash)",
+        "if (inbound->isFailed() validation)",
+        "if (!inbound->isComplete() validation)",
+        "inbound->getLedger()"
+      ],
+      "entry_point": "acquire",
+      "purpose": "Attempts to acquire a ledger by hash and sequence, validating input and internal state before returning the ledger or null.",
+      "validation_points": [
+        "XRPL_ASSERT (hash)",
+        "if (reason)",
+        "if (stopping_)",
+        "if (inbound->isFailed())",
+        "if (!inbound->isComplete())"
+      ]
+    },
+    {
+      "call_chain": [
+        "acquireAsync",
+        "pendingAcquires_.contains(hash)",
+        "pendingAcquires_.insert(hash)",
+        "acquire (calls above chain)",
+        "pendingAcquires_.erase(hash)"
+      ],
+      "entry_point": "acquireAsync",
+      "purpose": "Asynchronously attempts to acquire a ledger, ensuring only one concurrent acquire per hash, and handles exceptions.",
+      "validation_points": [
+        "acquire (see above for validations)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hash",
+      "flow": [
+        "acquire/acquireAsync parameter",
+        "doAcquire lambda",
+        "XRPL_ASSERT(hash.isNonZero())",
+        "mLedgers.find(hash)",
+        "inbound ledger construction or lookup",
+        "inbound->getLedger()"
+      ],
+      "origin": "Parameter to acquire/acquireAsync",
+      "transformations": [
+        "Checked for nonzero",
+        "Used as key in mLedgers",
+        "Passed to InboundLedger constructor"
+      ],
+      "validated_at": "XRPL_ASSERT(hash.isNonZero())"
+    },
+    {
+      "field": "reason",
+      "flow": [
+        "acquire/acquireAsync parameter",
+        "doAcquire lambda",
+        "if (reason != GENERIC && reason != CONSENSUS)",
+        "potential early return"
+      ],
+      "origin": "Parameter to acquire/acquireAsync",
+      "transformations": [
+        "Compared to enum values"
+      ],
+      "validated_at": "if (reason != GENERIC && reason != CONSENSUS)"
+    },
+    {
+      "field": "stopping_",
+      "flow": [
+        "doAcquire lambda",
+        "ScopedLockType sl(mLock)",
+        "if (stopping_)",
+        "early return if true"
+      ],
+      "origin": "Member variable of InboundLedgersImp",
+      "transformations": [
+        "Checked for shutdown state"
+      ],
+      "validated_at": "if (stopping_)"
+    },
+    {
+      "field": "inbound",
+      "flow": [
+        "mLedgers.find(hash)",
+        "if not found, create new InboundLedger",
+        "inbound->isFailed()",
+        "inbound->update(seq) if not new",
+        "inbound->isComplete()",
+        "inbound->getLedger()"
+      ],
+      "origin": "Lookup or creation in mLedgers",
+      "transformations": [
+        "May be updated with new seq",
+        "May be initialized if new"
+      ],
+      "validated_at": [
+        "inbound->isFailed()",
+        "inbound->isComplete()"
+      ]
+    }
+  ],
+  "description": "Implements the InboundLedgers subsystem for managing the acquisition, caching, and failure tracking of ledgers received from the network in the XRPL node. Handles asynchronous acquisition, failure logging, fetch pack processing, and periodic sweeping of stale entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hash (via XRPL_ASSERT)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field hash (via XRPL_ASSERT) validated by XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+      "issue_pattern": "Missing validation for hash (via XRPL_ASSERT)",
+      "why_false_positive": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet) validates hash (via XRPL_ASSERT) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "reason (via business logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field reason (via business logic) validated by XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+      "issue_pattern": "Missing validation for reason (via business logic)",
+      "why_false_positive": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet) validates reason (via business logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stopping_ (via business logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field stopping_ (via business logic) validated by XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+      "issue_pattern": "Missing validation for stopping_ (via business logic)",
+      "why_false_positive": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet) validates stopping_ (via business logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inbound->isFailed() (via business logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field inbound->isFailed() (via business logic) validated by XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+      "issue_pattern": "Missing validation for inbound->isFailed() (via business logic)",
+      "why_false_positive": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet) validates inbound->isFailed() (via business logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inbound->isComplete() (via business logic)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field inbound->isComplete() (via business logic) validated by XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+      "issue_pattern": "Missing validation for inbound->isComplete() (via business logic)",
+      "why_false_positive": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet) validates inbound->isComplete() (via business logic) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at acquire (doAcquire lambda)",
+      "issue_pattern": "Missing empty string validation for hash",
+      "why_false_positive": "XRPL_ASSERT validates hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "reason",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-statement at acquire (doAcquire lambda)",
+      "issue_pattern": "Missing empty string validation for reason",
+      "why_false_positive": "explicit if-statement validates reason for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "stopping_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-statement at acquire (doAcquire lambda, inside lock)",
+      "issue_pattern": "Missing empty string validation for stopping_",
+      "why_false_positive": "explicit if-statement validates stopping_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inbound->isFailed()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-statement at acquire (doAcquire lambda)",
+      "issue_pattern": "Missing empty string validation for inbound->isFailed()",
+      "why_false_positive": "explicit if-statement validates inbound->isFailed() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inbound->isComplete()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-statement at acquire (doAcquire lambda)",
+      "issue_pattern": "Missing empty string validation for inbound->isComplete()",
+      "why_false_positive": "explicit if-statement validates inbound->isComplete() for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/InboundLedgers.cpp",
+  "functions": [
+    {
+      "args": [
+        "hash",
+        "seq",
+        "reason"
+      ],
+      "lineno": 38,
+      "name": "acquire"
+    },
+    {
+      "args": [
+        "hash",
+        "seq",
+        "reason"
+      ],
+      "lineno": 81,
+      "name": "acquireAsync"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 104,
+      "name": "find"
+    },
+    {
+      "args": [
+        "hash",
+        "peer",
+        "packet"
+      ],
+      "lineno": 126,
+      "name": "gotLedgerData"
+    },
+    {
+      "args": [
+        "h",
+        "seq"
+      ],
+      "lineno": 157,
+      "name": "logFailure"
+    },
+    {
+      "args": [
+        "h"
+      ],
+      "lineno": 163,
+      "name": "isFailure"
+    },
+    {
+      "args": [
+        "packet_ptr"
+      ],
+      "lineno": 176,
+      "name": "gotStaleData"
+    },
+    {
+      "args": [],
+      "lineno": 200,
+      "name": "clearFailures"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "fetchRate"
+    },
+    {
+      "args": [],
+      "lineno": 215,
+      "name": "onLedgerFetched"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "getInfo"
+    },
+    {
+      "args": [],
+      "lineno": 255,
+      "name": "gotFetchPack"
+    },
+    {
+      "args": [],
+      "lineno": 272,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 320,
+      "name": "cacheSize"
+    },
+    {
+      "args": [
+        "app",
+        "clock",
+        "collector"
+      ],
+      "lineno": 332,
+      "name": "make_InboundLedgers"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by integration and unit tests for ledger acquisition and network operations. Typical test files would be in the test/ or unit_test/ directories, such as InboundLedgers_test.cpp or LedgerMaster_test.cpp. However, the specific validation branches (e.g., hash zero, reason mismatch, stopping_ true, inbound->isFailed(), inbound->isComplete() false) may not all be directly tested unless there are explicit negative/edge case tests. Exception handling in acquireAsync may also lack direct test coverage. Template-based validation and XRPL_ASSERT may be tested indirectly via assertion failures in test runs.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "hash (via XRPL_ASSERT)",
+      "reason (via business logic)",
+      "stopping_ (via business logic)",
+      "inbound->isFailed() (via business logic)",
+      "inbound->isComplete() (via business logic)"
+    ],
+    "framework": "XRPL_ASSERT, explicit C++ logic, some jss:: for JSON elsewhere (not in this snippet)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort)",
+      "field": "hash",
+      "location": "acquire (doAcquire lambda)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "hash must be nonzero",
+        "calls hash.isNonZero()"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns empty shared_ptr (no exception)",
+      "field": "reason",
+      "location": "acquire (doAcquire lambda)",
+      "validated_by": "explicit if-statement",
+      "validates": [
+        "if app_.getOPs().isNeedNetworkLedger() is true, reason must be GENERIC or CONSENSUS",
+        "otherwise, returns {} (empty)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns empty shared_ptr (no exception)",
+      "field": "stopping_",
+      "location": "acquire (doAcquire lambda, inside lock)",
+      "validated_by": "explicit if-statement",
+      "validates": [
+        "if stopping_ is true, aborts acquisition"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns empty shared_ptr (no exception)",
+      "field": "inbound->isFailed()",
+      "location": "acquire (doAcquire lambda)",
+      "validated_by": "explicit if-statement",
+      "validates": [
+        "if inbound ledger is marked failed, aborts acquisition"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns empty shared_ptr (no exception)",
+      "field": "inbound->isComplete()",
+      "location": "acquire (doAcquire lambda)",
+      "validated_by": "explicit if-statement",
+      "validates": [
+        "if inbound ledger is not complete, aborts acquisition"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

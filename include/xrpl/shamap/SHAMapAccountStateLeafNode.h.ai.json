@@ -1,0 +1,72 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid"
+      ],
+      "lineno": 11,
+      "name": "SHAMapAccountStateLeafNode"
+    }
+  ],
+  "description": "Defines the SHAMapAccountStateLeafNode class, a specialized leaf node for state objects in the SHAMap structure, providing serialization and hash update logic for account state leaves.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapAccountStateLeafNode.h",
+  "functions": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid"
+      ],
+      "lineno": 13,
+      "name": "SHAMapAccountStateLeafNode"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid",
+        "SHAMapHash const& hash"
+      ],
+      "lineno": 18,
+      "name": "SHAMapAccountStateLeafNode"
+    },
+    {
+      "args": [
+        "std::uint32_t cowid"
+      ],
+      "lineno": 25,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "updateHash"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 42,
+      "name": "serializeForWire"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 48,
+      "name": "serializeWithPrefix"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

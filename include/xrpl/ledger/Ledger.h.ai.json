@@ -1,0 +1,418 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "rules"
+    },
+    {
+      "lineno": 45,
+      "name": "fees"
+    },
+    {
+      "lineno": 46,
+      "name": "amendments"
+    },
+    {
+      "lineno": 47,
+      "name": "family"
+    },
+    {
+      "lineno": 49,
+      "name": "info"
+    },
+    {
+      "lineno": 50,
+      "name": "loaded"
+    },
+    {
+      "lineno": 51,
+      "name": "acquire"
+    },
+    {
+      "lineno": 55,
+      "name": "j"
+    },
+    {
+      "lineno": 60,
+      "name": "previous"
+    },
+    {
+      "lineno": 61,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 65,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 170,
+      "name": "closeResolution"
+    },
+    {
+      "lineno": 171,
+      "name": "correctCloseTime"
+    },
+    {
+      "lineno": 172,
+      "name": "rehash"
+    },
+    {
+      "lineno": 192,
+      "name": "totDrops"
+    },
+    {
+      "lineno": 212,
+      "name": "sle"
+    },
+    {
+      "lineno": 219,
+      "name": "parallel"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "create_genesis_t"
+    },
+    {
+      "args": [
+        "Ledger const&",
+        "create_genesis_t, Rules const&, Fees const&, std::vector<uint256> const&, Family&",
+        "LedgerHeader const&, Rules const&, Family&",
+        "LedgerHeader const&, bool&, bool, Rules const&, Fees const&, Family&, beast::Journal",
+        "Ledger const&, NetClock::time_point",
+        "std::uint32_t, NetClock::time_point, Rules const&, Fees const&, Family&"
+      ],
+      "lineno": 27,
+      "name": "Ledger"
+    },
+    {
+      "args": [],
+      "lineno": 265,
+      "name": "sles_iter_impl"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "txs_iter_impl"
+    }
+  ],
+  "description": "Defines the Ledger class, which represents an XRP Ledger instance, managing state and transaction SHAMaps, ledger metadata, and providing interfaces for reading, writing, and manipulating ledger data. Also defines related types and utility functions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/Ledger.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "header"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info"
+      ],
+      "lineno": 82,
+      "name": "setLedgerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "rules"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 94,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 96,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "std::optional<uint256> const& last"
+      ],
+      "lineno": 98,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 101,
+      "name": "read"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 109,
+      "name": "slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "txsEnd"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 118,
+      "name": "txExists"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 120,
+      "name": "txRead"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 125,
+      "name": "digest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 130,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 133,
+      "name": "rawInsert"
+    },
+    {
+      "args": [
+        "uint256 const& key"
+      ],
+      "lineno": 135,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 137,
+      "name": "rawReplace"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 139,
+      "name": "rawDestroyXRP"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "std::shared_ptr<Serializer const> const& txn",
+        "std::shared_ptr<Serializer const> const& metaData"
+      ],
+      "lineno": 146,
+      "name": "rawTxInsert"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "std::shared_ptr<Serializer const> const& txn",
+        "std::shared_ptr<Serializer const> const& metaData"
+      ],
+      "lineno": 153,
+      "name": "rawTxInsertWithHash"
+    },
+    {
+      "args": [],
+      "lineno": 163,
+      "name": "setValidated"
+    },
+    {
+      "args": [
+        "NetClock::time_point closeTime",
+        "NetClock::duration closeResolution",
+        "bool correctCloseTime"
+      ],
+      "lineno": 168,
+      "name": "setAccepted"
+    },
+    {
+      "args": [
+        "bool rehash"
+      ],
+      "lineno": 172,
+      "name": "setImmutable"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "isImmutable"
+    },
+    {
+      "args": [],
+      "lineno": 182,
+      "name": "setFull"
+    },
+    {
+      "args": [
+        "std::uint64_t totDrops"
+      ],
+      "lineno": 192,
+      "name": "setTotalDrops"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "stateMap"
+    },
+    {
+      "args": [],
+      "lineno": 200,
+      "name": "stateMap"
+    },
+    {
+      "args": [],
+      "lineno": 204,
+      "name": "txMap"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "txMap"
+    },
+    {
+      "args": [
+        "SLE const& sle"
+      ],
+      "lineno": 212,
+      "name": "addSLE"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "updateSkipList"
+    },
+    {
+      "args": [
+        "beast::Journal j",
+        "bool parallel"
+      ],
+      "lineno": 219,
+      "name": "walkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "isSensible"
+    },
+    {
+      "args": [],
+      "lineno": 223,
+      "name": "invariants"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "unshare"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "negativeUNL"
+    },
+    {
+      "args": [],
+      "lineno": 237,
+      "name": "validatorToDisable"
+    },
+    {
+      "args": [],
+      "lineno": 244,
+      "name": "validatorToReEnable"
+    },
+    {
+      "args": [],
+      "lineno": 251,
+      "name": "updateNegativeUNL"
+    },
+    {
+      "args": [],
+      "lineno": 256,
+      "name": "isFlagLedger"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "isVotingLedger"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 262,
+      "name": "peek"
+    },
+    {
+      "args": [],
+      "lineno": 268,
+      "name": "setup"
+    },
+    {
+      "args": [
+        "SHAMapItem const& item"
+      ],
+      "lineno": 272,
+      "name": "deserializeTx"
+    },
+    {
+      "args": [
+        "SHAMapItem const& item"
+      ],
+      "lineno": 279,
+      "name": "deserializeTxPlusMeta"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

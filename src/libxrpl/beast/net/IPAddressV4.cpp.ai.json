@@ -1,0 +1,228 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "addr"
+    },
+    {
+      "lineno": 15,
+      "name": "addr"
+    },
+    {
+      "lineno": 21,
+      "name": "addr"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "is_private"
+      ],
+      "entry_point": "is_private(AddressV4 const& addr)",
+      "purpose": "Determines if an IPv4 address is in a private range or is loopback.",
+      "validation_points": [
+        "is_private (checks private ranges and loopback)"
+      ]
+    },
+    {
+      "call_chain": [
+        "is_public",
+        "is_private"
+      ],
+      "entry_point": "is_public(AddressV4 const& addr)",
+      "purpose": "Determines if an IPv4 address is public (not private and not multicast).",
+      "validation_points": [
+        "is_private (checks private/loopback)",
+        "is_public (checks multicast)"
+      ]
+    },
+    {
+      "call_chain": [
+        "get_class"
+      ],
+      "entry_point": "get_class(AddressV4 const& addr)",
+      "purpose": "Returns the class (A, B, C, D, etc.) of the IPv4 address.",
+      "validation_points": [
+        "get_class (classifies address by bitmask)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AddressV4::to_uint()",
+      "flow": [
+        "AddressV4 instance creation",
+        "to_uint() called in is_private/is_public/get_class",
+        "Bitmask operations for validation/classification",
+        "Result used to determine address type/class"
+      ],
+      "origin": "AddressV4 object, likely constructed from user input, config, or network data",
+      "transformations": [
+        "Converted from AddressV4 to uint32_t via to_uint()",
+        "Bitmasking to extract relevant bits for validation"
+      ],
+      "validated_at": "is_private, is_public, get_class"
+    },
+    {
+      "field": "AddressV4::is_loopback()",
+      "flow": [
+        "AddressV4 instance creation",
+        "is_loopback() called in is_private"
+      ],
+      "origin": "AddressV4 object",
+      "transformations": [
+        "Checks if address is in loopback range"
+      ],
+      "validated_at": "is_private"
+    },
+    {
+      "field": "AddressV4::is_multicast()",
+      "flow": [
+        "AddressV4 instance creation",
+        "is_multicast() called in is_public"
+      ],
+      "origin": "AddressV4 object",
+      "transformations": [
+        "Checks if address is in multicast range"
+      ],
+      "validated_at": "is_public"
+    }
+  ],
+  "description": "Provides utility functions for IPv4 address classification, such as checking if an address is private, public, or determining its class.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AddressV4 addr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_private (custom logic) at is_private",
+      "issue_pattern": "Missing empty string validation for AddressV4 addr",
+      "why_false_positive": "is_private (custom logic) validates AddressV4 addr for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AddressV4 addr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_public (custom logic) at is_public",
+      "issue_pattern": "Missing empty string validation for AddressV4 addr",
+      "why_false_positive": "is_public (custom logic) validates AddressV4 addr for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AddressV4 addr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_class (custom logic) at get_class",
+      "issue_pattern": "Missing empty string validation for AddressV4 addr",
+      "why_false_positive": "get_class (custom logic) validates AddressV4 addr for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/net/IPAddressV4.cpp",
+  "functions": [
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 5,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 14,
+      "name": "is_public"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 20,
+      "name": "get_class"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "beast"
+    },
+    {
+      "lineno": 4,
+      "name": "IP"
+    }
+  ],
+  "test_coverage_notes": "The code itself does not include tests. Typical test coverage would be in files like 'test/IPAddressV4_test.cpp' or similar in the test suite. Tests should cover: (1) private address detection (10.x.x.x, 172.16.x.x-172.31.x.x, 192.168.x.x, loopback), (2) public address detection (addresses outside private/multicast), (3) multicast detection, (4) class determination (A, B, C, D, etc.). Gaps may exist if edge cases (e.g., broadcast, reserved ranges, or malformed addresses) are not tested. If AddressV4 is constructed from untrusted input, fuzzing or negative tests are important but may not be present.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (custom logic, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns bool)",
+      "field": "AddressV4 addr",
+      "location": "is_private",
+      "validated_by": "is_private (custom logic)",
+      "validates": [
+        "Checks if addr is in private IPv4 ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)",
+        "Checks if addr is loopback"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns bool)",
+      "field": "AddressV4 addr",
+      "location": "is_public",
+      "validated_by": "is_public (custom logic)",
+      "validates": [
+        "Checks if addr is not private",
+        "Checks if addr is not multicast"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns char)",
+      "field": "AddressV4 addr",
+      "location": "get_class",
+      "validated_by": "get_class (custom logic)",
+      "validates": [
+        "Determines IPv4 class (A, B, C, D) based on high bits"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

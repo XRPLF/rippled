@@ -1,0 +1,48 @@
+{
+  "args": [
+    {
+      "lineno": 67,
+      "name": "lock"
+    },
+    {
+      "lineno": 67,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::atomic<T>& lock, int index"
+      ],
+      "lineno": 49,
+      "name": "packed_spinlock"
+    },
+    {
+      "args": [
+        "std::atomic<T>& lock"
+      ],
+      "lineno": 108,
+      "name": "spinlock"
+    }
+  ],
+  "description": "This file implements space-efficient spinlock and packed spinlock classes using atomic integers for use in the XRPL codebase, providing low-level locking primitives with architecture-specific optimizations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/spinlock.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "spin_pause"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 14,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 16,
+      "name": "detail"
+    }
+  ]
+}

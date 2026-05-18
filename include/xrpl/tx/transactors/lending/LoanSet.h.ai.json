@@ -1,0 +1,116 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 21,
+      "name": "ctx"
+    },
+    {
+      "lineno": 24,
+      "name": "ctx"
+    },
+    {
+      "lineno": 27,
+      "name": "view"
+    },
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 33,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanSet"
+    }
+  ],
+  "description": "Defines the LoanSet transactor class for handling loan-related transactions in the XRPL lending protocol, including configuration constants and transaction lifecycle methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/lending/LoanSet.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "LoanSet"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "checkSign"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 27,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "getValueFields"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 33,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "callback"
+    },
+    {
+      "lineno": 9,
+      "name": "perfLog"
+    },
+    {
+      "lineno": 10,
+      "name": "threadNames"
+    },
+    {
+      "lineno": 11,
+      "name": "numberOfThreads"
+    },
+    {
+      "lineno": 102,
+      "name": "workers"
+    },
+    {
+      "lineno": 102,
+      "name": "threadName"
+    },
+    {
+      "lineno": 102,
+      "name": "instance"
+    },
+    {
+      "lineno": 88,
+      "name": "stack"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Callback& callback",
+        "perf::PerfLog* perfLog",
+        "std::string const& threadNames",
+        "int numberOfThreads"
+      ],
+      "lineno": 7,
+      "name": "Workers"
+    },
+    {
+      "args": [
+        "Workers& workers",
+        "std::string const& threadName",
+        "int const instance"
+      ],
+      "lineno": 101,
+      "name": "Worker"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Workers::Workers",
+        "Workers::setNumberOfThreads"
+      ],
+      "entry_point": "Workers::Workers",
+      "purpose": "Constructs a Workers pool and sets up the initial number of threads.",
+      "validation_points": [
+        "Workers::setNumberOfThreads"
+      ]
+    },
+    {
+      "call_chain": [
+        "Workers::setNumberOfThreads"
+      ],
+      "entry_point": "Workers::setNumberOfThreads",
+      "purpose": "Adjusts the number of worker threads, either increasing or decreasing as needed.",
+      "validation_points": [
+        "Workers::setNumberOfThreads"
+      ]
+    },
+    {
+      "call_chain": [
+        "Workers::stop",
+        "Workers::setNumberOfThreads"
+      ],
+      "entry_point": "Workers::stop",
+      "purpose": "Stops all workers by setting thread count to zero and waiting for all to pause.",
+      "validation_points": [
+        "Workers::setNumberOfThreads"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "numberOfThreads",
+      "flow": [
+        "Workers::Workers (argument)",
+        "Workers::setNumberOfThreads (parameter)",
+        "m_numberOfThreads (class member)"
+      ],
+      "origin": "Constructor argument to Workers::Workers",
+      "transformations": [
+        "Compared to current m_numberOfThreads",
+        "If increased: new Worker objects created or paused workers reused",
+        "If decreased: m_pauseCount incremented, m_semaphore notified"
+      ],
+      "validated_at": "Workers::setNumberOfThreads (checks if value is different from current)"
+    },
+    {
+      "field": "m_numberOfThreads",
+      "flow": [
+        "Workers::setNumberOfThreads",
+        "Used in thread management logic (increase/decrease workers)",
+        "Used in Workers::getNumberOfThreads"
+      ],
+      "origin": "Set in Workers::setNumberOfThreads",
+      "transformations": [
+        "Updated to new value after thread pool adjustment"
+      ],
+      "validated_at": "Workers::setNumberOfThreads"
+    },
+    {
+      "field": "m_semaphore",
+      "flow": [
+        "Workers::setNumberOfThreads (notify when pausing threads)",
+        "Workers::addTask (notify to add work)"
+      ],
+      "origin": "Initialized in Workers constructor",
+      "transformations": [
+        "Notified to wake up threads for pausing or new tasks"
+      ],
+      "validated_at": "Not directly validated, but usage is controlled by thread management logic"
+    }
+  ],
+  "description": "Implements a thread pool (Workers) for managing and executing tasks concurrently, with support for dynamic resizing, pausing, and stopping worker threads. Includes worker thread lifecycle management and synchronization.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "numberOfThreads",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Workers::setNumberOfThreads at Workers::setNumberOfThreads",
+      "issue_pattern": "Missing empty string validation for numberOfThreads",
+      "why_false_positive": "Workers::setNumberOfThreads validates numberOfThreads for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/detail/Workers.cpp",
+  "functions": [
+    {
+      "args": [
+        "Callback& callback",
+        "perf::PerfLog* perfLog",
+        "std::string const& threadNames",
+        "int numberOfThreads"
+      ],
+      "lineno": 7,
+      "name": "Workers"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "~Workers"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "getNumberOfThreads"
+    },
+    {
+      "args": [
+        "int numberOfThreads"
+      ],
+      "lineno": 31,
+      "name": "setNumberOfThreads"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "addTask"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "numberOfCurrentlyRunningTasks"
+    },
+    {
+      "args": [
+        "beast::LockFreeStack<Worker>& stack"
+      ],
+      "lineno": 88,
+      "name": "deleteWorkers"
+    },
+    {
+      "args": [
+        "Workers& workers",
+        "std::string const& threadName",
+        "int const instance"
+      ],
+      "lineno": 101,
+      "name": "Worker"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "~Worker"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "notify"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "run"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in the provided code. Typically, this code would be tested by integration or unit tests in the XRPLF/rippled repository, possibly under test/unit/core/ or test/unit/detail/ directories. The main validation (numberOfThreads) is only checked for equality with the current value, not for range or invalid values (e.g., negative numbers), so edge cases may not be covered unless explicitly tested elsewhere. Test coverage gaps may include: negative or zero thread counts, rapid increase/decrease cycles, and thread pool exhaustion or race conditions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "numberOfThreads",
+      "location": "Workers::setNumberOfThreads",
+      "validated_by": "Workers::setNumberOfThreads",
+      "validates": [
+        "Checks if new numberOfThreads equals current m_numberOfThreads",
+        "If equal, function returns early and does not proceed"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

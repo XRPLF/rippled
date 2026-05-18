@@ -1,0 +1,410 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "DefaultValueAllocator"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Value::CZString::CZString(char const*, DuplicationPolicy)",
+        "valueAllocator()->makeMemberName(cstr)",
+        "DefaultValueAllocator::makeMemberName",
+        "DefaultValueAllocator::duplicateStringValue"
+      ],
+      "entry_point": "Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)",
+      "purpose": "Constructs a CZString, optionally duplicating the input string if requested.",
+      "validation_points": [
+        "duplicateStringValue: Validates and duplicates the input string (cstr)."
+      ]
+    },
+    {
+      "call_chain": [
+        "Value::CZString::CZString(CZString const&)",
+        "valueAllocator()->makeMemberName(other.cstr_)"
+      ],
+      "entry_point": "Value::CZString::CZString(CZString const& other)",
+      "purpose": "Copy constructor for CZString, duplicates string if needed.",
+      "validation_points": [
+        "duplicateStringValue: Validates and duplicates the input string (other.cstr_)."
+      ]
+    },
+    {
+      "call_chain": [
+        "Value::CZString::~CZString()",
+        "valueAllocator()->releaseMemberName(const_cast<char*>(cstr_))",
+        "DefaultValueAllocator::releaseMemberName",
+        "DefaultValueAllocator::releaseStringValue"
+      ],
+      "entry_point": "Value::CZString::~CZString()",
+      "purpose": "Destructor for CZString, releases memory if string was duplicated.",
+      "validation_points": [
+        "releaseStringValue: Validates pointer before freeing."
+      ]
+    },
+    {
+      "call_chain": [
+        "DefaultValueAllocator::makeMemberName",
+        "DefaultValueAllocator::duplicateStringValue"
+      ],
+      "entry_point": "DefaultValueAllocator::makeMemberName(char const* memberName)",
+      "purpose": "Duplicates a member name string.",
+      "validation_points": [
+        "duplicateStringValue: Validates and duplicates the input string (memberName)."
+      ]
+    },
+    {
+      "call_chain": [
+        "DefaultValueAllocator::releaseMemberName",
+        "DefaultValueAllocator::releaseStringValue"
+      ],
+      "entry_point": "DefaultValueAllocator::releaseMemberName(char* memberName)",
+      "purpose": "Releases a duplicated member name string.",
+      "validation_points": [
+        "releaseStringValue: Validates pointer before freeing."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "char const* value (string value)",
+      "flow": [
+        "Input to duplicateStringValue",
+        "Length determined (strlen if unknown)",
+        "malloc for new string",
+        "memcpy to new buffer",
+        "Returned as duplicated string"
+      ],
+      "origin": "Passed to duplicateStringValue (from makeMemberName or directly)",
+      "transformations": [
+        "String is duplicated (deep copy)",
+        "Null-terminated"
+      ],
+      "validated_at": "duplicateStringValue (checks for nullptr, length)"
+    },
+    {
+      "field": "char* value (string value)",
+      "flow": [
+        "Allocated in duplicateStringValue",
+        "Passed to releaseStringValue (via releaseMemberName)",
+        "free called if not nullptr"
+      ],
+      "origin": "Allocated by duplicateStringValue, passed to releaseStringValue",
+      "transformations": [
+        "Memory is freed"
+      ],
+      "validated_at": "releaseStringValue (checks for nullptr)"
+    },
+    {
+      "field": "char const* memberName",
+      "flow": [
+        "Input to makeMemberName",
+        "Passed to duplicateStringValue",
+        "Duplicated and returned"
+      ],
+      "origin": "Passed to makeMemberName",
+      "transformations": [
+        "String is duplicated"
+      ],
+      "validated_at": "duplicateStringValue"
+    },
+    {
+      "field": "char* memberName",
+      "flow": [
+        "Allocated in duplicateStringValue",
+        "Passed to releaseMemberName",
+        "Passed to releaseStringValue",
+        "Memory freed"
+      ],
+      "origin": "Allocated by makeMemberName/duplicateStringValue",
+      "transformations": [
+        "Memory is freed"
+      ],
+      "validated_at": "releaseStringValue"
+    },
+    {
+      "field": "char const* cstr (in CZString)",
+      "flow": [
+        "Input to CZString constructor",
+        "If duplication requested, passed to makeMemberName",
+        "Duplicated via duplicateStringValue",
+        "Stored in cstr_ field"
+      ],
+      "origin": "Passed to CZString constructor",
+      "transformations": [
+        "May be duplicated"
+      ],
+      "validated_at": "duplicateStringValue"
+    }
+  ],
+  "description": "Implements the core logic for the Json::Value class, which represents and manipulates JSON values of various types (null, int, uint, double, string, array, object, boolean) including memory management, type conversions, comparison, and accessors.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "char* and char const* pointers for null before use",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field char* and char const* pointers for null before use validated by Custom (no external validation framework detected)",
+      "issue_pattern": "Missing validation for char* and char const* pointers for null before use",
+      "why_false_positive": "Custom (no external validation framework detected) validates char* and char const* pointers for null before use automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "value (char const* value)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "duplicateStringValue at DefaultValueAllocator::duplicateStringValue",
+      "issue_pattern": "Missing empty string validation for value (char const* value)",
+      "why_false_positive": "duplicateStringValue validates value (char const* value) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "memberName (char const* memberName)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "makeMemberName at DefaultValueAllocator::makeMemberName",
+      "issue_pattern": "Missing empty string validation for memberName (char const* memberName)",
+      "why_false_positive": "makeMemberName validates memberName (char const* memberName) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "value (char* value)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "releaseStringValue at DefaultValueAllocator::releaseStringValue",
+      "issue_pattern": "Missing empty string validation for value (char* value)",
+      "why_false_positive": "releaseStringValue validates value (char* value) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "memberName (char* memberName)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "releaseMemberName at DefaultValueAllocator::releaseMemberName",
+      "issue_pattern": "Missing empty string validation for memberName (char* memberName)",
+      "why_false_positive": "releaseMemberName validates memberName (char* memberName) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cstr (char const* cstr)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Value::CZString constructor at Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)",
+      "issue_pattern": "Missing empty string validation for cstr (char const* cstr)",
+      "why_false_positive": "Value::CZString constructor validates cstr (char const* cstr) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "other.cstr_ (char const* cstr_ in copy constructor)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Value::CZString copy constructor at Value::CZString::CZString(CZString const& other)",
+      "issue_pattern": "Missing empty string validation for other.cstr_ (char const* cstr_ in copy constructor)",
+      "why_false_positive": "Value::CZString copy constructor validates other.cstr_ (char const* cstr_ in copy constructor) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/json_value.cpp",
+  "functions": [
+    {
+      "args": [
+        "char const* memberName"
+      ],
+      "lineno": 18,
+      "name": "makeMemberName"
+    },
+    {
+      "args": [
+        "char* memberName"
+      ],
+      "lineno": 23,
+      "name": "releaseMemberName"
+    },
+    {
+      "args": [
+        "char const* value",
+        "unsigned int length"
+      ],
+      "lineno": 28,
+      "name": "duplicateStringValue"
+    },
+    {
+      "args": [
+        "char* value"
+      ],
+      "lineno": 41,
+      "name": "releaseStringValue"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "valueAllocator"
+    },
+    {
+      "args": [
+        "Int i",
+        "UInt ui"
+      ],
+      "lineno": 210,
+      "name": "integerCmp"
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 220,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 266,
+      "name": "operator=="
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "The code is low-level and likely tested indirectly via higher-level JSON parsing and manipulation tests. Direct unit tests for DefaultValueAllocator, duplicateStringValue, releaseStringValue, and CZString constructors/destructors are not visible here. Test coverage may exist in files like 'json_value_test.cpp', 'json_test.cpp', or integration tests for JSON parsing. Gaps: No explicit tests for edge cases (null pointers, zero-length strings, double-free, etc.) are evident from this file alone.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "char* and char const* pointers for null before use"
+    ],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic (within allocator and constructor logic)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (null pointer handled gracefully)",
+      "field": "value (char const* value)",
+      "location": "DefaultValueAllocator::duplicateStringValue",
+      "validated_by": "duplicateStringValue",
+      "validates": [
+        "Checks if value is nullptr before calling strlen or memcpy",
+        "If value is nullptr, length is set to 0 and memcpy is skipped"
+      ],
+      "validation_type": "type|null-check"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (delegates to duplicateStringValue)",
+      "field": "memberName (char const* memberName)",
+      "location": "DefaultValueAllocator::makeMemberName",
+      "validated_by": "makeMemberName",
+      "validates": [
+        "Indirectly checks if memberName is nullptr via duplicateStringValue"
+      ],
+      "validation_type": "type|null-check (delegated)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (null pointer handled gracefully)",
+      "field": "value (char* value)",
+      "location": "DefaultValueAllocator::releaseStringValue",
+      "validated_by": "releaseStringValue",
+      "validates": [
+        "Checks if value is nullptr before calling free"
+      ],
+      "validation_type": "type|null-check"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (delegates to releaseStringValue)",
+      "field": "memberName (char* memberName)",
+      "location": "DefaultValueAllocator::releaseMemberName",
+      "validated_by": "releaseMemberName",
+      "validates": [
+        "Indirectly checks if memberName is nullptr via releaseStringValue"
+      ],
+      "validation_type": "type|null-check (delegated)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (delegates to makeMemberName)",
+      "field": "cstr (char const* cstr)",
+      "location": "Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)",
+      "validated_by": "Value::CZString constructor",
+      "validates": [
+        "Indirectly checks if cstr is nullptr via makeMemberName/duplicateStringValue"
+      ],
+      "validation_type": "type|null-check (delegated)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (delegates to makeMemberName)",
+      "field": "other.cstr_ (char const* cstr_ in copy constructor)",
+      "location": "Value::CZString::CZString(CZString const& other)",
+      "validated_by": "Value::CZString copy constructor",
+      "validates": [
+        "Checks if other.cstr_ is nullptr before duplicating"
+      ],
+      "validation_type": "type|null-check (delegated)"
+    }
+  ]
+}

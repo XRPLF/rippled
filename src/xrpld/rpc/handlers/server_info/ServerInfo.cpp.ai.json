@@ -1,0 +1,222 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doServerInfo",
+        "context.netOps.getServerInfo"
+      ],
+      "entry_point": "doServerInfo",
+      "purpose": "Handles the 'server_info' RPC request, gathers server status and optionally counters, returns as JSON.",
+      "validation_points": [
+        "doServerInfo: context.params.isMember(jss::counters)",
+        "doServerInfo: context.params[jss::counters].asBool()"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "counters",
+      "flow": [
+        "context.params",
+        "context.params.isMember(jss::counters)",
+        "context.params[jss::counters].asBool()",
+        "context.netOps.getServerInfo(third argument)",
+        "ret[jss::info]"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Checked for presence with isMember",
+        "Converted to bool with asBool",
+        "Passed as boolean flag to getServerInfo"
+      ],
+      "validated_at": "doServerInfo: isMember and asBool"
+    },
+    {
+      "field": "role",
+      "flow": [
+        "context.role",
+        "context.role == Role::ADMIN",
+        "context.netOps.getServerInfo(second argument)",
+        "ret[jss::info]"
+      ],
+      "origin": "context.role (set by RPC framework based on authentication)",
+      "transformations": [
+        "Compared to Role::ADMIN",
+        "Passed as boolean flag to getServerInfo"
+      ],
+      "validated_at": "Implicitly validated by enum comparison"
+    },
+    {
+      "field": "params",
+      "flow": [
+        "context.params",
+        "context.params.isMember(jss::counters)",
+        "context.params[jss::counters].asBool()"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Checked for presence",
+        "Converted to bool"
+      ],
+      "validated_at": "doServerInfo: isMember and asBool"
+    }
+  ],
+  "description": "Implements the doServerInfo RPC handler, which returns server information in JSON format, including optional counters and admin details based on the context.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "counters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember at doServerInfo",
+      "issue_pattern": "Missing empty string validation for counters",
+      "why_false_positive": "Json::Value::isMember validates counters for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "counters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::asBool at doServerInfo",
+      "issue_pattern": "Missing empty string validation for counters",
+      "why_false_positive": "Json::Value::asBool validates counters for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "counters",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::Value::asBool at doServerInfo",
+      "issue_pattern": "Missing type validation for counters",
+      "why_false_positive": "Json::Value::asBool validates counters type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/ServerInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doServerInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this handler is likely found in integration or functional test suites for the 'server_info' RPC endpoint, such as 'server_info_test.cpp', 'ServerInfo_test.cpp', or broader RPC handler tests. These would cover cases with and without the 'counters' field, and with different roles (ADMIN vs non-ADMIN). Gaps may exist in edge cases: malformed 'counters' values (non-bool), missing fields, or unusual role values. There is no explicit type validation for 'counters' beyond asBool(), so tests for non-bool types would be valuable.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, Json::Value)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns false if not present)",
+      "field": "counters",
+      "location": "doServerInfo",
+      "validated_by": "Json::Value::isMember",
+      "validates": [
+        "checks if 'counters' field exists in input JSON"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Json::LogicError (if not convertible to bool)",
+      "field": "counters",
+      "location": "doServerInfo",
+      "validated_by": "Json::Value::asBool",
+      "validates": [
+        "checks if 'counters' field is boolean or convertible to boolean"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

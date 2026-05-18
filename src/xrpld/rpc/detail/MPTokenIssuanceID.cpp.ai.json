@@ -1,0 +1,521 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "insertMPTokenIssuanceID",
+        "canHaveMPTokenIssuanceID",
+        "getIDFromCreatedIssuance"
+      ],
+      "entry_point": "insertMPTokenIssuanceID",
+      "purpose": "Inserts the MPToken Issuance ID into a JSON response if the transaction is a successful MPToken Issuance Create.",
+      "validation_points": [
+        "canHaveMPTokenIssuanceID: serializedTx null check",
+        "canHaveMPTokenIssuanceID: serializedTx->getTxnType() == ttMPTOKEN_ISSUANCE_CREATE",
+        "canHaveMPTokenIssuanceID: isTesSuccess(transactionMeta.getResultTER())",
+        "getIDFromCreatedIssuance: node.getFieldU16(sfLedgerEntryType) == ltMPTOKEN_ISSUANCE",
+        "getIDFromCreatedIssuance: node.getFName() == sfCreatedNode"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "serializedTx",
+      "flow": [
+        "insertMPTokenIssuanceID argument",
+        "canHaveMPTokenIssuanceID argument",
+        "used for null check and getTxnType()"
+      ],
+      "origin": "Passed as argument to insertMPTokenIssuanceID",
+      "transformations": [
+        "Checked for null",
+        "getTxnType() called to extract transaction type"
+      ],
+      "validated_at": "canHaveMPTokenIssuanceID"
+    },
+    {
+      "field": "transactionMeta.getResultTER()",
+      "flow": [
+        "insertMPTokenIssuanceID argument",
+        "canHaveMPTokenIssuanceID argument",
+        "getResultTER() called",
+        "isTesSuccess() called"
+      ],
+      "origin": "TxMeta object passed to insertMPTokenIssuanceID",
+      "transformations": [
+        "Checked for transaction engine result success"
+      ],
+      "validated_at": "canHaveMPTokenIssuanceID"
+    },
+    {
+      "field": "transactionMeta.getNodes()",
+      "flow": [
+        "insertMPTokenIssuanceID argument",
+        "getIDFromCreatedIssuance argument",
+        "for loop over getNodes()"
+      ],
+      "origin": "TxMeta object passed to insertMPTokenIssuanceID",
+      "transformations": [
+        "Iterated over nodes"
+      ],
+      "validated_at": "getIDFromCreatedIssuance"
+    },
+    {
+      "field": "node.getFieldU16(sfLedgerEntryType)",
+      "flow": [
+        "getIDFromCreatedIssuance for loop",
+        "getFieldU16(sfLedgerEntryType) called",
+        "compared to ltMPTOKEN_ISSUANCE"
+      ],
+      "origin": "Each node in transactionMeta.getNodes()",
+      "transformations": [
+        "Type-checked"
+      ],
+      "validated_at": "getIDFromCreatedIssuance"
+    },
+    {
+      "field": "node.getFName()",
+      "flow": [
+        "getIDFromCreatedIssuance for loop",
+        "getFName() called",
+        "compared to sfCreatedNode"
+      ],
+      "origin": "Each node in transactionMeta.getNodes()",
+      "transformations": [
+        "Type-checked"
+      ],
+      "validated_at": "getIDFromCreatedIssuance"
+    },
+    {
+      "field": "mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer)",
+      "flow": [
+        "getIDFromCreatedIssuance",
+        "makeMptID called with these fields"
+      ],
+      "origin": "mptNode = node.peekAtField(sfNewFields).downcast<STObject>()",
+      "transformations": [
+        "Used to construct MPTID"
+      ],
+      "validated_at": "Implicitly validated by prior checks"
+    },
+    {
+      "field": "response[jss::mpt_issuance_id]",
+      "flow": [
+        "insertMPTokenIssuanceID",
+        "set if result from getIDFromCreatedIssuance is present"
+      ],
+      "origin": "Json::Value response passed to insertMPTokenIssuanceID",
+      "transformations": [
+        "Set to stringified MPTID"
+      ],
+      "validated_at": "Only set if all prior validations pass"
+    }
+  ],
+  "description": "Provides utility functions for handling MPToken Issuance IDs in XRPL transactions, including checking if a transaction can have an issuance ID, extracting the ID from transaction metadata, and inserting it into a JSON response.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "STObject field accessors (getFieldU32, getAccountID, getFieldU16)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field STObject field accessors (getFieldU32, getAccountID, getFieldU16) validated by Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys",
+      "issue_pattern": "Missing validation for STObject field accessors (getFieldU32, getAccountID, getFieldU16)",
+      "why_false_positive": "Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys validates STObject field accessors (getFieldU32, getAccountID, getFieldU16) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction type (getTxnType)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction type (getTxnType) validated by Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys",
+      "issue_pattern": "Missing validation for Transaction type (getTxnType)",
+      "why_false_positive": "Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys validates Transaction type (getTxnType) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction result (getResultTER)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction result (getResultTER) validated by Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys",
+      "issue_pattern": "Missing validation for Transaction result (getResultTER)",
+      "why_false_positive": "Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys validates Transaction result (getResultTER) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx (transaction)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at canHaveMPTokenIssuanceID",
+      "issue_pattern": "Missing empty string validation for serializedTx (transaction)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "serializedTx (transaction)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at canHaveMPTokenIssuanceID",
+      "issue_pattern": "Missing type validation for serializedTx (transaction)",
+      "why_false_positive": "explicit null check validates serializedTx (transaction) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "serializedTx->getTxnType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit value check at canHaveMPTokenIssuanceID",
+      "issue_pattern": "Missing empty string validation for serializedTx->getTxnType()",
+      "why_false_positive": "explicit value check validates serializedTx->getTxnType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transactionMeta.getResultTER()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess function at canHaveMPTokenIssuanceID",
+      "issue_pattern": "Missing empty string validation for transactionMeta.getResultTER()",
+      "why_false_positive": "isTesSuccess function validates transactionMeta.getResultTER() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.getFieldU16(sfLedgerEntryType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit value check at getIDFromCreatedIssuance",
+      "issue_pattern": "Missing empty string validation for node.getFieldU16(sfLedgerEntryType)",
+      "why_false_positive": "explicit value check validates node.getFieldU16(sfLedgerEntryType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.getFName()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit value check at getIDFromCreatedIssuance",
+      "issue_pattern": "Missing empty string validation for node.getFName()",
+      "why_false_positive": "explicit value check validates node.getFName() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mptNode.getFieldU32(sfSequence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject method (likely internal validation) at getIDFromCreatedIssuance",
+      "issue_pattern": "Missing empty string validation for mptNode.getFieldU32(sfSequence)",
+      "why_false_positive": "STObject method (likely internal validation) validates mptNode.getFieldU32(sfSequence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mptNode.getAccountID(sfIssuer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STObject method (likely internal validation) at getIDFromCreatedIssuance",
+      "issue_pattern": "Missing empty string validation for mptNode.getAccountID(sfIssuer)",
+      "why_false_positive": "STObject method (likely internal validation) validates mptNode.getAccountID(sfIssuer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/MPTokenIssuanceID.cpp",
+  "functions": [
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 7,
+      "name": "canHaveMPTokenIssuanceID"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 21,
+      "name": "getIDFromCreatedIssuance"
+    },
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 36,
+      "name": "insertMPTokenIssuanceID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit/integration tests for MPToken issuance transactions in the rippled codebase, especially those that test the RPC layer and transaction metadata processing. Tests should cover: (1) successful MPToken issuance, (2) failed transactions, (3) transactions of wrong type, (4) malformed or missing nodes. However, if there are no explicit tests for insertMPTokenIssuanceID or getIDFromCreatedIssuance, edge cases (e.g., missing fields, null pointers, unexpected node types) may not be fully covered. Test files to check: workflow/XRPLF-rippled-develop/test/rpc/MPTokenIssuanceID_test.cpp, or more generally, any test file under test/rpc/ or test/tx/ that exercises MPToken issuance and RPC responses.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "STObject field accessors (getFieldU32, getAccountID, getFieldU16)",
+      "Transaction type (getTxnType)",
+      "Transaction result (getResultTER)"
+    ],
+    "framework": "Ripple STObject/STTx/TxMeta validation, jss:: for JSON keys",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx (transaction)",
+      "location": "canHaveMPTokenIssuanceID",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if transaction pointer is not null"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "serializedTx->getTxnType()",
+      "location": "canHaveMPTokenIssuanceID",
+      "validated_by": "explicit value check",
+      "validates": [
+        "Checks if transaction type is ttMPTOKEN_ISSUANCE_CREATE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "transactionMeta.getResultTER()",
+      "location": "canHaveMPTokenIssuanceID",
+      "validated_by": "isTesSuccess function",
+      "validates": [
+        "Checks if transaction result is a success code"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "continues loop (no exception)",
+      "field": "node.getFieldU16(sfLedgerEntryType)",
+      "location": "getIDFromCreatedIssuance",
+      "validated_by": "explicit value check",
+      "validates": [
+        "Checks if ledger entry type is ltMPTOKEN_ISSUANCE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "continues loop (no exception)",
+      "field": "node.getFName()",
+      "location": "getIDFromCreatedIssuance",
+      "validated_by": "explicit value check",
+      "validates": [
+        "Checks if node is a CreatedNode"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (framework dependent)",
+      "field": "mptNode.getFieldU32(sfSequence)",
+      "location": "getIDFromCreatedIssuance",
+      "validated_by": "STObject method (likely internal validation)",
+      "validates": [
+        "Checks that sfSequence field exists and is uint32"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "likely throws if field missing or wrong type (framework dependent)",
+      "field": "mptNode.getAccountID(sfIssuer)",
+      "location": "getIDFromCreatedIssuance",
+      "validated_by": "STObject method (likely internal validation)",
+      "validates": [
+        "Checks that sfIssuer field exists and is AccountID"
+      ],
+      "validation_type": "type|format"
+    }
+  ]
+}

@@ -1,0 +1,685 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "PeerImp const&",
+        "Application& app",
+        "id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type&& request",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "Resource::Consumer consumer",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "OverlayImpl& overlay",
+        "Application& app",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "Buffers const& buffers",
+        "std::shared_ptr<PeerFinder::Slot>&& slot",
+        "http_response_type&& response",
+        "Resource::Consumer usage",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "id_t id",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 54,
+      "name": "PeerImp"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "Metrics"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "ChargeWithContext"
+    }
+  ],
+  "description": "This file defines the PeerImp class, which manages peer-to-peer connections in the XRPL overlay network. It handles message exchange, connection health monitoring, protocol features, and implements a multi-stage, thread-safe shutdown mechanism for peer connections.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/PeerImp.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type&& request",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "Resource::Consumer consumer",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 180,
+      "name": "PeerImp"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "Buffers const& buffers",
+        "std::shared_ptr<PeerFinder::Slot>&& slot",
+        "http_response_type&& response",
+        "Resource::Consumer usage",
+        "PublicKey const& publicKey",
+        "ProtocolVersion protocol",
+        "id_t id",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 183,
+      "name": "PeerImp"
+    },
+    {
+      "args": [],
+      "lineno": 195,
+      "name": "~PeerImp"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "pJournal"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "slot"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Message> const& m"
+      ],
+      "lineno": 215,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 218,
+      "name": "sendTxQueue"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 222,
+      "name": "addTxQueue"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 227,
+      "name": "removeTxQueue"
+    },
+    {
+      "args": [
+        "FwdIt first",
+        "FwdIt last"
+      ],
+      "lineno": 232,
+      "name": "sendEndpoints"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "getRemoteAddress"
+    },
+    {
+      "args": [
+        "Resource::Charge const& fee",
+        "std::string const& context"
+      ],
+      "lineno": 247,
+      "name": "charge"
+    },
+    {
+      "args": [],
+      "lineno": 252,
+      "name": "id"
+    },
+    {
+      "args": [],
+      "lineno": 258,
+      "name": "crawl"
+    },
+    {
+      "args": [],
+      "lineno": 261,
+      "name": "cluster"
+    },
+    {
+      "args": [
+        "std::uint32_t validationSeq"
+      ],
+      "lineno": 266,
+      "name": "checkTracking"
+    },
+    {
+      "args": [
+        "std::uint32_t seq1",
+        "std::uint32_t seq2"
+      ],
+      "lineno": 269,
+      "name": "checkTracking"
+    },
+    {
+      "args": [],
+      "lineno": 273,
+      "name": "getNodePublic"
+    },
+    {
+      "args": [],
+      "lineno": 278,
+      "name": "getVersion"
+    },
+    {
+      "args": [],
+      "lineno": 281,
+      "name": "uptime"
+    },
+    {
+      "args": [],
+      "lineno": 286,
+      "name": "json"
+    },
+    {
+      "args": [
+        "ProtocolFeature f"
+      ],
+      "lineno": 289,
+      "name": "supportsFeature"
+    },
+    {
+      "args": [
+        "PublicKey const& pubKey"
+      ],
+      "lineno": 291,
+      "name": "publisherListSequence"
+    },
+    {
+      "args": [
+        "PublicKey const& pubKey",
+        "std::size_t const seq"
+      ],
+      "lineno": 299,
+      "name": "setPublisherListSequence"
+    },
+    {
+      "args": [],
+      "lineno": 307,
+      "name": "getClosedLedgerHash"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq"
+      ],
+      "lineno": 312,
+      "name": "hasLedger"
+    },
+    {
+      "args": [
+        "std::uint32_t& minSeq",
+        "std::uint32_t& maxSeq"
+      ],
+      "lineno": 314,
+      "name": "ledgerRange"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 316,
+      "name": "hasTxSet"
+    },
+    {
+      "args": [],
+      "lineno": 318,
+      "name": "cycleStatus"
+    },
+    {
+      "args": [
+        "std::uint32_t uMin",
+        "std::uint32_t uMax"
+      ],
+      "lineno": 320,
+      "name": "hasRange"
+    },
+    {
+      "args": [
+        "bool haveItem"
+      ],
+      "lineno": 323,
+      "name": "getScore"
+    },
+    {
+      "args": [],
+      "lineno": 326,
+      "name": "isHighLatency"
+    },
+    {
+      "args": [],
+      "lineno": 329,
+      "name": "compressionEnabled"
+    },
+    {
+      "args": [],
+      "lineno": 333,
+      "name": "txReduceRelayEnabled"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "error_code ec"
+      ],
+      "lineno": 343,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 357,
+      "name": "fail"
+    },
+    {
+      "args": [],
+      "lineno": 370,
+      "name": "shutdown"
+    },
+    {
+      "args": [],
+      "lineno": 382,
+      "name": "tryAsyncShutdown"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 395,
+      "name": "onShutdown"
+    },
+    {
+      "args": [],
+      "lineno": 410,
+      "name": "close"
+    },
+    {
+      "args": [
+        "std::chrono::seconds interval"
+      ],
+      "lineno": 423,
+      "name": "setTimer"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 434,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 447,
+      "name": "cancelTimer"
+    },
+    {
+      "args": [
+        "std::string const& fingerprint"
+      ],
+      "lineno": 453,
+      "name": "makePrefix"
+    },
+    {
+      "args": [],
+      "lineno": 455,
+      "name": "doAccept"
+    },
+    {
+      "args": [],
+      "lineno": 457,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 459,
+      "name": "domain"
+    },
+    {
+      "args": [],
+      "lineno": 464,
+      "name": "doProtocolStart"
+    },
+    {
+      "args": [
+        "error_code ec",
+        "std::size_t bytes_transferred"
+      ],
+      "lineno": 467,
+      "name": "onReadMessage"
+    },
+    {
+      "args": [
+        "error_code ec",
+        "std::size_t bytes_transferred"
+      ],
+      "lineno": 470,
+      "name": "onWriteMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransaction> const& m",
+        "bool eraseTxQueue",
+        "bool batch"
+      ],
+      "lineno": 478,
+      "name": "handleTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactions> const& m"
+      ],
+      "lineno": 491,
+      "name": "handleHaveTransactions"
+    },
+    {
+      "args": [],
+      "lineno": 499,
+      "name": "fingerprint"
+    },
+    {
+      "args": [],
+      "lineno": 504,
+      "name": "prefix"
+    },
+    {
+      "args": [
+        "std::uint16_t type"
+      ],
+      "lineno": 514,
+      "name": "onMessageUnknown"
+    },
+    {
+      "args": [
+        "std::uint16_t type",
+        "std::shared_ptr<::google::protobuf::Message> const& m",
+        "std::size_t size",
+        "std::size_t uncompressed_size",
+        "bool isCompressed"
+      ],
+      "lineno": 517,
+      "name": "onMessageBegin"
+    },
+    {
+      "args": [
+        "std::uint16_t type",
+        "std::shared_ptr<::google::protobuf::Message> const& m"
+      ],
+      "lineno": 522,
+      "name": "onMessageEnd"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMManifests> const& m"
+      ],
+      "lineno": 524,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMPing> const& m"
+      ],
+      "lineno": 525,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMCluster> const& m"
+      ],
+      "lineno": 526,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMEndpoints> const& m"
+      ],
+      "lineno": 527,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransaction> const& m"
+      ],
+      "lineno": 528,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 529,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMLedgerData> const& m"
+      ],
+      "lineno": 530,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProposeSet> const& m"
+      ],
+      "lineno": 531,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMStatusChange> const& m"
+      ],
+      "lineno": 532,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactionSet> const& m"
+      ],
+      "lineno": 533,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidatorList> const& m"
+      ],
+      "lineno": 534,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidatorListCollection> const& m"
+      ],
+      "lineno": 535,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMValidation> const& m"
+      ],
+      "lineno": 536,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& m"
+      ],
+      "lineno": 537,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMHaveTransactions> const& m"
+      ],
+      "lineno": 538,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMTransactions> const& m"
+      ],
+      "lineno": 539,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMSquelch> const& m"
+      ],
+      "lineno": 540,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathRequest> const& m"
+      ],
+      "lineno": 541,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMProofPathResponse> const& m"
+      ],
+      "lineno": 542,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaRequest> const& m"
+      ],
+      "lineno": 543,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMReplayDeltaResponse> const& m"
+      ],
+      "lineno": 544,
+      "name": "onMessage"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::lock_guard<std::mutex> const& lockedRecentLock"
+      ],
+      "lineno": 551,
+      "name": "addLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& packet"
+      ],
+      "lineno": 554,
+      "name": "doFetchPack"
+    },
+    {
+      "args": [
+        "std::string const& messageType",
+        "std::string const& manifest",
+        "std::uint32_t version",
+        "std::vector<ValidatorBlobInfo> const& blobs"
+      ],
+      "lineno": 557,
+      "name": "onValidatorListMessage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetObjectByHash> const& packet"
+      ],
+      "lineno": 563,
+      "name": "doTransactions"
+    },
+    {
+      "args": [
+        "HashRouterFlags flags",
+        "bool checkSignature",
+        "std::shared_ptr<STTx const> const& stx",
+        "bool batch"
+      ],
+      "lineno": 568,
+      "name": "checkTransaction"
+    },
+    {
+      "args": [
+        "bool isTrusted",
+        "std::shared_ptr<protocol::TMProposeSet> const& packet",
+        "RCLCxPeerPos peerPos"
+      ],
+      "lineno": 574,
+      "name": "checkPropose"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STValidation> const& val",
+        "uint256 const& key",
+        "std::shared_ptr<protocol::TMValidation> const& packet"
+      ],
+      "lineno": 579,
+      "name": "checkValidation"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "protocol::TMLedgerData& ledgerData"
+      ],
+      "lineno": 585,
+      "name": "sendLedgerBase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 589,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 592,
+      "name": "getTxSet"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMGetLedger> const& m"
+      ],
+      "lineno": 595,
+      "name": "processLedgerRequest"
+    },
+    {
+      "args": [
+        "FwdIt first",
+        "FwdIt last"
+      ],
+      "lineno": 601,
+      "name": "sendEndpoints"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,358 @@
+{
+  "args": [
+    {
+      "lineno": 42,
+      "name": "setup"
+    },
+    {
+      "lineno": 42,
+      "name": "j"
+    },
+    {
+      "lineno": 127,
+      "name": "feeLevel_"
+    },
+    {
+      "lineno": 128,
+      "name": "lastValid_"
+    },
+    {
+      "lineno": 129,
+      "name": "consequences_"
+    },
+    {
+      "lineno": 130,
+      "name": "account_"
+    },
+    {
+      "lineno": 131,
+      "name": "seqProxy_"
+    },
+    {
+      "lineno": 132,
+      "name": "txn_"
+    },
+    {
+      "lineno": 133,
+      "name": "retriesRemaining_"
+    },
+    {
+      "lineno": 134,
+      "name": "preflightResult_"
+    },
+    {
+      "lineno": 135,
+      "name": "lastResult_"
+    },
+    {
+      "lineno": 235,
+      "name": "sleAccount"
+    },
+    {
+      "lineno": 240,
+      "name": "view"
+    },
+    {
+      "lineno": 252,
+      "name": "tx"
+    },
+    {
+      "lineno": 266,
+      "name": "account"
+    },
+    {
+      "lineno": 282,
+      "name": "app"
+    },
+    {
+      "lineno": 713,
+      "name": "Config"
+    },
+    {
+      "lineno": 715,
+      "name": "level"
+    },
+    {
+      "lineno": 715,
+      "name": "baseFee"
+    },
+    {
+      "lineno": 721,
+      "name": "drops"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 41,
+      "name": "TxQ"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Setup"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "Metrics"
+    },
+    {
+      "args": [
+        "feeLevel_",
+        "lastValid_",
+        "consequences_",
+        "account_",
+        "seqProxy_",
+        "txn_",
+        "retriesRemaining_",
+        "preflightResult_",
+        "lastResult_"
+      ],
+      "lineno": 126,
+      "name": "TxDetails"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "FeeAndSeq"
+    },
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 307,
+      "name": "FeeMetrics"
+    },
+    {
+      "args": [],
+      "lineno": 370,
+      "name": "Snapshot"
+    },
+    {
+      "args": [
+        "txn",
+        "txID",
+        "feeLevel",
+        "flags",
+        "pfResult"
+      ],
+      "lineno": 441,
+      "name": "MaybeTx"
+    },
+    {
+      "args": [],
+      "lineno": 527,
+      "name": "OrderCandidates"
+    },
+    {
+      "args": [
+        "txn"
+      ],
+      "lineno": 553,
+      "name": "TxQAccount"
+    }
+  ],
+  "description": "Implements the Transaction Queue (TxQ) for XRPL, managing transaction queuing, fee escalation, and application to the open ledger, including metrics, account management, and queue operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/TxQ.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "view",
+        "tx",
+        "flags",
+        "j"
+      ],
+      "lineno": 180,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "app",
+        "view"
+      ],
+      "lineno": 202,
+      "name": "accept"
+    },
+    {
+      "args": [
+        "app",
+        "view",
+        "timeLeap"
+      ],
+      "lineno": 222,
+      "name": "processClosedLedger"
+    },
+    {
+      "args": [
+        "sleAccount"
+      ],
+      "lineno": 234,
+      "name": "nextQueuableSeq"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 239,
+      "name": "getMetrics"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 251,
+      "name": "getTxRequiredFeeAndSeq"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 265,
+      "name": "getAccountTxs"
+    },
+    {
+      "args": [],
+      "lineno": 273,
+      "name": "getTxs"
+    },
+    {
+      "args": [
+        "app"
+      ],
+      "lineno": 281,
+      "name": "doRPC"
+    },
+    {
+      "args": [
+        "sleAccount",
+        ""
+      ],
+      "lineno": 289,
+      "name": "nextQueuableSeqImpl"
+    },
+    {
+      "args": [
+        "view",
+        "flags",
+        "metricsSnapshot",
+        "lock"
+      ],
+      "lineno": 573,
+      "name": "getRequiredFeeLevel"
+    },
+    {
+      "args": [
+        "app",
+        "view",
+        "tx",
+        "flags",
+        "j"
+      ],
+      "lineno": 581,
+      "name": "tryDirectApply"
+    },
+    {
+      "args": [
+        "replacedTxIter",
+        "tx"
+      ],
+      "lineno": 589,
+      "name": "removeFromByFee"
+    },
+    {
+      "args": [],
+      "lineno": 661,
+      "name": "isFull"
+    },
+    {
+      "args": [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "lineno": 668,
+      "name": "canBeHeld"
+    },
+    {
+      "args": [
+        "it"
+      ],
+      "lineno": 678,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "it"
+      ],
+      "lineno": 682,
+      "name": "eraseAndAdvance"
+    },
+    {
+      "args": [
+        "txQAccount",
+        "begin",
+        "end"
+      ],
+      "lineno": 687,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "app",
+        "view",
+        "tx",
+        "accountIter",
+        "",
+        "feeLevelPaid",
+        "pfResult",
+        "txExtraCount",
+        "flags",
+        "metricsSnapshot",
+        "j"
+      ],
+      "lineno": 697,
+      "name": "tryClearAccountQueueUpThruTx"
+    },
+    {
+      "args": [
+        "Config"
+      ],
+      "lineno": 713,
+      "name": "setup_TxQ"
+    },
+    {
+      "args": [
+        "level",
+        "baseFee"
+      ],
+      "lineno": 715,
+      "name": "toDrops"
+    },
+    {
+      "args": [
+        "drops",
+        "baseFee"
+      ],
+      "lineno": 721,
+      "name": "toFeeLevel"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

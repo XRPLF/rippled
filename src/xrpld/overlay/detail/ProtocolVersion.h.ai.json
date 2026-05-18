@@ -1,0 +1,92 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "major"
+    },
+    {
+      "lineno": 17,
+      "name": "minor"
+    },
+    {
+      "lineno": 23,
+      "name": "p"
+    },
+    {
+      "lineno": 32,
+      "name": "s"
+    },
+    {
+      "lineno": 44,
+      "name": "versions"
+    },
+    {
+      "lineno": 48,
+      "name": "versions"
+    },
+    {
+      "lineno": 54,
+      "name": "v"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the ProtocolVersion type and declares functions for handling XRPL peer-to-peer protocol versions, including parsing, negotiation, and support checks.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ProtocolVersion.h",
+  "functions": [
+    {
+      "args": [
+        "major",
+        "minor"
+      ],
+      "lineno": 17,
+      "name": "make_protocol"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 23,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 32,
+      "name": "parseProtocolVersions"
+    },
+    {
+      "args": [
+        "versions"
+      ],
+      "lineno": 44,
+      "name": "negotiateProtocolVersion"
+    },
+    {
+      "args": [
+        "versions"
+      ],
+      "lineno": 48,
+      "name": "negotiateProtocolVersion"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "supportedProtocolVersions"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 54,
+      "name": "isProtocolSupported"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

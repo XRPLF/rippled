@@ -1,0 +1,83 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doValidatorListSites",
+        "context.app.getValidatorSites()",
+        "ValidatorSites::getJson()"
+      ],
+      "entry_point": "doValidatorListSites",
+      "purpose": "Returns a JSON representation of the configured validator list sites for the XRPL node.",
+      "validation_points": [
+        "No explicit validation in doValidatorListSites; any validation would occur inside getValidatorSites() or getJson(), but not visible in this file."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC framework receives request",
+        "Constructs RPC::JsonContext",
+        "Passes context to doValidatorListSites"
+      ],
+      "origin": "RPC::JsonContext passed to doValidatorListSites (from RPC framework, likely from HTTP/JSON-RPC request)",
+      "transformations": [
+        "No transformation in this function; context is passed as-is."
+      ],
+      "validated_at": "Not validated in this function."
+    },
+    {
+      "field": "validator sites data",
+      "flow": [
+        "context.app.getValidatorSites()",
+        "ValidatorSites::getJson()"
+      ],
+      "origin": "Application::getValidatorSites()",
+      "transformations": [
+        "getJson() serializes internal ValidatorSites data to JSON."
+      ],
+      "validated_at": "Any validation would occur inside ValidatorSites or getJson(), not in this function."
+    }
+  ],
+  "description": "Provides an RPC handler function that returns the validator list sites as JSON by calling the application's ValidatorSites component.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/ValidatorListSites.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 7,
+      "name": "doValidatorListSites"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This function is a thin wrapper with no explicit validation or transformation. Test coverage would be indirect, via RPC integration or handler tests. Likely tested in end-to-end or RPC handler test suites (e.g., test/rpc/ValidatorListSites_test.cpp or similar), but not unit tested directly. Validation of input is not present here; any validation of validator site data would be tested in ValidatorSites or its methods. Gaps: No direct validation or error handling is tested here; relies on downstream components.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

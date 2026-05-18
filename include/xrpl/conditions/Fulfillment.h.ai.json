@@ -1,0 +1,139 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "s"
+    },
+    {
+      "lineno": 23,
+      "name": "ec"
+    },
+    {
+      "lineno": 49,
+      "name": "data"
+    },
+    {
+      "lineno": 68,
+      "name": "lhs"
+    },
+    {
+      "lineno": 68,
+      "name": "rhs"
+    },
+    {
+      "lineno": 80,
+      "name": "f"
+    },
+    {
+      "lineno": 80,
+      "name": "c"
+    },
+    {
+      "lineno": 85,
+      "name": "m"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Fulfillment"
+    }
+  ],
+  "description": "Defines the Fulfillment struct and related functions for handling cryptographic condition fulfillments in the XRPL cryptoconditions module, including serialization, validation, and comparison.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/conditions/Fulfillment.h",
+  "functions": [
+    {
+      "args": [
+        "Slice s",
+        "std::error_code& ec"
+      ],
+      "lineno": 22,
+      "name": "Fulfillment::deserialize"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "Fulfillment::~Fulfillment"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "Fulfillment::fingerprint"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "Fulfillment::type"
+    },
+    {
+      "args": [
+        "Slice data"
+      ],
+      "lineno": 48,
+      "name": "Fulfillment::validate"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Fulfillment::cost"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "Fulfillment::condition"
+    },
+    {
+      "args": [
+        "Fulfillment const& lhs",
+        "Fulfillment const& rhs"
+      ],
+      "lineno": 67,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Fulfillment const& lhs",
+        "Fulfillment const& rhs"
+      ],
+      "lineno": 74,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c"
+      ],
+      "lineno": 79,
+      "name": "match"
+    },
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c",
+        "Slice m"
+      ],
+      "lineno": 84,
+      "name": "validate"
+    },
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c"
+      ],
+      "lineno": 99,
+      "name": "validate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "cryptoconditions"
+    }
+  ]
+}

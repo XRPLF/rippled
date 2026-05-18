@@ -1,0 +1,415 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TaggedCache::TaggedCache"
+      ],
+      "entry_point": "TaggedCache::TaggedCache",
+      "purpose": "Constructs a TaggedCache instance, initializing internal fields and metrics.",
+      "validation_points": [
+        "No explicit validation in constructor; assumes parameters are valid."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::size"
+      ],
+      "entry_point": "TaggedCache::size",
+      "purpose": "Returns the number of elements in the cache.",
+      "validation_points": [
+        "Locks mutex to ensure thread safety, but no data validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::getCacheSize"
+      ],
+      "entry_point": "TaggedCache::getCacheSize",
+      "purpose": "Returns the cache count (number of cached items).",
+      "validation_points": [
+        "Locks mutex for thread safety, no data validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::getTrackSize"
+      ],
+      "entry_point": "TaggedCache::getTrackSize",
+      "purpose": "Returns the size of the cache container.",
+      "validation_points": [
+        "Locks mutex for thread safety, no data validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::getHitRate"
+      ],
+      "entry_point": "TaggedCache::getHitRate",
+      "purpose": "Calculates and returns the cache hit rate as a percentage.",
+      "validation_points": [
+        "Locks mutex for thread safety; uses std::max to avoid division by zero."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::clear"
+      ],
+      "entry_point": "TaggedCache::clear",
+      "purpose": "Clears the cache and resets the cache count.",
+      "validation_points": [
+        "Locks mutex for thread safety, no data validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::reset"
+      ],
+      "entry_point": "TaggedCache::reset",
+      "purpose": "Clears the cache and resets cache count, hits, and misses.",
+      "validation_points": [
+        "Locks mutex for thread safety, no data validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "TaggedCache::touch_if_exists"
+      ],
+      "entry_point": "TaggedCache::touch_if_exists",
+      "purpose": "Checks if a key exists in the cache and updates its usage if so.",
+      "validation_points": [
+        "Locks mutex for thread safety; key is checked for existence but not validated for format or value."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_cache",
+      "flow": [
+        "constructor",
+        "used in size(), getTrackSize(), clear(), reset(), touch_if_exists()"
+      ],
+      "origin": "Initialized in TaggedCache constructor.",
+      "transformations": [
+        "Cleared in clear() and reset(), queried in size() and getTrackSize(), checked for key existence in touch_if_exists()"
+      ],
+      "validated_at": "No explicit validation; only thread safety via mutex."
+    },
+    {
+      "field": "m_cache_count",
+      "flow": [
+        "constructor",
+        "used in getCacheSize(), clear(), reset()"
+      ],
+      "origin": "Initialized in constructor, updated in clear(), reset(), possibly elsewhere in full implementation.",
+      "transformations": [
+        "Reset to 0 in clear() and reset(), returned in getCacheSize()"
+      ],
+      "validated_at": "No explicit validation."
+    },
+    {
+      "field": "m_hits, m_misses",
+      "flow": [
+        "constructor",
+        "used in getHitRate(), reset()"
+      ],
+      "origin": "Initialized in constructor, updated in cache accessors (not shown in this snippet).",
+      "transformations": [
+        "Reset to 0 in reset(), used in hit rate calculation in getHitRate()"
+      ],
+      "validated_at": "Division by zero avoided in getHitRate() via std::max."
+    },
+    {
+      "field": "key (template parameter)",
+      "flow": [
+        "input to touch_if_exists()",
+        "checked for existence in m_cache"
+      ],
+      "origin": "Passed as argument to touch_if_exists() and likely other cache accessors (not shown).",
+      "transformations": [
+        "Used as lookup key; no transformation."
+      ],
+      "validated_at": "No explicit validation of key format or value; only existence in cache is checked."
+    }
+  ],
+  "description": "This file implements the methods for the xrpl::TaggedCache template class, which provides a thread-safe, partitioned cache with strong/weak reference semantics, expiration, and metrics collection. It supports both key-value and key-only caching, with customizable pointer types and concurrency primitives.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/TaggedCache.ipp",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "size",
+        "expiration",
+        "clock",
+        "journal",
+        "collector"
+      ],
+      "lineno": 15,
+      "name": "TaggedCache::TaggedCache"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "TaggedCache::clock"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "TaggedCache::size"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "TaggedCache::getCacheSize"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "TaggedCache::getTrackSize"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "TaggedCache::getHitRate"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "TaggedCache::clear"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "TaggedCache::reset"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 127,
+      "name": "TaggedCache::touch_if_exists"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "TaggedCache::sweep"
+    },
+    {
+      "args": [
+        "key",
+        "valid"
+      ],
+      "lineno": 210,
+      "name": "TaggedCache::del"
+    },
+    {
+      "args": [
+        "key",
+        "data",
+        "replaceCallback"
+      ],
+      "lineno": 241,
+      "name": "TaggedCache::canonicalize"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 292,
+      "name": "TaggedCache::canonicalize_replace_cache"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 299,
+      "name": "TaggedCache::canonicalize_replace_client"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 306,
+      "name": "TaggedCache::fetch"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 319,
+      "name": "TaggedCache::insert"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 338,
+      "name": "TaggedCache::insert"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 353,
+      "name": "TaggedCache::retrieve"
+    },
+    {
+      "args": [],
+      "lineno": 366,
+      "name": "TaggedCache::peekMutex"
+    },
+    {
+      "args": [],
+      "lineno": 374,
+      "name": "TaggedCache::getKeys"
+    },
+    {
+      "args": [],
+      "lineno": 389,
+      "name": "TaggedCache::rate"
+    },
+    {
+      "args": [
+        "digest",
+        "h"
+      ],
+      "lineno": 402,
+      "name": "TaggedCache::fetch"
+    },
+    {
+      "args": [
+        "key",
+        "l"
+      ],
+      "lineno": 423,
+      "name": "TaggedCache::initialFetch"
+    },
+    {
+      "args": [],
+      "lineno": 445,
+      "name": "TaggedCache::collect_metrics"
+    },
+    {
+      "args": [
+        "when_expire",
+        "now",
+        "partition",
+        "stuffToSweep",
+        "allRemovals",
+        "lock"
+      ],
+      "lineno": 463,
+      "name": "TaggedCache::sweepHelper"
+    },
+    {
+      "args": [
+        "when_expire",
+        "now",
+        "partition",
+        "stuffToSweep",
+        "allRemovals",
+        "lock"
+      ],
+      "lineno": 507,
+      "name": "TaggedCache::sweepHelper"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file is a template implementation and does not contain direct validation logic or input sanitization; it relies on thread safety via mutexes and basic checks (e.g., avoiding division by zero in getHitRate). Validation of input parameters (such as cache size, expiration, or key validity) is not present in this code. Test coverage would likely be found in unit tests for TaggedCache in the rippled codebase, possibly in files like 'TaggedCache_test.cpp' or similar. However, based on this snippet, there is no evidence of explicit validation being tested, and edge cases such as invalid constructor parameters or malformed keys are not handled or tested here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

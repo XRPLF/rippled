@@ -1,0 +1,81 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "parent"
+    },
+    {
+      "lineno": 44,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 44,
+      "name": "betaEnabled"
+    },
+    {
+      "lineno": 69,
+      "name": "jv"
+    },
+    {
+      "lineno": 69,
+      "name": "betaEnabled"
+    },
+    {
+      "lineno": 104,
+      "name": "fn"
+    },
+    {
+      "lineno": 104,
+      "name": "args"
+    }
+  ],
+  "classes": [],
+  "description": "Defines and manages API versioning for the XRPL RPC interface, including constants for supported versions, utilities for setting and retrieving API version information in JSON, and template utilities for iterating over API versions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/ApiVersion.h",
+  "functions": [
+    {
+      "args": [
+        "parent",
+        "apiVersion",
+        "betaEnabled"
+      ],
+      "lineno": 44,
+      "name": "setVersion"
+    },
+    {
+      "args": [
+        "jv",
+        "betaEnabled"
+      ],
+      "lineno": 69,
+      "name": "getAPIVersionNumber"
+    },
+    {
+      "args": [
+        "fn",
+        "args"
+      ],
+      "lineno": 104,
+      "name": "forApiVersions"
+    },
+    {
+      "args": [
+        "fn",
+        "args"
+      ],
+      "lineno": 120,
+      "name": "forAllApiVersions"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 32,
+      "name": "RPC"
+    }
+  ]
+}

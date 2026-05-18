@@ -1,0 +1,250 @@
+{
+  "args": [
+    {
+      "lineno": 98,
+      "name": "app"
+    },
+    {
+      "lineno": 99,
+      "name": "io_context"
+    },
+    {
+      "lineno": 100,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 101,
+      "name": "usage"
+    },
+    {
+      "lineno": 102,
+      "name": "context"
+    },
+    {
+      "lineno": 103,
+      "name": "id"
+    },
+    {
+      "lineno": 104,
+      "name": "slot"
+    },
+    {
+      "lineno": 105,
+      "name": "journal"
+    },
+    {
+      "lineno": 106,
+      "name": "overlay"
+    },
+    {
+      "lineno": 131,
+      "name": "step"
+    },
+    {
+      "lineno": 149,
+      "name": "ec"
+    },
+    {
+      "lineno": 155,
+      "name": "ec"
+    },
+    {
+      "lineno": 157,
+      "name": "ec"
+    },
+    {
+      "lineno": 159,
+      "name": "ec"
+    },
+    {
+      "lineno": 164,
+      "name": "reason"
+    },
+    {
+      "lineno": 165,
+      "name": "name"
+    },
+    {
+      "lineno": 165,
+      "name": "ec"
+    },
+    {
+      "lineno": 168,
+      "name": "ec"
+    },
+    {
+      "lineno": 182,
+      "name": "step"
+    },
+    {
+      "lineno": 201,
+      "name": "s"
+    },
+    {
+      "lineno": 201,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "endpoint_type const& remote_endpoint",
+        "Resource::Consumer usage",
+        "shared_context const& context",
+        "Peer::id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "beast::Journal journal",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 32,
+      "name": "ConnectAttempt"
+    }
+  ],
+  "description": "Defines the ConnectAttempt class, which manages outbound peer connection attempts in the XRPL network with comprehensive timeout handling and step diagnostics.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ConnectAttempt.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "endpoint_type const& remote_endpoint",
+        "Resource::Consumer usage",
+        "shared_context const& context",
+        "Peer::id_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "beast::Journal journal",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 97,
+      "name": "ConnectAttempt"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "~ConnectAttempt"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "run"
+    },
+    {
+      "args": [
+        "ConnectionStep step"
+      ],
+      "lineno": 130,
+      "name": "setTimer"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "cancelTimer"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 148,
+      "name": "onTimer"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 154,
+      "name": "onConnect"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 156,
+      "name": "onHandshake"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 158,
+      "name": "onWrite"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 160,
+      "name": "onRead"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 163,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "error_code ec"
+      ],
+      "lineno": 164,
+      "name": "fail"
+    },
+    {
+      "args": [],
+      "lineno": 165,
+      "name": "shutdown"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "tryAsyncShutdown"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 167,
+      "name": "onShutdown"
+    },
+    {
+      "args": [],
+      "lineno": 168,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 176,
+      "name": "processResponse"
+    },
+    {
+      "args": [
+        "ConnectionStep step"
+      ],
+      "lineno": 181,
+      "name": "stepToString"
+    },
+    {
+      "args": [
+        "std::string const& s",
+        "boost::system::error_code& ec"
+      ],
+      "lineno": 200,
+      "name": "parse_endpoint"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

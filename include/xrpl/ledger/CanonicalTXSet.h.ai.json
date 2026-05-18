@@ -1,0 +1,191 @@
+{
+  "args": [
+    {
+      "lineno": 24,
+      "name": "account"
+    },
+    {
+      "lineno": 24,
+      "name": "seqProx"
+    },
+    {
+      "lineno": 24,
+      "name": "id"
+    },
+    {
+      "lineno": 27,
+      "name": "lhs"
+    },
+    {
+      "lineno": 27,
+      "name": "rhs"
+    },
+    {
+      "lineno": 88,
+      "name": "account"
+    },
+    {
+      "lineno": 94,
+      "name": "txn"
+    },
+    {
+      "lineno": 100,
+      "name": "tx"
+    },
+    {
+      "lineno": 110,
+      "name": "salt"
+    },
+    {
+      "lineno": 116,
+      "name": "it"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "LedgerHash const& saltHash"
+      ],
+      "lineno": 18,
+      "name": "CanonicalTXSet"
+    },
+    {
+      "args": [
+        "uint256 const& account",
+        "SeqProxy seqProx",
+        "uint256 const& id"
+      ],
+      "lineno": 23,
+      "name": "CanonicalTXSet::Key"
+    }
+  ],
+  "description": "Defines the CanonicalTXSet class, which holds and orders deferred transactions for the next consensus pass in the XRPL ledger, ensuring transactions from the same account are ordered by SeqProxy.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/CanonicalTXSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "Key::getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "Key::getTXID"
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 56,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 59,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 64,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 69,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 74,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Key const& lhs",
+        "Key const& rhs"
+      ],
+      "lineno": 79,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 88,
+      "name": "CanonicalTXSet::accountKey"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 94,
+      "name": "CanonicalTXSet::insert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& tx"
+      ],
+      "lineno": 100,
+      "name": "CanonicalTXSet::popAcctTransaction"
+    },
+    {
+      "args": [
+        "LedgerHash const& salt"
+      ],
+      "lineno": 110,
+      "name": "CanonicalTXSet::reset"
+    },
+    {
+      "args": [
+        "const_iterator const& it"
+      ],
+      "lineno": 116,
+      "name": "CanonicalTXSet::erase"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "CanonicalTXSet::begin"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "CanonicalTXSet::end"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "CanonicalTXSet::size"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "CanonicalTXSet::empty"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "CanonicalTXSet::key"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

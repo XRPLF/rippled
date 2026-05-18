@@ -1,0 +1,31 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "Key"
+    },
+    {
+      "lineno": 11,
+      "name": "Clock"
+    },
+    {
+      "lineno": 12,
+      "name": "Compare"
+    },
+    {
+      "lineno": 13,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the aged_multiset template alias in the beast namespace, which is a time-aware multiset container based on aged_ordered_container.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_multiset.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

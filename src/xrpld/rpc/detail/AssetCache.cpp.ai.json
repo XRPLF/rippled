@@ -1,0 +1,307 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ledger"
+    },
+    {
+      "lineno": 8,
+      "name": "j"
+    },
+    {
+      "lineno": 18,
+      "name": "accountID"
+    },
+    {
+      "lineno": 18,
+      "name": "direction"
+    },
+    {
+      "lineno": 74,
+      "name": "account"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AssetCache::getRippleLines",
+        "PathFindTrustLine::getItems (if cache miss)",
+        "std::make_shared<std::vector<PathFindTrustLine>>",
+        "XRPL_ASSERT (multiple points)"
+      ],
+      "entry_point": "AssetCache::getRippleLines",
+      "purpose": "Fetches trust lines for an account in a given direction, using a cache to avoid recomputation. Handles cache invalidation and ensures only one set of trust lines per account is stored.",
+      "validation_points": [
+        "XRPL_ASSERT(size <= totalLineCount_, ...): Ensures the number of lines being erased does not exceed the total count.",
+        "XRPL_ASSERT(it->second == nullptr, ...): Ensures that a new cache entry is only created if it was previously null.",
+        "XRPL_ASSERT(!it->second || !it->second->empty(), ...): Ensures that the cache entry is either null or non-empty after population."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "totalLineCount_",
+      "flow": [
+        "constructor (set to 0)",
+        "incremented in getRippleLines when new trust lines are added",
+        "decremented in getRippleLines when old trust lines are erased"
+      ],
+      "origin": "Initialized to 0 in AssetCache constructor",
+      "transformations": [
+        "Incremented by size of new trust lines vector",
+        "Decremented by size of erased trust lines vector"
+      ],
+      "validated_at": "XRPL_ASSERT(size <= totalLineCount_, ...): Ensures we never subtract more than we have"
+    },
+    {
+      "field": "lines_ (cache map)",
+      "flow": [
+        "constructor (empty)",
+        "populated in getRippleLines via emplace",
+        "entries erased in getRippleLines if direction flip detected",
+        "entries updated with new trust lines"
+      ],
+      "origin": "Initialized empty in AssetCache constructor",
+      "transformations": [
+        "Emplaced with nullptr, then set to shared_ptr<vector<PathFindTrustLine>>",
+        "Erased if direction flip and subset/superset logic applies"
+      ],
+      "validated_at": "XRPL_ASSERT(it->second == nullptr, ...): Ensures no double population"
+    },
+    {
+      "field": "accountID",
+      "flow": [
+        "passed to hasher_ to generate hash",
+        "used to construct AccountKey",
+        "used in PathFindTrustLine::getItems"
+      ],
+      "origin": "Input parameter to getRippleLines",
+      "transformations": [
+        "Hashed for cache key",
+        "Used as lookup and for trust line retrieval"
+      ],
+      "validated_at": "Indirectly validated by cache logic and XRPL_ASSERTs on cache state"
+    },
+    {
+      "field": "direction",
+      "flow": [
+        "used to construct AccountKey and otherkey",
+        "used to determine cache logic (subset/superset)",
+        "passed to PathFindTrustLine::getItems"
+      ],
+      "origin": "Input parameter to getRippleLines",
+      "transformations": [
+        "Flipped to get otherkey",
+        "Determines which trust lines are fetched"
+      ],
+      "validated_at": "Indirectly validated by cache logic and XRPL_ASSERTs"
+    }
+  ],
+  "description": "Implements the AssetCache class for caching trust lines and multiparty tokens (MPTs) for accounts in an XRPL ledger, optimizing repeated lookups for pathfinding and asset queries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_ (type-checked as std::shared_ptr<ReadView const>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_ (type-checked as std::shared_ptr<ReadView const>) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for ledger_ (type-checked as std::shared_ptr<ReadView const>)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates ledger_ (type-checked as std::shared_ptr<ReadView const>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "accountID (type-checked as AccountID)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field accountID (type-checked as AccountID) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for accountID (type-checked as AccountID)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates accountID (type-checked as AccountID) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "direction (type-checked as LineDirection)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field direction (type-checked as LineDirection) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for direction (type-checked as LineDirection)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates direction (type-checked as LineDirection) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "totalLineCount_ vs size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at AssetCache::getRippleLines",
+      "issue_pattern": "Missing empty string validation for totalLineCount_ vs size",
+      "why_false_positive": "XRPL_ASSERT validates totalLineCount_ vs size for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/AssetCache.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "beast::Journal j"
+      ],
+      "lineno": 8,
+      "name": "AssetCache::AssetCache"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "AssetCache::~AssetCache"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "LineDirection direction"
+      ],
+      "lineno": 18,
+      "name": "AssetCache::getRippleLines"
+    },
+    {
+      "args": [
+        "xrpl::AccountID const& account"
+      ],
+      "lineno": 74,
+      "name": "AssetCache::getMPTs"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). Likely, tests would exist in the unit test suite for the RPC or ledger modules, possibly in files like test/rpc/AssetCache_test.cpp or test/rpc/PathFindTrustLine_test.cpp. The critical validation paths (XRPL_ASSERTs) are not directly tested here; coverage depends on whether tests exercise cache invalidation, direction flipping, and trust line population/erasure. Gaps may exist if tests do not cover edge cases such as direction flips, empty trust lines, or cache overwrites.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger_ (type-checked as std::shared_ptr<ReadView const>)",
+      "accountID (type-checked as AccountID)",
+      "direction (type-checked as LineDirection)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "totalLineCount_ vs size",
+      "location": "AssetCache::getRippleLines",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the number of trust lines being erased (size) does not exceed the totalLineCount_",
+        "Prevents underflow or logic error in trust line accounting"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

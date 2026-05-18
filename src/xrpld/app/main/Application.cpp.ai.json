@@ -1,0 +1,831 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "Config& config"
+    },
+    {
+      "lineno": 61,
+      "name": "Endpoints const& endpoints"
+    },
+    {
+      "lineno": 168,
+      "name": "Config const& config"
+    },
+    {
+      "lineno": 1012,
+      "name": "boost::program_options::variables_map const& cmdline"
+    },
+    {
+      "lineno": 1372,
+      "name": "bool withTimers"
+    },
+    {
+      "lineno": 1447,
+      "name": "std::string msg"
+    },
+    {
+      "lineno": 1466,
+      "name": "bool check"
+    },
+    {
+      "lineno": 1822,
+      "name": "std::string const& name"
+    },
+    {
+      "lineno": 1792,
+      "name": "std::string& reason"
+    },
+    {
+      "lineno": 1632,
+      "name": "std::string const& ledgerID"
+    },
+    {
+      "lineno": 1632,
+      "name": "bool replay"
+    },
+    {
+      "lineno": 1632,
+      "name": "bool isFileName"
+    },
+    {
+      "lineno": 1632,
+      "name": "std::optional<uint256> trapTxID"
+    },
+    {
+      "lineno": 1557,
+      "name": "std::string const& name"
+    },
+    {
+      "lineno": 71,
+      "name": "beast::insight::Event ev"
+    },
+    {
+      "lineno": 71,
+      "name": "beast::Journal journal"
+    },
+    {
+      "lineno": 71,
+      "name": "std::chrono::milliseconds interval"
+    },
+    {
+      "lineno": 71,
+      "name": "boost::asio::io_context& ios"
+    },
+    {
+      "lineno": 1837,
+      "name": "std::unique_ptr<Config> config"
+    },
+    {
+      "lineno": 1837,
+      "name": "std::unique_ptr<Logs> logs"
+    },
+    {
+      "lineno": 1837,
+      "name": "std::unique_ptr<TimeKeeper> timeKeeper"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::unique_ptr<Config> config",
+        "std::unique_ptr<Logs> logs",
+        "std::unique_ptr<TimeKeeper> timeKeeper"
+      ],
+      "lineno": 66,
+      "name": "ApplicationImp"
+    },
+    {
+      "args": [
+        "beast::insight::Event ev",
+        "beast::Journal journal",
+        "std::chrono::milliseconds interval",
+        "boost::asio::io_context& ios"
+      ],
+      "lineno": 71,
+      "name": "io_latency_sampler"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Application::setup",
+        "fixConfigPorts",
+        "Config::validate",
+        "NodeIdentity::loadNodeIdentity",
+        "LedgerMaster::setup",
+        "LedgerCleaner::setup",
+        "LedgerReplayer::setup"
+      ],
+      "entry_point": "Application::setup",
+      "purpose": "Initializes the application, validates configuration, sets up node identity, and prepares ledger components.",
+      "validation_points": [
+        "fixConfigPorts (validates and fixes port configs)",
+        "Config::validate (validates config fields)",
+        "NodeIdentity::loadNodeIdentity (validates node keys)",
+        "LedgerMaster::setup (validates ledger hash/ID inputs)",
+        "LedgerCleaner::setup (validates ledger state)",
+        "LedgerReplayer::setup (validates replay ledger IDs)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RPC handler",
+        "parse JSON input",
+        "jss:: template-based validation",
+        "STParsedJSON (for transaction fields)",
+        "applyTransaction"
+      ],
+      "entry_point": "RPC/JSON API handler (e.g., doCommand)",
+      "purpose": "Handles incoming JSON RPC requests, validates input fields, parses transactions, and applies them.",
+      "validation_points": [
+        "jss:: template-based validation (validates JSON fields)",
+        "STParsedJSON (validates transaction fields)",
+        "applyTransaction (validates transaction logic and signatures)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Application::run",
+        "start",
+        "GRPCServer::start",
+        "RPC/GRPC request handler",
+        "validation as above"
+      ],
+      "entry_point": "Application::run",
+      "purpose": "Runs the main application loop, starts network servers, and processes incoming requests.",
+      "validation_points": [
+        "GRPCServer::start (validates server config)",
+        "RPC/GRPC request handler (validates input as above)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "port",
+      "flow": [
+        "Config::load",
+        "fixConfigPorts",
+        "Config::validate",
+        "Application::setup",
+        "Network server startup"
+      ],
+      "origin": "Config file (parsed in Config)",
+      "transformations": [
+        "fixConfigPorts may adjust or correct port values",
+        "Config::validate checks for valid port ranges and conflicts"
+      ],
+      "validated_at": "fixConfigPorts, Config::validate"
+    },
+    {
+      "field": "node_public_key / node_private_key",
+      "flow": [
+        "Config::load",
+        "NodeIdentity::loadNodeIdentity",
+        "Application::setup",
+        "Used for signing/validation"
+      ],
+      "origin": "Config file or generated at startup",
+      "transformations": [
+        "NodeIdentity::loadNodeIdentity parses and validates keys"
+      ],
+      "validated_at": "NodeIdentity::loadNodeIdentity"
+    },
+    {
+      "field": "ledger_hash / ledger_id",
+      "flow": [
+        "RPC handler or internal trigger",
+        "LedgerMaster / LedgerCleaner / LedgerReplayer",
+        "Ledger lookup and processing"
+      ],
+      "origin": "RPC input or internal process",
+      "transformations": [
+        "Validated for format and existence in LedgerMaster, LedgerCleaner, LedgerReplayer"
+      ],
+      "validated_at": "LedgerMaster, LedgerCleaner, LedgerReplayer"
+    },
+    {
+      "field": "transaction JSON fields (amount, account, signature, etc.)",
+      "flow": [
+        "RPC handler",
+        "jss:: template-based validation",
+        "STParsedJSON",
+        "applyTransaction",
+        "TransactionMaster"
+      ],
+      "origin": "RPC/JSON input",
+      "transformations": [
+        "jss:: validation checks field presence/types",
+        "STParsedJSON parses and validates transaction structure",
+        "applyTransaction checks signatures and business logic"
+      ],
+      "validated_at": "jss:: validation, STParsedJSON, applyTransaction"
+    }
+  ],
+  "description": "This file implements the main ApplicationImp class for the XRPL server (xrpld), handling initialization, startup, shutdown, and core runtime logic for the ledger, networking, validation, and server management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "JSON RPC fields (via jss::)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field JSON RPC fields (via jss::) validated by jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+      "issue_pattern": "Missing validation for JSON RPC fields (via jss::)",
+      "why_false_positive": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable validates JSON RPC fields (via jss::) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Config fields (via Config class)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Config fields (via Config class) validated by jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+      "issue_pattern": "Missing validation for Config fields (via Config class)",
+      "why_false_positive": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable validates Config fields (via Config class) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Node identity keys",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Node identity keys validated by jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+      "issue_pattern": "Missing validation for Node identity keys",
+      "why_false_positive": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable validates Node identity keys automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Ledger hashes",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Ledger hashes validated by jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+      "issue_pattern": "Missing validation for Ledger hashes",
+      "why_false_positive": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable validates Ledger hashes automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction fields",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction fields validated by jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+      "issue_pattern": "Missing validation for Transaction fields",
+      "why_false_positive": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable validates Transaction fields automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "JSON input fields (via jss:: namespace)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss:: template-based validation at various RPC/JSON parsing entry points (e.g., STParsedJSON, LedgerToJson, etc.)",
+      "issue_pattern": "Missing empty string validation for JSON input fields (via jss:: namespace)",
+      "why_false_positive": "jss:: template-based validation validates JSON input fields (via jss:: namespace) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Config fields (ports, node identity, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config class and fixConfigPorts function at fixConfigPorts, ApplicationImp::setup, Config constructor",
+      "issue_pattern": "Missing empty string validation for Config fields (ports, node identity, etc.)",
+      "why_false_positive": "Config class and fixConfigPorts function validates Config fields (ports, node identity, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Node identity (public/private keys)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "NodeIdentity::loadNodeIdentity at ApplicationImp::setup (calls NodeIdentity::loadNodeIdentity)",
+      "issue_pattern": "Missing empty string validation for Node identity (public/private keys)",
+      "why_false_positive": "NodeIdentity::loadNodeIdentity validates Node identity (public/private keys) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "Ledger hash/ID inputs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LedgerMaster, LedgerCleaner, LedgerReplayer at LedgerMaster::getLedgerByHash, LedgerCleaner::doClean, etc.",
+      "issue_pattern": "Missing empty string validation for Ledger hash/ID inputs",
+      "why_false_positive": "LedgerMaster, LedgerCleaner, LedgerReplayer validates Ledger hash/ID inputs for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Transaction fields (amount, account, signature, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STParsedJSON, applyTransaction, TransactionMaster at Transaction parsing and apply logic",
+      "issue_pattern": "Missing empty string validation for Transaction fields (amount, account, signature, etc.)",
+      "why_false_positive": "STParsedJSON, applyTransaction, TransactionMaster validates Transaction fields (amount, account, signature, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "Amendment/Feature flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "AmendmentTable at AmendmentTable::addInitial, AmendmentTable::enable",
+      "issue_pattern": "Missing empty string validation for Amendment/Feature flags",
+      "why_false_positive": "AmendmentTable validates Amendment/Feature flags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "Database connection parameters",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "DatabaseCon, SQLiteDatabase at DatabaseCon constructor, SQLiteDatabase::open",
+      "issue_pattern": "Missing empty string validation for Database connection parameters",
+      "why_false_positive": "DatabaseCon, SQLiteDatabase validates Database connection parameters for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "file handle",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::ifstream",
+      "issue_pattern": "Missing file handle cleanup",
+      "why_false_positive": "std::ifstream provides automatic file handle cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/Application.cpp",
+  "functions": [
+    {
+      "args": [
+        "Config& config",
+        "Endpoints const& endpoints"
+      ],
+      "lineno": 61,
+      "name": "fixConfigPorts"
+    },
+    {
+      "args": [
+        "Config const& config"
+      ],
+      "lineno": 168,
+      "name": "numberOfThreads"
+    },
+    {
+      "args": [
+        "boost::program_options::variables_map const& cmdline"
+      ],
+      "lineno": 1012,
+      "name": "setup"
+    },
+    {
+      "args": [
+        "bool withTimers"
+      ],
+      "lineno": 1372,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 1397,
+      "name": "run"
+    },
+    {
+      "args": [
+        "std::string msg"
+      ],
+      "lineno": 1447,
+      "name": "signalStop"
+    },
+    {
+      "args": [],
+      "lineno": 1461,
+      "name": "checkSigs"
+    },
+    {
+      "args": [
+        "bool check"
+      ],
+      "lineno": 1466,
+      "name": "checkSigs"
+    },
+    {
+      "args": [],
+      "lineno": 1471,
+      "name": "isStopping"
+    },
+    {
+      "args": [],
+      "lineno": 1476,
+      "name": "fdRequired"
+    },
+    {
+      "args": [],
+      "lineno": 1502,
+      "name": "startGenesisLedger"
+    },
+    {
+      "args": [],
+      "lineno": 1522,
+      "name": "getLastFullLedger"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 1557,
+      "name": "loadLedgerFromFile"
+    },
+    {
+      "args": [
+        "std::string const& ledgerID",
+        "bool replay",
+        "bool isFileName",
+        "std::optional<uint256> trapTxID"
+      ],
+      "lineno": 1632,
+      "name": "loadOldLedger"
+    },
+    {
+      "args": [
+        "std::string& reason"
+      ],
+      "lineno": 1792,
+      "name": "serverOkay"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 1822,
+      "name": "getJournal"
+    },
+    {
+      "args": [],
+      "lineno": 1827,
+      "name": "setMaxDisallowedLedger"
+    },
+    {
+      "args": [
+        "std::unique_ptr<Config> config",
+        "std::unique_ptr<Logs> logs",
+        "std::unique_ptr<TimeKeeper> timeKeeper"
+      ],
+      "lineno": 1837,
+      "name": "make_Application"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic file handle cleanup",
+        "false_positive_risk": "Missing file handle cleanup",
+        "resource": "file handle",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::ifstream"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 59,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Core validation logic is typically covered by unit tests in the 'test' and 'unittest' directories, such as 'test/Config_test.cpp', 'test/NodeIdentity_test.cpp', 'test/ledger/LedgerMaster_test.cpp', and 'test/app/Transaction_test.cpp'. JSON/RPC validation is often tested in 'rpc' or 'json' test suites. However, integration between config validation and application startup may not be fully covered, and edge cases in fixConfigPorts or error handling for malformed configs may lack direct tests. Some validation paths (e.g., LedgerCleaner, LedgerReplayer) may only be tested indirectly via higher-level integration tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "JSON RPC fields (via jss::)",
+      "Config fields (via Config class)",
+      "Node identity keys",
+      "Ledger hashes",
+      "Transaction fields"
+    ],
+    "framework": "jss:: template-based validation, STParsedJSON, Config, NodeIdentity, AmendmentTable",
+    "validation_layer": "entry_point (JSON/config/database input), business_logic (ledger/transaction/application logic)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (typically std::runtime_error or custom parse error)",
+      "field": "JSON input fields (via jss:: namespace)",
+      "location": "various RPC/JSON parsing entry points (e.g., STParsedJSON, LedgerToJson, etc.)",
+      "validated_by": "jss:: template-based validation",
+      "validates": [
+        "Presence of required JSON fields",
+        "Type correctness (string, int, object, etc.)",
+        "Format (e.g., hex, base58, etc.)"
+      ],
+      "validation_type": "type|format|required fields"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::exception (invalid_argument, runtime_error)",
+      "field": "Config fields (ports, node identity, etc.)",
+      "location": "fixConfigPorts, ApplicationImp::setup, Config constructor",
+      "validated_by": "Config class and fixConfigPorts function",
+      "validates": [
+        "Port numbers are valid integers and in allowed range",
+        "Required config fields are present",
+        "Format of IP addresses and endpoints"
+      ],
+      "validation_type": "type|range|format"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::exception (runtime_error, custom identity error)",
+      "field": "Node identity (public/private keys)",
+      "location": "ApplicationImp::setup (calls NodeIdentity::loadNodeIdentity)",
+      "validated_by": "NodeIdentity::loadNodeIdentity",
+      "validates": [
+        "Key presence",
+        "Key format (base58, hex, etc.)",
+        "Key type (ed25519/secp256k1)"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::exception (runtime_error, not_found)",
+      "field": "Ledger hash/ID inputs",
+      "location": "LedgerMaster::getLedgerByHash, LedgerCleaner::doClean, etc.",
+      "validated_by": "LedgerMaster, LedgerCleaner, LedgerReplayer",
+      "validates": [
+        "Hash is correct length (256 bits)",
+        "Hash is valid hex",
+        "Ledger exists in database"
+      ],
+      "validation_type": "format|type|range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::exception (parse error, logic error)",
+      "field": "Transaction fields (amount, account, signature, etc.)",
+      "location": "Transaction parsing and apply logic",
+      "validated_by": "STParsedJSON, applyTransaction, TransactionMaster",
+      "validates": [
+        "Amount is numeric and within allowed range",
+        "Account is valid address",
+        "Signature is present and valid"
+      ],
+      "validation_type": "type|format|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::exception (logic_error)",
+      "field": "Amendment/Feature flags",
+      "location": "AmendmentTable::addInitial, AmendmentTable::enable",
+      "validated_by": "AmendmentTable",
+      "validates": [
+        "Feature flag is known",
+        "Feature flag is not duplicated"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "std::exception (database_error, invalid_argument)",
+      "field": "Database connection parameters",
+      "location": "DatabaseCon constructor, SQLiteDatabase::open",
+      "validated_by": "DatabaseCon, SQLiteDatabase",
+      "validates": [
+        "File path is valid",
+        "Connection string is correct format"
+      ],
+      "validation_type": "format|type"
+    }
+  ]
+}

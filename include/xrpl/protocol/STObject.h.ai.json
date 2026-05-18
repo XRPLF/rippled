@@ -1,0 +1,243 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "STObject"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "Proxy"
+    },
+    {
+      "args": [],
+      "lineno": 258,
+      "name": "ValueProxy"
+    },
+    {
+      "args": [],
+      "lineno": 307,
+      "name": "OptionalProxy"
+    },
+    {
+      "args": [],
+      "lineno": 373,
+      "name": "FieldErr"
+    }
+  ],
+  "description": "Defines the STObject class and related proxy classes for representing and manipulating XRPL serialized objects, including field access, mutation, and serialization logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STObject.h",
+  "functions": [
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 18,
+      "name": "throwFieldNotFound"
+    },
+    {
+      "args": [
+        "detail::STVar const& e"
+      ],
+      "lineno": 44,
+      "name": "operator()"
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 317,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 322,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "std::size_t n"
+      ],
+      "lineno": 327,
+      "name": "reserve"
+    },
+    {
+      "args": [],
+      "lineno": 332,
+      "name": "isFree"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 337,
+      "name": "addWithoutSigningFields"
+    },
+    {
+      "args": [],
+      "lineno": 343,
+      "name": "getSerializer"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 350,
+      "name": "emplace_back"
+    },
+    {
+      "args": [],
+      "lineno": 356,
+      "name": "getCount"
+    },
+    {
+      "args": [
+        "int offset"
+      ],
+      "lineno": 361,
+      "name": "peekAtIndex"
+    },
+    {
+      "args": [
+        "int offset"
+      ],
+      "lineno": 366,
+      "name": "getIndex"
+    },
+    {
+      "args": [
+        "int offset"
+      ],
+      "lineno": 371,
+      "name": "peekAtPIndex"
+    },
+    {
+      "args": [
+        "int offset"
+      ],
+      "lineno": 376,
+      "name": "getPIndex"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f"
+      ],
+      "lineno": 381,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "OptionaledField<T> const& of"
+      ],
+      "lineno": 386,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f"
+      ],
+      "lineno": 391,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "OptionaledField<T> const& of"
+      ],
+      "lineno": 396,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f"
+      ],
+      "lineno": 401,
+      "name": "at"
+    },
+    {
+      "args": [
+        "OptionaledField<T> const& of"
+      ],
+      "lineno": 422,
+      "name": "at"
+    },
+    {
+      "args": [
+        "TypedField<T> const& f"
+      ],
+      "lineno": 441,
+      "name": "at"
+    },
+    {
+      "args": [
+        "OptionaledField<T> const& of"
+      ],
+      "lineno": 446,
+      "name": "at"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "base_uint<160, Tag> const& v"
+      ],
+      "lineno": 451,
+      "name": "setFieldH160"
+    },
+    {
+      "args": [
+        "STObject const& o"
+      ],
+      "lineno": 466,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 471,
+      "name": "getFieldByValue"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "V const& empty"
+      ],
+      "lineno": 491,
+      "name": "getFieldByConstRef"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "V value"
+      ],
+      "lineno": 509,
+      "name": "setFieldUsingSetValue"
+    },
+    {
+      "args": [
+        "SField const& field",
+        "T const& value"
+      ],
+      "lineno": 527,
+      "name": "setFieldUsingAssignment"
+    },
+    {
+      "args": [
+        "SField const& field"
+      ],
+      "lineno": 545,
+      "name": "peekField"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ]
+}

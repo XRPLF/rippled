@@ -1,0 +1,43 @@
+# `LedgerHashes.h` — Auto-Generated Type-Safe Wrapper for the `ltLEDGER_HASHES` Ledger Entry
+
+## Role in the System
+
+This file is part of the `protocol_autogen` layer — a set of code-generated headers that impose a typed, immutable-wrapper/builder pattern on top of raw `SLE` (Serialized Ledger Entry) objects. It targets `ltLEDGER_HASHES` (type code `0x0068`, RPC name `hashes`), the ledger entry type that underlies XRPL's **skip-list mechanism**.
+
+The skip list is how the XRP Ledger provides O(1) lookup of any historical ledger hash by sequence number. Rather than walking the full chain, two categories of `LedgerHashes` entries are maintained: a rolling window holding the most recent 256 ledger hashes (keyed by `keylet::skip()`), and permanent boundary checkpoints written every 256 ledgers (keyed by `keylet::skip(seq)` when `seq & 0xff == 0`). Both are populated by `Ledger::updateSkipList()` on every ledger close, and consumed by `hashOfSeq()` in `View.cpp` — which reads `sfLastLedgerSequence` to find the right skip-list page and then indexes directly into `sfHashes`.
+
+## Field Schema
+
+The entry carries three fields, mirroring the `LEDGER_ENTRY` macro definition in `ledger_entries.macro`:
+
+- **`sfHashes`** (`soeREQUIRED`) — a `STVector256` (typed as `SF_VECTOR256`) holding up to 256 ancestor ledger hashes in oldest-to-newest order. The rolling-window entry caps at exactly 256 and slides forward; checkpoint entries accumulate up to 256 boundary hashes for their epoch.
+- **`sfFirstLedgerSequence`** (`soeOPTIONAL`) — a `uint32` marking the start of the range.
+- **`sfLastLedgerSequence`** (`soeOPTIONAL`) — a `uint32` marking the end of the range. `hashOfSeq()` in `View.cpp` asserts that `sfLastLedgerSequence == ledger.seq() - 1` before indexing into the rolling window, making this an invariant the system relies on for correctness.
+
+## `LedgerHashes` — Immutable Wrapper
+
+`LedgerHashes` inherits from `LedgerEntryBase`, which holds a `std::shared_ptr<SLE const>`. The const-ness is load-bearing: it makes the wrapper read-only, preventing callers from mutating ledger state through this accessor.
+
+The constructor validates the SLE type immediately, throwing `std::runtime_error` if the entry is not `ltLEDGER_HASHES`. This is an explicit fail-fast design: because the ledger state tree can hold arbitrary entry types at arbitrary keys, wrapping the wrong type would otherwise silently return garbage from field accessors.
+
+Optional fields (`sfFirstLedgerSequence`, `sfLastLedgerSequence`) follow the XRPL autogen convention: a paired `hasX()` / `getX()` interface where `getX()` returns `protocol_autogen::Optional<uint32_t>` — a `std::nullopt` alias in the autogen utility layer — avoiding callers having to test `isFieldPresent` separately. The required `sfHashes` field has no `has*` guard and returns the `STVector256` value type directly.
+
+## `LedgerHashesBuilder` — Fluent Constructor
+
+`LedgerHashesBuilder` inherits from the CRTP base `LedgerEntryBuilderBase<LedgerHashesBuilder>`, which initialises an `STObject object_{sfLedgerEntry}` and stamps it with `sfLedgerEntryType` and `sfFlags`. The CRTP parameter makes common base setters (`setLedgerIndex`, `setFlags`) return a `LedgerHashesBuilder&` rather than a `LedgerEntryBuilderBase&`, preserving the fluent chain without casting.
+
+Two construction modes exist:
+
+1. **From required fields** — the primary constructor takes `sfHashes` and immediately calls `setHashes()`. Optional fields may be chained via `setFirstLedgerSequence()` / `setLastLedgerSequence()` before calling `build()`. The builder avoids calling `set(soTemplate)` on the internal `STObject`, which would create `soeDEFAULT` placeholder entries that would then cause `applyTemplate()` in the `SLE` constructor to throw "may not be explicitly set to default". This is a non-obvious invariant documented in `LedgerEntryBuilderBase`.
+
+2. **From an existing SLE** — copies the raw `STObject` out of an existing `SLE const`, after verifying `sfLedgerEntryType`. This path enables read-modify-write workflows: read the SLE from the ledger, wrap it in a builder, call setters for changed fields, then `build()` with the original index to produce a new wrapper ready for `rawReplace()`.
+
+`build(index)` constructs an `SLE` from the accumulated `STObject` and the provided `uint256` key, wraps it in a `shared_ptr<SLE const>`, and returns a `LedgerHashes` wrapper. The `SLE` constructor runs `applyTemplate()` at this point, filling in default values for any fields not explicitly set.
+
+## Design Patterns and Tradeoffs
+
+The separation between a read-only wrapper and a mutable builder enforces a disciplined update path: code that reads ledger entries never accidentally mutates them, and code that builds entries must explicitly commit via `build()`. This mirrors the broader XRPL pattern of treating the ledger state tree as an append/replace log rather than an in-place mutable map.
+
+The autogenerated nature of the file (declared at line 1) means all entries in the `ledger_entries/` directory share an identical structural pattern. Adding or removing fields only requires updating the macro definition and regenerating, keeping the typed wrappers in sync with the canonical schema without manual maintenance.
+
+The `[[nodiscard]]` annotations on all getters ensure call sites don't silently discard lookup results — particularly relevant for optional fields where a missing `has_value()` check would otherwise compile silently.

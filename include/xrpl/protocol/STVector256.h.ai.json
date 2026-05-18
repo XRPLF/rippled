@@ -1,0 +1,217 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SField const& n",
+        "std::vector<uint256> const& vector",
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 8,
+      "name": "STVector256"
+    }
+  ],
+  "description": "Defines the STVector256 class in the xrpl namespace, representing a serialized type that holds a vector of 256-bit values (uint256), with methods for manipulation, serialization, and JSON conversion.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STVector256.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "STVector256"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 15,
+      "name": "STVector256"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& vector"
+      ],
+      "lineno": 16,
+      "name": "STVector256"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "std::vector<uint256> const& vector"
+      ],
+      "lineno": 17,
+      "name": "STVector256"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 18,
+      "name": "STVector256"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 23,
+      "name": "add"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 25,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 28,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& v"
+      ],
+      "lineno": 34,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::vector<uint256>&& v"
+      ],
+      "lineno": 37,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "STVector256 const& v"
+      ],
+      "lineno": 40,
+      "name": "setValue"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "operator std::vector<uint256>"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "size"
+    },
+    {
+      "args": [
+        "std::size_t n"
+      ],
+      "lineno": 50,
+      "name": "resize"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "std::vector<uint256>::size_type n"
+      ],
+      "lineno": 56,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "std::vector<uint256>::size_type n"
+      ],
+      "lineno": 59,
+      "name": "operator[]"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "value"
+    },
+    {
+      "args": [
+        "std::vector<uint256>::const_iterator pos",
+        "uint256 const& value"
+      ],
+      "lineno": 65,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "uint256 const& v"
+      ],
+      "lineno": 68,
+      "name": "push_back"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "end"
+    },
+    {
+      "args": [
+        "std::vector<uint256>::iterator position"
+      ],
+      "lineno": 83,
+      "name": "erase"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "clear"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 90,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 91,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

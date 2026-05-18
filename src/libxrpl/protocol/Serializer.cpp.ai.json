@@ -1,0 +1,654 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "i"
+    },
+    {
+      "lineno": 19,
+      "name": "p"
+    },
+    {
+      "lineno": 27,
+      "name": "i"
+    },
+    {
+      "lineno": 31,
+      "name": "i"
+    },
+    {
+      "lineno": 35,
+      "name": "i"
+    },
+    {
+      "lineno": 39,
+      "name": "i"
+    },
+    {
+      "lineno": 43,
+      "name": "i"
+    },
+    {
+      "lineno": 47,
+      "name": "vector"
+    },
+    {
+      "lineno": 53,
+      "name": "slice"
+    },
+    {
+      "lineno": 59,
+      "name": "s"
+    },
+    {
+      "lineno": 65,
+      "name": "ptr"
+    },
+    {
+      "lineno": 65,
+      "name": "len"
+    },
+    {
+      "lineno": 71,
+      "name": "type"
+    },
+    {
+      "lineno": 71,
+      "name": "name"
+    },
+    {
+      "lineno": 97,
+      "name": "byte"
+    },
+    {
+      "lineno": 102,
+      "name": "byte"
+    },
+    {
+      "lineno": 102,
+      "name": "offset"
+    },
+    {
+      "lineno": 109,
+      "name": "bytes"
+    },
+    {
+      "lineno": 120,
+      "name": "vector"
+    },
+    {
+      "lineno": 128,
+      "name": "slice"
+    },
+    {
+      "lineno": 135,
+      "name": "ptr"
+    },
+    {
+      "lineno": 135,
+      "name": "len"
+    },
+    {
+      "lineno": 142,
+      "name": "length"
+    },
+    {
+      "lineno": 164,
+      "name": "length"
+    },
+    {
+      "lineno": 177,
+      "name": "b1"
+    },
+    {
+      "lineno": 188,
+      "name": "b1"
+    },
+    {
+      "lineno": 195,
+      "name": "b1"
+    },
+    {
+      "lineno": 195,
+      "name": "b2"
+    },
+    {
+      "lineno": 204,
+      "name": "b1"
+    },
+    {
+      "lineno": 204,
+      "name": "b2"
+    },
+    {
+      "lineno": 204,
+      "name": "b3"
+    },
+    {
+      "lineno": 214,
+      "name": "data"
+    },
+    {
+      "lineno": 214,
+      "name": "size"
+    },
+    {
+      "lineno": 224,
+      "name": "length"
+    },
+    {
+      "lineno": 288,
+      "name": "type"
+    },
+    {
+      "lineno": 288,
+      "name": "name"
+    },
+    {
+      "lineno": 307,
+      "name": "size"
+    },
+    {
+      "lineno": 344,
+      "name": "bytes"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Serializer::addFieldID"
+      ],
+      "entry_point": "Serializer::addFieldID",
+      "purpose": "Encodes a field identifier (type, name) into the serializer buffer.",
+      "validation_points": [
+        "XRPL_ASSERT((type > 0) && (type < 256) && (name > 0) && (name < 256), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Serializer::add32(HashPrefix)",
+        "static_assert",
+        "Serializer::add32(std::uint32_t)"
+      ],
+      "entry_point": "Serializer::add32(HashPrefix)",
+      "purpose": "Adds a 32-bit hash prefix to the serializer buffer, ensuring type safety.",
+      "validation_points": [
+        "static_assert(std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Serializer::addVL(Blob const&)",
+        "addEncoded",
+        "addRaw",
+        "XRPL_ASSERT(...)"
+      ],
+      "entry_point": "Serializer::addVL(Blob const&)",
+      "purpose": "Adds a variable-length encoded blob to the serializer buffer.",
+      "validation_points": [
+        "XRPL_ASSERT(mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "type (addFieldID argument)",
+      "flow": [
+        "Caller provides type",
+        "Serializer::addFieldID receives type",
+        "XRPL_ASSERT validates type in range (1..255)",
+        "type used to encode field ID into mData"
+      ],
+      "origin": "Caller of Serializer::addFieldID",
+      "transformations": [
+        "Checked for range",
+        "Bit-shifted and combined with name for encoding"
+      ],
+      "validated_at": "XRPL_ASSERT in addFieldID"
+    },
+    {
+      "field": "name (addFieldID argument)",
+      "flow": [
+        "Caller provides name",
+        "Serializer::addFieldID receives name",
+        "XRPL_ASSERT validates name in range (1..255)",
+        "name used to encode field ID into mData"
+      ],
+      "origin": "Caller of Serializer::addFieldID",
+      "transformations": [
+        "Checked for range",
+        "Bit-shifted and combined with type for encoding"
+      ],
+      "validated_at": "XRPL_ASSERT in addFieldID"
+    },
+    {
+      "field": "p (HashPrefix argument to add32)",
+      "flow": [
+        "Caller provides p",
+        "Serializer::add32(HashPrefix) receives p",
+        "static_assert validates type at compile time",
+        "p cast to uint32_t and passed to add32(uint32_t)",
+        "Value encoded into mData"
+      ],
+      "origin": "Caller of Serializer::add32(HashPrefix)",
+      "transformations": [
+        "Compile-time type check",
+        "Safe cast to uint32_t"
+      ],
+      "validated_at": "static_assert in add32(HashPrefix)"
+    },
+    {
+      "field": "vector (Blob const& in addVL/addRaw)",
+      "flow": [
+        "Caller provides vector",
+        "addVL calls addEncoded(vector.size())",
+        "addVL calls addRaw(vector)",
+        "XRPL_ASSERT checks mData size after addition"
+      ],
+      "origin": "Caller of Serializer::addVL or addRaw",
+      "transformations": [
+        "Length encoded",
+        "Raw bytes appended to mData"
+      ],
+      "validated_at": "XRPL_ASSERT in addVL"
+    }
+  ],
+  "description": "Implements serialization and deserialization utilities for the XRPL protocol, including the Serializer and SerialIter classes for encoding/decoding binary data, variable-length fields, and field IDs.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type, name (arguments to addFieldID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Serializer::addFieldID",
+      "issue_pattern": "Missing empty string validation for type, name (arguments to addFieldID)",
+      "why_false_positive": "XRPL_ASSERT macro validates type, name (arguments to addFieldID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type, name (arguments to addFieldID)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Serializer::addFieldID",
+      "issue_pattern": "Missing range validation for type, name (arguments to addFieldID)",
+      "why_false_positive": "XRPL_ASSERT macro validates type, name (arguments to addFieldID) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p (HashPrefix argument to add32)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at Serializer::add32(HashPrefix p)",
+      "issue_pattern": "Missing empty string validation for p (HashPrefix argument to add32)",
+      "why_false_positive": "static_assert validates p (HashPrefix argument to add32) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "p (HashPrefix argument to add32)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert at Serializer::add32(HashPrefix p)",
+      "issue_pattern": "Missing type validation for p (HashPrefix argument to add32)",
+      "why_false_positive": "static_assert validates p (HashPrefix argument to add32) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Serializer.cpp",
+  "functions": [
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 12,
+      "name": "Serializer::add16"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 19,
+      "name": "Serializer::add32"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 27,
+      "name": "Serializer::addInteger<unsigned char>"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 31,
+      "name": "Serializer::addInteger<std::uint16_t>"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 35,
+      "name": "Serializer::addInteger<std::uint32_t>"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 39,
+      "name": "Serializer::addInteger<std::uint64_t>"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 43,
+      "name": "Serializer::addInteger<std::int32_t>"
+    },
+    {
+      "args": [
+        "vector"
+      ],
+      "lineno": 47,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 53,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 59,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "ptr",
+        "len"
+      ],
+      "lineno": 65,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "type",
+        "name"
+      ],
+      "lineno": 71,
+      "name": "Serializer::addFieldID"
+    },
+    {
+      "args": [
+        "byte"
+      ],
+      "lineno": 97,
+      "name": "Serializer::add8"
+    },
+    {
+      "args": [
+        "byte",
+        "offset"
+      ],
+      "lineno": 102,
+      "name": "Serializer::get8"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 109,
+      "name": "Serializer::chop"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "Serializer::getSHA512Half"
+    },
+    {
+      "args": [
+        "vector"
+      ],
+      "lineno": 120,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 128,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "ptr",
+        "len"
+      ],
+      "lineno": 135,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "length"
+      ],
+      "lineno": 142,
+      "name": "Serializer::addEncoded"
+    },
+    {
+      "args": [
+        "length"
+      ],
+      "lineno": 164,
+      "name": "Serializer::encodeLengthLength"
+    },
+    {
+      "args": [
+        "b1"
+      ],
+      "lineno": 177,
+      "name": "Serializer::decodeLengthLength"
+    },
+    {
+      "args": [
+        "b1"
+      ],
+      "lineno": 188,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "b1",
+        "b2"
+      ],
+      "lineno": 195,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "b1",
+        "b2",
+        "b3"
+      ],
+      "lineno": 204,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 214,
+      "name": "SerialIter::SerialIter"
+    },
+    {
+      "args": [],
+      "lineno": 218,
+      "name": "SerialIter::reset"
+    },
+    {
+      "args": [
+        "length"
+      ],
+      "lineno": 224,
+      "name": "SerialIter::skip"
+    },
+    {
+      "args": [],
+      "lineno": 232,
+      "name": "SerialIter::get8"
+    },
+    {
+      "args": [],
+      "lineno": 240,
+      "name": "SerialIter::get16"
+    },
+    {
+      "args": [],
+      "lineno": 249,
+      "name": "SerialIter::get32"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "SerialIter::get64"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "SerialIter::geti32"
+    },
+    {
+      "args": [],
+      "lineno": 279,
+      "name": "SerialIter::geti64"
+    },
+    {
+      "args": [
+        "type",
+        "name"
+      ],
+      "lineno": 288,
+      "name": "SerialIter::getFieldID"
+    },
+    {
+      "args": [
+        "size"
+      ],
+      "lineno": 307,
+      "name": "SerialIter::getRawHelper"
+    },
+    {
+      "args": [
+        "size"
+      ],
+      "lineno": 324,
+      "name": "SerialIter::getRaw"
+    },
+    {
+      "args": [],
+      "lineno": 329,
+      "name": "SerialIter::getVLDataLength"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 344,
+      "name": "SerialIter::getSlice"
+    },
+    {
+      "args": [],
+      "lineno": 355,
+      "name": "SerialIter::getVL"
+    },
+    {
+      "args": [],
+      "lineno": 360,
+      "name": "SerialIter::getVLBuffer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The Serializer class is a core utility and is likely tested indirectly via transaction serialization/deserialization and protocol-level tests. Direct unit tests for addFieldID, add32(HashPrefix), and addVL may exist in files like Serializer_test.cpp or protocol/Serializer.test.cpp. However, the XRPL_ASSERT macro may be compiled out in release builds, so runtime validation may not be covered in all configurations. The static_assert in add32(HashPrefix) is compile-time only and not testable at runtime. Edge cases for invalid type/name in addFieldID may not be fully covered if asserts are disabled. There may be gaps in negative testing for invalid arguments if asserts are not checked in tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, static_assert (compile-time)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error (via XRPL_ASSERT)",
+      "field": "type, name (arguments to addFieldID)",
+      "location": "Serializer::addFieldID",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "type > 0",
+        "type < 256",
+        "name > 0",
+        "name < 256"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error (static_assert)",
+      "field": "p (HashPrefix argument to add32)",
+      "location": "Serializer::add32(HashPrefix p)",
+      "validated_by": "static_assert",
+      "validates": [
+        "HashPrefix underlying type is std::uint32_t"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

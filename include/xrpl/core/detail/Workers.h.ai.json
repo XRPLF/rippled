@@ -1,0 +1,141 @@
+{
+  "args": [
+    {
+      "lineno": 77,
+      "name": "callback"
+    },
+    {
+      "lineno": 78,
+      "name": "perfLog"
+    },
+    {
+      "lineno": 79,
+      "name": "threadNames"
+    },
+    {
+      "lineno": 80,
+      "name": "numberOfThreads"
+    },
+    {
+      "lineno": 61,
+      "name": "instance"
+    },
+    {
+      "lineno": 94,
+      "name": "numberOfThreads"
+    },
+    {
+      "lineno": 142,
+      "name": "workers"
+    },
+    {
+      "lineno": 142,
+      "name": "threadName"
+    },
+    {
+      "lineno": 142,
+      "name": "instance"
+    },
+    {
+      "lineno": 167,
+      "name": "stack"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "callback",
+        "perfLog",
+        "threadNames",
+        "numberOfThreads"
+      ],
+      "lineno": 36,
+      "name": "Workers"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "Callback"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "PausedTag"
+    },
+    {
+      "args": [
+        "workers",
+        "threadName",
+        "instance"
+      ],
+      "lineno": 139,
+      "name": "Worker"
+    }
+  ],
+  "description": "Defines a thread pool class 'Workers' for managing worker threads that execute tasks via a callback interface, with support for pausing, resuming, and dynamically adjusting the number of threads.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/detail/Workers.h",
+  "functions": [
+    {
+      "args": [
+        "instance"
+      ],
+      "lineno": 61,
+      "name": "processTask"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getNumberOfThreads"
+    },
+    {
+      "args": [
+        "numberOfThreads"
+      ],
+      "lineno": 94,
+      "name": "setNumberOfThreads"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "addTask"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "numberOfCurrentlyRunningTasks"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "notify"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "run"
+    },
+    {
+      "args": [
+        "stack"
+      ],
+      "lineno": 167,
+      "name": "deleteWorkers"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "perf"
+    }
+  ]
+}

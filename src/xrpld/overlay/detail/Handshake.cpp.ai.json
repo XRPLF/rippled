@@ -1,0 +1,464 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "makeFeaturesRequestHeader"
+      ],
+      "entry_point": "makeFeaturesRequestHeader",
+      "purpose": "Constructs the X-Protocol-Ctl header for outgoing requests, encoding enabled features.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "makeFeaturesResponseHeader",
+        "isFeatureValue",
+        "getFeatureValue",
+        "beast::rfc2616::token_in_list",
+        "featureEnabled"
+      ],
+      "entry_point": "makeFeaturesResponseHeader",
+      "purpose": "Constructs the X-Protocol-Ctl header for outgoing responses, but only includes features that were requested and validated in the incoming request.",
+      "validation_points": [
+        "isFeatureValue (validates feature value in request header)",
+        "featureEnabled (validates feature enabled flag in request header)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFeatureValue",
+        "getFeatureValue",
+        "beast::rfc2616::token_in_list"
+      ],
+      "entry_point": "isFeatureValue",
+      "purpose": "Checks if a specific feature in the X-Protocol-Ctl header matches a given value.",
+      "validation_points": [
+        "getFeatureValue (extracts feature value using regex)",
+        "beast::rfc2616::token_in_list (validates value against allowed tokens)"
+      ]
+    },
+    {
+      "call_chain": [
+        "featureEnabled",
+        "isFeatureValue",
+        "getFeatureValue",
+        "beast::rfc2616::token_in_list"
+      ],
+      "entry_point": "featureEnabled",
+      "purpose": "Checks if a feature is enabled (value == '1') in the X-Protocol-Ctl header.",
+      "validation_points": [
+        "isFeatureValue (validates feature enabled flag)"
+      ]
+    },
+    {
+      "call_chain": [
+        "getFeatureValue"
+      ],
+      "entry_point": "getFeatureValue",
+      "purpose": "Extracts the value of a feature from the X-Protocol-Ctl header using regex.",
+      "validation_points": [
+        "boost::regex_search (validates header format and extracts value)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "X-Protocol-Ctl header",
+      "flow": [
+        "HTTP headers received",
+        "getFeatureValue extracts feature value using regex",
+        "isFeatureValue checks value using token_in_list",
+        "featureEnabled checks if value == '1'",
+        "makeFeaturesResponseHeader uses isFeatureValue/featureEnabled to decide what to echo"
+      ],
+      "origin": "Incoming HTTP request/response headers",
+      "transformations": [
+        "Regex extraction (getFeatureValue)",
+        "Token validation (token_in_list)",
+        "Boolean check for '1' (featureEnabled)"
+      ],
+      "validated_at": "getFeatureValue, isFeatureValue, featureEnabled"
+    },
+    {
+      "field": "feature values (e.g., lz4, 1)",
+      "flow": [
+        "getFeatureValue extracts value",
+        "isFeatureValue validates value",
+        "featureEnabled checks for '1'",
+        "makeFeaturesResponseHeader includes only validated features"
+      ],
+      "origin": "Parsed from X-Protocol-Ctl header",
+      "transformations": [
+        "String extraction",
+        "Token comparison",
+        "Conditional inclusion in response header"
+      ],
+      "validated_at": "isFeatureValue, featureEnabled"
+    },
+    {
+      "field": "Outgoing X-Protocol-Ctl header",
+      "flow": [
+        "Feature flags (bools) passed to makeFeaturesRequestHeader/makeFeaturesResponseHeader",
+        "Header string constructed",
+        "Header attached to outgoing HTTP request/response"
+      ],
+      "origin": "makeFeaturesRequestHeader or makeFeaturesResponseHeader",
+      "transformations": [
+        "Manual string construction",
+        "Conditional inclusion based on validation"
+      ],
+      "validated_at": "makeFeaturesResponseHeader (validates before echoing features)"
+    }
+  ],
+  "description": "Implements XRPL peer handshake logic, including feature negotiation, handshake request/response construction, and cryptographic verification for secure peer connections.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "X-Protocol-Ctl header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::regex_search at getFeatureValue",
+      "issue_pattern": "Missing empty string validation for X-Protocol-Ctl header",
+      "why_false_positive": "boost::regex_search validates X-Protocol-Ctl header for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "X-Protocol-Ctl header",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::regex_search at getFeatureValue",
+      "issue_pattern": "Missing format validation for X-Protocol-Ctl header",
+      "why_false_positive": "boost::regex_search validates X-Protocol-Ctl header format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feature value in X-Protocol-Ctl header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::rfc2616::token_in_list at isFeatureValue",
+      "issue_pattern": "Missing empty string validation for feature value in X-Protocol-Ctl header",
+      "why_false_positive": "beast::rfc2616::token_in_list validates feature value in X-Protocol-Ctl header for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "feature value in X-Protocol-Ctl header",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::rfc2616::token_in_list at isFeatureValue",
+      "issue_pattern": "Missing format validation for feature value in X-Protocol-Ctl header",
+      "why_false_positive": "beast::rfc2616::token_in_list validates feature value in X-Protocol-Ctl header format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feature enabled flag in X-Protocol-Ctl header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFeatureValue at featureEnabled",
+      "issue_pattern": "Missing empty string validation for feature enabled flag in X-Protocol-Ctl header",
+      "why_false_positive": "isFeatureValue validates feature enabled flag in X-Protocol-Ctl header for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "feature values in request header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual string construction at makeFeaturesRequestHeader",
+      "issue_pattern": "Missing empty string validation for feature values in request header",
+      "why_false_positive": "manual string construction validates feature values in request header for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "feature values in response header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFeatureValue, featureEnabled at makeFeaturesResponseHeader",
+      "issue_pattern": "Missing empty string validation for feature values in response header",
+      "why_false_positive": "isFeatureValue, featureEnabled validates feature values in response header for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/Handshake.cpp",
+  "functions": [
+    {
+      "args": [
+        "headers",
+        "feature"
+      ],
+      "lineno": 11,
+      "name": "getFeatureValue"
+    },
+    {
+      "args": [
+        "headers",
+        "feature",
+        "value"
+      ],
+      "lineno": 22,
+      "name": "isFeatureValue"
+    },
+    {
+      "args": [
+        "headers",
+        "feature"
+      ],
+      "lineno": 31,
+      "name": "featureEnabled"
+    },
+    {
+      "args": [
+        "comprEnabled",
+        "ledgerReplayEnabled",
+        "txReduceRelayEnabled",
+        "vpReduceRelayEnabled"
+      ],
+      "lineno": 35,
+      "name": "makeFeaturesRequestHeader"
+    },
+    {
+      "args": [
+        "headers",
+        "comprEnabled",
+        "ledgerReplayEnabled",
+        "txReduceRelayEnabled",
+        "vpReduceRelayEnabled"
+      ],
+      "lineno": 47,
+      "name": "makeFeaturesResponseHeader"
+    },
+    {
+      "args": [
+        "ssl",
+        "get"
+      ],
+      "lineno": 61,
+      "name": "hashLastMessage"
+    },
+    {
+      "args": [
+        "ssl",
+        "journal"
+      ],
+      "lineno": 81,
+      "name": "makeSharedValue"
+    },
+    {
+      "args": [
+        "h",
+        "sharedValue",
+        "networkID",
+        "public_ip",
+        "remote_ip",
+        "app"
+      ],
+      "lineno": 104,
+      "name": "buildHandshake"
+    },
+    {
+      "args": [
+        "headers",
+        "sharedValue",
+        "networkID",
+        "public_ip",
+        "remote",
+        "app"
+      ],
+      "lineno": 137,
+      "name": "verifyHandshake"
+    },
+    {
+      "args": [
+        "crawlPublic",
+        "comprEnabled",
+        "ledgerReplayEnabled",
+        "txReduceRelayEnabled",
+        "vpReduceRelayEnabled"
+      ],
+      "lineno": 238,
+      "name": "makeRequest"
+    },
+    {
+      "args": [
+        "crawlPublic",
+        "req",
+        "public_ip",
+        "remote_ip",
+        "sharedValue",
+        "networkID",
+        "protocol",
+        "app"
+      ],
+      "lineno": 257,
+      "name": "makeResponse"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is low-level and likely tested indirectly via overlay handshake integration or protocol negotiation tests. Direct unit tests for getFeatureValue, isFeatureValue, and featureEnabled may exist in overlay/detail or protocol test suites, but are not visible in this file. Manual string construction and regex parsing are error-prone and should be covered by tests for malformed/missing/extra header values, but such edge cases may not be fully tested. There is a risk that malformed X-Protocol-Ctl headers or unexpected feature values are not robustly tested. Look for tests in overlay/Overlay_test.cpp, overlay/Handshake_test.cpp, or protocol/HTTPHeaders_test.cpp. Gaps likely exist for malformed header formats, multiple features, or invalid tokens.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "boost::regex, beast::rfc2616",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns std::nullopt if not matched)",
+      "field": "X-Protocol-Ctl header",
+      "location": "getFeatureValue",
+      "validated_by": "boost::regex_search",
+      "validates": [
+        "Checks if the X-Protocol-Ctl header exists",
+        "Validates that the header contains the feature in the format feature=([^;\\s]+)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not matched)",
+      "field": "feature value in X-Protocol-Ctl header",
+      "location": "isFeatureValue",
+      "validated_by": "beast::rfc2616::token_in_list",
+      "validates": [
+        "Checks if the extracted feature value matches the expected value using RFC2616 token list rules"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not matched)",
+      "field": "feature enabled flag in X-Protocol-Ctl header",
+      "location": "featureEnabled",
+      "validated_by": "isFeatureValue",
+      "validates": [
+        "Checks if the feature value is '1' (enabled)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none",
+      "field": "feature values in request header",
+      "location": "makeFeaturesRequestHeader",
+      "validated_by": "manual string construction",
+      "validates": [
+        "Only includes features in header if corresponding boolean is true"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none",
+      "field": "feature values in response header",
+      "location": "makeFeaturesResponseHeader",
+      "validated_by": "isFeatureValue, featureEnabled",
+      "validates": [
+        "Only includes features in response if both local and remote support/enable them"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

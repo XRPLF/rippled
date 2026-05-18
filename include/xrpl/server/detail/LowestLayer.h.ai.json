@@ -1,0 +1,27 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "t"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to obtain the lowest layer of a Boost.Beast stream, handling differences between Boost versions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/LowestLayer.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 11,
+      "name": "get_lowest_layer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

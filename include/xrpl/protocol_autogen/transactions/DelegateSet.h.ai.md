@@ -1,0 +1,30 @@
+# `DelegateSet.h` — Auto-generated Transaction Wrapper for Permission Delegation
+
+## Role in the System
+
+`DelegateSet.h` lives in the `protocol_autogen/transactions/` layer of the XRPL codebase, a directory of auto-generated, do-not-edit headers — one per transaction type — that provide strongly-typed C++ interfaces over the raw serialized transaction format. This file specifically covers the `DelegateSet` transaction (`ttDELEGATE_SET`, type 64), introduced under the `featurePermissionDelegationV1_1` amendment. The transaction allows an XRPL account holder to authorize a second account to submit certain transaction types on their behalf, creating a fine-grained permission delegation system. The resulting on-ledger state is stored in a `Delegate` ledger entry (`ltDELEGATE`, 0x0083), defined by the parallel auto-generated file `ledger_entries/Delegate.h`.
+
+## Two-Class Design: Wrapper + Builder
+
+Every auto-generated transaction header pairs an immutable read-only view class with a mutable builder class. This separation enforces that already-signed, canonical `STTx` objects can never be mutated after construction, while still offering a convenient fluent API for assembling new ones.
+
+**`DelegateSet`** extends `TransactionBase` and wraps a `std::shared_ptr<STTx const>`. Its constructor performs an eager type assertion — if the wrapped `STTx` does not carry `ttDELEGATE_SET`, a `std::runtime_error` is thrown immediately. This is the only defense needed at the wrapper layer because all `STTx` deserialization and schema validation are handled upstream by `TransactionBase::validate()`, which delegates to `validateSTObject` and `passesLocalChecks`. Beyond the common fields inherited from `TransactionBase` (account, sequence, fee, flags, memos, signers, network ID, and the new `sfDelegate` field for delegated submission), `DelegateSet` exposes exactly two transaction-specific accessors:
+
+- `getAuthorize()` — returns the `AccountID` of the account being granted permissions (`sfAuthorize`, required).
+- `getPermissions()` — returns a `const STArray&` encoding the set of permitted transaction types (`sfPermissions`, required). Because `sfPermissions` is an opaque structured array in the protocol, the accessor bypasses field templates and calls `getFieldArray()` directly.
+
+**`DelegateSetBuilder`** extends `TransactionBuilderBase<DelegateSetBuilder>`, which uses CRTP so that all setter methods inherited from the base (sequence, fee, memos, network ID, delegate, etc.) return `DelegateSetBuilder&`, allowing fluent chaining without static casts in calling code. The builder's primary constructor requires all `soeREQUIRED` fields upfront: `account`, `authorize`, `permissions`, plus optional `sequence` and `fee`. This keeps the invariant that a fully-constructed builder always has the minimum viable transaction payload. There is also a secondary constructor accepting an existing `std::shared_ptr<STTx const>` for cases where a transaction should be reconstructed from an already-serialized form — useful in testing or transaction mutation workflows.
+
+The `build()` method finalizes the transaction by calling the base class `sign()`, which serializes the in-progress `STObject` with `HashPrefix::txSign`, signs the digest with the provided `PublicKey`/`SecretKey` pair, injects `sfSigningPubKey` and `sfTxnSignature` fields, then wraps the `STObject` in an `STTx` and passes it to the `DelegateSet` read wrapper constructor.
+
+## The `notDelegable` Constraint
+
+An important semantic property annotated in the class docblock: `DelegateSet` is marked `Delegation::notDelegable`. This means a delegated account cannot itself submit a `DelegateSet` on behalf of the granting account. The constraint closes the obvious privilege-escalation hole where a delegate could extend their own authority or create sub-delegates. Enforcement happens in the `DelegateSet` transactor (defined separately in `include/xrpl/tx/transactors/delegate/DelegateSet.h`), which performs `preflight`, `preclaim`, and `doApply` validation; the transactor also provides a static `deleteDelegate()` helper invoked during `AccountDelete` to clean up `Delegate` ledger entries owned by a departing account.
+
+## Relationship to `Delegate` Ledger Entry
+
+The fields `sfAuthorize` and `sfPermissions` that `DelegateSet` writes to the ledger end up mirrored almost exactly in the `Delegate` ledger entry (`ledger_entries/Delegate.h`). Where the transaction has only `sfAuthorize` and `sfPermissions` as required fields, the ledger entry additionally stores `sfAccount` (the granting account), `sfOwnerNode` (for the owner directory), `sfPreviousTxnID`, and `sfPreviousTxnLgrSeq` — the standard bookkeeping fields added by the ledger when committing any `SLE`. This direct structural mapping between the `DelegateSet` transaction type and the `Delegate` object it creates or modifies reflects the general XRPL design principle that each "Set" transaction type owns a corresponding named ledger object.
+
+## Auto-generation Implications
+
+The `// This file is auto-generated. Do not edit.` header and the mechanical uniformity of the code — constructor guard, `[[nodiscard]]` accessors, builder pattern with CRTP, `build()` finalizer — are intentional. The `protocol_autogen` directory contains roughly 70 transaction types following the same structure. Hand-coding that layer would introduce inconsistencies and drift from the protocol schema. The generator ensures that adding a new required field to `DelegateSet` propagates atomically to both the getter in `DelegateSet` and the setter and constructor parameter in `DelegateSetBuilder`, with no risk of mismatches. The cost is that the generated code is less idiomatic in places — for example, the constructor parameter list on line 92 is a single long line with inconsistent whitespace, a common artifact of template-driven generation.

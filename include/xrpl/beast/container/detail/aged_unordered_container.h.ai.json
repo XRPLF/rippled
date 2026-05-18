@@ -1,0 +1,126 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "clock_type& clock",
+        "clock_type& clock, Hash const& hash",
+        "clock_type& clock, KeyEqual const& key_eq",
+        "clock_type& clock, Allocator const& alloc",
+        "clock_type& clock, Hash const& hash, KeyEqual const& key_eq",
+        "clock_type& clock, Hash const& hash, Allocator const& alloc",
+        "clock_type& clock, KeyEqual const& key_eq, Allocator const& alloc",
+        "clock_type& clock, Hash const& hash, KeyEqual const& key_eq, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock",
+        "InputIt first, InputIt last, clock_type& clock, Hash const& hash",
+        "InputIt first, InputIt last, clock_type& clock, KeyEqual const& key_eq",
+        "InputIt first, InputIt last, clock_type& clock, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock, Hash const& hash, KeyEqual const& key_eq",
+        "InputIt first, InputIt last, clock_type& clock, Hash const& hash, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock, KeyEqual const& key_eq, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock, Hash const& hash, KeyEqual const& key_eq, Allocator const& alloc",
+        "aged_unordered_container const& other",
+        "aged_unordered_container const& other, Allocator const& alloc",
+        "aged_unordered_container&& other",
+        "aged_unordered_container&& other, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock",
+        "std::initializer_list<value_type> init, clock_type& clock, Hash const& hash",
+        "std::initializer_list<value_type> init, clock_type& clock, KeyEqual const& key_eq",
+        "std::initializer_list<value_type> init, clock_type& clock, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock, Hash const& hash, KeyEqual const& key_eq",
+        "std::initializer_list<value_type> init, clock_type& clock, Hash const& hash, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock, KeyEqual const& key_eq, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock, Hash const& hash, KeyEqual const& key_eq, Allocator const& alloc"
+      ],
+      "lineno": 38,
+      "name": "aged_unordered_container"
+    },
+    {
+      "args": [
+        "time_point const& when_, value_type const& value_",
+        "time_point const& when_, value_type&& value_",
+        "time_point const& when_, Args&&... args"
+      ],
+      "lineno": 70,
+      "name": "element"
+    },
+    {
+      "args": [
+        "()",
+        "(Hash const& h)"
+      ],
+      "lineno": 97,
+      "name": "ValueHash"
+    },
+    {
+      "args": [
+        "()",
+        "(KeyEqual const& keyEqual)"
+      ],
+      "lineno": 120,
+      "name": "KeyValueEqual"
+    },
+    {
+      "args": [
+        "clock_type& clock_",
+        "clock_type& clock_, Hash const& hash",
+        "clock_type& clock_, KeyEqual const& keyEqual",
+        "clock_type& clock_, Allocator const& alloc_",
+        "clock_type& clock_, Hash const& hash, KeyEqual const& keyEqual",
+        "clock_type& clock_, Hash const& hash, Allocator const& alloc_",
+        "clock_type& clock_, KeyEqual const& keyEqual, Allocator const& alloc_",
+        "clock_type& clock_, Hash const& hash, KeyEqual const& keyEqual, Allocator const& alloc_",
+        "config_t const& other",
+        "config_t const& other, Allocator const& alloc",
+        "config_t&& other",
+        "config_t&& other, Allocator const& alloc"
+      ],
+      "lineno": 154,
+      "name": "config_t"
+    },
+    {
+      "args": [
+        "()",
+        "(Allocator const& alloc)"
+      ],
+      "lineno": 246,
+      "name": "Buckets"
+    },
+    {
+      "args": [],
+      "lineno": 326,
+      "name": "chronological_t"
+    }
+  ],
+  "description": "This file implements an associative container (aged_unordered_container) where each element is indexed by both key and time, supporting expiration and cache-like behavior. It mirrors the interface of standard unordered containers, with additional chronological traversal and time-based operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/detail/aged_unordered_container.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 1207,
+      "name": "swap"
+    },
+    {
+      "args": [
+        "c",
+        "age"
+      ],
+      "lineno": 1222,
+      "name": "expire"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 27,
+      "name": "beast"
+    },
+    {
+      "lineno": 28,
+      "name": "detail"
+    }
+  ]
+}

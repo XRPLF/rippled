@@ -1,0 +1,56 @@
+{
+  "args": [
+    {
+      "lineno": 77,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "MPTAmount const& other",
+        "beast::Zero",
+        "Number const& x",
+        "value_type value"
+      ],
+      "lineno": 13,
+      "name": "MPTAmount"
+    }
+  ],
+  "description": "Defines the MPTAmount class for representing signed integer amounts in the XRPL protocol, including arithmetic operations, conversions, and utility functions such as mulRatio for ratio multiplication with rounding.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/MPTAmount.h",
+  "functions": [
+    {
+      "args": [
+        "os",
+        "q"
+      ],
+      "lineno": 97,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 104,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "amt",
+        "num",
+        "den",
+        "roundUp"
+      ],
+      "lineno": 109,
+      "name": "mulRatio"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

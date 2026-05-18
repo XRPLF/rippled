@@ -1,0 +1,130 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "tx"
+    },
+    {
+      "lineno": 110,
+      "name": "account"
+    },
+    {
+      "lineno": 111,
+      "name": "nFTokenID"
+    },
+    {
+      "lineno": 112,
+      "name": "sequence"
+    },
+    {
+      "lineno": 113,
+      "name": "fee"
+    },
+    {
+      "lineno": 119,
+      "name": "tx"
+    },
+    {
+      "lineno": 121,
+      "name": "value"
+    },
+    {
+      "lineno": 130,
+      "name": "value"
+    },
+    {
+      "lineno": 139,
+      "name": "value"
+    },
+    {
+      "lineno": 148,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 148,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 33,
+      "name": "NFTokenModify"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 101,
+      "name": "NFTokenModifyBuilder"
+    }
+  ],
+  "description": "Defines the NFTokenModify transaction and its builder for the XRPL protocol, providing type-safe accessors and a fluent builder interface for constructing and signing NFTokenModify transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/NFTokenModify.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getNFTokenID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "hasOwner"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getURI"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "hasURI"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 120,
+      "name": "setNFTokenID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 129,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 138,
+      "name": "setURI"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 147,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

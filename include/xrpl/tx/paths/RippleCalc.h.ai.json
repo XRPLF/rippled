@@ -1,0 +1,66 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "RippleCalc"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "Input"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "Output"
+    }
+  ],
+  "description": "Defines the RippleCalc class, which calculates the quality (exchange rate) of a payment path in the XRPL, including input/output amounts and removable offers for payment transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/RippleCalc.h",
+  "functions": [
+    {
+      "args": [
+        "PaymentSandbox& view",
+        "STAmount const& saMaxAmountReq",
+        "STAmount const& saDstAmountReq",
+        "AccountID const& uDstAccountID",
+        "AccountID const& uSrcAccountID",
+        "STPathSet const& spsPaths",
+        "std::optional<uint256> const& domainID",
+        "ServiceRegistry& registry",
+        "Input const* const pInputs"
+      ],
+      "lineno": 54,
+      "name": "rippleCalculate"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "result"
+    },
+    {
+      "args": [
+        "TER const value"
+      ],
+      "lineno": 48,
+      "name": "setResult"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "path"
+    },
+    {
+      "lineno": 11,
+      "name": "detail"
+    }
+  ]
+}

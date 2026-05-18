@@ -1,0 +1,59 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "name"
+    },
+    {
+      "lineno": 19,
+      "name": "name"
+    },
+    {
+      "lineno": 29,
+      "name": "collector"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "Groups"
+    }
+  ],
+  "description": "Defines the Groups class, a container for managing a set of metric groups, and declares a factory function to create such a container using a specified collector.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Groups.h",
+  "functions": [
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 16,
+      "name": "get"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 19,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "collector"
+      ],
+      "lineno": 29,
+      "name": "make_Groups"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "insight"
+    }
+  ]
+}

@@ -1,0 +1,383 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PermissionedDomainDelete::preflight"
+      ],
+      "entry_point": "PermissionedDomainDelete::preflight",
+      "purpose": "Initial transaction validation: checks for malformed or missing fields before further processing.",
+      "validation_points": [
+        "Checks if sfDomainID is present and not zero (ctx.tx.getFieldH256(sfDomainID) == beast::zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PermissionedDomainDelete::preclaim"
+      ],
+      "entry_point": "PermissionedDomainDelete::preclaim",
+      "purpose": "Checks ledger state and permissions before transaction is allowed to proceed.",
+      "validation_points": [
+        "Checks if permissioned domain exists (ctx.view.read(keylet::permissionedDomain(domain)))",
+        "Checks if sfOwner and sfAccount fields are present (sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount))",
+        "Checks if sfOwner matches sfAccount (sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount))"
+      ]
+    },
+    {
+      "call_chain": [
+        "PermissionedDomainDelete::doApply"
+      ],
+      "entry_point": "PermissionedDomainDelete::doApply",
+      "purpose": "Applies the transaction to the ledger, deleting the permissioned domain if all validations pass.",
+      "validation_points": [
+        "Checks if sfDomainID is present (ctx_.tx.isFieldPresent(sfDomainID))",
+        "Asserts owner count is nonzero before decrementing"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "ctx.tx.getFieldH256(sfDomainID) in preflight",
+        "ctx.tx.getFieldH256(sfDomainID) in preclaim",
+        "ctx_.tx.at(sfDomainID) in doApply"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for zero value in preflight",
+        "Used as key to lookup permissioned domain in ledger in preclaim and doApply"
+      ],
+      "validated_at": "preflight (not zero), preclaim (exists in ledger), doApply (present in tx)"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "sleDomain->isFieldPresent(sfOwner) in preclaim",
+        "sleDomain->getAccountID(sfOwner) in preclaim",
+        "(*slePd)[sfOwnerNode] in doApply"
+      ],
+      "origin": "sleDomain (ledger entry for permissioned domain)",
+      "transformations": [
+        "Checked for presence in preclaim",
+        "Compared to sfAccount in preclaim",
+        "Used to find owner directory node in doApply"
+      ],
+      "validated_at": "preclaim (presence and match with sfAccount)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfAccount) in preclaim",
+        "ctx.tx.getAccountID(sfAccount) in preclaim"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence in preclaim",
+        "Compared to sfOwner in preclaim"
+      ],
+      "validated_at": "preclaim (presence and match with sfOwner)"
+    },
+    {
+      "field": "sfOwnerNode",
+      "flow": [
+        "(*slePd)[sfOwnerNode] in doApply"
+      ],
+      "origin": "slePd (permissioned domain ledger entry)",
+      "transformations": [
+        "Used to locate the directory node for removal"
+      ],
+      "validated_at": "Not directly validated, but used after prior validations"
+    },
+    {
+      "field": "sfOwnerCount",
+      "flow": [
+        "ownerSle->getFieldU32(sfOwnerCount) in doApply"
+      ],
+      "origin": "ownerSle (account root ledger entry)",
+      "transformations": [
+        "Asserted to be > 0 before decrement",
+        "Decremented by adjustOwnerCount"
+      ],
+      "validated_at": "doApply (asserted > 0)"
+    }
+  ],
+  "description": "Implements the PermissionedDomainDelete transaction logic for deleting a permissioned domain in the XRPL ledger, including preflight, preclaim, and apply steps.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getFieldH256(sfDomainID) == beast::zero at PermissionedDomainDelete::preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.tx.getFieldH256(sfDomainID) == beast::zero validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfDomainID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "ctx.tx.getFieldH256(sfDomainID) == beast::zero at PermissionedDomainDelete::preflight",
+      "issue_pattern": "Missing format validation for sfDomainID",
+      "why_false_positive": "ctx.tx.getFieldH256(sfDomainID) == beast::zero validates sfDomainID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::permissionedDomain(domain)) at PermissionedDomainDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.view.read(keylet::permissionedDomain(domain)) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner, sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount) at PermissionedDomainDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwner, sfAccount",
+      "why_false_positive": "sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount) validates sfOwner, sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwner, sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount) at PermissionedDomainDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for sfOwner, sfAccount",
+      "why_false_positive": "sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount) validates sfOwner, sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx_.tx.isFieldPresent(sfDomainID) at PermissionedDomainDelete::doApply",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx_.tx.isFieldPresent(sfDomainID) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner directory entry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!view().dirRemove(...) at PermissionedDomainDelete::doApply",
+      "issue_pattern": "Missing empty string validation for owner directory entry",
+      "why_false_positive": "!view().dirRemove(...) validates owner directory entry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwnerCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0 at PermissionedDomainDelete::doApply",
+      "issue_pattern": "Missing empty string validation for sfOwnerCount",
+      "why_false_positive": "ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0 validates sfOwnerCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfOwnerCount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0 at PermissionedDomainDelete::doApply",
+      "issue_pattern": "Missing range validation for sfOwnerCount",
+      "why_false_positive": "ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0 validates sfOwnerCount range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 7,
+      "name": "PermissionedDomainDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "PermissionedDomainDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "PermissionedDomainDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit/integration tests for PermissionedDomainDelete transactions, typically found in files like 'PermissionedDomain_test.cpp', 'Transactor_test.cpp', or similar in the rippled codebase. The validation paths (malformed domain, missing fields, permission errors, successful deletion) are straightforward and should be tested. However, edge cases such as ledger corruption (e.g., missing owner directory node, owner count underflow) may not be fully covered unless explicitly tested. The LCOV_EXCL_START/STOP block suggests that the error path for directory removal failure is not covered by tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL custom transaction processing (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID",
+      "location": "PermissionedDomainDelete::preflight",
+      "validated_by": "ctx.tx.getFieldH256(sfDomainID) == beast::zero",
+      "validates": [
+        "Checks that the DomainID field is present and not zero (invalid/empty hash)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfDomainID",
+      "location": "PermissionedDomainDelete::preclaim",
+      "validated_by": "ctx.view.read(keylet::permissionedDomain(domain))",
+      "validates": [
+        "Checks that the Permissioned Domain entry exists in the ledger for the given DomainID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (internal assertion, likely aborts or logs error)",
+      "field": "sfOwner, sfAccount",
+      "location": "PermissionedDomainDelete::preclaim",
+      "validated_by": "sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount)",
+      "validates": [
+        "Checks that the Permissioned Domain entry has an owner and the transaction specifies an account"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfOwner, sfAccount",
+      "location": "PermissionedDomainDelete::preclaim",
+      "validated_by": "sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount)",
+      "validates": [
+        "Checks that the transaction's account matches the owner of the Permissioned Domain"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (internal assertion, likely aborts or logs error)",
+      "field": "sfDomainID",
+      "location": "PermissionedDomainDelete::doApply",
+      "validated_by": "ctx_.tx.isFieldPresent(sfDomainID)",
+      "validates": [
+        "Checks that the DomainID field is present in the transaction"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "owner directory entry",
+      "location": "PermissionedDomainDelete::doApply",
+      "validated_by": "!view().dirRemove(...)",
+      "validates": [
+        "Checks that the directory entry for the permissioned domain can be removed"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (internal assertion, likely aborts or logs error)",
+      "field": "sfOwnerCount",
+      "location": "PermissionedDomainDelete::doApply",
+      "validated_by": "ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0",
+      "validates": [
+        "Checks that the owner's OwnerCount is present and greater than zero before decrementing"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

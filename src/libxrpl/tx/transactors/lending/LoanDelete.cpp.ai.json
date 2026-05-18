@@ -1,0 +1,481 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanDelete::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanDelete::checkExtraFeatures",
+      "purpose": "Checks that all protocol dependencies for lending are satisfied before proceeding.",
+      "validation_points": [
+        "checkLendingProtocolDependencies"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanDelete::preflight"
+      ],
+      "entry_point": "LoanDelete::preflight",
+      "purpose": "Performs initial stateless validation of the transaction, such as field presence and basic checks.",
+      "validation_points": [
+        "ctx.tx[sfLoanID] == beast::zero"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanDelete::preclaim"
+      ],
+      "entry_point": "LoanDelete::preclaim",
+      "purpose": "Performs stateful validation, checking ledger state for existence and permissions.",
+      "validation_points": [
+        "ctx.view.read(keylet::loan(loanID))",
+        "loanSle->at(sfPaymentRemaining) > 0",
+        "ctx.view.read(keylet::loanbroker(loanBrokerID))",
+        "loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanDelete::doApply"
+      ],
+      "entry_point": "LoanDelete::doApply",
+      "purpose": "Applies the transaction to the ledger, assuming all validations have passed.",
+      "validation_points": [
+        "loanSle, borrowerSle, brokerSle, vaultSle existence checks (defensive, not user-facing validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLoanID",
+      "flow": [
+        "ctx.tx[sfLoanID]",
+        "LoanDelete::preflight (checked for zero)",
+        "LoanDelete::preclaim (used to read loanSle)",
+        "LoanDelete::doApply (used to peek loanSle)"
+      ],
+      "origin": "ctx.tx[sfLoanID] (transaction input)",
+      "transformations": [
+        "Checked for zero (invalid)",
+        "Used as key to fetch loan object"
+      ],
+      "validated_at": "LoanDelete::preflight, LoanDelete::preclaim"
+    },
+    {
+      "field": "sfPaymentRemaining",
+      "flow": [
+        "loanSle->at(sfPaymentRemaining)",
+        "LoanDelete::preclaim (checked > 0)"
+      ],
+      "origin": "loanSle->at(sfPaymentRemaining) (from ledger)",
+      "transformations": [
+        "Checked if > 0 to prevent deletion of active loans"
+      ],
+      "validated_at": "LoanDelete::preclaim"
+    },
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "loanSle->at(sfLoanBrokerID)",
+        "ctx.view.read(keylet::loanbroker(loanBrokerID)) (preclaim)",
+        "loanSle->at(sfLoanBrokerID) (doApply)"
+      ],
+      "origin": "loanSle->at(sfLoanBrokerID) (from loan object)",
+      "transformations": [
+        "Used as key to fetch loan broker object"
+      ],
+      "validated_at": "LoanDelete::preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "LoanDelete::preclaim (used for permission check)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to loanBrokerSle->at(sfOwner) and loanSle->at(sfBorrower)"
+      ],
+      "validated_at": "LoanDelete::preclaim"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "loanBrokerSle->at(sfOwner)",
+        "LoanDelete::preclaim (permission check)"
+      ],
+      "origin": "loanBrokerSle->at(sfOwner) (from loan broker object)",
+      "transformations": [
+        "Compared to sfAccount"
+      ],
+      "validated_at": "LoanDelete::preclaim"
+    },
+    {
+      "field": "sfBorrower",
+      "flow": [
+        "loanSle->at(sfBorrower)",
+        "LoanDelete::preclaim (permission check)",
+        "LoanDelete::doApply (used to fetch borrowerSle)"
+      ],
+      "origin": "loanSle->at(sfBorrower) (from loan object)",
+      "transformations": [
+        "Compared to sfAccount",
+        "Used as key to fetch borrower account"
+      ],
+      "validated_at": "LoanDelete::preclaim"
+    }
+  ],
+  "description": "Implements the LoanDelete transaction logic for deleting a loan in the XRPL lending protocol, including preflight, preclaim, and apply logic with permission and state checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfLoanID] == beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanID",
+      "why_false_positive": "explicit check (ctx.tx[sfLoanID] == beast::zero) validates sfLoanID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loan(loanID)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanID",
+      "why_false_positive": "ctx.view.read(keylet::loan(loanID)) validates sfLoanID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPaymentRemaining",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loanSle->at(sfPaymentRemaining) > 0 at preclaim",
+      "issue_pattern": "Missing empty string validation for sfPaymentRemaining",
+      "why_false_positive": "loanSle->at(sfPaymentRemaining) > 0 validates sfPaymentRemaining for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loanbroker(loanBrokerID)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "ctx.view.read(keylet::loanbroker(loanBrokerID)) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount, sfOwner, sfBorrower",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfOwner, sfBorrower",
+      "why_false_positive": "loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account validates sfAccount, sfOwner, sfBorrower for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::loan(loanID)) at doApply",
+      "issue_pattern": "Missing empty string validation for sfLoanID",
+      "why_false_positive": "view.peek(keylet::loan(loanID)) validates sfLoanID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBorrower",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::account(borrower)) at doApply",
+      "issue_pattern": "Missing empty string validation for sfBorrower",
+      "why_false_positive": "view.peek(keylet::account(borrower)) validates sfBorrower for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::loanbroker(brokerID)) at doApply",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "view.peek(keylet::loanbroker(brokerID)) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::vault(brokerSle->at(sfVaultID))) at doApply",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "view.peek(keylet::vault(brokerSle->at(sfVaultID))) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "LoanID in directories",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove(...) at doApply",
+      "issue_pattern": "Missing empty string validation for LoanID in directories",
+      "why_false_positive": "view.dirRemove(...) validates LoanID in directories for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Lending protocol dependencies",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkLendingProtocolDependencies(ctx) at checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for Lending protocol dependencies",
+      "why_false_positive": "checkLendingProtocolDependencies(ctx) validates Lending protocol dependencies for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanDelete::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "LoanDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "LoanDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "LoanDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LoanDelete is a transaction type, so it is likely tested in integration/functional tests for lending. Look for test files such as 'test/tx/Lending_test.cpp', 'test/tx/LoanDelete_test.cpp', or similar. The main validation paths (loan existence, payment remaining, broker/borrower permissions) are likely covered, but edge cases such as missing broker, missing borrower, or vault errors may not be directly tested unless negative/defensive tests exist. The explicit check for sfLoanID == beast::zero is a stateless validation and should be covered by malformed transaction tests. The permission checks (account must be broker owner or borrower) should be tested for both positive and negative cases. Defensive ledger checks in doApply (tefBAD_LEDGER) may not be directly tested unless there are tests for ledger corruption or manual ledger manipulation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in transaction processing (xrpl/rippled)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanID",
+      "location": "preflight",
+      "validated_by": "explicit check (ctx.tx[sfLoanID] == beast::zero)",
+      "validates": [
+        "LoanID must not be zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfLoanID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::loan(loanID))",
+      "validates": [
+        "Loan must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfPaymentRemaining",
+      "location": "preclaim",
+      "validated_by": "loanSle->at(sfPaymentRemaining) > 0",
+      "validates": [
+        "Loan must have no remaining payment obligations"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfLoanBrokerID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::loanbroker(loanBrokerID))",
+      "validates": [
+        "LoanBroker must exist for given LoanBrokerID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount, sfOwner, sfBorrower",
+      "location": "preclaim",
+      "validated_by": "loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account",
+      "validates": [
+        "Account must be either Loan Broker Owner or Loan Borrower"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfLoanID",
+      "location": "doApply",
+      "validated_by": "view.peek(keylet::loan(loanID))",
+      "validates": [
+        "Loan must exist in ledger at apply time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfBorrower",
+      "location": "doApply",
+      "validated_by": "view.peek(keylet::account(borrower))",
+      "validates": [
+        "Borrower account must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfLoanBrokerID",
+      "location": "doApply",
+      "validated_by": "view.peek(keylet::loanbroker(brokerID))",
+      "validates": [
+        "LoanBroker must exist in ledger at apply time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfVaultID",
+      "location": "doApply",
+      "validated_by": "view.peek(keylet::vault(brokerSle->at(sfVaultID)))",
+      "validates": [
+        "Vault must exist for the LoanBroker"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "LoanID in directories",
+      "location": "doApply",
+      "validated_by": "view.dirRemove(...)",
+      "validates": [
+        "LoanID must be removable from owner directories"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Not specified (returns bool, likely handled upstream)",
+      "field": "Lending protocol dependencies",
+      "location": "checkExtraFeatures",
+      "validated_by": "checkLendingProtocolDependencies(ctx)",
+      "validates": [
+        "Lending protocol dependencies must be satisfied"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "args": [
+    {
+      "lineno": 33,
+      "name": "to"
+    },
+    {
+      "lineno": 34,
+      "name": "tx"
+    },
+    {
+      "lineno": 35,
+      "name": "ter"
+    },
+    {
+      "lineno": 36,
+      "name": "parentBatchId"
+    },
+    {
+      "lineno": 37,
+      "name": "isDryRun"
+    },
+    {
+      "lineno": 38,
+      "name": "j"
+    },
+    {
+      "lineno": 49,
+      "name": "amount"
+    },
+    {
+      "lineno": 65,
+      "name": "target"
+    },
+    {
+      "lineno": 66,
+      "name": "func"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ReadView const* base",
+        "ApplyFlags flags"
+      ],
+      "lineno": 13,
+      "name": "ApplyViewImpl"
+    }
+  ],
+  "description": "Defines the ApplyViewImpl class, an editable and discardable ledger view used to build transaction metadata and apply transactions within the XRPL ledger implementation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/ApplyViewImpl.h",
+  "functions": [
+    {
+      "args": [
+        "to",
+        "tx",
+        "ter",
+        "parentBatchId",
+        "isDryRun",
+        "j"
+      ],
+      "lineno": 32,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 48,
+      "name": "deliver"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "size"
+    },
+    {
+      "args": [
+        "target",
+        "func"
+      ],
+      "lineno": 63,
+      "name": "visit"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

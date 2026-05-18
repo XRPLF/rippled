@@ -1,0 +1,309 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "n"
+    },
+    {
+      "lineno": 18,
+      "name": "f"
+    },
+    {
+      "lineno": 18,
+      "name": "v"
+    },
+    {
+      "lineno": 32,
+      "name": "name"
+    },
+    {
+      "lineno": 35,
+      "name": "amendment"
+    },
+    {
+      "lineno": 36,
+      "name": "amendment"
+    },
+    {
+      "lineno": 38,
+      "name": "amendment"
+    },
+    {
+      "lineno": 40,
+      "name": "amendment"
+    },
+    {
+      "lineno": 41,
+      "name": "amendment"
+    },
+    {
+      "lineno": 56,
+      "name": "isAdmin"
+    },
+    {
+      "lineno": 59,
+      "name": "amendment"
+    },
+    {
+      "lineno": 59,
+      "name": "isAdmin"
+    },
+    {
+      "lineno": 62,
+      "name": "lastValidatedLedger"
+    },
+    {
+      "lineno": 73,
+      "name": "seq"
+    },
+    {
+      "lineno": 76,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 76,
+      "name": "enabled"
+    },
+    {
+      "lineno": 76,
+      "name": "majority"
+    },
+    {
+      "lineno": 80,
+      "name": "allTrusted"
+    },
+    {
+      "lineno": 84,
+      "name": "rules"
+    },
+    {
+      "lineno": 84,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 84,
+      "name": "enabledAmendments"
+    },
+    {
+      "lineno": 84,
+      "name": "majorityAmendments"
+    },
+    {
+      "lineno": 84,
+      "name": "valSet"
+    },
+    {
+      "lineno": 91,
+      "name": "enabled"
+    },
+    {
+      "lineno": 108,
+      "name": "lastClosedLedger"
+    },
+    {
+      "lineno": 108,
+      "name": "parentValidations"
+    },
+    {
+      "lineno": 108,
+      "name": "initialPosition"
+    },
+    {
+      "lineno": 108,
+      "name": "j"
+    },
+    {
+      "lineno": 143,
+      "name": "registry"
+    },
+    {
+      "lineno": 143,
+      "name": "majorityTime"
+    },
+    {
+      "lineno": 143,
+      "name": "supported"
+    },
+    {
+      "lineno": 143,
+      "name": "enabled"
+    },
+    {
+      "lineno": 143,
+      "name": "vetoed"
+    },
+    {
+      "lineno": 143,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "AmendmentTable"
+    },
+    {
+      "args": [
+        "n",
+        "f",
+        "v"
+      ],
+      "lineno": 16,
+      "name": "FeatureInfo"
+    }
+  ],
+  "description": "Defines the AmendmentTable interface for managing protocol amendments in the XRPL ledger, including voting, enabling, vetoing, and querying amendment status.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/AmendmentTable.h",
+  "functions": [
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 32,
+      "name": "find"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 35,
+      "name": "veto"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 36,
+      "name": "unVeto"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 38,
+      "name": "enable"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 40,
+      "name": "isEnabled"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 41,
+      "name": "isSupported"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "hasUnsupportedEnabled"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "firstUnsupportedExpected"
+    },
+    {
+      "args": [
+        "isAdmin"
+      ],
+      "lineno": 56,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "amendment",
+        "isAdmin"
+      ],
+      "lineno": 59,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "lastValidatedLedger"
+      ],
+      "lineno": 62,
+      "name": "doValidatedLedger"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 73,
+      "name": "needValidatedLedger"
+    },
+    {
+      "args": [
+        "ledgerSeq",
+        "enabled",
+        "majority"
+      ],
+      "lineno": 76,
+      "name": "doValidatedLedger"
+    },
+    {
+      "args": [
+        "allTrusted"
+      ],
+      "lineno": 80,
+      "name": "trustChanged"
+    },
+    {
+      "args": [
+        "rules",
+        "closeTime",
+        "enabledAmendments",
+        "majorityAmendments",
+        "valSet"
+      ],
+      "lineno": 84,
+      "name": "doVoting"
+    },
+    {
+      "args": [
+        "enabled"
+      ],
+      "lineno": 91,
+      "name": "doValidation"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "getDesired"
+    },
+    {
+      "args": [
+        "lastClosedLedger",
+        "parentValidations",
+        "initialPosition",
+        "j"
+      ],
+      "lineno": 108,
+      "name": "doVoting"
+    },
+    {
+      "args": [
+        "registry",
+        "majorityTime",
+        "supported",
+        "enabled",
+        "vetoed",
+        "journal"
+      ],
+      "lineno": 143,
+      "name": "make_AmendmentTable"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

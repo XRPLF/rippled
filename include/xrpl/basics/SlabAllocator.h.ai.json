@@ -1,0 +1,110 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "Type"
+    },
+    {
+      "lineno": 209,
+      "name": "Type"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "extra",
+        "alloc",
+        "align"
+      ],
+      "lineno": 18,
+      "name": "SlabAllocator"
+    },
+    {
+      "args": [
+        "next",
+        "data",
+        "size",
+        "item"
+      ],
+      "lineno": 24,
+      "name": "SlabBlock"
+    },
+    {
+      "args": [
+        "cfg"
+      ],
+      "lineno": 210,
+      "name": "SlabAllocatorSet"
+    },
+    {
+      "args": [
+        "extra_",
+        "alloc_",
+        "align_"
+      ],
+      "lineno": 222,
+      "name": "SlabConfig"
+    }
+  ],
+  "description": "Implements a slab allocator and a set of slab allocators for efficient memory management of fixed-size objects, with support for alignment and extra bytes, intended for use in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/SlabAllocator.h",
+  "functions": [
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 54,
+      "name": "own"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "allocate"
+    },
+    {
+      "args": [
+        "ptr"
+      ],
+      "lineno": 77,
+      "name": "deallocate"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "allocate"
+    },
+    {
+      "args": [
+        "ptr"
+      ],
+      "lineno": 186,
+      "name": "deallocate"
+    },
+    {
+      "args": [
+        "extra"
+      ],
+      "lineno": 246,
+      "name": "allocate"
+    },
+    {
+      "args": [
+        "ptr"
+      ],
+      "lineno": 266,
+      "name": "deallocate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ]
+}

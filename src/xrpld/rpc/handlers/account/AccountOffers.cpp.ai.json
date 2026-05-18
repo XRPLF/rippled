@@ -1,0 +1,683 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "offer"
+    },
+    {
+      "lineno": 11,
+      "name": "offers"
+    },
+    {
+      "lineno": 27,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountOffers",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "ledger->exists(keylet::account(accountID))",
+        "readLimitField",
+        "forEachItemAfter",
+        "appendOfferJson"
+      ],
+      "entry_point": "doAccountOffers",
+      "purpose": "Handles the account_offers RPC request: validates input, locates ledger, parses account, checks account existence, processes pagination, and serializes offers.",
+      "validation_points": [
+        "doAccountOffers: params.isMember(jss::account)",
+        "doAccountOffers: params[jss::account].isString()",
+        "RPC::lookupLedger: ledger_hash / ledger_index validation",
+        "parseBase58<AccountID>: account string format validation",
+        "ledger->exists(keylet::account(accountID)): account existence validation",
+        "readLimitField: limit field validation",
+        "doAccountOffers: params.isMember(jss::marker) && params[jss::marker].isString()",
+        "doAccountOffers: marker parsing and ownership validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "params[jss::account]",
+        "doAccountOffers: isMember/isString validation",
+        "parseBase58<AccountID>",
+        "accountID",
+        "ledger->exists(keylet::account(accountID))",
+        "used in forEachItemAfter"
+      ],
+      "origin": "params[jss::account] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence and type",
+        "Parsed from base58 string to AccountID",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "doAccountOffers (multiple points: presence, type, parse, existence)"
+    },
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "params",
+        "RPC::lookupLedger",
+        "ledger"
+      ],
+      "origin": "params (JSON RPC input)",
+      "transformations": [
+        "Validated and resolved to a ledger pointer"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "params[jss::limit]",
+        "readLimitField",
+        "limit variable",
+        "forEachItemAfter"
+      ],
+      "origin": "params[jss::limit] (JSON RPC input, optional)",
+      "transformations": [
+        "Validated for type and range",
+        "Used to control pagination"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "marker",
+      "flow": [
+        "params[jss::marker]",
+        "doAccountOffers: isString validation",
+        "parsed into startAfter and startHint",
+        "ownership checked via ledger->read and RPC::isRelatedToAccount"
+      ],
+      "origin": "params[jss::marker] (JSON RPC input, optional)",
+      "transformations": [
+        "Parsed from string to uint256 and uint64_t",
+        "Validated for format and ownership"
+      ],
+      "validated_at": "doAccountOffers (marker parsing and ownership check)"
+    },
+    {
+      "field": "offers",
+      "flow": [
+        "forEachItemAfter",
+        "offers vector",
+        "appendOfferJson",
+        "result[jss::offers] (JSON output)"
+      ],
+      "origin": "ledger (via forEachItemAfter)",
+      "transformations": [
+        "Ledger objects transformed to JSON via appendOfferJson"
+      ],
+      "validated_at": "Offers themselves are not directly validated here; only the account and pagination context are validated"
+    }
+  ],
+  "description": "Implements the doAccountOffers RPC handler for XRPL, which retrieves and formats the list of offers (orders) for a given account, supporting pagination and limit parameters.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account (presence, type, format, existence)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account (presence, type, format, existence) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for account (presence, type, format, existence)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates account (presence, type, format, existence) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index (via lookupLedger)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash / ledger_index (via lookupLedger) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for ledger_hash / ledger_index (via lookupLedger)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates ledger_hash / ledger_index (via lookupLedger) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "limit (type, range)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field limit (type, range) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for limit (type, range)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates limit (type, range) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "marker (type, format)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field marker (type, format) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for marker (type, format)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates marker (type, format) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::account) at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params.isMember(jss::account) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountOffers",
+      "issue_pattern": "Missing type validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "parseBase58<AccountID> validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at doAccountOffers",
+      "issue_pattern": "Missing format validation for account",
+      "why_false_positive": "parseBase58<AccountID> validates account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->exists(keylet::account(accountID)) at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "ledger->exists(keylet::account(accountID)) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "readLimitField at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "readLimitField validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::marker) at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "params.isMember(jss::marker) validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::marker].isString() at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "params[jss::marker].isString() validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "marker",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::marker].isString() at doAccountOffers",
+      "issue_pattern": "Missing type validation for marker",
+      "why_false_positive": "params[jss::marker].isString() validates marker type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::getline(marker, value, ',') at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for marker",
+      "why_false_positive": "std::getline(marker, value, ',') validates marker for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "marker",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::getline(marker, value, ',') at doAccountOffers",
+      "issue_pattern": "Missing format validation for marker",
+      "why_false_positive": "std::getline(marker, value, ',') validates marker format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "marker (index part)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "startAfter.parseHex(value) at doAccountOffers",
+      "issue_pattern": "Missing empty string validation for marker (index part)",
+      "why_false_positive": "startAfter.parseHex(value) validates marker (index part) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "marker (index part)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "startAfter.parseHex(value) at doAccountOffers",
+      "issue_pattern": "Missing format validation for marker (index part)",
+      "why_false_positive": "startAfter.parseHex(value) validates marker (index part) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountOffers.cpp",
+  "functions": [
+    {
+      "args": [
+        "offer",
+        "offers"
+      ],
+      "lineno": 11,
+      "name": "appendOfferJson"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 27,
+      "name": "doAccountOffers"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in the RPC integration and unit test suites, such as 'account_offers' tests in 'rippled' or 'xrpld' test directories (e.g., test/rpc/account_offers_test.cpp, test/rpc/AccountOffers_test.cpp). These tests likely cover: valid/invalid account input, missing fields, malformed account, non-existent account, pagination (marker), and limit boundaries. Gaps may include: edge cases for marker parsing (malformed marker), ownership validation of marker, and rare ledger state conditions. Template-based validation and error injection paths may not be exhaustively tested unless specifically targeted in negative/edge-case tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "account (presence, type, format, existence)",
+      "ledger_hash / ledger_index (via lookupLedger)",
+      "limit (type, range)",
+      "marker (type, format)"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+    "validation_layer": "entry_point (doAccountOffers)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountOffers",
+      "validated_by": "params.isMember(jss::account)",
+      "validates": [
+        "Checks if 'account' field is present in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountOffers",
+      "validated_by": "params[jss::account].isString()",
+      "validates": [
+        "Checks if 'account' field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result from lookupLedger (error JSON)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doAccountOffers",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "Checks if ledger exists and is valid (hash/index)"
+      ],
+      "validation_type": "format|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcACT_MALFORMED, result)",
+      "field": "account",
+      "location": "doAccountOffers",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "Checks if 'account' string is valid Base58 AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_NOT_FOUND)",
+      "field": "account",
+      "location": "doAccountOffers",
+      "validated_by": "ledger->exists(keylet::account(accountID))",
+      "validates": [
+        "Checks if account exists in the ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "return *err (error JSON from readLimitField)",
+      "field": "limit",
+      "location": "doAccountOffers",
+      "validated_by": "readLimitField",
+      "validates": [
+        "Checks if 'limit' is present (optional)",
+        "Checks if 'limit' is integer",
+        "Checks if 'limit' is within allowed range (Tuning::accountOffers)"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (optional field)",
+      "field": "marker",
+      "location": "doAccountOffers",
+      "validated_by": "params.isMember(jss::marker)",
+      "validates": [
+        "Checks if 'marker' field is present (optional)"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::marker, \"string\")",
+      "field": "marker",
+      "location": "doAccountOffers",
+      "validated_by": "params[jss::marker].isString()",
+      "validates": [
+        "Checks if 'marker' is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::marker)",
+      "field": "marker",
+      "location": "doAccountOffers",
+      "validated_by": "std::getline(marker, value, ',')",
+      "validates": [
+        "Checks if 'marker' can be split into two comma-separated values"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::marker)",
+      "field": "marker (index part)",
+      "location": "doAccountOffers",
+      "validated_by": "startAfter.parseHex(value)",
+      "validates": [
+        "Checks if first part of 'marker' is valid hex"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

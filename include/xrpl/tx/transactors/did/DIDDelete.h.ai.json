@@ -1,0 +1,98 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "sleKeylet"
+    },
+    {
+      "lineno": 19,
+      "name": "owner"
+    },
+    {
+      "lineno": 23,
+      "name": "view"
+    },
+    {
+      "lineno": 23,
+      "name": "sle"
+    },
+    {
+      "lineno": 23,
+      "name": "owner"
+    },
+    {
+      "lineno": 23,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 8,
+      "name": "DIDDelete"
+    }
+  ],
+  "description": "Defines the DIDDelete transaction class for deleting decentralized identifiers (DIDs) in the XRPL ledger, including its interface and related static/instance methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/did/DIDDelete.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "DIDDelete"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx",
+        "Keylet sleKeylet",
+        "AccountID const owner"
+      ],
+      "lineno": 19,
+      "name": "deleteSLE"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> sle",
+        "AccountID const owner",
+        "beast::Journal j"
+      ],
+      "lineno": 23,
+      "name": "deleteSLE"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "Permission"
+    }
+  ],
+  "description": "Defines granular and transaction-level permission types, a Permission singleton class for managing and querying permission mappings, and related enums for XRPL transaction permissions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Permissions.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getInstance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 52,
+      "name": "getPermissionName"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 55,
+      "name": "getGranularValue"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 58,
+      "name": "getGranularName"
+    },
+    {
+      "args": [
+        "gpType"
+      ],
+      "lineno": 61,
+      "name": "getGranularTxType"
+    },
+    {
+      "args": [
+        "txType"
+      ],
+      "lineno": 64,
+      "name": "getTxFeature"
+    },
+    {
+      "args": [
+        "permissionValue",
+        "rules"
+      ],
+      "lineno": 67,
+      "name": "isDelegable"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 71,
+      "name": "txToPermissionType"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 74,
+      "name": "permissionToTxType"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

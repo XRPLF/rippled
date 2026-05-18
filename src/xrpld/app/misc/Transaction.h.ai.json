@@ -1,0 +1,380 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "std::shared_ptr<STTx const> const&"
+    },
+    {
+      "lineno": 36,
+      "name": "std::string&"
+    },
+    {
+      "lineno": 36,
+      "name": "Application&"
+    },
+    {
+      "lineno": 41,
+      "name": "boost::optional<std::uint64_t> const&"
+    },
+    {
+      "lineno": 41,
+      "name": "boost::optional<std::string> const&"
+    },
+    {
+      "lineno": 41,
+      "name": "Blob const&"
+    },
+    {
+      "lineno": 82,
+      "name": "TER terResult"
+    },
+    {
+      "lineno": 87,
+      "name": "TransStatus status"
+    },
+    {
+      "lineno": 87,
+      "name": "std::uint32_t ledgerSeq"
+    },
+    {
+      "lineno": 87,
+      "name": "std::optional<uint32_t> transactionSeq"
+    },
+    {
+      "lineno": 87,
+      "name": "std::optional<uint32_t> networkID"
+    },
+    {
+      "lineno": 94,
+      "name": "TransStatus status"
+    },
+    {
+      "lineno": 99,
+      "name": "LedgerIndex ledger"
+    },
+    {
+      "lineno": 194,
+      "name": "LedgerIndex li"
+    },
+    {
+      "lineno": 195,
+      "name": "XRPAmount fee"
+    },
+    {
+      "lineno": 196,
+      "name": "std::uint32_t accSeqNext"
+    },
+    {
+      "lineno": 197,
+      "name": "std::uint32_t accSeqAvail"
+    },
+    {
+      "lineno": 213,
+      "name": "LedgerIndex validatedLedger"
+    },
+    {
+      "lineno": 214,
+      "name": "XRPAmount fee"
+    },
+    {
+      "lineno": 215,
+      "name": "std::uint32_t accountSeq"
+    },
+    {
+      "lineno": 216,
+      "name": "std::uint32_t availableSeq"
+    },
+    {
+      "lineno": 221,
+      "name": "JsonOptions options"
+    },
+    {
+      "lineno": 221,
+      "name": "bool binary"
+    },
+    {
+      "lineno": 266,
+      "name": "uint256 const& id"
+    },
+    {
+      "lineno": 266,
+      "name": "Application& app"
+    },
+    {
+      "lineno": 269,
+      "name": "error_code_i& ec"
+    },
+    {
+      "lineno": 273,
+      "name": "ClosedInterval<uint32_t> const& range"
+    },
+    {
+      "lineno": 280,
+      "name": "std::optional<ClosedInterval<uint32_t>> const& range"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const&",
+        "std::string&",
+        "Application&"
+      ],
+      "lineno": 35,
+      "name": "Transaction"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "SubmitResult"
+    },
+    {
+      "args": [
+        "LedgerIndex li",
+        "XRPAmount fee",
+        "std::uint32_t accSeqNext",
+        "std::uint32_t accSeqAvail"
+      ],
+      "lineno": 192,
+      "name": "CurrentLedgerState"
+    },
+    {
+      "args": [],
+      "lineno": 231,
+      "name": "Locator"
+    }
+  ],
+  "description": "Defines the Transaction class for constructing, examining, and managing the state of XRPL transactions, including status, results, ledger state, and methods for loading and locating transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/Transaction.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const&",
+        "std::string&",
+        "Application&"
+      ],
+      "lineno": 36,
+      "name": "Transaction"
+    },
+    {
+      "args": [
+        "boost::optional<std::uint64_t> const&",
+        "boost::optional<std::string> const&",
+        "Blob const&",
+        "Application&"
+      ],
+      "lineno": 41,
+      "name": "transactionFromSQL"
+    },
+    {
+      "args": [
+        "boost::optional<std::string> const&"
+      ],
+      "lineno": 48,
+      "name": "sqlTransactionStatus"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "getSTransaction"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getID"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getLedger"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "isValidated"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "getStatus"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "getResult"
+    },
+    {
+      "args": [
+        "TER terResult"
+      ],
+      "lineno": 82,
+      "name": "setResult"
+    },
+    {
+      "args": [
+        "TransStatus status",
+        "std::uint32_t ledgerSeq",
+        "std::optional<uint32_t> transactionSeq",
+        "std::optional<uint32_t> networkID"
+      ],
+      "lineno": 87,
+      "name": "setStatus"
+    },
+    {
+      "args": [
+        "TransStatus status"
+      ],
+      "lineno": 94,
+      "name": "setStatus"
+    },
+    {
+      "args": [
+        "LedgerIndex ledger"
+      ],
+      "lineno": 99,
+      "name": "setLedger"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "setApplying"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "getApplying"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "clearApplying"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "clear"
+    },
+    {
+      "args": [],
+      "lineno": 142,
+      "name": "any"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "getSubmitResult"
+    },
+    {
+      "args": [],
+      "lineno": 163,
+      "name": "clearSubmitResult"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "setApplied"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "setQueued"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "setBroadcast"
+    },
+    {
+      "args": [],
+      "lineno": 187,
+      "name": "setKept"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "getCurrentLedgerState"
+    },
+    {
+      "args": [
+        "LedgerIndex validatedLedger",
+        "XRPAmount fee",
+        "std::uint32_t accountSeq",
+        "std::uint32_t availableSeq"
+      ],
+      "lineno": 210,
+      "name": "setCurrentLedgerState"
+    },
+    {
+      "args": [
+        "JsonOptions options",
+        "bool binary"
+      ],
+      "lineno": 221,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 236,
+      "name": "isFound"
+    },
+    {
+      "args": [],
+      "lineno": 244,
+      "name": "getNodestoreHash"
+    },
+    {
+      "args": [],
+      "lineno": 251,
+      "name": "getLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 258,
+      "name": "getLedgerRangeSearched"
+    },
+    {
+      "args": [
+        "uint256 const& id",
+        "Application& app"
+      ],
+      "lineno": 266,
+      "name": "locate"
+    },
+    {
+      "args": [
+        "uint256 const& id",
+        "Application& app",
+        "error_code_i& ec"
+      ],
+      "lineno": 269,
+      "name": "load"
+    },
+    {
+      "args": [
+        "uint256 const& id",
+        "Application& app",
+        "ClosedInterval<uint32_t> const& range",
+        "error_code_i& ec"
+      ],
+      "lineno": 273,
+      "name": "load"
+    },
+    {
+      "args": [
+        "uint256 const& id",
+        "Application& app",
+        "std::optional<ClosedInterval<uint32_t>> const& range",
+        "error_code_i& ec"
+      ],
+      "lineno": 280,
+      "name": "load"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ]
+}

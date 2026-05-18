@@ -1,0 +1,434 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SField const& field, Number const& value",
+        "SerialIter& sit, SField const& field"
+      ],
+      "lineno": 18,
+      "name": "STNumber"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STNumber::associateAsset",
+        "STTakesAsset::associateAsset",
+        "XRPL_ASSERT_PARTS",
+        "roundToAsset"
+      ],
+      "entry_point": "STNumber::associateAsset",
+      "purpose": "Associates an Asset with the STNumber and ensures the field requires an asset, then rounds the value to the asset's precision.",
+      "validation_points": [
+        "XRPL_ASSERT_PARTS(getFName().shouldMeta(SField::sMD_NeedsAsset), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STNumber::add",
+        "XRPL_ASSERT(getFName().isBinary(), ...)",
+        "XRPL_ASSERT(getFName().fieldType == getSType(), ...)",
+        "if (field.shouldMeta(SField::sMD_NeedsAsset)) { ... }",
+        "if (asset_) { roundToAsset(*asset_, value); XRPL_ASSERT_PARTS(value_ == value, ...) }",
+        "#if !NDEBUG XRPL_ASSERT_PARTS(Number::getMantissaScale() == MantissaRange::large, ...) #endif",
+        "XRPL_ASSERT_PARTS(mantissa in valid range, ...)",
+        "s.add64(mantissa)",
+        "s.add32(exponent)"
+      ],
+      "entry_point": "STNumber::add",
+      "purpose": "Serializes the STNumber, validating field type, binary status, asset requirements, rounding, and mantissa range.",
+      "validation_points": [
+        "XRPL_ASSERT(getFName().isBinary(), ...)",
+        "XRPL_ASSERT(getFName().fieldType == getSType(), ...)",
+        "XRPL_ASSERT_PARTS(value_ == value, ...)",
+        "XRPL_ASSERT_PARTS(Number::getMantissaScale() == MantissaRange::large, ...)",
+        "XRPL_ASSERT_PARTS(mantissa in valid range, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STNumber::isEquivalent",
+        "XRPL_ASSERT(t.getSType() == this->getSType(), ...)",
+        "dynamic_cast<STNumber const&>(t)",
+        "value_ == v"
+      ],
+      "entry_point": "STNumber::isEquivalent",
+      "purpose": "Checks if another STBase is equivalent to this STNumber, validating type match.",
+      "validation_points": [
+        "XRPL_ASSERT(t.getSType() == this->getSType(), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_",
+      "flow": [
+        "constructor (value_ = value or value_ = Number{mantissa, exponent})",
+        "possibly transformed in associateAsset (roundToAsset)",
+        "used in add (copied to local 'value', possibly rounded again)",
+        "serialized via s.add64(mantissa), s.add32(exponent)"
+      ],
+      "origin": "STNumber constructor (from Number or deserialized from SerialIter)",
+      "transformations": [
+        "May be rounded to asset precision in associateAsset or add",
+        "Compared for equality in add and isEquivalent"
+      ],
+      "validated_at": "add (XRPL_ASSERT_PARTS(value_ == value, ...)), isEquivalent (XRPL_ASSERT)"
+    },
+    {
+      "field": "getFName()",
+      "flow": [
+        "constructor",
+        "used in associateAsset (shouldMeta)",
+        "used in add (isBinary, fieldType, shouldMeta)"
+      ],
+      "origin": "STTakesAsset base class (field passed to constructor)",
+      "transformations": [
+        "Checked for metadata flags, binary status, and type"
+      ],
+      "validated_at": "associateAsset (XRPL_ASSERT_PARTS), add (XRPL_ASSERT)"
+    },
+    {
+      "field": "asset_",
+      "flow": [
+        "set in associateAsset",
+        "checked in add (if asset_)",
+        "used in roundToAsset"
+      ],
+      "origin": "STTakesAsset base class, set via associateAsset",
+      "transformations": [
+        "Used to round value_"
+      ],
+      "validated_at": "add (XRPL_ASSERT_PARTS(value_ == value, ...))"
+    },
+    {
+      "field": "mantissa",
+      "flow": [
+        "extracted in add",
+        "validated for range",
+        "serialized"
+      ],
+      "origin": "value_.mantissa()",
+      "transformations": [
+        "None (just checked and serialized)"
+      ],
+      "validated_at": "add (XRPL_ASSERT_PARTS(mantissa in valid range, ...))"
+    }
+  ],
+  "description": "Implements the STNumber class for handling serialized numbers in the XRPL protocol, including parsing, serialization, and JSON conversion.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SField::sMD_NeedsAsset",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT_PARTS at STNumber::associateAsset",
+      "issue_pattern": "Missing empty string validation for SField::sMD_NeedsAsset",
+      "why_false_positive": "XRPL_ASSERT_PARTS validates SField::sMD_NeedsAsset for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getFName().isBinary()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STNumber::add",
+      "issue_pattern": "Missing empty string validation for getFName().isBinary()",
+      "why_false_positive": "XRPL_ASSERT validates getFName().isBinary() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getFName().fieldType == getSType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at STNumber::add",
+      "issue_pattern": "Missing empty string validation for getFName().fieldType == getSType()",
+      "why_false_positive": "XRPL_ASSERT validates getFName().fieldType == getSType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "getFName().fieldType == getSType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at STNumber::add",
+      "issue_pattern": "Missing type validation for getFName().fieldType == getSType()",
+      "why_false_positive": "XRPL_ASSERT validates getFName().fieldType == getSType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "value_ == value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT_PARTS at STNumber::add",
+      "issue_pattern": "Missing empty string validation for value_ == value",
+      "why_false_positive": "XRPL_ASSERT_PARTS validates value_ == value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Number::getMantissaScale() == MantissaRange::large",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT_PARTS at STNumber::add (inside #if !NDEBUG)",
+      "issue_pattern": "Missing empty string validation for Number::getMantissaScale() == MantissaRange::large",
+      "why_false_positive": "XRPL_ASSERT_PARTS validates Number::getMantissaScale() == MantissaRange::large for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mantissa",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT_PARTS at STNumber::add",
+      "issue_pattern": "Missing empty string validation for mantissa",
+      "why_false_positive": "XRPL_ASSERT_PARTS validates mantissa for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mantissa",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT_PARTS at STNumber::add",
+      "issue_pattern": "Missing range validation for mantissa",
+      "why_false_positive": "XRPL_ASSERT_PARTS validates mantissa range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STNumber.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "STNumber::getSType"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "STNumber::getText"
+    },
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 37,
+      "name": "STNumber::associateAsset"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 52,
+      "name": "STNumber::add"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "STNumber::value"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 96,
+      "name": "STNumber::setValue"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 101,
+      "name": "STNumber::copy"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 106,
+      "name": "STNumber::move"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 111,
+      "name": "STNumber::isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "STNumber::isDefault"
+    },
+    {
+      "args": [
+        "out",
+        "rhs"
+      ],
+      "lineno": 124,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "number"
+      ],
+      "lineno": 129,
+      "name": "partsFromString"
+    },
+    {
+      "args": [
+        "field",
+        "value"
+      ],
+      "lineno": 181,
+      "name": "numberFromJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for serialization/deserialization, asset association, and equivalence checks. Tests should exist in files like test/protocol/STNumber_test.cpp or test/protocol/Serializer_test.cpp. However, edge cases such as missing asset when required, mantissa out of range, or type mismatches may not be fully covered. The debug-only assertion for MantissaRange::large may not be tested in release builds. There is no explicit test coverage for exception paths or assertion failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT, XRPL_ASSERT_PARTS (custom assertion macros)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT_PARTS)",
+      "field": "SField::sMD_NeedsAsset",
+      "location": "STNumber::associateAsset",
+      "validated_by": "XRPL_ASSERT_PARTS",
+      "validates": [
+        "Checks that the field requires an asset (shouldMeta(SField::sMD_NeedsAsset)) before associating asset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "getFName().isBinary()",
+      "location": "STNumber::add",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the field is binary before serialization"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "getFName().fieldType == getSType()",
+      "location": "STNumber::add",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the field type matches the serialized type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT_PARTS)",
+      "field": "value_ == value",
+      "location": "STNumber::add",
+      "validated_by": "XRPL_ASSERT_PARTS",
+      "validates": [
+        "Checks that the value is already rounded to the asset's precision"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "AssertionError (via XRPL_ASSERT_PARTS)",
+      "field": "Number::getMantissaScale() == MantissaRange::large",
+      "location": "STNumber::add (inside #if !NDEBUG)",
+      "validated_by": "XRPL_ASSERT_PARTS",
+      "validates": [
+        "Checks that STNumber is only used with large mantissa scale when asset is not assigned"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT_PARTS)",
+      "field": "mantissa",
+      "location": "STNumber::add",
+      "validated_by": "XRPL_ASSERT_PARTS",
+      "validates": [
+        "Checks that mantissa is within std::int64_t range"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

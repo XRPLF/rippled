@@ -1,0 +1,430 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 8,
+      "name": "PeerSetImpl"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 62,
+      "name": "PeerSetBuilderImpl"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 79,
+      "name": "DummyPeerSet"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PeerSetImpl::addPeers",
+        "overlay.foreach (lambda)",
+        "peer->getScore",
+        "std::sort",
+        "for (auto const& pair : pairs)",
+        "peers_.insert(peer->id())",
+        "onPeerAdded(peer)"
+      ],
+      "entry_point": "PeerSetImpl::addPeers",
+      "purpose": "Adds up to 'limit' new peers to the PeerSet, scoring and sorting them, and invoking a callback for each added peer.",
+      "validation_points": [
+        "peers_.insert(peer->id()).second (validates peer uniqueness)",
+        "if (++accepted >= limit) break; (validates limit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerSetImpl::sendRequest",
+        "if (peer)",
+        "peer->send(packet)",
+        "else",
+        "for (auto id : peers_)",
+        "app_.getOverlay().findPeerByShortID(id)",
+        "p->send(packet)"
+      ],
+      "entry_point": "PeerSetImpl::sendRequest",
+      "purpose": "Sends a message to a specific peer if provided, or to all peers in the set.",
+      "validation_points": [
+        "if (peer) (validates peer is not null)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PeerSetImpl::getPeerIds"
+      ],
+      "entry_point": "PeerSetImpl::getPeerIds",
+      "purpose": "Returns the set of peer IDs currently tracked.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "PeerSetBuilderImpl::build",
+        "std::make_unique<PeerSetImpl>(app_)"
+      ],
+      "entry_point": "PeerSetBuilderImpl::build",
+      "purpose": "Constructs a new PeerSetImpl instance.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "DummyPeerSet::addPeers / sendRequest / getPeerIds"
+      ],
+      "entry_point": "DummyPeerSet::*",
+      "purpose": "Dummy implementations that log errors if called.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "peer (std::shared_ptr<Peer> const&)",
+      "flow": [
+        "addPeers/sendRequest parameter",
+        "overlay.foreach (addPeers) or direct use (sendRequest)",
+        "peer->id() (addPeers), peer->send(packet) (sendRequest)"
+      ],
+      "origin": "Passed into addPeers/sendRequest by caller",
+      "transformations": [
+        "Scored in addPeers",
+        "Sorted in addPeers",
+        "Checked for uniqueness in addPeers",
+        "Used for sending in sendRequest"
+      ],
+      "validated_at": "if (peer) in sendRequest; peers_.insert(peer->id()).second in addPeers"
+    },
+    {
+      "field": "peer->id() (Peer::id_t)",
+      "flow": [
+        "peer->id()",
+        "peers_.insert(peer->id())",
+        "peers_ set"
+      ],
+      "origin": "peer object",
+      "transformations": [
+        "Inserted into set to ensure uniqueness"
+      ],
+      "validated_at": "peers_.insert(peer->id()).second (addPeers)"
+    },
+    {
+      "field": "limit (std::size_t)",
+      "flow": [
+        "addPeers parameter",
+        "for loop in addPeers",
+        "if (++accepted >= limit) break;"
+      ],
+      "origin": "Passed into addPeers by caller",
+      "transformations": [
+        "Incremented accepted counter"
+      ],
+      "validated_at": "if (++accepted >= limit) break;"
+    },
+    {
+      "field": "peers_ (std::set<Peer::id_t>)",
+      "flow": [
+        "populated in addPeers via peers_.insert(peer->id())",
+        "read in sendRequest (for broadcasting)",
+        "read in getPeerIds"
+      ],
+      "origin": "PeerSetImpl member, initially empty",
+      "transformations": [
+        "Grows as new unique peers are added"
+      ],
+      "validated_at": "peers_.insert(peer->id()).second (ensures uniqueness)"
+    }
+  ],
+  "description": "Implements PeerSet and PeerSetBuilder classes for managing sets of peers in the XRPL overlay network, including logic for adding peers, sending requests, and dummy/test implementations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer (std::shared_ptr<Peer> const&)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (peer) at PeerSetImpl::sendRequest",
+      "issue_pattern": "Missing empty string validation for peer (std::shared_ptr<Peer> const&)",
+      "why_false_positive": "if (peer) validates peer (std::shared_ptr<Peer> const&) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer->id() (Peer::id_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peers_.insert(peer->id()).second at PeerSetImpl::addPeers",
+      "issue_pattern": "Missing empty string validation for peer->id() (Peer::id_t)",
+      "why_false_positive": "peers_.insert(peer->id()).second validates peer->id() (Peer::id_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit (std::size_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (++accepted >= limit) break; at PeerSetImpl::addPeers",
+      "issue_pattern": "Missing empty string validation for limit (std::size_t)",
+      "why_false_positive": "if (++accepted >= limit) break; validates limit (std::size_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/PeerSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 20,
+      "name": "PeerSetImpl::PeerSetImpl"
+    },
+    {
+      "args": [
+        "std::size_t limit",
+        "std::function<bool(std::shared_ptr<Peer> const&)> hasItem",
+        "std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded"
+      ],
+      "lineno": 24,
+      "name": "PeerSetImpl::addPeers"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message",
+        "protocol::MessageType type",
+        "std::shared_ptr<Peer> const& peer"
+      ],
+      "lineno": 41,
+      "name": "PeerSetImpl::sendRequest"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "PeerSetImpl::getPeerIds"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 64,
+      "name": "PeerSetBuilderImpl::PeerSetBuilderImpl"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "PeerSetBuilderImpl::build"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 76,
+      "name": "make_PeerSetBuilder"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 81,
+      "name": "DummyPeerSet::DummyPeerSet"
+    },
+    {
+      "args": [
+        "std::size_t limit",
+        "std::function<bool(std::shared_ptr<Peer> const&)> hasItem",
+        "std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded"
+      ],
+      "lineno": 85,
+      "name": "DummyPeerSet::addPeers"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message",
+        "protocol::MessageType type",
+        "std::shared_ptr<Peer> const& peer"
+      ],
+      "lineno": 92,
+      "name": "DummyPeerSet::sendRequest"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "DummyPeerSet::getPeerIds"
+    },
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 108,
+      "name": "make_DummyPeerSet"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, PeerSet and PeerSetImpl would be tested via integration or unit tests in files like test_overlay.cpp, test_PeerSet.cpp, or similar. The validation logic (peer uniqueness, limit enforcement, null peer checks) would need explicit tests for: (1) adding duplicate peers, (2) exceeding the limit, (3) sending to null vs. specific peers. If such tests do not exist, these paths may not be fully covered. DummyPeerSet is likely only tested for error logging if at all. Gaps: No evidence of tests for edge cases (e.g., empty overlay, all peers already present, limit=0, null peer in sendRequest).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation, C++ STL containers)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branching logic)",
+      "field": "peer (std::shared_ptr<Peer> const&)",
+      "location": "PeerSetImpl::sendRequest",
+      "validated_by": "if (peer)",
+      "validates": [
+        "Checks if peer is not null before calling peer->send(packet)"
+      ],
+      "validation_type": "type/null-check"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (continues loop if duplicate)",
+      "field": "peer->id() (Peer::id_t)",
+      "location": "PeerSetImpl::addPeers",
+      "validated_by": "peers_.insert(peer->id()).second",
+      "validates": [
+        "Ensures peer is not already in peers_ set before adding"
+      ],
+      "validation_type": "business_logic (uniqueness)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (loop break)",
+      "field": "limit (std::size_t)",
+      "location": "PeerSetImpl::addPeers",
+      "validated_by": "if (++accepted >= limit) break;",
+      "validates": [
+        "Ensures no more than 'limit' peers are added"
+      ],
+      "validation_type": "range (upper bound)"
+    }
+  ]
+}

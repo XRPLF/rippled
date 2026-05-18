@@ -1,0 +1,66 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "ValidNFTokenPage"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "NFTokenCountTracking"
+    }
+  ],
+  "description": "Defines invariants for XRPL NFTokens, including checks for valid NFToken pages and tracking of minted/burned NFTokens across transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/NFTInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 32,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 35,
+      "name": "finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 61,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 64,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

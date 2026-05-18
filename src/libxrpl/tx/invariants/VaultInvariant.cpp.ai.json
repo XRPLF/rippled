@@ -1,0 +1,352 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidVault::visitEntry",
+        "ValidVault::Vault::make / ValidVault::Shares::make"
+      ],
+      "entry_point": "ValidVault::visitEntry",
+      "purpose": "Processes ledger entry changes (creation, modification, deletion) for Vault and related objects, collecting state for invariant validation.",
+      "validation_points": [
+        "XRPL_ASSERT in visitEntry (after != nullptr && (before != nullptr || !isDelete))",
+        "XRPL_ASSERT in Vault::make (from.getType() == ltVAULT)",
+        "XRPL_ASSERT in Shares::make (from.getType() == ltMPTOKEN_ISSUANCE)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidVault::Vault::make"
+      ],
+      "entry_point": "ValidVault::Vault::make",
+      "purpose": "Constructs a Vault struct from a SLE, validating type and extracting fields.",
+      "validation_points": [
+        "XRPL_ASSERT (from.getType() == ltVAULT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidVault::Shares::make"
+      ],
+      "entry_point": "ValidVault::Shares::make",
+      "purpose": "Constructs a Shares struct from a SLE, validating type and extracting fields.",
+      "validation_points": [
+        "XRPL_ASSERT (from.getType() == ltMPTOKEN_ISSUANCE)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "from.getType()",
+      "flow": [
+        "SLE::getType()",
+        "XRPL_ASSERT in Vault::make or Shares::make",
+        "Field extraction if type matches"
+      ],
+      "origin": "SLE object passed to Vault::make or Shares::make",
+      "transformations": [
+        "Type checked against expected value (ltVAULT or ltMPTOKEN_ISSUANCE)"
+      ],
+      "validated_at": "XRPL_ASSERT in Vault::make or Shares::make"
+    },
+    {
+      "field": "sfAsset, sfOwner, sfShareMPTID, sfAssetsTotal, sfAssetsAvailable, sfAssetsMaximum, sfLossUnrealized",
+      "flow": [
+        "SLE",
+        "Vault::make extracts fields after type validation",
+        "Stored in ValidVault::Vault struct"
+      ],
+      "origin": "Fields in SLE passed to Vault::make",
+      "transformations": [
+        "Direct extraction via SLE::at or SLE::getAccountID"
+      ],
+      "validated_at": "After XRPL_ASSERT (type check) in Vault::make"
+    },
+    {
+      "field": "sfOutstandingAmount, sfMaximumAmount, sfSequence, sfIssuer",
+      "flow": [
+        "SLE",
+        "Shares::make extracts fields after type validation",
+        "Stored in ValidVault::Shares struct"
+      ],
+      "origin": "Fields in SLE passed to Shares::make",
+      "transformations": [
+        "Direct extraction; sharesMaximum uses value_or fallback"
+      ],
+      "validated_at": "After XRPL_ASSERT (type check) in Shares::make"
+    },
+    {
+      "field": "before, after, isDelete",
+      "flow": [
+        "visitEntry",
+        "XRPL_ASSERT (after != nullptr && (before != nullptr || !isDelete))",
+        "Switch on before/after->getType() to extract and process fields"
+      ],
+      "origin": "Arguments to visitEntry (from invariant framework)",
+      "transformations": [
+        "Checked for nullness and logical consistency"
+      ],
+      "validated_at": "XRPL_ASSERT at start of visitEntry"
+    }
+  ],
+  "description": "Implements the ValidVault invariant check for XRPL transactions, ensuring that all operations involving Vault objects and their associated shares comply with protocol rules and invariants during ledger state transitions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SLE type for Vault and Shares creation",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SLE type for Vault and Shares creation validated by XRPL_ASSERT (custom assertion macro)",
+      "issue_pattern": "Missing validation for SLE type for Vault and Shares creation",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro) validates SLE type for Vault and Shares creation automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Presence and logical consistency of before/after/isDelete in visitEntry",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Presence and logical consistency of before/after/isDelete in visitEntry validated by XRPL_ASSERT (custom assertion macro)",
+      "issue_pattern": "Missing validation for Presence and logical consistency of before/after/isDelete in visitEntry",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro) validates Presence and logical consistency of before/after/isDelete in visitEntry automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "from.getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ValidVault::Vault::make",
+      "issue_pattern": "Missing empty string validation for from.getType()",
+      "why_false_positive": "XRPL_ASSERT validates from.getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "from.getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at ValidVault::Vault::make",
+      "issue_pattern": "Missing type validation for from.getType()",
+      "why_false_positive": "XRPL_ASSERT validates from.getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "from.getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ValidVault::Shares::make",
+      "issue_pattern": "Missing empty string validation for from.getType()",
+      "why_false_positive": "XRPL_ASSERT validates from.getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "from.getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at ValidVault::Shares::make",
+      "issue_pattern": "Missing type validation for from.getType()",
+      "why_false_positive": "XRPL_ASSERT validates from.getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "after, before, isDelete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at ValidVault::visitEntry",
+      "issue_pattern": "Missing empty string validation for after, before, isDelete",
+      "why_false_positive": "XRPL_ASSERT validates after, before, isDelete for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/VaultInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "SLE const& from"
+      ],
+      "lineno": 13,
+      "name": "ValidVault::Vault::make"
+    },
+    {
+      "args": [
+        "SLE const& from"
+      ],
+      "lineno": 27,
+      "name": "ValidVault::Shares::make"
+    },
+    {
+      "args": [
+        "bool isDelete",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 41,
+      "name": "ValidVault::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const ret",
+        "XRPAmount const fee",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 99,
+      "name": "ValidVault::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is part of the XRPL invariant framework, typically tested via integration and unit tests for transaction invariants. Likely test files: 'Invariant_test.cpp', 'VaultInvariant_test.cpp', or similar in the tx/invariants or workflow/test directories. Tests should cover creation, modification, and deletion of Vault and MPTokenIssuance objects, including type mismatches and field extraction. Gaps may exist if edge cases (e.g., malformed SLEs, missing fields, or unexpected types) are not explicitly tested. Direct unit tests for Vault::make and Shares::make are recommended to ensure type validation and field extraction are robust.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "SLE type for Vault and Shares creation",
+      "Presence and logical consistency of before/after/isDelete in visitEntry"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "from.getType()",
+      "location": "ValidVault::Vault::make",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the SLE object passed is of type ltVAULT"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "from.getType()",
+      "location": "ValidVault::Shares::make",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the SLE object passed is of type ltMPTOKEN_ISSUANCE"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "after, before, isDelete",
+      "location": "ValidVault::visitEntry",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that if before is empty, isDelete must be false",
+        "Ensures that after is not null",
+        "Ensures that at least one object is available for processing"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "BipsTag"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "TenthBipsTag"
+    },
+    {
+      "args": [
+        "UnitTag",
+        "T"
+      ],
+      "lineno": 32,
+      "name": "ValueUnit"
+    }
+  ],
+  "description": "Defines unit-safe arithmetic types and utilities for XRP Ledger protocol, including tagged value types for drops, fee levels, basis points, and safe arithmetic operations with unit enforcement.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Units.h",
+  "functions": [
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 156,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 210,
+      "name": "scalar"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 217,
+      "name": "mulDivU"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 282,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 289,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 296,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 304,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 312,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 320,
+      "name": "mulDiv"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 328,
+      "name": "safe_cast"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 334,
+      "name": "safe_cast"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 340,
+      "name": "unsafe_cast"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 346,
+      "name": "unsafe_cast"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "unit"
+    }
+  ]
+}

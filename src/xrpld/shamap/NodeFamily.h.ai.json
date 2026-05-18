@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "app"
+    },
+    {
+      "lineno": 17,
+      "name": "cm"
+    },
+    {
+      "lineno": 55,
+      "name": "seq"
+    },
+    {
+      "lineno": 55,
+      "name": "hash"
+    },
+    {
+      "lineno": 58,
+      "name": "hash"
+    },
+    {
+      "lineno": 58,
+      "name": "seq"
+    },
+    {
+      "lineno": 68,
+      "name": "hash"
+    },
+    {
+      "lineno": 68,
+      "name": "seq"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app, CollectorManager& cm"
+      ],
+      "lineno": 7,
+      "name": "NodeFamily"
+    }
+  ],
+  "description": "Defines the NodeFamily class, which implements the xrpl::Family interface for managing node storage, caching, and missing node acquisition in the XRPL ledger system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/shamap/NodeFamily.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "db"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "db"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "journal"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "getFullBelowCache"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "getTreeNodeCache"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "reset"
+    },
+    {
+      "args": [
+        "seq",
+        "hash"
+      ],
+      "lineno": 55,
+      "name": "missingNodeAcquireBySeq"
+    },
+    {
+      "args": [
+        "hash",
+        "seq"
+      ],
+      "lineno": 58,
+      "name": "missingNodeAcquireByHash"
+    },
+    {
+      "args": [
+        "hash",
+        "seq"
+      ],
+      "lineno": 68,
+      "name": "acquire"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

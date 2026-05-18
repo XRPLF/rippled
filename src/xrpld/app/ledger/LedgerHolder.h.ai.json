@@ -1,0 +1,38 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "LedgerHolder"
+    }
+  ],
+  "description": "Provides a thread-safe holder for an immutable ledger using a mutex for synchronization. Ensures only immutable ledgers are held and offers set/get/empty operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerHolder.h",
+  "functions": [
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 20,
+      "name": "set"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "empty"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

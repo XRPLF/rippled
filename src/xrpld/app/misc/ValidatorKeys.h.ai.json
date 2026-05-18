@@ -1,0 +1,67 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "masterPublic_"
+    },
+    {
+      "lineno": 23,
+      "name": "public_"
+    },
+    {
+      "lineno": 23,
+      "name": "secret_"
+    },
+    {
+      "lineno": 38,
+      "name": "config"
+    },
+    {
+      "lineno": 38,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Config const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 13,
+      "name": "ValidatorKeys"
+    },
+    {
+      "args": [
+        "PublicKey const& masterPublic_",
+        "PublicKey const& public_",
+        "SecretKey const& secret_"
+      ],
+      "lineno": 17,
+      "name": "Keys"
+    }
+  ],
+  "description": "Defines the ValidatorKeys class, which encapsulates validator keys and manifest information as set in the configuration file for the XRPL software. It includes a nested Keys struct for grouping key material, and provides methods for configuration validation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/ValidatorKeys.h",
+  "functions": [
+    {
+      "args": [
+        "Config const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 38,
+      "name": "ValidatorKeys"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "configInvalid"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

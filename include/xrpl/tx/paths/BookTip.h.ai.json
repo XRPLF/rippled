@@ -1,0 +1,64 @@
+{
+  "args": [
+    {
+      "lineno": 26,
+      "name": "view"
+    },
+    {
+      "lineno": 26,
+      "name": "book"
+    },
+    {
+      "lineno": 50,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyView& view",
+        "Book const& book"
+      ],
+      "lineno": 13,
+      "name": "BookTip"
+    }
+  ],
+  "description": "Defines the BookTip class, which iterates and consumes raw offers in an order book, presenting offers from highest to lowest quality.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/BookTip.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "dir"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "index"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "quality"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "entry"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 50,
+      "name": "step"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

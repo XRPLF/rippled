@@ -1,0 +1,80 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "l"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& l"
+      ],
+      "lineno": 13,
+      "name": "RCLCxLedger"
+    }
+  ],
+  "description": "Defines the RCLCxLedger class, a thin wrapper over a shared pointer to a Ledger, providing accessors and metadata for use in RCLConsensus.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLCxLedger.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "RCLCxLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& l"
+      ],
+      "lineno": 28,
+      "name": "RCLCxLedger"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "seq"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "id"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "parentID"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "closeTimeResolution"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "closeAgree"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "closeTime"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "parentCloseTime"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "getJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 42,
+      "name": "value"
+    },
+    {
+      "lineno": 42,
+      "name": "field"
+    },
+    {
+      "lineno": 52,
+      "name": "condition_required"
+    },
+    {
+      "lineno": 52,
+      "name": "context"
+    },
+    {
+      "lineno": 38,
+      "name": "version"
+    },
+    {
+      "lineno": 38,
+      "name": "betaEnabled"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "Handler"
+    }
+  ],
+  "description": "Defines the RPC Handler structure and related utilities for XRPL, including handler registration, condition checking, and helper functions for JSON responses.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Handler.h",
+  "functions": [
+    {
+      "args": [
+        "version",
+        "betaEnabled",
+        ""
+      ],
+      "lineno": 38,
+      "name": "getHandler"
+    },
+    {
+      "args": [
+        "value",
+        "field"
+      ],
+      "lineno": 41,
+      "name": "makeObjectValue"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getHandlerNames"
+    },
+    {
+      "args": [
+        "condition_required",
+        "context"
+      ],
+      "lineno": 51,
+      "name": "conditionMet"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "Json"
+    },
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "RPC"
+    }
+  ]
+}

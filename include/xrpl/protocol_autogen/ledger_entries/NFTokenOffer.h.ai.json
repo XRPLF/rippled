@@ -1,0 +1,238 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "sle"
+    },
+    {
+      "lineno": 157,
+      "name": "owner"
+    },
+    {
+      "lineno": 157,
+      "name": "nFTokenID"
+    },
+    {
+      "lineno": 157,
+      "name": "amount"
+    },
+    {
+      "lineno": 157,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 157,
+      "name": "nFTokenOfferNode"
+    },
+    {
+      "lineno": 157,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 157,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 170,
+      "name": "sle"
+    },
+    {
+      "lineno": 182,
+      "name": "value"
+    },
+    {
+      "lineno": 192,
+      "name": "value"
+    },
+    {
+      "lineno": 202,
+      "name": "value"
+    },
+    {
+      "lineno": 212,
+      "name": "value"
+    },
+    {
+      "lineno": 222,
+      "name": "value"
+    },
+    {
+      "lineno": 232,
+      "name": "value"
+    },
+    {
+      "lineno": 242,
+      "name": "value"
+    },
+    {
+      "lineno": 252,
+      "name": "value"
+    },
+    {
+      "lineno": 262,
+      "name": "value"
+    },
+    {
+      "lineno": 272,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 18,
+      "name": "NFTokenOffer"
+    },
+    {
+      "args": [
+        "owner",
+        "nFTokenID",
+        "amount",
+        "ownerNode",
+        "nFTokenOfferNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 153,
+      "name": "NFTokenOfferBuilder"
+    }
+  ],
+  "description": "Defines the NFTokenOffer ledger entry and its builder for the XRPL, providing type-safe accessors and a fluent builder interface for constructing and manipulating NFTokenOffer ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/NFTokenOffer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getNFTokenID"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getNFTokenOfferNode"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "hasDestination"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 180,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 190,
+      "name": "setNFTokenID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 200,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 210,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 220,
+      "name": "setNFTokenOfferNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 230,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 240,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 250,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 260,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 270,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

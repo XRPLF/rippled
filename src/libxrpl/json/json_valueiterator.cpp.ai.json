@@ -1,0 +1,445 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "ValueIteratorBase"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "ValueConstIterator"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "ValueIterator"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValueIteratorBase::key",
+        "Value::CZString::c_str",
+        "Value::CZString::isStaticString",
+        "Value::CZString::index"
+      ],
+      "entry_point": "ValueIteratorBase::key",
+      "purpose": "Retrieves the key for the current iterator position, returning either a string or an index.",
+      "validation_points": [
+        "ValueIteratorBase::key: czString.c_str() != nullptr (manual null pointer check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValueIteratorBase::index",
+        "Value::CZString::c_str",
+        "Value::CZString::index"
+      ],
+      "entry_point": "ValueIteratorBase::index",
+      "purpose": "Retrieves the index for the current iterator position, or returns -1 if the key is a string.",
+      "validation_points": [
+        "ValueIteratorBase::index: czString.c_str() == nullptr (manual null pointer check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValueIteratorBase::isEqual"
+      ],
+      "entry_point": "ValueIteratorBase::isEqual",
+      "purpose": "Checks if two iterators are equal, with special handling for null iterators.",
+      "validation_points": [
+        "ValueIteratorBase::isEqual: isNull_ (manual check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValueIteratorBase::computeDistance"
+      ],
+      "entry_point": "ValueIteratorBase::computeDistance",
+      "purpose": "Computes the distance between two iterators, with special handling for null iterators.",
+      "validation_points": [
+        "ValueIteratorBase::computeDistance: isNull_ && other.isNull_ (manual check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValueIteratorBase::memberName",
+        "Value::CZString::c_str"
+      ],
+      "entry_point": "ValueIteratorBase::memberName",
+      "purpose": "Returns the member name as a C string, or an empty string if null.",
+      "validation_points": [
+        "ValueIteratorBase::memberName: (*current_).first.c_str() != nullptr (manual null pointer check)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "isNull_",
+      "flow": [
+        "ValueIteratorBase::ValueIteratorBase",
+        "ValueIteratorBase::isEqual",
+        "ValueIteratorBase::computeDistance"
+      ],
+      "origin": "ValueIteratorBase constructor (default: true, with iterator: false)",
+      "transformations": [
+        "Set to true in default constructor, false in iterator constructor",
+        "Checked in isEqual and computeDistance for special null handling"
+      ],
+      "validated_at": "isEqual, computeDistance"
+    },
+    {
+      "field": "current_",
+      "flow": [
+        "ValueIteratorBase::ValueIteratorBase",
+        "ValueIteratorBase::deref",
+        "ValueIteratorBase::increment",
+        "ValueIteratorBase::decrement",
+        "ValueIteratorBase::key",
+        "ValueIteratorBase::index",
+        "ValueIteratorBase::memberName"
+      ],
+      "origin": "ValueIteratorBase constructor (passed-in iterator)",
+      "transformations": [
+        "Incremented/decremented in increment/decrement",
+        "Dereferenced for key/index/memberName"
+      ],
+      "validated_at": "Indirectly validated via isNull_ and null pointer checks on c_str()"
+    },
+    {
+      "field": "Value::CZString (from (*current_).first)",
+      "flow": [
+        "(*current_).first",
+        "ValueIteratorBase::key",
+        "ValueIteratorBase::index",
+        "ValueIteratorBase::memberName"
+      ],
+      "origin": "Underlying map key in ObjectValues",
+      "transformations": [
+        "c_str() called to check if key is string or index",
+        "isStaticString() checked for static string optimization"
+      ],
+      "validated_at": "czString.c_str() != nullptr (manual null pointer check in key, index, memberName)"
+    }
+  ],
+  "description": "Implements iterator classes and methods for traversing JSON object values in the Json namespace, including base, const, and mutable iterators.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isNull_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at ValueIteratorBase::computeDistance",
+      "issue_pattern": "Missing empty string validation for isNull_",
+      "why_false_positive": "manual check validates isNull_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isNull_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at ValueIteratorBase::isEqual",
+      "issue_pattern": "Missing empty string validation for isNull_",
+      "why_false_positive": "manual check validates isNull_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "czString.c_str()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::key",
+      "issue_pattern": "Missing empty string validation for czString.c_str()",
+      "why_false_positive": "manual null pointer check validates czString.c_str() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "czString.c_str()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::key",
+      "issue_pattern": "Missing type validation for czString.c_str()",
+      "why_false_positive": "manual null pointer check validates czString.c_str() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "czString.c_str()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::index",
+      "issue_pattern": "Missing empty string validation for czString.c_str()",
+      "why_false_positive": "manual null pointer check validates czString.c_str() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "czString.c_str()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::index",
+      "issue_pattern": "Missing type validation for czString.c_str()",
+      "why_false_positive": "manual null pointer check validates czString.c_str() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "(*current_).first.c_str()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::memberName",
+      "issue_pattern": "Missing empty string validation for (*current_).first.c_str()",
+      "why_false_positive": "manual null pointer check validates (*current_).first.c_str() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "(*current_).first.c_str()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual null pointer check at ValueIteratorBase::memberName",
+      "issue_pattern": "Missing type validation for (*current_).first.c_str()",
+      "why_false_positive": "manual null pointer check validates (*current_).first.c_str() type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/json_valueiterator.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "ValueIteratorBase::ValueIteratorBase"
+    },
+    {
+      "args": [
+        "Value::ObjectValues::iterator const& current"
+      ],
+      "lineno": 13,
+      "name": "ValueIteratorBase::ValueIteratorBase"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "ValueIteratorBase::deref"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "ValueIteratorBase::increment"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "ValueIteratorBase::decrement"
+    },
+    {
+      "args": [
+        "SelfType const& other"
+      ],
+      "lineno": 32,
+      "name": "ValueIteratorBase::computeDistance"
+    },
+    {
+      "args": [
+        "SelfType const& other"
+      ],
+      "lineno": 54,
+      "name": "ValueIteratorBase::isEqual"
+    },
+    {
+      "args": [
+        "SelfType const& other"
+      ],
+      "lineno": 62,
+      "name": "ValueIteratorBase::copy"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "ValueIteratorBase::key"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "ValueIteratorBase::index"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "ValueIteratorBase::memberName"
+    },
+    {
+      "args": [
+        "Value::ObjectValues::iterator const& current"
+      ],
+      "lineno": 96,
+      "name": "ValueConstIterator::ValueConstIterator"
+    },
+    {
+      "args": [
+        "ValueIteratorBase const& other"
+      ],
+      "lineno": 100,
+      "name": "ValueConstIterator::operator="
+    },
+    {
+      "args": [
+        "Value::ObjectValues::iterator const& current"
+      ],
+      "lineno": 108,
+      "name": "ValueIterator::ValueIterator"
+    },
+    {
+      "args": [
+        "ValueConstIterator const& other"
+      ],
+      "lineno": 112,
+      "name": "ValueIterator::ValueIterator"
+    },
+    {
+      "args": [
+        "ValueIterator const& other"
+      ],
+      "lineno": 115,
+      "name": "ValueIterator::ValueIterator"
+    },
+    {
+      "args": [
+        "SelfType const& other"
+      ],
+      "lineno": 119,
+      "name": "ValueIterator::operator="
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "This code is low-level iterator logic for JSON object traversal. Direct unit tests for these iterators are rare; instead, coverage is typically achieved via higher-level JSON parsing and manipulation tests (e.g., tests that iterate over JSON objects using the library's public API). Test files likely to cover this code include those for JSON parsing, object iteration, and key/index access (e.g., json_value_test.cpp, json_iterator_test.cpp). However, edge cases such as null iterators, empty objects, and non-string keys may not be exhaustively tested unless specifically targeted. Manual null pointer checks are present, but there is no explicit exception or error handling for invalid iterator usage, so robustness relies on upstream code and test coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (special case handled)",
+      "field": "isNull_",
+      "location": "ValueIteratorBase::computeDistance",
+      "validated_by": "manual check",
+      "validates": [
+        "Checks if both iterators are null (default constructed)",
+        "If both are null, returns distance 0"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "isNull_",
+      "location": "ValueIteratorBase::isEqual",
+      "validated_by": "manual check",
+      "validates": [
+        "Checks if current iterator is null",
+        "If so, only returns true if other is also null"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns Value(czString.index()) if null)",
+      "field": "czString.c_str()",
+      "location": "ValueIteratorBase::key",
+      "validated_by": "manual null pointer check",
+      "validates": [
+        "Checks if czString.c_str() is not null before dereferencing"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns czString.index() if null)",
+      "field": "czString.c_str()",
+      "location": "ValueIteratorBase::index",
+      "validated_by": "manual null pointer check",
+      "validates": [
+        "Checks if czString.c_str() is null before returning index"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns empty string if null)",
+      "field": "(*current_).first.c_str()",
+      "location": "ValueIteratorBase::memberName",
+      "validated_by": "manual null pointer check",
+      "validates": [
+        "Checks if member name pointer is null before returning"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

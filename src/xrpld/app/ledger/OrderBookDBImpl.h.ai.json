@@ -1,0 +1,46 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "registry"
+    },
+    {
+      "lineno": 22,
+      "name": "config"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "OrderBookDBConfig"
+    },
+    {
+      "args": [
+        "registry",
+        "config"
+      ],
+      "lineno": 28,
+      "name": "OrderBookDBImpl"
+    }
+  ],
+  "description": "Defines the OrderBookDBImpl class, which implements the OrderBookDB interface for managing order books in the XRPL ledger, including configuration, book management, and listener support.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/OrderBookDBImpl.h",
+  "functions": [
+    {
+      "args": [
+        "registry",
+        "config"
+      ],
+      "lineno": 22,
+      "name": "make_OrderBookDB"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

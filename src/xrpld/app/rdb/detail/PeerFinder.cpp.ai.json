@@ -1,0 +1,460 @@
+{
+  "args": [
+    {
+      "lineno": 5,
+      "name": "session"
+    },
+    {
+      "lineno": 5,
+      "name": "config"
+    },
+    {
+      "lineno": 5,
+      "name": "j"
+    },
+    {
+      "lineno": 27,
+      "name": "session"
+    },
+    {
+      "lineno": 27,
+      "name": "currentSchemaVersion"
+    },
+    {
+      "lineno": 27,
+      "name": "j"
+    },
+    {
+      "lineno": 120,
+      "name": "session"
+    },
+    {
+      "lineno": 120,
+      "name": "func"
+    },
+    {
+      "lineno": 135,
+      "name": "session"
+    },
+    {
+      "lineno": 135,
+      "name": "v"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "initPeerFinderDB"
+      ],
+      "entry_point": "initPeerFinderDB",
+      "purpose": "Initializes the PeerFinder database schema and tables.",
+      "validation_points": [
+        "SchemaVersion.version: validated by manual check (if/else) in updatePeerFinderDB",
+        "PeerFinder_BootstrapCache.address: validated by SQL schema constraint (UNIQUE, NOT NULL)",
+        "PeerFinder_BootstrapCache.valence: validated by SQL schema (INTEGER type)",
+        "PeerFinder_BootstrapCache.id: validated by SQL schema (PRIMARY KEY AUTOINCREMENT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "updatePeerFinderDB"
+      ],
+      "entry_point": "updatePeerFinderDB",
+      "purpose": "Checks and updates the PeerFinder database schema version, migrates data if needed.",
+      "validation_points": [
+        "SchemaVersion.version: validated by manual check (if/else) against currentSchemaVersion",
+        "PeerFinder_BootstrapCache.address: validated by SQL schema constraint (UNIQUE, NOT NULL)",
+        "PeerFinder_BootstrapCache.valence: validated by SQL schema (INTEGER type)",
+        "PeerFinder_BootstrapCache.id: validated by SQL schema (PRIMARY KEY AUTOINCREMENT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "readPeerFinderDB"
+      ],
+      "entry_point": "readPeerFinderDB",
+      "purpose": "Reads PeerFinder bootstrap cache entries from the database.",
+      "validation_points": [
+        "PeerFinder_BootstrapCache.address: validated by SQL schema constraint (UNIQUE, NOT NULL)",
+        "PeerFinder_BootstrapCache.valence: validated by SQL schema (INTEGER type)"
+      ]
+    },
+    {
+      "call_chain": [
+        "savePeerFinderDB"
+      ],
+      "entry_point": "savePeerFinderDB",
+      "purpose": "Saves PeerFinder bootstrap cache entries to the database.",
+      "validation_points": [
+        "PeerFinder_BootstrapCache.address: validated by SQL schema constraint (UNIQUE, NOT NULL)",
+        "PeerFinder_BootstrapCache.valence: validated by SQL schema (INTEGER type)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "SchemaVersion.version",
+      "flow": [
+        "Database (SchemaVersion.version)",
+        "Read into boost::optional<int> vO in updatePeerFinderDB",
+        "Compared to currentSchemaVersion in updatePeerFinderDB",
+        "Used to determine if migration is needed"
+      ],
+      "origin": "SchemaVersion table in database",
+      "transformations": [
+        "Read from DB",
+        "Defaulted to 0 if not present",
+        "Compared via if/else"
+      ],
+      "validated_at": "updatePeerFinderDB (manual check via if/else)"
+    },
+    {
+      "field": "PeerFinder_BootstrapCache.address",
+      "flow": [
+        "Database (PeerFinder_BootstrapCache.address)",
+        "Read into string s in updatePeerFinderDB",
+        "Converted to beast::IP::Endpoint via from_string(s)",
+        "Checked for validity (is_unspecified)",
+        "Used to populate PeerFinder::Store::Entry"
+      ],
+      "origin": "PeerFinder_BootstrapCache table in database",
+      "transformations": [
+        "Read from DB",
+        "String to Endpoint conversion",
+        "Validity check"
+      ],
+      "validated_at": "SQL schema (UNIQUE, NOT NULL), and runtime check (is_unspecified)"
+    },
+    {
+      "field": "PeerFinder_BootstrapCache.valence",
+      "flow": [
+        "Database (PeerFinder_BootstrapCache.valence)",
+        "Read into int valence in updatePeerFinderDB",
+        "Assigned to PeerFinder::Store::Entry.valence"
+      ],
+      "origin": "PeerFinder_BootstrapCache table in database",
+      "transformations": [
+        "Read from DB",
+        "Direct assignment"
+      ],
+      "validated_at": "SQL schema (INTEGER type)"
+    },
+    {
+      "field": "PeerFinder_BootstrapCache.id",
+      "flow": [
+        "Database (PeerFinder_BootstrapCache.id)",
+        "Used as primary key for entries"
+      ],
+      "origin": "PeerFinder_BootstrapCache table in database",
+      "transformations": [
+        "Auto-incremented by DB"
+      ],
+      "validated_at": "SQL schema (PRIMARY KEY AUTOINCREMENT)"
+    }
+  ],
+  "description": "Implements database initialization, migration, reading, and saving logic for the PeerFinder component in the xrpl namespace, managing peer bootstrap cache and schema versioning using SOCI.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.address (UNIQUE, NOT NULL)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field PeerFinder_BootstrapCache.address (UNIQUE, NOT NULL) validated by SOCI (C++ DB access), SQLite schema constraints",
+      "issue_pattern": "Missing validation for PeerFinder_BootstrapCache.address (UNIQUE, NOT NULL)",
+      "why_false_positive": "SOCI (C++ DB access), SQLite schema constraints validates PeerFinder_BootstrapCache.address (UNIQUE, NOT NULL) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.valence (INTEGER)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field PeerFinder_BootstrapCache.valence (INTEGER) validated by SOCI (C++ DB access), SQLite schema constraints",
+      "issue_pattern": "Missing validation for PeerFinder_BootstrapCache.valence (INTEGER)",
+      "why_false_positive": "SOCI (C++ DB access), SQLite schema constraints validates PeerFinder_BootstrapCache.valence (INTEGER) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.id (INTEGER PRIMARY KEY AUTOINCREMENT)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field PeerFinder_BootstrapCache.id (INTEGER PRIMARY KEY AUTOINCREMENT) validated by SOCI (C++ DB access), SQLite schema constraints",
+      "issue_pattern": "Missing validation for PeerFinder_BootstrapCache.id (INTEGER PRIMARY KEY AUTOINCREMENT)",
+      "why_false_positive": "SOCI (C++ DB access), SQLite schema constraints validates PeerFinder_BootstrapCache.id (INTEGER PRIMARY KEY AUTOINCREMENT) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SchemaVersion.version",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if/else) at updatePeerFinderDB",
+      "issue_pattern": "Missing empty string validation for SchemaVersion.version",
+      "why_false_positive": "manual check (if/else) validates SchemaVersion.version for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SchemaVersion.version",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if/else) at updatePeerFinderDB",
+      "issue_pattern": "Missing empty string validation for SchemaVersion.version",
+      "why_false_positive": "manual check (if/else) validates SchemaVersion.version for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.address",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SQL schema constraint (UNIQUE, NOT NULL) at initPeerFinderDB",
+      "issue_pattern": "Missing empty string validation for PeerFinder_BootstrapCache.address",
+      "why_false_positive": "SQL schema constraint (UNIQUE, NOT NULL) validates PeerFinder_BootstrapCache.address for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.address",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "SQL schema constraint (UNIQUE, NOT NULL) at initPeerFinderDB",
+      "issue_pattern": "Missing format validation for PeerFinder_BootstrapCache.address",
+      "why_false_positive": "SQL schema constraint (UNIQUE, NOT NULL) validates PeerFinder_BootstrapCache.address format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.valence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SQL schema (INTEGER type) at initPeerFinderDB",
+      "issue_pattern": "Missing empty string validation for PeerFinder_BootstrapCache.valence",
+      "why_false_positive": "SQL schema (INTEGER type) validates PeerFinder_BootstrapCache.valence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.valence",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "SQL schema (INTEGER type) at initPeerFinderDB",
+      "issue_pattern": "Missing type validation for PeerFinder_BootstrapCache.valence",
+      "why_false_positive": "SQL schema (INTEGER type) validates PeerFinder_BootstrapCache.valence type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SQL schema (PRIMARY KEY AUTOINCREMENT) at initPeerFinderDB",
+      "issue_pattern": "Missing empty string validation for PeerFinder_BootstrapCache.id",
+      "why_false_positive": "SQL schema (PRIMARY KEY AUTOINCREMENT) validates PeerFinder_BootstrapCache.id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "PeerFinder_BootstrapCache.id",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "SQL schema (PRIMARY KEY AUTOINCREMENT) at initPeerFinderDB",
+      "issue_pattern": "Missing type validation for PeerFinder_BootstrapCache.id",
+      "why_false_positive": "SQL schema (PRIMARY KEY AUTOINCREMENT) validates PeerFinder_BootstrapCache.id type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/rdb/detail/PeerFinder.cpp",
+  "functions": [
+    {
+      "args": [
+        "session",
+        "config",
+        "j"
+      ],
+      "lineno": 5,
+      "name": "initPeerFinderDB"
+    },
+    {
+      "args": [
+        "session",
+        "currentSchemaVersion",
+        "j"
+      ],
+      "lineno": 27,
+      "name": "updatePeerFinderDB"
+    },
+    {
+      "args": [
+        "session",
+        "func"
+      ],
+      "lineno": 120,
+      "name": "readPeerFinderDB"
+    },
+    {
+      "args": [
+        "session",
+        "v"
+      ],
+      "lineno": 135,
+      "name": "savePeerFinderDB"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). Likely, integration or unit tests exist elsewhere (e.g., in test/app/rdb/PeerFinder_test.cpp or similar). The schema versioning logic and migration paths may not be fully covered by tests, especially for edge cases (e.g., corrupted DB, unexpected schema versions). The runtime validation of address strings (is_unspecified) may not be thoroughly tested for all malformed input cases. SQL constraint violations (e.g., duplicate addresses) are likely only tested indirectly via integration tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "PeerFinder_BootstrapCache.address (UNIQUE, NOT NULL)",
+      "PeerFinder_BootstrapCache.valence (INTEGER)",
+      "PeerFinder_BootstrapCache.id (INTEGER PRIMARY KEY AUTOINCREMENT)"
+    ],
+    "framework": "SOCI (C++ DB access), SQLite schema constraints",
+    "validation_layer": "business_logic (manual checks in C++), database schema (SQL constraints)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "SchemaVersion.version",
+      "location": "updatePeerFinderDB",
+      "validated_by": "manual check (if/else)",
+      "validates": [
+        "Checks if database schema version is higher than expected (version > currentSchemaVersion)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (just logs)",
+      "field": "SchemaVersion.version",
+      "location": "updatePeerFinderDB",
+      "validated_by": "manual check (if/else)",
+      "validates": [
+        "Checks if database schema version is lower than expected (version < currentSchemaVersion)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "SQL constraint violation (exception thrown by SOCI/SQLite)",
+      "field": "PeerFinder_BootstrapCache.address",
+      "location": "initPeerFinderDB",
+      "validated_by": "SQL schema constraint (UNIQUE, NOT NULL)",
+      "validates": [
+        "Ensures address is unique",
+        "Ensures address is not null"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "SQL type error (exception thrown by SOCI/SQLite)",
+      "field": "PeerFinder_BootstrapCache.valence",
+      "location": "initPeerFinderDB",
+      "validated_by": "SQL schema (INTEGER type)",
+      "validates": [
+        "Ensures valence is an integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "SQL type error (exception thrown by SOCI/SQLite)",
+      "field": "PeerFinder_BootstrapCache.id",
+      "location": "initPeerFinderDB",
+      "validated_by": "SQL schema (PRIMARY KEY AUTOINCREMENT)",
+      "validates": [
+        "Ensures id is an integer and unique"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

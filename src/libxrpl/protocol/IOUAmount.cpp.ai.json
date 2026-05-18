@@ -1,0 +1,577 @@
+{
+  "args": [
+    {
+      "lineno": 26,
+      "name": "v"
+    },
+    {
+      "lineno": 36,
+      "name": "number"
+    },
+    {
+      "lineno": 81,
+      "name": "other"
+    },
+    {
+      "lineno": 85,
+      "name": "other"
+    },
+    {
+      "lineno": 112,
+      "name": "amount"
+    },
+    {
+      "lineno": 116,
+      "name": "amt"
+    },
+    {
+      "lineno": 116,
+      "name": "num"
+    },
+    {
+      "lineno": 116,
+      "name": "den"
+    },
+    {
+      "lineno": 116,
+      "name": "roundUp"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "IOUAmount::fromNumber",
+        "Number::normalizeToRange"
+      ],
+      "entry_point": "IOUAmount::fromNumber",
+      "purpose": "Constructs an IOUAmount from a Number, normalizing mantissa and exponent to allowed ranges.",
+      "validation_points": [
+        "Number::normalizeToRange (validates mantissa_ and exponent_ against min/max)"
+      ]
+    },
+    {
+      "call_chain": [
+        "IOUAmount::normalize",
+        "getSTNumberSwitchover",
+        "IOUAmount::fromNumber (if switchover is true)",
+        "Number::normalizeToRange"
+      ],
+      "entry_point": "IOUAmount::normalize",
+      "purpose": "Normalizes the mantissa and exponent to ensure they are within valid ranges, handling zero and overflow cases.",
+      "validation_points": [
+        "IOUAmount::normalize (manual checks on mantissa_ and exponent_)",
+        "IOUAmount::fromNumber (calls Number::normalizeToRange)"
+      ]
+    },
+    {
+      "call_chain": [
+        "IOUAmount::IOUAmount(Number const&)",
+        "IOUAmount::fromNumber",
+        "Number::normalizeToRange"
+      ],
+      "entry_point": "IOUAmount::IOUAmount(Number const&)",
+      "purpose": "Constructs an IOUAmount from a Number, ensuring normalization and validation.",
+      "validation_points": [
+        "IOUAmount::fromNumber (calls Number::normalizeToRange)",
+        "IOUAmount::IOUAmount(Number const&) (manual checks on exponent_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "IOUAmount::operator+=",
+        "getSTNumberSwitchover",
+        "IOUAmount(Number{*this} + Number{other}) (if switchover is true)",
+        "normalize (if switchover is false)"
+      ],
+      "entry_point": "IOUAmount::operator+=",
+      "purpose": "Adds another IOUAmount, normalizing and validating the result.",
+      "validation_points": [
+        "IOUAmount::normalize (manual checks on mantissa_ and exponent_)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mantissa_",
+      "flow": [
+        "Input (Number or direct value)",
+        "Assigned to IOUAmount::mantissa_",
+        "Transformed in normalize (multiplied/divided by 10, sign adjusted)",
+        "Used in arithmetic (operator+=, etc.)",
+        "Validated in normalize and fromNumber"
+      ],
+      "origin": "Input Number or direct assignment in IOUAmount",
+      "transformations": [
+        "Normalization (scaling to fit minMantissa/maxMantissa)",
+        "Sign adjustment (negative/positive)",
+        "Arithmetic operations (addition, multiplication)"
+      ],
+      "validated_at": "normalize, fromNumber (via Number::normalizeToRange)"
+    },
+    {
+      "field": "exponent_",
+      "flow": [
+        "Input (Number or direct value)",
+        "Assigned to IOUAmount::exponent_",
+        "Transformed in normalize (incremented/decremented as mantissa is scaled)",
+        "Used in arithmetic (operator+=, etc.)",
+        "Validated in normalize and fromNumber"
+      ],
+      "origin": "Input Number or direct assignment in IOUAmount",
+      "transformations": [
+        "Normalization (incremented/decremented to keep mantissa in range)",
+        "Arithmetic operations (addition, etc.)"
+      ],
+      "validated_at": "normalize, fromNumber (via Number::normalizeToRange)"
+    }
+  ],
+  "description": "Implements arithmetic and normalization logic for IOUAmount in the XRPL protocol, including conversion, normalization, addition, and multiplication with ratio, using arbitrary precision math for safe calculations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "exponent_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing empty string validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "exponent_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing range validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "exponent_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing empty string validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "exponent_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing range validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mantissa_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing empty string validation for mantissa_",
+      "why_false_positive": "manual check validates mantissa_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mantissa_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing range validation for mantissa_",
+      "why_false_positive": "manual check validates mantissa_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mantissa_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing empty string validation for mantissa_",
+      "why_false_positive": "manual check validates mantissa_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mantissa_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing range validation for mantissa_",
+      "why_false_positive": "manual check validates mantissa_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mantissa_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount::normalize",
+      "issue_pattern": "Missing empty string validation for mantissa_",
+      "why_false_positive": "manual check validates mantissa_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "exponent_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount(Number const& other) (constructor)",
+      "issue_pattern": "Missing empty string validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "exponent_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount(Number const& other) (constructor)",
+      "issue_pattern": "Missing range validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "exponent_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount(Number const& other) (constructor)",
+      "issue_pattern": "Missing empty string validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "exponent_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at IOUAmount(Number const& other) (constructor)",
+      "issue_pattern": "Missing range validation for exponent_",
+      "why_false_positive": "manual check validates exponent_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "mantissa_, exponent_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Number::normalizeToRange (called in IOUAmount::fromNumber) at IOUAmount::fromNumber",
+      "issue_pattern": "Missing empty string validation for mantissa_, exponent_",
+      "why_false_positive": "Number::normalizeToRange (called in IOUAmount::fromNumber) validates mantissa_, exponent_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/IOUAmount.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "getStaticSTNumberSwitchover"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "getSTNumberSwitchover"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 26,
+      "name": "setSTNumberSwitchover"
+    },
+    {
+      "args": [
+        "number"
+      ],
+      "lineno": 36,
+      "name": "fromNumber"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "minPositiveAmount"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "normalize"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 81,
+      "name": "IOUAmount"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 85,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 112,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "amt",
+        "num",
+        "den",
+        "roundUp"
+      ],
+      "lineno": 116,
+      "name": "mulRatio"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for IOUAmount and STAmount, typically found in files like IOUAmount_test.cpp, STAmount_test.cpp, or protocol/IOUAmount_test.cpp. These tests should cover normalization, overflow, underflow, zero handling, and arithmetic operations. However, edge cases such as extreme exponent/mantissa values, switchover logic, and exception paths (e.g., overflow errors) may not be exhaustively tested unless specifically targeted. Manual validation logic (e.g., mantissa_ >= -10 && mantissa_ <= 10 triggers zeroing) should be checked for test coverage. There may be gaps in tests for the getSTNumberSwitchover/setSTNumberSwitchover logic and for all exception-throwing branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual validation (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::overflow_error (via Throw)",
+      "field": "exponent_",
+      "location": "IOUAmount::normalize",
+      "validated_by": "manual check",
+      "validates": [
+        "exponent_ must not exceed maxExponent"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets to zero)",
+      "field": "exponent_",
+      "location": "IOUAmount::normalize",
+      "validated_by": "manual check",
+      "validates": [
+        "exponent_ below minExponent results in zeroing the amount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets to zero)",
+      "field": "mantissa_",
+      "location": "IOUAmount::normalize",
+      "validated_by": "manual check",
+      "validates": [
+        "mantissa_ below minMantissa results in zeroing the amount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::overflow_error (via Throw)",
+      "field": "mantissa_",
+      "location": "IOUAmount::normalize",
+      "validated_by": "manual check",
+      "validates": [
+        "mantissa_ above maxMantissa triggers normalization loop, and if exponent_ >= maxExponent, throws"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets to zero)",
+      "field": "mantissa_",
+      "location": "IOUAmount::normalize",
+      "validated_by": "manual check",
+      "validates": [
+        "mantissa_ == 0 results in zeroing the amount"
+      ],
+      "validation_type": "type/business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::overflow_error (via Throw)",
+      "field": "exponent_",
+      "location": "IOUAmount(Number const& other) (constructor)",
+      "validated_by": "manual check",
+      "validates": [
+        "exponent_ must not exceed maxExponent"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets to zero)",
+      "field": "exponent_",
+      "location": "IOUAmount(Number const& other) (constructor)",
+      "validated_by": "manual check",
+      "validates": [
+        "exponent_ below minExponent results in zeroing the amount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "depends on Number::normalizeToRange (not shown here)",
+      "field": "mantissa_, exponent_",
+      "location": "IOUAmount::fromNumber",
+      "validated_by": "Number::normalizeToRange (called in IOUAmount::fromNumber)",
+      "validates": [
+        "mantissa_ and exponent_ are normalized to allowed ranges"
+      ],
+      "validation_type": "range/business_logic"
+    }
+  ]
+}

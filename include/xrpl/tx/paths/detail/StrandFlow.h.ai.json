@@ -1,0 +1,78 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "StrandResult"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "FlowResult"
+    },
+    {
+      "args": [
+        "std::vector<Strand> const& strands"
+      ],
+      "lineno": 312,
+      "name": "ActiveStrands"
+    }
+  ],
+  "description": "Implements the core logic for executing payment flows through strands (paths) in the XRPL ledger, including liquidity search, offer consumption, quality limiting, and payment sandbox management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/StrandFlow.h",
+  "functions": [
+    {
+      "args": [
+        "PaymentSandbox const& baseView",
+        "Strand const& strand",
+        "std::optional<TInAmt> const& maxIn",
+        "TOutAmt const& out",
+        "beast::Journal j"
+      ],
+      "lineno": 54,
+      "name": "flow"
+    },
+    {
+      "args": [
+        "ReadView const& v",
+        "Strand const& strand"
+      ],
+      "lineno": 246,
+      "name": "qualityUpperBound"
+    },
+    {
+      "args": [
+        "ReadView const& v",
+        "Strand const& strand",
+        "TOutAmt const& remainingOut",
+        "Quality const& limitQuality"
+      ],
+      "lineno": 266,
+      "name": "limitOut"
+    },
+    {
+      "args": [
+        "PaymentSandbox const& baseView",
+        "std::vector<Strand> const& strands",
+        "TOutAmt const& outReq",
+        "bool partialPayment",
+        "OfferCrossing offerCrossing",
+        "std::optional<Quality> const& limitQuality",
+        "std::optional<STAmount> const& sendMaxST",
+        "beast::Journal j",
+        "AMMContext& ammContext",
+        "path::detail::FlowDebugInfo* flowDebugInfo"
+      ],
+      "lineno": 393,
+      "name": "flow"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

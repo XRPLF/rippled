@@ -1,0 +1,168 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 36,
+      "name": "AMMDeposit"
+    }
+  ],
+  "description": "Implements the AMMDeposit transactor for adding liquidity to an AMM pool in the XRPL, supporting various deposit modes and updating pool and LP token balances accordingly.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMDeposit.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 38,
+      "name": "AMMDeposit"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 43,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 46,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 49,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 52,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view"
+      ],
+      "lineno": 59,
+      "name": "applyGuts"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amountDeposit",
+        "std::optional<STAmount> const& amount2Deposit",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::optional<STAmount> const& depositMin",
+        "std::optional<STAmount> const& deposit2Min",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 80,
+      "name": "deposit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::optional<STAmount> const& depositMin",
+        "std::optional<STAmount> const& deposit2Min",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 108,
+      "name": "equalDepositTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 134,
+      "name": "equalDepositLimit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& amount",
+        "std::optional<STAmount> const& lpTokensDepositMin",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 159,
+      "name": "singleDeposit"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& lpTokensDeposit",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 179,
+      "name": "singleDepositTokens"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& ePrice",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 199,
+      "name": "singleDepositEPrice"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "AccountID const& ammAccount",
+        "STAmount const& amount",
+        "STAmount const& amount2",
+        "Asset const& lptIssue",
+        "std::uint16_t tfee"
+      ],
+      "lineno": 219,
+      "name": "equalDepositInEmptyState"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

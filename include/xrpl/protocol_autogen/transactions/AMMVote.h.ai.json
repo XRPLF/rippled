@@ -1,0 +1,142 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "tx"
+    },
+    {
+      "lineno": 86,
+      "name": "account"
+    },
+    {
+      "lineno": 87,
+      "name": "asset"
+    },
+    {
+      "lineno": 88,
+      "name": "asset2"
+    },
+    {
+      "lineno": 89,
+      "name": "tradingFee"
+    },
+    {
+      "lineno": 90,
+      "name": "sequence"
+    },
+    {
+      "lineno": 91,
+      "name": "fee"
+    },
+    {
+      "lineno": 144,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 144,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 111,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "AMMVote"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::decay_t<typename SF_ISSUE::type::value_type> const& asset2, std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 85,
+      "name": "AMMVoteBuilder"
+    }
+  ],
+  "description": "Defines the AMMVote transaction type for XRPL, including a type-safe wrapper and a builder class for constructing and signing AMMVote transactions with required fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMVote.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "AMMVote"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset2",
+        "std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 86,
+      "name": "AMMVoteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 98,
+      "name": "AMMVoteBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 110,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 121,
+      "name": "setAsset2"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT16::type::value_type> const& value"
+      ],
+      "lineno": 132,
+      "name": "setTradingFee"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 143,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

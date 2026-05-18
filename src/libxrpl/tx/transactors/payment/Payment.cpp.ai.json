@@ -1,0 +1,676 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "tx"
+    },
+    {
+      "lineno": 23,
+      "name": "account"
+    },
+    {
+      "lineno": 23,
+      "name": "dstAmount"
+    },
+    {
+      "lineno": 23,
+      "name": "sendMax"
+    },
+    {
+      "lineno": 154,
+      "name": "view"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Payment::preflight",
+        "getMaxSourceAmount",
+        "STAmount::holds<MPTIssue>",
+        "ctx.rules.enabled",
+        "tx.isFieldPresent",
+        "tx.getFieldAmount",
+        "tx.getAccountID"
+      ],
+      "entry_point": "Payment::preflight",
+      "purpose": "Performs preflight validation on Payment transactions, checking feature flags, field presence, type correctness, and consistency between fields.",
+      "validation_points": [
+        "Payment::preflight (feature flag checks, type checks, field presence checks, consistency checks)",
+        "getMaxSourceAmount (type and presence checks)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Payment::checkExtraFeatures",
+        "ctx.tx.isFieldPresent",
+        "ctx.rules.enabled"
+      ],
+      "entry_point": "Payment::checkExtraFeatures",
+      "purpose": "Validates that extra fields (sfCredentialIDs, sfDomainID) are only present if the corresponding feature is enabled.",
+      "validation_points": [
+        "Payment::checkExtraFeatures (feature flag checks for extra fields)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Payment::doApply",
+        "Payment::preflight",
+        "Payment::preclaim",
+        "Payment::checkPermission"
+      ],
+      "entry_point": "Payment::doApply",
+      "purpose": "Applies the Payment transaction, but only after passing preflight, preclaim, and permission checks.",
+      "validation_points": [
+        "Payment::preflight",
+        "Payment::preclaim",
+        "Payment::checkPermission"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx (input)",
+        "tx.getFieldAmount(sfAmount)",
+        "STAmount dstAmount",
+        "dstAmount.holds<MPTIssue>()",
+        "getMaxSourceAmount",
+        "Validation in preflight"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Type checked via holds<MPTIssue>()",
+        "Used to construct STAmount",
+        "Compared for asset consistency"
+      ],
+      "validated_at": "Payment::preflight (type and consistency checks)"
+    },
+    {
+      "field": "sfSendMax",
+      "flow": [
+        "ctx.tx (input)",
+        "tx.isFieldPresent(sfSendMax)",
+        "tx[~sfSendMax]",
+        "getMaxSourceAmount"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence checked",
+        "Used as max source amount if present"
+      ],
+      "validated_at": "Payment::preflight (presence and consistency checks)"
+    },
+    {
+      "field": "sfCredentialIDs",
+      "flow": [
+        "ctx.tx (input)",
+        "tx.isFieldPresent(sfCredentialIDs)",
+        "Payment::checkExtraFeatures"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence checked",
+        "Feature flag checked"
+      ],
+      "validated_at": "Payment::checkExtraFeatures"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "ctx.tx (input)",
+        "tx.isFieldPresent(sfDomainID)",
+        "Payment::checkExtraFeatures"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence checked",
+        "Feature flag checked"
+      ],
+      "validated_at": "Payment::checkExtraFeatures"
+    },
+    {
+      "field": "sfPaths",
+      "flow": [
+        "ctx.tx (input)",
+        "tx.isFieldPresent(sfPaths)",
+        "Payment::preflight"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence checked",
+        "Used to determine if path-based payment"
+      ],
+      "validated_at": "Payment::preflight (malformed if present with MPTIssue and not MPTokensV2)"
+    }
+  ],
+  "description": "Implements the Payment transaction logic for the XRPL ledger, including preflight checks, permission checks, preclaim logic, and application of payments, supporting both XRP and issued tokens, as well as advanced features like multi-path payments, delegated payments, and permissioned DEX.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmount validated by xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+      "issue_pattern": "Missing validation for sfAmount",
+      "why_false_positive": "xrpl protocol validation (jss::, STAmount, Issue, feature flags) validates sfAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSendMax",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSendMax validated by xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+      "issue_pattern": "Missing validation for sfSendMax",
+      "why_false_positive": "xrpl protocol validation (jss::, STAmount, Issue, feature flags) validates sfSendMax automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCredentialIDs validated by xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+      "issue_pattern": "Missing validation for sfCredentialIDs",
+      "why_false_positive": "xrpl protocol validation (jss::, STAmount, Issue, feature flags) validates sfCredentialIDs automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDomainID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDomainID validated by xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+      "issue_pattern": "Missing validation for sfDomainID",
+      "why_false_positive": "xrpl protocol validation (jss::, STAmount, Issue, feature flags) validates sfDomainID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPaths",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPaths validated by xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+      "issue_pattern": "Missing validation for sfPaths",
+      "why_false_positive": "xrpl protocol validation (jss::, STAmount, Issue, feature flags) validates sfPaths automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "feature flag check at Payment::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfCredentialIDs",
+      "why_false_positive": "feature flag check validates sfCredentialIDs for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "feature flag check at Payment::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "feature flag check validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount (destination amount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type check (holds<MPTIssue>) at Payment::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount (destination amount)",
+      "why_false_positive": "type check (holds<MPTIssue>) validates sfAmount (destination amount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (destination amount)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type check (holds<MPTIssue>) at Payment::preflight",
+      "issue_pattern": "Missing type validation for sfAmount (destination amount)",
+      "why_false_positive": "type check (holds<MPTIssue>) validates sfAmount (destination amount) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfSendMax",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "field presence check at Payment::makeTxConsequences",
+      "issue_pattern": "Missing empty string validation for sfSendMax",
+      "why_false_positive": "field presence check validates sfSendMax for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfAmount (native/XRP check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "native() method at Payment::makeTxConsequences",
+      "issue_pattern": "Missing empty string validation for sfAmount (native/XRP check)",
+      "why_false_positive": "native() method validates sfAmount (native/XRP check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (native/XRP check)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "native() method at Payment::makeTxConsequences",
+      "issue_pattern": "Missing type validation for sfAmount (native/XRP check)",
+      "why_false_positive": "native() method validates sfAmount (native/XRP check) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfAmount (destination amount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "holds<MPTIssue> at Payment::getFlagsMask, Payment::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount (destination amount)",
+      "why_false_positive": "holds<MPTIssue> validates sfAmount (destination amount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (destination amount)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "holds<MPTIssue> at Payment::getFlagsMask, Payment::preflight",
+      "issue_pattern": "Missing type validation for sfAmount (destination amount)",
+      "why_false_positive": "holds<MPTIssue> validates sfAmount (destination amount) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfSendMax",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "optional presence at getMaxSourceAmount",
+      "issue_pattern": "Missing empty string validation for sfSendMax",
+      "why_false_positive": "optional presence validates sfSendMax for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfAmount (Issue type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "native() method, Issue construction at getMaxSourceAmount",
+      "issue_pattern": "Missing empty string validation for sfAmount (Issue type)",
+      "why_false_positive": "native() method, Issue construction validates sfAmount (Issue type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount (Issue type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "native() method, Issue construction at getMaxSourceAmount",
+      "issue_pattern": "Missing type validation for sfAmount (Issue type)",
+      "why_false_positive": "native() method, Issue construction validates sfAmount (Issue type) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "sfPaths",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent at Payment::preflight",
+      "issue_pattern": "Missing empty string validation for sfPaths",
+      "why_false_positive": "isFieldPresent validates sfPaths for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/payment/Payment.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "Payment::makeTxConsequences"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "STAmount const& dstAmount",
+        "std::optional<STAmount> const& sendMax"
+      ],
+      "lineno": 23,
+      "name": "getMaxSourceAmount"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 38,
+      "name": "Payment::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 46,
+      "name": "Payment::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 57,
+      "name": "Payment::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 154,
+      "name": "Payment::checkPermission"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 191,
+      "name": "Payment::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "Payment::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Payment transaction validation is typically covered in unit/integration tests under 'test/tx/Payment_test.cpp', 'test/tx/PaymentFlow_test.cpp', and possibly 'test/tx/MPTokens_test.cpp'. These tests cover standard, edge, and malformed cases, including feature flag gating, field presence, and type checks. However, new fields like sfCredentialIDs and sfDomainID may lack exhaustive negative tests for feature flag gating, and MPTokensV2-specific paths may not be fully covered if recently added. Tests for malformed combinations (e.g., inconsistent asset types, forbidden field combinations) should be reviewed for completeness.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAmount",
+      "sfSendMax",
+      "sfCredentialIDs",
+      "sfDomainID",
+      "sfPaths"
+    ],
+    "framework": "xrpl protocol validation (jss::, STAmount, Issue, feature flags)",
+    "validation_layer": "business_logic (preflight, feature gating, type checks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (causes temDISABLED or similar error upstream)",
+      "field": "sfCredentialIDs",
+      "location": "Payment::checkExtraFeatures",
+      "validated_by": "feature flag check",
+      "validates": [
+        "Presence of sfCredentialIDs requires featureCredentials to be enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (causes temDISABLED or similar error upstream)",
+      "field": "sfDomainID",
+      "location": "Payment::checkExtraFeatures",
+      "validated_by": "feature flag check",
+      "validates": [
+        "Presence of sfDomainID requires featurePermissionedDEX to be enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDISABLED",
+      "field": "sfAmount (destination amount)",
+      "location": "Payment::preflight",
+      "validated_by": "type check (holds<MPTIssue>)",
+      "validates": [
+        "If destination amount is MPTIssue, featureMPTokensV1 must be enabled"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (affects calculation, not error)",
+      "field": "sfSendMax",
+      "location": "Payment::makeTxConsequences",
+      "validated_by": "field presence check",
+      "validates": [
+        "If sfSendMax is present, use it for max spend calculation; else use sfAmount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (affects calculation, not error)",
+      "field": "sfAmount (native/XRP check)",
+      "location": "Payment::makeTxConsequences",
+      "validated_by": "native() method",
+      "validates": [
+        "If amount is not native (XRP), transaction does not spend XRP"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (affects mask/logic, not error)",
+      "field": "sfAmount (destination amount)",
+      "location": "Payment::getFlagsMask, Payment::preflight",
+      "validated_by": "holds<MPTIssue>",
+      "validates": [
+        "Checks if destination amount is MPTIssue for flag mask and feature gating"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (affects calculation, not error)",
+      "field": "sfSendMax",
+      "location": "getMaxSourceAmount",
+      "validated_by": "optional presence",
+      "validates": [
+        "If sendMax is present, use it as max source amount; else use dstAmount"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (affects calculation, not error)",
+      "field": "sfAmount (Issue type)",
+      "location": "getMaxSourceAmount",
+      "validated_by": "native() method, Issue construction",
+      "validates": [
+        "If Issue is native, use dstAmount; else construct STAmount with Issue and account"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "N/A (code incomplete, but likely error if present with MPTokensV1 off)",
+      "field": "sfPaths",
+      "location": "Payment::preflight",
+      "validated_by": "isFieldPresent",
+      "validates": [
+        "If MPTokensV2 is not enabled and destination is MPT, sfPaths presence is checked"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

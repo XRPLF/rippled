@@ -1,0 +1,73 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 22,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "LoanDelete"
+    }
+  ],
+  "description": "Defines the LoanDelete transaction transactor class for the XRPL lending protocol, including its interface for preflight, preclaim, and application logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/lending/LoanDelete.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 11,
+      "name": "LoanDelete"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

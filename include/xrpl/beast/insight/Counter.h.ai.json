@@ -1,0 +1,98 @@
+{
+  "args": [
+    {
+      "lineno": 37,
+      "name": "amount"
+    },
+    {
+      "lineno": 43,
+      "name": "amount"
+    },
+    {
+      "lineno": 49,
+      "name": "amount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "()",
+        "std::shared_ptr<CounterImpl> const& impl"
+      ],
+      "lineno": 13,
+      "name": "Counter"
+    }
+  ],
+  "description": "Defines the beast::insight::Counter class, a lightweight reference wrapper for a metric that measures an integral value, allowing increment and decrement operations for metrics collection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Counter.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "Counter"
+    },
+    {
+      "args": [
+        "std::shared_ptr<CounterImpl> const& impl"
+      ],
+      "lineno": 27,
+      "name": "Counter"
+    },
+    {
+      "args": [
+        "value_type amount"
+      ],
+      "lineno": 36,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "value_type amount"
+      ],
+      "lineno": 42,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "value_type amount"
+      ],
+      "lineno": 48,
+      "name": "operator-="
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 60,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "operator--"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 72,
+      "name": "operator--"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "insight"
+    }
+  ]
+}

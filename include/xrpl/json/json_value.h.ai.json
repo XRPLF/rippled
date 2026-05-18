@@ -1,0 +1,160 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "char const* czString"
+      ],
+      "lineno": 23,
+      "name": "StaticString"
+    },
+    {
+      "args": [
+        "ValueType type = nullValue"
+      ],
+      "lineno": 77,
+      "name": "Value"
+    },
+    {
+      "args": [
+        "int index"
+      ],
+      "lineno": 109,
+      "name": "Value::CZString"
+    },
+    {
+      "args": [],
+      "lineno": 355,
+      "name": "ValueAllocator"
+    },
+    {
+      "args": [],
+      "lineno": 377,
+      "name": "ValueIteratorBase"
+    },
+    {
+      "args": [],
+      "lineno": 427,
+      "name": "ValueConstIterator"
+    },
+    {
+      "args": [],
+      "lineno": 470,
+      "name": "ValueIterator"
+    }
+  ],
+  "description": "Defines the core JSON value types, the Json::Value class (a discriminated union for JSON values), static string optimization, value iterators, and related utilities for representing and manipulating JSON data in C++.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/json_value.h",
+  "functions": [
+    {
+      "args": [
+        "StaticString x",
+        "StaticString y"
+      ],
+      "lineno": 38,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "StaticString x",
+        "StaticString y"
+      ],
+      "lineno": 43,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "std::string const& x",
+        "StaticString y"
+      ],
+      "lineno": 48,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "std::string const& x",
+        "StaticString y"
+      ],
+      "lineno": 53,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "StaticString x",
+        "std::string const& y"
+      ],
+      "lineno": 58,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "StaticString x",
+        "std::string const& y"
+      ],
+      "lineno": 63,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "xrpl::Number const& number"
+      ],
+      "lineno": 324,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "Value const&",
+        "Value const&"
+      ],
+      "lineno": 329,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 331,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "Value const&",
+        "Value const&"
+      ],
+      "lineno": 336,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 338,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 343,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "Value const& x",
+        "Value const& y"
+      ],
+      "lineno": 348,
+      "name": "operator>="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "Json"
+    }
+  ]
+}

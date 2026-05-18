@@ -1,0 +1,156 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "sle"
+    }
+  ],
+  "classes": [],
+  "code_paths": [],
+  "data_flows": [],
+  "description": "Implements the Keylet::check method to validate STLedgerEntry objects against Keylet type and key constraints within the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle.getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Keylet::check",
+      "issue_pattern": "Missing empty string validation for sle.getType()",
+      "why_false_positive": "XRPL_ASSERT macro validates sle.getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type == ltANY) at Keylet::check",
+      "issue_pattern": "Missing empty string validation for type",
+      "why_false_positive": "if (type == ltANY) validates type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type and sle.getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type == ltCHILD) at Keylet::check",
+      "issue_pattern": "Missing empty string validation for type and sle.getType()",
+      "why_false_positive": "if (type == ltCHILD) validates type and sle.getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle.getType() and sle.key()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "return sle.getType() == type && sle.key() == key at Keylet::check",
+      "issue_pattern": "Missing empty string validation for sle.getType() and sle.key()",
+      "why_false_positive": "return sle.getType() == type && sle.key() == key validates sle.getType() and sle.key() for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Keylet.cpp",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 7,
+      "name": "Keylet::check"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion), manual checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "sle.getType()",
+      "location": "Keylet::check",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures that the STLedgerEntry type is not ltANY",
+        "Ensures that the STLedgerEntry type is not ltCHILD"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns true)",
+      "field": "type",
+      "location": "Keylet::check",
+      "validated_by": "if (type == ltANY)",
+      "validates": [
+        "If Keylet type is ltANY, always passes validation"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns boolean)",
+      "field": "type and sle.getType()",
+      "location": "Keylet::check",
+      "validated_by": "if (type == ltCHILD)",
+      "validates": [
+        "If Keylet type is ltCHILD, passes if sle.getType() is not ltDIR_NODE"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns boolean)",
+      "field": "sle.getType() and sle.key()",
+      "location": "Keylet::check",
+      "validated_by": "return sle.getType() == type && sle.key() == key",
+      "validates": [
+        "Checks that sle.getType() matches Keylet type",
+        "Checks that sle.key() matches Keylet key"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

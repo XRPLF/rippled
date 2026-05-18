@@ -1,0 +1,57 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "a"
+    },
+    {
+      "lineno": 10,
+      "name": "b"
+    },
+    {
+      "lineno": 10,
+      "name": "c"
+    },
+    {
+      "lineno": 49,
+      "name": "h"
+    },
+    {
+      "lineno": 49,
+      "name": "hp"
+    }
+  ],
+  "classes": [],
+  "description": "Defines hash prefixes used in the XRPL protocol to namespace different types of hashes, preventing collisions between different object types. Provides an enum for the prefixes and a utility for appending them to hashers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/HashPrefix.h",
+  "functions": [
+    {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lineno": 10,
+      "name": "make_hash_prefix"
+    },
+    {
+      "args": [
+        "h",
+        "hp"
+      ],
+      "lineno": 49,
+      "name": "hash_append"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ]
+}

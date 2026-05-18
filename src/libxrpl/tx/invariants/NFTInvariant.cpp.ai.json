@@ -1,0 +1,529 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InvariantCheck::visitEntry (base class, called by transaction application logic)",
+        "ValidNFTokenPage::visitEntry"
+      ],
+      "entry_point": "ValidNFTokenPage::visitEntry",
+      "purpose": "Validates the integrity and ordering of NFTokenPage ledger entries during transaction application (create, modify, delete).",
+      "validation_points": [
+        "ValidNFTokenPage::visitEntry (main validation logic in lambda 'check')"
+      ]
+    },
+    {
+      "call_chain": [
+        "InvariantCheck::finalize (base class, called after all entries visited)",
+        "ValidNFTokenPage::finalize"
+      ],
+      "entry_point": "ValidNFTokenPage::finalize",
+      "purpose": "Finalizes the invariant check, typically reporting or acting on any validation failures detected during visitEntry.",
+      "validation_points": [
+        "ValidNFTokenPage::finalize (acts on flags set during visitEntry)"
+      ]
+    },
+    {
+      "call_chain": [
+        "InvariantCheck::visitEntry",
+        "NFTokenCountTracking::visitEntry"
+      ],
+      "entry_point": "NFTokenCountTracking::visitEntry",
+      "purpose": "Tracks and validates the count of NFTs per account across ledger changes.",
+      "validation_points": [
+        "NFTokenCountTracking::visitEntry"
+      ]
+    },
+    {
+      "call_chain": [
+        "InvariantCheck::finalize",
+        "NFTokenCountTracking::finalize"
+      ],
+      "entry_point": "NFTokenCountTracking::finalize",
+      "purpose": "Finalizes NFT count tracking, ensuring no overflows or underflows.",
+      "validation_points": [
+        "NFTokenCountTracking::finalize"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "SLE type (ltNFTOKEN_PAGE)",
+      "flow": [
+        "SLE object",
+        "visitEntry (before/after)",
+        "getType() check"
+      ],
+      "origin": "Ledger entry (SLE) passed as 'before' or 'after' to visitEntry",
+      "transformations": [
+        "Explicit type check: only process if type == ltNFTOKEN_PAGE"
+      ],
+      "validated_at": "ValidNFTokenPage::visitEntry (early return if not NFTOKEN_PAGE)"
+    },
+    {
+      "field": "sfPreviousPageMin / sfNextPageMin (page links)",
+      "flow": [
+        "SLE object",
+        "visitEntry",
+        "lambda 'check'",
+        "(*sle)[~sfPreviousPageMin] / (*sle)[~sfNextPageMin]"
+      ],
+      "origin": "Fields in SLE (NFTokenPage)",
+      "transformations": [
+        "Bitmask applied: accountBits and pageBits extracted",
+        "Compared to current page's accountBits/pageBits"
+      ],
+      "validated_at": "ValidNFTokenPage::visitEntry::check (bitmask comparisons for account and ordering)"
+    },
+    {
+      "field": "sfNFTokens (array of NFTs on page)",
+      "flow": [
+        "SLE object",
+        "visitEntry",
+        "lambda 'check'",
+        "sle->getFieldArray(sfNFTokens)"
+      ],
+      "origin": "Field in SLE (NFTokenPage)",
+      "transformations": [
+        "Counted for size validation",
+        "Iterated for ordering and page-bits validation"
+      ],
+      "validated_at": "ValidNFTokenPage::visitEntry::check (size, ordering, and page-bits checks)"
+    },
+    {
+      "field": "sfNFTokenID (NFT ID in page)",
+      "flow": [
+        "sfNFTokens array",
+        "for loop in check",
+        "obj[sfNFTokenID]"
+      ],
+      "origin": "Element in sfNFTokens array",
+      "transformations": [
+        "Compared for ordering (nft::compareTokens)",
+        "Bitmasked for pageBits validation"
+      ],
+      "validated_at": "ValidNFTokenPage::visitEntry::check (ordering and page-bits checks)"
+    },
+    {
+      "field": "sfURI (NFT URI)",
+      "flow": [
+        "sfNFTokens array",
+        "for loop in check",
+        "obj[~sfURI]"
+      ],
+      "origin": "Element in sfNFTokens array",
+      "transformations": [
+        "Checked for presence and non-empty"
+      ],
+      "validated_at": "ValidNFTokenPage::visitEntry::check (empty URI check)"
+    }
+  ],
+  "description": "Implements invariants for NFT-related ledger objects in the XRPL, including checks for NFTokenPage structure, linking, sorting, and NFT mint/burn count tracking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SLE type (ltNFTOKEN_PAGE)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit type check (getType()) at ValidNFTokenPage::visitEntry",
+      "issue_pattern": "Missing empty string validation for SLE type (ltNFTOKEN_PAGE)",
+      "why_false_positive": "explicit type check (getType()) validates SLE type (ltNFTOKEN_PAGE) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SLE type (ltNFTOKEN_PAGE)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit type check (getType()) at ValidNFTokenPage::visitEntry",
+      "issue_pattern": "Missing type validation for SLE type (ltNFTOKEN_PAGE)",
+      "why_false_positive": "explicit type check (getType()) validates SLE type (ltNFTOKEN_PAGE) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPreviousPageMin link (account bits)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask comparison at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfPreviousPageMin link (account bits)",
+      "why_false_positive": "bitmask comparison validates sfPreviousPageMin link (account bits) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPreviousPageMin link (ordering)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask comparison at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfPreviousPageMin link (ordering)",
+      "why_false_positive": "bitmask comparison validates sfPreviousPageMin link (ordering) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNextPageMin link (account bits)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask comparison at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfNextPageMin link (account bits)",
+      "why_false_positive": "bitmask comparison validates sfNextPageMin link (account bits) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNextPageMin link (ordering)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask comparison at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfNextPageMin link (ordering)",
+      "why_false_positive": "bitmask comparison validates sfNextPageMin link (ordering) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokens array size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "array size check at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfNFTokens array size",
+      "why_false_positive": "array size check validates sfNFTokens array size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfNFTokens array size",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "array size check at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing range validation for sfNFTokens array size",
+      "why_false_positive": "array size check validates sfNFTokens array size range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokens array (sorted order)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::compareTokens at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfNFTokens array (sorted order)",
+      "why_false_positive": "nft::compareTokens validates sfNFTokens array (sorted order) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokens array (token page bits in range)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "bitmask and range check at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfNFTokens array (token page bits in range)",
+      "why_false_positive": "bitmask and range check validates sfNFTokens array (token page bits in range) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfURI (inside sfNFTokens array)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "optional field presence and empty check at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing empty string validation for sfURI (inside sfNFTokens array)",
+      "why_false_positive": "optional field presence and empty check validates sfURI (inside sfNFTokens array) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfURI (inside sfNFTokens array)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "optional field presence and empty check at ValidNFTokenPage::visitEntry::check (lambda)",
+      "issue_pattern": "Missing format validation for sfURI (inside sfNFTokens array)",
+      "why_false_positive": "optional field presence and empty check validates sfURI (inside sfNFTokens array) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/NFTInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 11,
+      "name": "ValidNFTokenPage::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "XRPAmount",
+        "view",
+        "j"
+      ],
+      "lineno": 97,
+      "name": "ValidNFTokenPage::finalize"
+    },
+    {
+      "args": [
+        "",
+        "before",
+        "after"
+      ],
+      "lineno": 143,
+      "name": "NFTokenCountTracking::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "XRPAmount",
+        "view",
+        "j"
+      ],
+      "lineno": 155,
+      "name": "NFTokenCountTracking::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The invariant checks are typically tested in the rippled codebase under unit tests for invariants and NFT logic. Look for test files such as 'test/invariant/NFTInvariant_test.cpp', 'test/app/tx/NFToken_test.cpp', or similar. These should cover cases like invalid page links, empty or oversized pages, unsorted NFT IDs, and invalid URIs. Gaps may exist in edge cases (e.g., malformed links, simultaneous multiple errors, or rare boundary conditions like deleting the final page). Integration tests may also exercise these invariants indirectly via transaction application. Direct fuzzing or property-based tests for all bitmask edge cases may be limited.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic (no external validation framework)",
+    "validation_layer": "business_logic (invariant check after transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "SLE type (ltNFTOKEN_PAGE)",
+      "location": "ValidNFTokenPage::visitEntry",
+      "validated_by": "explicit type check (getType())",
+      "validates": [
+        "Ensures only NFTOKEN_PAGE entries are processed"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badLink_ = true)",
+      "field": "sfPreviousPageMin link (account bits)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "bitmask comparison",
+      "validates": [
+        "Previous page link must match owning account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badLink_ = true)",
+      "field": "sfPreviousPageMin link (ordering)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "bitmask comparison",
+      "validates": [
+        "Previous page link must be strictly less than current page (ordering)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badLink_ = true)",
+      "field": "sfNextPageMin link (account bits)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "bitmask comparison",
+      "validates": [
+        "Next page link must match owning account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badLink_ = true)",
+      "field": "sfNextPageMin link (ordering)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "bitmask comparison",
+      "validates": [
+        "Next page link must be strictly greater than current page (ordering)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets invalidSize_ = true)",
+      "field": "sfNFTokens array size",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "array size check",
+      "validates": [
+        "NFTokenPage must not be empty (unless being deleted)",
+        "NFTokenPage must not exceed dirMaxTokensPerPage"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badSort_ = true)",
+      "field": "sfNFTokens array (sorted order)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "nft::compareTokens",
+      "validates": [
+        "NFTokenIDs in the page must be sorted"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badEntry_ = true)",
+      "field": "sfNFTokens array (token page bits in range)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "bitmask and range check",
+      "validates": [
+        "Each NFTokenID must belong to the current page (tokenPageBits in [loLimit, hiLimit))"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badURI_ = true)",
+      "field": "sfURI (inside sfNFTokens array)",
+      "location": "ValidNFTokenPage::visitEntry::check (lambda)",
+      "validated_by": "optional field presence and empty check",
+      "validates": [
+        "If sfURI is present, it must not be empty"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

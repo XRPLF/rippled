@@ -1,0 +1,186 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "tx"
+    },
+    {
+      "lineno": 188,
+      "name": "account"
+    },
+    {
+      "lineno": 189,
+      "name": "nFTokenTaxon"
+    },
+    {
+      "lineno": 190,
+      "name": "sequence"
+    },
+    {
+      "lineno": 191,
+      "name": "fee"
+    },
+    {
+      "lineno": 267,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 267,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 204,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 33,
+      "name": "NFTokenMint"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT32::type::value_type> const& nFTokenTaxon, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 181,
+      "name": "NFTokenMintBuilder"
+    }
+  ],
+  "description": "Defines the NFTokenMint transaction type for the XRPL protocol, providing a type-safe wrapper and a builder class for constructing and signing NFTokenMint transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/NFTokenMint.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getNFTokenTaxon"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "hasTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "hasIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "getURI"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "hasURI"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "hasAmount"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "hasDestination"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 202,
+      "name": "setNFTokenTaxon"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 211,
+      "name": "setTransferFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 220,
+      "name": "setIssuer"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 229,
+      "name": "setURI"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 238,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 247,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 256,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 265,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "k"
+    },
+    {
+      "lineno": 20,
+      "name": "type"
+    },
+    {
+      "lineno": 20,
+      "name": "key"
+    },
+    {
+      "lineno": 21,
+      "name": "sit"
+    },
+    {
+      "lineno": 21,
+      "name": "index"
+    },
+    {
+      "lineno": 22,
+      "name": "sit"
+    },
+    {
+      "lineno": 22,
+      "name": "index"
+    },
+    {
+      "lineno": 23,
+      "name": "object"
+    },
+    {
+      "lineno": 23,
+      "name": "index"
+    },
+    {
+      "lineno": 34,
+      "name": "options"
+    },
+    {
+      "lineno": 50,
+      "name": "rules"
+    },
+    {
+      "lineno": 53,
+      "name": "txID"
+    },
+    {
+      "lineno": 53,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 53,
+      "name": "prevTxID"
+    },
+    {
+      "lineno": 53,
+      "name": "prevLedgerID"
+    },
+    {
+      "lineno": 66,
+      "name": "n"
+    },
+    {
+      "lineno": 66,
+      "name": "buf"
+    },
+    {
+      "lineno": 68,
+      "name": "n"
+    },
+    {
+      "lineno": 68,
+      "name": "buf"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Keylet const& k",
+        "LedgerEntryType type, uint256 const& key",
+        "SerialIter& sit, uint256 const& index",
+        "SerialIter&& sit, uint256 const& index",
+        "STObject const& object, uint256 const& index"
+      ],
+      "lineno": 13,
+      "name": "STLedgerEntry"
+    }
+  ],
+  "description": "Defines the STLedgerEntry class, representing a ledger entry in the XRPL, including its key, type, and serialization/deserialization logic. Provides methods for accessing entry metadata, threading, and JSON/text representations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STLedgerEntry.h",
+  "functions": [
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 19,
+      "name": "STLedgerEntry"
+    },
+    {
+      "args": [
+        "LedgerEntryType type",
+        "uint256 const& key"
+      ],
+      "lineno": 20,
+      "name": "STLedgerEntry"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "uint256 const& index"
+      ],
+      "lineno": 21,
+      "name": "STLedgerEntry"
+    },
+    {
+      "args": [
+        "SerialIter&& sit",
+        "uint256 const& index"
+      ],
+      "lineno": 22,
+      "name": "STLedgerEntry"
+    },
+    {
+      "args": [
+        "STObject const& object",
+        "uint256 const& index"
+      ],
+      "lineno": 23,
+      "name": "STLedgerEntry"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions options"
+      ],
+      "lineno": 34,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "key"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getType"
+    },
+    {
+      "args": [
+        "Rules const& rules"
+      ],
+      "lineno": 50,
+      "name": "isThreadedType"
+    },
+    {
+      "args": [
+        "uint256 const& txID",
+        "std::uint32_t ledgerSeq",
+        "uint256& prevTxID",
+        "std::uint32_t& prevLedgerID"
+      ],
+      "lineno": 53,
+      "name": "thread"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "setSLEType"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 66,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 68,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "test"
+    }
+  ]
+}

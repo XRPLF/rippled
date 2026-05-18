@@ -1,0 +1,303 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "T"
+    },
+    {
+      "lineno": 101,
+      "name": "TIss"
+    },
+    {
+      "lineno": 104,
+      "name": "TIss"
+    },
+    {
+      "lineno": 117,
+      "name": "TIss"
+    },
+    {
+      "lineno": 122,
+      "name": "TIss"
+    },
+    {
+      "lineno": 129,
+      "name": "TIss"
+    },
+    {
+      "lineno": 232,
+      "name": "h"
+    },
+    {
+      "lineno": 232,
+      "name": "r"
+    },
+    {
+      "lineno": 240,
+      "name": "os"
+    },
+    {
+      "lineno": 240,
+      "name": "x"
+    },
+    {
+      "lineno": 109,
+      "name": "asset"
+    },
+    {
+      "lineno": 208,
+      "name": "asset"
+    },
+    {
+      "lineno": 212,
+      "name": "asset"
+    },
+    {
+      "lineno": 214,
+      "name": "jv"
+    },
+    {
+      "lineno": 216,
+      "name": "jv"
+    },
+    {
+      "lineno": 218,
+      "name": "asset"
+    },
+    {
+      "lineno": 220,
+      "name": "asset"
+    },
+    {
+      "lineno": 226,
+      "name": "asset"
+    },
+    {
+      "lineno": 159,
+      "name": "lhs"
+    },
+    {
+      "lineno": 159,
+      "name": "rhs"
+    },
+    {
+      "lineno": 168,
+      "name": "lhs"
+    },
+    {
+      "lineno": 168,
+      "name": "rhs"
+    },
+    {
+      "lineno": 181,
+      "name": "lhs"
+    },
+    {
+      "lineno": 181,
+      "name": "rhs"
+    },
+    {
+      "lineno": 186,
+      "name": "lhs"
+    },
+    {
+      "lineno": 186,
+      "name": "rhs"
+    },
+    {
+      "lineno": 192,
+      "name": "lhs"
+    },
+    {
+      "lineno": 192,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "T"
+      ],
+      "lineno": 13,
+      "name": "AmountType"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "BadAsset"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "Asset"
+    }
+  ],
+  "description": "Defines the Asset abstraction in the XRPL protocol, representing XRP, IOU, and MPT assets, with utilities for type-safe access, comparison, serialization, and validation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Asset.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "badAsset"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 109,
+      "name": "to_json"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "is_issue_v"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "is_mptissue_v"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "Asset::holds"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "Asset::get"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "Asset::get"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "Asset::value"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "Asset::token"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "Asset::getAmountType"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 159,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 168,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 181,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 186,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 192,
+      "name": "equalTokens"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 208,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 212,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 214,
+      "name": "validJSONAsset"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 216,
+      "name": "assetFromJson"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 218,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 220,
+      "name": "isConsistent"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 226,
+      "name": "validAsset"
+    },
+    {
+      "args": [
+        "h",
+        "r"
+      ],
+      "lineno": 232,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 240,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

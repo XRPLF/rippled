@@ -1,0 +1,133 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 27,
+      "name": "ourVote"
+    },
+    {
+      "lineno": 27,
+      "name": "numPeers"
+    },
+    {
+      "lineno": 27,
+      "name": "j"
+    },
+    {
+      "lineno": 102,
+      "name": "o"
+    },
+    {
+      "lineno": 113,
+      "name": "peer"
+    },
+    {
+      "lineno": 113,
+      "name": "votesYes"
+    },
+    {
+      "lineno": 124,
+      "name": "peer"
+    },
+    {
+      "lineno": 135,
+      "name": "percentTime"
+    },
+    {
+      "lineno": 135,
+      "name": "proposing"
+    },
+    {
+      "lineno": 135,
+      "name": "p"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "tx",
+        "ourVote",
+        "numPeers",
+        "j"
+      ],
+      "lineno": 18,
+      "name": "DisputedTx"
+    }
+  ],
+  "description": "Defines the DisputedTx template class, which represents a transaction under dispute during the XRPL consensus process, tracking peer votes and managing voting logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/DisputedTx.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "ID"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getOurVote"
+    },
+    {
+      "args": [
+        "p",
+        "proposing",
+        "peersUnchanged",
+        "j",
+        "clog"
+      ],
+      "lineno": 43,
+      "name": "stalled"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "tx"
+    },
+    {
+      "args": [
+        "o"
+      ],
+      "lineno": 102,
+      "name": "setOurVote"
+    },
+    {
+      "args": [
+        "peer",
+        "votesYes"
+      ],
+      "lineno": 113,
+      "name": "setVote"
+    },
+    {
+      "args": [
+        "peer"
+      ],
+      "lineno": 124,
+      "name": "unVote"
+    },
+    {
+      "args": [
+        "percentTime",
+        "proposing",
+        "p"
+      ],
+      "lineno": 135,
+      "name": "updateVote"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "getJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

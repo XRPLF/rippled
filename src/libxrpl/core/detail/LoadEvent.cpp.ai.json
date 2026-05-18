@@ -1,0 +1,229 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "monitor"
+    },
+    {
+      "lineno": 6,
+      "name": "name"
+    },
+    {
+      "lineno": 6,
+      "name": "shouldStart"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "LoadMonitor& monitor",
+        "std::string const& name",
+        "bool shouldStart"
+      ],
+      "lineno": 6,
+      "name": "LoadEvent"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoadEvent::stop"
+      ],
+      "entry_point": "LoadEvent::stop",
+      "purpose": "Stops the event timer, records running time, and notifies the monitor.",
+      "validation_points": [
+        "XRPL_ASSERT(running_, ...): Ensures stop() is only called when the event is running."
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadEvent::~LoadEvent",
+        "LoadEvent::stop"
+      ],
+      "entry_point": "LoadEvent::~LoadEvent",
+      "purpose": "Destructor ensures that if the event is still running, it is stopped and accounted for.",
+      "validation_points": [
+        "XRPL_ASSERT(running_, ...): Indirectly, if running_ is true, stop() is called and validated."
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadEvent::start"
+      ],
+      "entry_point": "LoadEvent::start",
+      "purpose": "Starts or restarts the event timer, accumulates waiting time.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "running_",
+      "flow": [
+        "LoadEvent::LoadEvent (sets running_)",
+        "LoadEvent::start (sets running_ = true)",
+        "LoadEvent::stop (checks running_ via XRPL_ASSERT, sets running_ = false)",
+        "LoadEvent::~LoadEvent (checks running_, may call stop())"
+      ],
+      "origin": "Constructor parameter 'shouldStart'",
+      "transformations": [
+        "Set at construction",
+        "Set to true in start()",
+        "Set to false in stop()"
+      ],
+      "validated_at": "LoadEvent::stop (XRPL_ASSERT)"
+    },
+    {
+      "field": "name_",
+      "flow": [
+        "LoadEvent::LoadEvent (sets name_)",
+        "LoadEvent::setName (can update name_)",
+        "LoadEvent::name (returns name_)"
+      ],
+      "origin": "Constructor parameter 'name'",
+      "transformations": [
+        "Set at construction",
+        "Can be updated via setName()"
+      ],
+      "validated_at": "Not validated"
+    },
+    {
+      "field": "mark_",
+      "flow": [
+        "LoadEvent::LoadEvent (initializes mark_)",
+        "LoadEvent::start (updates mark_)",
+        "LoadEvent::stop (updates mark_)"
+      ],
+      "origin": "Set to std::chrono::steady_clock::now() in constructor",
+      "transformations": [
+        "Updated to current time in start() and stop()"
+      ],
+      "validated_at": "Not validated"
+    },
+    {
+      "field": "timeWaiting_",
+      "flow": [
+        "LoadEvent::start (increments by now - mark_)",
+        "LoadEvent::waitTime (returns value)"
+      ],
+      "origin": "Zero-initialized in constructor",
+      "transformations": [
+        "Incremented in start()"
+      ],
+      "validated_at": "Not validated"
+    },
+    {
+      "field": "timeRunning_",
+      "flow": [
+        "LoadEvent::stop (increments by now - mark_)",
+        "LoadEvent::runTime (returns value)"
+      ],
+      "origin": "Zero-initialized in constructor",
+      "transformations": [
+        "Incremented in stop()"
+      ],
+      "validated_at": "Not validated"
+    }
+  ],
+  "description": "Implements the LoadEvent class, which tracks and records timing information for job events (waiting and running times) and reports them to a LoadMonitor in the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "running_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at stop()",
+      "issue_pattern": "Missing empty string validation for running_",
+      "why_false_positive": "XRPL_ASSERT macro validates running_ for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/detail/LoadEvent.cpp",
+  "functions": [
+    {
+      "args": [
+        "LoadMonitor& monitor",
+        "std::string const& name",
+        "bool shouldStart"
+      ],
+      "lineno": 6,
+      "name": "LoadEvent::LoadEvent"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "LoadEvent::~LoadEvent"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "LoadEvent::name"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "LoadEvent::waitTime"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "LoadEvent::runTime"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 36,
+      "name": "LoadEvent::setName"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "LoadEvent::start"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "LoadEvent::stop"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typical tests would be in files like 'LoadEvent_test.cpp' or similar, likely under a 'test' or 'unittest' directory. The critical validation (XRPL_ASSERT on running_ in stop()) should be tested by attempting to call stop() when not running, and ensuring it triggers the assertion. Gaps: No validation on name_, mark_, timeWaiting_, or timeRunning_. No explicit test coverage for edge cases like double start(), double stop(), or destructor behavior when running_ is true.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "notes": "No input, type, range, or format validation is performed on constructor parameters or setters. Only business logic validation is present via assertion.",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws depending on XRPL_ASSERT implementation)",
+      "field": "running_",
+      "location": "stop()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures stop() is only called if the event is running"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

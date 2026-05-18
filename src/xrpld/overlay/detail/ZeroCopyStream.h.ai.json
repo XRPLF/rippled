@@ -1,0 +1,164 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "Buffers"
+    },
+    {
+      "lineno": 88,
+      "name": "Streambuf"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Buffers const& buffers"
+      ],
+      "lineno": 17,
+      "name": "ZeroCopyInputStream"
+    },
+    {
+      "args": [
+        "Streambuf& streambuf",
+        "std::size_t blockSize"
+      ],
+      "lineno": 89,
+      "name": "ZeroCopyOutputStream"
+    }
+  ],
+  "description": "Implements zero-copy input and output streams for use with Protocol Buffers, wrapping Boost.Asio buffer sequences and streambufs to efficiently read from and write to network buffers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ZeroCopyStream.h",
+  "functions": [
+    {
+      "args": [
+        "Buffers const& buffers"
+      ],
+      "lineno": 25,
+      "name": "ZeroCopyInputStream"
+    },
+    {
+      "args": [
+        "void const** data",
+        "int* size"
+      ],
+      "lineno": 28,
+      "name": "Next"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 31,
+      "name": "BackUp"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 34,
+      "name": "Skip"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "ByteCount"
+    },
+    {
+      "args": [
+        "Buffers const& buffers"
+      ],
+      "lineno": 49,
+      "name": "ZeroCopyInputStream<Buffers>::ZeroCopyInputStream"
+    },
+    {
+      "args": [
+        "void const** data",
+        "int* size"
+      ],
+      "lineno": 55,
+      "name": "ZeroCopyInputStream<Buffers>::Next"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 65,
+      "name": "ZeroCopyInputStream<Buffers>::BackUp"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 70,
+      "name": "ZeroCopyInputStream<Buffers>::Skip"
+    },
+    {
+      "args": [
+        "Streambuf& streambuf",
+        "std::size_t blockSize"
+      ],
+      "lineno": 97,
+      "name": "ZeroCopyOutputStream"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "~ZeroCopyOutputStream"
+    },
+    {
+      "args": [
+        "void** data",
+        "int* size"
+      ],
+      "lineno": 102,
+      "name": "Next"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 105,
+      "name": "BackUp"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "ByteCount"
+    },
+    {
+      "args": [
+        "Streambuf& streambuf",
+        "std::size_t blockSize"
+      ],
+      "lineno": 120,
+      "name": "ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "ZeroCopyOutputStream<Streambuf>::~ZeroCopyOutputStream"
+    },
+    {
+      "args": [
+        "void** data",
+        "int* size"
+      ],
+      "lineno": 132,
+      "name": "ZeroCopyOutputStream<Streambuf>::Next"
+    },
+    {
+      "args": [
+        "int count"
+      ],
+      "lineno": 146,
+      "name": "ZeroCopyOutputStream<Streambuf>::BackUp"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

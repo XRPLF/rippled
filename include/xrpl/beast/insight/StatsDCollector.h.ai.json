@@ -1,0 +1,47 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "address"
+    },
+    {
+      "lineno": 19,
+      "name": "prefix"
+    },
+    {
+      "lineno": 19,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "StatsDCollector"
+    }
+  ],
+  "description": "Defines the StatsDCollector class, a Collector implementation that reports metrics to a StatsD server, including a static factory method for instantiation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/StatsDCollector.h",
+  "functions": [
+    {
+      "args": [
+        "address",
+        "prefix",
+        "journal"
+      ],
+      "lineno": 18,
+      "name": "New"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 6,
+      "name": "insight"
+    }
+  ]
+}

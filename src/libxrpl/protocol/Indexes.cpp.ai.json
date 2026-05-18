@@ -1,0 +1,883 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "space"
+    },
+    {
+      "lineno": 54,
+      "name": "args"
+    },
+    {
+      "lineno": 59,
+      "name": "book"
+    },
+    {
+      "lineno": 108,
+      "name": "uBase"
+    },
+    {
+      "lineno": 114,
+      "name": "uBase"
+    },
+    {
+      "lineno": 121,
+      "name": "account"
+    },
+    {
+      "lineno": 121,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 126,
+      "name": "account"
+    },
+    {
+      "lineno": 126,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 131,
+      "name": "sequence"
+    },
+    {
+      "lineno": 131,
+      "name": "account"
+    },
+    {
+      "lineno": 142,
+      "name": "id"
+    },
+    {
+      "lineno": 147,
+      "name": "key"
+    },
+    {
+      "lineno": 157,
+      "name": "ledger"
+    },
+    {
+      "lineno": 179,
+      "name": "b"
+    },
+    {
+      "lineno": 184,
+      "name": "id0"
+    },
+    {
+      "lineno": 184,
+      "name": "id1"
+    },
+    {
+      "lineno": 184,
+      "name": "currency"
+    },
+    {
+      "lineno": 200,
+      "name": "id"
+    },
+    {
+      "lineno": 200,
+      "name": "seq"
+    },
+    {
+      "lineno": 205,
+      "name": "k"
+    },
+    {
+      "lineno": 205,
+      "name": "q"
+    },
+    {
+      "lineno": 220,
+      "name": "k"
+    },
+    {
+      "lineno": 225,
+      "name": "id"
+    },
+    {
+      "lineno": 225,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 230,
+      "name": "id"
+    },
+    {
+      "lineno": 230,
+      "name": "ticketSeq"
+    },
+    {
+      "lineno": 237,
+      "name": "account"
+    },
+    {
+      "lineno": 237,
+      "name": "page"
+    },
+    {
+      "lineno": 242,
+      "name": "account"
+    },
+    {
+      "lineno": 246,
+      "name": "id"
+    },
+    {
+      "lineno": 246,
+      "name": "seq"
+    },
+    {
+      "lineno": 251,
+      "name": "owner"
+    },
+    {
+      "lineno": 251,
+      "name": "preauthorized"
+    },
+    {
+      "lineno": 256,
+      "name": "owner"
+    },
+    {
+      "lineno": 256,
+      "name": "authCreds"
+    },
+    {
+      "lineno": 267,
+      "name": "key"
+    },
+    {
+      "lineno": 271,
+      "name": "id"
+    },
+    {
+      "lineno": 275,
+      "name": "key"
+    },
+    {
+      "lineno": 275,
+      "name": "index"
+    },
+    {
+      "lineno": 282,
+      "name": "src"
+    },
+    {
+      "lineno": 282,
+      "name": "seq"
+    },
+    {
+      "lineno": 286,
+      "name": "src"
+    },
+    {
+      "lineno": 286,
+      "name": "dst"
+    },
+    {
+      "lineno": 286,
+      "name": "seq"
+    },
+    {
+      "lineno": 291,
+      "name": "owner"
+    },
+    {
+      "lineno": 297,
+      "name": "owner"
+    },
+    {
+      "lineno": 303,
+      "name": "k"
+    },
+    {
+      "lineno": 303,
+      "name": "token"
+    },
+    {
+      "lineno": 308,
+      "name": "owner"
+    },
+    {
+      "lineno": 308,
+      "name": "seq"
+    },
+    {
+      "lineno": 312,
+      "name": "id"
+    },
+    {
+      "lineno": 316,
+      "name": "id"
+    },
+    {
+      "lineno": 320,
+      "name": "asset1"
+    },
+    {
+      "lineno": 320,
+      "name": "asset2"
+    },
+    {
+      "lineno": 347,
+      "name": "id"
+    },
+    {
+      "lineno": 351,
+      "name": "account"
+    },
+    {
+      "lineno": 351,
+      "name": "authorizedAccount"
+    },
+    {
+      "lineno": 355,
+      "name": "bridge"
+    },
+    {
+      "lineno": 355,
+      "name": "chainType"
+    },
+    {
+      "lineno": 363,
+      "name": "bridge"
+    },
+    {
+      "lineno": 363,
+      "name": "seq"
+    },
+    {
+      "lineno": 373,
+      "name": "bridge"
+    },
+    {
+      "lineno": 373,
+      "name": "seq"
+    },
+    {
+      "lineno": 383,
+      "name": "account"
+    },
+    {
+      "lineno": 387,
+      "name": "account"
+    },
+    {
+      "lineno": 387,
+      "name": "documentID"
+    },
+    {
+      "lineno": 391,
+      "name": "seq"
+    },
+    {
+      "lineno": 391,
+      "name": "issuer"
+    },
+    {
+      "lineno": 395,
+      "name": "issuanceID"
+    },
+    {
+      "lineno": 399,
+      "name": "issuanceID"
+    },
+    {
+      "lineno": 399,
+      "name": "holder"
+    },
+    {
+      "lineno": 403,
+      "name": "issuanceKey"
+    },
+    {
+      "lineno": 403,
+      "name": "holder"
+    },
+    {
+      "lineno": 407,
+      "name": "subject"
+    },
+    {
+      "lineno": 407,
+      "name": "issuer"
+    },
+    {
+      "lineno": 407,
+      "name": "credType"
+    },
+    {
+      "lineno": 411,
+      "name": "owner"
+    },
+    {
+      "lineno": 411,
+      "name": "seq"
+    },
+    {
+      "lineno": 415,
+      "name": "owner"
+    },
+    {
+      "lineno": 415,
+      "name": "seq"
+    },
+    {
+      "lineno": 419,
+      "name": "loanBrokerID"
+    },
+    {
+      "lineno": 419,
+      "name": "loanSeq"
+    },
+    {
+      "lineno": 423,
+      "name": "account"
+    },
+    {
+      "lineno": 423,
+      "name": "seq"
+    },
+    {
+      "lineno": 427,
+      "name": "domainID"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getBookBase",
+        "XRPL_ASSERT(isConsistent(book), ...)",
+        "std::visit([&](...) {...}, book.in, book.out)",
+        "getIndexHash(...)",
+        "indexHash(...)",
+        "sha512Half(...)"
+      ],
+      "entry_point": "getBookBase(Book const& book)",
+      "purpose": "Computes the ledger index for a given Book object, ensuring the Book is consistent before hashing its fields to generate the index.",
+      "validation_points": [
+        "XRPL_ASSERT(isConsistent(book), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "book (Book const&)",
+      "flow": [
+        "Input to getBookBase",
+        "Validated by isConsistent(book) via XRPL_ASSERT",
+        "Fields accessed via std::visit (book.in, book.out)",
+        "Fields passed to getIndexHash and indexHash",
+        "Used in sha512Half to compute ledger index"
+      ],
+      "origin": "Input parameter to getBookBase (likely constructed elsewhere, e.g., from user input, ledger state, or test fixtures)",
+      "transformations": [
+        "Checked for consistency (isConsistent)",
+        "Fields extracted (currency, account, domain, etc.)",
+        "Fields possibly transformed (e.g., getMptID for MPTIssue)",
+        "Fields serialized and hashed"
+      ],
+      "validated_at": "XRPL_ASSERT(isConsistent(book), ...) in getBookBase"
+    },
+    {
+      "field": "book.domain",
+      "flow": [
+        "Checked in getIndexHash lambda",
+        "If present, included as extra argument to indexHash"
+      ],
+      "origin": "Optional field in Book struct",
+      "transformations": [
+        "Conditional inclusion in hash input"
+      ],
+      "validated_at": "Indirectly, as part of isConsistent(book)"
+    },
+    {
+      "field": "book.in / book.out",
+      "flow": [
+        "Accessed via std::visit in getBookBase",
+        "Depending on type, fields extracted (currency, account, getMptID)",
+        "Passed to getIndexHash and indexHash"
+      ],
+      "origin": "Fields of Book, variant types (Issue or MPTIssue)",
+      "transformations": [
+        "Type-dispatched via std::visit",
+        "getMptID called if MPTIssue"
+      ],
+      "validated_at": "Indirectly, as part of isConsistent(book)"
+    }
+  ],
+  "description": "This file provides functions and utilities for generating and working with ledger indices and keylets in the XRPL protocol, including type-specific hashing, index calculation for various ledger objects, and keylet construction for different ledger entry types.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book (Book const& book)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(isConsistent(book), ...) at getBookBase",
+      "issue_pattern": "Missing empty string validation for book (Book const& book)",
+      "why_false_positive": "XRPL_ASSERT(isConsistent(book), ...) validates book (Book const& book) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Indexes.cpp",
+  "functions": [
+    {
+      "args": [
+        "space",
+        "args..."
+      ],
+      "lineno": 54,
+      "name": "indexHash"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 59,
+      "name": "getBookBase"
+    },
+    {
+      "args": [
+        "uBase"
+      ],
+      "lineno": 108,
+      "name": "getQualityNext"
+    },
+    {
+      "args": [
+        "uBase"
+      ],
+      "lineno": 114,
+      "name": "getQuality"
+    },
+    {
+      "args": [
+        "account",
+        "ticketSeq"
+      ],
+      "lineno": 121,
+      "name": "getTicketIndex"
+    },
+    {
+      "args": [
+        "account",
+        "ticketSeq"
+      ],
+      "lineno": 126,
+      "name": "getTicketIndex"
+    },
+    {
+      "args": [
+        "sequence",
+        "account"
+      ],
+      "lineno": 131,
+      "name": "makeMptID"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 142,
+      "name": "account"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 147,
+      "name": "child"
+    },
+    {
+      "args": [],
+      "lineno": 152,
+      "name": "skip"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 157,
+      "name": "skip"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "amendments"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "fees"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "negativeUNL"
+    },
+    {
+      "args": [
+        "b"
+      ],
+      "lineno": 179,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "id0",
+        "id1",
+        "currency"
+      ],
+      "lineno": 184,
+      "name": "line"
+    },
+    {
+      "args": [
+        "id",
+        "seq"
+      ],
+      "lineno": 200,
+      "name": "offer"
+    },
+    {
+      "args": [
+        "k",
+        "q"
+      ],
+      "lineno": 205,
+      "name": "quality"
+    },
+    {
+      "args": [
+        "k"
+      ],
+      "lineno": 220,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "id",
+        "ticketSeq"
+      ],
+      "lineno": 225,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "id",
+        "ticketSeq"
+      ],
+      "lineno": 230,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "account",
+        "page"
+      ],
+      "lineno": 237,
+      "name": "signers"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 242,
+      "name": "signers"
+    },
+    {
+      "args": [
+        "id",
+        "seq"
+      ],
+      "lineno": 246,
+      "name": "check"
+    },
+    {
+      "args": [
+        "owner",
+        "preauthorized"
+      ],
+      "lineno": 251,
+      "name": "depositPreauth"
+    },
+    {
+      "args": [
+        "owner",
+        "authCreds"
+      ],
+      "lineno": 256,
+      "name": "depositPreauth"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 267,
+      "name": "unchecked"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 271,
+      "name": "ownerDir"
+    },
+    {
+      "args": [
+        "key",
+        "index"
+      ],
+      "lineno": 275,
+      "name": "page"
+    },
+    {
+      "args": [
+        "src",
+        "seq"
+      ],
+      "lineno": 282,
+      "name": "escrow"
+    },
+    {
+      "args": [
+        "src",
+        "dst",
+        "seq"
+      ],
+      "lineno": 286,
+      "name": "payChan"
+    },
+    {
+      "args": [
+        "owner"
+      ],
+      "lineno": 291,
+      "name": "nftpage_min"
+    },
+    {
+      "args": [
+        "owner"
+      ],
+      "lineno": 297,
+      "name": "nftpage_max"
+    },
+    {
+      "args": [
+        "k",
+        "token"
+      ],
+      "lineno": 303,
+      "name": "nftpage"
+    },
+    {
+      "args": [
+        "owner",
+        "seq"
+      ],
+      "lineno": 308,
+      "name": "nftoffer"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 312,
+      "name": "nft_buys"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 316,
+      "name": "nft_sells"
+    },
+    {
+      "args": [
+        "asset1",
+        "asset2"
+      ],
+      "lineno": 320,
+      "name": "amm"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 347,
+      "name": "amm"
+    },
+    {
+      "args": [
+        "account",
+        "authorizedAccount"
+      ],
+      "lineno": 351,
+      "name": "delegate"
+    },
+    {
+      "args": [
+        "bridge",
+        "chainType"
+      ],
+      "lineno": 355,
+      "name": "bridge"
+    },
+    {
+      "args": [
+        "bridge",
+        "seq"
+      ],
+      "lineno": 363,
+      "name": "xChainClaimID"
+    },
+    {
+      "args": [
+        "bridge",
+        "seq"
+      ],
+      "lineno": 373,
+      "name": "xChainCreateAccountClaimID"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 383,
+      "name": "did"
+    },
+    {
+      "args": [
+        "account",
+        "documentID"
+      ],
+      "lineno": 387,
+      "name": "oracle"
+    },
+    {
+      "args": [
+        "seq",
+        "issuer"
+      ],
+      "lineno": 391,
+      "name": "mptIssuance"
+    },
+    {
+      "args": [
+        "issuanceID"
+      ],
+      "lineno": 395,
+      "name": "mptIssuance"
+    },
+    {
+      "args": [
+        "issuanceID",
+        "holder"
+      ],
+      "lineno": 399,
+      "name": "mptoken"
+    },
+    {
+      "args": [
+        "issuanceKey",
+        "holder"
+      ],
+      "lineno": 403,
+      "name": "mptoken"
+    },
+    {
+      "args": [
+        "subject",
+        "issuer",
+        "credType"
+      ],
+      "lineno": 407,
+      "name": "credential"
+    },
+    {
+      "args": [
+        "owner",
+        "seq"
+      ],
+      "lineno": 411,
+      "name": "vault"
+    },
+    {
+      "args": [
+        "owner",
+        "seq"
+      ],
+      "lineno": 415,
+      "name": "loanbroker"
+    },
+    {
+      "args": [
+        "loanBrokerID",
+        "loanSeq"
+      ],
+      "lineno": 419,
+      "name": "loan"
+    },
+    {
+      "args": [
+        "account",
+        "seq"
+      ],
+      "lineno": 423,
+      "name": "permissionedDomain"
+    },
+    {
+      "args": [
+        "domainID"
+      ],
+      "lineno": 427,
+      "name": "permissionedDomain"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 139,
+      "name": "keylet"
+    }
+  ],
+  "test_coverage_notes": "The validation path (XRPL_ASSERT(isConsistent(book), ...)) is only triggered when getBookBase is called. Test coverage depends on whether tests call getBookBase with both valid and invalid Book objects. Typical test files would be in the unit test suite for protocol/Indexes.cpp or protocol/Book.cpp, possibly named Indexes_test.cpp, Book_test.cpp, or similar. If tests do not explicitly check for assertion failures on inconsistent Book objects, the negative validation path may not be covered. There is no evidence in this file of test hooks or test-only code, so coverage must be checked in the test suite. Gaps may exist if edge cases for Book consistency are not tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, isConsistent function",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "book (Book const& book)",
+      "location": "getBookBase",
+      "validated_by": "XRPL_ASSERT(isConsistent(book), ...)",
+      "validates": [
+        "Checks that the input Book object is consistent via isConsistent(book)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

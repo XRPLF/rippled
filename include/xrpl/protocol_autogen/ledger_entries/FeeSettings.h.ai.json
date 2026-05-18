@@ -1,0 +1,195 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 19,
+      "name": "FeeSettings"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "FeeSettingsBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 231,
+      "name": "FeeSettingsBuilder"
+    }
+  ],
+  "description": "Defines the FeeSettings ledger entry and its builder for the XRPL protocol, providing type-safe accessors and mutators for ledger entry fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/FeeSettings.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "hasBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "getReferenceFeeUnits"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "hasReferenceFeeUnits"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getReserveBase"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "hasReserveBase"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getReserveIncrement"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "hasReserveIncrement"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "getBaseFeeDrops"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "hasBaseFeeDrops"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "getReserveBaseDrops"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "hasReserveBaseDrops"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "getReserveIncrementDrops"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "hasReserveIncrementDrops"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 206,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "hasPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 246,
+      "name": "setBaseFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 256,
+      "name": "setReferenceFeeUnits"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 266,
+      "name": "setReserveBase"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 276,
+      "name": "setReserveIncrement"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 286,
+      "name": "setBaseFeeDrops"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 296,
+      "name": "setReserveBaseDrops"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 306,
+      "name": "setReserveIncrementDrops"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 316,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 326,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 336,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

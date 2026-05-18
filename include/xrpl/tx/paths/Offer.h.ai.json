@@ -1,0 +1,226 @@
+{
+  "args": [
+    {
+      "lineno": 126,
+      "name": "entry"
+    },
+    {
+      "lineno": 126,
+      "name": "quality"
+    },
+    {
+      "lineno": 59,
+      "name": "view"
+    },
+    {
+      "lineno": 59,
+      "name": "consumed"
+    },
+    {
+      "lineno": 84,
+      "name": "offerAmount"
+    },
+    {
+      "lineno": 84,
+      "name": "limit"
+    },
+    {
+      "lineno": 84,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 101,
+      "name": "ofrInRate"
+    },
+    {
+      "lineno": 101,
+      "name": "ofrOutRate"
+    },
+    {
+      "lineno": 108,
+      "name": "j"
+    },
+    {
+      "lineno": 92,
+      "name": "Args&&... args"
+    },
+    {
+      "lineno": 181,
+      "name": "os"
+    },
+    {
+      "lineno": 181,
+      "name": "offer"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SLE::pointer const& entry, Quality quality"
+      ],
+      "lineno": 11,
+      "name": "TOffer"
+    }
+  ],
+  "description": "Defines the TOffer template class representing a limit order book offer in the XRPL, including methods for offer management, consumption, and quality calculations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/Offer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "quality"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "owner"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "amount"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "fully_consumed"
+    },
+    {
+      "args": [
+        "view",
+        "consumed"
+      ],
+      "lineno": 59,
+      "name": "consume"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "id"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "key"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "assetIn"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "assetOut"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 84,
+      "name": "limitOut"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 88,
+      "name": "limitIn"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 92,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "isFunded"
+    },
+    {
+      "args": [
+        "ofrInRate",
+        "ofrOutRate"
+      ],
+      "lineno": 101,
+      "name": "adjustRates"
+    },
+    {
+      "args": [
+        "consumed",
+        "j"
+      ],
+      "lineno": 108,
+      "name": "checkInvariant"
+    },
+    {
+      "args": [
+        "entry",
+        "quality"
+      ],
+      "lineno": 126,
+      "name": "TOffer"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "setFieldAmounts"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 144,
+      "name": "limitOut"
+    },
+    {
+      "args": [
+        "offerAmount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 153,
+      "name": "limitIn"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 166,
+      "name": "send"
+    },
+    {
+      "args": [],
+      "lineno": 171,
+      "name": "assetIn"
+    },
+    {
+      "args": [],
+      "lineno": 176,
+      "name": "assetOut"
+    },
+    {
+      "args": [
+        "os",
+        "offer"
+      ],
+      "lineno": 181,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,396 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doPeers"
+      ],
+      "entry_point": "doPeers",
+      "purpose": "Handles the /peers RPC endpoint, returning peer and cluster information, with legacy support for API version 1.",
+      "validation_points": [
+        "context.apiVersion validated by comparison (if (context.apiVersion == 1))",
+        "p[jss::track] validated by isMember and asString (if (p.isMember(jss::track)))",
+        "node.name() validated by empty() check (if (!node.name().empty()))",
+        "node.getLoadFee() validated by comparison to ref and 0 (if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0)))",
+        "node.getReportTime() validated by comparison to NetClock::time_point{} (if (node.getReportTime() != NetClock::time_point{}))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.apiVersion",
+      "flow": [
+        "context.apiVersion",
+        "if (context.apiVersion == 1)",
+        "legacy peer field transformation"
+      ],
+      "origin": "RPC::JsonContext (input to doPeers)",
+      "transformations": [
+        "Compared to integer 1 to determine legacy behavior"
+      ],
+      "validated_at": "doPeers (if (context.apiVersion == 1))"
+    },
+    {
+      "field": "p[jss::track]",
+      "flow": [
+        "context.app.getOverlay().json()",
+        "for (auto& p : jvResult[jss::peers])",
+        "if (p.isMember(jss::track))",
+        "auto const s = p[jss::track].asString()",
+        "if (s == 'diverged' || s == 'unknown')",
+        "p['sanity'] = ... (transformation)"
+      ],
+      "origin": "Each peer object in jvResult[jss::peers] (from context.app.getOverlay().json())",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Converted to string (asString)",
+        "Mapped to new field 'sanity' if value matches"
+      ],
+      "validated_at": "doPeers (if (p.isMember(jss::track)))"
+    },
+    {
+      "field": "node.name()",
+      "flow": [
+        "context.app.getCluster().for_each(...)",
+        "node.name()",
+        "if (!node.name().empty())",
+        "json[jss::tag] = node.name()"
+      ],
+      "origin": "ClusterNode::name() in for_each over cluster nodes",
+      "transformations": [
+        "Checked for non-empty string before assignment"
+      ],
+      "validated_at": "doPeers (if (!node.name().empty()))"
+    },
+    {
+      "field": "node.getLoadFee()",
+      "flow": [
+        "context.app.getCluster().for_each(...)",
+        "node.getLoadFee()",
+        "if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))",
+        "json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref"
+      ],
+      "origin": "ClusterNode::getLoadFee() in for_each over cluster nodes",
+      "transformations": [
+        "Compared to reference fee and zero before division and assignment"
+      ],
+      "validated_at": "doPeers (if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0)))"
+    },
+    {
+      "field": "node.getReportTime()",
+      "flow": [
+        "context.app.getCluster().for_each(...)",
+        "node.getReportTime()",
+        "if (node.getReportTime() != NetClock::time_point{})",
+        "json[jss::age] = (node.getReportTime() >= now) ? 0 : (now - node.getReportTime()).count()"
+      ],
+      "origin": "ClusterNode::getReportTime() in for_each over cluster nodes",
+      "transformations": [
+        "Checked for non-default time_point before calculating age"
+      ],
+      "validated_at": "doPeers (if (node.getReportTime() != NetClock::time_point{}))"
+    }
+  ],
+  "description": "Implements the doPeers RPC handler, which returns information about connected peers and cluster nodes in the XRPL network, including legacy support for API version 1.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Json::Value fields via isMember/type checks",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Json::Value fields via isMember/type checks validated by Json::Value, jss:: (JSON field tags), implicit C++ type system",
+      "issue_pattern": "Missing validation for Json::Value fields via isMember/type checks",
+      "why_false_positive": "Json::Value, jss:: (JSON field tags), implicit C++ type system validates Json::Value fields via isMember/type checks automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "apiVersion (by type and value)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field apiVersion (by type and value) validated by Json::Value, jss:: (JSON field tags), implicit C++ type system",
+      "issue_pattern": "Missing validation for apiVersion (by type and value)",
+      "why_false_positive": "Json::Value, jss:: (JSON field tags), implicit C++ type system validates apiVersion (by type and value) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ClusterNode fields (name, identity, load fee, report time)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ClusterNode fields (name, identity, load fee, report time) validated by Json::Value, jss:: (JSON field tags), implicit C++ type system",
+      "issue_pattern": "Missing validation for ClusterNode fields (name, identity, load fee, report time)",
+      "why_false_positive": "Json::Value, jss:: (JSON field tags), implicit C++ type system validates ClusterNode fields (name, identity, load fee, report time) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "context.apiVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type (int/uint) and comparison at doPeers",
+      "issue_pattern": "Missing empty string validation for context.apiVersion",
+      "why_false_positive": "implicit type (int/uint) and comparison validates context.apiVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "p[jss::track]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember, Json::Value::asString at doPeers",
+      "issue_pattern": "Missing empty string validation for p[jss::track]",
+      "why_false_positive": "Json::Value::isMember, Json::Value::asString validates p[jss::track] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.name()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::string::empty() at doPeers (lambda in for_each)",
+      "issue_pattern": "Missing empty string validation for node.name()",
+      "why_false_positive": "std::string::empty() validates node.name() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.getLoadFee()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison to ref and 0 at doPeers (lambda in for_each)",
+      "issue_pattern": "Missing empty string validation for node.getLoadFee()",
+      "why_false_positive": "comparison to ref and 0 validates node.getLoadFee() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.getReportTime()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison to NetClock::time_point{} at doPeers (lambda in for_each)",
+      "issue_pattern": "Missing empty string validation for node.getReportTime()",
+      "why_false_positive": "comparison to NetClock::time_point{} validates node.getReportTime() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "node.identity() == self",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "equality comparison at doPeers (lambda in for_each)",
+      "issue_pattern": "Missing empty string validation for node.identity() == self",
+      "why_false_positive": "equality comparison validates node.identity() == self for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/peer/Peers.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doPeers"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doPeers handler is typically tested via RPC integration tests that exercise the /peers endpoint. Likely test files include rpc-peers-test.cpp, cluster_test.cpp, and overlay_test.cpp. These tests would cover normal and legacy (apiVersion == 1) cases, peer field transformations, and cluster node reporting. However, edge cases such as malformed peer objects, missing fields, or unusual cluster node states (e.g., empty name, zero/invalid fees, default report times) may not be fully covered unless explicitly tested. There is no evidence of unit tests for the validation logic itself; most coverage is likely through end-to-end or integration tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Json::Value fields via isMember/type checks",
+      "apiVersion (by type and value)",
+      "ClusterNode fields (name, identity, load fee, report time)"
+    ],
+    "framework": "Json::Value, jss:: (JSON field tags), implicit C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (branching only)",
+      "field": "context.apiVersion",
+      "location": "doPeers",
+      "validated_by": "implicit type (int/uint) and comparison",
+      "validates": [
+        "apiVersion is compared to 1 to determine legacy logic"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (branching only)",
+      "field": "p[jss::track]",
+      "location": "doPeers",
+      "validated_by": "Json::Value::isMember, Json::Value::asString",
+      "validates": [
+        "Checks if 'track' field exists in peer object",
+        "Converts 'track' field to string before comparison"
+      ],
+      "validation_type": "existence|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (branching only)",
+      "field": "node.name()",
+      "location": "doPeers (lambda in for_each)",
+      "validated_by": "std::string::empty()",
+      "validates": [
+        "Checks if cluster node name is non-empty before adding to JSON"
+      ],
+      "validation_type": "existence|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (branching only)",
+      "field": "node.getLoadFee()",
+      "location": "doPeers (lambda in for_each)",
+      "validated_by": "comparison to ref and 0",
+      "validates": [
+        "Only adds fee field if node.getLoadFee() != ref and != 0"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (branching only)",
+      "field": "node.getReportTime()",
+      "location": "doPeers (lambda in for_each)",
+      "validated_by": "comparison to NetClock::time_point{}",
+      "validates": [
+        "Only adds age field if report time is not default constructed"
+      ],
+      "validation_type": "existence|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (branching only)",
+      "field": "node.identity() == self",
+      "location": "doPeers (lambda in for_each)",
+      "validated_by": "equality comparison",
+      "validates": [
+        "Skips adding self node to cluster list"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

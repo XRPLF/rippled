@@ -1,0 +1,411 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerHistory::insert"
+      ],
+      "entry_point": "LedgerHistory::insert",
+      "purpose": "Insert a ledger into the cache, optionally marking it as validated.",
+      "validation_points": [
+        "ledger->isImmutable() (LogicError if false)",
+        "ledger->stateMap().getHash().isNonZero() (XRPL_ASSERT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerHistory::getLedgerBySeq",
+        "loadByIndex (if not found in cache)"
+      ],
+      "entry_point": "LedgerHistory::getLedgerBySeq",
+      "purpose": "Retrieve a ledger by its sequence number, loading from storage if not cached.",
+      "validation_points": [
+        "ret->header().seq == index (XRPL_ASSERT)",
+        "ret->isImmutable() (XRPL_ASSERT)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerHistory::getLedgerByHash",
+        "loadByHash (if not found in cache)"
+      ],
+      "entry_point": "LedgerHistory::getLedgerByHash",
+      "purpose": "Retrieve a ledger by its hash, loading from storage if not cached.",
+      "validation_points": [
+        "ret->isImmutable() (XRPL_ASSERT, both after fetch and after load)",
+        "ret->header().hash == hash (XRPL_ASSERT, both after fetch and after load)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger (std::shared_ptr<Ledger const>)",
+      "flow": [
+        "insert argument",
+        "isImmutable() check",
+        "stateMap().getHash().isNonZero() check",
+        "m_ledgers_by_hash.canonicalize_replace_cache",
+        "mLedgersByIndex[ledger->header().seq] = ledger->header().hash (if validated)"
+      ],
+      "origin": "Passed as argument to LedgerHistory::insert",
+      "transformations": [
+        "Checked for immutability",
+        "Checked for nonzero state map hash",
+        "Inserted into cache and index"
+      ],
+      "validated_at": "LedgerHistory::insert"
+    },
+    {
+      "field": "ret (std::shared_ptr<Ledger const>)",
+      "flow": [
+        "loadByIndex/loadByHash",
+        "ret->header().seq == index (getLedgerBySeq)",
+        "ret->isImmutable() (getLedgerBySeq/getLedgerByHash)",
+        "m_ledgers_by_hash.canonicalize_replace_client",
+        "mLedgersByIndex[ret->header().seq] = ret->header().hash"
+      ],
+      "origin": "Result of loadByIndex or loadByHash",
+      "transformations": [
+        "Loaded from storage",
+        "Validated for correct sequence/hash and immutability",
+        "Inserted into cache and index"
+      ],
+      "validated_at": "LedgerHistory::getLedgerBySeq, LedgerHistory::getLedgerByHash"
+    },
+    {
+      "field": "mLedgersByIndex",
+      "flow": [
+        "insert/getLedgerBySeq/getLedgerByHash",
+        "mLedgersByIndex[seq] = hash",
+        "Used in getLedgerHash and getLedgerBySeq"
+      ],
+      "origin": "LedgerHistory member, updated in insert/getLedgerBySeq/getLedgerByHash",
+      "transformations": [
+        "Mapping from sequence to hash is updated"
+      ],
+      "validated_at": "Indirectly validated via ledger immutability and hash/seq checks"
+    }
+  ],
+  "description": "Implements the LedgerHistory class for managing, tracking, and analyzing ledgers by hash and sequence in the XRPL server, including mismatch detection and logging.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger (immutability)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isImmutable() method + LogicError exception at LedgerHistory::insert",
+      "issue_pattern": "Missing empty string validation for ledger (immutability)",
+      "why_false_positive": "isImmutable() method + LogicError exception validates ledger (immutability) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger->stateMap().getHash()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isNonZero() method + XRPL_ASSERT macro at LedgerHistory::insert",
+      "issue_pattern": "Missing empty string validation for ledger->stateMap().getHash()",
+      "why_false_positive": "isNonZero() method + XRPL_ASSERT macro validates ledger->stateMap().getHash() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger->stateMap().getHash()",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isNonZero() method + XRPL_ASSERT macro at LedgerHistory::insert",
+      "issue_pattern": "Missing format validation for ledger->stateMap().getHash()",
+      "why_false_positive": "isNonZero() method + XRPL_ASSERT macro validates ledger->stateMap().getHash() format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ret->header().seq == index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at LedgerHistory::getLedgerBySeq",
+      "issue_pattern": "Missing empty string validation for ret->header().seq == index",
+      "why_false_positive": "XRPL_ASSERT macro validates ret->header().seq == index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ret->isImmutable()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isImmutable() method + XRPL_ASSERT macro at LedgerHistory::getLedgerBySeq",
+      "issue_pattern": "Missing empty string validation for ret->isImmutable()",
+      "why_false_positive": "isImmutable() method + XRPL_ASSERT macro validates ret->isImmutable() for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerHistory.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& ledger",
+        "uint256 const& tx",
+        "char const* msg",
+        "beast::Journal& j"
+      ],
+      "lineno": 109,
+      "name": "log_one"
+    },
+    {
+      "args": [
+        "ReadView const& builtLedger",
+        "ReadView const& validLedger",
+        "uint256 const& tx",
+        "beast::Journal j"
+      ],
+      "lineno": 122,
+      "name": "log_metadata_difference"
+    },
+    {
+      "args": [
+        "SHAMap const& sm"
+      ],
+      "lineno": 202,
+      "name": "leaves"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "bool validated"
+      ],
+      "lineno": 38,
+      "name": "LedgerHistory::insert"
+    },
+    {
+      "args": [
+        "LedgerIndex index"
+      ],
+      "lineno": 54,
+      "name": "LedgerHistory::getLedgerHash"
+    },
+    {
+      "args": [
+        "LedgerIndex index"
+      ],
+      "lineno": 61,
+      "name": "LedgerHistory::getLedgerBySeq"
+    },
+    {
+      "args": [
+        "LedgerHash const& hash"
+      ],
+      "lineno": 92,
+      "name": "LedgerHistory::getLedgerByHash"
+    },
+    {
+      "args": [
+        "LedgerHash const& built",
+        "LedgerHash const& valid",
+        "std::optional<uint256> const& builtConsensusHash",
+        "std::optional<uint256> const& validatedConsensusHash",
+        "Json::Value const& consensus"
+      ],
+      "lineno": 217,
+      "name": "LedgerHistory::handleMismatch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "uint256 const& consensusHash",
+        "Json::Value consensus"
+      ],
+      "lineno": 312,
+      "name": "LedgerHistory::builtLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "std::optional<uint256> const& consensusHash"
+      ],
+      "lineno": 340,
+      "name": "LedgerHistory::validatedLedger"
+    },
+    {
+      "args": [
+        "LedgerIndex ledgerIndex",
+        "LedgerHash const& ledgerHash"
+      ],
+      "lineno": 368,
+      "name": "LedgerHistory::fixIndex"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 382,
+      "name": "LedgerHistory::clearLedgerCachePrior"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LedgerHistory is a core component, so it is likely tested in integration and unit tests in the rippled codebase. Typical test files would be in 'src/test/ledger/' such as LedgerHistory_test.cpp, Ledger_test.cpp, or LedgerCache_test.cpp. However, the specific validation logic (immutability, nonzero hash, sequence/hash match) may not be directly unit tested for all error paths (e.g., mutable ledgers, zero hashes, mismatched seq/hash). There may be gaps in negative-path testing (ensuring exceptions/asserts fire as expected).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, LogicError exception, isImmutable() method",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError",
+      "field": "ledger (immutability)",
+      "location": "LedgerHistory::insert",
+      "validated_by": "isImmutable() method + LogicError exception",
+      "validates": [
+        "Ensures the ledger passed to insert is immutable"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "ledger->stateMap().getHash()",
+      "location": "LedgerHistory::insert",
+      "validated_by": "isNonZero() method + XRPL_ASSERT macro",
+      "validates": [
+        "Ensures the state map hash of the ledger is non-zero"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "ret->header().seq == index",
+      "location": "LedgerHistory::getLedgerBySeq",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures the loaded ledger's sequence matches the requested index"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "ret->isImmutable()",
+      "location": "LedgerHistory::getLedgerBySeq",
+      "validated_by": "isImmutable() method + XRPL_ASSERT macro",
+      "validates": [
+        "Ensures the loaded ledger is immutable before caching"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

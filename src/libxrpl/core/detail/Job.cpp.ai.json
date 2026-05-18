@@ -1,0 +1,257 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "type"
+    },
+    {
+      "lineno": 10,
+      "name": "index"
+    },
+    {
+      "lineno": 14,
+      "name": "type"
+    },
+    {
+      "lineno": 14,
+      "name": "name"
+    },
+    {
+      "lineno": 14,
+      "name": "index"
+    },
+    {
+      "lineno": 14,
+      "name": "lm"
+    },
+    {
+      "lineno": 14,
+      "name": "job"
+    },
+    {
+      "lineno": 44,
+      "name": "j"
+    },
+    {
+      "lineno": 56,
+      "name": "j"
+    },
+    {
+      "lineno": 68,
+      "name": "j"
+    },
+    {
+      "lineno": 80,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Job::doJob",
+        "mJob()"
+      ],
+      "entry_point": "Job::doJob",
+      "purpose": "Executes the job's function, tracking load event timing and thread naming.",
+      "validation_points": [
+        "No explicit validation in this chain; assumes mJob is valid (non-null) and m_loadEvent is initialized."
+      ]
+    },
+    {
+      "call_chain": [
+        "Job::Job(JobType, std::string const&, std::uint64_t, LoadMonitor&, std::function<void()> const&)",
+        "std::make_shared<LoadEvent>(...)"
+      ],
+      "entry_point": "Job::Job (constructor with job function)",
+      "purpose": "Constructs a Job object, initializes fields, and creates a LoadEvent for monitoring.",
+      "validation_points": [
+        "No explicit validation of input parameters (e.g., job function, name, type)."
+      ]
+    },
+    {
+      "call_chain": [
+        "Job::operator<",
+        "Job::operator>",
+        "Job::operator<=",
+        "Job::operator>="
+      ],
+      "entry_point": "Job::operator<, operator>, operator<=, operator>=",
+      "purpose": "Compares Job objects for ordering, typically for queueing or prioritization.",
+      "validation_points": [
+        "No explicit validation; relies on correct initialization of mType and mJobIndex."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mType",
+      "flow": [
+        "Constructor parameter",
+        "Assigned to mType",
+        "Used in comparison operators and getType()"
+      ],
+      "origin": "Constructor parameter (JobType type)",
+      "transformations": [
+        "Direct assignment; no transformation"
+      ],
+      "validated_at": "Not explicitly validated; assumed valid by caller"
+    },
+    {
+      "field": "mJobIndex",
+      "flow": [
+        "Constructor parameter",
+        "Assigned to mJobIndex",
+        "Used in comparison operators"
+      ],
+      "origin": "Constructor parameter (std::uint64_t index)",
+      "transformations": [
+        "Direct assignment; no transformation"
+      ],
+      "validated_at": "Not explicitly validated; assumed valid by caller"
+    },
+    {
+      "field": "mJob",
+      "flow": [
+        "Constructor parameter",
+        "Assigned to mJob",
+        "Invoked in doJob()"
+      ],
+      "origin": "Constructor parameter (std::function<void()> const& job)",
+      "transformations": [
+        "Direct assignment; set to nullptr after execution in doJob()"
+      ],
+      "validated_at": "Not explicitly validated; if null, calling mJob() in doJob() would crash"
+    },
+    {
+      "field": "mName",
+      "flow": [
+        "Constructor parameter",
+        "Assigned to mName",
+        "Used in thread naming and LoadEvent"
+      ],
+      "origin": "Constructor parameter (std::string const& name)",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "Not explicitly validated"
+    },
+    {
+      "field": "m_loadEvent",
+      "flow": [
+        "Constructed in Job constructor",
+        "Used in doJob() for start() and setName()"
+      ],
+      "origin": "Constructed in Job constructor via std::make_shared<LoadEvent>",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Not explicitly validated; assumed constructed successfully"
+    },
+    {
+      "field": "m_queue_time",
+      "flow": [
+        "Set in constructor",
+        "Returned by queue_time()"
+      ],
+      "origin": "Set to clock_type::now() in Job constructor",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Not validated"
+    }
+  ],
+  "description": "Implements the Job class for the xrpl namespace, providing job management, execution, and comparison operators for job scheduling.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/detail/Job.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "Job"
+    },
+    {
+      "args": [
+        "type",
+        "index"
+      ],
+      "lineno": 10,
+      "name": "Job"
+    },
+    {
+      "args": [
+        "type",
+        "name",
+        "index",
+        "lm",
+        "job"
+      ],
+      "lineno": 14,
+      "name": "Job"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "queue_time"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "doJob"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 44,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 56,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 68,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 80,
+      "name": "operator<="
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains only basic data structure and logic for Job objects. There is no explicit validation logic (e.g., input checking, error handling) in this code. Test coverage would likely exist in higher-level tests that exercise the job queue, job execution, and load monitoring (e.g., tests for the job queue system, scheduler, or load monitor). There are no direct tests for validation paths in this file, and potential issues (such as null mJob or m_loadEvent) are not guarded against. Tests that pass invalid or null jobs would likely crash, indicating a gap in defensive programming and test coverage for invalid input handling.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

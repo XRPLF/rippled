@@ -1,0 +1,709 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "key"
+    },
+    {
+      "lineno": 31,
+      "name": "value"
+    },
+    {
+      "lineno": 36,
+      "name": "Value"
+    },
+    {
+      "lineno": 36,
+      "name": "key"
+    },
+    {
+      "lineno": 36,
+      "name": "value"
+    },
+    {
+      "lineno": 42,
+      "name": "key"
+    },
+    {
+      "lineno": 42,
+      "name": "value"
+    },
+    {
+      "lineno": 64,
+      "name": "value"
+    },
+    {
+      "lineno": 69,
+      "name": "Value"
+    },
+    {
+      "lineno": 69,
+      "name": "value"
+    },
+    {
+      "lineno": 74,
+      "name": "value"
+    },
+    {
+      "lineno": 113,
+      "name": "map"
+    },
+    {
+      "lineno": 113,
+      "name": "key"
+    },
+    {
+      "lineno": 114,
+      "name": "other"
+    },
+    {
+      "lineno": 153,
+      "name": "value"
+    },
+    {
+      "lineno": 157,
+      "name": "manip"
+    },
+    {
+      "lineno": 161,
+      "name": "t"
+    },
+    {
+      "lineno": 139,
+      "name": "stream"
+    },
+    {
+      "lineno": 140,
+      "name": "parent"
+    },
+    {
+      "lineno": 141,
+      "name": "key"
+    },
+    {
+      "lineno": 141,
+      "name": "parent"
+    },
+    {
+      "lineno": 142,
+      "name": "key"
+    },
+    {
+      "lineno": 142,
+      "name": "stream"
+    },
+    {
+      "lineno": 180,
+      "name": "key"
+    },
+    {
+      "lineno": 180,
+      "name": "value"
+    },
+    {
+      "lineno": 186,
+      "name": "Key"
+    },
+    {
+      "lineno": 186,
+      "name": "key"
+    },
+    {
+      "lineno": 186,
+      "name": "Value"
+    },
+    {
+      "lineno": 186,
+      "name": "value"
+    },
+    {
+      "lineno": 191,
+      "name": "key"
+    },
+    {
+      "lineno": 194,
+      "name": "key"
+    },
+    {
+      "lineno": 199,
+      "name": "Key"
+    },
+    {
+      "lineno": 199,
+      "name": "key"
+    },
+    {
+      "lineno": 220,
+      "name": "value"
+    },
+    {
+      "lineno": 212,
+      "name": "key"
+    },
+    {
+      "lineno": 212,
+      "name": "map"
+    },
+    {
+      "lineno": 213,
+      "name": "key"
+    },
+    {
+      "lineno": 213,
+      "name": "stream"
+    },
+    {
+      "lineno": 230,
+      "name": "name"
+    },
+    {
+      "lineno": 243,
+      "name": "stream"
+    },
+    {
+      "lineno": 246,
+      "name": "stream"
+    },
+    {
+      "lineno": 247,
+      "name": "source"
+    },
+    {
+      "lineno": 252,
+      "name": "child"
+    },
+    {
+      "lineno": 258,
+      "name": "child"
+    },
+    {
+      "lineno": 264,
+      "name": "stream"
+    },
+    {
+      "lineno": 267,
+      "name": "stream"
+    },
+    {
+      "lineno": 271,
+      "name": "stream"
+    },
+    {
+      "lineno": 271,
+      "name": "path"
+    },
+    {
+      "lineno": 292,
+      "name": "path"
+    },
+    {
+      "lineno": 299,
+      "name": "name"
+    },
+    {
+      "lineno": 300,
+      "name": "path"
+    },
+    {
+      "lineno": 301,
+      "name": "name"
+    },
+    {
+      "lineno": 303,
+      "name": "path"
+    },
+    {
+      "lineno": 304,
+      "name": "path"
+    },
+    {
+      "lineno": 305,
+      "name": "path"
+    },
+    {
+      "lineno": 312,
+      "name": "Map"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "PropertyStream"
+    },
+    {
+      "args": [
+        "Source* source"
+      ],
+      "lineno": 93,
+      "name": "PropertyStream::Item"
+    },
+    {
+      "args": [
+        "Map const& map",
+        "std::string const& key"
+      ],
+      "lineno": 112,
+      "name": "PropertyStream::Proxy"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 137,
+      "name": "PropertyStream::Map"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Map& map"
+      ],
+      "lineno": 210,
+      "name": "PropertyStream::Set"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 229,
+      "name": "PropertyStream::Source"
+    }
+  ],
+  "description": "Defines the PropertyStream class and related classes for structured, hierarchical property streaming and introspection, supporting map/set/array output and recursive source trees for diagnostics/logging.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/PropertyStream.h",
+  "functions": [
+    {
+      "args": [
+        "std::string const& key",
+        "char const* value"
+      ],
+      "lineno": 32,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Value value"
+      ],
+      "lineno": 37,
+      "name": "lexical_add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "bool value"
+      ],
+      "lineno": 43,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "char value"
+      ],
+      "lineno": 44,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "signed char value"
+      ],
+      "lineno": 45,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned char value"
+      ],
+      "lineno": 46,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "short value"
+      ],
+      "lineno": 47,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned short value"
+      ],
+      "lineno": 48,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "int value"
+      ],
+      "lineno": 49,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned int value"
+      ],
+      "lineno": 50,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long value"
+      ],
+      "lineno": 51,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned long value"
+      ],
+      "lineno": 52,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long long value"
+      ],
+      "lineno": 53,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned long long value"
+      ],
+      "lineno": 54,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "float value"
+      ],
+      "lineno": 55,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "double value"
+      ],
+      "lineno": 56,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long double value"
+      ],
+      "lineno": 57,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& value"
+      ],
+      "lineno": 63,
+      "name": "add"
+    },
+    {
+      "args": [
+        "char const* value"
+      ],
+      "lineno": 65,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Value value"
+      ],
+      "lineno": 70,
+      "name": "lexical_add"
+    },
+    {
+      "args": [
+        "bool value"
+      ],
+      "lineno": 75,
+      "name": "add"
+    },
+    {
+      "args": [
+        "char value"
+      ],
+      "lineno": 76,
+      "name": "add"
+    },
+    {
+      "args": [
+        "signed char value"
+      ],
+      "lineno": 77,
+      "name": "add"
+    },
+    {
+      "args": [
+        "unsigned char value"
+      ],
+      "lineno": 78,
+      "name": "add"
+    },
+    {
+      "args": [
+        "short value"
+      ],
+      "lineno": 79,
+      "name": "add"
+    },
+    {
+      "args": [
+        "unsigned short value"
+      ],
+      "lineno": 80,
+      "name": "add"
+    },
+    {
+      "args": [
+        "int value"
+      ],
+      "lineno": 81,
+      "name": "add"
+    },
+    {
+      "args": [
+        "unsigned int value"
+      ],
+      "lineno": 82,
+      "name": "add"
+    },
+    {
+      "args": [
+        "long value"
+      ],
+      "lineno": 83,
+      "name": "add"
+    },
+    {
+      "args": [
+        "unsigned long value"
+      ],
+      "lineno": 84,
+      "name": "add"
+    },
+    {
+      "args": [
+        "long long value"
+      ],
+      "lineno": 85,
+      "name": "add"
+    },
+    {
+      "args": [
+        "unsigned long long value"
+      ],
+      "lineno": 86,
+      "name": "add"
+    },
+    {
+      "args": [
+        "float value"
+      ],
+      "lineno": 87,
+      "name": "add"
+    },
+    {
+      "args": [
+        "double value"
+      ],
+      "lineno": 88,
+      "name": "add"
+    },
+    {
+      "args": [
+        "long double value"
+      ],
+      "lineno": 89,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Value value"
+      ],
+      "lineno": 154,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::ostream& manip(std::ostream&)"
+      ],
+      "lineno": 158,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "T const& t"
+      ],
+      "lineno": 161,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Value value"
+      ],
+      "lineno": 181,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Key key",
+        "Value value"
+      ],
+      "lineno": 187,
+      "name": "add"
+    },
+    {
+      "args": [
+        "std::string const& key"
+      ],
+      "lineno": 192,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "char const* key"
+      ],
+      "lineno": 195,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "Key key"
+      ],
+      "lineno": 200,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "Value value"
+      ],
+      "lineno": 221,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Source& source"
+      ],
+      "lineno": 246,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Derived* child"
+      ],
+      "lineno": 252,
+      "name": "add"
+    },
+    {
+      "args": [
+        "Source& child"
+      ],
+      "lineno": 258,
+      "name": "remove"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 264,
+      "name": "write_one"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 267,
+      "name": "write"
+    },
+    {
+      "args": [
+        "PropertyStream& stream",
+        "std::string const& path"
+      ],
+      "lineno": 271,
+      "name": "write"
+    },
+    {
+      "args": [
+        "std::string path"
+      ],
+      "lineno": 292,
+      "name": "find"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 299,
+      "name": "find_one_deep"
+    },
+    {
+      "args": [
+        "std::string path"
+      ],
+      "lineno": 300,
+      "name": "find_path"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 301,
+      "name": "find_one"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 303,
+      "name": "peel_leading_slash"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 304,
+      "name": "peel_trailing_slashstar"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 305,
+      "name": "peel_name"
+    },
+    {
+      "args": [
+        "Map&"
+      ],
+      "lineno": 312,
+      "name": "onWrite"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doPeerReservationsDel"
+      ],
+      "entry_point": "doPeerReservationsDel",
+      "purpose": "Handles the RPC request to delete a peer reservation by public key.",
+      "validation_points": [
+        "params.isMember(jss::public_key)",
+        "params[jss::public_key].isString()",
+        "parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "public_key",
+      "flow": [
+        "context.params",
+        "params[jss::public_key]",
+        "parseBase58<PublicKey>(..., params[jss::public_key].asString())",
+        "nodeId (PublicKey)",
+        "context.app.getPeerReservations().erase(nodeId)"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence in params (isMember)",
+        "Checked for type string (isString)",
+        "Parsed from base58 string to PublicKey object (parseBase58)"
+      ],
+      "validated_at": [
+        "params.isMember(jss::public_key)",
+        "params[jss::public_key].isString()",
+        "parseBase58<PublicKey>(...)"
+      ]
+    }
+  ],
+  "description": "Implements the RPC handler for deleting a peer reservation by public key in the XRPL server.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "public_key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::public_key) at doPeerReservationsDel",
+      "issue_pattern": "Missing empty string validation for public_key",
+      "why_false_positive": "params.isMember(jss::public_key) validates public_key for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "public_key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::public_key].isString() at doPeerReservationsDel",
+      "issue_pattern": "Missing empty string validation for public_key",
+      "why_false_positive": "params[jss::public_key].isString() validates public_key for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "public_key",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::public_key].isString() at doPeerReservationsDel",
+      "issue_pattern": "Missing type validation for public_key",
+      "why_false_positive": "params[jss::public_key].isString() validates public_key type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "public_key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<PublicKey>(TokenType::NodePublic, ...) at doPeerReservationsDel",
+      "issue_pattern": "Missing empty string validation for public_key",
+      "why_false_positive": "parseBase58<PublicKey>(TokenType::NodePublic, ...) validates public_key for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "public_key",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<PublicKey>(TokenType::NodePublic, ...) at doPeerReservationsDel",
+      "issue_pattern": "Missing format validation for public_key",
+      "why_false_positive": "parseBase58<PublicKey>(TokenType::NodePublic, ...) validates public_key format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/peer/PeerReservationsDel.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 10,
+      "name": "doPeerReservationsDel"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function doPeerReservationsDel is likely tested in integration or functional tests for the admin/peer RPC endpoints, possibly in files like 'PeerReservations_test.cpp', 'PeerReservation_test.cpp', or broader admin RPC handler test suites. The validation paths (missing field, wrong type, malformed key) should be covered by tests that send requests with missing, non-string, or invalid public_key values. However, if tests only cover the happy path (valid public_key), negative cases (missing/invalid/malformed) may not be fully tested. There is no evidence in this file of direct unit tests or test hooks; coverage depends on the surrounding test infrastructure.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58)",
+    "validation_layer": "entry_point (handler function doPeerReservationsDel)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::public_key)",
+      "field": "public_key",
+      "location": "doPeerReservationsDel",
+      "validated_by": "params.isMember(jss::public_key)",
+      "validates": [
+        "Checks that the 'public_key' field is present in the input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::public_key, \"a string\")",
+      "field": "public_key",
+      "location": "doPeerReservationsDel",
+      "validated_by": "params[jss::public_key].isString()",
+      "validates": [
+        "Checks that the 'public_key' field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcPUBLIC_MALFORMED)",
+      "field": "public_key",
+      "location": "doPeerReservationsDel",
+      "validated_by": "parseBase58<PublicKey>(TokenType::NodePublic, ...)",
+      "validates": [
+        "Checks that the 'public_key' string is a valid base58-encoded NodePublic key",
+        "Checks that the decoded value can be parsed as a PublicKey"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

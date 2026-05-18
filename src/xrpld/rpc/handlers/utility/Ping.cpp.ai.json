@@ -1,0 +1,222 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doPing"
+      ],
+      "entry_point": "doPing",
+      "purpose": "Handles the 'ping' RPC command, returning role and connection info for the current session.",
+      "validation_points": [
+        "Manual check: if (!context.headers.forwardedFor.empty())",
+        "Manual check: if (context.infoSub)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.headers.forwardedFor",
+      "flow": [
+        "HTTP/WebSocket request header",
+        "context.headers.forwardedFor",
+        "doPing",
+        "ret[jss::ip]"
+      ],
+      "origin": "Set by upstream HTTP/WebSocket layer, populated from incoming request headers.",
+      "transformations": [
+        "Checked for non-emptiness before use",
+        "Copied as std::string to JSON output"
+      ],
+      "validated_at": "doPing: if (!context.headers.forwardedFor.empty())"
+    },
+    {
+      "field": "context.infoSub",
+      "flow": [
+        "Session creation",
+        "context.infoSub",
+        "doPing",
+        "context.infoSub->getConsumer().isUnlimited()",
+        "ret[jss::unlimited]"
+      ],
+      "origin": "Set by session management code for WebSocket clients; nullptr for HTTP.",
+      "transformations": [
+        "Pointer existence checked before dereference"
+      ],
+      "validated_at": "doPing: if (context.infoSub)"
+    },
+    {
+      "field": "context.headers.user",
+      "flow": [
+        "Authentication layer",
+        "context.headers.user",
+        "doPing",
+        "ret[jss::username]"
+      ],
+      "origin": "Set by authentication middleware, populated from request context.",
+      "transformations": [
+        "Copied as std::string to JSON output"
+      ],
+      "validated_at": "No explicit validation in doPing; assumed validated upstream"
+    },
+    {
+      "field": "context.role",
+      "flow": [
+        "Authentication/authorization",
+        "context.role",
+        "doPing",
+        "switch (context.role)",
+        "ret[jss::role]"
+      ],
+      "origin": "Set by authentication/authorization logic based on credentials.",
+      "transformations": [
+        "Switch statement determines output fields"
+      ],
+      "validated_at": "No explicit validation in doPing; assumed validated upstream"
+    }
+  ],
+  "description": "Implements the doPing RPC handler for the XRPL server, returning role and connection metadata in a JSON response.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.headers.forwardedFor",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (!empty()) at doPing",
+      "issue_pattern": "Missing empty string validation for context.headers.forwardedFor",
+      "why_false_positive": "manual check (!empty()) validates context.headers.forwardedFor for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.infoSub",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (pointer existence) at doPing",
+      "issue_pattern": "Missing empty string validation for context.infoSub",
+      "why_false_positive": "manual check (pointer existence) validates context.infoSub for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/utility/Ping.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 13,
+      "name": "doPing"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "Ping handlers are typically covered by integration tests for the RPC API (e.g., test_rpc_ping, test_ws_ping). These tests likely check output for various roles and connection types. However, edge cases such as missing or malformed 'forwardedFor', null 'infoSub', or unusual user fields may not be exhaustively tested. There is no evidence of unit tests specifically targeting the manual validation logic (e.g., empty forwardedFor, null infoSub). Template-based validation is not used in this handler; all validation is manual and local.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc (jss:: for JSON field names, not validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (field is simply omitted if empty)",
+      "field": "context.headers.forwardedFor",
+      "location": "doPing",
+      "validated_by": "manual check (!empty())",
+      "validates": [
+        "field is not empty before use"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (block skipped if null)",
+      "field": "context.infoSub",
+      "location": "doPing",
+      "validated_by": "manual check (pointer existence)",
+      "validates": [
+        "object exists before dereferencing"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

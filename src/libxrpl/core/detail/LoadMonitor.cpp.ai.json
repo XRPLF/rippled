@@ -1,0 +1,352 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "LoadMonitor::Stats"
+    },
+    {
+      "args": [
+        "beast::Journal j"
+      ],
+      "lineno": 22,
+      "name": "LoadMonitor"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoadMonitor::addLoadSample",
+        "LoadMonitor::addSamples",
+        "LoadMonitor::update"
+      ],
+      "entry_point": "LoadMonitor::addLoadSample",
+      "purpose": "Adds a single load sample (from a LoadEvent), computes latency, logs if high, and updates internal counters with validation.",
+      "validation_points": [
+        "addLoadSample: Validates latency (manual if-check: latency > 500ms)",
+        "addSamples: Implicitly validates count (int type, arithmetic)",
+        "update: Validates 'now' (manual if-check: now == mLastUpdate, now < mLastUpdate, now > mLastUpdate + 8s)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadMonitor::addSamples",
+        "LoadMonitor::update"
+      ],
+      "entry_point": "LoadMonitor::addSamples",
+      "purpose": "Adds multiple samples and updates latency/counters, with validation on time and count.",
+      "validation_points": [
+        "addSamples: Implicitly validates count (int type, arithmetic)",
+        "update: Validates 'now' (manual if-checks as above)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadMonitor::isOver",
+        "LoadMonitor::update",
+        "LoadMonitor::isOverTarget"
+      ],
+      "entry_point": "LoadMonitor::isOver",
+      "purpose": "Checks if current load exceeds target latency thresholds, with validation on event count and latency.",
+      "validation_points": [
+        "isOver: Validates mLatencyEvents != 0",
+        "isOverTarget: Validates avg/peak against target thresholds"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadMonitor::getStats",
+        "LoadMonitor::update"
+      ],
+      "entry_point": "LoadMonitor::getStats",
+      "purpose": "Retrieves current stats, with validation on event count and time.",
+      "validation_points": [
+        "getStats: Validates mLatencyEvents == 0 (sets latencyAvg/latencyPeak to 0)",
+        "update: Validates 'now' (manual if-checks as above)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mLastUpdate",
+      "flow": [
+        "constructor",
+        "update (compared to now, incremented in decay loop)",
+        "used in all update() calls"
+      ],
+      "origin": "Initialized in constructor to UptimeClock::now()",
+      "transformations": [
+        "Set to now in constructor and after reset",
+        "Incremented by 1s in decay loop"
+      ],
+      "validated_at": "update (if now == mLastUpdate, if now < mLastUpdate, if now > mLastUpdate + 8s)"
+    },
+    {
+      "field": "latency (in addLoadSample)",
+      "flow": [
+        "addLoadSample (computed)",
+        "manual if-check for logging",
+        "passed to addSamples"
+      ],
+      "origin": "Computed from s.runTime() + s.waitTime()",
+      "transformations": [
+        "Rounded to milliseconds",
+        "Set to 0ms if < 2ms"
+      ],
+      "validated_at": "addLoadSample (if latency > 500ms for logging)"
+    },
+    {
+      "field": "mCounts",
+      "flow": [
+        "addSamples (incremented by count)",
+        "update (decayed by 1/4 each second)",
+        "getStats (divided by 4 for stats.count)"
+      ],
+      "origin": "Initialized to 0 in constructor/reset",
+      "transformations": [
+        "Incremented by count",
+        "Decayed by 1/4 per second in update"
+      ],
+      "validated_at": "addSamples (count is int, no explicit range check)"
+    },
+    {
+      "field": "mLatencyEvents",
+      "flow": [
+        "addSamples (incremented by count)",
+        "update (decayed by 1/4 each second)",
+        "isOver, getStats (used as divisor, checked for zero)"
+      ],
+      "origin": "Initialized to 0 in constructor/reset",
+      "transformations": [
+        "Incremented by count",
+        "Decayed by 1/4 per second in update"
+      ],
+      "validated_at": "isOver, getStats (checked for zero before division)"
+    },
+    {
+      "field": "mLatencyMSAvg / mLatencyMSPeak",
+      "flow": [
+        "addSamples (incremented by latency)",
+        "update (decayed by 1/4 each second)",
+        "isOver, getStats (used for avg/peak calculations)"
+      ],
+      "origin": "Initialized to 0 in constructor/reset",
+      "transformations": [
+        "Incremented by latency",
+        "Decayed by 1/4 per second in update"
+      ],
+      "validated_at": "isOverTarget (compared to target thresholds)"
+    },
+    {
+      "field": "mTargetLatencyAvg / mTargetLatencyPk",
+      "flow": [
+        "setTargetLatency (set)",
+        "isOverTarget (compared against computed avg/peak)"
+      ],
+      "origin": "Set via setTargetLatency",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "isOverTarget (manual if-checks for > 0ms and comparison)"
+    }
+  ],
+  "description": "Implements the LoadMonitor class for tracking and managing system load and latency statistics, including methods for updating, sampling, and querying load metrics.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "now (current time)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at LoadMonitor::update",
+      "issue_pattern": "Missing empty string validation for now (current time)",
+      "why_false_positive": "manual if-check validates now (current time) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "latency (derived from s.runTime() + s.waitTime())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at LoadMonitor::addLoadSample",
+      "issue_pattern": "Missing empty string validation for latency (derived from s.runTime() + s.waitTime())",
+      "why_false_positive": "manual if-check validates latency (derived from s.runTime() + s.waitTime()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "count (number of samples)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type (int) and arithmetic at LoadMonitor::addSamples",
+      "issue_pattern": "Missing empty string validation for count (number of samples)",
+      "why_false_positive": "implicit type (int) and arithmetic validates count (number of samples) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "count (number of samples)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type (int) and arithmetic at LoadMonitor::addSamples",
+      "issue_pattern": "Missing type validation for count (number of samples)",
+      "why_false_positive": "implicit type (int) and arithmetic validates count (number of samples) type"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/detail/LoadMonitor.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "LoadMonitor::update"
+    },
+    {
+      "args": [
+        "LoadEvent const& s"
+      ],
+      "lineno": 61,
+      "name": "LoadMonitor::addLoadSample"
+    },
+    {
+      "args": [
+        "int count",
+        "std::chrono::milliseconds latency"
+      ],
+      "lineno": 77,
+      "name": "LoadMonitor::addSamples"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds avg",
+        "std::chrono::milliseconds pk"
+      ],
+      "lineno": 93,
+      "name": "LoadMonitor::setTargetLatency"
+    },
+    {
+      "args": [
+        "std::chrono::milliseconds avg",
+        "std::chrono::milliseconds peak"
+      ],
+      "lineno": 98,
+      "name": "LoadMonitor::isOverTarget"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "LoadMonitor::isOver"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "LoadMonitor::getStats"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in the provided context. Typically, LoadMonitor would be tested via unit tests in files like 'LoadMonitor_test.cpp' or integration tests that exercise load event handling. Key validation paths (time validation, latency threshold checks, count arithmetic) should be covered by tests that: (1) add samples with varying latencies, (2) simulate time jumps (to test update's decay/reset logic), (3) set target latencies and check isOver/isOverTarget, and (4) check stats output. Gaps may exist if tests do not cover edge cases such as negative/zero counts, extreme time jumps, or very high latency values. Manual validation (e.g., logging for high latency) may not be directly testable unless logs are captured and asserted.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "now (current time)",
+      "location": "LoadMonitor::update",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Checks if now == mLastUpdate (duplicate update)",
+        "Checks if now < mLastUpdate (clock skew or error)",
+        "Checks if now > mLastUpdate + 8s (too old, reset state)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logging only)",
+      "field": "latency (derived from s.runTime() + s.waitTime())",
+      "location": "LoadMonitor::addLoadSample",
+      "validated_by": "manual if-check",
+      "validates": [
+        "If latency > 500ms, logs warning/info",
+        "If latency < 2ms, sets latency to 0ms (ignores jitter)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (no explicit check)",
+      "field": "count (number of samples)",
+      "location": "LoadMonitor::addSamples",
+      "validated_by": "implicit type (int) and arithmetic",
+      "validates": [
+        "count is used as divisor, but not explicitly checked for zero or negative"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

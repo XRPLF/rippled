@@ -1,0 +1,441 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerReplayTask::TaskParameter::TaskParameter"
+      ],
+      "entry_point": "LedgerReplayTask::TaskParameter::TaskParameter",
+      "purpose": "Constructs a TaskParameter object with finishLedgerHash and totalNumLedgers, validates inputs.",
+      "validation_points": [
+        "XRPL_ASSERT on finishLedgerHash.isNonZero() && totalNumLedgers > 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerReplayTask::TaskParameter::update"
+      ],
+      "entry_point": "LedgerReplayTask::TaskParameter::update",
+      "purpose": "Updates TaskParameter with new hash, sequence, and skip list; validates hash, skip list size, and full_ flag.",
+      "validation_points": [
+        "if (finishHash_ != hash || sList.size() + 1 < totalLedgers_ || full_)",
+        "XRPL_ASSERT on startHash_.isNonZero()"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerReplayTask::init",
+        "skipListAcquirer_->addDataCallback",
+        "LedgerReplayTask::updateSkipList",
+        "LedgerReplayTask::parameter_.update"
+      ],
+      "entry_point": "LedgerReplayTask::init",
+      "purpose": "Initializes the replay task, sets up callback for skip list data, triggers update and validation.",
+      "validation_points": [
+        "LedgerReplayTask::TaskParameter::update (see above)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerReplayTask::trigger"
+      ],
+      "entry_point": "LedgerReplayTask::trigger",
+      "purpose": "Triggers the replay task if parameter_.full_ is true; relies on prior validation.",
+      "validation_points": [
+        "if (!parameter_.full_) return;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "finishLedgerHash",
+      "flow": [
+        "LedgerReplayTask::TaskParameter::TaskParameter (input)",
+        "TaskParameter::finishHash_ (member assignment)",
+        "TaskParameter::update (compared to hash argument)",
+        "Used in canMergeInto, update, and elsewhere"
+      ],
+      "origin": "Constructor argument to TaskParameter",
+      "transformations": [
+        "Assigned directly; compared for equality"
+      ],
+      "validated_at": "LedgerReplayTask::TaskParameter::TaskParameter (XRPL_ASSERT)"
+    },
+    {
+      "field": "totalNumLedgers",
+      "flow": [
+        "LedgerReplayTask::TaskParameter::TaskParameter (input)",
+        "TaskParameter::totalLedgers_ (member assignment)",
+        "TaskParameter::update (compared to sList.size() + 1)",
+        "Used in canMergeInto, update, and elsewhere"
+      ],
+      "origin": "Constructor argument to TaskParameter",
+      "transformations": [
+        "Assigned directly; compared for size"
+      ],
+      "validated_at": "LedgerReplayTask::TaskParameter::TaskParameter (XRPL_ASSERT)"
+    },
+    {
+      "field": "hash (update argument)",
+      "flow": [
+        "skipListAcquirer_->addDataCallback (callback arg)",
+        "LedgerReplayTask::updateSkipList",
+        "TaskParameter::update (hash argument)"
+      ],
+      "origin": "Argument to TaskParameter::update (from skipListAcquirer callback)",
+      "transformations": [
+        "Compared to finishHash_"
+      ],
+      "validated_at": "TaskParameter::update (if statement)"
+    },
+    {
+      "field": "sList (update argument)",
+      "flow": [
+        "skipListAcquirer_->addDataCallback",
+        "LedgerReplayTask::updateSkipList",
+        "TaskParameter::update (sList argument)"
+      ],
+      "origin": "skipListAcquirer_->getData()->skipList",
+      "transformations": [
+        "Compared for size; copied to skipList_; finishHash_ appended"
+      ],
+      "validated_at": "TaskParameter::update (if statement)"
+    },
+    {
+      "field": "full_",
+      "flow": [
+        "TaskParameter::update (checked in if, set to true at end)",
+        "TaskParameter::canMergeInto (checked)",
+        "LedgerReplayTask::trigger (checked)"
+      ],
+      "origin": "TaskParameter member, default false",
+      "transformations": [
+        "Set to true after successful update"
+      ],
+      "validated_at": "TaskParameter::update (if statement)"
+    },
+    {
+      "field": "startHash_",
+      "flow": [
+        "TaskParameter::update (set from skipList_)",
+        "XRPL_ASSERT on isNonZero()",
+        "Used in LedgerReplayTask::trigger (to acquire parent ledger)"
+      ],
+      "origin": "Set in TaskParameter::update",
+      "transformations": [
+        "Extracted from skipList_"
+      ],
+      "validated_at": "TaskParameter::update (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the LedgerReplayTask class, which manages the process of replaying a sequence of ledgers in XRPL by acquiring necessary ledger deltas and handling task progress, timeouts, and completion.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "finishLedgerHash, totalNumLedgers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at LedgerReplayTask::TaskParameter::TaskParameter (constructor)",
+      "issue_pattern": "Missing empty string validation for finishLedgerHash, totalNumLedgers",
+      "why_false_positive": "XRPL_ASSERT macro validates finishLedgerHash, totalNumLedgers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hash, sList, full_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if statement at LedgerReplayTask::TaskParameter::update",
+      "issue_pattern": "Missing empty string validation for hash, sList, full_",
+      "why_false_positive": "explicit if statement validates hash, sList, full_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "startHash_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at LedgerReplayTask::TaskParameter::update",
+      "issue_pattern": "Missing empty string validation for startHash_",
+      "why_false_positive": "XRPL_ASSERT macro validates startHash_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerReplayTask.cpp",
+  "functions": [
+    {
+      "args": [
+        "InboundLedger::Reason r",
+        "uint256 const& finishLedgerHash",
+        "std::uint32_t totalNumLedgers"
+      ],
+      "lineno": 8,
+      "name": "LedgerReplayTask::TaskParameter::TaskParameter"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq",
+        "std::vector<uint256> const& sList"
+      ],
+      "lineno": 17,
+      "name": "LedgerReplayTask::TaskParameter::update"
+    },
+    {
+      "args": [
+        "TaskParameter const& existingTask"
+      ],
+      "lineno": 34,
+      "name": "LedgerReplayTask::TaskParameter::canMergeInto"
+    },
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "LedgerReplayer& replayer",
+        "std::shared_ptr<SkipListAcquire>& skipListAcquirer",
+        "TaskParameter const& parameter"
+      ],
+      "lineno": 51,
+      "name": "LedgerReplayTask::LedgerReplayTask"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "LedgerReplayTask::~LedgerReplayTask"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "LedgerReplayTask::init"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 92,
+      "name": "LedgerReplayTask::trigger"
+    },
+    {
+      "args": [
+        "uint256 const& deltaHash"
+      ],
+      "lineno": 117,
+      "name": "LedgerReplayTask::deltaReady"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 124,
+      "name": "LedgerReplayTask::tryAdvance"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq",
+        "std::vector<uint256> const& sList"
+      ],
+      "lineno": 157,
+      "name": "LedgerReplayTask::updateSkipList"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 177,
+      "name": "LedgerReplayTask::onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "LedgerReplayTask::pmDowncast"
+    },
+    {
+      "args": [
+        "std::shared_ptr<LedgerDeltaAcquire> const& delta"
+      ],
+      "lineno": 196,
+      "name": "LedgerReplayTask::addDelta"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "LedgerReplayTask::finished"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested indirectly via integration tests for ledger replay and inbound ledger acquisition. Direct unit tests for TaskParameter validation logic may exist in test files such as LedgerReplayTask_test.cpp, LedgerReplayer_test.cpp, or InboundLedgers_test.cpp. However, explicit tests for all validation branches (e.g., invalid finishLedgerHash, too-short skip list, full_ already set) may not be present or may be incomplete. Exception/error handling paths may not be fully covered in tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion), explicit C++ logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "finishLedgerHash, totalNumLedgers",
+      "location": "LedgerReplayTask::TaskParameter::TaskParameter (constructor)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "finishLedgerHash.isNonZero()",
+        "totalNumLedgers > 0"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "hash, sList, full_",
+      "location": "LedgerReplayTask::TaskParameter::update",
+      "validated_by": "explicit if statement",
+      "validates": [
+        "finishHash_ == hash",
+        "sList.size() + 1 >= totalLedgers_",
+        "full_ == false"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "startHash_",
+      "location": "LedgerReplayTask::TaskParameter::update",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "startHash_.isNonZero()"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

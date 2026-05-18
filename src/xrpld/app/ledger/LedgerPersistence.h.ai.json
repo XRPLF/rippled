@@ -1,0 +1,67 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file declares utility functions for saving and loading fully-validated ledgers in the XRPL system, including loading by index or hash, and fetching the latest ledger from the database.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerPersistence.h",
+  "functions": [
+    {
+      "args": [
+        "registry",
+        "ledger",
+        "isSynchronous",
+        "isCurrent"
+      ],
+      "lineno": 13,
+      "name": "pendSaveValidated"
+    },
+    {
+      "args": [
+        "info",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 29,
+      "name": "loadLedgerHelper"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 44,
+      "name": "loadByIndex"
+    },
+    {
+      "args": [
+        "ledgerHash",
+        "rules",
+        "fees",
+        "registry",
+        "acquire"
+      ],
+      "lineno": 59,
+      "name": "loadByHash"
+    },
+    {
+      "args": [
+        "rules",
+        "fees",
+        "registry"
+      ],
+      "lineno": 74,
+      "name": "getLatestLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

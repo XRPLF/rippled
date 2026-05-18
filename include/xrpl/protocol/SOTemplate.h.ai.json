@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 80,
+      "name": "other"
+    },
+    {
+      "lineno": 86,
+      "name": "uniqueFields"
+    },
+    {
+      "lineno": 86,
+      "name": "commonFields"
+    },
+    {
+      "lineno": 120,
+      "name": "sf"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SField const& fieldName, SOEStyle style",
+        "TypedField<T> const& fieldName, SOEStyle style, SOETxMPTIssue supportMpt = soeMPTNotSupported"
+      ],
+      "lineno": 23,
+      "name": "SOElement"
+    },
+    {
+      "args": [
+        "SOTemplate&& other",
+        "std::vector<SOElement> uniqueFields, std::vector<SOElement> commonFields = {}",
+        "std::initializer_list<SOElement> uniqueFields, std::initializer_list<SOElement> commonFields = {}"
+      ],
+      "lineno": 75,
+      "name": "SOTemplate"
+    }
+  ],
+  "description": "Defines the SOTemplate and SOElement classes used to describe the fields and their metadata for XRPL serialized objects, including field styles and MPT support.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/SOTemplate.h",
+  "functions": [
+    {
+      "args": [
+        "fieldName"
+      ],
+      "lineno": 28,
+      "name": "SOElement::init"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "SOElement::sField"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "SOElement::style"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "SOElement::supportMPT"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "SOTemplate::begin"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "SOTemplate::cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "SOTemplate::end"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "SOTemplate::cend"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "SOTemplate::size"
+    },
+    {
+      "args": [
+        "SField const&"
+      ],
+      "lineno": 117,
+      "name": "SOTemplate::getIndex"
+    },
+    {
+      "args": [
+        "SField const& sf"
+      ],
+      "lineno": 120,
+      "name": "SOTemplate::style"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,411 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "createIfMissing"
+    },
+    {
+      "lineno": 29,
+      "name": "uint256 const&"
+    },
+    {
+      "lineno": 29,
+      "name": "std::shared_ptr<NodeObject>*"
+    },
+    {
+      "lineno": 34,
+      "name": "std::vector<uint256> const& hashes"
+    },
+    {
+      "lineno": 39,
+      "name": "std::shared_ptr<NodeObject> const& object"
+    },
+    {
+      "lineno": 43,
+      "name": "Batch const& batch"
+    },
+    {
+      "lineno": 51,
+      "name": "std::function<void(std::shared_ptr<NodeObject>)> f"
+    },
+    {
+      "lineno": 85,
+      "name": "Manager& manager"
+    },
+    {
+      "lineno": 80,
+      "name": "size_t"
+    },
+    {
+      "lineno": 80,
+      "name": "Section const&"
+    },
+    {
+      "lineno": 80,
+      "name": "std::size_t"
+    },
+    {
+      "lineno": 80,
+      "name": "Scheduler&"
+    },
+    {
+      "lineno": 80,
+      "name": "beast::Journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "NullBackend"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 68,
+      "name": "NullFactory"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NullFactory::createInstance",
+        "std::make_unique<NullBackend>()",
+        "NullBackend constructor"
+      ],
+      "entry_point": "NullFactory::createInstance",
+      "purpose": "Creates a new instance of NullBackend when requested by the Manager or other NodeStore infrastructure.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::fetch"
+      ],
+      "entry_point": "NullBackend::fetch",
+      "purpose": "Fetches a NodeObject by hash. In this implementation, always returns notFound.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::fetchBatch"
+      ],
+      "entry_point": "NullBackend::fetchBatch",
+      "purpose": "Fetches a batch of NodeObjects by hashes. Always returns empty.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::store"
+      ],
+      "entry_point": "NullBackend::store",
+      "purpose": "Stores a NodeObject. No-op in this implementation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::storeBatch"
+      ],
+      "entry_point": "NullBackend::storeBatch",
+      "purpose": "Stores a batch of NodeObjects. No-op in this implementation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::open"
+      ],
+      "entry_point": "NullBackend::open",
+      "purpose": "Opens the backend. No-op in this implementation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullBackend::isOpen"
+      ],
+      "entry_point": "NullBackend::isOpen",
+      "purpose": "Checks if backend is open. Always returns false.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "uint256 const& (hash)",
+      "flow": [
+        "fetch parameter",
+        "immediately ignored",
+        "returns notFound"
+      ],
+      "origin": "Parameter to NullBackend::fetch",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "std::vector<uint256> const& (hashes)",
+      "flow": [
+        "fetchBatch parameter",
+        "immediately ignored",
+        "returns empty vector and default Status"
+      ],
+      "origin": "Parameter to NullBackend::fetchBatch",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "std::shared_ptr<NodeObject> const& (object)",
+      "flow": [
+        "store parameter",
+        "immediately ignored",
+        "no storage or validation"
+      ],
+      "origin": "Parameter to NullBackend::store",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "Batch const& (batch)",
+      "flow": [
+        "storeBatch parameter",
+        "immediately ignored",
+        "no storage or validation"
+      ],
+      "origin": "Parameter to NullBackend::storeBatch",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "Manager& manager",
+      "flow": [
+        "NullFactory constructor",
+        "stored as member",
+        "used in manager_.insert(*this)"
+      ],
+      "origin": "Parameter to NullFactory constructor",
+      "transformations": [],
+      "validated_at": null
+    }
+  ],
+  "description": "Implements a NullBackend and NullFactory for the XRPL NodeStore, providing a no-op backend for testing or placeholder purposes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/backend/NullFactory.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "NullBackend::getName"
+    },
+    {
+      "args": [
+        "createIfMissing"
+      ],
+      "lineno": 17,
+      "name": "NullBackend::open"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "NullBackend::isOpen"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "NullBackend::close"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::shared_ptr<NodeObject>*"
+      ],
+      "lineno": 29,
+      "name": "NullBackend::fetch"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& hashes"
+      ],
+      "lineno": 34,
+      "name": "NullBackend::fetchBatch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& object"
+      ],
+      "lineno": 39,
+      "name": "NullBackend::store"
+    },
+    {
+      "args": [
+        "Batch const& batch"
+      ],
+      "lineno": 43,
+      "name": "NullBackend::storeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "NullBackend::sync"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 51,
+      "name": "NullBackend::for_each"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "NullBackend::getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "NullBackend::setDeletePath"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "NullBackend::fdRequired"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "NullFactory::getName"
+    },
+    {
+      "args": [
+        "size_t",
+        "Section const&",
+        "std::size_t",
+        "Scheduler&",
+        "beast::Journal"
+      ],
+      "lineno": 80,
+      "name": "NullFactory::createInstance"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 85,
+      "name": "registerNullFactory"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "This NullBackend is a stub/no-op implementation. There are no validation code paths: all inputs are ignored, and no data is processed or validated. Test coverage is likely minimal or non-existent for this file, as its purpose is to provide a 'do nothing' backend for testing or configuration purposes. If tested, it would be in integration tests ensuring the system can operate with a null backend, but there are no field-level or validation tests required or present. No explicit test files are referenced or implied by this code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

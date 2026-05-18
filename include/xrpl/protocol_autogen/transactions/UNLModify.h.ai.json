@@ -1,0 +1,154 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 80,
+      "name": "account"
+    },
+    {
+      "lineno": 81,
+      "name": "uNLModifyDisabling"
+    },
+    {
+      "lineno": 82,
+      "name": "ledgerSequence"
+    },
+    {
+      "lineno": 83,
+      "name": "uNLModifyValidator"
+    },
+    {
+      "lineno": 84,
+      "name": "sequence"
+    },
+    {
+      "lineno": 85,
+      "name": "fee"
+    },
+    {
+      "lineno": 92,
+      "name": "tx"
+    },
+    {
+      "lineno": 104,
+      "name": "value"
+    },
+    {
+      "lineno": 113,
+      "name": "value"
+    },
+    {
+      "lineno": 122,
+      "name": "value"
+    },
+    {
+      "lineno": 131,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 131,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 25,
+      "name": "UNLModify"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling, std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence, std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 74,
+      "name": "UNLModifyBuilder"
+    }
+  ],
+  "description": "Defines the UNLModify transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing UNLModify transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/UNLModify.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "UNLModify"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getUNLModifyDisabling"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getLedgerSequence"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getUNLModifyValidator"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence",
+        "std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 80,
+      "name": "UNLModifyBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 92,
+      "name": "UNLModifyBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT8::type::value_type> const& value"
+      ],
+      "lineno": 104,
+      "name": "setUNLModifyDisabling"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 113,
+      "name": "setLedgerSequence"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 122,
+      "name": "setUNLModifyValidator"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 131,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

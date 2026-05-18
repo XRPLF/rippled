@@ -1,0 +1,189 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doBlackList"
+      ],
+      "entry_point": "doBlackList",
+      "purpose": "Handles the 'blacklist' RPC command, optionally filtering by a 'threshold' parameter.",
+      "validation_points": [
+        "if (context.params.isMember(jss::threshold))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "threshold",
+      "flow": [
+        "context.params",
+        "context.params[jss::threshold]",
+        "context.params[jss::threshold].asInt()",
+        "rm.getJson(context.params[jss::threshold].asInt())"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Checked for presence with isMember",
+        "Converted to int with asInt"
+      ],
+      "validated_at": "if (context.params.isMember(jss::threshold))"
+    }
+  ],
+  "description": "Implements the doBlackList RPC handler for the xrpl namespace, which interacts with the ResourceManager to return JSON data, optionally filtered by a threshold parameter.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "threshold",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember at doBlackList",
+      "issue_pattern": "Missing empty string validation for threshold",
+      "why_false_positive": "Json::Value::isMember validates threshold for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "threshold",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::asInt at doBlackList",
+      "issue_pattern": "Missing empty string validation for threshold",
+      "why_false_positive": "Json::Value::asInt validates threshold for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "threshold",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::Value::asInt at doBlackList",
+      "issue_pattern": "Missing type validation for threshold",
+      "why_false_positive": "Json::Value::asInt validates threshold type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/BlackList.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doBlackList"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage. Typical test files would be under workflow/XRPLF-rippled-develop/test or workflow/XRPLF-rippled-develop/unittest, possibly named after the handler (e.g., BlackList_test.cpp or rpc_blacklist_test.cpp). The validation is minimal: only presence and integer conversion are checked. There is no type or range validation, so malformed or out-of-range values may not be handled robustly. Tests should cover: missing threshold, threshold as non-integer, threshold as integer, and absence of threshold. Gaps: No explicit error handling for invalid types or values.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "JsonCpp (Json::Value), jss:: (field name constants)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional branch)",
+      "field": "threshold",
+      "location": "doBlackList",
+      "validated_by": "Json::Value::isMember",
+      "validates": [
+        "checks if 'threshold' field exists in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Json::LogicError (if not convertible to int)",
+      "field": "threshold",
+      "location": "doBlackList",
+      "validated_by": "Json::Value::asInt",
+      "validates": [
+        "checks if 'threshold' can be interpreted as integer"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

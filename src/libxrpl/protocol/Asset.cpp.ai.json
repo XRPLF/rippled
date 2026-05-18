@@ -1,0 +1,343 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "assetFromJson",
+        "issueFromJson OR mptIssueFromJson"
+      ],
+      "entry_point": "assetFromJson",
+      "purpose": "Constructs an Asset from a JSON value, dispatching to the correct constructor based on presence of 'currency' or 'mpt_issuance_id'.",
+      "validation_points": [
+        "assetFromJson: Checks that at least one of 'currency' or 'mpt_issuance_id' is present. Throws if not.",
+        "issueFromJson/mptIssueFromJson: Further validation of fields (not shown in this file, but implied)."
+      ]
+    },
+    {
+      "call_chain": [
+        "validJSONAsset"
+      ],
+      "entry_point": "validJSONAsset",
+      "purpose": "Checks if a JSON value is a valid representation of an Asset.",
+      "validation_points": [
+        "validJSONAsset: Ensures that if 'mpt_issuance_id' is present, 'currency' and 'issuer' are not, and vice versa."
+      ]
+    },
+    {
+      "call_chain": [
+        "Asset::operator()"
+      ],
+      "entry_point": "operator() (Asset::operator())",
+      "purpose": "Creates an STAmount from an Asset and a Number.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "Asset::setJson",
+        "issue.setJson"
+      ],
+      "entry_point": "setJson",
+      "purpose": "Serializes the Asset to JSON by delegating to the underlying issue type.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "currency",
+      "flow": [
+        "Json::Value",
+        "assetFromJson",
+        "issueFromJson",
+        "Asset"
+      ],
+      "origin": "Json::Value input (possibly from RPC or config)",
+      "transformations": [
+        "Checked for presence in assetFromJson",
+        "Used to construct Issue or MPTIssue"
+      ],
+      "validated_at": "assetFromJson (presence), validJSONAsset (mutual exclusion with mpt_issuance_id)"
+    },
+    {
+      "field": "issuer",
+      "flow": [
+        "Json::Value",
+        "issueFromJson",
+        "Asset"
+      ],
+      "origin": "Json::Value input",
+      "transformations": [
+        "Checked for presence in issueFromJson (not shown here)"
+      ],
+      "validated_at": "validJSONAsset (mutual exclusion with mpt_issuance_id)"
+    },
+    {
+      "field": "mpt_issuance_id",
+      "flow": [
+        "Json::Value",
+        "assetFromJson",
+        "mptIssueFromJson",
+        "Asset"
+      ],
+      "origin": "Json::Value input",
+      "transformations": [
+        "Checked for presence in assetFromJson",
+        "Used to construct MPTIssue"
+      ],
+      "validated_at": "assetFromJson (presence), validJSONAsset (mutual exclusion with currency/issuer)"
+    },
+    {
+      "field": "issue_ (variant of Issue or MPTIssue)",
+      "flow": [
+        "assetFromJson",
+        "Asset",
+        "various Asset methods (getIssuer, getText, setJson, operator())"
+      ],
+      "origin": "Constructed in assetFromJson via issueFromJson or mptIssueFromJson",
+      "transformations": [
+        "std::visit used to dispatch to correct type"
+      ],
+      "validated_at": "assetFromJson (type selection), issueFromJson/mptIssueFromJson (field validation)"
+    }
+  ],
+  "description": "Implements the Asset class and related functions for handling XRPL assets, including JSON serialization, string conversion, and construction from JSON.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "currency",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field currency validated by jss:: (JSON field name constants), Throw<> (template exception helper)",
+      "issue_pattern": "Missing validation for currency",
+      "why_false_positive": "jss:: (JSON field name constants), Throw<> (template exception helper) validates currency automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "issuer",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field issuer validated by jss:: (JSON field name constants), Throw<> (template exception helper)",
+      "issue_pattern": "Missing validation for issuer",
+      "why_false_positive": "jss:: (JSON field name constants), Throw<> (template exception helper) validates issuer automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mpt_issuance_id",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mpt_issuance_id validated by jss:: (JSON field name constants), Throw<> (template exception helper)",
+      "issue_pattern": "Missing validation for mpt_issuance_id",
+      "why_false_positive": "jss:: (JSON field name constants), Throw<> (template exception helper) validates mpt_issuance_id automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency, mpt_issuance_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at assetFromJson",
+      "issue_pattern": "Missing empty string validation for currency, mpt_issuance_id",
+      "why_false_positive": "explicit code validates currency, mpt_issuance_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency, issuer, mpt_issuance_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit code at validJSONAsset",
+      "issue_pattern": "Missing empty string validation for currency, issuer, mpt_issuance_id",
+      "why_false_positive": "explicit code validates currency, issuer, mpt_issuance_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Asset.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Asset::getIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "Asset::getText"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 21,
+      "name": "Asset::setJson"
+    },
+    {
+      "args": [
+        "number"
+      ],
+      "lineno": 26,
+      "name": "Asset::operator()"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 31,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 36,
+      "name": "validJSONAsset"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 43,
+      "name": "assetFromJson"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 52,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage is not shown in this file. Likely test files: protocol/Asset_test.cpp, protocol/Issue_test.cpp, protocol/MPTIssue_test.cpp, or higher-level JSON/RPC tests. The main validation logic (field presence, mutual exclusion) is simple and should be covered by tests that check asset parsing from JSON, including error cases (missing fields, conflicting fields). Gaps may exist if tests do not cover all invalid combinations (e.g., both 'currency' and 'mpt_issuance_id' present, or neither present). No explicit test hooks or asserts are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "currency",
+      "issuer",
+      "mpt_issuance_id"
+    ],
+    "framework": "jss:: (JSON field name constants), Throw<> (template exception helper)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<> template)",
+      "field": "currency, mpt_issuance_id",
+      "location": "assetFromJson",
+      "validated_by": "explicit code",
+      "validates": [
+        "At least one of 'currency' or 'mpt_issuance_id' must be present in the input JSON"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "currency, issuer, mpt_issuance_id",
+      "location": "validJSONAsset",
+      "validated_by": "explicit code",
+      "validates": [
+        "If 'mpt_issuance_id' is present, 'currency' and 'issuer' must NOT be present",
+        "If 'mpt_issuance_id' is NOT present, 'currency' must be present"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

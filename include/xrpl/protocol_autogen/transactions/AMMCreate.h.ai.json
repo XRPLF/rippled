@@ -1,0 +1,128 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "tx"
+    },
+    {
+      "lineno": 86,
+      "name": "account"
+    },
+    {
+      "lineno": 87,
+      "name": "amount"
+    },
+    {
+      "lineno": 88,
+      "name": "amount2"
+    },
+    {
+      "lineno": 89,
+      "name": "tradingFee"
+    },
+    {
+      "lineno": 90,
+      "name": "sequence"
+    },
+    {
+      "lineno": 91,
+      "name": "fee"
+    },
+    {
+      "lineno": 97,
+      "name": "tx"
+    },
+    {
+      "lineno": 102,
+      "name": "value"
+    },
+    {
+      "lineno": 113,
+      "name": "value"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    },
+    {
+      "lineno": 134,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 134,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "AMMCreate"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount2, std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 77,
+      "name": "AMMCreateBuilder"
+    }
+  ],
+  "description": "Defines the AMMCreate transaction type and its builder for the XRPL protocol, providing type-safe field access and a fluent interface for constructing AMMCreate transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMCreate.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAmount2"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 101,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 112,
+      "name": "setAmount2"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 123,
+      "name": "setTradingFee"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 133,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

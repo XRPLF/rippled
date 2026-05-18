@@ -1,0 +1,330 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "params"
+    },
+    {
+      "lineno": 22,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doValidationCreate",
+        "validationSeed",
+        "parseGenericSeed (if secret provided)",
+        "generateSecretKey",
+        "derivePublicKey",
+        "toBase58",
+        "seedAs1751"
+      ],
+      "entry_point": "doValidationCreate",
+      "purpose": "Handles the admin RPC command to create a new validation keypair, optionally using a provided secret.",
+      "validation_points": [
+        "doValidationCreate: checks if seed is valid (if (!seed) return rpcError(rpcBAD_SEED))",
+        "validationSeed: checks if params contains 'secret' (if (!params.isMember(jss::secret)))",
+        "validationSeed: parses and validates the secret with parseGenericSeed"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "params",
+      "flow": [
+        "context.params",
+        "validationSeed(params)",
+        "parseGenericSeed(params[jss::secret].asString()) (if present)",
+        "Seed (optional, returned from validationSeed)",
+        "used in generateSecretKey"
+      ],
+      "origin": "context.params (RPC JSON input)",
+      "transformations": [
+        "Extracts 'secret' field if present",
+        "Parses secret string into Seed object"
+      ],
+      "validated_at": "validationSeed (checks presence and parses secret)"
+    },
+    {
+      "field": "secret",
+      "flow": [
+        "params['secret']",
+        "parseGenericSeed(secret)",
+        "Seed (optional)"
+      ],
+      "origin": "params['secret'] (user input)",
+      "transformations": [
+        "String to Seed conversion",
+        "Validation of format and content"
+      ],
+      "validated_at": "parseGenericSeed (inside validationSeed)"
+    },
+    {
+      "field": "seed",
+      "flow": [
+        "validationSeed(params)",
+        "doValidationCreate: if (!seed) return rpcError(rpcBAD_SEED)",
+        "generateSecretKey(KeyType::secp256k1, *seed)",
+        "derivePublicKey(KeyType::secp256k1, private_key)",
+        "toBase58, seedAs1751"
+      ],
+      "origin": "validationSeed(params)",
+      "transformations": [
+        "Seed is used to generate private key",
+        "Private key used to derive public key",
+        "Keys and seed encoded to Base58 and 1751 format"
+      ],
+      "validated_at": "doValidationCreate (if (!seed) ...), validationSeed"
+    }
+  ],
+  "description": "Implements an RPC command to create a new validation key pair and seed for the XRPL, requiring admin access.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "params (as JSON object, by context)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field params (as JSON object, by context) validated by xrpld jss:: (JSON field tags), parseGenericSeed, RPC::JsonContext",
+      "issue_pattern": "Missing validation for params (as JSON object, by context)",
+      "why_false_positive": "xrpld jss:: (JSON field tags), parseGenericSeed, RPC::JsonContext validates params (as JSON object, by context) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "secret (as string, by parseGenericSeed)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field secret (as string, by parseGenericSeed) validated by xrpld jss:: (JSON field tags), parseGenericSeed, RPC::JsonContext",
+      "issue_pattern": "Missing validation for secret (as string, by parseGenericSeed)",
+      "why_false_positive": "xrpld jss:: (JSON field tags), parseGenericSeed, RPC::JsonContext validates secret (as string, by parseGenericSeed) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "secret",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::secret) at validationSeed",
+      "issue_pattern": "Missing empty string validation for secret",
+      "why_false_positive": "params.isMember(jss::secret) validates secret for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "secret",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseGenericSeed at validationSeed",
+      "issue_pattern": "Missing empty string validation for secret",
+      "why_false_positive": "parseGenericSeed validates secret for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params at doValidationCreate",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "context.params validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "params",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "context.params at doValidationCreate",
+      "issue_pattern": "Missing type validation for params",
+      "why_false_positive": "context.params validates params type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seed",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!seed) return rpcError(rpcBAD_SEED) at doValidationCreate",
+      "issue_pattern": "Missing empty string validation for seed",
+      "why_false_positive": "if (!seed) return rpcError(rpcBAD_SEED) validates seed for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/keygen/ValidationCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 8,
+      "name": "validationSeed"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 22,
+      "name": "doValidationCreate"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is likely covered by admin RPC handler tests, especially those testing the 'validation_create' or similar endpoints. Tests should cover: (1) valid secret provided, (2) no secret provided (random seed), (3) invalid secret (parseGenericSeed fails), (4) missing or malformed params. Gaps may exist if there are no tests for edge cases (e.g., empty string, non-string secret, malformed JSON). Test files to check: rpc/handlers/admin/keygen/ValidationCreate_test.cpp, or more general admin RPC handler test suites. If parseGenericSeed or randomSeed are not directly tested, their error handling may be missed.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "params (as JSON object, by context)",
+      "secret (as string, by parseGenericSeed)"
+    ],
+    "framework": "xrpld jss:: (JSON field tags), parseGenericSeed, RPC::JsonContext",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (falls back to randomSeed)",
+      "field": "secret",
+      "location": "validationSeed",
+      "validated_by": "params.isMember(jss::secret)",
+      "validates": [
+        "Checks if 'secret' field is present in input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt if invalid, triggers rpcError(rpcBAD_SEED) in doValidationCreate",
+      "field": "secret",
+      "location": "validationSeed",
+      "validated_by": "parseGenericSeed",
+      "validates": [
+        "Checks if 'secret' string can be parsed as a valid seed (format/type validation)",
+        "Ensures the seed is a valid cryptographic value"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (assumes params is a Json::Value)",
+      "field": "params",
+      "location": "doValidationCreate",
+      "validated_by": "context.params",
+      "validates": [
+        "Assumes params is a valid JSON object (type validation by framework/context)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcBAD_SEED)",
+      "field": "seed",
+      "location": "doValidationCreate",
+      "validated_by": "if (!seed) return rpcError(rpcBAD_SEED)",
+      "validates": [
+        "Ensures a valid seed was generated or parsed before proceeding"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

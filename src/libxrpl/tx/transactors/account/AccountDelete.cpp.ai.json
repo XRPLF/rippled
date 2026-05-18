@@ -1,0 +1,635 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 22,
+      "name": "ctx"
+    },
+    {
+      "lineno": 33,
+      "name": "view"
+    },
+    {
+      "lineno": 33,
+      "name": "tx"
+    },
+    {
+      "lineno": 46,
+      "name": "registry"
+    },
+    {
+      "lineno": 46,
+      "name": "view"
+    },
+    {
+      "lineno": 46,
+      "name": "account"
+    },
+    {
+      "lineno": 46,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 46,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 46,
+      "name": "j"
+    },
+    {
+      "lineno": 53,
+      "name": "registry"
+    },
+    {
+      "lineno": 53,
+      "name": "view"
+    },
+    {
+      "lineno": 53,
+      "name": "account"
+    },
+    {
+      "lineno": 53,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 53,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 53,
+      "name": "j"
+    },
+    {
+      "lineno": 60,
+      "name": "view"
+    },
+    {
+      "lineno": 60,
+      "name": "account"
+    },
+    {
+      "lineno": 60,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 60,
+      "name": "j"
+    },
+    {
+      "lineno": 67,
+      "name": "view"
+    },
+    {
+      "lineno": 67,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 67,
+      "name": "j"
+    },
+    {
+      "lineno": 74,
+      "name": "view"
+    },
+    {
+      "lineno": 74,
+      "name": "account"
+    },
+    {
+      "lineno": 74,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 74,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 83,
+      "name": "view"
+    },
+    {
+      "lineno": 83,
+      "name": "account"
+    },
+    {
+      "lineno": 83,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 83,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 83,
+      "name": "j"
+    },
+    {
+      "lineno": 90,
+      "name": "view"
+    },
+    {
+      "lineno": 90,
+      "name": "account"
+    },
+    {
+      "lineno": 90,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 90,
+      "name": "j"
+    },
+    {
+      "lineno": 97,
+      "name": "view"
+    },
+    {
+      "lineno": 97,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 97,
+      "name": "j"
+    },
+    {
+      "lineno": 104,
+      "name": "view"
+    },
+    {
+      "lineno": 104,
+      "name": "account"
+    },
+    {
+      "lineno": 104,
+      "name": "delIndex"
+    },
+    {
+      "lineno": 104,
+      "name": "sleDel"
+    },
+    {
+      "lineno": 104,
+      "name": "j"
+    },
+    {
+      "lineno": 112,
+      "name": "t"
+    },
+    {
+      "lineno": 132,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AccountDelete::preflight",
+        "credentials::checkFields"
+      ],
+      "entry_point": "AccountDelete::preflight",
+      "purpose": "Performs preflight validation for AccountDelete transactions, ensuring fields are correct and business rules are enforced before execution.",
+      "validation_points": [
+        "AccountDelete::preflight: Checks sfAccount != sfDestination",
+        "AccountDelete::preflight: Calls credentials::checkFields for credential field validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "AccountDelete::checkExtraFeatures"
+      ],
+      "entry_point": "AccountDelete::checkExtraFeatures",
+      "purpose": "Checks if extra features (like credentials) are allowed by the current rules and transaction fields.",
+      "validation_points": [
+        "AccountDelete::checkExtraFeatures: Validates presence of sfCredentialIDs and featureCredentials"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "AccountDelete::preflight"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to ctx.tx[sfDestination] for equality"
+      ],
+      "validated_at": "AccountDelete::preflight"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "Transaction input",
+        "AccountDelete::preflight"
+      ],
+      "origin": "ctx.tx[sfDestination] (transaction input)",
+      "transformations": [
+        "Compared to ctx.tx[sfAccount] for equality"
+      ],
+      "validated_at": "AccountDelete::preflight"
+    },
+    {
+      "field": "sfCredentialIDs",
+      "flow": [
+        "Transaction input",
+        "AccountDelete::checkExtraFeatures",
+        "AccountDelete::preflight",
+        "credentials::checkFields"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence with ctx.tx.isFieldPresent(sfCredentialIDs)",
+        "Validated with credentials::checkFields"
+      ],
+      "validated_at": "AccountDelete::checkExtraFeatures, AccountDelete::preflight (via credentials::checkFields)"
+    }
+  ],
+  "description": "Implements the logic for the AccountDelete transaction in the XRPL codebase, including preflight, preclaim, fee calculation, and ledger cleanup for account deletion.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by xrpl transaction preflight validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "xrpl transaction preflight validation (custom, not external framework) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDestination",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDestination validated by xrpl transaction preflight validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfDestination",
+      "why_false_positive": "xrpl transaction preflight validation (custom, not external framework) validates sfDestination automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCredentialIDs validated by xrpl transaction preflight validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfCredentialIDs",
+      "why_false_positive": "xrpl transaction preflight validation (custom, not external framework) validates sfCredentialIDs automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "other credential fields (via credentials::checkFields)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field other credential fields (via credentials::checkFields) validated by xrpl transaction preflight validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for other credential fields (via credentials::checkFields)",
+      "why_false_positive": "xrpl transaction preflight validation (custom, not external framework) validates other credential fields (via credentials::checkFields) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount, sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison at AccountDelete::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfDestination",
+      "why_false_positive": "explicit comparison validates sfAccount, sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Credential fields (e.g., sfCredentialIDs)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "credentials::checkFields at AccountDelete::preflight",
+      "issue_pattern": "Missing empty string validation for Credential fields (e.g., sfCredentialIDs)",
+      "why_false_positive": "credentials::checkFields validates Credential fields (e.g., sfCredentialIDs) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfCredentialIDs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.isFieldPresent(sfCredentialIDs) && ctx.rules.enabled(featureCredentials) at AccountDelete::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfCredentialIDs",
+      "why_false_positive": "ctx.tx.isFieldPresent(sfCredentialIDs) && ctx.rules.enabled(featureCredentials) validates sfCredentialIDs for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/account/AccountDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "AccountDelete::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "AccountDelete::preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 33,
+      "name": "AccountDelete::calculateBaseFee"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 46,
+      "name": "offerDelete"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 53,
+      "name": "removeSignersFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const&",
+        "beast::Journal j"
+      ],
+      "lineno": 60,
+      "name": "removeTicketFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const&",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const&",
+        "beast::Journal j"
+      ],
+      "lineno": 67,
+      "name": "removeDepositPreauthFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal"
+      ],
+      "lineno": 74,
+      "name": "removeNFTokenOfferFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 83,
+      "name": "removeDIDFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const&",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 90,
+      "name": "removeOracleFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const&",
+        "uint256 const&",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 97,
+      "name": "removeCredentialFromLedger"
+    },
+    {
+      "args": [
+        "ServiceRegistry&",
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& delIndex",
+        "std::shared_ptr<SLE> const& sleDel",
+        "beast::Journal j"
+      ],
+      "lineno": 104,
+      "name": "removeDelegateFromLedger"
+    },
+    {
+      "args": [
+        "LedgerEntryType t"
+      ],
+      "lineno": 112,
+      "name": "nonObligationDeleter"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 132,
+      "name": "AccountDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "AccountDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AccountDelete transaction logic is typically tested in unit/integration test files such as AccountDelete_test.cpp or Transaction_test.cpp. Validation of sfAccount != sfDestination and credential field checks should be covered, but edge cases (e.g., malformed credential fields, feature flag toggling) may not be fully tested. Tests for featureCredentials gating and credential field presence should be verified. Gaps may exist if new credential-related features are added without corresponding tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAccount",
+      "sfDestination",
+      "sfCredentialIDs",
+      "other credential fields (via credentials::checkFields)"
+    ],
+    "framework": "xrpl transaction preflight validation (custom, not external framework)",
+    "validation_layer": "business_logic (preflight phase of transaction processing)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDST_IS_SRC",
+      "field": "sfAccount, sfDestination",
+      "location": "AccountDelete::preflight",
+      "validated_by": "explicit comparison",
+      "validates": [
+        "Checks that the account being deleted is not the same as the destination account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "various NotTEC error codes (see credentials::checkFields)",
+      "field": "Credential fields (e.g., sfCredentialIDs)",
+      "location": "AccountDelete::preflight",
+      "validated_by": "credentials::checkFields",
+      "validates": [
+        "Checks presence, format, and validity of credential-related fields in the transaction"
+      ],
+      "validation_type": "business_logic|format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "N/A (returns bool, used for gating feature usage)",
+      "field": "sfCredentialIDs",
+      "location": "AccountDelete::checkExtraFeatures",
+      "validated_by": "ctx.tx.isFieldPresent(sfCredentialIDs) && ctx.rules.enabled(featureCredentials)",
+      "validates": [
+        "Checks that credential features are only used if the feature is enabled"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "void"
+      ],
+      "lineno": 13,
+      "name": "ApplyStateTable"
+    }
+  ],
+  "description": "Helper class ApplyStateTable buffers ledger modifications for the XRP Ledger, providing methods to apply, read, modify, and track changes to ledger state.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/detail/ApplyStateTable.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "ApplyStateTable"
+    },
+    {
+      "args": [
+        "ApplyStateTable&&"
+      ],
+      "lineno": 19,
+      "name": "ApplyStateTable"
+    },
+    {
+      "args": [
+        "ApplyStateTable const&"
+      ],
+      "lineno": 21,
+      "name": "ApplyStateTable"
+    },
+    {
+      "args": [
+        "ApplyStateTable&&"
+      ],
+      "lineno": 22,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "ApplyStateTable const&"
+      ],
+      "lineno": 24,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "RawView& to"
+      ],
+      "lineno": 26,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "OpenView& to",
+        "STTx const& tx",
+        "TER ter",
+        "std::optional<STAmount> const& deliver",
+        "std::optional<uint256 const> const& parentBatchId",
+        "bool isDryRun",
+        "beast::Journal j"
+      ],
+      "lineno": 28,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 36,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "key_type const& key",
+        "std::optional<key_type> const& last"
+      ],
+      "lineno": 39,
+      "name": "succ"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 42,
+      "name": "read"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "Keylet const& k"
+      ],
+      "lineno": 45,
+      "name": "peek"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "size"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::function<void(uint256 const& key, bool isDelete, std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after)> const& func"
+      ],
+      "lineno": 51,
+      "name": "visit"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 57,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 60,
+      "name": "rawErase"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 63,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 66,
+      "name": "update"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "std::shared_ptr<SLE> const& sle"
+      ],
+      "lineno": 69,
+      "name": "replace"
+    },
+    {
+      "args": [
+        "XRPAmount const& fee"
+      ],
+      "lineno": 72,
+      "name": "destroyXRP"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "dropsDestroyed"
+    },
+    {
+      "args": [
+        "TxMeta& meta",
+        "std::shared_ptr<SLE> const& to"
+      ],
+      "lineno": 84,
+      "name": "threadItem"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "key_type const& key",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 87,
+      "name": "getForMod"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "TxMeta& meta",
+        "AccountID const& to",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 90,
+      "name": "threadTx"
+    },
+    {
+      "args": [
+        "ReadView const& base",
+        "TxMeta& meta",
+        "std::shared_ptr<SLE const> const& sle",
+        "Mods& mods",
+        "beast::Journal j"
+      ],
+      "lineno": 95,
+      "name": "threadOwners"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

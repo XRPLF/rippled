@@ -1,0 +1,546 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "isDelete"
+    },
+    {
+      "lineno": 11,
+      "name": "before"
+    },
+    {
+      "lineno": 12,
+      "name": "after"
+    },
+    {
+      "lineno": 33,
+      "name": "amount"
+    },
+    {
+      "lineno": 33,
+      "name": "amount2"
+    },
+    {
+      "lineno": 33,
+      "name": "lptAMMBalance"
+    },
+    {
+      "lineno": 34,
+      "name": "zeroAllowed"
+    },
+    {
+      "lineno": 46,
+      "name": "enforce"
+    },
+    {
+      "lineno": 46,
+      "name": "j"
+    },
+    {
+      "lineno": 111,
+      "name": "res"
+    },
+    {
+      "lineno": 82,
+      "name": "tx"
+    },
+    {
+      "lineno": 82,
+      "name": "view"
+    },
+    {
+      "lineno": 200,
+      "name": "result"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidAMM::visitEntry",
+        "ValidAMM::finalizeVote / finalizeBid / finalizeCreate / finalizeDelete / finalizeDEX / finalizeDeposit / finalizeWithdraw / generalInvariant"
+      ],
+      "entry_point": "ValidAMM::visitEntry",
+      "purpose": "Collects before/after SLE state for AMM-related objects during a transaction, then triggers invariant checks at transaction finalization.",
+      "validation_points": [
+        "visitEntry: Validates SLE type and field presence (AMM, LPTokenBalance, AMM pool change)",
+        "finalizeVote: Validates AMM pool and LPTokenBalance invariance on vote",
+        "finalizeBid: Validates AMM pool invariance and LPTokenBalance decrease on bid",
+        "finalizeCreate: Validates AMM object creation, pool balances, and LPToken math"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidAMM::finalizeVote"
+      ],
+      "entry_point": "ValidAMM::finalizeVote",
+      "purpose": "Checks that AMM pool and LPTokenBalance did not change during a vote transaction.",
+      "validation_points": [
+        "finalizeVote: Compares lptAMMBalanceBefore_ and lptAMMBalanceAfter_, and ammPoolChanged_"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidAMM::finalizeBid"
+      ],
+      "entry_point": "ValidAMM::finalizeBid",
+      "purpose": "Checks that AMM pool did not change and LPTokenBalance only decreased during a bid.",
+      "validation_points": [
+        "finalizeBid: Checks ammPoolChanged_, and that lptAMMBalanceAfter_ <= lptAMMBalanceBefore_ and > 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidAMM::finalizeCreate",
+        "ammPoolHolds",
+        "validBalances",
+        "ammLPTokens"
+      ],
+      "entry_point": "ValidAMM::finalizeCreate",
+      "purpose": "Checks that AMM object was created, pool balances are positive, and LPToken math is correct.",
+      "validation_points": [
+        "finalizeCreate: Checks ammAccount_ presence, validBalances, and LPToken math"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AMM SLE (ltAMM)",
+      "flow": [
+        "SLE (after)",
+        "visitEntry: after->getType() == ltAMM",
+        "visitEntry: after->getAccountID(sfAccount), after->getFieldAmount(sfLPTokenBalance)",
+        "Stored in ammAccount_, lptAMMBalanceAfter_"
+      ],
+      "origin": "Ledger entry (SLE) passed to visitEntry (before/after)",
+      "transformations": [
+        "Type check",
+        "Field extraction"
+      ],
+      "validated_at": "visitEntry"
+    },
+    {
+      "field": "AMM pool change (ltRIPPLE_STATE/ltACCOUNT_ROOT)",
+      "flow": [
+        "SLE (after)",
+        "visitEntry: after->getType() == ltRIPPLE_STATE or ltACCOUNT_ROOT",
+        "visitEntry: after->getFlags() & lsfAMMNode or after->isFieldPresent(sfAMMID)",
+        "Sets ammPoolChanged_"
+      ],
+      "origin": "Ledger entry (SLE) passed to visitEntry (after)",
+      "transformations": [
+        "Type and flag/field presence check"
+      ],
+      "validated_at": "visitEntry"
+    },
+    {
+      "field": "LPTokenBalance (before/after)",
+      "flow": [
+        "SLE (before/after)",
+        "visitEntry: getFieldAmount(sfLPTokenBalance)",
+        "Stored in lptAMMBalanceBefore_/lptAMMBalanceAfter_"
+      ],
+      "origin": "Ledger entry (SLE) passed to visitEntry (before/after)",
+      "transformations": [
+        "Type check",
+        "Field extraction"
+      ],
+      "validated_at": "visitEntry"
+    },
+    {
+      "field": "AMM pool balances (amount, amount2)",
+      "flow": [
+        "finalizeCreate",
+        "ammPoolHolds(view, *ammAccount_, ...)",
+        "Returns amount, amount2"
+      ],
+      "origin": "ammPoolHolds (called in finalizeCreate)",
+      "transformations": [
+        "Ledger read",
+        "Asset extraction"
+      ],
+      "validated_at": "validBalances (called in finalizeCreate)"
+    },
+    {
+      "field": "LPToken math",
+      "flow": [
+        "finalizeCreate",
+        "ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>())",
+        "Compared to *lptAMMBalanceAfter_"
+      ],
+      "origin": "ammLPTokens (called in finalizeCreate)",
+      "transformations": [
+        "Math: sqrt(amount * amount2)"
+      ],
+      "validated_at": "finalizeCreate"
+    }
+  ],
+  "description": "Implements invariants and validation logic for Automated Market Maker (AMM) transactions in the XRPL ledger, ensuring AMM-related state changes conform to protocol rules.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AMM SLE type (ltAMM), AccountID (sfAccount), LPTokenBalance (sfLPTokenBalance)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type check and field presence (after->getType(), after->getAccountID, after->getFieldAmount) at visitEntry",
+      "issue_pattern": "Missing empty string validation for AMM SLE type (ltAMM), AccountID (sfAccount), LPTokenBalance (sfLPTokenBalance)",
+      "why_false_positive": "type check and field presence (after->getType(), after->getAccountID, after->getFieldAmount) validates AMM SLE type (ltAMM), AccountID (sfAccount), LPTokenBalance (sfLPTokenBalance) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AMM pool change (ltRIPPLE_STATE with lsfAMMNode, ltACCOUNT_ROOT with sfAMMID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type and flag/field presence check (after->getType(), after->getFlags(), after->isFieldPresent) at visitEntry",
+      "issue_pattern": "Missing empty string validation for AMM pool change (ltRIPPLE_STATE with lsfAMMNode, ltACCOUNT_ROOT with sfAMMID)",
+      "why_false_positive": "type and flag/field presence check (after->getType(), after->getFlags(), after->isFieldPresent) validates AMM pool change (ltRIPPLE_STATE with lsfAMMNode, ltACCOUNT_ROOT with sfAMMID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LPTokenBalance (before)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type check and field extraction (before->getType(), before->getFieldAmount) at visitEntry",
+      "issue_pattern": "Missing empty string validation for LPTokenBalance (before)",
+      "why_false_positive": "type check and field extraction (before->getType(), before->getFieldAmount) validates LPTokenBalance (before) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM pool and LPTokenBalance invariance on vote",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_) at finalizeVote",
+      "issue_pattern": "Missing empty string validation for AMM pool and LPTokenBalance invariance on vote",
+      "why_false_positive": "business logic (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_) validates AMM pool and LPTokenBalance invariance on vote for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM pool invariance on bid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (ammPoolChanged_) at finalizeBid",
+      "issue_pattern": "Missing empty string validation for AMM pool invariance on bid",
+      "why_false_positive": "business logic (ammPoolChanged_) validates AMM pool invariance on bid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "LPTokenBalance decrease on bid",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::zero) at finalizeBid",
+      "issue_pattern": "Missing empty string validation for LPTokenBalance decrease on bid",
+      "why_false_positive": "business logic (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::zero) validates LPTokenBalance decrease on bid for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM balances (amount, amount2, lptAMMBalance)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validBalances function (comparison with beast::zero) at validBalances",
+      "issue_pattern": "Missing empty string validation for AMM balances (amount, amount2, lptAMMBalance)",
+      "why_false_positive": "validBalances function (comparison with beast::zero) validates AMM balances (amount, amount2, lptAMMBalance) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/AMMInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 9,
+      "name": "ValidAMM::visitEntry"
+    },
+    {
+      "args": [
+        "amount",
+        "amount2",
+        "lptAMMBalance",
+        "zeroAllowed"
+      ],
+      "lineno": 32,
+      "name": "validBalances"
+    },
+    {
+      "args": [
+        "enforce",
+        "j"
+      ],
+      "lineno": 45,
+      "name": "ValidAMM::finalizeVote"
+    },
+    {
+      "args": [
+        "enforce",
+        "j"
+      ],
+      "lineno": 59,
+      "name": "ValidAMM::finalizeBid"
+    },
+    {
+      "args": [
+        "tx",
+        "view",
+        "enforce",
+        "j"
+      ],
+      "lineno": 81,
+      "name": "ValidAMM::finalizeCreate"
+    },
+    {
+      "args": [
+        "enforce",
+        "res",
+        "j"
+      ],
+      "lineno": 110,
+      "name": "ValidAMM::finalizeDelete"
+    },
+    {
+      "args": [
+        "enforce",
+        "j"
+      ],
+      "lineno": 126,
+      "name": "ValidAMM::finalizeDEX"
+    },
+    {
+      "args": [
+        "tx",
+        "view",
+        "zeroAllowed",
+        "j"
+      ],
+      "lineno": 140,
+      "name": "ValidAMM::generalInvariant"
+    },
+    {
+      "args": [
+        "tx",
+        "view",
+        "enforce",
+        "j"
+      ],
+      "lineno": 170,
+      "name": "ValidAMM::finalizeDeposit"
+    },
+    {
+      "args": [
+        "tx",
+        "view",
+        "enforce",
+        "j"
+      ],
+      "lineno": 185,
+      "name": "ValidAMM::finalizeWithdraw"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "",
+        "view",
+        "j"
+      ],
+      "lineno": 199,
+      "name": "ValidAMM::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMM invariants are typically tested in integration/tx/AMM_invariant_test.cpp or similar files. These tests cover creation, bid, vote, and pool change scenarios. However, some error paths (e.g., LCOV_EXCL_START blocks) may not be directly tested, especially for enforcement=false or unreachable error states. Edge cases for field absence or malformed SLEs may not be fully covered. Unit tests for validBalances and LPToken math may exist but are not guaranteed.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic, no external validation framework",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (no exception, just sets member variables)",
+      "field": "AMM SLE type (ltAMM), AccountID (sfAccount), LPTokenBalance (sfLPTokenBalance)",
+      "location": "visitEntry",
+      "validated_by": "type check and field presence (after->getType(), after->getAccountID, after->getFieldAmount)",
+      "validates": [
+        "Checks if the SLE is of type ltAMM",
+        "Extracts AccountID and LPTokenBalance if so"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (just sets ammPoolChanged_ flag)",
+      "field": "AMM pool change (ltRIPPLE_STATE with lsfAMMNode, ltACCOUNT_ROOT with sfAMMID)",
+      "location": "visitEntry",
+      "validated_by": "type and flag/field presence check (after->getType(), after->getFlags(), after->isFieldPresent)",
+      "validates": [
+        "Checks if SLE is a pool-related entry by type and flag/field"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none",
+      "field": "LPTokenBalance (before)",
+      "location": "visitEntry",
+      "validated_by": "type check and field extraction (before->getType(), before->getFieldAmount)",
+      "validates": [
+        "Checks if the previous SLE is ltAMM and extracts LPTokenBalance"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if enforce is true (no exception, signals invariant failure)",
+      "field": "AMM pool and LPTokenBalance invariance on vote",
+      "location": "finalizeVote",
+      "validated_by": "business logic (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_)",
+      "validates": [
+        "Ensures LPTokenBalance and pool do not change during a vote"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if enforce is true (no exception, signals invariant failure)",
+      "field": "AMM pool invariance on bid",
+      "location": "finalizeBid",
+      "validated_by": "business logic (ammPoolChanged_)",
+      "validates": [
+        "Ensures pool does not change during a bid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if enforce is true (no exception, signals invariant failure)",
+      "field": "LPTokenBalance decrease on bid",
+      "location": "finalizeBid",
+      "validated_by": "business logic (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::zero)",
+      "validates": [
+        "Ensures LPTokenBalance only decreases and remains positive on bid"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception, used as boolean check)",
+      "field": "AMM balances (amount, amount2, lptAMMBalance)",
+      "location": "validBalances",
+      "validated_by": "validBalances function (comparison with beast::zero)",
+      "validates": [
+        "Ensures all balances are positive, or all are zero if zeroAllowed"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

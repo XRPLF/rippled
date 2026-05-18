@@ -1,0 +1,121 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 29,
+      "name": "signature"
+    },
+    {
+      "lineno": 30,
+      "name": "suppress"
+    },
+    {
+      "lineno": 31,
+      "name": "proposal"
+    },
+    {
+      "lineno": 104,
+      "name": "proposeHash"
+    },
+    {
+      "lineno": 105,
+      "name": "previousLedger"
+    },
+    {
+      "lineno": 106,
+      "name": "proposeSeq"
+    },
+    {
+      "lineno": 107,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 108,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 109,
+      "name": "signature"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "Slice const& signature",
+        "uint256 const& suppress",
+        "Proposal const& proposal"
+      ],
+      "lineno": 15,
+      "name": "RCLCxPeerPos"
+    }
+  ],
+  "description": "Defines the RCLCxPeerPos class, representing a peer's signed consensus proposal in the XRPL consensus process, including signature verification and unique proposal identification.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLCxPeerPos.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "checkSign"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "signature"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "publicKey"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "suppressionID"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "proposal"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "render"
+    },
+    {
+      "args": [
+        "Hasher& h"
+      ],
+      "lineno": 80,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "uint256 const& proposeHash",
+        "uint256 const& previousLedger",
+        "std::uint32_t proposeSeq",
+        "NetClock::time_point closeTime",
+        "Slice const& publicKey",
+        "Slice const& signature"
+      ],
+      "lineno": 97,
+      "name": "proposalUniqueId"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# `STValidation.h` — Ledger Validation Protocol Object
+
+`STValidation` is the wire-format representation of a single ledger validation message in the XRPL consensus protocol. When a validator agrees with a particular closed ledger, it constructs one of these objects, signs it, and broadcasts it to its peers. Every other node that receives the message deserializes it into another `STValidation` instance, verifies its signature, and decides whether to count it toward quorum. The class therefore has two very different construction lifetimes — one for creation-and-signing by a local validator, one for deserialization-and-verification of a peer's message — and its API is shaped by that duality.
+
+Inheriting from `STObject` gives `STValidation` access to XRPL's typed-field serialization system: the same infrastructure used by transactions and ledger entries. The `CountedObject<STValidation>` mixin hooks into the instrumentation layer for live-instance tracking, which aids leak detection in a long-running rippled process.
+
+## Two Construction Paths
+
+**Deserialization from a peer** uses the template constructor taking `SerialIter&`. It delegates field parsing to `STObject`, then bootstraps `signingPubKey_` from the serialized `sfSigningPubKey` field via a lambda in the member-initializer list — a technique that allows `const` members to be computed from partially-constructed object state. The `lookupNodeID` callable is the key design point here: the constructor accepts a generic invocable `NodeID(PublicKey const&)` rather than a direct dependency on manifest resolution code. This decouples `STValidation` from the XRPL manifest system; the caller supplies the translation from an ephemeral signing key to the stable master `NodeID`. Because a validator may rotate its ephemeral keys without changing its identity (via the manifest mechanism), `signingPubKey_` and `nodeID_` can differ — `signingPubKey_` is what actually signed the bytes, while `nodeID_` is the stable validator identity used for UNL membership checks. If `checkSignature` is true and the signature is invalid, the constructor throws immediately, making it impossible to hold an object in an inconsistent state.
+
+**Self-construction and signing** uses the template constructor taking `PublicKey`, `SecretKey`, `NodeID`, and a filler callback `F&&`. Rather than requiring a fully populated data structure as input, it accepts an inversion-of-control callback `f(*this)` that runs after the mandatory bookkeeping fields are set but before the signature is computed. This lets callers attach arbitrary optional fields — fee votes, amendment bits, server version — without a separate builder type or a mutable pre-signature staging object. After `f` returns, the constructor sets `vfFullyCanonicalSig`, signs the content hash using `signDigest`, marks the validation as trusted (self-issued validations are always locally trusted), and caches `valid_ = true` to skip future signature checks. A format validation sweep then asserts that all `soeREQUIRED` fields were filled in.
+
+## Valid vs. Trusted: A Critical Distinction
+
+The class separates two concepts that are easy to conflate:
+
+**`valid_`** (`mutable std::optional<bool>`) reflects whether the cryptographic signature is correct. It starts as `std::nullopt` for deserialized validations and is lazily populated on the first call to `isValid()`. The `mutable` qualifier is justified because signature verification is a pure read of immutable byte content — it produces a cacheable result without mutating any observable state. Because secp256k1 verification is expensive and validations may be checked multiple times as they propagate through the validation cache, this lazy-cached pattern matters for performance.
+
+**`mTrusted`** is a runtime policy flag that reflects whether the issuing validator is on this node's current Unique Node List. A validation may be cryptographically valid but untrusted (validator not on the UNL), or trusted but structurally incomplete. The `setTrusted()` / `setUntrusted()` mutators exist because trust status can be toggled dynamically as the UNL changes during a node's lifetime. Keeping this separate from validity enforces that "has a good signature" and "should count toward quorum" are never silently conflated.
+
+## Sign Time vs. Seen Time
+
+`sfSigningTime` (inside the serialized `STObject` payload) records when the validator created and signed the validation. `seenTime_` is local metadata recording when *this* node received the message. These diverge under realistic network conditions: a validation signed at time T may arrive at a peer two seconds later. The seen time is never serialized or sent over the wire — it is set via `setSeen()` after receipt. For self-generated validations, the signing constructor initializes `seenTime_` to `signTime`, making the two identical when the local node is the author.
+
+## The `validationFormat()` Schema
+
+The private static `validationFormat()` returns the `SOTemplate` that constrains which fields may appear in a validation, and which are required vs. optional. Required fields include `sfFlags`, `sfLedgerHash`, `sfLedgerSequence`, `sfSigningTime`, `sfSigningPubKey`, and `sfSignature`. Optional fields include `sfCloseTime`, `sfLoadFee`, `sfAmendments`, `sfConsensusHash`, `sfValidatedHash`, `sfServerVersion`, and the newer XRPFees amendment fields. The `soeDEFAULT` entry for `sfCookie` means the field is always present in the serialized form but defaults to zero. Keeping this schema private and as a function-local static (rather than a namespace-scope static) avoids the static initialization order problem — `SOTemplate` construction depends on `SField` objects being initialized first.
+
+## Flag Constants
+
+The two constants at the top of the file — `vfFullValidation` and `vfFullyCanonicalSig` — are bit flags stored in the serialized `sfFlags` field and are thus part of the wire protocol. `vfFullValidation` (bit 0) distinguishes a complete ledger validation from a partial validation that only signals participation in consensus without fully endorsing a specific ledger. `vfFullyCanonicalSig` (bit 31) indicates that the DER-encoded signature uses the low-S canonical form required by XRPL's signature rules; the signing constructor always sets this flag, and `isValid()` passes it to `verifyDigest` to enforce strictness on inbound messages.
+
+## Integration with the Consensus Layer
+
+`STValidation` objects are owned via `std::shared_ptr` and wrapped by `RCLValidation` in the consensus machinery. `RCLValidation` provides the concept interface expected by the generic `Validations` template — forwarding calls like `ledgerID()`, `seq()`, `signTime()`, `seenTime()`, `key()`, and `nodeID()` to the underlying `STValidation`. This adapter pattern keeps `STValidation` free of consensus-specific logic while still allowing it to participate in the generic quorum-counting engine.

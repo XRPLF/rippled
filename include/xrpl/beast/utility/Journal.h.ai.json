@@ -1,0 +1,326 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 71,
+      "name": "bool output"
+    },
+    {
+      "lineno": 81,
+      "name": "Severity thresh"
+    },
+    {
+      "lineno": 87,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 87,
+      "name": "std::string const& text"
+    },
+    {
+      "lineno": 97,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 97,
+      "name": "std::string const& text"
+    },
+    {
+      "lineno": 127,
+      "name": "ScopedStream const& other"
+    },
+    {
+      "lineno": 131,
+      "name": "Sink& sink"
+    },
+    {
+      "lineno": 131,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 134,
+      "name": "Stream const& stream"
+    },
+    {
+      "lineno": 134,
+      "name": "T const& t"
+    },
+    {
+      "lineno": 136,
+      "name": "Stream const& stream"
+    },
+    {
+      "lineno": 136,
+      "name": "std::ostream& manip(std::ostream&)"
+    },
+    {
+      "lineno": 155,
+      "name": "T const& t"
+    },
+    {
+      "lineno": 251,
+      "name": "Sink& sink"
+    },
+    {
+      "lineno": 251,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 258,
+      "name": "Severity level"
+    },
+    {
+      "lineno": 340,
+      "name": "char const* s"
+    },
+    {
+      "lineno": 345,
+      "name": "wchar_t const* s"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Sink& sink"
+      ],
+      "lineno": 32,
+      "name": "Journal"
+    },
+    {
+      "args": [
+        "Sink(Sink const& sink)",
+        "Sink(Severity thresh, bool console)"
+      ],
+      "lineno": 49,
+      "name": "Journal::Sink"
+    },
+    {
+      "args": [
+        "ScopedStream(ScopedStream const& other)",
+        "ScopedStream(Sink& sink, Severity level)",
+        "ScopedStream(Stream const& stream, T const& t)",
+        "ScopedStream(Stream const& stream, std::ostream& manip(std::ostream&))"
+      ],
+      "lineno": 123,
+      "name": "Journal::ScopedStream"
+    },
+    {
+      "args": [
+        "Stream()",
+        "Stream(Sink& sink, Severity level)",
+        "Stream(Stream const& other)"
+      ],
+      "lineno": 170,
+      "name": "Journal::Stream"
+    },
+    {
+      "args": [
+        "logstream_buf(beast::Journal::Stream const& strm)"
+      ],
+      "lineno": 319,
+      "name": "detail::logstream_buf"
+    },
+    {
+      "args": [
+        "basic_logstream(beast::Journal::Stream const& strm)"
+      ],
+      "lineno": 370,
+      "name": "basic_logstream"
+    }
+  ],
+  "description": "This file defines a lightweight, runtime-configurable logging system for the beast namespace, including severity levels, log sinks, and stream-based logging interfaces.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/Journal.h",
+  "functions": [
+    {
+      "args": [
+        "Severity level"
+      ],
+      "lineno": 61,
+      "name": "active"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "console"
+    },
+    {
+      "args": [
+        "bool output"
+      ],
+      "lineno": 71,
+      "name": "console"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "threshold"
+    },
+    {
+      "args": [
+        "Severity thresh"
+      ],
+      "lineno": 81,
+      "name": "threshold"
+    },
+    {
+      "args": [
+        "Severity level",
+        "std::string const& text"
+      ],
+      "lineno": 87,
+      "name": "write"
+    },
+    {
+      "args": [
+        "Severity level",
+        "std::string const& text"
+      ],
+      "lineno": 97,
+      "name": "writeAlways"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "getNullSink"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "ostream"
+    },
+    {
+      "args": [
+        "std::ostream& manip(std::ostream&)"
+      ],
+      "lineno": 151,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "T const& t"
+      ],
+      "lineno": 155,
+      "name": "operator<<"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "sink"
+    },
+    {
+      "args": [],
+      "lineno": 207,
+      "name": "level"
+    },
+    {
+      "args": [],
+      "lineno": 212,
+      "name": "active"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "operator bool"
+    },
+    {
+      "args": [
+        "std::ostream& manip(std::ostream&)"
+      ],
+      "lineno": 224,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "T const& t"
+      ],
+      "lineno": 228,
+      "name": "operator<<"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "sink"
+    },
+    {
+      "args": [
+        "Severity level"
+      ],
+      "lineno": 251,
+      "name": "stream"
+    },
+    {
+      "args": [
+        "Severity level"
+      ],
+      "lineno": 258,
+      "name": "active"
+    },
+    {
+      "args": [],
+      "lineno": 265,
+      "name": "trace"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "debug"
+    },
+    {
+      "args": [],
+      "lineno": 275,
+      "name": "info"
+    },
+    {
+      "args": [],
+      "lineno": 280,
+      "name": "warn"
+    },
+    {
+      "args": [],
+      "lineno": 285,
+      "name": "error"
+    },
+    {
+      "args": [],
+      "lineno": 290,
+      "name": "fatal"
+    },
+    {
+      "args": [
+        "char const* s"
+      ],
+      "lineno": 340,
+      "name": "write"
+    },
+    {
+      "args": [
+        "wchar_t const* s"
+      ],
+      "lineno": 345,
+      "name": "write"
+    },
+    {
+      "args": [],
+      "lineno": 355,
+      "name": "sync"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "severities"
+    },
+    {
+      "lineno": 312,
+      "name": "detail"
+    }
+  ]
+}

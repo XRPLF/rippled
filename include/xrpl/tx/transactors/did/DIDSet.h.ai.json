@@ -1,0 +1,40 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "DIDSet"
+    }
+  ],
+  "description": "Defines the DIDSet transactor class for handling DID set transactions in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/did/DIDSet.h",
+  "functions": [
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 13,
+      "name": "preflight"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

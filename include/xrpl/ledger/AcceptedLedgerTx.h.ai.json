@@ -1,0 +1,92 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "ledger"
+    },
+    {
+      "lineno": 29,
+      "name": "STTx"
+    },
+    {
+      "lineno": 30,
+      "name": "STObject"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ledger",
+        "STTx",
+        "STObject"
+      ],
+      "lineno": 25,
+      "name": "AcceptedLedgerTx"
+    }
+  ],
+  "description": "Defines the AcceptedLedgerTx class, representing a transaction in a closed ledger with additional metadata and utility methods for accessing transaction details, affected accounts, and JSON representation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/AcceptedLedgerTx.h",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "STTx",
+        "STObject"
+      ],
+      "lineno": 27,
+      "name": "AcceptedLedgerTx"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "getTxn"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getMeta"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getAffected"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getTransactionID"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "getTxnType"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getResult"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getTxnSeq"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getEscMeta"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

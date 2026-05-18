@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "T* p"
+    },
+    {
+      "lineno": 61,
+      "name": "TAdoptTag"
+    },
+    {
+      "lineno": 63,
+      "name": "SharedIntrusive const& rhs"
+    },
+    {
+      "lineno": 67,
+      "name": "SharedIntrusive<TT> const& rhs"
+    },
+    {
+      "lineno": 70,
+      "name": "SharedIntrusive&& rhs"
+    },
+    {
+      "lineno": 74,
+      "name": "SharedIntrusive<TT>&& rhs"
+    },
+    {
+      "lineno": 196,
+      "name": "TT"
+    },
+    {
+      "lineno": 196,
+      "name": "Args&&... args"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "StaticCastTagSharedIntrusive"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "DynamicCastTagSharedIntrusive"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "SharedIntrusiveAdoptIncrementStrongTag"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "SharedIntrusiveAdoptNoIncrementTag"
+    },
+    {
+      "args": [
+        "T* p, TAdoptTag",
+        "SharedIntrusive const& rhs",
+        "SharedIntrusive<TT> const& rhs",
+        "SharedIntrusive&& rhs",
+        "SharedIntrusive<TT>&& rhs",
+        "StaticCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs",
+        "StaticCastTagSharedIntrusive, SharedIntrusive<TT>&& rhs",
+        "DynamicCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs",
+        "DynamicCastTagSharedIntrusive, SharedIntrusive<TT>&& rhs"
+      ],
+      "lineno": 54,
+      "name": "SharedIntrusive"
+    },
+    {
+      "args": [
+        "WeakIntrusive const& rhs",
+        "WeakIntrusive&& rhs",
+        "SharedIntrusive<T> const& rhs",
+        "SharedIntrusive<T> const&& rhs"
+      ],
+      "lineno": 151,
+      "name": "WeakIntrusive"
+    },
+    {
+      "args": [
+        "SharedWeakUnion const& rhs",
+        "SharedIntrusive<TT> const& rhs",
+        "SharedWeakUnion&& rhs",
+        "SharedIntrusive<TT>&& rhs"
+      ],
+      "lineno": 210,
+      "name": "SharedWeakUnion"
+    }
+  ],
+  "description": "This file implements shared and weak intrusive pointer classes (SharedIntrusive, WeakIntrusive, SharedWeakUnion) for reference-counted memory management, including utilities for casting and pointer creation, primarily for use in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/IntrusivePointer.h",
+  "functions": [
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 196,
+      "name": "make_SharedIntrusive"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 222,
+      "name": "intr_ptr"
+    }
+  ]
+}

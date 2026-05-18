@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "os"
+    },
+    {
+      "lineno": 11,
+      "name": "type"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the StartUpType enum class and an output stream operator for it within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/StartUpType.h",
+  "functions": [
+    {
+      "args": [
+        "os",
+        "type"
+      ],
+      "lineno": 10,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

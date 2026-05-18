@@ -1,0 +1,27 @@
+# `ZeroCopyStream.h`
+
+This file provides the glue between Protocol Buffers' serialization engine and Boost.Asio's buffer model, enabling zero-copy encoding and decoding of protobuf messages directly into and out of network I/O buffers. It exists because protobuf's `ZeroCopyInputStream` and `ZeroCopyOutputStream` interfaces are the canonical way to feed protobuf parsers and serializers from arbitrary memory sources — but the XRPL overlay network works with Asio buffer sequences and streambufs. Without this adapter layer, every inbound message would require an intermediate copy into a flat byte array before protobuf could parse it, which is unacceptable on a high-throughput network path.
+
+## `ZeroCopyInputStream<Buffers>`
+
+This template wraps any type satisfying `ConstBufferSequence` — the same scatter-gather concept used throughout Asio — and exposes it as a protobuf `ZeroCopyInputStream`. The design is intentionally iterator-based: the class maintains three pieces of state — an end sentinel `last_`, a "current buffer" iterator `first_`, and a `const_buffer` named `pos_` representing where within the current buffer the next read will begin.
+
+The reason `pos_` is tracked separately from `*first_` is to support `BackUp()` and `Skip()`. Protobuf's zero-copy contract allows callers to return unconsumed bytes via `BackUp()`, and `Skip()` must advance through buffers without surfacing data. Both operations require sub-buffer granularity. `BackUp()` decrements `first_`, then recomputes `pos_` as an offset within that buffer — effectively rewinding into the middle of a prior chunk without touching memory. `Skip()` walks forward across buffer boundaries, advancing `pos_` within the current buffer when the skip target falls short of its end, or consuming entire buffers and moving `first_` until the skip count is exhausted.
+
+One subtle defensive detail: in the constructor, if `buffers` is empty (`first_ == last_`), `pos_` is initialized to a null buffer of size zero. This ensures `Next()` immediately returns `false` without dereferencing the end iterator — avoiding a special case elsewhere in the call paths. `ByteCount()` returns a running total of bytes surfaced to the parser, maintained by incrementing `count_` in `Next()` and adjusting it symmetrically in `BackUp()` and `Skip()`.
+
+In practice, `ZeroCopyInputStream` is used directly by `detail::parseMessageContent()` in `ProtocolMessage.h`. For uncompressed messages, it calls `m->ParseFromZeroCopyStream(&stream)`, letting protobuf walk the Asio receive buffers without any copy. For LZ4-compressed messages, the stream is passed to `xrpl::compression::decompress()`, which reads the compressed bytes in-place before protobuf sees the result. The `Skip(header.header_size)` call at the start of `parseMessageContent()` is the mechanism that advances past the framing header before handing the stream to the protobuf decoder.
+
+## `ZeroCopyOutputStream<Streambuf>`
+
+The output side wraps a `Streambuf` — a type matching the `boost::asio::streambuf` interface — and implements `ZeroCopyOutputStream`. Writing to a streambuf follows a prepare/commit protocol: `prepare(n)` reserves `n` bytes of write space and returns a mutable buffer sequence; once data is written, `commit(n)` advances the streambuf's write pointer. The class manages this lifecycle across protobuf's repeated `Next()` calls.
+
+The `commit_` field is the key: it tracks how many bytes were promised in the most recent `Next()` call but not yet committed to the streambuf. This is a deferred-commit pattern. When `Next()` is called again, it first commits the previous block before calling `prepare(blockSize_)` for a new one. This batches commits rather than issuing one per protobuf write, reducing overhead for messages that span multiple blocks.
+
+The destructor is critical to correctness. Protobuf does not guarantee a terminal `BackUp()` or second `Next()` call after it finishes serializing — so the final outstanding `commit_` would be lost if the destructor didn't flush it. `~ZeroCopyOutputStream()` calls `streambuf_.commit(commit_)` if `commit_ != 0`, making this an RAII flush of the streambuf tail. Without this, bytes written in the last `Next()` call would be silently dropped.
+
+`BackUp()` handles over-allocation: protobuf often requests more buffer than it actually uses, then calls `BackUp(count)` to return the excess. The implementation commits only `commit_ - count` bytes and zeroes `commit_` to prevent a double-commit in the destructor or the next `Next()` call. The `XRPL_ASSERT(count <= commit_)` guards the internal invariant that you cannot back up more bytes than were vended in the last `Next()`.
+
+## Position in the Overlay Architecture
+
+Both adapters are header-only templates, meaning no virtual dispatch is introduced beyond the one already mandated by protobuf's abstract base classes. The template parameter approach ensures the compiler can inline the iterator operations and buffer size queries, keeping the per-byte overhead minimal on the message parsing hot path. The `blockSize` constructor argument on `ZeroCopyOutputStream` decouples allocation granularity from the serialization logic, allowing it to be tuned via constants defined elsewhere (such as `Tuning.h`) without touching this file. Together, these two classes are the lowest-level I/O adapters in the overlay stack, sitting directly between raw Asio buffers and the protobuf layer that all peer-to-peer message types flow through.

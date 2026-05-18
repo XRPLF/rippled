@@ -1,0 +1,169 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "period"
+    },
+    {
+      "lineno": 23,
+      "name": "ios"
+    },
+    {
+      "lineno": 67,
+      "name": "handler"
+    },
+    {
+      "lineno": 80,
+      "name": "handler"
+    },
+    {
+      "lineno": 92,
+      "name": "lock"
+    },
+    {
+      "lineno": 92,
+      "name": "wait"
+    },
+    {
+      "lineno": 117,
+      "name": "handler"
+    },
+    {
+      "lineno": 117,
+      "name": "start"
+    },
+    {
+      "lineno": 117,
+      "name": "repeat"
+    },
+    {
+      "lineno": 117,
+      "name": "probe"
+    },
+    {
+      "lineno": 127,
+      "name": "from"
+    },
+    {
+      "lineno": 170,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "duration const& period",
+        "boost::asio::io_context& ios"
+      ],
+      "lineno": 11,
+      "name": "io_latency_probe"
+    },
+    {
+      "args": [
+        "Handler const& handler",
+        "time_point const& start",
+        "bool repeat",
+        "io_latency_probe* probe"
+      ],
+      "lineno": 116,
+      "name": "sample_op"
+    }
+  ],
+  "description": "Defines a template class beast::io_latency_probe that measures handler latency on a boost::asio::io_context queue, providing synchronous and asynchronous sampling and cancellation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/asio/io_latency_probe.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "get_io_context"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "get_io_context"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "cancel"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "cancel_async"
+    },
+    {
+      "args": [
+        "Handler&& handler"
+      ],
+      "lineno": 67,
+      "name": "sample_one"
+    },
+    {
+      "args": [
+        "Handler&& handler"
+      ],
+      "lineno": 80,
+      "name": "sample"
+    },
+    {
+      "args": [
+        "std::unique_lock<decltype(m_mutex)>& lock",
+        "bool wait"
+      ],
+      "lineno": 92,
+      "name": "cancel"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "addref"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "release"
+    },
+    {
+      "args": [
+        "Handler const& handler",
+        "time_point const& start",
+        "bool repeat",
+        "io_latency_probe* probe"
+      ],
+      "lineno": 117,
+      "name": "sample_op"
+    },
+    {
+      "args": [
+        "sample_op&& from"
+      ],
+      "lineno": 127,
+      "name": "sample_op"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "~sample_op"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "boost::system::error_code const& ec"
+      ],
+      "lineno": 170,
+      "name": "operator()"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "beast"
+    }
+  ]
+}

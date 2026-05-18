@@ -1,0 +1,30 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides utility functions to convert binary data or containers into hexadecimal string representations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/strHex.h",
+  "functions": [
+    {
+      "args": [
+        "begin",
+        "end"
+      ],
+      "lineno": 8,
+      "name": "strHex"
+    },
+    {
+      "args": [
+        "from"
+      ],
+      "lineno": 22,
+      "name": "strHex"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

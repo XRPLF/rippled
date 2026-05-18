@@ -1,0 +1,30 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "Group"
+    }
+  ],
+  "description": "Defines the Group class, a front-end collector that manages a group of metrics, inheriting from Collector and providing an interface to get the group's name.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Group.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "name"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "insight"
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "value_type"
+    },
+    {
+      "lineno": 41,
+      "name": "value_type const&"
+    },
+    {
+      "lineno": 57,
+      "name": "value_type"
+    },
+    {
+      "lineno": 61,
+      "name": "difference_type"
+    },
+    {
+      "lineno": 77,
+      "name": "value_type"
+    },
+    {
+      "lineno": 88,
+      "name": "HookImpl::HandlerType const&"
+    },
+    {
+      "lineno": 93,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 98,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 103,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 108,
+      "name": "std::string const&"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "NullHookImpl"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "NullCounterImpl"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "NullEventImpl"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "NullGaugeImpl"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "NullMeterImpl"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "NullCollectorImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NullCollector::New",
+        "detail::NullCollectorImp::make_hook / make_counter / make_event / make_gauge / make_meter",
+        "NullHookImpl / NullCounterImpl / NullEventImpl / NullGaugeImpl / NullMeterImpl methods"
+      ],
+      "entry_point": "NullCollector::New",
+      "purpose": "Provides a 'null' implementation of the Collector interface for metrics, returning inert (no-op) metric objects.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "detail::NullCollectorImp::make_counter",
+        "std::make_shared<detail::NullCounterImpl>",
+        "NullCounterImpl::increment"
+      ],
+      "entry_point": "detail::NullCollectorImp::make_counter (and similar make_* methods)",
+      "purpose": "Creates a no-op Counter object; increment does nothing.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NullCounterImpl::increment",
+        "(no further calls)"
+      ],
+      "entry_point": "detail::NullCounterImpl::increment (and similar methods in other Null*Impl classes)",
+      "purpose": "Implements the metric interface but does nothing (no validation, no state change).",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_type (for Counter, Meter, Gauge)",
+      "flow": [
+        "Caller of Counter/Meter/Gauge::increment or Gauge::set",
+        "Null*Impl::increment/set (no-op)"
+      ],
+      "origin": "Passed as argument to increment/set methods",
+      "transformations": [
+        "No transformation; argument is ignored"
+      ],
+      "validated_at": "Never validated"
+    },
+    {
+      "field": "value_type const& (for Event)",
+      "flow": [
+        "Caller of Event::notify",
+        "NullEventImpl::notify (no-op)"
+      ],
+      "origin": "Passed as argument to Event::notify",
+      "transformations": [
+        "No transformation; argument is ignored"
+      ],
+      "validated_at": "Never validated"
+    },
+    {
+      "field": "std::string (metric name)",
+      "flow": [
+        "Caller of make_*",
+        "NullCollectorImp::make_* (argument ignored)",
+        "Null*Impl constructed (no use of name)"
+      ],
+      "origin": "Passed as argument to make_counter, make_event, make_gauge, make_meter",
+      "transformations": [
+        "No transformation; argument is ignored"
+      ],
+      "validated_at": "Never validated"
+    }
+  ],
+  "description": "Implements 'null' (no-op) versions of insight metrics (Hook, Counter, Event, Gauge, Meter) and a NullCollector for use when metrics collection is disabled or not needed.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/insight/NullCollector.cpp",
+  "functions": [
+    {
+      "args": [
+        "value_type"
+      ],
+      "lineno": 25,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "value_type const&"
+      ],
+      "lineno": 41,
+      "name": "notify"
+    },
+    {
+      "args": [
+        "value_type"
+      ],
+      "lineno": 57,
+      "name": "set"
+    },
+    {
+      "args": [
+        "difference_type"
+      ],
+      "lineno": 61,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "value_type"
+      ],
+      "lineno": 77,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "HookImpl::HandlerType const&"
+      ],
+      "lineno": 88,
+      "name": "make_hook"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 93,
+      "name": "make_counter"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 98,
+      "name": "make_event"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 103,
+      "name": "make_gauge"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 108,
+      "name": "make_meter"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "New"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "beast"
+    },
+    {
+      "lineno": 11,
+      "name": "insight"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file implements a 'null object' pattern for metrics collection. There is no validation logic or state mutation; all methods are no-ops. As such, there are no validation code paths to test. Test coverage would only verify that these objects can be constructed and called without error, and that they do not throw or mutate state. Typical tests (if any) would be in files like test/insight/NullCollector_test.cpp or similar, but such tests would only check for interface compliance and not validation. There are no data-dependent behaviors to test, and no validation gaps, because no validation is performed.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

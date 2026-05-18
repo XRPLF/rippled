@@ -1,0 +1,281 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "inp"
+    },
+    {
+      "lineno": 25,
+      "name": "hash"
+    },
+    {
+      "lineno": 246,
+      "name": "context"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "ServerDefinitions"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doServerDefinitions",
+        "ServerDefinitions (constructor)",
+        "ServerDefinitions::translate",
+        "ServerDefinitions::hashMatches",
+        "ServerDefinitions::get"
+      ],
+      "entry_point": "doServerDefinitions",
+      "purpose": "Handles the server_info/server_definitions RPC, constructs ServerDefinitions, translates type names, validates hash, and returns definitions.",
+      "validation_points": [
+        "ServerDefinitions::translate (validates and transforms input type strings)",
+        "ServerDefinitions::hashMatches (validates hash equality)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "inp (input string to translate)",
+      "flow": [
+        "sTypeMap/rawName",
+        "ServerDefinitions::translate(inp)",
+        "typeName (used as key in defs_[jss::TYPES])"
+      ],
+      "origin": "Passed to ServerDefinitions::translate (from sTypeMap or similar sources in ServerDefinitions constructor)",
+      "transformations": [
+        "String replacement (e.g., UINT\u2192Hash/UInt, OBJECT\u2192STObject, etc.)",
+        "Snake_case to CamelCase conversion"
+      ],
+      "validated_at": "ServerDefinitions::translate"
+    },
+    {
+      "field": "hash (uint256)",
+      "flow": [
+        "RPC input or internal state",
+        "ServerDefinitions::hashMatches(hash)",
+        "Comparison with defsHash_"
+      ],
+      "origin": "Passed to ServerDefinitions::hashMatches (likely from RPC input or internal state)",
+      "transformations": [
+        "Equality check"
+      ],
+      "validated_at": "ServerDefinitions::hashMatches"
+    },
+    {
+      "field": "defs_ (Json::Value)",
+      "flow": [
+        "ServerDefinitions()",
+        "defs_ populated with translated type names and values",
+        "Returned by ServerDefinitions::get()"
+      ],
+      "origin": "Constructed in ServerDefinitions constructor",
+      "transformations": [
+        "Populated with validated and transformed type names"
+      ],
+      "validated_at": "Type names validated in translate before insertion"
+    }
+  ],
+  "description": "Defines and implements the server-side logic for generating and returning XRPL server definitions, including types, fields, transaction/ledger formats, flags, and a hash for integrity verification, for use in RPC responses.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "jss::TYPES (field names for JSON output, not input validation)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field jss::TYPES (field names for JSON output, not input validation) validated by xrpl::jss (JSON field naming/validation), boost::algorithm (string ops)",
+      "issue_pattern": "Missing validation for jss::TYPES (field names for JSON output, not input validation)",
+      "why_false_positive": "xrpl::jss (JSON field naming/validation), boost::algorithm (string ops) validates jss::TYPES (field names for JSON output, not input validation) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "inp (input string to translate)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ServerDefinitions::translate (manual logic) at ServerDefinitions::translate",
+      "issue_pattern": "Missing empty string validation for inp (input string to translate)",
+      "why_false_positive": "ServerDefinitions::translate (manual logic) validates inp (input string to translate) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "inp (input string to translate)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "ServerDefinitions::translate (manual logic) at ServerDefinitions::translate",
+      "issue_pattern": "Missing format validation for inp (input string to translate)",
+      "why_false_positive": "ServerDefinitions::translate (manual logic) validates inp (input string to translate) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "hash (uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ServerDefinitions::hashMatches (equality check) at ServerDefinitions::hashMatches",
+      "issue_pattern": "Missing empty string validation for hash (uint256)",
+      "why_false_positive": "ServerDefinitions::hashMatches (equality check) validates hash (uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/ServerDefinitions.cpp",
+  "functions": [
+    {
+      "args": [
+        "inp"
+      ],
+      "lineno": 18,
+      "name": "translate"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 25,
+      "name": "hashMatches"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "ServerDefinitions"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 246,
+      "name": "doServerDefinitions"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by RPC handler tests for server_info/server_definitions, which would exercise the construction of ServerDefinitions, translation of type names, and hash validation. However, there is no evidence in this file of direct unit tests for ServerDefinitions::translate or hashMatches. Edge cases in string translation (e.g., unusual type names, malformed input) may not be fully tested unless explicitly covered in dedicated unit tests. Test files to check: workflow/XRPLF-rippled-develop/test/rpc/server_info_test.cpp or similar. Gaps: No explicit fuzz or malformed input tests for translate; hashMatches is a simple equality check and likely covered indirectly.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "jss::TYPES (field names for JSON output, not input validation)"
+    ],
+    "framework": "xrpl::jss (JSON field naming/validation), boost::algorithm (string ops)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (no exception, fallback to transformation)",
+      "field": "inp (input string to translate)",
+      "location": "ServerDefinitions::translate",
+      "validated_by": "ServerDefinitions::translate (manual logic)",
+      "validates": [
+        "Checks if inp contains 'UINT', '512', '384', '256', '192', '160', '128'",
+        "Checks if inp matches keys in replacements map",
+        "Transforms snake_case to CamelCase"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (returns bool)",
+      "field": "hash (uint256)",
+      "location": "ServerDefinitions::hashMatches",
+      "validated_by": "ServerDefinitions::hashMatches (equality check)",
+      "validates": [
+        "Checks if provided hash matches internal defsHash_"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

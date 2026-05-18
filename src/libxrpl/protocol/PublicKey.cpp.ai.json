@@ -1,0 +1,267 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 144,
+      "name": "PublicKey"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 153,
+      "name": "PublicKey"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseBase58",
+        "decodeBase58Token",
+        "makeSlice",
+        "publicKeyType",
+        "PublicKey ctor"
+      ],
+      "entry_point": "parseBase58",
+      "purpose": "Parses a base58-encoded public key string, validates its type, and constructs a PublicKey object if valid.",
+      "validation_points": [
+        "decodeBase58Token (validates base58 format and token type)",
+        "publicKeyType (validates the slice is a recognized public key type)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ecdsaCanonicality",
+        "sigPart (twice, for R and S)",
+        "sliceToHex",
+        "boost::multiprecision::number (parsing hex to big int)"
+      ],
+      "entry_point": "ecdsaCanonicality",
+      "purpose": "Validates that a DER-encoded ECDSA signature is canonical (protects against signature morphing).",
+      "validation_points": [
+        "ecdsaCanonicality (checks signature structure, length, and canonicality)",
+        "sigPart (validates each integer part of the signature)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "base58 public key string",
+      "flow": [
+        "parseBase58 (input string)",
+        "decodeBase58Token (decodes base58, checks token type)",
+        "makeSlice (wraps result as Slice)",
+        "publicKeyType (checks if slice is valid public key type)",
+        "PublicKey ctor (constructs PublicKey object)"
+      ],
+      "origin": "External input (user, config, network)",
+      "transformations": [
+        "Base58 decoding",
+        "Token type validation",
+        "Slice wrapping"
+      ],
+      "validated_at": "decodeBase58Token, publicKeyType"
+    },
+    {
+      "field": "DER-encoded ECDSA signature",
+      "flow": [
+        "ecdsaCanonicality (input Slice)",
+        "sigPart (parses R and S parts, validates structure and canonicality)",
+        "sliceToHex (converts to hex string)",
+        "boost::multiprecision::number (parses hex to big int)",
+        "ecdsaCanonicality (compares R and S to curve order)"
+      ],
+      "origin": "External input (transaction signature)",
+      "transformations": [
+        "DER parsing",
+        "Length and value checks",
+        "Hex conversion",
+        "Big integer conversion"
+      ],
+      "validated_at": "sigPart, ecdsaCanonicality"
+    }
+  ],
+  "description": "This file implements cryptographic utilities and logic for handling XRPL public keys, including parsing, canonicality checks, signature verification for secp256k1 and ed25519, and node ID calculation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Base58-encoded public key string",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token, publicKeyType at parseBase58",
+      "issue_pattern": "Missing empty string validation for Base58-encoded public key string",
+      "why_false_positive": "decodeBase58Token, publicKeyType validates Base58-encoded public key string for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Base58-encoded public key string",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "decodeBase58Token, publicKeyType at parseBase58",
+      "issue_pattern": "Missing format validation for Base58-encoded public key string",
+      "why_false_positive": "decodeBase58Token, publicKeyType validates Base58-encoded public key string format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "DER-encoded ECDSA signature part",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sigPart at sigPart",
+      "issue_pattern": "Missing empty string validation for DER-encoded ECDSA signature part",
+      "why_false_positive": "sigPart validates DER-encoded ECDSA signature part for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/PublicKey.cpp",
+  "functions": [
+    {
+      "args": [
+        "os",
+        "pk"
+      ],
+      "lineno": 16,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "type",
+        "s"
+      ],
+      "lineno": 22,
+      "name": "parseBase58"
+    },
+    {
+      "args": [
+        "buf"
+      ],
+      "lineno": 36,
+      "name": "sigPart"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 56,
+      "name": "sliceToHex"
+    },
+    {
+      "args": [
+        "sig"
+      ],
+      "lineno": 80,
+      "name": "ecdsaCanonicality"
+    },
+    {
+      "args": [
+        "sig"
+      ],
+      "lineno": 124,
+      "name": "ed25519Canonical"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 164,
+      "name": "publicKeyType"
+    },
+    {
+      "args": [
+        "publicKey",
+        "digest",
+        "sig",
+        "mustBeFullyCanonical"
+      ],
+      "lineno": 176,
+      "name": "verifyDigest"
+    },
+    {
+      "args": [
+        "publicKey",
+        "m",
+        "sig"
+      ],
+      "lineno": 210,
+      "name": "verify"
+    },
+    {
+      "args": [
+        "pk"
+      ],
+      "lineno": 241,
+      "name": "calcNodeID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 14,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for PublicKey parsing and signature validation, typically found in files like PublicKey_test.cpp, Protocol_test.cpp, or SignatureCanonicality_test.cpp. However, the provided code does not reference any test files directly. Potential gaps: edge cases for malformed base58 strings, unusual DER encodings, or non-canonical signatures may not be fully covered unless explicitly tested. There is no evidence of fuzz or property-based testing for malformed inputs in this snippet.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation via utility functions (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "Base58-encoded public key string",
+      "location": "parseBase58",
+      "validated_by": "decodeBase58Token, publicKeyType",
+      "validates": [
+        "Checks if the decoded Base58 string matches the expected TokenType",
+        "Checks if the resulting slice is a valid public key type"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "DER-encoded ECDSA signature part",
+      "location": "sigPart",
+      "validated_by": "sigPart",
+      "validates": [
+        "Checks minimum buffer size (at least 3 bytes)",
+        "Checks first byte is 0x02 (DER integer tag)",
+        "Checks length byte is within buffer and between 1 and 33",
+        "Checks number is not negative (first data byte & 0x80 == 0)",
+        "Checks for zero value and padding rules"
+      ],
+      "validation_type": "format|range"
+    }
+  ]
+}

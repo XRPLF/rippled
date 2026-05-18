@@ -1,0 +1,24 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "Peer"
+    }
+  ],
+  "description": "Defines the Peer class, representing a peer connection in the XRPL overlay network, including its interface for network communication, identity, ledger synchronization, and protocol feature support.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Peer.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "Resource"
+    }
+  ]
+}

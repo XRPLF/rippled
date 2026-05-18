@@ -1,0 +1,216 @@
+{
+  "args": [
+    {
+      "lineno": 56,
+      "name": "app"
+    },
+    {
+      "lineno": 56,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 56,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "NodeStore::Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 15,
+      "name": "SHAMapStoreImp"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "SavedStateDB"
+    }
+  ],
+  "description": "Implements the SHAMapStoreImp class, which manages the online deletion of old ledgers and related state in the XRPL node, including database rotation, health checks, and cache management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/SHAMapStoreImp.h",
+  "functions": [
+    {
+      "args": [
+        "config",
+        "dbName"
+      ],
+      "lineno": 27,
+      "name": "init"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "getCanDelete"
+    },
+    {
+      "args": [
+        "canDelete"
+      ],
+      "lineno": 31,
+      "name": "setCanDelete"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "getState"
+    },
+    {
+      "args": [
+        "state"
+      ],
+      "lineno": 33,
+      "name": "setState"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 34,
+      "name": "setLastRotated"
+    },
+    {
+      "args": [
+        "fetch_depth"
+      ],
+      "lineno": 74,
+      "name": "clampFetchDepth"
+    },
+    {
+      "args": [
+        "readThreads"
+      ],
+      "lineno": 79,
+      "name": "makeNodeStore"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 82,
+      "name": "setCanDelete"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "advisoryDelete"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "getLastRotated"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "getCanDelete"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 106,
+      "name": "onLedgerClosed"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "rendezvous"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "fdRequired"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "minimumOnline"
+    },
+    {
+      "args": [
+        "nodeCount",
+        "node"
+      ],
+      "lineno": 117,
+      "name": "copyNode"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "dbPaths"
+    },
+    {
+      "args": [
+        "path"
+      ],
+      "lineno": 121,
+      "name": "makeBackendRotating"
+    },
+    {
+      "args": [
+        "cache"
+      ],
+      "lineno": 123,
+      "name": "freshenCache"
+    },
+    {
+      "args": [
+        "lastRotated",
+        "TableName",
+        "getMinSeq",
+        "deleteBeforeSeq"
+      ],
+      "lineno": 137,
+      "name": "clearSql"
+    },
+    {
+      "args": [
+        "validatedSeq"
+      ],
+      "lineno": 142,
+      "name": "clearCaches"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "freshenCaches"
+    },
+    {
+      "args": [
+        "lastRotated"
+      ],
+      "lineno": 144,
+      "name": "clearPrior"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "healthWait"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "stop"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

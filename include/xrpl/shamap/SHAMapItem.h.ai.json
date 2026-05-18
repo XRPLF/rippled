@@ -1,0 +1,70 @@
+{
+  "args": [
+    {
+      "lineno": 41,
+      "name": "tag"
+    },
+    {
+      "lineno": 41,
+      "name": "data"
+    },
+    {
+      "lineno": 31,
+      "name": "other"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "uint256 const& tag",
+        "Slice data"
+      ],
+      "lineno": 10,
+      "name": "SHAMapItem"
+    }
+  ],
+  "description": "Defines the SHAMapItem class, representing an item stored in a SHAMap, with custom memory management and reference counting using boost::intrusive_ptr and slab allocation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapItem.h",
+  "functions": [
+    {
+      "args": [
+        "SHAMapItem const* x"
+      ],
+      "lineno": 65,
+      "name": "intrusive_ptr_add_ref"
+    },
+    {
+      "args": [
+        "SHAMapItem const* x"
+      ],
+      "lineno": 73,
+      "name": "intrusive_ptr_release"
+    },
+    {
+      "args": [
+        "uint256 const& tag",
+        "Slice data"
+      ],
+      "lineno": 89,
+      "name": "make_shamapitem"
+    },
+    {
+      "args": [
+        "SHAMapItem const& other"
+      ],
+      "lineno": 110,
+      "name": "make_shamapitem"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 56,
+      "name": "detail"
+    }
+  ]
+}

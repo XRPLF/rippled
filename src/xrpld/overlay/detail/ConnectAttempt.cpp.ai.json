@@ -1,0 +1,464 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "app"
+    },
+    {
+      "lineno": 12,
+      "name": "io_context"
+    },
+    {
+      "lineno": 13,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 14,
+      "name": "usage"
+    },
+    {
+      "lineno": 15,
+      "name": "context"
+    },
+    {
+      "lineno": 16,
+      "name": "id"
+    },
+    {
+      "lineno": 17,
+      "name": "slot"
+    },
+    {
+      "lineno": 18,
+      "name": "journal"
+    },
+    {
+      "lineno": 19,
+      "name": "overlay"
+    },
+    {
+      "lineno": 100,
+      "name": "ec"
+    },
+    {
+      "lineno": 133,
+      "name": "reason"
+    },
+    {
+      "lineno": 138,
+      "name": "name"
+    },
+    {
+      "lineno": 144,
+      "name": "step"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "endpoint_type const& remote_endpoint",
+        "Resource::Consumer usage",
+        "shared_context const& context",
+        "std::uint32_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "beast::Journal journal",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 9,
+      "name": "ConnectAttempt"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ConnectAttempt::stop",
+        "ConnectAttempt::shutdown"
+      ],
+      "entry_point": "ConnectAttempt::stop",
+      "purpose": "Stops the connection attempt, ensuring shutdown is performed on the correct strand/thread.",
+      "validation_points": [
+        "ConnectAttempt::shutdown (XRPL_ASSERT(strand_.running_in_this_thread()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "ConnectAttempt::run",
+        "stream_.next_layer().async_connect",
+        "ConnectAttempt::onConnect (not shown in snippet)"
+      ],
+      "entry_point": "ConnectAttempt::run",
+      "purpose": "Initiates the asynchronous connection process to a remote endpoint.",
+      "validation_points": [
+        "ConnectAttempt::run (indirect: posts to strand if not in thread)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ConnectAttempt::shutdown",
+        "ConnectAttempt::tryAsyncShutdown"
+      ],
+      "entry_point": "ConnectAttempt::shutdown",
+      "purpose": "Performs shutdown logic, including validation of strand context and async SSL shutdown if needed.",
+      "validation_points": [
+        "ConnectAttempt::shutdown (XRPL_ASSERT(strand_.running_in_this_thread()))",
+        "ConnectAttempt::tryAsyncShutdown (XRPL_ASSERT(strand_.running_in_this_thread()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "ConnectAttempt::tryAsyncShutdown",
+        "stream_.async_shutdown",
+        "ConnectAttempt::onShutdown"
+      ],
+      "entry_point": "ConnectAttempt::tryAsyncShutdown",
+      "purpose": "Handles the asynchronous SSL shutdown handshake if required.",
+      "validation_points": [
+        "ConnectAttempt::tryAsyncShutdown (XRPL_ASSERT(strand_.running_in_this_thread()))"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "strand_",
+      "flow": [
+        "ConnectAttempt::ConnectAttempt (constructor)",
+        "Used in ConnectAttempt::stop, run, shutdown, tryAsyncShutdown, async operations"
+      ],
+      "origin": "Constructed in ConnectAttempt constructor using boost::asio::make_strand(io_context)",
+      "transformations": [
+        "Used to post functions to correct thread/strand",
+        "Checked for running_in_this_thread() in validation"
+      ],
+      "validated_at": "ConnectAttempt::shutdown, ConnectAttempt::tryAsyncShutdown (XRPL_ASSERT)"
+    },
+    {
+      "field": "socket_",
+      "flow": [
+        "ConnectAttempt::ConnectAttempt (constructor)",
+        "Used in stop, shutdown, tryAsyncShutdown, run"
+      ],
+      "origin": "stream_ptr_->next_layer().socket() in constructor",
+      "transformations": [
+        "Checked for is_open()",
+        "Used for async_connect and shutdown"
+      ],
+      "validated_at": "Indirectly, via strand_ validation before use"
+    },
+    {
+      "field": "remote_endpoint_",
+      "flow": [
+        "ConnectAttempt::ConnectAttempt (constructor)",
+        "Used in run for async_connect"
+      ],
+      "origin": "Passed as argument to ConnectAttempt constructor",
+      "transformations": [
+        "Passed directly to async_connect"
+      ],
+      "validated_at": "Not explicitly validated in shown code"
+    },
+    {
+      "field": "shutdown_",
+      "flow": [
+        "Set in shutdown()",
+        "Checked in tryAsyncShutdown()"
+      ],
+      "origin": "Class member, set in shutdown()",
+      "transformations": [
+        "Boolean flag to indicate shutdown in progress"
+      ],
+      "validated_at": "Not explicitly validated, but only set/checked on strand"
+    },
+    {
+      "field": "ioPending_",
+      "flow": [
+        "Set to true in run()",
+        "Checked in tryAsyncShutdown()"
+      ],
+      "origin": "Class member, set in run()",
+      "transformations": [
+        "Boolean flag to indicate IO operation in progress"
+      ],
+      "validated_at": "Not explicitly validated, but only set/checked on strand"
+    }
+  ],
+  "description": "Implements the ConnectAttempt class, which manages the lifecycle of an outbound peer connection attempt in the XRPL overlay network, handling asynchronous connection, handshake, protocol negotiation, and error handling.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strand context (thread safety for async operations)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strand context (thread safety for async operations) validated by XRPL_ASSERT (custom assertion macro), boost::asio strand for thread safety",
+      "issue_pattern": "Missing validation for strand context (thread safety for async operations)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), boost::asio strand for thread safety validates strand context (thread safety for async operations) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "strand_.running_in_this_thread()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at shutdown",
+      "issue_pattern": "Missing empty string validation for strand_.running_in_this_thread()",
+      "why_false_positive": "XRPL_ASSERT macro validates strand_.running_in_this_thread() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "strand_.running_in_this_thread()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at tryAsyncShutdown",
+      "issue_pattern": "Missing empty string validation for strand_.running_in_this_thread()",
+      "why_false_positive": "XRPL_ASSERT macro validates strand_.running_in_this_thread() for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/ConnectAttempt.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "endpoint_type const& remote_endpoint",
+        "Resource::Consumer usage",
+        "shared_context const& context",
+        "std::uint32_t id",
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "beast::Journal journal",
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 9,
+      "name": "ConnectAttempt"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "~ConnectAttempt"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "shutdown"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "tryAsyncShutdown"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 99,
+      "name": "onShutdown"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "close"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 132,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "error_code ec"
+      ],
+      "lineno": 137,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "ConnectionStep step"
+      ],
+      "lineno": 143,
+      "name": "setTimer"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "cancelTimer"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 197,
+      "name": "onTimer"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 222,
+      "name": "onConnect"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 259,
+      "name": "onHandshake"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 307,
+      "name": "onWrite"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 334,
+      "name": "onRead"
+    },
+    {
+      "args": [],
+      "lineno": 355,
+      "name": "processResponse"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests for overlay/peer connection logic, typically found in test files such as overlay/Overlay_test.cpp, PeerFinder_test.cpp, or similar. However, the specific validation of strand_.running_in_this_thread() via XRPL_ASSERT is not always directly tested unless tests deliberately invoke ConnectAttempt methods from the wrong thread/strand. There may be gaps in coverage for error paths (e.g., shutdown during various connection steps, or strand misuse). Tests that simulate multi-threaded misuse or forced shutdowns would be needed for full validation path coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "strand context (thread safety for async operations)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), boost::asio strand for thread safety",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "strand_.running_in_this_thread()",
+      "location": "shutdown",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures shutdown is called from the correct thread/strand context"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "strand_.running_in_this_thread()",
+      "location": "tryAsyncShutdown",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures tryAsyncShutdown is called from the correct thread/strand context"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

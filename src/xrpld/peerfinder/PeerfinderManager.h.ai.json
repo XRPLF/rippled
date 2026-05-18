@@ -1,0 +1,320 @@
+{
+  "args": [
+    {
+      "lineno": 62,
+      "name": "config"
+    },
+    {
+      "lineno": 63,
+      "name": "port"
+    },
+    {
+      "lineno": 64,
+      "name": "validationPublicKey"
+    },
+    {
+      "lineno": 65,
+      "name": "ipLimit"
+    },
+    {
+      "lineno": 70,
+      "name": "lhs"
+    },
+    {
+      "lineno": 70,
+      "name": "rhs"
+    },
+    {
+      "lineno": 78,
+      "name": "ep"
+    },
+    {
+      "lineno": 78,
+      "name": "hops_"
+    },
+    {
+      "lineno": 99,
+      "name": "result"
+    },
+    {
+      "lineno": 55,
+      "name": "map"
+    },
+    {
+      "lineno": 138,
+      "name": "name"
+    },
+    {
+      "lineno": 138,
+      "name": "addresses"
+    },
+    {
+      "lineno": 144,
+      "name": "strings"
+    },
+    {
+      "lineno": 158,
+      "name": "local_endpoint"
+    },
+    {
+      "lineno": 158,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 170,
+      "name": "slot"
+    },
+    {
+      "lineno": 170,
+      "name": "endpoints"
+    },
+    {
+      "lineno": 186,
+      "name": "remote_address"
+    },
+    {
+      "lineno": 186,
+      "name": "eps"
+    },
+    {
+      "lineno": 200,
+      "name": "key"
+    },
+    {
+      "lineno": 200,
+      "name": "reserved"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "Config"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "Endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "Manager"
+    }
+  ],
+  "description": "PeerFinder configuration and management interfaces for XRPL, including peer slot management, endpoint metadata, and connection logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/PeerfinderManager.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "Config"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "calcOutPeers"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "applyTuning"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 55,
+      "name": "onWrite"
+    },
+    {
+      "args": [
+        "config",
+        "port",
+        "validationPublicKey",
+        "ipLimit"
+      ],
+      "lineno": 61,
+      "name": "makeConfig"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 69,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "Endpoint"
+    },
+    {
+      "args": [
+        "ep",
+        "hops_"
+      ],
+      "lineno": 78,
+      "name": "Endpoint"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 84,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "result"
+      ],
+      "lineno": 98,
+      "name": "to_string"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "Manager"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "~Manager"
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 123,
+      "name": "setConfig"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "config"
+    },
+    {
+      "args": [
+        "name",
+        "addresses"
+      ],
+      "lineno": 138,
+      "name": "addFixedPeer"
+    },
+    {
+      "args": [
+        "name",
+        "strings"
+      ],
+      "lineno": 144,
+      "name": "addFallbackStrings"
+    },
+    {
+      "args": [
+        "local_endpoint",
+        "remote_endpoint"
+      ],
+      "lineno": 158,
+      "name": "new_inbound_slot"
+    },
+    {
+      "args": [
+        "remote_endpoint"
+      ],
+      "lineno": 165,
+      "name": "new_outbound_slot"
+    },
+    {
+      "args": [
+        "slot",
+        "endpoints"
+      ],
+      "lineno": 170,
+      "name": "on_endpoints"
+    },
+    {
+      "args": [
+        "slot"
+      ],
+      "lineno": 175,
+      "name": "on_closed"
+    },
+    {
+      "args": [
+        "slot"
+      ],
+      "lineno": 181,
+      "name": "on_failure"
+    },
+    {
+      "args": [
+        "remote_address",
+        "eps"
+      ],
+      "lineno": 186,
+      "name": "onRedirects"
+    },
+    {
+      "args": [
+        "slot",
+        "local_endpoint"
+      ],
+      "lineno": 194,
+      "name": "onConnected"
+    },
+    {
+      "args": [
+        "slot",
+        "key",
+        "reserved"
+      ],
+      "lineno": 200,
+      "name": "activate"
+    },
+    {
+      "args": [
+        "slot"
+      ],
+      "lineno": 205,
+      "name": "redirect"
+    },
+    {
+      "args": [],
+      "lineno": 209,
+      "name": "autoconnect"
+    },
+    {
+      "args": [],
+      "lineno": 212,
+      "name": "buildEndpointsForPeers"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "once_per_second"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "PeerFinder"
+    }
+  ]
+}

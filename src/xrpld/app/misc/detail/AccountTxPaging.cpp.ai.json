@@ -1,0 +1,410 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "to"
+    },
+    {
+      "lineno": 13,
+      "name": "ledger_index"
+    },
+    {
+      "lineno": 14,
+      "name": "status"
+    },
+    {
+      "lineno": 15,
+      "name": "rawTxn"
+    },
+    {
+      "lineno": 16,
+      "name": "rawMeta"
+    },
+    {
+      "lineno": 17,
+      "name": "app"
+    },
+    {
+      "lineno": 39,
+      "name": "seq"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "convertBlobsToTxResult",
+        "STTx constructor (via SerialIter)",
+        "Transaction constructor",
+        "TxMeta constructor",
+        "Transaction::setStatus"
+      ],
+      "entry_point": "convertBlobsToTxResult",
+      "purpose": "Converts raw transaction and metadata blobs into Transaction and TxMeta objects, validates them, and appends to output vector.",
+      "validation_points": [
+        "STTx constructor validates rawTxn",
+        "TxMeta constructor validates rawMeta",
+        "Transaction::sqlTransactionStatus validates status",
+        "app.getLedgerMaster().getLedgerBySeq validates ledger_index (indirectly, if used elsewhere)",
+        "metaset->getAsObject().isFieldPresent(sfTransactionIndex) validates presence of sfTransactionIndex"
+      ]
+    },
+    {
+      "call_chain": [
+        "saveLedgerAsync",
+        "app.getLedgerMaster().getLedgerBySeq",
+        "pendSaveValidated"
+      ],
+      "entry_point": "saveLedgerAsync",
+      "purpose": "Asynchronously triggers saving of a validated ledger if it exists.",
+      "validation_points": [
+        "app.getLedgerMaster().getLedgerBySeq validates ledger_index (seq)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "rawTxn",
+      "flow": [
+        "convertBlobsToTxResult parameter",
+        "makeSlice(rawTxn)",
+        "SerialIter it(makeSlice(rawTxn))",
+        "STTx constructor(it)",
+        "std::make_shared<Transaction>(txn, ...)"
+      ],
+      "origin": "Input parameter to convertBlobsToTxResult",
+      "transformations": [
+        "Converted to slice",
+        "Parsed by SerialIter",
+        "Validated and parsed by STTx constructor"
+      ],
+      "validated_at": "STTx constructor"
+    },
+    {
+      "field": "rawMeta",
+      "flow": [
+        "convertBlobsToTxResult parameter",
+        "TxMeta constructor(tr->getID(), ledger_index, rawMeta)",
+        "metaset->getAsObject()"
+      ],
+      "origin": "Input parameter to convertBlobsToTxResult",
+      "transformations": [
+        "Parsed and validated by TxMeta constructor"
+      ],
+      "validated_at": "TxMeta constructor"
+    },
+    {
+      "field": "status",
+      "flow": [
+        "convertBlobsToTxResult parameter",
+        "Transaction::sqlTransactionStatus(status)",
+        "Transaction::setStatus"
+      ],
+      "origin": "Input parameter to convertBlobsToTxResult",
+      "transformations": [
+        "Mapped/validated by sqlTransactionStatus"
+      ],
+      "validated_at": "Transaction::sqlTransactionStatus"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "convertBlobsToTxResult parameter",
+        "TxMeta constructor",
+        "Transaction::setStatus",
+        "saveLedgerAsync parameter",
+        "app.getLedgerMaster().getLedgerBySeq(seq)"
+      ],
+      "origin": "Input parameter to convertBlobsToTxResult and saveLedgerAsync",
+      "transformations": [
+        "Used as-is, checked for existence in getLedgerBySeq"
+      ],
+      "validated_at": "app.getLedgerMaster().getLedgerBySeq"
+    },
+    {
+      "field": "sfTransactionIndex",
+      "flow": [
+        "TxMeta constructor parses rawMeta",
+        "metaset->getAsObject().isFieldPresent(sfTransactionIndex)",
+        "metaset->getAsObject().getFieldU32(sfTransactionIndex) (if present)",
+        "Transaction::setStatus"
+      ],
+      "origin": "Field in TxMeta object (from rawMeta)",
+      "transformations": [
+        "Checked for presence, extracted as U32"
+      ],
+      "validated_at": "metaset->getAsObject().isFieldPresent(sfTransactionIndex)"
+    }
+  ],
+  "description": "Implements utility functions for converting raw transaction and metadata blobs into transaction results and for asynchronously saving a ledger in the context of the XRPL application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rawTxn (by STTx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field rawTxn (by STTx) validated by Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+      "issue_pattern": "Missing validation for rawTxn (by STTx)",
+      "why_false_positive": "Custom (xrpld internal classes: STTx, TxMeta, Transaction) validates rawTxn (by STTx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rawMeta (by TxMeta)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field rawMeta (by TxMeta) validated by Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+      "issue_pattern": "Missing validation for rawMeta (by TxMeta)",
+      "why_false_positive": "Custom (xrpld internal classes: STTx, TxMeta, Transaction) validates rawMeta (by TxMeta) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "status (by sqlTransactionStatus)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field status (by sqlTransactionStatus) validated by Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+      "issue_pattern": "Missing validation for status (by sqlTransactionStatus)",
+      "why_false_positive": "Custom (xrpld internal classes: STTx, TxMeta, Transaction) validates status (by sqlTransactionStatus) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index (by getLedgerBySeq)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index (by getLedgerBySeq) validated by Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+      "issue_pattern": "Missing validation for ledger_index (by getLedgerBySeq)",
+      "why_false_positive": "Custom (xrpld internal classes: STTx, TxMeta, Transaction) validates ledger_index (by getLedgerBySeq) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionIndex (by isFieldPresent)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionIndex (by isFieldPresent) validated by Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+      "issue_pattern": "Missing validation for sfTransactionIndex (by isFieldPresent)",
+      "why_false_positive": "Custom (xrpld internal classes: STTx, TxMeta, Transaction) validates sfTransactionIndex (by isFieldPresent) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rawTxn",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STTx constructor (via SerialIter) at convertBlobsToTxResult",
+      "issue_pattern": "Missing empty string validation for rawTxn",
+      "why_false_positive": "STTx constructor (via SerialIter) validates rawTxn for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rawMeta",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TxMeta constructor at convertBlobsToTxResult",
+      "issue_pattern": "Missing empty string validation for rawMeta",
+      "why_false_positive": "TxMeta constructor validates rawMeta for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "status",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Transaction::sqlTransactionStatus at convertBlobsToTxResult",
+      "issue_pattern": "Missing empty string validation for status",
+      "why_false_positive": "Transaction::sqlTransactionStatus validates status for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "app.getLedgerMaster().getLedgerBySeq(seq) at saveLedgerAsync",
+      "issue_pattern": "Missing empty string validation for ledger_index",
+      "why_false_positive": "app.getLedgerMaster().getLedgerBySeq(seq) validates ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfTransactionIndex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "metaset->getAsObject().isFieldPresent(sfTransactionIndex) at convertBlobsToTxResult",
+      "issue_pattern": "Missing empty string validation for sfTransactionIndex",
+      "why_false_positive": "metaset->getAsObject().isFieldPresent(sfTransactionIndex) validates sfTransactionIndex for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/AccountTxPaging.cpp",
+  "functions": [
+    {
+      "args": [
+        "RelationalDatabase::AccountTxs& to",
+        "std::uint32_t ledger_index",
+        "std::string const& status",
+        "Blob const& rawTxn",
+        "Blob const& rawMeta",
+        "Application& app"
+      ],
+      "lineno": 10,
+      "name": "convertBlobsToTxResult"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::uint32_t seq"
+      ],
+      "lineno": 38,
+      "name": "saveLedgerAsync"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is low-level and likely tested indirectly via higher-level transaction and ledger tests. Direct unit tests for convertBlobsToTxResult and saveLedgerAsync may not exist, but their behavior is exercised by integration tests that check transaction history, ledger persistence, and database correctness. Test files might include those under 'test/app/misc', 'test/app/ledger', or 'test/rpc'. Gaps: There may be limited direct negative testing for malformed rawTxn/rawMeta blobs, or for edge cases in status/ledger_index validation. Direct fuzzing or malformed input tests would strengthen coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "rawTxn (by STTx)",
+      "rawMeta (by TxMeta)",
+      "status (by sqlTransactionStatus)",
+      "ledger_index (by getLedgerBySeq)",
+      "sfTransactionIndex (by isFieldPresent)"
+    ],
+    "framework": "Custom (xrpld internal classes: STTx, TxMeta, Transaction)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (likely, if deserialization fails)",
+      "field": "rawTxn",
+      "location": "convertBlobsToTxResult",
+      "validated_by": "STTx constructor (via SerialIter)",
+      "validates": [
+        "rawTxn is valid serialized transaction",
+        "rawTxn can be parsed into STTx"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::exception (likely, if deserialization fails)",
+      "field": "rawMeta",
+      "location": "convertBlobsToTxResult",
+      "validated_by": "TxMeta constructor",
+      "validates": [
+        "rawMeta is valid serialized metadata",
+        "rawMeta can be parsed into TxMeta"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "unknown (depends on sqlTransactionStatus implementation)",
+      "field": "status",
+      "location": "convertBlobsToTxResult",
+      "validated_by": "Transaction::sqlTransactionStatus",
+      "validates": [
+        "status is mapped to a valid transaction status"
+      ],
+      "validation_type": "business_logic|enum"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (function returns nullptr if not found)",
+      "field": "ledger_index",
+      "location": "saveLedgerAsync",
+      "validated_by": "app.getLedgerMaster().getLedgerBySeq(seq)",
+      "validates": [
+        "ledger_index exists in ledger master"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (conditional check)",
+      "field": "sfTransactionIndex",
+      "location": "convertBlobsToTxResult",
+      "validated_by": "metaset->getAsObject().isFieldPresent(sfTransactionIndex)",
+      "validates": [
+        "sfTransactionIndex field exists in meta object"
+      ],
+      "validation_type": "existence"
+    }
+  ]
+}

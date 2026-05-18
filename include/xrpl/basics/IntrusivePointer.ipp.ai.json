@@ -1,0 +1,698 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag)",
+        "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>)",
+        "if (p)",
+        "p->addStrongRef()"
+      ],
+      "entry_point": "SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag)",
+      "purpose": "Constructs a SharedIntrusive from a raw pointer, optionally incrementing the strong ref count if adopting.",
+      "validation_points": [
+        "if (p) // Validates pointer before addStrongRef"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)",
+        "rhs.unsafeGetRawPtr()",
+        "if (p)",
+        "p->addStrongRef()"
+      ],
+      "entry_point": "SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)",
+      "purpose": "Copy constructor, increments strong ref if pointer is not null.",
+      "validation_points": [
+        "if (p) // Validates pointer before addStrongRef"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)",
+        "if (this == &rhs)",
+        "rhs.unsafeGetRawPtr()",
+        "if (p)",
+        "p->addStrongRef()",
+        "unsafeReleaseAndStore(p)"
+      ],
+      "entry_point": "SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)",
+      "purpose": "Assignment operator, handles self-assignment, increments ref if needed, releases old pointer.",
+      "validation_points": [
+        "if (this == &rhs) // Self-assignment check",
+        "if (p) // Validates pointer before addStrongRef"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)",
+        "if constexpr (std::is_same_v<T, TT>)",
+        "if (this == &rhs)",
+        "rhs.unsafeGetRawPtr()",
+        "if (p)",
+        "p->addStrongRef()",
+        "unsafeReleaseAndStore(p)"
+      ],
+      "entry_point": "SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)",
+      "purpose": "Assignment from convertible type, handles self-assignment, increments ref if needed, releases old pointer.",
+      "validation_points": [
+        "if (this == &rhs) // Self-assignment check (if T == TT)",
+        "if (p) // Validates pointer before addStrongRef"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedIntrusive<T>::adopt(T* p)",
+        "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>)",
+        "if (p)",
+        "p->addStrongRef()",
+        "unsafeReleaseAndStore(p)"
+      ],
+      "entry_point": "SharedIntrusive<T>::adopt(T* p)",
+      "purpose": "Adopts a raw pointer, optionally increments ref count, releases old pointer.",
+      "validation_points": [
+        "if (p) // Validates pointer before addStrongRef"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ptr_",
+      "flow": [
+        "T* p (input or from rhs)",
+        "if (p) validation",
+        "p->addStrongRef() (if validated)",
+        "ptr_ = p"
+      ],
+      "origin": "Constructor argument (T* p) or rhs.unsafeGetRawPtr()",
+      "transformations": [
+        "Pointer is checked for null",
+        "Reference count incremented if not null",
+        "Stored in ptr_"
+      ],
+      "validated_at": "if (p) before addStrongRef"
+    },
+    {
+      "field": "rhs (SharedIntrusive const& rhs or SharedIntrusive<TT> const& rhs)",
+      "flow": [
+        "rhs (input)",
+        "if (this == &rhs) validation (self-assignment)",
+        "rhs.unsafeGetRawPtr()",
+        "if (p) validation",
+        "p->addStrongRef()",
+        "unsafeReleaseAndStore(p)"
+      ],
+      "origin": "Function argument",
+      "transformations": [
+        "Self-assignment check",
+        "Pointer extracted",
+        "Reference count incremented if not null",
+        "Old pointer released and replaced"
+      ],
+      "validated_at": "if (this == &rhs), if (p)"
+    },
+    {
+      "field": "T* p (adopt)",
+      "flow": [
+        "T* p (input)",
+        "if (p) validation",
+        "p->addStrongRef() (if validated)",
+        "unsafeReleaseAndStore(p)"
+      ],
+      "origin": "adopt(T* p) argument",
+      "transformations": [
+        "Pointer is checked for null",
+        "Reference count incremented if not null",
+        "Old pointer released and replaced"
+      ],
+      "validated_at": "if (p)"
+    }
+  ],
+  "description": "Implements the definitions for intrusive smart pointer types (SharedIntrusive, WeakIntrusive, SharedWeakUnion) used for reference-counted memory management in the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "template type parameters (via static_assert and if constexpr)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field template type parameters (via static_assert and if constexpr) validated by C++ type system, manual null checks, static_assert",
+      "issue_pattern": "Missing validation for template type parameters (via static_assert and if constexpr)",
+      "why_false_positive": "C++ type system, manual null checks, static_assert validates template type parameters (via static_assert and if constexpr) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "pointer nullness (via if (p))",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field pointer nullness (via if (p)) validated by C++ type system, manual null checks, static_assert",
+      "issue_pattern": "Missing validation for pointer nullness (via if (p))",
+      "why_false_positive": "C++ type system, manual null checks, static_assert validates pointer nullness (via if (p)) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p (pointer to T)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p) at SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept",
+      "issue_pattern": "Missing empty string validation for p (pointer to T)",
+      "why_false_positive": "if (p) validates p (pointer to T) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rhs (SharedIntrusive const& rhs)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p) at SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)",
+      "issue_pattern": "Missing empty string validation for rhs (SharedIntrusive const& rhs)",
+      "why_false_positive": "if (p) validates rhs (SharedIntrusive const& rhs) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rhs (SharedIntrusive<TT> const& rhs)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p) at SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)",
+      "issue_pattern": "Missing empty string validation for rhs (SharedIntrusive<TT> const& rhs)",
+      "why_false_positive": "if (p) validates rhs (SharedIntrusive<TT> const& rhs) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "this and rhs (self-assignment)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (this == &rhs) at SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)",
+      "issue_pattern": "Missing empty string validation for this and rhs (self-assignment)",
+      "why_false_positive": "if (this == &rhs) validates this and rhs (self-assignment) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "this and rhs (self-assignment)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (this == &rhs) at SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)",
+      "issue_pattern": "Missing empty string validation for this and rhs (self-assignment)",
+      "why_false_positive": "if (this == &rhs) validates this and rhs (self-assignment) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "this and rhs (self-assignment)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (this == &rhs) at SharedIntrusive<T>::operator=(SharedIntrusive&& rhs)",
+      "issue_pattern": "Missing empty string validation for this and rhs (self-assignment)",
+      "why_false_positive": "if (this == &rhs) validates this and rhs (self-assignment) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "TT (template type parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert(!std::is_same_v<T, TT>, ...) at SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)",
+      "issue_pattern": "Missing empty string validation for TT (template type parameter)",
+      "why_false_positive": "static_assert(!std::is_same_v<T, TT>, ...) validates TT (template type parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "TT (template type parameter)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_assert(!std::is_same_v<T, TT>, ...) at SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)",
+      "issue_pattern": "Missing type validation for TT (template type parameter)",
+      "why_false_positive": "static_assert(!std::is_same_v<T, TT>, ...) validates TT (template type parameter) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "TAdoptTag (template type parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>) at SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept and adopt(T* p)",
+      "issue_pattern": "Missing empty string validation for TAdoptTag (template type parameter)",
+      "why_false_positive": "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>) validates TAdoptTag (template type parameter) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "TAdoptTag (template type parameter)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>) at SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept and adopt(T* p)",
+      "issue_pattern": "Missing type validation for TAdoptTag (template type parameter)",
+      "why_false_positive": "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>) validates TAdoptTag (template type parameter) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/IntrusivePointer.ipp",
+  "functions": [
+    {
+      "args": [
+        "SharedIntrusive const& rhs"
+      ],
+      "lineno": 61,
+      "name": "SharedIntrusive<T>::operator="
+    },
+    {
+      "args": [
+        "SharedIntrusive<TT> const& rhs"
+      ],
+      "lineno": 80,
+      "name": "SharedIntrusive<T>::operator="
+    },
+    {
+      "args": [
+        "SharedIntrusive&& rhs"
+      ],
+      "lineno": 99,
+      "name": "SharedIntrusive<T>::operator="
+    },
+    {
+      "args": [
+        "SharedIntrusive<TT>&& rhs"
+      ],
+      "lineno": 110,
+      "name": "SharedIntrusive<T>::operator="
+    },
+    {
+      "args": [
+        "std::nullptr_t"
+      ],
+      "lineno": 120,
+      "name": "SharedIntrusive<T>::operator!="
+    },
+    {
+      "args": [
+        "std::nullptr_t"
+      ],
+      "lineno": 126,
+      "name": "SharedIntrusive<T>::operator=="
+    },
+    {
+      "args": [
+        "T* p"
+      ],
+      "lineno": 132,
+      "name": "SharedIntrusive<T>::adopt"
+    },
+    {
+      "args": [],
+      "lineno": 142,
+      "name": "SharedIntrusive<T>::~SharedIntrusive"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "SharedIntrusive<T>::operator*"
+    },
+    {
+      "args": [],
+      "lineno": 176,
+      "name": "SharedIntrusive<T>::operator->"
+    },
+    {
+      "args": [],
+      "lineno": 182,
+      "name": "SharedIntrusive<T>::operator bool"
+    },
+    {
+      "args": [],
+      "lineno": 188,
+      "name": "SharedIntrusive<T>::reset"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "SharedIntrusive<T>::get"
+    },
+    {
+      "args": [],
+      "lineno": 198,
+      "name": "SharedIntrusive<T>::use_count"
+    },
+    {
+      "args": [],
+      "lineno": 206,
+      "name": "SharedIntrusive<T>::unsafeGetRawPtr"
+    },
+    {
+      "args": [
+        "T* p"
+      ],
+      "lineno": 211,
+      "name": "SharedIntrusive<T>::unsafeSetRawPtr"
+    },
+    {
+      "args": [
+        "T* p"
+      ],
+      "lineno": 216,
+      "name": "SharedIntrusive<T>::unsafeExchange"
+    },
+    {
+      "args": [
+        "T* next"
+      ],
+      "lineno": 221,
+      "name": "SharedIntrusive<T>::unsafeReleaseAndStore"
+    },
+    {
+      "args": [
+        "SharedIntrusive<TT> const& rhs"
+      ],
+      "lineno": 265,
+      "name": "WeakIntrusive<T>::operator="
+    },
+    {
+      "args": [
+        "T* ptr"
+      ],
+      "lineno": 274,
+      "name": "WeakIntrusive<T>::adopt"
+    },
+    {
+      "args": [],
+      "lineno": 280,
+      "name": "WeakIntrusive<T>::~WeakIntrusive"
+    },
+    {
+      "args": [],
+      "lineno": 285,
+      "name": "WeakIntrusive<T>::lock"
+    },
+    {
+      "args": [],
+      "lineno": 294,
+      "name": "WeakIntrusive<T>::expired"
+    },
+    {
+      "args": [],
+      "lineno": 299,
+      "name": "WeakIntrusive<T>::reset"
+    },
+    {
+      "args": [],
+      "lineno": 304,
+      "name": "WeakIntrusive<T>::unsafeReleaseNoStore"
+    },
+    {
+      "args": [
+        "SharedWeakUnion const& rhs"
+      ],
+      "lineno": 353,
+      "name": "SharedWeakUnion<T>::operator="
+    },
+    {
+      "args": [
+        "SharedIntrusive<TT> const& rhs"
+      ],
+      "lineno": 380,
+      "name": "SharedWeakUnion<T>::operator="
+    },
+    {
+      "args": [
+        "SharedIntrusive<TT>&& rhs"
+      ],
+      "lineno": 391,
+      "name": "SharedWeakUnion<T>::operator="
+    },
+    {
+      "args": [],
+      "lineno": 399,
+      "name": "SharedWeakUnion<T>::~SharedWeakUnion"
+    },
+    {
+      "args": [],
+      "lineno": 404,
+      "name": "SharedWeakUnion<T>::getStrong"
+    },
+    {
+      "args": [],
+      "lineno": 415,
+      "name": "SharedWeakUnion<T>::operator bool"
+    },
+    {
+      "args": [],
+      "lineno": 420,
+      "name": "SharedWeakUnion<T>::reset"
+    },
+    {
+      "args": [],
+      "lineno": 425,
+      "name": "SharedWeakUnion<T>::get"
+    },
+    {
+      "args": [],
+      "lineno": 430,
+      "name": "SharedWeakUnion<T>::use_count"
+    },
+    {
+      "args": [],
+      "lineno": 437,
+      "name": "SharedWeakUnion<T>::expired"
+    },
+    {
+      "args": [],
+      "lineno": 442,
+      "name": "SharedWeakUnion<T>::lock"
+    },
+    {
+      "args": [],
+      "lineno": 463,
+      "name": "SharedWeakUnion<T>::isStrong"
+    },
+    {
+      "args": [],
+      "lineno": 468,
+      "name": "SharedWeakUnion<T>::isWeak"
+    },
+    {
+      "args": [],
+      "lineno": 473,
+      "name": "SharedWeakUnion<T>::convertToStrong"
+    },
+    {
+      "args": [],
+      "lineno": 491,
+      "name": "SharedWeakUnion<T>::convertToWeak"
+    },
+    {
+      "args": [],
+      "lineno": 517,
+      "name": "SharedWeakUnion<T>::unsafeGetRawPtr"
+    },
+    {
+      "args": [
+        "T* p",
+        "RefStrength rs"
+      ],
+      "lineno": 522,
+      "name": "SharedWeakUnion<T>::unsafeSetRawPtr"
+    },
+    {
+      "args": [
+        "std::nullptr_t"
+      ],
+      "lineno": 528,
+      "name": "SharedWeakUnion<T>::unsafeSetRawPtr"
+    },
+    {
+      "args": [],
+      "lineno": 532,
+      "name": "SharedWeakUnion<T>::unsafeReleaseNoStore"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is a low-level utility for intrusive reference counting. Typical tests would be in files like IntrusivePointer_test.cpp or SharedIntrusive_test.cpp, likely under the 'test' or 'unittest' directories. Tests should cover: construction from raw pointer (null and non-null), copy/move construction, assignment (including self-assignment), adopt(), and destruction. Gaps may exist in testing edge cases such as self-assignment, null pointer handling, and cross-type assignment. No direct evidence of test files is present in this snippet, so coverage should be verified in the codebase.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "template type parameters (via static_assert and if constexpr)",
+      "pointer nullness (via if (p))"
+    ],
+    "framework": "C++ type system, manual null checks, static_assert",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic only)",
+      "field": "p (pointer to T)",
+      "location": "SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept",
+      "validated_by": "if (p)",
+      "validates": [
+        "Checks if pointer p is not null before calling p->addStrongRef()"
+      ],
+      "validation_type": "null check"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic only)",
+      "field": "rhs (SharedIntrusive const& rhs)",
+      "location": "SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)",
+      "validated_by": "if (p)",
+      "validates": [
+        "Checks if pointer p (from rhs.unsafeGetRawPtr()) is not null before calling p->addStrongRef()"
+      ],
+      "validation_type": "null check"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic only)",
+      "field": "rhs (SharedIntrusive<TT> const& rhs)",
+      "location": "SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)",
+      "validated_by": "if (p)",
+      "validates": [
+        "Checks if pointer p (from rhs.unsafeGetRawPtr()) is not null before calling p->addStrongRef()"
+      ],
+      "validation_type": "null check"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "this and rhs (self-assignment)",
+      "location": "SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)",
+      "validated_by": "if (this == &rhs)",
+      "validates": [
+        "Checks for self-assignment to avoid unnecessary operations"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "this and rhs (self-assignment)",
+      "location": "SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)",
+      "validated_by": "if (this == &rhs)",
+      "validates": [
+        "Checks for self-assignment to avoid unnecessary operations (only if T == TT)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "this and rhs (self-assignment)",
+      "location": "SharedIntrusive<T>::operator=(SharedIntrusive&& rhs)",
+      "validated_by": "if (this == &rhs)",
+      "validates": [
+        "Checks for self-assignment to avoid unnecessary operations"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "static_assert failure (compile-time error)",
+      "field": "TT (template type parameter)",
+      "location": "SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)",
+      "validated_by": "static_assert(!std::is_same_v<T, TT>, ...)",
+      "validates": [
+        "Ensures that this overload is not instantiated for T == TT"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (compile-time conditional)",
+      "field": "TAdoptTag (template type parameter)",
+      "location": "SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept and adopt(T* p)",
+      "validated_by": "if constexpr (std::is_same_v<TAdoptTag, SharedIntrusiveAdoptIncrementStrongTag>)",
+      "validates": [
+        "Ensures that addStrongRef() is only called if TAdoptTag is SharedIntrusiveAdoptIncrementStrongTag"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

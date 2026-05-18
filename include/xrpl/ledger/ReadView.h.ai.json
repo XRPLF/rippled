@@ -1,0 +1,42 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "ReadView"
+    },
+    {
+      "args": [],
+      "lineno": 168,
+      "name": "DigestAwareReadView"
+    }
+  ],
+  "description": "Defines the ReadView interface for read-only access to XRPL ledger state and transactions, including iterators and hooks for balance and owner count adjustments. Also defines DigestAwareReadView for digest-aware access, and utility functions for rules extraction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/ReadView.h",
+  "functions": [
+    {
+      "args": [
+        "DigestAwareReadView const& ledger",
+        "Rules const& current"
+      ],
+      "lineno": 196,
+      "name": "makeRulesGivenLedger"
+    },
+    {
+      "args": [
+        "DigestAwareReadView const& ledger",
+        "std::unordered_set<uint256, beast::uhash<>> const& presets"
+      ],
+      "lineno": 199,
+      "name": "makeRulesGivenLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

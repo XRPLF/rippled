@@ -1,0 +1,155 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "anyTransactions"
+    },
+    {
+      "lineno": 21,
+      "name": "prevProposers"
+    },
+    {
+      "lineno": 22,
+      "name": "proposersClosed"
+    },
+    {
+      "lineno": 23,
+      "name": "proposersValidated"
+    },
+    {
+      "lineno": 24,
+      "name": "prevRoundTime"
+    },
+    {
+      "lineno": 25,
+      "name": "timeSincePrevClose"
+    },
+    {
+      "lineno": 26,
+      "name": "openTime"
+    },
+    {
+      "lineno": 27,
+      "name": "idleInterval"
+    },
+    {
+      "lineno": 28,
+      "name": "parms"
+    },
+    {
+      "lineno": 29,
+      "name": "j"
+    },
+    {
+      "lineno": 30,
+      "name": "clog"
+    },
+    {
+      "lineno": 46,
+      "name": "currentProposers"
+    },
+    {
+      "lineno": 47,
+      "name": "currentAgree"
+    },
+    {
+      "lineno": 48,
+      "name": "currentFinished"
+    },
+    {
+      "lineno": 49,
+      "name": "previousAgreeTime"
+    },
+    {
+      "lineno": 50,
+      "name": "currentAgreeTime"
+    },
+    {
+      "lineno": 51,
+      "name": "stalled"
+    },
+    {
+      "lineno": 53,
+      "name": "proposing"
+    },
+    {
+      "lineno": 564,
+      "name": "participants"
+    },
+    {
+      "lineno": 565,
+      "name": "percent"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "clock_type const& clock",
+        "Adaptor& adaptor",
+        "beast::Journal j"
+      ],
+      "lineno": 153,
+      "name": "Consensus"
+    },
+    {
+      "args": [
+        "ConsensusMode m"
+      ],
+      "lineno": 167,
+      "name": "Consensus<Adaptor>::MonitoredMode"
+    }
+  ],
+  "description": "This file implements the core logic for the XRPL consensus algorithm, including the Consensus class template, which manages the consensus process for ledgers, transaction sets, and peer proposals. It provides mechanisms for starting consensus rounds, handling peer proposals, progressing through consensus phases, managing disputes, and determining when consensus is reached. The file also includes utility functions for consensus thresholds and ledger closing decisions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/Consensus.h",
+  "functions": [
+    {
+      "args": [
+        "anyTransactions",
+        "prevProposers",
+        "proposersClosed",
+        "proposersValidated",
+        "prevRoundTime",
+        "timeSincePrevClose",
+        "openTime",
+        "idleInterval",
+        "parms",
+        "j",
+        "clog"
+      ],
+      "lineno": 19,
+      "name": "shouldCloseLedger"
+    },
+    {
+      "args": [
+        "prevProposers",
+        "currentProposers",
+        "currentAgree",
+        "currentFinished",
+        "previousAgreeTime",
+        "currentAgreeTime",
+        "stalled",
+        "parms",
+        "proposing",
+        "j",
+        "clog"
+      ],
+      "lineno": 44,
+      "name": "checkConsensus"
+    },
+    {
+      "args": [
+        "participants",
+        "percent"
+      ],
+      "lineno": 563,
+      "name": "participantsNeeded"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

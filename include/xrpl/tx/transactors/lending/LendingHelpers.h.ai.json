@@ -1,0 +1,650 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 13,
+      "name": "interestRate"
+    },
+    {
+      "lineno": 13,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 17,
+      "name": "asset"
+    },
+    {
+      "lineno": 17,
+      "name": "periodicPayment"
+    },
+    {
+      "lineno": 17,
+      "name": "scale"
+    },
+    {
+      "lineno": 54,
+      "name": "other"
+    },
+    {
+      "lineno": 57,
+      "name": "other"
+    },
+    {
+      "lineno": 109,
+      "name": "value"
+    },
+    {
+      "lineno": 109,
+      "name": "adjustment"
+    },
+    {
+      "lineno": 109,
+      "name": "asset"
+    },
+    {
+      "lineno": 109,
+      "name": "vaultScale"
+    },
+    {
+      "lineno": 119,
+      "name": "vaultSle"
+    },
+    {
+      "lineno": 127,
+      "name": "vaultAsset"
+    },
+    {
+      "lineno": 127,
+      "name": "principalRequested"
+    },
+    {
+      "lineno": 127,
+      "name": "expectInterest"
+    },
+    {
+      "lineno": 127,
+      "name": "paymentTotal"
+    },
+    {
+      "lineno": 127,
+      "name": "properties"
+    },
+    {
+      "lineno": 127,
+      "name": "j"
+    },
+    {
+      "lineno": 135,
+      "name": "periodicPayment"
+    },
+    {
+      "lineno": 135,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 135,
+      "name": "paymentRemaining"
+    },
+    {
+      "lineno": 135,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 140,
+      "name": "totalValueOutstanding"
+    },
+    {
+      "lineno": 140,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 140,
+      "name": "managementFeeOutstanding"
+    },
+    {
+      "lineno": 146,
+      "name": "loan"
+    },
+    {
+      "lineno": 150,
+      "name": "asset"
+    },
+    {
+      "lineno": 150,
+      "name": "interest"
+    },
+    {
+      "lineno": 150,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 150,
+      "name": "scale"
+    },
+    {
+      "lineno": 156,
+      "name": "theoreticalPrincipalOutstanding"
+    },
+    {
+      "lineno": 156,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 156,
+      "name": "parentCloseTime"
+    },
+    {
+      "lineno": 156,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 156,
+      "name": "prevPaymentDate"
+    },
+    {
+      "lineno": 156,
+      "name": "startDate"
+    },
+    {
+      "lineno": 156,
+      "name": "closeInterestRate"
+    },
+    {
+      "lineno": 221,
+      "name": "p"
+    },
+    {
+      "lineno": 221,
+      "name": "fee"
+    },
+    {
+      "lineno": 221,
+      "name": "interest"
+    },
+    {
+      "lineno": 332,
+      "name": "lhs"
+    },
+    {
+      "lineno": 332,
+      "name": "rhs"
+    },
+    {
+      "lineno": 335,
+      "name": "lhs"
+    },
+    {
+      "lineno": 335,
+      "name": "rhs"
+    },
+    {
+      "lineno": 338,
+      "name": "lhs"
+    },
+    {
+      "lineno": 338,
+      "name": "rhs"
+    },
+    {
+      "lineno": 341,
+      "name": "asset"
+    },
+    {
+      "lineno": 341,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 341,
+      "name": "interestRate"
+    },
+    {
+      "lineno": 341,
+      "name": "paymentInterval"
+    },
+    {
+      "lineno": 341,
+      "name": "paymentsRemaining"
+    },
+    {
+      "lineno": 341,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 341,
+      "name": "minimumScale"
+    },
+    {
+      "lineno": 349,
+      "name": "asset"
+    },
+    {
+      "lineno": 349,
+      "name": "principalOutstanding"
+    },
+    {
+      "lineno": 349,
+      "name": "periodicRate"
+    },
+    {
+      "lineno": 349,
+      "name": "paymentsRemaining"
+    },
+    {
+      "lineno": 349,
+      "name": "managementFeeRate"
+    },
+    {
+      "lineno": 349,
+      "name": "minimumScale"
+    },
+    {
+      "lineno": 355,
+      "name": "asset"
+    },
+    {
+      "lineno": 355,
+      "name": "value"
+    },
+    {
+      "lineno": 355,
+      "name": "scale"
+    },
+    {
+      "lineno": 366,
+      "name": "asset"
+    },
+    {
+      "lineno": 366,
+      "name": "view"
+    },
+    {
+      "lineno": 366,
+      "name": "loan"
+    },
+    {
+      "lineno": 366,
+      "name": "brokerSle"
+    },
+    {
+      "lineno": 366,
+      "name": "amount"
+    },
+    {
+      "lineno": 366,
+      "name": "paymentType"
+    },
+    {
+      "lineno": 366,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "LoanPaymentParts"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "LoanState"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "LoanProperties"
+    },
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "PaymentComponents"
+    },
+    {
+      "args": [
+        "p",
+        "fee",
+        "interest"
+      ],
+      "lineno": 221,
+      "name": "ExtendedPaymentComponents"
+    },
+    {
+      "args": [],
+      "lineno": 247,
+      "name": "LoanStateDeltas"
+    }
+  ],
+  "description": "This file defines data structures and functions for handling loan payment processing, amortization, and state management in an XRPL-based lending protocol, including calculations for interest, fees, overpayments, and loan state deltas.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/lending/LendingHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 10,
+      "name": "checkLendingProtocolDependencies"
+    },
+    {
+      "args": [
+        "interestRate",
+        "paymentInterval"
+      ],
+      "lineno": 13,
+      "name": "loanPeriodicRate"
+    },
+    {
+      "args": [
+        "asset",
+        "periodicPayment",
+        "scale"
+      ],
+      "lineno": 17,
+      "name": "roundPeriodicPayment"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 54,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 57,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "interestOutstanding"
+    },
+    {
+      "args": [
+        "value",
+        "adjustment",
+        "asset",
+        "vaultScale"
+      ],
+      "lineno": 109,
+      "name": "adjustImpreciseNumber"
+    },
+    {
+      "args": [
+        "vaultSle"
+      ],
+      "lineno": 119,
+      "name": "getAssetsTotalScale"
+    },
+    {
+      "args": [
+        "vaultAsset",
+        "principalRequested",
+        "expectInterest",
+        "paymentTotal",
+        "properties",
+        "j"
+      ],
+      "lineno": 127,
+      "name": "checkLoanGuards"
+    },
+    {
+      "args": [
+        "periodicPayment",
+        "periodicRate",
+        "paymentRemaining",
+        "managementFeeRate"
+      ],
+      "lineno": 135,
+      "name": "computeTheoreticalLoanState"
+    },
+    {
+      "args": [
+        "totalValueOutstanding",
+        "principalOutstanding",
+        "managementFeeOutstanding"
+      ],
+      "lineno": 140,
+      "name": "constructLoanState"
+    },
+    {
+      "args": [
+        "loan"
+      ],
+      "lineno": 146,
+      "name": "constructRoundedLoanState"
+    },
+    {
+      "args": [
+        "asset",
+        "interest",
+        "managementFeeRate",
+        "scale"
+      ],
+      "lineno": 150,
+      "name": "computeManagementFee"
+    },
+    {
+      "args": [
+        "theoreticalPrincipalOutstanding",
+        "periodicRate",
+        "parentCloseTime",
+        "paymentInterval",
+        "prevPaymentDate",
+        "startDate",
+        "closeInterestRate"
+      ],
+      "lineno": 156,
+      "name": "computeFullPaymentInterest"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "trackedInterestPart"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "total"
+    },
+    {
+      "args": [],
+      "lineno": 264,
+      "name": "nonNegative"
+    },
+    {
+      "args": [
+        "asset",
+        "loanScale",
+        "overpaymentComponents",
+        "roundedLoanState",
+        "periodicPayment",
+        "periodicRate",
+        "paymentRemaining",
+        "managementFeeRate",
+        "j"
+      ],
+      "lineno": 270,
+      "name": "tryOverpayment"
+    },
+    {
+      "args": [
+        "periodicRate",
+        "paymentsRemaining"
+      ],
+      "lineno": 282,
+      "name": "computeRaisedRate"
+    },
+    {
+      "args": [
+        "periodicRate",
+        "paymentsRemaining"
+      ],
+      "lineno": 285,
+      "name": "computePaymentFactor"
+    },
+    {
+      "args": [
+        "asset",
+        "interest",
+        "managementFeeRate",
+        "loanScale"
+      ],
+      "lineno": 288,
+      "name": "computeInterestAndFeeParts"
+    },
+    {
+      "args": [
+        "principalOutstanding",
+        "periodicRate",
+        "paymentsRemaining"
+      ],
+      "lineno": 294,
+      "name": "loanPeriodicPayment"
+    },
+    {
+      "args": [
+        "periodicPayment",
+        "periodicRate",
+        "paymentsRemaining"
+      ],
+      "lineno": 298,
+      "name": "loanPrincipalFromPeriodicPayment"
+    },
+    {
+      "args": [
+        "principalOutstanding",
+        "lateInterestRate",
+        "parentCloseTime",
+        "nextPaymentDueDate"
+      ],
+      "lineno": 302,
+      "name": "loanLatePaymentInterest"
+    },
+    {
+      "args": [
+        "principalOutstanding",
+        "periodicRate",
+        "parentCloseTime",
+        "startDate",
+        "prevPaymentDate",
+        "paymentInterval"
+      ],
+      "lineno": 308,
+      "name": "loanAccruedInterest"
+    },
+    {
+      "args": [
+        "asset",
+        "loanScale",
+        "overpayment",
+        "overpaymentInterestRate",
+        "overpaymentFeeRate",
+        "managementFeeRate"
+      ],
+      "lineno": 315,
+      "name": "computeOverpaymentComponents"
+    },
+    {
+      "args": [
+        "asset",
+        "scale",
+        "totalValueOutstanding",
+        "principalOutstanding",
+        "managementFeeOutstanding",
+        "periodicPayment",
+        "periodicRate",
+        "paymentRemaining",
+        "managementFeeRate"
+      ],
+      "lineno": 324,
+      "name": "computePaymentComponents"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 332,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 335,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 338,
+      "name": "operator+"
+    },
+    {
+      "args": [
+        "asset",
+        "principalOutstanding",
+        "interestRate",
+        "paymentInterval",
+        "paymentsRemaining",
+        "managementFeeRate",
+        "minimumScale"
+      ],
+      "lineno": 341,
+      "name": "computeLoanProperties"
+    },
+    {
+      "args": [
+        "asset",
+        "principalOutstanding",
+        "periodicRate",
+        "paymentsRemaining",
+        "managementFeeRate",
+        "minimumScale"
+      ],
+      "lineno": 349,
+      "name": "computeLoanProperties"
+    },
+    {
+      "args": [
+        "asset",
+        "value",
+        "scale"
+      ],
+      "lineno": 355,
+      "name": "isRounded"
+    },
+    {
+      "args": [
+        "asset",
+        "view",
+        "loan",
+        "brokerSle",
+        "amount",
+        "paymentType",
+        "j"
+      ],
+      "lineno": 366,
+      "name": "loanMakePayment"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 173,
+      "name": "detail"
+    }
+  ]
+}

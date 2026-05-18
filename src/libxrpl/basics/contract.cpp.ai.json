@@ -1,0 +1,110 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "title"
+    },
+    {
+      "lineno": 14,
+      "name": "s"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LogThrow"
+      ],
+      "entry_point": "LogThrow",
+      "purpose": "Logs a warning message when a contract violation or exceptional condition is detected.",
+      "validation_points": [
+        "LogThrow (logs but does not validate or throw)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LogicError",
+        "UNREACHABLE",
+        "std::abort"
+      ],
+      "entry_point": "LogicError",
+      "purpose": "Handles logic errors by logging, reporting, and terminating the process. Used as a last-resort contract violation handler.",
+      "validation_points": [
+        "LogicError (logs fatal, reports error, aborts execution)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "title (LogThrow)",
+      "flow": [
+        "caller",
+        "LogThrow(title)",
+        "JLOG(debugLog().warn()) << title"
+      ],
+      "origin": "Passed as argument to LogThrow by caller",
+      "transformations": [
+        "No transformation; directly logged as warning"
+      ],
+      "validated_at": "No validation; only logging"
+    },
+    {
+      "field": "s (LogicError)",
+      "flow": [
+        "caller",
+        "LogicError(s)",
+        "JLOG(debugLog().fatal()) << s",
+        "std::cerr << s",
+        "UNREACHABLE(\"LogicError\", {{\"message\", s}})",
+        "std::abort()"
+      ],
+      "origin": "Passed as argument to LogicError by caller",
+      "transformations": [
+        "Logged as fatal",
+        "Printed to std::cerr",
+        "Passed as 'message' to UNREACHABLE contract macro"
+      ],
+      "validated_at": "No explicit validation; function is for unrecoverable errors"
+    }
+  ],
+  "description": "Provides logging and error handling utilities for the xrpl project, including functions to log warnings and handle logic errors with fatal logging and process termination.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/contract.cpp",
+  "functions": [
+    {
+      "args": [
+        "title"
+      ],
+      "lineno": 8,
+      "name": "LogThrow"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 13,
+      "name": "LogicError"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These functions are intended for contract violation handling and process termination. They are not directly tested in normal unit tests due to their fatal behavior (process abort). Coverage tools (LCOV) explicitly exclude these paths (see LCOV_EXCL_START/STOP). Indirectly, they may be triggered by higher-level contract checks or assertions elsewhere in the codebase, but direct invocation is not covered by tests. Test files likely do not exist for these functions, and any coverage would be via integration or crash tests, not unit tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

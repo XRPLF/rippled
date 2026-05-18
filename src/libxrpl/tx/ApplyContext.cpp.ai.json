@@ -1,0 +1,455 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "registry_"
+    },
+    {
+      "lineno": 12,
+      "name": "base"
+    },
+    {
+      "lineno": 13,
+      "name": "parentBatchId"
+    },
+    {
+      "lineno": 14,
+      "name": "tx_"
+    },
+    {
+      "lineno": 15,
+      "name": "preclaimResult_"
+    },
+    {
+      "lineno": 16,
+      "name": "baseFee_"
+    },
+    {
+      "lineno": 17,
+      "name": "flags"
+    },
+    {
+      "lineno": 18,
+      "name": "journal_"
+    },
+    {
+      "lineno": 34,
+      "name": "ter"
+    },
+    {
+      "lineno": 45,
+      "name": "func"
+    },
+    {
+      "lineno": 54,
+      "name": "result"
+    },
+    {
+      "lineno": 68,
+      "name": "fee"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyContext::ApplyContext"
+      ],
+      "entry_point": "ApplyContext::ApplyContext",
+      "purpose": "Constructor for ApplyContext, sets up context for transaction application, including validation of batch flag and parentBatchId.",
+      "validation_points": [
+        "XRPL_ASSERT in constructor: Validates that parentBatchId is set if and only if tapBATCH flag is set."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyContext::apply",
+        "ApplyViewImpl::apply"
+      ],
+      "entry_point": "ApplyContext::apply",
+      "purpose": "Applies the transaction to the ledger view, possibly as a dry run, and returns transaction metadata.",
+      "validation_points": [
+        "Indirect: ApplyViewImpl::apply may perform further validation, but not shown in this file."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyContext::checkInvariants",
+        "ApplyContext::checkInvariantsHelper",
+        "ApplyContext::visit",
+        "InvariantCheck::visitEntry (for each checker)",
+        "InvariantCheck::finalize (for each checker)"
+      ],
+      "entry_point": "ApplyContext::checkInvariants",
+      "purpose": "Checks all transaction invariants after application, logging and failing if any are violated.",
+      "validation_points": [
+        "XRPL_ASSERT in checkInvariants: Ensures result is tesSUCCESS or tecCLAIM.",
+        "InvariantCheck::finalize: Each invariant check validates the transaction.",
+        "Exception handling: Any exception in invariant checks is caught and triggers failInvariantCheck."
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyContext::failInvariantCheck"
+      ],
+      "entry_point": "ApplyContext::failInvariantCheck",
+      "purpose": "Maps invariant check failures to the correct TER code.",
+      "validation_points": [
+        "Direct: Maps tecINVARIANT_FAILED/tefINVARIANT_FAILED to tefINVARIANT_FAILED."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "parentBatchId_",
+      "flow": [
+        "constructor argument",
+        "assigned to member parentBatchId_",
+        "used in XRPL_ASSERT for validation",
+        "passed to ApplyViewImpl::apply in ApplyContext::apply"
+      ],
+      "origin": "ApplyContext constructor argument",
+      "transformations": [
+        "Validated for presence/absence against tapBATCH flag"
+      ],
+      "validated_at": "ApplyContext constructor (XRPL_ASSERT)"
+    },
+    {
+      "field": "flags_",
+      "flow": [
+        "constructor argument",
+        "assigned to member flags_",
+        "used in XRPL_ASSERT for validation",
+        "used to determine dry run in ApplyContext::apply",
+        "used to initialize view_"
+      ],
+      "origin": "ApplyContext constructor argument",
+      "transformations": [
+        "Bitwise checked for tapBATCH and tapDRY_RUN"
+      ],
+      "validated_at": "ApplyContext constructor (XRPL_ASSERT)"
+    },
+    {
+      "field": "tx",
+      "flow": [
+        "constructor argument",
+        "assigned to member tx",
+        "passed to ApplyViewImpl::apply",
+        "passed to InvariantCheck::finalize",
+        "used in logging"
+      ],
+      "origin": "ApplyContext constructor argument (STTx const& tx_)",
+      "transformations": [
+        "No transformation, but used as input to multiple downstream checks"
+      ],
+      "validated_at": "Not directly validated here; assumed validated elsewhere"
+    },
+    {
+      "field": "result (TER)",
+      "flow": [
+        "passed to checkInvariants",
+        "asserted to be tesSUCCESS or tecCLAIM",
+        "passed to checkInvariantsHelper",
+        "passed to InvariantCheck::finalize",
+        "possibly transformed by failInvariantCheck"
+      ],
+      "origin": "Argument to checkInvariants/checkInvariantsHelper",
+      "transformations": [
+        "May be mapped to tefINVARIANT_FAILED by failInvariantCheck"
+      ],
+      "validated_at": "checkInvariants (XRPL_ASSERT)"
+    },
+    {
+      "field": "fee (XRPAmount)",
+      "flow": [
+        "passed to checkInvariants",
+        "passed to checkInvariantsHelper",
+        "passed to InvariantCheck::finalize"
+      ],
+      "origin": "Argument to checkInvariants/checkInvariantsHelper",
+      "transformations": [
+        "No transformation in this file"
+      ],
+      "validated_at": "Not directly validated here"
+    }
+  ],
+  "description": "Implements the ApplyContext class for transaction application logic in the XRPL codebase, handling transaction application, invariant checks, and view management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx (STTx const&): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx (STTx const&): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for tx (STTx const&): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates tx (STTx const&): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "base (OpenView&): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field base (OpenView&): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for base (OpenView&): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates base (OpenView&): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "preclaimResult_ (TER): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field preclaimResult_ (TER): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for preclaimResult_ (TER): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates preclaimResult_ (TER): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "baseFee_ (XRPAmount): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field baseFee_ (XRPAmount): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for baseFee_ (XRPAmount): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates baseFee_ (XRPAmount): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "flags (ApplyFlags): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field flags (ApplyFlags): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for flags (ApplyFlags): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates flags (ApplyFlags): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "journal (beast::Journal): type-checked by C++",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field journal (beast::Journal): type-checked by C++ validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for journal (beast::Journal): type-checked by C++",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates journal (beast::Journal): type-checked by C++ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "parentBatchId and flags_ (tapBATCH)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at ApplyContext constructor",
+      "issue_pattern": "Missing empty string validation for parentBatchId and flags_ (tapBATCH)",
+      "why_false_positive": "XRPL_ASSERT macro validates parentBatchId and flags_ (tapBATCH) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/ApplyContext.cpp",
+  "functions": [
+    {
+      "args": [
+        "ServiceRegistry& registry_",
+        "OpenView& base",
+        "std::optional<uint256 const> const& parentBatchId",
+        "STTx const& tx_",
+        "TER preclaimResult_",
+        "XRPAmount baseFee_",
+        "ApplyFlags flags",
+        "beast::Journal journal_"
+      ],
+      "lineno": 10,
+      "name": "ApplyContext::ApplyContext"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "ApplyContext::discard"
+    },
+    {
+      "args": [
+        "TER ter"
+      ],
+      "lineno": 33,
+      "name": "ApplyContext::apply"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "ApplyContext::size"
+    },
+    {
+      "args": [
+        "std::function<void(uint256 const&, bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&)> const& func"
+      ],
+      "lineno": 44,
+      "name": "ApplyContext::visit"
+    },
+    {
+      "args": [
+        "TER const result"
+      ],
+      "lineno": 53,
+      "name": "ApplyContext::failInvariantCheck"
+    },
+    {
+      "args": [
+        "TER const result",
+        "XRPAmount const fee",
+        "std::index_sequence<Is...>"
+      ],
+      "lineno": 66,
+      "name": "ApplyContext::checkInvariantsHelper"
+    },
+    {
+      "args": [
+        "TER const result",
+        "XRPAmount const fee"
+      ],
+      "lineno": 104,
+      "name": "ApplyContext::checkInvariants"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in ApplyContext (especially the XRPL_ASSERT for parentBatchId/flags_ and the invariant checks) is likely covered by integration and unit tests for transaction application and batch processing. Tests would exist in files such as 'test/tx/apply_test.cpp', 'test/tx/invariant_test.cpp', or similar. However, direct unit tests for the constructor's XRPL_ASSERT and for failInvariantCheck's mapping logic may be limited. Exception handling in checkInvariantsHelper may not be fully tested unless invariants are deliberately made to throw. There may be gaps in testing for edge cases where parentBatchId and tapBATCH flag mismatches occur, or for rare invariant check failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "tx (STTx const&): type-checked by C++",
+      "base (OpenView&): type-checked by C++",
+      "preclaimResult_ (TER): type-checked by C++",
+      "baseFee_ (XRPAmount): type-checked by C++",
+      "flags (ApplyFlags): type-checked by C++",
+      "journal (beast::Journal): type-checked by C++"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "entry_point (constructor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "parentBatchId and flags_ (tapBATCH)",
+      "location": "ApplyContext constructor",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "parentBatchId must be set if and only if tapBATCH flag is set in flags_"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

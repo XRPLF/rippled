@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "Handler"
+    },
+    {
+      "lineno": 28,
+      "name": "ConstBufferSequence"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::io_context& ioc",
+        "beast::Journal journal",
+        "endpoint_type remote_address",
+        "ConstBufferSequence const& buffers",
+        "stream_type&& stream"
+      ],
+      "lineno": 13,
+      "name": "PlainHTTPPeer"
+    }
+  ],
+  "description": "Defines the PlainHTTPPeer class template for handling plain (non-SSL) HTTP peer connections in the XRPL server, including HTTP request handling, WebSocket upgrade, and connection management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/PlainHTTPPeer.h",
+  "functions": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::io_context& ioc",
+        "beast::Journal journal",
+        "endpoint_type remote_endpoint",
+        "ConstBufferSequence const& buffers",
+        "stream_type&& stream"
+      ],
+      "lineno": 29,
+      "name": "PlainHTTPPeer"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "websocketUpgrade"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "do_request"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "do_close"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

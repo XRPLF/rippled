@@ -1,0 +1,27 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "params"
+    }
+  ],
+  "classes": [],
+  "description": "Header file declaring the walletPropose function for generating or proposing a wallet, likely for use in XRPL RPC handlers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/keygen/WalletPropose.h",
+  "functions": [
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 6,
+      "name": "walletPropose"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

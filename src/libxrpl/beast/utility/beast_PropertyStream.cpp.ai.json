@@ -1,0 +1,979 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "source"
+    },
+    {
+      "lineno": 31,
+      "name": "map"
+    },
+    {
+      "lineno": 31,
+      "name": "key"
+    },
+    {
+      "lineno": 35,
+      "name": "other"
+    },
+    {
+      "lineno": 46,
+      "name": "manip"
+    },
+    {
+      "lineno": 52,
+      "name": "stream"
+    },
+    {
+      "lineno": 56,
+      "name": "parent"
+    },
+    {
+      "lineno": 61,
+      "name": "key"
+    },
+    {
+      "lineno": 61,
+      "name": "map"
+    },
+    {
+      "lineno": 65,
+      "name": "key"
+    },
+    {
+      "lineno": 65,
+      "name": "stream"
+    },
+    {
+      "lineno": 87,
+      "name": "key"
+    },
+    {
+      "lineno": 87,
+      "name": "map"
+    },
+    {
+      "lineno": 91,
+      "name": "key"
+    },
+    {
+      "lineno": 91,
+      "name": "stream"
+    },
+    {
+      "lineno": 109,
+      "name": "name"
+    },
+    {
+      "lineno": 124,
+      "name": "source"
+    },
+    {
+      "lineno": 134,
+      "name": "child"
+    },
+    {
+      "lineno": 154,
+      "name": "stream"
+    },
+    {
+      "lineno": 159,
+      "name": "stream"
+    },
+    {
+      "lineno": 167,
+      "name": "stream"
+    },
+    {
+      "lineno": 167,
+      "name": "path"
+    },
+    {
+      "lineno": 177,
+      "name": "path"
+    },
+    {
+      "lineno": 191,
+      "name": "path"
+    },
+    {
+      "lineno": 199,
+      "name": "path"
+    },
+    {
+      "lineno": 210,
+      "name": "path"
+    },
+    {
+      "lineno": 225,
+      "name": "name"
+    },
+    {
+      "lineno": 236,
+      "name": "path"
+    },
+    {
+      "lineno": 249,
+      "name": "name"
+    },
+    {
+      "lineno": 258,
+      "name": "map"
+    },
+    {
+      "lineno": 265,
+      "name": "key"
+    },
+    {
+      "lineno": 265,
+      "name": "value"
+    },
+    {
+      "lineno": 272,
+      "name": "key"
+    },
+    {
+      "lineno": 272,
+      "name": "value"
+    },
+    {
+      "lineno": 276,
+      "name": "key"
+    },
+    {
+      "lineno": 276,
+      "name": "value"
+    },
+    {
+      "lineno": 280,
+      "name": "key"
+    },
+    {
+      "lineno": 280,
+      "name": "value"
+    },
+    {
+      "lineno": 284,
+      "name": "key"
+    },
+    {
+      "lineno": 284,
+      "name": "value"
+    },
+    {
+      "lineno": 288,
+      "name": "key"
+    },
+    {
+      "lineno": 288,
+      "name": "value"
+    },
+    {
+      "lineno": 292,
+      "name": "key"
+    },
+    {
+      "lineno": 292,
+      "name": "value"
+    },
+    {
+      "lineno": 296,
+      "name": "key"
+    },
+    {
+      "lineno": 296,
+      "name": "value"
+    },
+    {
+      "lineno": 300,
+      "name": "key"
+    },
+    {
+      "lineno": 300,
+      "name": "value"
+    },
+    {
+      "lineno": 304,
+      "name": "key"
+    },
+    {
+      "lineno": 304,
+      "name": "value"
+    },
+    {
+      "lineno": 308,
+      "name": "key"
+    },
+    {
+      "lineno": 308,
+      "name": "value"
+    },
+    {
+      "lineno": 312,
+      "name": "key"
+    },
+    {
+      "lineno": 312,
+      "name": "value"
+    },
+    {
+      "lineno": 316,
+      "name": "key"
+    },
+    {
+      "lineno": 316,
+      "name": "value"
+    },
+    {
+      "lineno": 320,
+      "name": "key"
+    },
+    {
+      "lineno": 320,
+      "name": "value"
+    },
+    {
+      "lineno": 324,
+      "name": "key"
+    },
+    {
+      "lineno": 324,
+      "name": "value"
+    },
+    {
+      "lineno": 328,
+      "name": "value"
+    },
+    {
+      "lineno": 335,
+      "name": "value"
+    },
+    {
+      "lineno": 339,
+      "name": "value"
+    },
+    {
+      "lineno": 343,
+      "name": "value"
+    },
+    {
+      "lineno": 347,
+      "name": "value"
+    },
+    {
+      "lineno": 351,
+      "name": "value"
+    },
+    {
+      "lineno": 355,
+      "name": "value"
+    },
+    {
+      "lineno": 359,
+      "name": "value"
+    },
+    {
+      "lineno": 363,
+      "name": "value"
+    },
+    {
+      "lineno": 367,
+      "name": "value"
+    },
+    {
+      "lineno": 371,
+      "name": "value"
+    },
+    {
+      "lineno": 375,
+      "name": "value"
+    },
+    {
+      "lineno": 379,
+      "name": "value"
+    },
+    {
+      "lineno": 383,
+      "name": "value"
+    },
+    {
+      "lineno": 387,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Source* source"
+      ],
+      "lineno": 12,
+      "name": "PropertyStream::Item"
+    },
+    {
+      "args": [
+        "Map const& map",
+        "std::string const& key"
+      ],
+      "lineno": 30,
+      "name": "PropertyStream::Proxy"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 51,
+      "name": "PropertyStream::Map"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Map& map"
+      ],
+      "lineno": 86,
+      "name": "PropertyStream::Set"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 108,
+      "name": "PropertyStream::Source"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PropertyStream::Source::add",
+        "XRPL_ASSERT (source.parent_ == nullptr)",
+        "children_.push_back(source.item_)",
+        "source.parent_ = this"
+      ],
+      "entry_point": "PropertyStream::Source::add",
+      "purpose": "Adds a child Source to the current Source, ensuring the child has no parent (i.e., is not already attached elsewhere).",
+      "validation_points": [
+        "XRPL_ASSERT (source.parent_ == nullptr)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PropertyStream::Source::~Source",
+        "std::lock_guard(lock_)",
+        "if (parent_ != nullptr) parent_->remove(*this)",
+        "removeAll()"
+      ],
+      "entry_point": "PropertyStream::Source::~Source",
+      "purpose": "Destructor for Source, ensures removal from parent and cleanup of children.",
+      "validation_points": [
+        "if (parent_ != nullptr) parent_->remove(*this)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PropertyStream::Proxy::~Proxy",
+        "std::string const s(m_ostream.str())",
+        "if (!s.empty()) m_map->add(m_key, s)"
+      ],
+      "entry_point": "PropertyStream::Proxy::~Proxy",
+      "purpose": "On destruction, flushes the Proxy's stream to the Map if not empty.",
+      "validation_points": [
+        "if (!s.empty())"
+      ]
+    },
+    {
+      "call_chain": [
+        "PropertyStream::Map::Map(Set& parent)",
+        "m_stream(parent.stream())",
+        "m_stream.map_begin()"
+      ],
+      "entry_point": "PropertyStream::Map::Map",
+      "purpose": "Constructs a Map, starting a new map in the PropertyStream.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "PropertyStream::Set::Set(std::string const& key, Map& map)",
+        "m_stream(map.stream())",
+        "m_stream.array_begin(key)"
+      ],
+      "entry_point": "PropertyStream::Set::Set",
+      "purpose": "Constructs a Set, starting a new array in the PropertyStream.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "parent_ (PropertyStream::Source)",
+      "flow": [
+        "Source::Source (parent_ = nullptr)",
+        "Source::add (XRPL_ASSERT parent_ == nullptr, then parent_ = this)",
+        "Source::~Source (if parent_ != nullptr, parent_->remove(*this))"
+      ],
+      "origin": "Initialized as nullptr in Source constructor",
+      "transformations": [
+        "Set to 'this' when added as child",
+        "Reset to nullptr when removed"
+      ],
+      "validated_at": "Source::add (XRPL_ASSERT parent_ == nullptr)"
+    },
+    {
+      "field": "children_ (PropertyStream::Source)",
+      "flow": [
+        "Source::add (children_.push_back(source.item_))",
+        "Source::~Source (removeAll())"
+      ],
+      "origin": "Empty vector at Source construction",
+      "transformations": [
+        "Child items are appended",
+        "Cleared on destruction"
+      ],
+      "validated_at": "Indirectly via XRPL_ASSERT in add"
+    },
+    {
+      "field": "m_key (PropertyStream::Proxy)",
+      "flow": [
+        "Proxy::Proxy (m_key = key)",
+        "Proxy::~Proxy (used in m_map->add(m_key, s))"
+      ],
+      "origin": "Set in Proxy constructor",
+      "transformations": [
+        "No transformation, just passed through"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "m_ostream (PropertyStream::Proxy)",
+      "flow": [
+        "Proxy::operator<< (writes to m_ostream)",
+        "Proxy::~Proxy (reads m_ostream.str())"
+      ],
+      "origin": "std::ostringstream, default constructed",
+      "transformations": [
+        "Data is streamed in via operator<<",
+        "Converted to string on destruction"
+      ],
+      "validated_at": "Proxy::~Proxy (if (!s.empty()))"
+    }
+  ],
+  "description": "Implements the PropertyStream utility for structured property streaming, including classes for hierarchical property sources, maps, sets, and proxies, with thread-safe management and value addition for various types.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/utility/beast_PropertyStream.cpp",
+  "functions": [
+    {
+      "args": [
+        "Source* source"
+      ],
+      "lineno": 13,
+      "name": "PropertyStream::Item::Item"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "PropertyStream::Item::source"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "PropertyStream::Item::operator->"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "PropertyStream::Item::operator*"
+    },
+    {
+      "args": [
+        "Map const& map",
+        "std::string const& key"
+      ],
+      "lineno": 31,
+      "name": "PropertyStream::Proxy::Proxy"
+    },
+    {
+      "args": [
+        "Proxy const& other"
+      ],
+      "lineno": 35,
+      "name": "PropertyStream::Proxy::Proxy"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "PropertyStream::Proxy::~Proxy"
+    },
+    {
+      "args": [
+        "std::ostream& manip(std::ostream&)"
+      ],
+      "lineno": 46,
+      "name": "PropertyStream::Proxy::operator<<"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 52,
+      "name": "PropertyStream::Map::Map"
+    },
+    {
+      "args": [
+        "Set& parent"
+      ],
+      "lineno": 56,
+      "name": "PropertyStream::Map::Map"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Map& map"
+      ],
+      "lineno": 61,
+      "name": "PropertyStream::Map::Map"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "PropertyStream& stream"
+      ],
+      "lineno": 65,
+      "name": "PropertyStream::Map::Map"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "PropertyStream::Map::~Map"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "PropertyStream::Map::stream"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "PropertyStream::Map::stream"
+    },
+    {
+      "args": [
+        "std::string const& key"
+      ],
+      "lineno": 81,
+      "name": "PropertyStream::Map::operator[]"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "Map& map"
+      ],
+      "lineno": 87,
+      "name": "PropertyStream::Set::Set"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "PropertyStream& stream"
+      ],
+      "lineno": 91,
+      "name": "PropertyStream::Set::Set"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "PropertyStream::Set::~Set"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "PropertyStream::Set::stream"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "PropertyStream::Set::stream"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 109,
+      "name": "PropertyStream::Source::Source"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "PropertyStream::Source::~Source"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "PropertyStream::Source::name"
+    },
+    {
+      "args": [
+        "Source& source"
+      ],
+      "lineno": 124,
+      "name": "PropertyStream::Source::add"
+    },
+    {
+      "args": [
+        "Source& child"
+      ],
+      "lineno": 134,
+      "name": "PropertyStream::Source::remove"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "PropertyStream::Source::removeAll"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 154,
+      "name": "PropertyStream::Source::write_one"
+    },
+    {
+      "args": [
+        "PropertyStream& stream"
+      ],
+      "lineno": 159,
+      "name": "PropertyStream::Source::write"
+    },
+    {
+      "args": [
+        "PropertyStream& stream",
+        "std::string const& path"
+      ],
+      "lineno": 167,
+      "name": "PropertyStream::Source::write"
+    },
+    {
+      "args": [
+        "std::string path"
+      ],
+      "lineno": 177,
+      "name": "PropertyStream::Source::find"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 191,
+      "name": "PropertyStream::Source::peel_leading_slash"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 199,
+      "name": "PropertyStream::Source::peel_trailing_slashstar"
+    },
+    {
+      "args": [
+        "std::string* path"
+      ],
+      "lineno": 210,
+      "name": "PropertyStream::Source::peel_name"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 225,
+      "name": "PropertyStream::Source::find_one_deep"
+    },
+    {
+      "args": [
+        "std::string path"
+      ],
+      "lineno": 236,
+      "name": "PropertyStream::Source::find_path"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 249,
+      "name": "PropertyStream::Source::find_one"
+    },
+    {
+      "args": [
+        "Map&"
+      ],
+      "lineno": 258,
+      "name": "PropertyStream::Source::onWrite"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "bool value"
+      ],
+      "lineno": 265,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "char value"
+      ],
+      "lineno": 272,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "signed char value"
+      ],
+      "lineno": 276,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned char value"
+      ],
+      "lineno": 280,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "short value"
+      ],
+      "lineno": 284,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned short value"
+      ],
+      "lineno": 288,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "int value"
+      ],
+      "lineno": 292,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned int value"
+      ],
+      "lineno": 296,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long value"
+      ],
+      "lineno": 300,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned long value"
+      ],
+      "lineno": 304,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long long value"
+      ],
+      "lineno": 308,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "unsigned long long value"
+      ],
+      "lineno": 312,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "float value"
+      ],
+      "lineno": 316,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "double value"
+      ],
+      "lineno": 320,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "std::string const& key",
+        "long double value"
+      ],
+      "lineno": 324,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "bool value"
+      ],
+      "lineno": 328,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "char value"
+      ],
+      "lineno": 335,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "signed char value"
+      ],
+      "lineno": 339,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned char value"
+      ],
+      "lineno": 343,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "short value"
+      ],
+      "lineno": 347,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned short value"
+      ],
+      "lineno": 351,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "int value"
+      ],
+      "lineno": 355,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned int value"
+      ],
+      "lineno": 359,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "long value"
+      ],
+      "lineno": 363,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned long value"
+      ],
+      "lineno": 367,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "long long value"
+      ],
+      "lineno": 371,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "unsigned long long value"
+      ],
+      "lineno": 375,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "float value"
+      ],
+      "lineno": 379,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "double value"
+      ],
+      "lineno": 383,
+      "name": "PropertyStream::add"
+    },
+    {
+      "args": [
+        "long double value"
+      ],
+      "lineno": 387,
+      "name": "PropertyStream::add"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "beast"
+    }
+  ],
+  "test_coverage_notes": "This file contains utility and data structure code for property streaming, with validation primarily via XRPL_ASSERT in Source::add. There is no direct evidence of test files in this snippet. Likely, tests would exist in higher-level integration or unit tests for PropertyStream, Source, Map, Set, and Proxy, possibly in files like test_PropertyStream.cpp or similar. Validation is minimal and mostly structural (parent_ checks). There is no input validation for string keys or stream data. Potential gaps: No explicit tests for invalid parent/child relationships, no tests for empty or malformed keys, and no tests for concurrent access (though locks are used).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

@@ -1,0 +1,377 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "service",
+        "cq",
+        "app",
+        "bindListener",
+        "handler",
+        "forward",
+        "requiredCondition",
+        "loadType",
+        "secureGatewayIPs"
+      ],
+      "lineno": 27,
+      "name": "GRPCServerImpl::CallData"
+    },
+    {
+      "args": [
+        "app"
+      ],
+      "lineno": 210,
+      "name": "GRPCServerImpl"
+    },
+    {
+      "args": [],
+      "lineno": 420,
+      "name": "GRPCServer"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "GRPCServerImpl::CallData<Request, Response>::process()",
+        "app_.getJobQueue().postCoro(...)",
+        "GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro>)",
+        "getUsage()",
+        "clientIsUnlimited()",
+        "getClientIpAddress()",
+        "getClientEndpoint()",
+        "getEndpoint(peer)"
+      ],
+      "entry_point": "GRPCServerImpl::CallData<Request, Response>::process()",
+      "purpose": "Handles incoming gRPC requests, schedules processing, checks resource usage, and validates client endpoint.",
+      "validation_points": [
+        "getEndpoint(peer): Validates and parses the peer (endpoint string) using beast::IP::Endpoint::from_string_checked"
+      ]
+    },
+    {
+      "call_chain": [
+        "getClientEndpoint()",
+        "getEndpoint(peer)"
+      ],
+      "entry_point": "getClientEndpoint()",
+      "purpose": "Extracts and validates the client's network endpoint from a string.",
+      "validation_points": [
+        "getEndpoint(peer): Validates endpoint string"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "peer (endpoint string)",
+      "flow": [
+        "gRPC request arrives",
+        "peer string extracted (possibly in getClientIpAddress or getClientEndpoint)",
+        "getEndpoint(peer) called",
+        "beast::IP::Endpoint::from_string_checked(peerClean)",
+        "beast::IP::to_asio_endpoint(endpoint.value())",
+        "used for client identification, resource limiting, or logging"
+      ],
+      "origin": "gRPC context (ctx_) or request metadata",
+      "transformations": [
+        "peer string may be cleaned (scheme/port stripped)",
+        "converted to beast::IP::Endpoint",
+        "converted to boost::asio::ip::tcp::endpoint"
+      ],
+      "validated_at": "getEndpoint (via beast::IP::Endpoint::from_string_checked)"
+    },
+    {
+      "field": "request_ (gRPC request object)",
+      "flow": [
+        "gRPCServerImpl::CallData<Request, Response> constructed",
+        "request_ populated by gRPC",
+        "handler_ or forward_ invoked with request_",
+        "response generated and sent via responder_"
+      ],
+      "origin": "gRPC framework (populated by incoming RPC)",
+      "transformations": [
+        "request_ is passed as-is to handler/forward",
+        "may be inspected for fields, but not validated in this file"
+      ],
+      "validated_at": "Not validated in this file"
+    }
+  ],
+  "description": "Implements the gRPC server for the XRPLedger, including request handling, server lifecycle management, and resource usage enforcement.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "peer (endpoint string passed to getEndpoint)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field peer (endpoint string passed to getEndpoint) validated by beast::IP (for endpoint parsing/validation)",
+      "issue_pattern": "Missing validation for peer (endpoint string passed to getEndpoint)",
+      "why_false_positive": "beast::IP (for endpoint parsing/validation) validates peer (endpoint string passed to getEndpoint) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer (endpoint string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at getEndpoint (static helper function)",
+      "issue_pattern": "Missing empty string validation for peer (endpoint string)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates peer (endpoint string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "peer (endpoint string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at getEndpoint (static helper function)",
+      "issue_pattern": "Missing format validation for peer (endpoint string)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates peer (endpoint string) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/GRPCServer.cpp",
+  "functions": [
+    {
+      "args": [
+        "peer"
+      ],
+      "lineno": 10,
+      "name": "getEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "clone"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "process"
+    },
+    {
+      "args": [
+        "coro"
+      ],
+      "lineno": 84,
+      "name": "process"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "isFinished"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "getLoadType"
+    },
+    {
+      "args": [
+        "isUnlimited"
+      ],
+      "lineno": 146,
+      "name": "getRole"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "getUser"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "getClientIpAddress"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "getClientEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 179,
+      "name": "clientIsUnlimited"
+    },
+    {
+      "args": [
+        "response",
+        "isUnlimited"
+      ],
+      "lineno": 192,
+      "name": "setIsUnlimited"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "getUsage"
+    },
+    {
+      "args": [
+        "app"
+      ],
+      "lineno": 210,
+      "name": "GRPCServerImpl"
+    },
+    {
+      "args": [],
+      "lineno": 253,
+      "name": "shutdown"
+    },
+    {
+      "args": [],
+      "lineno": 273,
+      "name": "handleRpcs"
+    },
+    {
+      "args": [],
+      "lineno": 340,
+      "name": "setupListeners"
+    },
+    {
+      "args": [],
+      "lineno": 393,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 414,
+      "name": "getEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 420,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 432,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 441,
+      "name": "~GRPCServer"
+    },
+    {
+      "args": [],
+      "lineno": 446,
+      "name": "getEndpoint"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is primarily server-side infrastructure. Validation of the peer endpoint string is handled in getEndpoint, which is likely tested indirectly via integration or system tests that exercise gRPC endpoints with various client addresses. There is no evidence of direct unit tests for getEndpoint in this file. Test coverage for malformed or malicious endpoint strings depends on higher-level gRPC server tests, possibly in test files under workflow/XRPLF-rippled-develop/test or similar directories. Direct unit tests for endpoint parsing/validation may be missing unless beast::IP::Endpoint::from_string_checked is tested elsewhere. Error handling (exceptions, empty optionals) is present but not explicitly tested here.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "peer (endpoint string passed to getEndpoint)"
+    ],
+    "framework": "beast::IP (for endpoint parsing/validation)",
+    "validation_layer": "entry_point (input parsing before use in server setup)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::exception (caught and ignored, returns std::nullopt)",
+      "field": "peer (endpoint string)",
+      "location": "getEndpoint (static helper function)",
+      "validated_by": "beast::IP::Endpoint::from_string_checked",
+      "validates": [
+        "Checks if the input string is a valid IP address (IPv4 or IPv6), optionally with port and scheme",
+        "Handles malformed input by catching exceptions"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

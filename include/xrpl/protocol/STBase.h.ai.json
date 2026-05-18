@@ -1,0 +1,124 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "v"
+    },
+    {
+      "lineno": 38,
+      "name": "lh"
+    },
+    {
+      "lineno": 38,
+      "name": "rh"
+    },
+    {
+      "lineno": 44,
+      "name": "lh"
+    },
+    {
+      "lineno": 44,
+      "name": "rh"
+    },
+    {
+      "lineno": 49,
+      "name": "lh"
+    },
+    {
+      "lineno": 49,
+      "name": "rh"
+    },
+    {
+      "lineno": 54,
+      "name": "lh"
+    },
+    {
+      "lineno": 54,
+      "name": "rh"
+    },
+    {
+      "lineno": 59,
+      "name": "v"
+    },
+    {
+      "lineno": 49,
+      "name": "t"
+    },
+    {
+      "lineno": 143,
+      "name": "out"
+    },
+    {
+      "lineno": 143,
+      "name": "t"
+    },
+    {
+      "lineno": 147,
+      "name": "D"
+    },
+    {
+      "lineno": 156,
+      "name": "D"
+    },
+    {
+      "lineno": 165,
+      "name": "T"
+    },
+    {
+      "lineno": 166,
+      "name": "n"
+    },
+    {
+      "lineno": 166,
+      "name": "buf"
+    },
+    {
+      "lineno": 166,
+      "name": "val"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "underlying_t v"
+      ],
+      "lineno": 13,
+      "name": "JsonOptions"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "STBase"
+    }
+  ],
+  "description": "Defines the STBase class and related utilities for XRPL's serialization framework, including JSON export options, type-safe downcasting, and serialization helpers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STBase.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 49,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "out",
+        "t"
+      ],
+      "lineno": 143,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 56,
+      "name": "detail"
+    }
+  ]
+}

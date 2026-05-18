@@ -1,0 +1,32 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides helper functions to check and load delegate account permissions for executing transactions in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/DelegateHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "delegate",
+        "tx"
+      ],
+      "lineno": 13,
+      "name": "checkTxPermission"
+    },
+    {
+      "args": [
+        "delegate",
+        "type",
+        "granularPermissions"
+      ],
+      "lineno": 23,
+      "name": "loadGranularPermission"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

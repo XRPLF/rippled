@@ -1,0 +1,54 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "data"
+    },
+    {
+      "lineno": 44,
+      "name": "len"
+    },
+    {
+      "lineno": 46,
+      "name": "s"
+    },
+    {
+      "lineno": 52,
+      "name": "data"
+    }
+  ],
+  "classes": [],
+  "description": "Provides base64 encoding and decoding utilities for binary and string data, including functions to encode raw bytes or strings to base64 and decode base64 strings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/base64.h",
+  "functions": [
+    {
+      "args": [
+        "std::uint8_t const* data",
+        "std::size_t len"
+      ],
+      "lineno": 44,
+      "name": "base64_encode"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 46,
+      "name": "base64_encode"
+    },
+    {
+      "args": [
+        "std::string_view data"
+      ],
+      "lineno": 52,
+      "name": "base64_decode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 42,
+      "name": "xrpl"
+    }
+  ]
+}

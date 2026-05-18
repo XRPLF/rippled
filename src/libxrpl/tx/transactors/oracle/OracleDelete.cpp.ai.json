@@ -1,0 +1,462 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "ctx"
+    },
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 32,
+      "name": "view"
+    },
+    {
+      "lineno": 32,
+      "name": "sle"
+    },
+    {
+      "lineno": 32,
+      "name": "account"
+    },
+    {
+      "lineno": 32,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OracleDelete::preflight"
+      ],
+      "entry_point": "OracleDelete::preflight",
+      "purpose": "Initial preflight checks for transaction validity (syntax, basic rules).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "OracleDelete::preclaim"
+      ],
+      "entry_point": "OracleDelete::preclaim",
+      "purpose": "Performs ledger state validation before transaction is applied.",
+      "validation_points": [
+        "ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount)))",
+        "ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]))",
+        "ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OracleDelete::doApply",
+        "OracleDelete::deleteOracle"
+      ],
+      "entry_point": "OracleDelete::doApply",
+      "purpose": "Applies the OracleDelete transaction to the ledger.",
+      "validation_points": [
+        "if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))",
+        "OracleDelete::deleteOracle: if (!sle)",
+        "OracleDelete::deleteOracle: if (!view.dirRemove(...))",
+        "OracleDelete::deleteOracle: if (!sleOwner)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx.getAccountID(sfAccount)",
+        "keylet::account(ctx.tx.getAccountID(sfAccount))",
+        "ctx.view.exists(...)",
+        "keylet::oracle(ctx.tx.getAccountID(sfAccount), ...)",
+        "ctx.view.read(...)"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Extracted as AccountID from transaction",
+        "Used to construct keylets for account and oracle objects"
+      ],
+      "validated_at": "OracleDelete::preclaim (account existence, ownership)"
+    },
+    {
+      "field": "sfOracleDocumentID",
+      "flow": [
+        "ctx.tx[sfOracleDocumentID]",
+        "keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID])",
+        "ctx.view.read(...)"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Used as key to locate Oracle SLE"
+      ],
+      "validated_at": "OracleDelete::preclaim (oracle existence)"
+    },
+    {
+      "field": "sle (Oracle SLE pointer)",
+      "flow": [
+        "sle",
+        "sle->getAccountID(sfOwner)",
+        "deleteOracle(sle, ...)",
+        "view.dirRemove(..., sle->key(), ...)",
+        "view.erase(sle)"
+      ],
+      "origin": "ctx.view.read(keylet::oracle(...))",
+      "transformations": [
+        "Checked for existence",
+        "Used to verify ownership",
+        "Used for directory removal and erasure"
+      ],
+      "validated_at": "OracleDelete::preclaim (existence, ownership), OracleDelete::deleteOracle (existence)"
+    },
+    {
+      "field": "sfOwnerNode",
+      "flow": [
+        "view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true)"
+      ],
+      "origin": "(*sle)[sfOwnerNode]",
+      "transformations": [
+        "Used as directory node index for removal"
+      ],
+      "validated_at": "OracleDelete::deleteOracle (dirRemove success)"
+    },
+    {
+      "field": "sfPriceDataSeries",
+      "flow": [
+        "sle->getFieldArray(sfPriceDataSeries).size()",
+        "count = (size > 5 ? -2 : -1)",
+        "adjustOwnerCount(view, sleOwner, count, j)"
+      ],
+      "origin": "sle->getFieldArray(sfPriceDataSeries)",
+      "transformations": [
+        "Array size checked to determine decrement value for owner count"
+      ],
+      "validated_at": "No explicit validation, but used in logic"
+    }
+  ],
+  "description": "Implements the OracleDelete transaction logic for deleting oracle entries from the XRPL ledger, including preflight, preclaim, and apply steps.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOracleDocumentID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID])) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfOracleDocumentID",
+      "why_false_positive": "ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID])) validates sfOracleDocumentID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount vs sfOwner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount vs sfOwner",
+      "why_false_positive": "ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner) validates sfAccount vs sfOwner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (Oracle SLE pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sle at deleteOracle",
+      "issue_pattern": "Missing empty string validation for sle (Oracle SLE pointer)",
+      "why_false_positive": "!sle validates sle (Oracle SLE pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle (Oracle SLE pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "!sle at deleteOracle",
+      "issue_pattern": "Missing type validation for sle (Oracle SLE pointer)",
+      "why_false_positive": "!sle validates sle (Oracle SLE pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dirRemove success",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!view.dirRemove(...) at deleteOracle",
+      "issue_pattern": "Missing empty string validation for dirRemove success",
+      "why_false_positive": "!view.dirRemove(...) validates dirRemove success for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sleOwner (Account SLE pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sleOwner at deleteOracle",
+      "issue_pattern": "Missing empty string validation for sleOwner (Account SLE pointer)",
+      "why_false_positive": "!sleOwner validates sleOwner (Account SLE pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sleOwner (Account SLE pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "!sleOwner at deleteOracle",
+      "issue_pattern": "Missing type validation for sleOwner (Account SLE pointer)",
+      "why_false_positive": "!sleOwner validates sleOwner (Account SLE pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Oracle SLE existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])) at doApply",
+      "issue_pattern": "Missing empty string validation for Oracle SLE existence",
+      "why_false_positive": "ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])) validates Oracle SLE existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/oracle/OracleDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "OracleDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "OracleDelete::preclaim"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& sle",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 32,
+      "name": "OracleDelete::deleteOracle"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "OracleDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code contains LCOV_EXCL_LINE and LCOV_EXCL_START/STOP comments, indicating some error paths are excluded from coverage (e.g., internal errors, impossible states). Main validation paths (account existence, oracle existence, ownership) are likely covered by standard transaction tests. However, error branches for internal failures (e.g., dirRemove failure, missing sleOwner) are not tested. Test files likely to cover this logic include transaction/OracleDelete and ledger/Oracle tests, but explicit negative tests for internal errors may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl ledger view and SLE accessors",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "preclaim",
+      "validated_by": "ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount)))",
+      "validates": [
+        "Checks that the account specified by sfAccount exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfOracleDocumentID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]))",
+      "validates": [
+        "Checks that the Oracle entry for the given account and OracleDocumentID exists"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfAccount vs sfOwner",
+      "location": "preclaim",
+      "validated_by": "ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner)",
+      "validates": [
+        "Checks that the account requesting the delete is the owner of the Oracle entry"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sle (Oracle SLE pointer)",
+      "location": "deleteOracle",
+      "validated_by": "!sle",
+      "validates": [
+        "Checks that the Oracle SLE pointer is not null before proceeding"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "dirRemove success",
+      "location": "deleteOracle",
+      "validated_by": "!view.dirRemove(...)",
+      "validates": [
+        "Checks that the Oracle entry is successfully removed from the owner's directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sleOwner (Account SLE pointer)",
+      "location": "deleteOracle",
+      "validated_by": "!sleOwner",
+      "validates": [
+        "Checks that the owner's Account SLE pointer is not null before adjusting owner count"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "Oracle SLE existence",
+      "location": "doApply",
+      "validated_by": "ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]))",
+      "validates": [
+        "Checks that the Oracle SLE exists before attempting to delete"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

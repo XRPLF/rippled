@@ -1,0 +1,85 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "AMMClawback"
+    }
+  ],
+  "description": "Defines the AMMClawback transactor class for handling AMM clawback transactions in the XRPL codebase, including methods for preflight checks, applying the transaction, and withdrawing assets.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMClawback.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "AMMClawback"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "Sandbox& view"
+      ],
+      "lineno": 31,
+      "name": "applyGuts"
+    },
+    {
+      "args": [
+        "Sandbox& view",
+        "SLE const& ammSle",
+        "AccountID const& holder",
+        "AccountID const& ammAccount",
+        "STAmount const& amountBalance",
+        "STAmount const& amount2Balance",
+        "STAmount const& lptAMMBalance",
+        "STAmount const& holdLPtokens",
+        "STAmount const& amount"
+      ],
+      "lineno": 39,
+      "name": "equalWithdrawMatchingOneAmount"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

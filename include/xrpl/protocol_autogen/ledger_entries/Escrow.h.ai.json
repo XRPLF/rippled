@@ -1,0 +1,364 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "sle"
+    },
+    {
+      "lineno": 285,
+      "name": "account"
+    },
+    {
+      "lineno": 285,
+      "name": "destination"
+    },
+    {
+      "lineno": 285,
+      "name": "amount"
+    },
+    {
+      "lineno": 285,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 285,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 285,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 295,
+      "name": "sle"
+    },
+    {
+      "lineno": 301,
+      "name": "value"
+    },
+    {
+      "lineno": 310,
+      "name": "value"
+    },
+    {
+      "lineno": 319,
+      "name": "value"
+    },
+    {
+      "lineno": 328,
+      "name": "value"
+    },
+    {
+      "lineno": 337,
+      "name": "value"
+    },
+    {
+      "lineno": 346,
+      "name": "value"
+    },
+    {
+      "lineno": 355,
+      "name": "value"
+    },
+    {
+      "lineno": 364,
+      "name": "value"
+    },
+    {
+      "lineno": 373,
+      "name": "value"
+    },
+    {
+      "lineno": 382,
+      "name": "value"
+    },
+    {
+      "lineno": 391,
+      "name": "value"
+    },
+    {
+      "lineno": 400,
+      "name": "value"
+    },
+    {
+      "lineno": 409,
+      "name": "value"
+    },
+    {
+      "lineno": 418,
+      "name": "value"
+    },
+    {
+      "lineno": 427,
+      "name": "value"
+    },
+    {
+      "lineno": 436,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 28,
+      "name": "Escrow"
+    },
+    {
+      "args": [
+        "account",
+        "destination",
+        "amount",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 277,
+      "name": "EscrowBuilder"
+    }
+  ],
+  "description": "Defines the Escrow ledger entry wrapper and builder for XRPL, providing type-safe field access and a fluent interface for constructing Escrow ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Escrow.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "hasSequence"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getCondition"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "hasCondition"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "getCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "hasCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "getFinishAfter"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "hasFinishAfter"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "getSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "hasSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 171,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 182,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 192,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 219,
+      "name": "getDestinationNode"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "hasDestinationNode"
+    },
+    {
+      "args": [],
+      "lineno": 240,
+      "name": "getTransferRate"
+    },
+    {
+      "args": [],
+      "lineno": 251,
+      "name": "hasTransferRate"
+    },
+    {
+      "args": [],
+      "lineno": 261,
+      "name": "getIssuerNode"
+    },
+    {
+      "args": [],
+      "lineno": 272,
+      "name": "hasIssuerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 299,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 308,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 317,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 326,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 335,
+      "name": "setCondition"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 344,
+      "name": "setCancelAfter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 353,
+      "name": "setFinishAfter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 362,
+      "name": "setSourceTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 371,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 380,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 389,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 398,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 407,
+      "name": "setDestinationNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 416,
+      "name": "setTransferRate"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 425,
+      "name": "setIssuerNode"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 434,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

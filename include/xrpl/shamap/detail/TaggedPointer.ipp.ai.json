@@ -1,0 +1,495 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "boundaries"
+    },
+    {
+      "lineno": 18,
+      "name": "elementSizeBytes"
+    },
+    {
+      "lineno": 20,
+      "name": "blockSizeBytes"
+    },
+    {
+      "lineno": 28,
+      "name": "arrayChunkSizeBytes"
+    },
+    {
+      "lineno": 36,
+      "name": "chunksPerBlock"
+    },
+    {
+      "lineno": 60,
+      "name": "allocateArrayFuns"
+    },
+    {
+      "lineno": 70,
+      "name": "freeArrayFuns"
+    },
+    {
+      "lineno": 80,
+      "name": "isFromArrayFuns"
+    },
+    {
+      "lineno": 94,
+      "name": "zeroSHAMapHash"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "numAllocatedChildren"
+      ],
+      "entry_point": "numAllocatedChildren",
+      "purpose": "Determines the number of allocated children slots for a given n (number of children).",
+      "validation_points": [
+        "XRPL_ASSERT(n <= SHAMapInnerNode::branchFactor) in numAllocatedChildren"
+      ]
+    },
+    {
+      "call_chain": [
+        "boundariesIndex"
+      ],
+      "entry_point": "boundariesIndex",
+      "purpose": "Finds the index in the boundaries array for a given number of children.",
+      "validation_points": [
+        "XRPL_ASSERT(numChildren <= SHAMapInnerNode::branchFactor) in boundariesIndex"
+      ]
+    },
+    {
+      "call_chain": [
+        "static_assert(boundaries.size() <= 4)",
+        "static_assert(boundaries.back() == SHAMapInnerNode::branchFactor)"
+      ],
+      "entry_point": "static initialization",
+      "purpose": "Ensures at compile time that the boundaries array is valid for the tagged pointer format.",
+      "validation_points": [
+        "static_assert(boundaries.size() <= 4)",
+        "static_assert(boundaries.back() == SHAMapInnerNode::branchFactor)"
+      ]
+    },
+    {
+      "call_chain": [
+        "initArrayChunkSizeBytes"
+      ],
+      "entry_point": "initArrayChunkSizeBytes",
+      "purpose": "Initializes array of chunk sizes for each boundary.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "initArrayChunksPerBlock"
+      ],
+      "entry_point": "initArrayChunksPerBlock",
+      "purpose": "Initializes array of chunk counts per block for each boundary.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "n (number of children)",
+      "flow": [
+        "Input to numAllocatedChildren",
+        "XRPL_ASSERT validation",
+        "std::lower_bound(boundaries.begin(), boundaries.end(), n)",
+        "Return value (number of allocated children slots)"
+      ],
+      "origin": "Input parameter to numAllocatedChildren",
+      "transformations": [
+        "Validated for upper bound",
+        "Mapped to nearest boundary value"
+      ],
+      "validated_at": "XRPL_ASSERT in numAllocatedChildren"
+    },
+    {
+      "field": "numChildren",
+      "flow": [
+        "Input to boundariesIndex",
+        "XRPL_ASSERT validation",
+        "std::lower_bound(boundaries.begin(), boundaries.end(), numChildren)",
+        "std::distance to get index",
+        "Return value (index in boundaries array)"
+      ],
+      "origin": "Input parameter to boundariesIndex",
+      "transformations": [
+        "Validated for upper bound",
+        "Mapped to index in boundaries"
+      ],
+      "validated_at": "XRPL_ASSERT in boundariesIndex"
+    },
+    {
+      "field": "boundaries",
+      "flow": [
+        "Defined at file scope",
+        "Used in static_asserts for compile-time validation",
+        "Used in numAllocatedChildren and boundariesIndex for runtime logic",
+        "Used in arrayChunkSizeBytes and chunksPerBlock initialization"
+      ],
+      "origin": "constexpr std::array in file scope",
+      "transformations": [
+        "Checked for size and last element at compile time",
+        "Used as lookup for allocation logic"
+      ],
+      "validated_at": "static_asserts at file scope"
+    },
+    {
+      "field": "arrayChunkSizeBytes",
+      "flow": [
+        "Computed from boundaries and elementSizeBytes",
+        "Used in initArrayChunksPerBlock and pool allocator templates"
+      ],
+      "origin": "initArrayChunkSizeBytes",
+      "transformations": [
+        "Calculated as boundaries[I] * elementSizeBytes"
+      ],
+      "validated_at": "Indirectly via boundaries static_asserts"
+    }
+  ],
+  "description": "Implements memory management and manipulation utilities for the TaggedPointer class, which efficiently stores and manages child hashes and pointers for SHAMapInnerNode in the XRPL SHAMap structure, supporting both dense and sparse representations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "n",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at numAllocatedChildren",
+      "issue_pattern": "Missing empty string validation for n",
+      "why_false_positive": "XRPL_ASSERT validates n for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "n",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at numAllocatedChildren",
+      "issue_pattern": "Missing range validation for n",
+      "why_false_positive": "XRPL_ASSERT validates n range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "numChildren",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at boundariesIndex",
+      "issue_pattern": "Missing empty string validation for numChildren",
+      "why_false_positive": "XRPL_ASSERT validates numChildren for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "numChildren",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at boundariesIndex",
+      "issue_pattern": "Missing range validation for numChildren",
+      "why_false_positive": "XRPL_ASSERT validates numChildren range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "boundaries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at global scope (file-level)",
+      "issue_pattern": "Missing empty string validation for boundaries",
+      "why_false_positive": "static_assert validates boundaries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "boundaries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert at global scope (file-level)",
+      "issue_pattern": "Missing empty string validation for boundaries",
+      "why_false_positive": "static_assert validates boundaries for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/detail/TaggedPointer.ipp",
+  "functions": [
+    {
+      "args": [
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 22,
+      "name": "initArrayChunkSizeBytes"
+    },
+    {
+      "args": [
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 30,
+      "name": "initArrayChunksPerBlock"
+    },
+    {
+      "args": [
+        "std::uint8_t n"
+      ],
+      "lineno": 39,
+      "name": "numAllocatedChildren"
+    },
+    {
+      "args": [
+        "std::uint8_t numChildren"
+      ],
+      "lineno": 45,
+      "name": "boundariesIndex"
+    },
+    {
+      "args": [
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 52,
+      "name": "initAllocateArrayFuns"
+    },
+    {
+      "args": [
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 62,
+      "name": "initFreeArrayFuns"
+    },
+    {
+      "args": [
+        "std::index_sequence<I...>"
+      ],
+      "lineno": 72,
+      "name": "initIsFromArrayFuns"
+    },
+    {
+      "args": [
+        "std::uint8_t numChildren"
+      ],
+      "lineno": 82,
+      "name": "allocateArrays"
+    },
+    {
+      "args": [
+        "std::uint8_t boundaryIndex",
+        "void* p"
+      ],
+      "lineno": 88,
+      "name": "deallocateArrays"
+    },
+    {
+      "args": [
+        "std::uint16_t isBranch",
+        "F&& f"
+      ],
+      "lineno": 98,
+      "name": "iterChildren"
+    },
+    {
+      "args": [
+        "std::uint16_t isBranch",
+        "F&& f"
+      ],
+      "lineno": 117,
+      "name": "iterNonEmptyChildIndexes"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "destroyHashesAndChildren"
+    },
+    {
+      "args": [
+        "std::uint16_t isBranch",
+        "int i"
+      ],
+      "lineno": 149,
+      "name": "getChildIndex"
+    },
+    {
+      "args": [
+        "RawAllocateTag",
+        "std::uint8_t numChildren"
+      ],
+      "lineno": 167,
+      "name": "TaggedPointer::TaggedPointer"
+    },
+    {
+      "args": [
+        "TaggedPointer&& other",
+        "std::uint16_t srcBranches",
+        "std::uint16_t dstBranches",
+        "std::uint8_t toAllocate"
+      ],
+      "lineno": 179,
+      "name": "TaggedPointer::TaggedPointer"
+    },
+    {
+      "args": [
+        "TaggedPointer&& other",
+        "std::uint16_t isBranch",
+        "std::uint8_t toAllocate"
+      ],
+      "lineno": 246,
+      "name": "TaggedPointer::TaggedPointer"
+    },
+    {
+      "args": [
+        "std::uint8_t numChildren"
+      ],
+      "lineno": 288,
+      "name": "TaggedPointer::TaggedPointer"
+    },
+    {
+      "args": [
+        "TaggedPointer&& other"
+      ],
+      "lineno": 297,
+      "name": "TaggedPointer::TaggedPointer"
+    },
+    {
+      "args": [
+        "TaggedPointer&& other"
+      ],
+      "lineno": 301,
+      "name": "TaggedPointer::operator="
+    },
+    {
+      "args": [],
+      "lineno": 310,
+      "name": "decode"
+    },
+    {
+      "args": [],
+      "lineno": 315,
+      "name": "capacity"
+    },
+    {
+      "args": [],
+      "lineno": 320,
+      "name": "isDense"
+    },
+    {
+      "args": [],
+      "lineno": 325,
+      "name": "getHashesAndChildren"
+    },
+    {
+      "args": [],
+      "lineno": 334,
+      "name": "getHashes"
+    },
+    {
+      "args": [],
+      "lineno": 338,
+      "name": "getChildren"
+    },
+    {
+      "args": [],
+      "lineno": 343,
+      "name": "~TaggedPointer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file is a low-level implementation detail and is unlikely to be directly unit tested. Instead, its logic is exercised via higher-level SHAMap and SHAMapInnerNode tests. Typical test files would be in the SHAMap or SHAMapInnerNode test suites (e.g., SHAMap_test.cpp, SHAMapInnerNode_test.cpp). Direct validation of XRPL_ASSERT and static_asserts is not typically covered by runtime tests; static_asserts are compile-time only. There may be gaps in testing for edge cases (e.g., n == 0, n == branchFactor+1) unless explicitly tested in higher-level tests. No direct test hooks or test-specific code is present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT, static_assert (custom assertion and C++ built-in)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws in debug)",
+      "field": "n",
+      "location": "numAllocatedChildren",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that n <= SHAMapInnerNode::branchFactor"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws in debug)",
+      "field": "numChildren",
+      "location": "boundariesIndex",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that numChildren <= SHAMapInnerNode::branchFactor"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error",
+      "field": "boundaries",
+      "location": "global scope (file-level)",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures boundaries.size() <= 4"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error",
+      "field": "boundaries",
+      "location": "global scope (file-level)",
+      "validated_by": "static_assert",
+      "validates": [
+        "Ensures boundaries.back() == SHAMapInnerNode::branchFactor"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

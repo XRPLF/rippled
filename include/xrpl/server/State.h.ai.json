@@ -1,0 +1,113 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "session"
+    },
+    {
+      "lineno": 20,
+      "name": "config"
+    },
+    {
+      "lineno": 20,
+      "name": "dbName"
+    },
+    {
+      "lineno": 29,
+      "name": "session"
+    },
+    {
+      "lineno": 37,
+      "name": "session"
+    },
+    {
+      "lineno": 37,
+      "name": "canDelete"
+    },
+    {
+      "lineno": 48,
+      "name": "session"
+    },
+    {
+      "lineno": 58,
+      "name": "session"
+    },
+    {
+      "lineno": 58,
+      "name": "state"
+    },
+    {
+      "lineno": 68,
+      "name": "session"
+    },
+    {
+      "lineno": 68,
+      "name": "seq"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "SavedState"
+    }
+  ],
+  "description": "This file provides functions and a struct for managing and interacting with the state database in the XRPL server, including initialization, saving and retrieving state, and managing ledger deletion and rotation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/State.h",
+  "functions": [
+    {
+      "args": [
+        "session",
+        "config",
+        "dbName"
+      ],
+      "lineno": 19,
+      "name": "initStateDB"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 28,
+      "name": "getCanDelete"
+    },
+    {
+      "args": [
+        "session",
+        "canDelete"
+      ],
+      "lineno": 36,
+      "name": "setCanDelete"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 47,
+      "name": "getSavedState"
+    },
+    {
+      "args": [
+        "session",
+        "state"
+      ],
+      "lineno": 57,
+      "name": "setSavedState"
+    },
+    {
+      "args": [
+        "session",
+        "seq"
+      ],
+      "lineno": 67,
+      "name": "setLastRotated"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

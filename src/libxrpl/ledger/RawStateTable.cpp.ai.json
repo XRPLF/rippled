@@ -1,0 +1,453 @@
+{
+  "args": [
+    {
+      "lineno": 74,
+      "name": "to"
+    },
+    {
+      "lineno": 92,
+      "name": "base"
+    },
+    {
+      "lineno": 92,
+      "name": "k"
+    },
+    {
+      "lineno": 110,
+      "name": "base"
+    },
+    {
+      "lineno": 110,
+      "name": "key"
+    },
+    {
+      "lineno": 110,
+      "name": "last"
+    },
+    {
+      "lineno": 143,
+      "name": "sle"
+    },
+    {
+      "lineno": 167,
+      "name": "sle"
+    },
+    {
+      "lineno": 191,
+      "name": "sle"
+    },
+    {
+      "lineno": 215,
+      "name": "base"
+    },
+    {
+      "lineno": 215,
+      "name": "k"
+    },
+    {
+      "lineno": 231,
+      "name": "fee"
+    },
+    {
+      "lineno": 235,
+      "name": "base"
+    },
+    {
+      "lineno": 241,
+      "name": "base"
+    },
+    {
+      "lineno": 247,
+      "name": "base"
+    },
+    {
+      "lineno": 247,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sles_iter_impl(const&)",
+        "sles_iter_impl(items_t::const_iterator, items_t::const_iterator, ReadView::sles_type::iterator, ReadView::sles_type::iterator)"
+      ],
+      "lineno": 6,
+      "name": "RawStateTable::sles_iter_impl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RawStateTable::sles_iter_impl::equal"
+      ],
+      "entry_point": "RawStateTable::sles_iter_impl::equal",
+      "purpose": "Compares two iterator implementations for equality, ensuring they are iterating over the same range.",
+      "validation_points": [
+        "XRPL_ASSERT(end1_ == p->end1_ && end0_ == p->end0_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RawStateTable::sles_iter_impl::increment",
+        "RawStateTable::sles_iter_impl::inc1/inc0/skip"
+      ],
+      "entry_point": "RawStateTable::sles_iter_impl::increment",
+      "purpose": "Advances the iterator to the next valid ledger entry, handling merges and erasures.",
+      "validation_points": [
+        "XRPL_ASSERT(sle1_ || sle0_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RawStateTable::apply",
+        "RawView::rawDestroyXRP",
+        "RawView::rawErase/rawInsert/rawReplace"
+      ],
+      "entry_point": "RawStateTable::apply",
+      "purpose": "Applies all pending state changes (insert, erase, replace) and XRP destruction to a RawView.",
+      "validation_points": [
+        "Base invariants checked by base during apply() (not shown here, but referenced in comment)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RawStateTable::exists",
+        "ReadView::exists"
+      ],
+      "entry_point": "RawStateTable::exists",
+      "purpose": "Checks if a key exists in the local state table or the underlying view.",
+      "validation_points": [
+        "XRPL_ASSERT(k.key.isNonZero())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "end1_ / end0_",
+      "flow": [
+        "sles_iter_impl constructor",
+        "stored in sles_iter_impl",
+        "used in equal() for validation"
+      ],
+      "origin": "Constructor of sles_iter_impl (from function arguments)",
+      "transformations": [
+        "Assigned directly from constructor arguments"
+      ],
+      "validated_at": "sles_iter_impl::equal (XRPL_ASSERT)"
+    },
+    {
+      "field": "sle1_ / sle0_",
+      "flow": [
+        "sles_iter_impl constructor",
+        "set via iterators",
+        "used in increment(), dereference(), skip()"
+      ],
+      "origin": "sles_iter_impl constructor (from iterators over items_t and ReadView)",
+      "transformations": [
+        "Set to nullptr when iterator reaches end",
+        "Updated via inc0()/inc1()"
+      ],
+      "validated_at": "sles_iter_impl::increment (XRPL_ASSERT)"
+    },
+    {
+      "field": "items_",
+      "flow": [
+        "RawStateTable",
+        "used in apply() to drive state changes",
+        "used in sles_iter_impl for iteration"
+      ],
+      "origin": "RawStateTable (populated externally, not shown in this file)",
+      "transformations": [
+        "Iterated, actions dispatched (erase/insert/replace)"
+      ],
+      "validated_at": "Indirectly, via logic in apply() and iterator"
+    },
+    {
+      "field": "dropsDestroyed_",
+      "flow": [
+        "RawStateTable",
+        "used in apply()",
+        "passed to RawView::rawDestroyXRP"
+      ],
+      "origin": "RawStateTable (populated externally)",
+      "transformations": [
+        "None in this file"
+      ],
+      "validated_at": "Not directly validated here"
+    },
+    {
+      "field": "k.key",
+      "flow": [
+        "RawStateTable::exists",
+        "XRPL_ASSERT(k.key.isNonZero())",
+        "lookup in items_",
+        "fallback to base.exists(k)"
+      ],
+      "origin": "Keylet argument to exists()",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "RawStateTable::exists (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the RawStateTable class for managing staged changes to the XRPL ledger state, including insertion, replacement, erasure, and iteration over state ledger entries (SLEs), with logic for merging staged and base views.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "end1_ == p->end1_ && end0_ == p->end0_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at equal()",
+      "issue_pattern": "Missing empty string validation for end1_ == p->end1_ && end0_ == p->end0_",
+      "why_false_positive": "XRPL_ASSERT macro validates end1_ == p->end1_ && end0_ == p->end0_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle1_ || sle0_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at increment()",
+      "issue_pattern": "Missing empty string validation for sle1_ || sle0_",
+      "why_false_positive": "XRPL_ASSERT macro validates sle1_ || sle0_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/RawStateTable.cpp",
+  "functions": [
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 74,
+      "name": "RawStateTable::apply"
+    },
+    {
+      "args": [
+        "base",
+        "k"
+      ],
+      "lineno": 92,
+      "name": "RawStateTable::exists"
+    },
+    {
+      "args": [
+        "base",
+        "key",
+        "last"
+      ],
+      "lineno": 110,
+      "name": "RawStateTable::succ"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 143,
+      "name": "RawStateTable::erase"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 167,
+      "name": "RawStateTable::insert"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 191,
+      "name": "RawStateTable::replace"
+    },
+    {
+      "args": [
+        "base",
+        "k"
+      ],
+      "lineno": 215,
+      "name": "RawStateTable::read"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 231,
+      "name": "RawStateTable::destroyXRP"
+    },
+    {
+      "args": [
+        "base"
+      ],
+      "lineno": 235,
+      "name": "RawStateTable::slesBegin"
+    },
+    {
+      "args": [
+        "base"
+      ],
+      "lineno": 241,
+      "name": "RawStateTable::slesEnd"
+    },
+    {
+      "args": [
+        "base",
+        "key"
+      ],
+      "lineno": 247,
+      "name": "RawStateTable::slesUpperBound"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The validation code paths (XRPL_ASSERTs) are primarily internal consistency checks and are not directly tested unless assertions are triggered (e.g., via debug builds or assertion-failure tests). Typical unit tests for RawStateTable would be found in files like 'RawStateTable_test.cpp', 'RawView_test.cpp', or broader ledger state tests. However, assertion failures are often not covered by standard tests unless there are explicit negative tests for iterator misuse or state corruption. The main data flows (items_, sle0_/sle1_, end0_/end1_) are exercised by tests that iterate over or apply RawStateTable changes, but coverage for assertion failures (e.g., mismatched iterators, null SLEs) may be incomplete unless specifically targeted. There may be a gap in tests that intentionally trigger these assertions to verify robustness against internal misuse.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a general validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely contract violation, may abort or throw depending on XRPL_ASSERT implementation)",
+      "field": "end1_ == p->end1_ && end0_ == p->end0_",
+      "location": "equal()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures that the compared iterators are from the same range (matching end iterators) before comparing positions"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely contract violation, may abort or throw depending on XRPL_ASSERT implementation)",
+      "field": "sle1_ || sle0_",
+      "location": "increment()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures that at least one of the SLE pointers is non-null before incrementing"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

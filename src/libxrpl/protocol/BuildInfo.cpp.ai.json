@@ -1,0 +1,422 @@
+{
+  "args": [
+    {
+      "lineno": 69,
+      "name": "versionStr"
+    },
+    {
+      "lineno": 122,
+      "name": "version"
+    },
+    {
+      "lineno": 127,
+      "name": "version"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getVersionString",
+        "buildVersionString"
+      ],
+      "entry_point": "getVersionString",
+      "purpose": "Returns the validated version string for the server, including build metadata if present.",
+      "validation_points": [
+        "beast::SemanticVersion::parse(s) in getVersionString",
+        "beast::SemanticVersion::print() == s in getVersionString"
+      ]
+    },
+    {
+      "call_chain": [
+        "getFullVersionString",
+        "getVersionString",
+        "buildVersionString"
+      ],
+      "entry_point": "getFullVersionString",
+      "purpose": "Returns the full version string, including the system name and validated version string.",
+      "validation_points": [
+        "beast::SemanticVersion::parse(s) in getVersionString",
+        "beast::SemanticVersion::print() == s in getVersionString"
+      ]
+    },
+    {
+      "call_chain": [
+        "encodeSoftwareVersion"
+      ],
+      "entry_point": "encodeSoftwareVersion",
+      "purpose": "Encodes a version string into a 64-bit integer, validating and extracting major, minor, patch, and pre-release info.",
+      "validation_points": [
+        "beast::SemanticVersion::parse(versionStr) in encodeSoftwareVersion",
+        "majorVersion, minorVersion, patchVersion range checks (>=0 && <=255)",
+        "parsePreRelease: lexicalCastChecked and range checks for pre-release identifiers"
+      ]
+    },
+    {
+      "call_chain": [
+        "isXrpldVersion"
+      ],
+      "entry_point": "isXrpldVersion",
+      "purpose": "Checks if a given encoded version matches the implementation version identifier mask.",
+      "validation_points": [
+        "Bitmask check (no semantic validation, just bitwise)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isNewerVersion"
+      ],
+      "entry_point": "isNewerVersion",
+      "purpose": "Compares two encoded version numbers to determine if one is newer.",
+      "validation_points": [
+        "Relies on encodeSoftwareVersion for validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "versionString",
+      "flow": [
+        "versionString",
+        "buildVersionString (may append metadata)",
+        "getVersionString (validates via SemanticVersion::parse/print)",
+        "getFullVersionString (prepends systemName)"
+      ],
+      "origin": "Static const char* in anonymous namespace",
+      "transformations": [
+        "May append commit hash, DEBUG, SANITIZERS metadata in buildVersionString"
+      ],
+      "validated_at": "getVersionString (SemanticVersion::parse and print)"
+    },
+    {
+      "field": "versionStr (input to encodeSoftwareVersion)",
+      "flow": [
+        "encodeSoftwareVersion (input)",
+        "beast::SemanticVersion::parse(versionStr)",
+        "Extract majorVersion, minorVersion, patchVersion, preReleaseIdentifiers",
+        "Range checks and bitwise encoding"
+      ],
+      "origin": "Function argument to encodeSoftwareVersion",
+      "transformations": [
+        "Parsed into SemanticVersion struct",
+        "Major/minor/patch extracted and range-checked",
+        "Pre-release identifiers parsed and encoded"
+      ],
+      "validated_at": "encodeSoftwareVersion (SemanticVersion::parse, range checks, parsePreRelease)"
+    },
+    {
+      "field": "majorVersion, minorVersion, patchVersion",
+      "flow": [
+        "SemanticVersion::parse(versionStr)",
+        "encodeSoftwareVersion (range checks and bitwise encoding)"
+      ],
+      "origin": "Parsed from versionStr via SemanticVersion",
+      "transformations": [
+        "Range-checked (>=0 && <=255)",
+        "Bit-shifted and OR'd into encoded version"
+      ],
+      "validated_at": "encodeSoftwareVersion (explicit range checks)"
+    },
+    {
+      "field": "preReleaseIdentifiers",
+      "flow": [
+        "SemanticVersion::parse(versionStr)",
+        "encodeSoftwareVersion (parsePreRelease lambda)"
+      ],
+      "origin": "Parsed from versionStr via SemanticVersion",
+      "transformations": [
+        "Each identifier checked for prefix (rc/b), parsed as integer, range-checked, encoded"
+      ],
+      "validated_at": "encodeSoftwareVersion (parsePreRelease: prefix, lexicalCastChecked, range check)"
+    }
+  ],
+  "description": "This file provides build and version information utilities for the XRPL software, including version string management, encoding/decoding of software versions, and version comparison functions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "version string (s)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::SemanticVersion::parse and beast::SemanticVersion::print at getVersionString",
+      "issue_pattern": "Missing empty string validation for version string (s)",
+      "why_false_positive": "beast::SemanticVersion::parse and beast::SemanticVersion::print validates version string (s) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "version string (s)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::SemanticVersion::parse and beast::SemanticVersion::print at getVersionString",
+      "issue_pattern": "Missing format validation for version string (s)",
+      "why_false_positive": "beast::SemanticVersion::parse and beast::SemanticVersion::print validates version string (s) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "majorVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing empty string validation for majorVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates majorVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "majorVersion",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing range validation for majorVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates majorVersion range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "minorVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing empty string validation for minorVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates minorVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "minorVersion",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing range validation for minorVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates minorVersion range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "patchVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing empty string validation for patchVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates patchVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "patchVersion",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check (>=0 && <=255) at encodeSoftwareVersion",
+      "issue_pattern": "Missing range validation for patchVersion",
+      "why_false_positive": "explicit range check (>=0 && <=255) validates patchVersion range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "versionStr",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::SemanticVersion::parse at encodeSoftwareVersion",
+      "issue_pattern": "Missing empty string validation for versionStr",
+      "why_false_positive": "beast::SemanticVersion::parse validates versionStr for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "versionStr",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::SemanticVersion::parse at encodeSoftwareVersion",
+      "issue_pattern": "Missing format validation for versionStr",
+      "why_false_positive": "beast::SemanticVersion::parse validates versionStr format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/BuildInfo.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "buildVersionString"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "getVersionString"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getFullVersionString"
+    },
+    {
+      "args": [
+        "versionStr"
+      ],
+      "lineno": 69,
+      "name": "encodeSoftwareVersion"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "getEncodedVersion"
+    },
+    {
+      "args": [
+        "version"
+      ],
+      "lineno": 122,
+      "name": "isXrpldVersion"
+    },
+    {
+      "args": [
+        "version"
+      ],
+      "lineno": 127,
+      "name": "isNewerVersion"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 15,
+      "name": "BuildInfo"
+    }
+  ],
+  "test_coverage_notes": "The code relies heavily on beast::SemanticVersion for parsing and validation, so test coverage depends on both direct tests of BuildInfo.cpp and tests of SemanticVersion. Typical test files would be in the unit test suite for protocol/BuildInfo or protocol/BuildInfo_test.cpp, as well as tests for version encoding/decoding and error handling (e.g., invalid version strings, out-of-range values, malformed pre-release identifiers). Gaps may exist if there are no tests for malformed version strings, edge cases for range checks, or unusual pre-release identifiers. There is no evidence in this file of explicit test hooks or test-only code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "beast::SemanticVersion (custom class), explicit C++ checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LogicError (exception)",
+      "field": "version string (s)",
+      "location": "getVersionString",
+      "validated_by": "beast::SemanticVersion::parse and beast::SemanticVersion::print",
+      "validates": [
+        "Checks if the version string can be parsed as a semantic version",
+        "Checks if the printed version matches the input string (round-trip format validation)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (value is only encoded if valid, otherwise skipped)",
+      "field": "majorVersion",
+      "location": "encodeSoftwareVersion",
+      "validated_by": "explicit range check (>=0 && <=255)",
+      "validates": [
+        "Ensures majorVersion is between 0 and 255 before encoding"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (value is only encoded if valid, otherwise skipped)",
+      "field": "minorVersion",
+      "location": "encodeSoftwareVersion",
+      "validated_by": "explicit range check (>=0 && <=255)",
+      "validates": [
+        "Ensures minorVersion is between 0 and 255 before encoding"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (value is only encoded if valid, otherwise skipped)",
+      "field": "patchVersion",
+      "location": "encodeSoftwareVersion",
+      "validated_by": "explicit range check (>=0 && <=255)",
+      "validates": [
+        "Ensures patchVersion is between 0 and 255 before encoding"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (function returns default encoding if parse fails)",
+      "field": "versionStr",
+      "location": "encodeSoftwareVersion",
+      "validated_by": "beast::SemanticVersion::parse",
+      "validates": [
+        "Checks if versionStr is a valid semantic version string"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

@@ -1,0 +1,587 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "jsonLines"
+    },
+    {
+      "lineno": 10,
+      "name": "line"
+    },
+    {
+      "lineno": 34,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountChannels",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "ledger->exists(keylet::account(accountID))",
+        "readLimitField",
+        "addChannel"
+      ],
+      "entry_point": "doAccountChannels",
+      "purpose": "Handles the 'account_channels' RPC request: validates input, locates ledger, parses account, checks existence, processes optional fields, and collects payment channel data.",
+      "validation_points": [
+        "doAccountChannels: params.isMember(jss::account)",
+        "doAccountChannels: params[jss::account].isString()",
+        "RPC::lookupLedger: ledger_hash / ledger_index validation",
+        "doAccountChannels: parseBase58<AccountID>(params[jss::account].asString())",
+        "doAccountChannels: ledger->exists(keylet::account(accountID))",
+        "doAccountChannels: parseBase58<AccountID>(strDst) (if destination_account present)",
+        "doAccountChannels: readLimitField (limit validation)",
+        "doAccountChannels: params.isMember(jss::marker) && params[jss::marker].isString()"
+      ]
+    },
+    {
+      "call_chain": [
+        "addChannel"
+      ],
+      "entry_point": "addChannel",
+      "purpose": "Formats a payment channel SLE into a JSON object for the response.",
+      "validation_points": [
+        "addChannel: publicKeyType(line[sfPublicKey]) (checks public key validity)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "params[jss::account]",
+        "doAccountChannels: isMember/isString validation",
+        "parseBase58<AccountID>(params[jss::account].asString())",
+        "accountID",
+        "ledger->exists(keylet::account(accountID))",
+        "used for directory traversal and filtering"
+      ],
+      "origin": "params[jss::account] (JSON RPC input)",
+      "transformations": [
+        "String \u2192 AccountID (via parseBase58)",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "doAccountChannels: isMember, isString, parseBase58, ledger->exists"
+    },
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "params",
+        "RPC::lookupLedger",
+        "ledger (ReadView const)"
+      ],
+      "origin": "params (JSON RPC input)",
+      "transformations": [
+        "Validated and resolved to a ledger object"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "destination_account",
+      "flow": [
+        "params[jss::destination_account]",
+        "strDst",
+        "parseBase58<AccountID>(strDst)",
+        "raDstAccount (optional<AccountID>)"
+      ],
+      "origin": "params[jss::destination_account] (optional, JSON RPC input)",
+      "transformations": [
+        "String \u2192 AccountID (if present and valid)"
+      ],
+      "validated_at": "doAccountChannels: parseBase58<AccountID>(strDst)"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "params[\"limit\"]",
+        "readLimitField",
+        "limit (unsigned int)"
+      ],
+      "origin": "params[\"limit\"] (optional, JSON RPC input)",
+      "transformations": [
+        "String/int \u2192 unsigned int (with bounds checking)"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "marker",
+      "flow": [
+        "params[\"marker\"]",
+        "isString validation",
+        "parsed into startAfter (uint256) and startHint (uint64_t)"
+      ],
+      "origin": "params[\"marker\"] (optional, JSON RPC input)",
+      "transformations": [
+        "String \u2192 (uint256, uint64_t) via parsing"
+      ],
+      "validated_at": "doAccountChannels: params.isMember(jss::marker) && params[jss::marker].isString()"
+    },
+    {
+      "field": "channel data (SLE)",
+      "flow": [
+        "ledger directory",
+        "SLE objects",
+        "addChannel",
+        "jsonChannels (JSON array in response)"
+      ],
+      "origin": "ledger directory traversal",
+      "transformations": [
+        "SLE \u2192 JSON object (field mapping, formatting, public key encoding)"
+      ],
+      "validated_at": "addChannel: publicKeyType(line[sfPublicKey])"
+    }
+  ],
+  "description": "Implements the XRPL RPC method 'account_channels', which returns payment channels associated with a given account, supporting pagination and filtering by destination account.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account (presence, type, format, existence)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account (presence, type, format, existence) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for account (presence, type, format, existence)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates account (presence, type, format, existence) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "destination_account (format if present)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field destination_account (format if present) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for destination_account (format if present)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates destination_account (format if present) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "limit (type, range if present)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field limit (type, range if present) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for limit (type, range if present)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates limit (type, range if present) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index (existence via lookupLedger)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash / ledger_index (existence via lookupLedger) validated by xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+      "issue_pattern": "Missing validation for ledger_hash / ledger_index (existence via lookupLedger)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField) validates ledger_hash / ledger_index (existence via lookupLedger) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::account) at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params.isMember(jss::account) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::account].isString() at doAccountChannels",
+      "issue_pattern": "Missing type validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::account].asString()) at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::account].asString()) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID>(params[jss::account].asString()) at doAccountChannels",
+      "issue_pattern": "Missing format validation for account",
+      "why_false_positive": "parseBase58<AccountID>(params[jss::account].asString()) validates account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->exists(keylet::account(accountID)) at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "ledger->exists(keylet::account(accountID)) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "destination_account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID>(strDst) at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for destination_account",
+      "why_false_positive": "parseBase58<AccountID>(strDst) validates destination_account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "destination_account",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID>(strDst) at doAccountChannels",
+      "issue_pattern": "Missing format validation for destination_account",
+      "why_false_positive": "parseBase58<AccountID>(strDst) validates destination_account format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "readLimitField(limit, RPC::Tuning::accountChannels, context) at doAccountChannels",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "readLimitField(limit, RPC::Tuning::accountChannels, context) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountChannels.cpp",
+  "functions": [
+    {
+      "args": [
+        "jsonLines",
+        "line"
+      ],
+      "lineno": 10,
+      "name": "addChannel"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 34,
+      "name": "doAccountChannels"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation and data flow logic is exercised by integration and unit tests for the 'account_channels' RPC. Likely test files: 'rpc/account_channels_test.cpp', 'rpc/AccountChannels_test.cpp', or similar in the test suite. These should cover: missing/invalid account, malformed account, non-existent account, invalid ledger, invalid limit, invalid marker, and correct channel listing. Gaps may exist for edge cases in marker parsing, destination_account validation, and malformed public keys in SLEs. Exception handling paths (e.g., parse errors, ledger lookup failures) should be explicitly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "account (presence, type, format, existence)",
+      "destination_account (format if present)",
+      "limit (type, range if present)",
+      "ledger_hash / ledger_index (existence via lookupLedger)"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, parseBase58, readLimitField)",
+    "validation_layer": "entry_point (doAccountChannels)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountChannels",
+      "validated_by": "params.isMember(jss::account)",
+      "validates": [
+        "Checks that the 'account' field is present in the input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::account)",
+      "field": "account",
+      "location": "doAccountChannels",
+      "validated_by": "params[jss::account].isString()",
+      "validates": [
+        "Checks that the 'account' field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "result (error JSON from lookupLedger)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doAccountChannels",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "Checks that the specified ledger exists and is accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "account",
+      "location": "doAccountChannels",
+      "validated_by": "parseBase58<AccountID>(params[jss::account].asString())",
+      "validates": [
+        "Checks that the 'account' field is a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_NOT_FOUND)",
+      "field": "account",
+      "location": "doAccountChannels",
+      "validated_by": "ledger->exists(keylet::account(accountID))",
+      "validates": [
+        "Checks that the account exists in the specified ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcACT_MALFORMED)",
+      "field": "destination_account",
+      "location": "doAccountChannels",
+      "validated_by": "parseBase58<AccountID>(strDst)",
+      "validates": [
+        "Checks that the 'destination_account' field, if present, is a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "*err (error JSON from readLimitField)",
+      "field": "limit",
+      "location": "doAccountChannels",
+      "validated_by": "readLimitField(limit, RPC::Tuning::accountChannels, context)",
+      "validates": [
+        "Checks that the 'limit' field, if present, is an integer",
+        "Checks that the 'limit' field is within allowed range (as per RPC::Tuning::accountChannels)"
+      ],
+      "validation_type": "range|type"
+    }
+  ]
+}

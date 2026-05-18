@@ -1,0 +1,41 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "ev"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "is_error_code_enum"
+    }
+  ],
+  "description": "Defines error codes and error handling utilities for the xrpl::cryptoconditions module, including an error enum and integration with std::error_code.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/conditions/detail/error.h",
+  "functions": [
+    {
+      "args": [
+        "ev"
+      ],
+      "lineno": 23,
+      "name": "make_error_code"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "cryptoconditions"
+    },
+    {
+      "lineno": 30,
+      "name": "std"
+    }
+  ]
+}

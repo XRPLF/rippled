@@ -1,0 +1,14 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines type aliases for hash-based containers (maps and sets) with both standard and hardened (cryptographically secure) hash functions, within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/UnorderedContainers.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ]
+}

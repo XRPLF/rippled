@@ -1,0 +1,406 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SetRegularKey::preflight"
+      ],
+      "entry_point": "SetRegularKey::preflight",
+      "purpose": "Performs initial validation on the SetRegularKey transaction before it is applied.",
+      "validation_points": [
+        "Checks if sfRegularKey is present and not equal to sfAccount (prevents setting regular key to self)."
+      ]
+    },
+    {
+      "call_chain": [
+        "SetRegularKey::doApply"
+      ],
+      "entry_point": "SetRegularKey::doApply",
+      "purpose": "Applies the SetRegularKey transaction to the ledger, updating or removing the regular key.",
+      "validation_points": [
+        "Checks if account exists (peek),",
+        "Checks if minimum fee is paid (minimumFee),",
+        "Checks if sfRegularKey is present (isFieldPresent),",
+        "Checks if master key is disabled and no signer list exists (isFlag(lsfDisableMaster) && !peek(signers))"
+      ]
+    },
+    {
+      "call_chain": [
+        "SetRegularKey::calculateBaseFee"
+      ],
+      "entry_point": "SetRegularKey::calculateBaseFee",
+      "purpose": "Calculates the base fee for the transaction, possibly waiving the fee if certain conditions are met.",
+      "validation_points": [
+        "Validates signing public key type,",
+        "Validates that signing public key matches account,",
+        "Checks lsfPasswordSpent flag"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfRegularKey",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.isFieldPresent(sfRegularKey)",
+        "ctx.tx.getAccountID(sfRegularKey)",
+        "sle->setAccountID(sfRegularKey, ...)",
+        "sle->makeFieldAbsent(sfRegularKey)"
+      ],
+      "origin": "ctx.tx (STTx) - transaction input",
+      "transformations": [
+        "Checked for presence (isFieldPresent)",
+        "Converted to AccountID (getAccountID)",
+        "Set or removed on ledger entry (setAccountID/makeFieldAbsent)"
+      ],
+      "validated_at": "preflight (for self-assignment), doApply (for presence/absence and ledger update)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx",
+        "ctx.tx.getAccountID(sfAccount)",
+        "used in preflight for comparison",
+        "used in calculateBaseFee for account lookup",
+        "used in doApply for ledger lookup"
+      ],
+      "origin": "ctx.tx (STTx) - transaction input",
+      "transformations": [
+        "Converted to AccountID (getAccountID)",
+        "Used for comparison and ledger keylet"
+      ],
+      "validated_at": "preflight (for comparison), calculateBaseFee (for account lookup)"
+    },
+    {
+      "field": "SigningPubKey",
+      "flow": [
+        "tx.getSigningPubKey()",
+        "publicKeyType(makeSlice(spk))",
+        "calcAccountID(PublicKey(makeSlice(spk)))",
+        "compared to tx.getAccountID(sfAccount)"
+      ],
+      "origin": "ctx.tx (STTx) - transaction input",
+      "transformations": [
+        "Converted to PublicKey",
+        "AccountID derived from PublicKey"
+      ],
+      "validated_at": "calculateBaseFee (for fee waiver eligibility)"
+    },
+    {
+      "field": "lsfPasswordSpent",
+      "flow": [
+        "view.read(keylet::account(id))",
+        "sle->getFlags() & lsfPasswordSpent",
+        "sle->setFlag(lsfPasswordSpent)"
+      ],
+      "origin": "AccountRoot ledger entry",
+      "transformations": [
+        "Checked for flag presence",
+        "Set if minimum fee not paid"
+      ],
+      "validated_at": "calculateBaseFee (for fee waiver), doApply (for flag setting)"
+    }
+  ],
+  "description": "Implements the SetRegularKey transaction logic for the XRPL, including fee calculation, preflight checks, and application of the regular key setting or removal.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfRegularKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight",
+      "issue_pattern": "Missing empty string validation for sfRegularKey",
+      "why_false_positive": "explicit check in code validates sfRegularKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfRegularKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent at preflight",
+      "issue_pattern": "Missing empty string validation for sfRegularKey",
+      "why_false_positive": "isFieldPresent validates sfRegularKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfRegularKey",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isFieldPresent at preflight",
+      "issue_pattern": "Missing format validation for sfRegularKey",
+      "why_false_positive": "isFieldPresent validates sfRegularKey format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfRegularKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent at doApply",
+      "issue_pattern": "Missing empty string validation for sfRegularKey",
+      "why_false_positive": "isFieldPresent validates sfRegularKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfRegularKey",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isFieldPresent at doApply",
+      "issue_pattern": "Missing format validation for sfRegularKey",
+      "why_false_positive": "isFieldPresent validates sfRegularKey format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfRegularKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getAccountID at preflight",
+      "issue_pattern": "Missing empty string validation for sfRegularKey",
+      "why_false_positive": "getAccountID validates sfRegularKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfRegularKey",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "getAccountID at preflight",
+      "issue_pattern": "Missing type validation for sfRegularKey",
+      "why_false_positive": "getAccountID validates sfRegularKey type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getAccountID at preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "getAccountID validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAccount",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "getAccountID at preflight",
+      "issue_pattern": "Missing type validation for sfAccount",
+      "why_false_positive": "getAccountID validates sfAccount type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfDisableMaster, signer list",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFlag, peek(keylet::signers) at doApply",
+      "issue_pattern": "Missing empty string validation for lsfDisableMaster, signer list",
+      "why_false_positive": "isFlag, peek(keylet::signers) validates lsfDisableMaster, signer list for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "signingPubKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "publicKeyType, calcAccountID at calculateBaseFee",
+      "issue_pattern": "Missing empty string validation for signingPubKey",
+      "why_false_positive": "publicKeyType, calcAccountID validates signingPubKey for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/account/SetRegularKey.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 7,
+      "name": "SetRegularKey::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "SetRegularKey::preflight"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "SetRegularKey::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "SetRegularKey is a core transaction type and is typically covered by integration and unit tests in the rippled codebase. Likely test files include 'SetRegularKey_test.cpp', 'Transactor_test.cpp', and broader transaction/ledger tests. The explicit check for setting the regular key to self (temBAD_REGKEY) and the removal logic (tecNO_ALTERNATIVE_KEY) are usually tested. However, edge cases such as malformed keys, fee waiver logic (lsfPasswordSpent), and interactions with disabled master keys or missing signer lists may not be exhaustively tested. Coverage for minimumFee logic and all possible error returns (e.g., tefINTERNAL) should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_REGKEY",
+      "field": "sfRegularKey",
+      "location": "preflight",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Checks if sfRegularKey is present and equal to sfAccount (prevents setting regular key to self)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_REGKEY",
+      "field": "sfRegularKey",
+      "location": "preflight",
+      "validated_by": "isFieldPresent",
+      "validates": [
+        "Checks if sfRegularKey field is present in the transaction"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ALTERNATIVE_KEY",
+      "field": "sfRegularKey",
+      "location": "doApply",
+      "validated_by": "isFieldPresent",
+      "validates": [
+        "Checks if sfRegularKey is present to determine if key is being set or removed"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "temBAD_REGKEY",
+      "field": "sfRegularKey",
+      "location": "preflight",
+      "validated_by": "getAccountID",
+      "validates": [
+        "Ensures sfRegularKey is a valid AccountID"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "temBAD_REGKEY",
+      "field": "sfAccount",
+      "location": "preflight",
+      "validated_by": "getAccountID",
+      "validates": [
+        "Ensures sfAccount is a valid AccountID"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ALTERNATIVE_KEY",
+      "field": "lsfDisableMaster, signer list",
+      "location": "doApply",
+      "validated_by": "isFlag, peek(keylet::signers)",
+      "validates": [
+        "If removing regular key, ensures account has alternative signing method (not both master key disabled and no signer list)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (affects fee calculation only)",
+      "field": "signingPubKey",
+      "location": "calculateBaseFee",
+      "validated_by": "publicKeyType, calcAccountID",
+      "validates": [
+        "Checks if signingPubKey is a valid public key type and matches account ID"
+      ],
+      "validation_type": "format|business_logic"
+    }
+  ]
+}

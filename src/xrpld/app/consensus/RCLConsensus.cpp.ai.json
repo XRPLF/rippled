@@ -1,0 +1,766 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "RCLConsensus"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "RCLConsensus::Adaptor"
+    },
+    {
+      "args": [
+        "char const* label",
+        "bool const validating",
+        "beast::Journal j"
+      ],
+      "lineno": 706,
+      "name": "RclConsensusLogger"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RCLConsensus::RCLConsensus",
+        "RCLConsensus::Adaptor::Adaptor"
+      ],
+      "entry_point": "RCLConsensus::RCLConsensus",
+      "purpose": "Constructs the consensus engine and its adaptor, initializing validator keys and validation cookie.",
+      "validation_points": [
+        "RCLConsensus::Adaptor::Adaptor: XRPL_ASSERT(valCookie_, ...)",
+        "RCLConsensus::Adaptor::Adaptor: validatorKeys_.nodeID != beast::zero",
+        "RCLConsensus::Adaptor::Adaptor: validatorKeys_.keys pointer check"
+      ]
+    },
+    {
+      "call_chain": [
+        "RCLConsensus::Adaptor::acquireLedger",
+        "ledgerMaster_.getLedgerByHash",
+        "app_.getJobQueue().addJob"
+      ],
+      "entry_point": "RCLConsensus::Adaptor::acquireLedger",
+      "purpose": "Attempts to acquire a ledger by hash, triggers async acquisition if not present.",
+      "validation_points": [
+        "XRPL_ASSERT(!built->open() && built->isImmutable(), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "valCookie_",
+      "flow": [
+        "Adaptor constructor",
+        "Assigned to valCookie_",
+        "Validated by XRPL_ASSERT",
+        "Used for logging and possibly for consensus identity"
+      ],
+      "origin": "RCLConsensus::Adaptor::Adaptor constructor (randomly generated)",
+      "transformations": [
+        "Random value assigned at construction"
+      ],
+      "validated_at": "RCLConsensus::Adaptor::Adaptor (XRPL_ASSERT)"
+    },
+    {
+      "field": "validatorKeys_.nodeID",
+      "flow": [
+        "ValidatorKeys input",
+        "Assigned to member validatorKeys_",
+        "Checked for non-zero in Adaptor constructor",
+        "Used for logging and nUnlVote_ initialization"
+      ],
+      "origin": "Passed into RCLConsensus::Adaptor::Adaptor as ValidatorKeys const&",
+      "transformations": [
+        "None (direct assignment and check)"
+      ],
+      "validated_at": "RCLConsensus::Adaptor::Adaptor (if (validatorKeys_.nodeID != beast::zero))"
+    },
+    {
+      "field": "validatorKeys_.keys",
+      "flow": [
+        "ValidatorKeys input",
+        "Assigned to member validatorKeys_",
+        "Pointer checked in Adaptor constructor",
+        "Used for logging public keys"
+      ],
+      "origin": "Passed into RCLConsensus::Adaptor::Adaptor as ValidatorKeys const&",
+      "transformations": [
+        "Pointer check (null or not)"
+      ],
+      "validated_at": "RCLConsensus::Adaptor::Adaptor (if (validatorKeys_.keys))"
+    }
+  ],
+  "description": "Implements the RCLConsensus class and its Adaptor for managing consensus rounds, ledger building, transaction sharing, validation, and related operations in the XRPL (Ripple) distributed ledger system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "valCookie_ (range via assertion)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field valCookie_ (range via assertion) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for valCookie_ (range via assertion)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates valCookie_ (range via assertion) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "validatorKeys_.nodeID (business logic via conditional)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field validatorKeys_.nodeID (business logic via conditional) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for validatorKeys_.nodeID (business logic via conditional)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates validatorKeys_.nodeID (business logic via conditional) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "validatorKeys_.keys (pointer validity via conditional)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field validatorKeys_.keys (pointer validity via conditional) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for validatorKeys_.keys (pointer validity via conditional)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates validatorKeys_.keys (pointer validity via conditional) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "valCookie_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at RCLConsensus::Adaptor::Adaptor (constructor)",
+      "issue_pattern": "Missing empty string validation for valCookie_",
+      "why_false_positive": "XRPL_ASSERT validates valCookie_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "valCookie_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at RCLConsensus::Adaptor::Adaptor (constructor)",
+      "issue_pattern": "Missing range validation for valCookie_",
+      "why_false_positive": "XRPL_ASSERT validates valCookie_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "validatorKeys_.nodeID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison (validatorKeys_.nodeID != beast::zero) at RCLConsensus::Adaptor::Adaptor (constructor)",
+      "issue_pattern": "Missing empty string validation for validatorKeys_.nodeID",
+      "why_false_positive": "comparison (validatorKeys_.nodeID != beast::zero) validates validatorKeys_.nodeID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "validatorKeys_.keys",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer check (validatorKeys_.keys) at RCLConsensus::Adaptor::Adaptor (constructor)",
+      "issue_pattern": "Missing empty string validation for validatorKeys_.keys",
+      "why_false_positive": "pointer check (validatorKeys_.keys) validates validatorKeys_.keys for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "validatorKeys_.keys",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "pointer check (validatorKeys_.keys) at RCLConsensus::Adaptor::Adaptor (constructor)",
+      "issue_pattern": "Missing type validation for validatorKeys_.keys",
+      "why_false_positive": "pointer check (validatorKeys_.keys) validates validatorKeys_.keys type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLConsensus.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "std::unique_ptr<FeeVote>&& feeVote",
+        "LedgerMaster& ledgerMaster",
+        "LocalTxs& localTxs",
+        "InboundTransactions& inboundTransactions",
+        "Consensus<Adaptor>::clock_type const& clock",
+        "ValidatorKeys const& validatorKeys",
+        "beast::Journal journal"
+      ],
+      "lineno": 19,
+      "name": "RCLConsensus::RCLConsensus"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::unique_ptr<FeeVote>&& feeVote",
+        "LedgerMaster& ledgerMaster",
+        "LocalTxs& localTxs",
+        "InboundTransactions& inboundTransactions",
+        "ValidatorKeys const& validatorKeys",
+        "beast::Journal journal"
+      ],
+      "lineno": 34,
+      "name": "RCLConsensus::Adaptor::Adaptor"
+    },
+    {
+      "args": [
+        "LedgerHash const& hash"
+      ],
+      "lineno": 56,
+      "name": "RCLConsensus::Adaptor::acquireLedger"
+    },
+    {
+      "args": [
+        "RCLCxPeerPos const& peerPos"
+      ],
+      "lineno": 81,
+      "name": "RCLConsensus::Adaptor::share"
+    },
+    {
+      "args": [
+        "RCLCxTx const& tx"
+      ],
+      "lineno": 101,
+      "name": "RCLConsensus::Adaptor::share"
+    },
+    {
+      "args": [
+        "RCLCxPeerPos::Proposal const& proposal"
+      ],
+      "lineno": 116,
+      "name": "RCLConsensus::Adaptor::propose"
+    },
+    {
+      "args": [
+        "RCLTxSet const& txns"
+      ],
+      "lineno": 146,
+      "name": "RCLConsensus::Adaptor::share"
+    },
+    {
+      "args": [
+        "RCLTxSet::ID const& setId"
+      ],
+      "lineno": 150,
+      "name": "RCLConsensus::Adaptor::acquireTxSet"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "RCLConsensus::Adaptor::hasOpenTransactions"
+    },
+    {
+      "args": [
+        "LedgerHash const& h"
+      ],
+      "lineno": 162,
+      "name": "RCLConsensus::Adaptor::proposersValidated"
+    },
+    {
+      "args": [
+        "RCLCxLedger const& ledger",
+        "LedgerHash const& h"
+      ],
+      "lineno": 167,
+      "name": "RCLConsensus::Adaptor::proposersFinished"
+    },
+    {
+      "args": [
+        "uint256 ledgerID",
+        "RCLCxLedger const& ledger",
+        "ConsensusMode mode"
+      ],
+      "lineno": 174,
+      "name": "RCLConsensus::Adaptor::getPrevLedger"
+    },
+    {
+      "args": [
+        "RCLCxLedger const& ledger",
+        "NetClock::time_point const& closeTime",
+        "ConsensusMode mode"
+      ],
+      "lineno": 188,
+      "name": "RCLConsensus::Adaptor::onClose"
+    },
+    {
+      "args": [
+        "Result const& result",
+        "RCLCxLedger const& prevLedger",
+        "NetClock::duration const& closeResolution",
+        "ConsensusCloseTimes const& rawCloseTimes",
+        "ConsensusMode const& mode",
+        "Json::Value&& consensusJson"
+      ],
+      "lineno": 265,
+      "name": "RCLConsensus::Adaptor::onForceAccept"
+    },
+    {
+      "args": [
+        "Result const& result",
+        "RCLCxLedger const& prevLedger",
+        "NetClock::duration const& closeResolution",
+        "ConsensusCloseTimes const& rawCloseTimes",
+        "ConsensusMode const& mode",
+        "Json::Value&& consensusJson",
+        "bool const validating"
+      ],
+      "lineno": 274,
+      "name": "RCLConsensus::Adaptor::onAccept"
+    },
+    {
+      "args": [
+        "Result const& result",
+        "RCLCxLedger const& prevLedger",
+        "NetClock::duration closeResolution",
+        "ConsensusCloseTimes const& rawCloseTimes",
+        "ConsensusMode const& mode",
+        "Json::Value&& consensusJson"
+      ],
+      "lineno": 292,
+      "name": "RCLConsensus::Adaptor::doAccept"
+    },
+    {
+      "args": [
+        "protocol::NodeEvent ne",
+        "RCLCxLedger const& ledger",
+        "bool haveCorrectLCL"
+      ],
+      "lineno": 464,
+      "name": "RCLConsensus::Adaptor::notify"
+    },
+    {
+      "args": [
+        "RCLCxLedger const& previousLedger",
+        "CanonicalTXSet& retriableTxs",
+        "NetClock::time_point closeTime",
+        "bool closeTimeCorrect",
+        "NetClock::duration closeResolution",
+        "std::chrono::milliseconds roundTime",
+        "std::set<TxID>& failedTxs"
+      ],
+      "lineno": 491,
+      "name": "RCLConsensus::Adaptor::buildLCL"
+    },
+    {
+      "args": [
+        "RCLCxLedger const& ledger",
+        "RCLTxSet const& txns",
+        "bool proposing"
+      ],
+      "lineno": 520,
+      "name": "RCLConsensus::Adaptor::validate"
+    },
+    {
+      "args": [
+        "ConsensusMode before",
+        "ConsensusMode after"
+      ],
+      "lineno": 573,
+      "name": "RCLConsensus::Adaptor::onModeChange"
+    },
+    {
+      "args": [
+        "bool full"
+      ],
+      "lineno": 585,
+      "name": "RCLConsensus::getJson"
+    },
+    {
+      "args": [
+        "NetClock::time_point const& now",
+        "std::unique_ptr<std::stringstream> const& clog"
+      ],
+      "lineno": 597,
+      "name": "RCLConsensus::timerEntry"
+    },
+    {
+      "args": [
+        "NetClock::time_point const& now",
+        "RCLTxSet const& txSet"
+      ],
+      "lineno": 613,
+      "name": "RCLConsensus::gotTxSet"
+    },
+    {
+      "args": [
+        "NetClock::time_point const& now",
+        "std::optional<std::chrono::milliseconds> consensusDelay"
+      ],
+      "lineno": 626,
+      "name": "RCLConsensus::simulate"
+    },
+    {
+      "args": [
+        "NetClock::time_point const& now",
+        "RCLCxPeerPos const& newProposal"
+      ],
+      "lineno": 632,
+      "name": "RCLConsensus::peerProposal"
+    },
+    {
+      "args": [
+        "RCLCxLedger const& prevLgr",
+        "hash_set<NodeID> const& nowTrusted"
+      ],
+      "lineno": 638,
+      "name": "RCLConsensus::Adaptor::preStartRound"
+    },
+    {
+      "args": [],
+      "lineno": 670,
+      "name": "RCLConsensus::Adaptor::haveValidated"
+    },
+    {
+      "args": [],
+      "lineno": 674,
+      "name": "RCLConsensus::Adaptor::getValidLedgerIndex"
+    },
+    {
+      "args": [],
+      "lineno": 678,
+      "name": "RCLConsensus::Adaptor::getQuorumKeys"
+    },
+    {
+      "args": [
+        "Ledger_t::Seq const seq",
+        "hash_set<RCLConsensus::Adaptor::NodeKey_t>& trustedKeys"
+      ],
+      "lineno": 683,
+      "name": "RCLConsensus::Adaptor::laggards"
+    },
+    {
+      "args": [],
+      "lineno": 688,
+      "name": "RCLConsensus::Adaptor::validator"
+    },
+    {
+      "args": [
+        "std::size_t const positions"
+      ],
+      "lineno": 692,
+      "name": "RCLConsensus::Adaptor::updateOperatingMode"
+    },
+    {
+      "args": [
+        "NetClock::time_point const& now",
+        "RCLCxLedger::ID const& prevLgrId",
+        "RCLCxLedger const& prevLgr",
+        "hash_set<NodeID> const& nowUntrusted",
+        "hash_set<NodeID> const& nowTrusted",
+        "std::unique_ptr<std::stringstream> const& clog"
+      ],
+      "lineno": 697,
+      "name": "RCLConsensus::startRound"
+    },
+    {
+      "args": [
+        "char const* label",
+        "bool const validating",
+        "beast::Journal j"
+      ],
+      "lineno": 707,
+      "name": "RclConsensusLogger::RclConsensusLogger"
+    },
+    {
+      "args": [],
+      "lineno": 715,
+      "name": "RclConsensusLogger::~RclConsensusLogger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is primarily in constructors and is likely tested indirectly via consensus engine startup and validator identity tests. Look for test files in the codebase such as 'test/consensus/Consensus_test.cpp', 'test/consensus/RCLConsensus_test.cpp', or integration tests that start the application with various validator key configurations. Direct unit tests for constructor validation (e.g., valCookie_ nonzero, nodeID nonzero, keys pointer) may be missing or only covered by integration tests. There may be a gap in explicit negative tests for invalid ValidatorKeys or zero valCookie_ (since XRPL_ASSERT may abort).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "valCookie_ (range via assertion)",
+      "validatorKeys_.nodeID (business logic via conditional)",
+      "validatorKeys_.keys (pointer validity via conditional)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "constructor (object initialization)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "valCookie_",
+      "location": "RCLConsensus::Adaptor::Adaptor (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "valCookie_ must be nonzero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (used as conditional, not error)",
+      "field": "validatorKeys_.nodeID",
+      "location": "RCLConsensus::Adaptor::Adaptor (constructor)",
+      "validated_by": "comparison (validatorKeys_.nodeID != beast::zero)",
+      "validates": [
+        "Checks if nodeID is set (not zero) before using validator keys"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (used as conditional, not error)",
+      "field": "validatorKeys_.keys",
+      "location": "RCLConsensus::Adaptor::Adaptor (constructor)",
+      "validated_by": "pointer check (validatorKeys_.keys)",
+      "validates": [
+        "Checks if validatorKeys_.keys is not null before dereferencing"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

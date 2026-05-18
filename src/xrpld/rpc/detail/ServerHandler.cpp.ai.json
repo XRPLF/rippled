@@ -1,0 +1,805 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "Peer"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "LedgerMaster"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "Transaction"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "ValidatorKeys"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "CanonicalTXSet"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ServerHandler::onHandoff",
+        "isStatusRequest",
+        "authorized"
+      ],
+      "entry_point": "ServerHandler::onHandoff",
+      "purpose": "Handles incoming HTTP requests, determines if the request is a status request, and validates HTTP Authorization.",
+      "validation_points": [
+        "isStatusRequest: Validates HTTP method, version, target, and body.",
+        "authorized: Validates Authorization header, base64 decodes credentials, checks for colon separator, compares user/pass."
+      ]
+    },
+    {
+      "call_chain": [
+        "ServerHandler::onAccept",
+        "authorized"
+      ],
+      "entry_point": "ServerHandler::onAccept",
+      "purpose": "Handles new connections, validates HTTP Authorization header.",
+      "validation_points": [
+        "authorized: Validates Authorization header, base64 decodes credentials, checks for colon separator, compares user/pass."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "HTTP Authorization header",
+      "flow": [
+        "HTTP request received",
+        "headers extracted into std::map",
+        "passed to authorized()"
+      ],
+      "origin": "Incoming HTTP request headers",
+      "transformations": [
+        "Header value is trimmed",
+        "Base64 portion extracted (after 'Basic ')",
+        "Base64 decoded to user:pass string",
+        "Split at ':' to get user and password"
+      ],
+      "validated_at": "authorized"
+    },
+    {
+      "field": "HTTP method, version, target, body",
+      "flow": [
+        "HTTP request received",
+        "passed to isStatusRequest()"
+      ],
+      "origin": "Incoming HTTP request object",
+      "transformations": [
+        "Checked for GET method",
+        "Checked for HTTP/1.1+ version",
+        "Checked for '/' target",
+        "Checked for empty body"
+      ],
+      "validated_at": "isStatusRequest"
+    },
+    {
+      "field": "Base64-encoded credentials",
+      "flow": [
+        "Extracted from header",
+        "Trimmed",
+        "Passed to base64_decode"
+      ],
+      "origin": "Authorization header value",
+      "transformations": [
+        "Base64 decoded to user:pass string"
+      ],
+      "validated_at": "authorized (via base64_decode)"
+    },
+    {
+      "field": "Decoded credentials format",
+      "flow": [
+        "Decoded string",
+        "std::string::find(':') to locate separator"
+      ],
+      "origin": "Result of base64_decode",
+      "transformations": [
+        "Split into user and password"
+      ],
+      "validated_at": "authorized (colon check)"
+    }
+  ],
+  "description": "Implements the ServerHandler for XRPL, handling HTTP/WebSocket RPC requests, authorization, session management, and server setup/configuration.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "HTTP method",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field HTTP method validated by Custom validation, base64_decode, boost::beast::http",
+      "issue_pattern": "Missing validation for HTTP method",
+      "why_false_positive": "Custom validation, base64_decode, boost::beast::http validates HTTP method automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "HTTP version",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field HTTP version validated by Custom validation, base64_decode, boost::beast::http",
+      "issue_pattern": "Missing validation for HTTP version",
+      "why_false_positive": "Custom validation, base64_decode, boost::beast::http validates HTTP version automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "HTTP target",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field HTTP target validated by Custom validation, base64_decode, boost::beast::http",
+      "issue_pattern": "Missing validation for HTTP target",
+      "why_false_positive": "Custom validation, base64_decode, boost::beast::http validates HTTP target automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "HTTP body",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field HTTP body validated by Custom validation, base64_decode, boost::beast::http",
+      "issue_pattern": "Missing validation for HTTP body",
+      "why_false_positive": "Custom validation, base64_decode, boost::beast::http validates HTTP body automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Authorization header",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Authorization header validated by Custom validation, base64_decode, boost::beast::http",
+      "issue_pattern": "Missing validation for Authorization header",
+      "why_false_positive": "Custom validation, base64_decode, boost::beast::http validates Authorization header automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "HTTP Authorization header",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "authorized (custom function) at authorized",
+      "issue_pattern": "Missing empty string validation for HTTP Authorization header",
+      "why_false_positive": "authorized (custom function) validates HTTP Authorization header for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "HTTP request method, version, target, body",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isStatusRequest (custom function) at isStatusRequest",
+      "issue_pattern": "Missing empty string validation for HTTP request method, version, target, body",
+      "why_false_positive": "isStatusRequest (custom function) validates HTTP request method, version, target, body for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Base64-encoded credentials",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "base64_decode (xrpl::base64_decode) at authorized",
+      "issue_pattern": "Missing empty string validation for Base64-encoded credentials",
+      "why_false_positive": "base64_decode (xrpl::base64_decode) validates Base64-encoded credentials for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Base64-encoded credentials",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "base64_decode (xrpl::base64_decode) at authorized",
+      "issue_pattern": "Missing format validation for Base64-encoded credentials",
+      "why_false_positive": "base64_decode (xrpl::base64_decode) validates Base64-encoded credentials format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Decoded credentials format",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::string::find(':') at authorized",
+      "issue_pattern": "Missing empty string validation for Decoded credentials format",
+      "why_false_positive": "std::string::find(':') validates Decoded credentials format for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Decoded credentials format",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::string::find(':') at authorized",
+      "issue_pattern": "Missing format validation for Decoded credentials format",
+      "why_false_positive": "std::string::find(':') validates Decoded credentials format format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/ServerHandler.cpp",
+  "functions": [
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 27,
+      "name": "isStatusRequest"
+    },
+    {
+      "args": [
+        "http_request_type const& request",
+        "boost::beast::http::status status"
+      ],
+      "lineno": 33,
+      "name": "statusRequestResponse"
+    },
+    {
+      "args": [
+        "Port const& port",
+        "std::map<std::string, std::string> const& h"
+      ],
+      "lineno": 48,
+      "name": "authorized"
+    },
+    {
+      "args": [
+        "ServerHandlerCreator const&",
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "JobQueue& jobQueue",
+        "NetworkOPs& networkOPs",
+        "Resource::Manager& resourceManager",
+        "CollectorManager& cm"
+      ],
+      "lineno": 66,
+      "name": "ServerHandler"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "~ServerHandler"
+    },
+    {
+      "args": [
+        "Setup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 83,
+      "name": "setup"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "Session& session",
+        "boost::asio::ip::tcp::endpoint endpoint"
+      ],
+      "lineno": 113,
+      "name": "onAccept"
+    },
+    {
+      "args": [
+        "Session& session",
+        "std::unique_ptr<stream_type>&& bundle",
+        "http_request_type&& request",
+        "boost::asio::ip::tcp::endpoint const& remote_address"
+      ],
+      "lineno": 126,
+      "name": "onHandoff"
+    },
+    {
+      "args": [
+        "Session& session"
+      ],
+      "lineno": 163,
+      "name": "makeOutput"
+    },
+    {
+      "args": [
+        "boost::beast::http::fields const& h"
+      ],
+      "lineno": 168,
+      "name": "build_map"
+    },
+    {
+      "args": [
+        "ConstBufferSequence const& bs"
+      ],
+      "lineno": 179,
+      "name": "buffers_to_string"
+    },
+    {
+      "args": [
+        "Session& session"
+      ],
+      "lineno": 189,
+      "name": "onRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<WSSession> session",
+        "std::vector<boost::asio::const_buffer> const& buffers"
+      ],
+      "lineno": 210,
+      "name": "onWSMessage"
+    },
+    {
+      "args": [
+        "Session& session",
+        "boost::system::error_code const&"
+      ],
+      "lineno": 241,
+      "name": "onClose"
+    },
+    {
+      "args": [
+        "Server&"
+      ],
+      "lineno": 246,
+      "name": "onStopped"
+    },
+    {
+      "args": [
+        "Json::Value const& request",
+        "T const& duration",
+        "beast::Journal& journal"
+      ],
+      "lineno": 254,
+      "name": "logDuration"
+    },
+    {
+      "args": [
+        "std::shared_ptr<WSSession> const& session",
+        "std::shared_ptr<JobQueue::Coro> const& coro",
+        "Json::Value const& jv"
+      ],
+      "lineno": 267,
+      "name": "processSession"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Session> const& session",
+        "std::shared_ptr<JobQueue::Coro> coro"
+      ],
+      "lineno": 340,
+      "name": "processSession"
+    },
+    {
+      "args": [
+        "Json::Int code",
+        "Json::Value&& message"
+      ],
+      "lineno": 357,
+      "name": "make_json_error"
+    },
+    {
+      "args": [
+        "Port const& port",
+        "std::string const& request",
+        "beast::IP::Endpoint const& remoteIPAddress",
+        "Output const& output",
+        "std::shared_ptr<JobQueue::Coro> coro",
+        "std::string_view forwardedFor",
+        "std::string_view user"
+      ],
+      "lineno": 366,
+      "name": "processRequest"
+    },
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 563,
+      "name": "statusResponse"
+    },
+    {
+      "args": [],
+      "lineno": 590,
+      "name": "makeContexts"
+    },
+    {
+      "args": [
+        "ParsedPort const& parsed",
+        "std::ostream& log"
+      ],
+      "lineno": 609,
+      "name": "to_Port"
+    },
+    {
+      "args": [
+        "Config const& config",
+        "std::ostream& log"
+      ],
+      "lineno": 641,
+      "name": "parse_Ports"
+    },
+    {
+      "args": [
+        "ServerHandler::Setup& setup"
+      ],
+      "lineno": 701,
+      "name": "setup_Client"
+    },
+    {
+      "args": [
+        "ServerHandler::Setup& setup"
+      ],
+      "lineno": 723,
+      "name": "setup_Overlay"
+    },
+    {
+      "args": [
+        "Config const& config",
+        "std::ostream& log"
+      ],
+      "lineno": 736,
+      "name": "setup_ServerHandler"
+    },
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "JobQueue& jobQueue",
+        "NetworkOPs& networkOPs",
+        "Resource::Manager& resourceManager",
+        "CollectorManager& cm"
+      ],
+      "lineno": 747,
+      "name": "make_ServerHandler"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 22,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is typically tested in integration or functional tests for the HTTP/RPC server. Likely test files include those under 'test/rpc', 'test/server', or similar directories (e.g., test/rpc/ServerHandler_test.cpp, test/server/Authorization_test.cpp). These would test correct/incorrect Authorization headers, malformed base64, missing colon, wrong credentials, and status request handling. Gaps may exist if there are no explicit tests for malformed base64, missing colon, or edge cases in HTTP version/target/body validation. Unit tests for 'authorized' and 'isStatusRequest' functions are recommended if not present.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "HTTP method",
+      "HTTP version",
+      "HTTP target",
+      "HTTP body",
+      "Authorization header"
+    ],
+    "framework": "Custom validation, base64_decode, boost::beast::http",
+    "validation_layer": "middleware (request pre-processing, authentication)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw or reject request)",
+      "field": "HTTP Authorization header",
+      "location": "authorized",
+      "validated_by": "authorized (custom function)",
+      "validates": [
+        "Checks if port.user and port.password are set",
+        "Checks if 'authorization' header exists",
+        "Checks if header starts with 'Basic '",
+        "Base64 decodes credentials",
+        "Checks for ':' separator in decoded credentials",
+        "Splits into username and password",
+        "Compares username and password to configured values"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns bool (caller may throw or reject request)",
+      "field": "HTTP request method, version, target, body",
+      "location": "isStatusRequest",
+      "validated_by": "isStatusRequest (custom function)",
+      "validates": [
+        "Checks HTTP version >= 11",
+        "Checks target is '/'",
+        "Checks body is empty",
+        "Checks method is GET"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns empty string or malformed result (caller may reject)",
+      "field": "Base64-encoded credentials",
+      "location": "authorized",
+      "validated_by": "base64_decode (xrpl::base64_decode)",
+      "validates": [
+        "Checks if base64 string is decodable"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw or reject request)",
+      "field": "Decoded credentials format",
+      "location": "authorized",
+      "validated_by": "std::string::find(':')",
+      "validates": [
+        "Checks if decoded credentials contain ':' separator"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

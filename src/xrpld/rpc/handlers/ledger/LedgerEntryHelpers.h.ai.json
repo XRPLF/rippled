@@ -1,0 +1,344 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "field"
+    },
+    {
+      "lineno": 12,
+      "name": "err"
+    },
+    {
+      "lineno": 20,
+      "name": "err"
+    },
+    {
+      "lineno": 20,
+      "name": "field"
+    },
+    {
+      "lineno": 20,
+      "name": "type"
+    },
+    {
+      "lineno": 28,
+      "name": "err"
+    },
+    {
+      "lineno": 28,
+      "name": "message"
+    },
+    {
+      "lineno": 36,
+      "name": "params"
+    },
+    {
+      "lineno": 37,
+      "name": "fields"
+    },
+    {
+      "lineno": 38,
+      "name": "err"
+    },
+    {
+      "lineno": 49,
+      "name": "param"
+    },
+    {
+      "lineno": 53,
+      "name": "params"
+    },
+    {
+      "lineno": 54,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 55,
+      "name": "err"
+    },
+    {
+      "lineno": 56,
+      "name": "expectedType"
+    },
+    {
+      "lineno": 64,
+      "name": "param"
+    },
+    {
+      "lineno": 75,
+      "name": "params"
+    },
+    {
+      "lineno": 76,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 77,
+      "name": "err"
+    },
+    {
+      "lineno": 81,
+      "name": "param"
+    },
+    {
+      "lineno": 81,
+      "name": "maxLength"
+    },
+    {
+      "lineno": 90,
+      "name": "params"
+    },
+    {
+      "lineno": 91,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 92,
+      "name": "maxLength"
+    },
+    {
+      "lineno": 93,
+      "name": "err"
+    },
+    {
+      "lineno": 102,
+      "name": "param"
+    },
+    {
+      "lineno": 114,
+      "name": "params"
+    },
+    {
+      "lineno": 115,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 116,
+      "name": "err"
+    },
+    {
+      "lineno": 120,
+      "name": "param"
+    },
+    {
+      "lineno": 128,
+      "name": "params"
+    },
+    {
+      "lineno": 129,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 130,
+      "name": "err"
+    },
+    {
+      "lineno": 134,
+      "name": "param"
+    },
+    {
+      "lineno": 142,
+      "name": "params"
+    },
+    {
+      "lineno": 143,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 144,
+      "name": "err"
+    },
+    {
+      "lineno": 148,
+      "name": "param"
+    },
+    {
+      "lineno": 156,
+      "name": "params"
+    },
+    {
+      "lineno": 157,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 158,
+      "name": "err"
+    },
+    {
+      "lineno": 160,
+      "name": "params"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides helper functions for parsing and validating fields in JSON RPC requests related to ledger entries in the XRPL codebase. It includes utilities for extracting and validating AccountIDs, blobs, numbers, hashes, assets, and bridge fields from JSON parameters, returning appropriate error objects when validation fails.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerEntryHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "field",
+        "err"
+      ],
+      "lineno": 11,
+      "name": "missingFieldError"
+    },
+    {
+      "args": [
+        "err",
+        "field",
+        "type"
+      ],
+      "lineno": 19,
+      "name": "invalidFieldError"
+    },
+    {
+      "args": [
+        "err",
+        "message"
+      ],
+      "lineno": 27,
+      "name": "malformedError"
+    },
+    {
+      "args": [
+        "params",
+        "fields",
+        "err"
+      ],
+      "lineno": 35,
+      "name": "hasRequired"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 48,
+      "name": "parse"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err",
+        "expectedType"
+      ],
+      "lineno": 52,
+      "name": "required"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 63,
+      "name": "parse<AccountID>"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err"
+      ],
+      "lineno": 74,
+      "name": "requiredAccountID"
+    },
+    {
+      "args": [
+        "param",
+        "maxLength"
+      ],
+      "lineno": 80,
+      "name": "parseHexBlob"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "maxLength",
+        "err"
+      ],
+      "lineno": 89,
+      "name": "requiredHexBlob"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 101,
+      "name": "parse<std::uint32_t>"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err"
+      ],
+      "lineno": 113,
+      "name": "requiredUInt32"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 119,
+      "name": "parse<uint256>"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err"
+      ],
+      "lineno": 127,
+      "name": "requiredUInt256"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 133,
+      "name": "parse<uint192>"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err"
+      ],
+      "lineno": 141,
+      "name": "requiredUInt192"
+    },
+    {
+      "args": [
+        "param"
+      ],
+      "lineno": 147,
+      "name": "parse<Asset>"
+    },
+    {
+      "args": [
+        "params",
+        "fieldName",
+        "err"
+      ],
+      "lineno": 155,
+      "name": "requiredAsset"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 159,
+      "name": "parseBridgeFields"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "LedgerEntryHelpers"
+    }
+  ]
+}

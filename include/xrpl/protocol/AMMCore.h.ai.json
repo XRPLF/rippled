@@ -1,0 +1,187 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "asset1"
+    },
+    {
+      "lineno": 27,
+      "name": "asset2"
+    },
+    {
+      "lineno": 32,
+      "name": "asset1"
+    },
+    {
+      "lineno": 32,
+      "name": "asset2"
+    },
+    {
+      "lineno": 32,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 38,
+      "name": "amount"
+    },
+    {
+      "lineno": 39,
+      "name": "pair"
+    },
+    {
+      "lineno": 40,
+      "name": "validZero"
+    },
+    {
+      "lineno": 46,
+      "name": "asset"
+    },
+    {
+      "lineno": 47,
+      "name": "pair"
+    },
+    {
+      "lineno": 50,
+      "name": "asset1"
+    },
+    {
+      "lineno": 51,
+      "name": "asset2"
+    },
+    {
+      "lineno": 52,
+      "name": "pair"
+    },
+    {
+      "lineno": 56,
+      "name": "current"
+    },
+    {
+      "lineno": 56,
+      "name": "auctionSlot"
+    },
+    {
+      "lineno": 61,
+      "name": "Rules"
+    },
+    {
+      "lineno": 67,
+      "name": "tfee"
+    },
+    {
+      "lineno": 75,
+      "name": "tfee"
+    },
+    {
+      "lineno": 82,
+      "name": "tfee"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "STObject"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "STAmount"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "Rules"
+    }
+  ],
+  "description": "Header file for XRPL Automated Market Maker (AMM) utilities, constants, and validation functions related to trading fees, auction slots, and asset pairs.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/AMMCore.h",
+  "functions": [
+    {
+      "args": [
+        "asset1",
+        "asset2"
+      ],
+      "lineno": 27,
+      "name": "ammLPTCurrency"
+    },
+    {
+      "args": [
+        "asset1",
+        "asset2",
+        "ammAccountID"
+      ],
+      "lineno": 32,
+      "name": "ammLPTIssue"
+    },
+    {
+      "args": [
+        "amount",
+        "pair",
+        "validZero"
+      ],
+      "lineno": 38,
+      "name": "invalidAMMAmount"
+    },
+    {
+      "args": [
+        "asset",
+        "pair"
+      ],
+      "lineno": 46,
+      "name": "invalidAMMAsset"
+    },
+    {
+      "args": [
+        "asset1",
+        "asset2",
+        "pair"
+      ],
+      "lineno": 50,
+      "name": "invalidAMMAssetPair"
+    },
+    {
+      "args": [
+        "current",
+        "auctionSlot"
+      ],
+      "lineno": 56,
+      "name": "ammAuctionTimeSlot"
+    },
+    {
+      "args": [
+        "Rules"
+      ],
+      "lineno": 61,
+      "name": "ammEnabled"
+    },
+    {
+      "args": [
+        "tfee"
+      ],
+      "lineno": 67,
+      "name": "getFee"
+    },
+    {
+      "args": [
+        "tfee"
+      ],
+      "lineno": 75,
+      "name": "feeMult"
+    },
+    {
+      "args": [
+        "tfee"
+      ],
+      "lineno": 82,
+      "name": "feeMultHalf"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

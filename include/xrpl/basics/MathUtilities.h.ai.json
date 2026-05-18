@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "count"
+    },
+    {
+      "lineno": 16,
+      "name": "total"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a constexpr function to calculate the percentage of one number divided by another, rounded up and capped between 0 and 100, with static_assert unit tests.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/MathUtilities.h",
+  "functions": [
+    {
+      "args": [
+        "count",
+        "total"
+      ],
+      "lineno": 16,
+      "name": "calculatePercent"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

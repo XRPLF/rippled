@@ -1,0 +1,26 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "NetworkIDService"
+    }
+  ],
+  "description": "Defines the NetworkIDService class, which provides read-only access to the configured network ID for the XRPL server, identifying which network (mainnet, testnet, devnet, or custom) the server is connected to.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/NetworkIDService.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "getNetworkID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

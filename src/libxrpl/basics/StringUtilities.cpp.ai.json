@@ -1,0 +1,382 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseUrl"
+      ],
+      "entry_point": "parseUrl",
+      "purpose": "Parses a URL string into its components, validating structure, port, and domain.",
+      "validation_points": [
+        "boost::regex_match(strUrl, reUrl) - validates URL structure",
+        "beast::IP::Endpoint::from_string_checked(domain) - validates/normalizes domain",
+        "beast::lexicalCast<std::uint16_t>(port) - validates port is a valid uint16",
+        "if (pUrl.port == 0) return false; - rejects invalid port"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_uint64"
+      ],
+      "entry_point": "to_uint64",
+      "purpose": "Converts a string to uint64, validating input is a valid number.",
+      "validation_points": [
+        "beast::lexicalCastChecked(result, s) - validates string is a valid uint64"
+      ]
+    },
+    {
+      "call_chain": [
+        "isProperlyFormedTomlDomain"
+      ],
+      "entry_point": "isProperlyFormedTomlDomain",
+      "purpose": "Validates a TOML domain string for length and format.",
+      "validation_points": [
+        "domain.size() < 4 || domain.size() > 128 - length validation",
+        "boost::regex_match(domain, re) - domain format validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "sqlBlobLiteral"
+      ],
+      "entry_point": "sqlBlobLiteral",
+      "purpose": "Converts a binary blob to a SQL hex literal. No validation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "trim_whitespace"
+      ],
+      "entry_point": "trim_whitespace",
+      "purpose": "Trims whitespace from a string. No validation.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "strUrl",
+      "flow": [
+        "parseUrl(strUrl)",
+        "boost::regex_match(strUrl, reUrl)",
+        "smMatch groups",
+        "parsedURL fields"
+      ],
+      "origin": "Input parameter to parseUrl",
+      "transformations": [
+        "Regex parsing splits strUrl into scheme, username, password, domain, port, path"
+      ],
+      "validated_at": "boost::regex_match(strUrl, reUrl)"
+    },
+    {
+      "field": "domain (from URL)",
+      "flow": [
+        "smMatch[4]",
+        "beast::IP::Endpoint::from_string_checked(domain)",
+        "pUrl.domain"
+      ],
+      "origin": "Extracted from regex match group in parseUrl",
+      "transformations": [
+        "If domain is IPv6 in brackets, brackets are stripped; otherwise, left as is"
+      ],
+      "validated_at": "beast::IP::Endpoint::from_string_checked(domain)"
+    },
+    {
+      "field": "port",
+      "flow": [
+        "smMatch[5]",
+        "beast::lexicalCast<std::uint16_t>(port)",
+        "pUrl.port"
+      ],
+      "origin": "Extracted from regex match group in parseUrl",
+      "transformations": [
+        "String port is cast to uint16_t; if invalid or out of range, set to 0"
+      ],
+      "validated_at": "beast::lexicalCast<std::uint16_t>(port) and if (pUrl.port == 0)"
+    },
+    {
+      "field": "s (string to convert to uint64)",
+      "flow": [
+        "to_uint64(s)",
+        "beast::lexicalCastChecked(result, s)",
+        "return result or nullopt"
+      ],
+      "origin": "Input parameter to to_uint64",
+      "transformations": [
+        "String is parsed to uint64_t if valid"
+      ],
+      "validated_at": "beast::lexicalCastChecked(result, s)"
+    },
+    {
+      "field": "domain (TOML domain string)",
+      "flow": [
+        "isProperlyFormedTomlDomain(domain)",
+        "length check",
+        "regex match"
+      ],
+      "origin": "Input parameter to isProperlyFormedTomlDomain",
+      "transformations": [
+        "Checked for length, then regex-validated for domain format"
+      ],
+      "validated_at": "length check and regex match"
+    }
+  ],
+  "description": "Provides utility functions for string and blob manipulation, URL parsing, whitespace trimming, string-to-uint64 conversion, and domain name validation, primarily for use in the XRPL codebase.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "strUrl (input URL string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::regex_match (with reUrl regex) at parseUrl",
+      "issue_pattern": "Missing empty string validation for strUrl (input URL string)",
+      "why_false_positive": "boost::regex_match (with reUrl regex) validates strUrl (input URL string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "strUrl (input URL string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::regex_match (with reUrl regex) at parseUrl",
+      "issue_pattern": "Missing format validation for strUrl (input URL string)",
+      "why_false_positive": "boost::regex_match (with reUrl regex) validates strUrl (input URL string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "port (parsed from URL)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::lexicalCast<std::uint16_t> at parseUrl",
+      "issue_pattern": "Missing empty string validation for port (parsed from URL)",
+      "why_false_positive": "beast::lexicalCast<std::uint16_t> validates port (parsed from URL) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "domain (parsed from URL)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at parseUrl",
+      "issue_pattern": "Missing empty string validation for domain (parsed from URL)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates domain (parsed from URL) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "domain (parsed from URL)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string_checked at parseUrl",
+      "issue_pattern": "Missing format validation for domain (parsed from URL)",
+      "why_false_positive": "beast::IP::Endpoint::from_string_checked validates domain (parsed from URL) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "s (string to convert to uint64)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::lexicalCastChecked at to_uint64",
+      "issue_pattern": "Missing empty string validation for s (string to convert to uint64)",
+      "why_false_positive": "beast::lexicalCastChecked validates s (string to convert to uint64) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "domain (TOML domain string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit length check at isProperlyFormedTomlDomain",
+      "issue_pattern": "Missing empty string validation for domain (TOML domain string)",
+      "why_false_positive": "explicit length check validates domain (TOML domain string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "domain (TOML domain string)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit length check at isProperlyFormedTomlDomain",
+      "issue_pattern": "Missing range validation for domain (TOML domain string)",
+      "why_false_positive": "explicit length check validates domain (TOML domain string) range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/StringUtilities.cpp",
+  "functions": [
+    {
+      "args": [
+        "blob"
+      ],
+      "lineno": 10,
+      "name": "sqlBlobLiteral"
+    },
+    {
+      "args": [
+        "pUrl",
+        "strUrl"
+      ],
+      "lineno": 20,
+      "name": "parseUrl"
+    },
+    {
+      "args": [
+        "str"
+      ],
+      "lineno": 67,
+      "name": "trim_whitespace"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 72,
+      "name": "to_uint64"
+    },
+    {
+      "args": [
+        "domain"
+      ],
+      "lineno": 80,
+      "name": "isProperlyFormedTomlDomain"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is utility code, so direct tests would be in unit test files for StringUtilities or related modules. Typical test files would be 'StringUtilities_test.cpp', 'parseUrl_test.cpp', or similar in the test/unit or test directory. Tests should cover: valid/invalid URLs (parseUrl), edge cases for port and domain, conversion failures for to_uint64, and domain format/length for isProperlyFormedTomlDomain. Gaps may exist if: (1) edge cases for IPv6 domains are not tested, (2) extremely large port numbers are not tested, (3) TOML domain regex edge cases (e.g., IDNs, unicode) are not tested, (4) error handling (exceptions) are not tested. No test code is shown here, so actual coverage must be checked in the repo.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "boost::regex, beast::lexicalCast, explicit checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception); catches all exceptions from regex and returns false",
+      "field": "strUrl (input URL string)",
+      "location": "parseUrl",
+      "validated_by": "boost::regex_match (with reUrl regex)",
+      "validates": [
+        "URL must match scheme://username:password@hostname:port/rest format",
+        "Scheme must be present and valid",
+        "Optional userinfo, host, port, and path must be in correct positions"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if port is 0 (invalid or out of range)",
+      "field": "port (parsed from URL)",
+      "location": "parseUrl",
+      "validated_by": "beast::lexicalCast<std::uint16_t>",
+      "validates": [
+        "Port must be convertible to uint16_t (0-65535)",
+        "Port must not be 0 (0 is considered invalid here)"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (fallback to original domain string if parsing fails)",
+      "field": "domain (parsed from URL)",
+      "location": "parseUrl",
+      "validated_by": "beast::IP::Endpoint::from_string_checked",
+      "validates": [
+        "If domain is an IP address, must be valid (IPv4 or IPv6)",
+        "IPv6 addresses must be enclosed in brackets"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt if conversion fails",
+      "field": "s (string to convert to uint64)",
+      "location": "to_uint64",
+      "validated_by": "beast::lexicalCastChecked",
+      "validates": [
+        "String must represent a valid uint64_t value"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if length is out of bounds",
+      "field": "domain (TOML domain string)",
+      "location": "isProperlyFormedTomlDomain",
+      "validated_by": "explicit length check",
+      "validates": [
+        "Domain must be between 4 and 128 characters"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

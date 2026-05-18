@@ -1,0 +1,41 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "ValidPermissionedDEX"
+    }
+  ],
+  "description": "Defines the ValidPermissionedDEX class, which checks invariants related to permissioned decentralized exchanges (DEX) in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/PermissionedDEXInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 15,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 18,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

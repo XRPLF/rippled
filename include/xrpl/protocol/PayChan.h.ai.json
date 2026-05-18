@@ -1,0 +1,37 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "msg"
+    },
+    {
+      "lineno": 10,
+      "name": "key"
+    },
+    {
+      "lineno": 10,
+      "name": "amt"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to serialize a payment channel authorization message for the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/PayChan.h",
+  "functions": [
+    {
+      "args": [
+        "msg",
+        "key",
+        "amt"
+      ],
+      "lineno": 9,
+      "name": "serializePayChanAuthorization"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,978 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Number::rounding_mode mode"
+      ],
+      "lineno": 951,
+      "name": "DontAffectNumberRoundMode"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getSNValue",
+        "getInt64Value"
+      ],
+      "entry_point": "getSNValue",
+      "purpose": "Extracts a native (XRP) amount as int64, validating type and value.",
+      "validation_points": [
+        "getInt64Value: Validates amount.native() is true (else throws)",
+        "getInt64Value: XRPL_ASSERT on amount.exponent() == 0",
+        "getInt64Value: XRPL_ASSERT on mantissa roundtrip"
+      ]
+    },
+    {
+      "call_chain": [
+        "getMPTValue",
+        "getInt64Value"
+      ],
+      "entry_point": "getMPTValue",
+      "purpose": "Extracts an MPT amount as int64, validating type and value.",
+      "validation_points": [
+        "getInt64Value: Validates amount.holds<MPTIssue>() is true (else throws)",
+        "getInt64Value: XRPL_ASSERT on amount.exponent() == 0",
+        "getInt64Value: XRPL_ASSERT on mantissa roundtrip"
+      ]
+    },
+    {
+      "call_chain": [
+        "areComparable",
+        "std::visit (lambda with type traits)"
+      ],
+      "entry_point": "areComparable",
+      "purpose": "Checks if two STAmount instances are comparable (same type/currency/issue).",
+      "validation_points": [
+        "areComparable: Type and issue comparability checked via type traits and value comparison"
+      ]
+    },
+    {
+      "call_chain": [
+        "STAmount::STAmount (SerialIter, SField)",
+        "parsing/bitmask logic"
+      ],
+      "entry_point": "STAmount::STAmount (SerialIter& sit, SField const& name)",
+      "purpose": "Deserializes an STAmount from serialized data, determines type, sets fields.",
+      "validation_points": [
+        "Bitmask checks for native/MPT/XRP type",
+        "Field assignments based on type"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "amount.native()",
+      "flow": [
+        "STAmount constructed (from SerialIter or direct)",
+        "amount.native() called in getSNValue",
+        "Passed to getInt64Value for validation"
+      ],
+      "origin": "STAmount instance (possibly from deserialization or construction)",
+      "transformations": [
+        "Bitmask logic in constructor sets native flag"
+      ],
+      "validated_at": "getInt64Value (via getSNValue)"
+    },
+    {
+      "field": "amount.holds<MPTIssue>()",
+      "flow": [
+        "STAmount constructed (from SerialIter or direct)",
+        "amount.holds<MPTIssue>() called in getMPTValue",
+        "Passed to getInt64Value for validation"
+      ],
+      "origin": "STAmount instance (from deserialization or construction)",
+      "transformations": [
+        "Bitmask logic in constructor sets MPT flag"
+      ],
+      "validated_at": "getInt64Value (via getMPTValue)"
+    },
+    {
+      "field": "amount.exponent()",
+      "flow": [
+        "STAmount constructed",
+        "amount.exponent() called in getInt64Value"
+      ],
+      "origin": "STAmount instance (from deserialization or construction)",
+      "transformations": [
+        "Set during construction based on serialized value"
+      ],
+      "validated_at": "getInt64Value (XRPL_ASSERT)"
+    },
+    {
+      "field": "amount.mantissa()",
+      "flow": [
+        "STAmount constructed",
+        "amount.mantissa() called in getInt64Value"
+      ],
+      "origin": "STAmount instance (from deserialization or construction)",
+      "transformations": [
+        "Set during construction based on serialized value"
+      ],
+      "validated_at": "getInt64Value (XRPL_ASSERT)"
+    },
+    {
+      "field": "issue comparability",
+      "flow": [
+        "STAmount constructed",
+        "areComparable called with two STAmount instances",
+        "std::visit lambda compares issues/currencies/types"
+      ],
+      "origin": "STAmount::asset().value()",
+      "transformations": [
+        "Type traits and value comparison"
+      ],
+      "validated_at": "areComparable"
+    }
+  ],
+  "description": "Implements the STAmount class and related arithmetic, serialization, and conversion logic for representing and manipulating XRP, IOU, and MPT token amounts in the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "amount.native()",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field amount.native() validated by XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit)",
+      "issue_pattern": "Missing validation for amount.native()",
+      "why_false_positive": "XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit) validates amount.native() automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "amount.holds<MPTIssue>()",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field amount.holds<MPTIssue>() validated by XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit)",
+      "issue_pattern": "Missing validation for amount.holds<MPTIssue>()",
+      "why_false_positive": "XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit) validates amount.holds<MPTIssue>() automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "amount.exponent()",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field amount.exponent() validated by XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit)",
+      "issue_pattern": "Missing validation for amount.exponent()",
+      "why_false_positive": "XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit) validates amount.exponent() automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "amount.mantissa()",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field amount.mantissa() validated by XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit)",
+      "issue_pattern": "Missing validation for amount.mantissa()",
+      "why_false_positive": "XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit) validates amount.mantissa() automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount validity (native or MPT)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getInt64Value (called by getSNValue, getMPTValue) at getInt64Value",
+      "issue_pattern": "Missing empty string validation for amount validity (native or MPT)",
+      "why_false_positive": "getInt64Value (called by getSNValue, getMPTValue) validates amount validity (native or MPT) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.exponent",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at getInt64Value",
+      "issue_pattern": "Missing empty string validation for amount.exponent",
+      "why_false_positive": "XRPL_ASSERT macro validates amount.exponent for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount.mantissa",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at getInt64Value",
+      "issue_pattern": "Missing empty string validation for amount.mantissa",
+      "why_false_positive": "XRPL_ASSERT macro validates amount.mantissa for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "amount.mantissa",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at getInt64Value",
+      "issue_pattern": "Missing type validation for amount.mantissa",
+      "why_false_positive": "XRPL_ASSERT macro validates amount.mantissa type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount type (native or MPT)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getSNValue, getMPTValue at getSNValue, getMPTValue",
+      "issue_pattern": "Missing empty string validation for amount type (native or MPT)",
+      "why_false_positive": "getSNValue, getMPTValue validates amount type (native or MPT) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "amount type (native or MPT)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "getSNValue, getMPTValue at getSNValue, getMPTValue",
+      "issue_pattern": "Missing type validation for amount type (native or MPT)",
+      "why_false_positive": "getSNValue, getMPTValue validates amount type (native or MPT) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "issue comparability",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "areComparable (std::visit with type traits) at areComparable",
+      "issue_pattern": "Missing empty string validation for issue comparability",
+      "why_false_positive": "areComparable (std::visit with type traits) validates issue comparability for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STAmount.cpp",
+  "functions": [
+    {
+      "args": [
+        "amount",
+        "valid",
+        "error"
+      ],
+      "lineno": 23,
+      "name": "getInt64Value"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 36,
+      "name": "getSNValue"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 41,
+      "name": "getMPTValue"
+    },
+    {
+      "args": [
+        "v1",
+        "v2"
+      ],
+      "lineno": 46,
+      "name": "areComparable"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 61,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "std::int64_t mantissa"
+      ],
+      "lineno": 99,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "std::uint64_t mantissa",
+        "bool negative"
+      ],
+      "lineno": 105,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "STAmount const& from"
+      ],
+      "lineno": 111,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "std::uint64_t mantissa",
+        "bool negative"
+      ],
+      "lineno": 122,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "XRPAmount const& amount"
+      ],
+      "lineno": 128,
+      "name": "STAmount::STAmount"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 139,
+      "name": "STAmount::construct"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 143,
+      "name": "STAmount::copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 148,
+      "name": "STAmount::move"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "STAmount::xrp"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "STAmount::iou"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "STAmount::mpt"
+    },
+    {
+      "args": [
+        "IOUAmount const& iou"
+      ],
+      "lineno": 198,
+      "name": "STAmount::operator="
+    },
+    {
+      "args": [
+        "Number const& number"
+      ],
+      "lineno": 212,
+      "name": "STAmount::operator="
+    },
+    {
+      "args": [
+        "STAmount const& a"
+      ],
+      "lineno": 229,
+      "name": "STAmount::operator+="
+    },
+    {
+      "args": [
+        "STAmount const& a"
+      ],
+      "lineno": 234,
+      "name": "STAmount::operator-="
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2"
+      ],
+      "lineno": 239,
+      "name": "operator+"
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2"
+      ],
+      "lineno": 277,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "Asset const& asset"
+      ],
+      "lineno": 287,
+      "name": "STAmount::setIssue"
+    },
+    {
+      "args": [
+        "STAmount const& offerOut",
+        "STAmount const& offerIn"
+      ],
+      "lineno": 297,
+      "name": "getRate"
+    },
+    {
+      "args": [
+        "STAmount const& a",
+        "STAmount const& b"
+      ],
+      "lineno": 332,
+      "name": "canAdd"
+    },
+    {
+      "args": [
+        "STAmount const& a",
+        "STAmount const& b"
+      ],
+      "lineno": 393,
+      "name": "canSubtract"
+    },
+    {
+      "args": [
+        "Json::Value& elem"
+      ],
+      "lineno": 453,
+      "name": "STAmount::setJson"
+    },
+    {
+      "args": [],
+      "lineno": 471,
+      "name": "STAmount::getSType"
+    },
+    {
+      "args": [],
+      "lineno": 475,
+      "name": "STAmount::getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 482,
+      "name": "STAmount::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 527,
+      "name": "STAmount::getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 532,
+      "name": "STAmount::add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 563,
+      "name": "STAmount::isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 568,
+      "name": "STAmount::isDefault"
+    },
+    {
+      "args": [],
+      "lineno": 577,
+      "name": "STAmount::canonicalize"
+    },
+    {
+      "args": [
+        "std::int64_t v"
+      ],
+      "lineno": 642,
+      "name": "STAmount::set"
+    },
+    {
+      "args": [
+        "std::uint64_t rate"
+      ],
+      "lineno": 654,
+      "name": "amountFromQuality"
+    },
+    {
+      "args": [
+        "Asset const& asset",
+        "std::string const& amount"
+      ],
+      "lineno": 664,
+      "name": "amountFromString"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 671,
+      "name": "amountFromJson"
+    },
+    {
+      "args": [
+        "STAmount& result",
+        "Json::Value const& jvSource"
+      ],
+      "lineno": 735,
+      "name": "amountFromJsonNoThrow"
+    },
+    {
+      "args": [
+        "STAmount const& lhs",
+        "STAmount const& rhs"
+      ],
+      "lineno": 749,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STAmount const& lhs",
+        "STAmount const& rhs"
+      ],
+      "lineno": 754,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "STAmount const& value"
+      ],
+      "lineno": 779,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "std::uint64_t multiplier",
+        "std::uint64_t multiplicand",
+        "std::uint64_t divisor"
+      ],
+      "lineno": 792,
+      "name": "muldiv"
+    },
+    {
+      "args": [
+        "std::uint64_t multiplier",
+        "std::uint64_t multiplicand",
+        "std::uint64_t divisor",
+        "std::uint64_t rounding"
+      ],
+      "lineno": 803,
+      "name": "muldiv_round"
+    },
+    {
+      "args": [
+        "STAmount const& num",
+        "STAmount const& den",
+        "Asset const& asset"
+      ],
+      "lineno": 816,
+      "name": "divide"
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2",
+        "Asset const& asset"
+      ],
+      "lineno": 844,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "bool integral",
+        "std::uint64_t& value",
+        "int& offset",
+        "bool"
+      ],
+      "lineno": 889,
+      "name": "canonicalizeRound"
+    },
+    {
+      "args": [
+        "bool integral",
+        "std::uint64_t& value",
+        "int& offset",
+        "bool roundUp"
+      ],
+      "lineno": 914,
+      "name": "canonicalizeRoundStrict"
+    },
+    {
+      "args": [
+        "STAmount const& value",
+        "std::int32_t scale",
+        "Number::rounding_mode rounding"
+      ],
+      "lineno": 940,
+      "name": "roundToScale"
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 963,
+      "name": "mulRoundImpl"
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 1022,
+      "name": "mulRound"
+    },
+    {
+      "args": [
+        "STAmount const& v1",
+        "STAmount const& v2",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 1027,
+      "name": "mulRoundStrict"
+    },
+    {
+      "args": [
+        "STAmount const& num",
+        "STAmount const& den",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 1033,
+      "name": "divRoundImpl"
+    },
+    {
+      "args": [
+        "STAmount const& num",
+        "STAmount const& den",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 1082,
+      "name": "divRound"
+    },
+    {
+      "args": [
+        "STAmount const& num",
+        "STAmount const& den",
+        "Asset const& asset",
+        "bool roundUp"
+      ],
+      "lineno": 1087,
+      "name": "divRoundStrict"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::logic_error for error reporting",
+        "exception_type": "std::logic_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 21,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STAmount and related validation logic are typically covered by unit tests in files like 'test/protocol/STAmount_test.cpp', 'test/protocol/Amount_test.cpp', and possibly integration tests involving transaction serialization/deserialization. These tests likely cover native, IOU, and MPT amounts, including edge cases for exponent/mantissa. However, coverage gaps may exist for: (1) malformed serialized data (bitmask edge cases), (2) negative/overflow mantissa/exponent values, (3) areComparable with mixed/invalid types, and (4) exception paths in getInt64Value. Fuzzing or property-based tests may be needed for full coverage of deserialization and validation error paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "amount.native()",
+      "amount.holds<MPTIssue>()",
+      "amount.exponent()",
+      "amount.mantissa()"
+    ],
+    "framework": "XRPL custom (Throw<T>, XRPL_ASSERT, type traits, std::visit)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<T>)",
+      "field": "amount validity (native or MPT)",
+      "location": "getInt64Value",
+      "validated_by": "getInt64Value (called by getSNValue, getMPTValue)",
+      "validates": [
+        "Checks if the amount is valid for the requested type (native or MPT)",
+        "Throws if not valid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs)",
+      "field": "amount.exponent",
+      "location": "getInt64Value",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that exponent is zero for int64 conversion"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs)",
+      "field": "amount.mantissa",
+      "location": "getInt64Value",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that mantissa fits in int64_t (roundtrip check)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<T>)",
+      "field": "amount type (native or MPT)",
+      "location": "getSNValue, getMPTValue",
+      "validated_by": "getSNValue, getMPTValue",
+      "validates": [
+        "Checks that amount is native (getSNValue) or MPT (getMPTValue)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (returns bool)",
+      "field": "issue comparability",
+      "location": "areComparable",
+      "validated_by": "areComparable (std::visit with type traits)",
+      "validates": [
+        "Checks that two STAmount objects are comparable (same type, currency, etc.)"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

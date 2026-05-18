@@ -1,0 +1,55 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "PendingSaves"
+    }
+  ],
+  "description": "This file defines the PendingSaves class, which manages and tracks ledgers that are in the process of being saved but have not yet been fully written, providing thread-safe operations for starting, finishing, and querying the status of ledger saves.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/PendingSaves.h",
+  "functions": [
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 22,
+      "name": "startWork"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 39,
+      "name": "finishWork"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 51,
+      "name": "pending"
+    },
+    {
+      "args": [
+        "LedgerIndex seq",
+        "bool isSynchronous"
+      ],
+      "lineno": 59,
+      "name": "shouldWork"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "getSnapshot"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

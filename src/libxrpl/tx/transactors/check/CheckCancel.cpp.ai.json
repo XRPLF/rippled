@@ -1,0 +1,320 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 15,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "CheckCancel::preflight"
+      ],
+      "entry_point": "CheckCancel::preflight",
+      "purpose": "Initial transaction preflight checks (syntax, basic validity). In this implementation, it always returns tesSUCCESS (no validation).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "CheckCancel::preclaim"
+      ],
+      "entry_point": "CheckCancel::preclaim",
+      "purpose": "Performs semantic validation before applying the transaction. Checks existence of the Check, expiration, and permissions.",
+      "validation_points": [
+        "ctx.view.read(keylet::check(ctx.tx[sfCheckID])): Validates sfCheckID exists.",
+        "hasExpired(ctx.view, (*sleCheck)[~sfExpiration]): Validates expiration.",
+        "acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination]: Validates sender is source or destination if not expired."
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCancel::doApply"
+      ],
+      "entry_point": "CheckCancel::doApply",
+      "purpose": "Applies the transaction to the ledger. Removes the Check from owner and destination directories, updates owner count, erases Check.",
+      "validation_points": [
+        "view().peek(keylet::check(ctx_.tx[sfCheckID])): Validates sfCheckID exists (should be redundant after preclaim).",
+        "view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true): Validates/removes Check from destination directory.",
+        "view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true): Validates/removes Check from owner directory."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfCheckID",
+      "flow": [
+        "ctx.tx[sfCheckID]",
+        "keylet::check(ctx.tx[sfCheckID])",
+        "ctx.view.read(...) in preclaim",
+        "view().peek(...) in doApply"
+      ],
+      "origin": "ctx.tx[sfCheckID] (transaction input)",
+      "transformations": [
+        "Used to look up Check ledger entry"
+      ],
+      "validated_at": "preclaim (existence), doApply (existence, redundant)"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "(*sleCheck)[~sfExpiration]",
+        "hasExpired(ctx.view, ...)"
+      ],
+      "origin": "(*sleCheck)[~sfExpiration] (optional field in Check ledger entry)",
+      "transformations": [
+        "Checked for presence and compared to ledger close time"
+      ],
+      "validated_at": "preclaim (expiration check)"
+    },
+    {
+      "field": "sfAccount (transaction sender)",
+      "flow": [
+        "AccountID const acctId{ctx.tx[sfAccount]}",
+        "Compared to (*sleCheck)[sfAccount] and (*sleCheck)[sfDestination]"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Converted to AccountID, compared for permission"
+      ],
+      "validated_at": "preclaim (permission check)"
+    },
+    {
+      "field": "sfDestinationNode",
+      "flow": [
+        "(*sleCheck)[sfDestinationNode]",
+        "view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true)"
+      ],
+      "origin": "(*sleCheck)[sfDestinationNode] (Check ledger entry)",
+      "transformations": [
+        "Used as page index for directory removal"
+      ],
+      "validated_at": "doApply (directory removal, error if fails)"
+    },
+    {
+      "field": "sfOwnerNode",
+      "flow": [
+        "(*sleCheck)[sfOwnerNode]",
+        "view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true)"
+      ],
+      "origin": "(*sleCheck)[sfOwnerNode] (Check ledger entry)",
+      "transformations": [
+        "Used as page index for directory removal"
+      ],
+      "validated_at": "doApply (directory removal, error if fails)"
+    }
+  ],
+  "description": "Implements the CheckCancel transaction logic for the XRPL ledger, including preflight, preclaim, and apply steps for canceling checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCheckID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::check(ctx.tx[sfCheckID])) at CheckCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for sfCheckID",
+      "why_false_positive": "ctx.view.read(keylet::check(ctx.tx[sfCheckID])) validates sfCheckID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasExpired(ctx.view, (*sleCheck)[~sfExpiration]) at CheckCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "hasExpired(ctx.view, (*sleCheck)[~sfExpiration]) validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (transaction sender)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination] at CheckCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount (transaction sender)",
+      "why_false_positive": "acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination] validates sfAccount (transaction sender) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCheckID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view().peek(keylet::check(ctx_.tx[sfCheckID])) at CheckCancel::doApply",
+      "issue_pattern": "Missing empty string validation for sfCheckID",
+      "why_false_positive": "view().peek(keylet::check(ctx_.tx[sfCheckID])) validates sfCheckID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestinationNode",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true) at CheckCancel::doApply",
+      "issue_pattern": "Missing empty string validation for sfDestinationNode",
+      "why_false_positive": "view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true) validates sfDestinationNode for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOwnerNode",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true) at CheckCancel::doApply",
+      "issue_pattern": "Missing empty string validation for sfOwnerNode",
+      "why_false_positive": "view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true) validates sfOwnerNode for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/check/CheckCancel.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 10,
+      "name": "CheckCancel::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "CheckCancel::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "CheckCancel::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for CheckCancel would be in unit/integration tests for transaction processing, e.g., 'CheckCancel_test.cpp', 'Transactor_test.cpp', or broader transaction suite files. Tests should cover: non-existent Check (tecNO_ENTRY), expired Check (anyone can cancel), not expired (only source/destination can cancel), directory removal failures (tefBAD_LEDGER, usually unreachable), and owner count adjustment. Gaps: No validation in preflight (could be tested for completeness), and error paths in doApply are marked LCOV_EXCL (excluded from coverage, likely not tested).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl ledger view and keylet accessors",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfCheckID",
+      "location": "CheckCancel::preclaim",
+      "validated_by": "ctx.view.read(keylet::check(ctx.tx[sfCheckID]))",
+      "validates": [
+        "Check existence in ledger by CheckID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION (if not expired and not authorized)",
+      "field": "sfExpiration",
+      "location": "CheckCancel::preclaim",
+      "validated_by": "hasExpired(ctx.view, (*sleCheck)[~sfExpiration])",
+      "validates": [
+        "Check expiration against ledger close time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount (transaction sender)",
+      "location": "CheckCancel::preclaim",
+      "validated_by": "acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination]",
+      "validates": [
+        "If check is not expired, only creator or destination can cancel"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfCheckID",
+      "location": "CheckCancel::doApply",
+      "validated_by": "view().peek(keylet::check(ctx_.tx[sfCheckID]))",
+      "validates": [
+        "Check existence in ledger by CheckID (should be caught in preclaim)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfDestinationNode",
+      "location": "CheckCancel::doApply",
+      "validated_by": "view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true)",
+      "validates": [
+        "Check can be removed from destination's owner directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfOwnerNode",
+      "location": "CheckCancel::doApply",
+      "validated_by": "view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true)",
+      "validates": [
+        "Check can be removed from owner's directory"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

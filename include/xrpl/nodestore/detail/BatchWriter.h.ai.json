@@ -1,0 +1,97 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "callback"
+    },
+    {
+      "lineno": 32,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 43,
+      "name": "object"
+    },
+    {
+      "lineno": 22,
+      "name": "batch"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Callback& callback",
+        "Scheduler& scheduler"
+      ],
+      "lineno": 16,
+      "name": "BatchWriter"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "Callback"
+    }
+  ],
+  "description": "Provides batch-writing assist logic for NodeStore backends in the xrpl project, allowing scheduled batch writes via a BatchWriter class.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/BatchWriter.h",
+  "functions": [
+    {
+      "args": [
+        "Callback& callback",
+        "Scheduler& scheduler"
+      ],
+      "lineno": 32,
+      "name": "BatchWriter"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "~BatchWriter"
+    },
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& object"
+      ],
+      "lineno": 43,
+      "name": "store"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "performScheduledTask"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "writeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "waitForWriting"
+    },
+    {
+      "args": [
+        "Batch const& batch"
+      ],
+      "lineno": 22,
+      "name": "writeBatch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "NodeStore"
+    }
+  ]
+}

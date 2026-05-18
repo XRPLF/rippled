@@ -1,0 +1,246 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "AMMLiquidity<TIn, TOut> const& ammLiquidity",
+        "TAmounts<TIn, TOut> const& amounts",
+        "TAmounts<TIn, TOut> const& balances",
+        "Quality const& quality"
+      ],
+      "lineno": 8,
+      "name": "AMMOffer"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BookStep::consumeOffer (external, not shown)",
+        "AMMOffer::consume"
+      ],
+      "entry_point": "AMMOffer::consume",
+      "purpose": "Consumes (partially or fully) an AMM offer, updating state and marking as used.",
+      "validation_points": [
+        "AMMOffer::consume: Checks if consumed.in > amounts_.in || consumed.out > amounts_.out, throws if invalid."
+      ]
+    },
+    {
+      "call_chain": [
+        "BookStep::consumeOffer (external, not shown)",
+        "AMMOffer::checkInvariant"
+      ],
+      "entry_point": "AMMOffer::checkInvariant",
+      "purpose": "Validates that the consumed amounts do not exceed the original offer amounts (invariant check).",
+      "validation_points": [
+        "AMMOffer::checkInvariant: Checks if consumed.in > amounts_.in || consumed.out > amounts_.out, logs error if invalid."
+      ]
+    },
+    {
+      "call_chain": [
+        "BookStep::limitOffer (external, not shown)",
+        "AMMOffer::limitOut"
+      ],
+      "entry_point": "AMMOffer::limitOut",
+      "purpose": "Calculates the maximum output amount for an offer, possibly rounding and applying quality/fees.",
+      "validation_points": [
+        "No explicit validation, but uses quality().ceil_out_strict or swapAssetOut, which may have internal checks."
+      ]
+    },
+    {
+      "call_chain": [
+        "BookStep::limitOffer (external, not shown)",
+        "AMMOffer::limitIn"
+      ],
+      "entry_point": "AMMOffer::limitIn",
+      "purpose": "Calculates the maximum input amount for an offer, possibly rounding and applying quality/fees.",
+      "validation_points": [
+        "No explicit validation, but uses quality().ceil_in_strict or swapAssetIn, which may have internal checks."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "amounts_",
+      "flow": [
+        "AMMOffer::AMMOffer (constructor)",
+        "Stored in amounts_",
+        "Read in AMMOffer::amount, AMMOffer::consume, AMMOffer::checkInvariant"
+      ],
+      "origin": "Constructor parameter (TAmounts<TIn, TOut> const& amounts)",
+      "transformations": [
+        "None (read-only after construction)"
+      ],
+      "validated_at": "AMMOffer::consume, AMMOffer::checkInvariant (compared against consumed)"
+    },
+    {
+      "field": "consumed",
+      "flow": [
+        "Passed from BookStep::consumeOffer (external)",
+        "Validated in AMMOffer::consume or AMMOffer::checkInvariant",
+        "If valid, triggers state update (consumed_ = true, context().setAMMUsed())"
+      ],
+      "origin": "Parameter to AMMOffer::consume and AMMOffer::checkInvariant",
+      "transformations": [
+        "None (used for validation and state update)"
+      ],
+      "validated_at": "AMMOffer::consume, AMMOffer::checkInvariant"
+    },
+    {
+      "field": "balances_",
+      "flow": [
+        "AMMOffer::AMMOffer (constructor)",
+        "Stored in balances_",
+        "Used in limitOut, limitIn, getQualityFunc"
+      ],
+      "origin": "Constructor parameter (TAmounts<TIn, TOut> const& balances)",
+      "transformations": [
+        "Passed to swapAssetOut, swapAssetIn, QualityFunction"
+      ],
+      "validated_at": "Not directly validated in this file"
+    },
+    {
+      "field": "quality_",
+      "flow": [
+        "AMMOffer::AMMOffer (constructor)",
+        "Stored in quality_",
+        "Used in limitOut, limitIn, getQualityFunc"
+      ],
+      "origin": "Constructor parameter (Quality const& quality)",
+      "transformations": [
+        "Passed to quality().ceil_out_strict, quality().ceil_in_strict, etc."
+      ],
+      "validated_at": "Not directly validated in this file"
+    }
+  ],
+  "description": "Implements the AMMOffer template class for Automated Market Maker (AMM) offers in the XRPL, providing methods for offer management, quality calculation, and invariant checking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "consumed (TAmounts<TIn, TOut> const& consumed)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit if-check at AMMOffer<TIn, TOut>::consume",
+      "issue_pattern": "Missing empty string validation for consumed (TAmounts<TIn, TOut> const& consumed)",
+      "why_false_positive": "explicit if-check validates consumed (TAmounts<TIn, TOut> const& consumed) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/AMMOffer.cpp",
+  "functions": [
+    {
+      "args": [
+        "AMMLiquidity<TIn, TOut> const& ammLiquidity",
+        "TAmounts<TIn, TOut> const& amounts",
+        "TAmounts<TIn, TOut> const& balances",
+        "Quality const& quality"
+      ],
+      "lineno": 8,
+      "name": "AMMOffer"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "assetIn"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "assetOut"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "owner"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "amount"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "TAmounts<TIn, TOut> const& consumed"
+      ],
+      "lineno": 41,
+      "name": "consume"
+    },
+    {
+      "args": [
+        "TAmounts<TIn, TOut> const& offerAmount",
+        "TOut const& limit",
+        "bool roundUp"
+      ],
+      "lineno": 56,
+      "name": "limitOut"
+    },
+    {
+      "args": [
+        "TAmounts<TIn, TOut> const& offerAmount",
+        "TIn const& limit",
+        "bool roundUp"
+      ],
+      "lineno": 75,
+      "name": "limitIn"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "getQualityFunc"
+    },
+    {
+      "args": [
+        "TAmounts<TIn, TOut> const& consumed",
+        "beast::Journal j"
+      ],
+      "lineno": 98,
+      "name": "checkInvariant"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::logic_error for error reporting",
+        "exception_type": "std::logic_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation (consumed <= amounts_) is critical and likely tested in integration/flow tests for AMM offers and BookStep logic. However, there is no evidence in this file of direct unit tests for AMMOffer. Tests likely exist in files such as 'test/AMMOffer_test.cpp', 'test/BookStep_test.cpp', or broader transaction/AMM integration tests. Gaps may exist in edge cases (e.g., boundary values for consumed amounts, multi-path logic, or error handling for exceptions). Direct negative tests for the exception path in consume and error logging in checkInvariant should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, custom Throw<> macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::logic_error (via Throw<std::logic_error>)",
+      "field": "consumed (TAmounts<TIn, TOut> const& consumed)",
+      "location": "AMMOffer<TIn, TOut>::consume",
+      "validated_by": "explicit if-check",
+      "validates": [
+        "consumed.in must be <= amounts_.in",
+        "consumed.out must be <= amounts_.out"
+      ],
+      "validation_type": "business_logic|range"
+    }
+  ]
+}

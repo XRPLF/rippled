@@ -1,0 +1,27 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "config"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to create a HashRouter setup from configuration within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/setup_HashRouter.h",
+  "functions": [
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 9,
+      "name": "setup_HashRouter"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

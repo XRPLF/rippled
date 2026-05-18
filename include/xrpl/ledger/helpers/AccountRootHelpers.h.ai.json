@@ -1,0 +1,155 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "issuer"
+    },
+    {
+      "lineno": 16,
+      "name": "view"
+    },
+    {
+      "lineno": 26,
+      "name": "id"
+    },
+    {
+      "lineno": 26,
+      "name": "ownerCountAdj"
+    },
+    {
+      "lineno": 26,
+      "name": "j"
+    },
+    {
+      "lineno": 37,
+      "name": "sle"
+    },
+    {
+      "lineno": 37,
+      "name": "amount"
+    },
+    {
+      "lineno": 52,
+      "name": "pseudoOwnerKey"
+    },
+    {
+      "lineno": 70,
+      "name": "sleAcct"
+    },
+    {
+      "lineno": 70,
+      "name": "pseudoFieldFilter"
+    },
+    {
+      "lineno": 80,
+      "name": "accountId"
+    },
+    {
+      "lineno": 92,
+      "name": "ownerField"
+    },
+    {
+      "lineno": 104,
+      "name": "toSle"
+    },
+    {
+      "lineno": 104,
+      "name": "hasDestinationTag"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides helper functions for working with accounts and pseudo-accounts in the XRPL ledger, including checking global freeze status, calculating liquid XRP, adjusting owner counts, handling transfer rates, and managing pseudo-accounts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/AccountRootHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "issuer"
+      ],
+      "lineno": 16,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "ownerCountAdj",
+        "j"
+      ],
+      "lineno": 25,
+      "name": "xrpLiquid"
+    },
+    {
+      "args": [
+        "view",
+        "sle",
+        "amount",
+        "j"
+      ],
+      "lineno": 36,
+      "name": "adjustOwnerCount"
+    },
+    {
+      "args": [
+        "view",
+        "issuer"
+      ],
+      "lineno": 43,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "view",
+        "pseudoOwnerKey"
+      ],
+      "lineno": 51,
+      "name": "pseudoAccountAddress"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "getPseudoAccountFields"
+    },
+    {
+      "args": [
+        "sleAcct",
+        "pseudoFieldFilter"
+      ],
+      "lineno": 69,
+      "name": "isPseudoAccount"
+    },
+    {
+      "args": [
+        "view",
+        "accountId",
+        "pseudoFieldFilter"
+      ],
+      "lineno": 78,
+      "name": "isPseudoAccount"
+    },
+    {
+      "args": [
+        "view",
+        "pseudoOwnerKey",
+        "ownerField"
+      ],
+      "lineno": 91,
+      "name": "createPseudoAccount"
+    },
+    {
+      "args": [
+        "toSle",
+        "hasDestinationTag"
+      ],
+      "lineno": 102,
+      "name": "checkDestinationAndTag"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

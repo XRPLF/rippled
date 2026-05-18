@@ -1,0 +1,250 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doConnect"
+      ],
+      "entry_point": "doConnect",
+      "purpose": "Handles the RPC 'connect' command to manually connect to a peer by IP and port.",
+      "validation_points": [
+        "context.app.config().standalone() - Validates not in standalone mode",
+        "context.params.isMember(jss::ip) - Validates 'ip' field is present",
+        "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) - Validates 'port' is integer if present"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ip",
+      "flow": [
+        "context.params[jss::ip] (input)",
+        "context.params.isMember(jss::ip) (validation)",
+        "context.params[jss::ip].asString() (conversion to string)",
+        "beast::IP::Endpoint::from_string(ip_str) (conversion to endpoint)",
+        "context.app.getOverlay().connect(ip.at_port(iPort)) (used for connection)"
+      ],
+      "origin": "context.params[jss::ip] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence",
+        "Converted from JSON value to string",
+        "Parsed into IP endpoint"
+      ],
+      "validated_at": "if (!context.params.isMember(jss::ip))"
+    },
+    {
+      "field": "port",
+      "flow": [
+        "context.params[jss::port] (input, optional)",
+        "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) (validation)",
+        "context.params[jss::port].asInt() (conversion to int, if present)",
+        "DEFAULT_PEER_PORT (fallback if not present)",
+        "ip.at_port(iPort) (used for connection)"
+      ],
+      "origin": "context.params[jss::port] (JSON RPC input, optional)",
+      "transformations": [
+        "Checked for presence",
+        "Checked for integer convertibility",
+        "Converted from JSON value to int",
+        "Defaulted if not present"
+      ],
+      "validated_at": "if (context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue))"
+    },
+    {
+      "field": "standalone",
+      "flow": [
+        "context.app.config().standalone() (checked at start)",
+        "If true, returns error and aborts"
+      ],
+      "origin": "context.app.config().standalone() (application config)",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "if (context.app.config().standalone())"
+    }
+  ],
+  "description": "Implements the doConnect RPC handler for connecting to a peer by IP and port in the XRPL server application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "standalone mode (application state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.config().standalone() at doConnect",
+      "issue_pattern": "Missing empty string validation for standalone mode (application state)",
+      "why_false_positive": "context.app.config().standalone() validates standalone mode (application state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ip",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::ip) at doConnect",
+      "issue_pattern": "Missing empty string validation for ip",
+      "why_false_positive": "context.params.isMember(jss::ip) validates ip for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "port",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) at doConnect",
+      "issue_pattern": "Missing empty string validation for port",
+      "why_false_positive": "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) validates port for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "port",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) at doConnect",
+      "issue_pattern": "Missing type validation for port",
+      "why_false_positive": "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue) validates port type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/peer/Connect.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 17,
+      "name": "doConnect"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doConnect handler is typically tested via RPC integration tests, likely found in files such as 'rpc_peer_test.cpp', 'PeerFinder_test.cpp', or 'Overlay_test.cpp'. These tests would cover valid/invalid IP and port inputs, missing fields, and standalone mode. However, edge cases such as malformed IPs, non-integer ports, and behavior in standalone mode should be explicitly checked. There may be gaps if tests do not cover all error paths (e.g., missing 'ip', invalid 'port', or standalone mode). Unit tests for the handler itself may be limited; most coverage is likely via higher-level integration tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for JSON field names, Json::Value for type checking)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcNOT_SYNCED (via RPC::make_error)",
+      "field": "standalone mode (application state)",
+      "location": "doConnect",
+      "validated_by": "context.app.config().standalone()",
+      "validates": [
+        "checks if the application is in standalone mode, which disallows peer connections"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "missing_field_error (via RPC::missing_field_error)",
+      "field": "ip",
+      "location": "doConnect",
+      "validated_by": "context.params.isMember(jss::ip)",
+      "validates": [
+        "checks if the 'ip' field is present in the input JSON"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcINVALID_PARAMS (via rpcError)",
+      "field": "port",
+      "location": "doConnect",
+      "validated_by": "context.params.isMember(jss::port) && !context.params[jss::port].isConvertibleTo(Json::intValue)",
+      "validates": [
+        "checks if 'port' is present and convertible to integer"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

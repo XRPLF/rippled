@@ -1,0 +1,486 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "index"
+    },
+    {
+      "lineno": 23,
+      "name": "txn"
+    },
+    {
+      "lineno": 46,
+      "name": "i"
+    },
+    {
+      "lineno": 89,
+      "name": "view"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "LedgerIndex index",
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 16,
+      "name": "LocalTx"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "LocalTxsImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LocalTxsImp::push_back",
+        "LocalTx::LocalTx (constructor)",
+        "LocalTx::getAccount",
+        "LocalTx::getSeqProxy"
+      ],
+      "entry_point": "LocalTxsImp::push_back",
+      "purpose": "Adds a new local transaction to the local transaction set, wrapping it in a LocalTx object which performs validation and caching.",
+      "validation_points": [
+        "LocalTx::LocalTx (validates sfLastLedgerSequence, validates txn type, validates sfAccount)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LocalTxsImp::sweep",
+        "LocalTx::isExpired",
+        "LocalTx::getID",
+        "LocalTx::getAccount",
+        "LocalTx::getSeqProxy"
+      ],
+      "entry_point": "LocalTxsImp::sweep",
+      "purpose": "Removes expired or accepted transactions from the local transaction set, validating expiration and existence in the ledger.",
+      "validation_points": [
+        "LocalTx::isExpired (validates expiration against ledger index)",
+        "view.txExists (checks if transaction is in ledger)",
+        "AccountID/account existence and sequence validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "LocalTxsImp::getTxSet",
+        "LocalTx::getTX"
+      ],
+      "entry_point": "LocalTxsImp::getTxSet",
+      "purpose": "Retrieves all local transactions as a canonical set for application to the open ledger.",
+      "validation_points": [
+        "No explicit validation here; relies on prior validation in LocalTx construction"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLastLedgerSequence",
+      "flow": [
+        "STTx::getFieldU32(sfLastLedgerSequence)",
+        "LocalTx::LocalTx (constructor)",
+        "m_expire (expiration ledger index)"
+      ],
+      "origin": "STTx (transaction) field",
+      "transformations": [
+        "If present, m_expire is set to min(default_expire, sfLastLedgerSequence+1)"
+      ],
+      "validated_at": "LocalTx::LocalTx (constructor)"
+    },
+    {
+      "field": "txn (STTx pointer)",
+      "flow": [
+        "LocalTxsImp::push_back",
+        "LocalTx::LocalTx (constructor)",
+        "m_txn"
+      ],
+      "origin": "Input to LocalTxsImp::push_back",
+      "transformations": [
+        "Type-checked as std::shared_ptr<STTx const>"
+      ],
+      "validated_at": "LocalTx::LocalTx (constructor, via type system)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "txn->getAccountID(sfAccount)",
+        "LocalTx::LocalTx (constructor)",
+        "m_account"
+      ],
+      "origin": "STTx (transaction) field",
+      "transformations": [
+        "Extracted and cached as AccountID"
+      ],
+      "validated_at": "LocalTx::LocalTx (constructor)"
+    },
+    {
+      "field": "m_expire",
+      "flow": [
+        "Set in LocalTx::LocalTx",
+        "Used in LocalTx::isExpired",
+        "Checked in LocalTxsImp::sweep"
+      ],
+      "origin": "LocalTx::LocalTx (constructor)",
+      "transformations": [
+        "Set to index + holdLedgers, possibly reduced by sfLastLedgerSequence"
+      ],
+      "validated_at": "LocalTx::isExpired"
+    },
+    {
+      "field": "m_account",
+      "flow": [
+        "Set in LocalTx::LocalTx",
+        "Used in LocalTx::getAccount",
+        "Used in LocalTxsImp::sweep for account lookup"
+      ],
+      "origin": "LocalTx::LocalTx (constructor)",
+      "transformations": [
+        "None after extraction"
+      ],
+      "validated_at": "LocalTx::LocalTx (constructor)"
+    },
+    {
+      "field": "m_seqProxy",
+      "flow": [
+        "Set in LocalTx::LocalTx",
+        "Used in LocalTx::getSeqProxy",
+        "Used in LocalTxsImp::sweep for sequence checks"
+      ],
+      "origin": "LocalTx::LocalTx (constructor)",
+      "transformations": [
+        "Extracted from txn->getSeqProxy()"
+      ],
+      "validated_at": "LocalTx::LocalTx (constructor)"
+    }
+  ],
+  "description": "Implements tracking and management of local transactions that have not yet been included in a fully-validated ledger, ensuring they are retried on new open ledgers until confirmed or expired.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txn (STTx pointer) via type system",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txn (STTx pointer) via type system validated by None (manual validation, type system, business logic)",
+      "issue_pattern": "Missing validation for txn (STTx pointer) via type system",
+      "why_false_positive": "None (manual validation, type system, business logic) validates txn (STTx pointer) via type system automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLastLedgerSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LocalTx constructor at LocalTx::LocalTx (constructor)",
+      "issue_pattern": "Missing empty string validation for sfLastLedgerSequence",
+      "why_false_positive": "LocalTx constructor validates sfLastLedgerSequence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txn (STTx pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Type system (std::shared_ptr<STTx const>) at LocalTx::LocalTx (constructor)",
+      "issue_pattern": "Missing empty string validation for txn (STTx pointer)",
+      "why_false_positive": "Type system (std::shared_ptr<STTx const>) validates txn (STTx pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "txn (STTx pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Type system (std::shared_ptr<STTx const>) at LocalTx::LocalTx (constructor)",
+      "issue_pattern": "Missing type validation for txn (STTx pointer)",
+      "why_false_positive": "Type system (std::shared_ptr<STTx const>) validates txn (STTx pointer) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "txn->getAccountID(sfAccount) at LocalTx::LocalTx (constructor)",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "txn->getAccountID(sfAccount) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LocalTxs.cpp",
+  "functions": [
+    {
+      "args": [
+        "LedgerIndex index",
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 23,
+      "name": "LocalTx"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getID"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getSeqProxy"
+    },
+    {
+      "args": [
+        "LedgerIndex i"
+      ],
+      "lineno": 46,
+      "name": "isExpired"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getTX"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "LocalTxsImp"
+    },
+    {
+      "args": [
+        "LedgerIndex index",
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 69,
+      "name": "push_back"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getTxSet"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 89,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "make_LocalTxs"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests in the rippled codebase, especially those testing local transaction handling, transaction expiration, and ledger replay. Look for tests in files such as 'test/ledger/LocalTxs_test.cpp', 'test/app/ledger/LocalTxs_test.cpp', or broader transaction/ledger tests. However, explicit validation of sfLastLedgerSequence, sfAccount extraction, and sequence proxy logic may not be directly unit tested unless there are targeted tests for LocalTx construction and LocalTxsImp::sweep. Edge cases (e.g., missing sfAccount, malformed transactions, or boundary expiration) may not be fully covered unless specifically tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "txn (STTx pointer) via type system"
+    ],
+    "framework": "None (manual validation, type system, business logic)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (handled via logic, not exception)",
+      "field": "sfLastLedgerSequence",
+      "location": "LocalTx::LocalTx (constructor)",
+      "validated_by": "LocalTx constructor",
+      "validates": [
+        "Checks if sfLastLedgerSequence field is present in the transaction (txn->isFieldPresent(sfLastLedgerSequence))",
+        "If present, sets m_expire to the minimum of (index + holdLedgers) and (sfLastLedgerSequence + 1)"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (relies on type safety)",
+      "field": "txn (STTx pointer)",
+      "location": "LocalTx::LocalTx (constructor)",
+      "validated_by": "Type system (std::shared_ptr<STTx const>)",
+      "validates": [
+        "Ensures txn is a shared pointer to a constant STTx object"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (assumes field is present, no explicit check)",
+      "field": "sfAccount",
+      "location": "LocalTx::LocalTx (constructor)",
+      "validated_by": "txn->getAccountID(sfAccount)",
+      "validates": [
+        "Retrieves the account ID from the transaction using sfAccount"
+      ],
+      "validation_type": "business_logic|type"
+    }
+  ]
+}

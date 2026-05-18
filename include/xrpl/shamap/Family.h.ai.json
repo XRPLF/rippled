@@ -1,0 +1,99 @@
+{
+  "args": [
+    {
+      "lineno": 40,
+      "name": "refNum"
+    },
+    {
+      "lineno": 40,
+      "name": "nodeHash"
+    },
+    {
+      "lineno": 48,
+      "name": "refHash"
+    },
+    {
+      "lineno": 48,
+      "name": "refNum"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Family"
+    }
+  ],
+  "description": "Defines the abstract base class 'Family' in the xrpl namespace, which provides an interface for managing caches, databases, and missing node acquisition in the context of the XRP Ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/Family.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "Family"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "~Family"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "db"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "db"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "journal"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "getFullBelowCache"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "getTreeNodeCache"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "sweep"
+    },
+    {
+      "args": [
+        "refNum",
+        "nodeHash"
+      ],
+      "lineno": 39,
+      "name": "missingNodeAcquireBySeq"
+    },
+    {
+      "args": [
+        "refHash",
+        "refNum"
+      ],
+      "lineno": 47,
+      "name": "missingNodeAcquireByHash"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "reset"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

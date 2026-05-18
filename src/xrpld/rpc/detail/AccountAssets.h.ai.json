@@ -1,0 +1,58 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "account"
+    },
+    {
+      "lineno": 11,
+      "name": "cache"
+    },
+    {
+      "lineno": 12,
+      "name": "includeXRP"
+    },
+    {
+      "lineno": 15,
+      "name": "account"
+    },
+    {
+      "lineno": 16,
+      "name": "lrLedger"
+    },
+    {
+      "lineno": 17,
+      "name": "includeXRP"
+    }
+  ],
+  "classes": [],
+  "description": "This header file declares functions for retrieving destination and source assets associated with an account, using an asset cache, within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/AccountAssets.h",
+  "functions": [
+    {
+      "args": [
+        "account",
+        "cache",
+        "includeXRP"
+      ],
+      "lineno": 9,
+      "name": "accountDestAssets"
+    },
+    {
+      "args": [
+        "account",
+        "lrLedger",
+        "includeXRP"
+      ],
+      "lineno": 14,
+      "name": "accountSourceAssets"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

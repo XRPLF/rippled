@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "T"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides optimized low-level arithmetic utilities for big integer operations, specifically for base58 encoding/decoding, including division, multiplication, addition, and conversion routines. It is part of the xrpl (XRP Ledger) codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/detail/b58_utils.h",
+  "functions": [
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 18,
+      "name": "div_rem"
+    },
+    {
+      "args": [
+        "a",
+        "b",
+        "carry"
+      ],
+      "lineno": 25,
+      "name": "carrying_mul"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 32,
+      "name": "carrying_add"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 41,
+      "name": "inplace_bigint_add"
+    },
+    {
+      "args": [
+        "a",
+        "b"
+      ],
+      "lineno": 62,
+      "name": "inplace_bigint_mul"
+    },
+    {
+      "args": [
+        "numerator",
+        "divisor"
+      ],
+      "lineno": 82,
+      "name": "inplace_bigint_div_rem"
+    },
+    {
+      "args": [
+        "input"
+      ],
+      "lineno": 120,
+      "name": "b58_10_to_b58_be"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 15,
+      "name": "b58_fast"
+    },
+    {
+      "lineno": 16,
+      "name": "detail"
+    }
+  ]
+}

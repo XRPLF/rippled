@@ -1,0 +1,356 @@
+{
+  "args": [
+    {
+      "lineno": 4,
+      "name": "item"
+    },
+    {
+      "lineno": 4,
+      "name": "cowid"
+    },
+    {
+      "lineno": 13,
+      "name": "hash"
+    },
+    {
+      "lineno": 34,
+      "name": "id"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid",
+        "boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash"
+      ],
+      "lineno": 4,
+      "name": "SHAMapLeafNode"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMapLeafNode::SHAMapLeafNode"
+      ],
+      "entry_point": "SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)",
+      "purpose": "Constructs a SHAMapLeafNode with an item and cowid; validates item size.",
+      "validation_points": [
+        "XRPL_ASSERT(item_->size() >= 12) in constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapLeafNode::SHAMapLeafNode"
+      ],
+      "entry_point": "SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)",
+      "purpose": "Constructs a SHAMapLeafNode with an item, cowid, and hash; validates item size.",
+      "validation_points": [
+        "XRPL_ASSERT(item_->size() >= 12) in constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapLeafNode::setItem"
+      ],
+      "entry_point": "SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)",
+      "purpose": "Sets the item for the node, validates cowid, updates hash.",
+      "validation_points": [
+        "XRPL_ASSERT(cowid_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapLeafNode::invariants"
+      ],
+      "entry_point": "SHAMapLeafNode::invariants(bool)",
+      "purpose": "Checks invariants for the node: hash is nonzero, item is non-null.",
+      "validation_points": [
+        "XRPL_ASSERT(hash_.isNonZero())",
+        "XRPL_ASSERT(item_)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "item_",
+      "flow": [
+        "Constructor parameter",
+        "Assigned to item_",
+        "Used in setItem, getString, invariants"
+      ],
+      "origin": "Constructor parameter (item)",
+      "transformations": [
+        "Moved into item_ in constructor",
+        "Replaced in setItem"
+      ],
+      "validated_at": "item_->size() validated in constructors; item_ validated in invariants"
+    },
+    {
+      "field": "cowid_",
+      "flow": [
+        "Constructor parameter",
+        "Passed to SHAMapTreeNode base",
+        "Used in setItem"
+      ],
+      "origin": "Constructor parameter (cowid)",
+      "transformations": [
+        "None (direct assignment)"
+      ],
+      "validated_at": "XRPL_ASSERT(cowid_) in setItem"
+    },
+    {
+      "field": "hash_",
+      "flow": [
+        "Constructor parameter or computed",
+        "Assigned to hash_",
+        "Used in getString, invariants"
+      ],
+      "origin": "Constructor parameter (hash) or computed via updateHash()",
+      "transformations": [
+        "Set in constructor or updated in setItem via updateHash()"
+      ],
+      "validated_at": "XRPL_ASSERT(hash_.isNonZero()) in invariants"
+    },
+    {
+      "field": "item_->size()",
+      "flow": [
+        "item_ (from constructor)",
+        "item_->size() checked in constructor",
+        "item_->size() used in getString"
+      ],
+      "origin": "SHAMapItem::size()",
+      "transformations": [
+        "None (read-only)"
+      ],
+      "validated_at": "XRPL_ASSERT(item_->size() >= 12) in constructors"
+    }
+  ],
+  "description": "Implements the SHAMapLeafNode class, representing a leaf node in the SHAMap tree structure used in XRPL, including constructors, item access, mutation, string representation, and invariants checking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "item_->size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::SHAMapLeafNode (constructor, line 7 and 17)",
+      "issue_pattern": "Missing empty string validation for item_->size()",
+      "why_false_positive": "XRPL_ASSERT validates item_->size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "item_->size()",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::SHAMapLeafNode (constructor, line 7 and 17)",
+      "issue_pattern": "Missing range validation for item_->size()",
+      "why_false_positive": "XRPL_ASSERT validates item_->size() range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cowid_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::setItem",
+      "issue_pattern": "Missing empty string validation for cowid_",
+      "why_false_positive": "XRPL_ASSERT validates cowid_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "cowid_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::setItem",
+      "issue_pattern": "Missing range validation for cowid_",
+      "why_false_positive": "XRPL_ASSERT validates cowid_ range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hash_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::invariants",
+      "issue_pattern": "Missing empty string validation for hash_",
+      "why_false_positive": "XRPL_ASSERT validates hash_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "item_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::invariants",
+      "issue_pattern": "Missing empty string validation for item_",
+      "why_false_positive": "XRPL_ASSERT validates item_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "item_",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT at SHAMapLeafNode::invariants",
+      "issue_pattern": "Missing type validation for item_",
+      "why_false_positive": "XRPL_ASSERT validates item_ type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapLeafNode.cpp",
+  "functions": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid"
+      ],
+      "lineno": 4,
+      "name": "SHAMapLeafNode::SHAMapLeafNode"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid",
+        "SHAMapHash const& hash"
+      ],
+      "lineno": 11,
+      "name": "SHAMapLeafNode::SHAMapLeafNode"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "SHAMapLeafNode::peekItem"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item"
+      ],
+      "lineno": 25,
+      "name": "SHAMapLeafNode::setItem"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& id"
+      ],
+      "lineno": 34,
+      "name": "SHAMapLeafNode::getString"
+    },
+    {
+      "args": [
+        "bool"
+      ],
+      "lineno": 56,
+      "name": "SHAMapLeafNode::invariants"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is primarily in constructors, setItem, and invariants. Typical test files would be in the rippled codebase under tests/shamap/ or tests/shamap/SHAMapLeafNode_test.cpp, but coverage depends on whether tests explicitly construct SHAMapLeafNode with invalid item sizes, null items, zero cowid, or zero hash. Gaps may exist if tests do not cover edge cases (e.g., item size < 12, cowid_ == 0, hash_ == 0, item_ == nullptr). Invariants may only be checked in debug/test builds. Review of test files is needed to confirm coverage of all validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro/function)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "item_->size()",
+      "location": "SHAMapLeafNode::SHAMapLeafNode (constructor, line 7 and 17)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures item_->size() >= 12",
+        "Minimum input size for SHAMapItem"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "cowid_",
+      "location": "SHAMapLeafNode::setItem",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures cowid_ is nonzero before allowing setItem"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "hash_",
+      "location": "SHAMapLeafNode::invariants",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures hash_ is nonzero (hash_.isNonZero())"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "item_",
+      "location": "SHAMapLeafNode::invariants",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures item_ is not null"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,683 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 12,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 13,
+      "name": "config"
+    },
+    {
+      "lineno": 14,
+      "name": "journal"
+    },
+    {
+      "lineno": 134,
+      "name": "dstBackend"
+    },
+    {
+      "lineno": 134,
+      "name": "srcDB"
+    },
+    {
+      "lineno": 123,
+      "name": "hash"
+    },
+    {
+      "lineno": 123,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 123,
+      "name": "cb"
+    },
+    {
+      "lineno": 167,
+      "name": "fetchType"
+    },
+    {
+      "lineno": 167,
+      "name": "duplicate"
+    },
+    {
+      "lineno": 191,
+      "name": "obj"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "Section const& config",
+        "beast::Journal journal"
+      ],
+      "lineno": 10,
+      "name": "Database"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Database::Database"
+      ],
+      "entry_point": "Database::Database",
+      "purpose": "Constructs a Database object, initializes configuration, validates parameters, and spawns read threads.",
+      "validation_points": [
+        "XRPL_ASSERT(readThreads, ...)",
+        "if (earliestLedgerSeq_ < 1) Throw<std::runtime_error>(...)",
+        "if (requestBundle_ < 1 || requestBundle_ > 64) Throw<std::runtime_error>(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Database::Database",
+        "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ)"
+      ],
+      "entry_point": "Database::Database",
+      "purpose": "Reads and validates 'earliest_seq' from config using a template-based getter.",
+      "validation_points": [
+        "get<std::uint32_t>(...) (type/range validation)",
+        "if (earliestLedgerSeq_ < 1) Throw<std::runtime_error>(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Database::Database",
+        "get<int>(config, \"rq_bundle\", 4)"
+      ],
+      "entry_point": "Database::Database",
+      "purpose": "Reads and validates 'rq_bundle' from config using a template-based getter.",
+      "validation_points": [
+        "get<int>(...) (type/range validation)",
+        "if (requestBundle_ < 1 || requestBundle_ > 64) Throw<std::runtime_error>(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Database::Database",
+        "std::thread (lambda)",
+        "fetchNodeObject"
+      ],
+      "entry_point": "Database::Database",
+      "purpose": "Spawns read threads that process queued read requests, using validated configuration values.",
+      "validation_points": [
+        "requestBundle_ used as loop bound (already validated)",
+        "XRPL_ASSERT(!it->second.empty(), ...)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "readThreads",
+      "flow": [
+        "constructor argument",
+        "XRPL_ASSERT(readThreads, ...)",
+        "readThreads_ = std::max(1, readThreads)",
+        "used as thread count in for loop"
+      ],
+      "origin": "Database::Database constructor argument",
+      "transformations": [
+        "Asserted nonzero",
+        "Clamped to minimum 1"
+      ],
+      "validated_at": "XRPL_ASSERT(readThreads, ...)"
+    },
+    {
+      "field": "earliestLedgerSeq_",
+      "flow": [
+        "config['earliest_seq']",
+        "get<std::uint32_t>(...)",
+        "earliestLedgerSeq_",
+        "if (earliestLedgerSeq_ < 1) Throw"
+      ],
+      "origin": "config['earliest_seq'] via get<std::uint32_t>",
+      "transformations": [
+        "Type conversion via template getter",
+        "Range checked for >= 1"
+      ],
+      "validated_at": "if (earliestLedgerSeq_ < 1) Throw"
+    },
+    {
+      "field": "requestBundle_",
+      "flow": [
+        "config['rq_bundle']",
+        "get<int>(...)",
+        "requestBundle_",
+        "if (requestBundle_ < 1 || requestBundle_ > 64) Throw"
+      ],
+      "origin": "config['rq_bundle'] via get<int>",
+      "transformations": [
+        "Type conversion via template getter",
+        "Range checked for 1 <= x <= 64"
+      ],
+      "validated_at": "if (requestBundle_ < 1 || requestBundle_ > 64) Throw"
+    },
+    {
+      "field": "read_",
+      "flow": [
+        "populated by external code (not shown)",
+        "accessed in read thread lambda",
+        "extracted up to requestBundle_ items per loop"
+      ],
+      "origin": "Database member variable",
+      "transformations": [
+        "Batch extraction (up to requestBundle_)"
+      ],
+      "validated_at": "requestBundle_ already validated at construction"
+    }
+  ],
+  "description": "Implements the xrpl::NodeStore::Database class, which manages asynchronous and batched access to a node storage backend, including thread management, async fetch, import, and statistics reporting.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "config['earliest_seq'] (type via get<> template)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field config['earliest_seq'] (type via get<> template) validated by XRPL custom (XRPL_ASSERT, Throw<>, get<> template), possibly jss:: for JSON field names",
+      "issue_pattern": "Missing validation for config['earliest_seq'] (type via get<> template)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, Throw<>, get<> template), possibly jss:: for JSON field names validates config['earliest_seq'] (type via get<> template) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "config['rq_bundle'] (type via get<> template)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field config['rq_bundle'] (type via get<> template) validated by XRPL custom (XRPL_ASSERT, Throw<>, get<> template), possibly jss:: for JSON field names",
+      "issue_pattern": "Missing validation for config['rq_bundle'] (type via get<> template)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, Throw<>, get<> template), possibly jss:: for JSON field names validates config['rq_bundle'] (type via get<> template) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "readThreads",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Database::Database (constructor)",
+      "issue_pattern": "Missing empty string validation for readThreads",
+      "why_false_positive": "XRPL_ASSERT macro validates readThreads for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "earliestLedgerSeq_ (from config['earliest_seq'])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check and Throw<std::runtime_error> at Database::Database (constructor)",
+      "issue_pattern": "Missing empty string validation for earliestLedgerSeq_ (from config['earliest_seq'])",
+      "why_false_positive": "explicit range check and Throw<std::runtime_error> validates earliestLedgerSeq_ (from config['earliest_seq']) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "earliestLedgerSeq_ (from config['earliest_seq'])",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check and Throw<std::runtime_error> at Database::Database (constructor)",
+      "issue_pattern": "Missing range validation for earliestLedgerSeq_ (from config['earliest_seq'])",
+      "why_false_positive": "explicit range check and Throw<std::runtime_error> validates earliestLedgerSeq_ (from config['earliest_seq']) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "requestBundle_ (from config['rq_bundle'])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check and Throw<std::runtime_error> at Database::Database (constructor)",
+      "issue_pattern": "Missing empty string validation for requestBundle_ (from config['rq_bundle'])",
+      "why_false_positive": "explicit range check and Throw<std::runtime_error> validates requestBundle_ (from config['rq_bundle']) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "requestBundle_ (from config['rq_bundle'])",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check and Throw<std::runtime_error> at Database::Database (constructor)",
+      "issue_pattern": "Missing range validation for requestBundle_ (from config['rq_bundle'])",
+      "why_false_positive": "explicit range check and Throw<std::runtime_error> validates requestBundle_ (from config['rq_bundle']) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "config['earliest_seq']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ) at Database::Database (constructor)",
+      "issue_pattern": "Missing empty string validation for config['earliest_seq']",
+      "why_false_positive": "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ) validates config['earliest_seq'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "config['earliest_seq']",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ) at Database::Database (constructor)",
+      "issue_pattern": "Missing type validation for config['earliest_seq']",
+      "why_false_positive": "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ) validates config['earliest_seq'] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "config['rq_bundle']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get<int>(config, \"rq_bundle\", 4) at Database::Database (constructor)",
+      "issue_pattern": "Missing empty string validation for config['rq_bundle']",
+      "why_false_positive": "get<int>(config, \"rq_bundle\", 4) validates config['rq_bundle'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "config['rq_bundle']",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get<int>(config, \"rq_bundle\", 4) at Database::Database (constructor)",
+      "issue_pattern": "Missing type validation for config['rq_bundle']",
+      "why_false_positive": "get<int>(config, \"rq_bundle\", 4) validates config['rq_bundle'] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "it->second (data)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at Database::Database (thread lambda)",
+      "issue_pattern": "Missing empty string validation for it->second (data)",
+      "why_false_positive": "XRPL_ASSERT macro validates it->second (data) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/Database.cpp",
+  "functions": [
+    {
+      "args": [
+        "scheduler",
+        "readThreads",
+        "config",
+        "journal"
+      ],
+      "lineno": 10,
+      "name": "Database"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "~Database"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "isStopping"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "hash",
+        "ledgerSeq",
+        "cb"
+      ],
+      "lineno": 123,
+      "name": "asyncFetch"
+    },
+    {
+      "args": [
+        "dstBackend",
+        "srcDB"
+      ],
+      "lineno": 134,
+      "name": "importInternal"
+    },
+    {
+      "args": [
+        "hash",
+        "ledgerSeq",
+        "fetchType",
+        "duplicate"
+      ],
+      "lineno": 167,
+      "name": "fetchNodeObject"
+    },
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 191,
+      "name": "getCountsJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is primarily in the Database constructor. Typical test coverage would be in integration or unit tests for NodeStore::Database, likely in files such as 'nodestore/Database_test.cpp' or similar. Tests should cover invalid 'earliest_seq' (e.g., 0), invalid 'rq_bundle' (e.g., 0, 65), and zero readThreads. Gaps may exist if tests do not explicitly check exception throwing for these invalid configurations, or if edge cases (e.g., negative values, missing config keys) are not tested. Template-based config getters may have their own tests elsewhere. Threading behavior is harder to test and may not be fully covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "config['earliest_seq'] (type via get<> template)",
+      "config['rq_bundle'] (type via get<> template)"
+    ],
+    "framework": "XRPL custom (XRPL_ASSERT, Throw<>, get<> template), possibly jss:: for JSON field names",
+    "validation_layer": "constructor (entry_point), business_logic (thread lambda)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "readThreads",
+      "location": "Database::Database (constructor)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "readThreads must be nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"Invalid earliest_seq\")",
+      "field": "earliestLedgerSeq_ (from config['earliest_seq'])",
+      "location": "Database::Database (constructor)",
+      "validated_by": "explicit range check and Throw<std::runtime_error>",
+      "validates": [
+        "earliestLedgerSeq_ must be >= 1"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error(\"Invalid rq_bundle\")",
+      "field": "requestBundle_ (from config['rq_bundle'])",
+      "location": "Database::Database (constructor)",
+      "validated_by": "explicit range check and Throw<std::runtime_error>",
+      "validates": [
+        "requestBundle_ must be >= 1 and <= 64"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "depends on get<> implementation (likely throws if type mismatch)",
+      "field": "config['earliest_seq']",
+      "location": "Database::Database (constructor)",
+      "validated_by": "get<std::uint32_t>(config, \"earliest_seq\", XRP_LEDGER_EARLIEST_SEQ)",
+      "validates": [
+        "config['earliest_seq'] must be convertible to std::uint32_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "depends on get<> implementation (likely throws if type mismatch)",
+      "field": "config['rq_bundle']",
+      "location": "Database::Database (constructor)",
+      "validated_by": "get<int>(config, \"rq_bundle\", 4)",
+      "validates": [
+        "config['rq_bundle'] must be convertible to int"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "it->second (data)",
+      "location": "Database::Database (thread lambda)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "data must not be empty"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

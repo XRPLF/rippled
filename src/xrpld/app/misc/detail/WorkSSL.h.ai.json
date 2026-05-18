@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "host"
+    },
+    {
+      "lineno": 24,
+      "name": "path"
+    },
+    {
+      "lineno": 25,
+      "name": "port"
+    },
+    {
+      "lineno": 26,
+      "name": "ios"
+    },
+    {
+      "lineno": 27,
+      "name": "j"
+    },
+    {
+      "lineno": 28,
+      "name": "config"
+    },
+    {
+      "lineno": 29,
+      "name": "lastEndpoint"
+    },
+    {
+      "lineno": 30,
+      "name": "lastStatus"
+    },
+    {
+      "lineno": 31,
+      "name": "cb"
+    },
+    {
+      "lineno": 42,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "host",
+        "path",
+        "port",
+        "ios",
+        "j",
+        "config",
+        "lastEndpoint",
+        "lastStatus",
+        "cb"
+      ],
+      "lineno": 15,
+      "name": "WorkSSL"
+    }
+  ],
+  "description": "Defines the WorkSSL class, which handles asynchronous work over SSL connections as part of the XRPL application's networking layer.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/WorkSSL.h",
+  "functions": [
+    {
+      "args": [
+        "host",
+        "path",
+        "port",
+        "ios",
+        "j",
+        "config",
+        "lastEndpoint",
+        "lastStatus",
+        "cb"
+      ],
+      "lineno": 22,
+      "name": "WorkSSL"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "~WorkSSL"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "stream"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 42,
+      "name": "onConnect"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 45,
+      "name": "onHandshake"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

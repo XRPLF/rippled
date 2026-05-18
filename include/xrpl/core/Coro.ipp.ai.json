@@ -1,0 +1,369 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "JobQueue::Coro::~Coro"
+      ],
+      "entry_point": "JobQueue::Coro::~Coro",
+      "purpose": "Destructor for Coro, ensures coroutine has finished before destruction.",
+      "validation_points": [
+        "XRPL_ASSERT(finished_, ...) (debug only) - validates that the coroutine is finished before destruction"
+      ]
+    },
+    {
+      "call_chain": [
+        "JobQueue::Coro::resume",
+        "if (coro_) { coro_(); }"
+      ],
+      "entry_point": "JobQueue::Coro::resume",
+      "purpose": "Resumes the coroutine if it is still valid (not completed).",
+      "validation_points": [
+        "if (coro_) - validates that the coroutine object is still valid before resuming"
+      ]
+    },
+    {
+      "call_chain": [
+        "JobQueue::Coro::expectEarlyExit"
+      ],
+      "entry_point": "JobQueue::Coro::expectEarlyExit",
+      "purpose": "Handles early exit from coroutine, ensures state is updated and nSuspend decremented.",
+      "validation_points": [
+        "if (!finished_) (debug only) - validates that the coroutine is not already finished before marking as finished"
+      ]
+    },
+    {
+      "call_chain": [
+        "JobQueue::Coro::post",
+        "jq_.addJob(..., [this, sp = shared_from_this()]() { resume(); })",
+        "JobQueue::Coro::resume"
+      ],
+      "entry_point": "JobQueue::Coro::post",
+      "purpose": "Schedules the coroutine to be resumed by the job queue.",
+      "validation_points": [
+        "resume() -> if (coro_) - validates coroutine validity before resuming"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "finished_",
+      "flow": [
+        "Coro constructor (implicitly false)",
+        "Set to true at end of coroutine lambda (after fn(shared_from_this()))",
+        "Set to true in expectEarlyExit() if not already finished"
+      ],
+      "origin": "Set to false by default; set to true at end of coroutine lambda and in expectEarlyExit() (debug only)",
+      "transformations": [
+        "Set to true when coroutine completes or early exit is expected"
+      ],
+      "validated_at": "XRPL_ASSERT in ~Coro (debug only); if (!finished_) in expectEarlyExit() (debug only)"
+    },
+    {
+      "field": "coro_",
+      "flow": [
+        "Coro constructor",
+        "Used in resume() to check validity before calling coro_()",
+        "Used in runnable() to check if coroutine is still valid"
+      ],
+      "origin": "Initialized in Coro constructor with boost::coroutines2::pull_type",
+      "transformations": [
+        "May become invalid (empty) when coroutine completes"
+      ],
+      "validated_at": "if (coro_) in resume() and runnable()"
+    },
+    {
+      "field": "running_",
+      "flow": [
+        "Set to true in post() before scheduling job",
+        "Set to true in resume() before resuming coroutine",
+        "Set to false in resume() after coroutine resumes",
+        "Set to false in post() if job scheduling fails"
+      ],
+      "origin": "Set to true in post() and resume(), set to false after resume() completes or if post() fails",
+      "transformations": [
+        "Tracks whether coroutine is currently running"
+      ],
+      "validated_at": "Used in join() to wait until running_ == false"
+    },
+    {
+      "field": "yield_",
+      "flow": [
+        "Set in coroutine lambda at start",
+        "Used in yield() to suspend coroutine"
+      ],
+      "origin": "Set in coroutine lambda to point to do_yield",
+      "transformations": [
+        "Pointer assignment"
+      ],
+      "validated_at": "Not explicitly validated; assumed valid after construction"
+    },
+    {
+      "field": "jq_.nSuspend_",
+      "flow": [
+        "Incremented in yield()",
+        "Decremented in resume() and expectEarlyExit()"
+      ],
+      "origin": "JobQueue member, incremented/decremented to track suspended coroutines",
+      "transformations": [
+        "Increment/decrement"
+      ],
+      "validated_at": "Not explicitly validated here"
+    }
+  ],
+  "description": "Implements the JobQueue::Coro coroutine class for managing asynchronous job execution and suspension/resumption in the XRPL job queue system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "coro_ (by boost::coroutines2 type system)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field coro_ (by boost::coroutines2 type system) validated by XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2",
+      "issue_pattern": "Missing validation for coro_ (by boost::coroutines2 type system)",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2 validates coro_ (by boost::coroutines2 type system) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "type_ (by C++ enum type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field type_ (by C++ enum type) validated by XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2",
+      "issue_pattern": "Missing validation for type_ (by C++ enum type)",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2 validates type_ (by C++ enum type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "name_ (by std::string type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field name_ (by std::string type) validated by XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2",
+      "issue_pattern": "Missing validation for name_ (by std::string type)",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2 validates name_ (by std::string type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "finished_ (Coro completion state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at JobQueue::Coro::~Coro (destructor)",
+      "issue_pattern": "Missing empty string validation for finished_ (Coro completion state)",
+      "why_false_positive": "XRPL_ASSERT macro validates finished_ (Coro completion state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "coro_ (coroutine object validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (coro_) check at JobQueue::Coro::resume",
+      "issue_pattern": "Missing empty string validation for coro_ (coroutine object validity)",
+      "why_false_positive": "if (coro_) check validates coro_ (coroutine object validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "finished_ (Coro completion state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!finished_) check (debug only) at JobQueue::Coro::expectEarlyExit",
+      "issue_pattern": "Missing empty string validation for finished_ (Coro completion state)",
+      "why_false_positive": "if (!finished_) check (debug only) validates finished_ (Coro completion state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/Coro.ipp",
+  "functions": [
+    {
+      "args": [
+        "Coro_create_t",
+        "JobQueue& jq",
+        "JobType type",
+        "std::string const& name",
+        "F&& f"
+      ],
+      "lineno": 5,
+      "name": "JobQueue::Coro::Coro"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "JobQueue::Coro::~Coro"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "JobQueue::Coro::yield"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "JobQueue::Coro::post"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "JobQueue::Coro::resume"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "JobQueue::Coro::runnable"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "JobQueue::Coro::expectEarlyExit"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "JobQueue::Coro::join"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is low-level coroutine infrastructure. Direct unit tests for Coro are unlikely; instead, coverage is expected via higher-level JobQueue and job/coroutine scheduling tests. Validation code (XRPL_ASSERT, debug checks) is only active in debug builds, so release builds do not check finished_ state. Test files likely to cover this indirectly include those for JobQueue, job scheduling, and possibly integration tests for asynchronous job handling. Gaps: No direct tests for validation logic (e.g., destructor assertion, expectEarlyExit), and no explicit tests for race conditions or invalid coroutine state.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "coro_ (by boost::coroutines2 type system)",
+      "type_ (by C++ enum type)",
+      "name_ (by std::string type)"
+    ],
+    "framework": "XRPL_ASSERT macro (custom assertion), C++ type system, boost::coroutines2",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts in debug builds)",
+      "field": "finished_ (Coro completion state)",
+      "location": "JobQueue::Coro::~Coro (destructor)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures coroutine has finished before destruction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (skips execution if invalid)",
+      "field": "coro_ (coroutine object validity)",
+      "location": "JobQueue::Coro::resume",
+      "validated_by": "if (coro_) check",
+      "validates": [
+        "Checks that coroutine is still valid before resuming"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (debug-only check, no error thrown)",
+      "field": "finished_ (Coro completion state)",
+      "location": "JobQueue::Coro::expectEarlyExit",
+      "validated_by": "if (!finished_) check (debug only)",
+      "validates": [
+        "Checks if coroutine has finished before early exit logic"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

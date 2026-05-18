@@ -1,0 +1,60 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "LedgerHeader"
+    }
+  ],
+  "description": "Defines the LedgerHeader struct and related functions for handling ledger metadata in the XRPL protocol, including serialization, deserialization, and hash calculation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/LedgerHeader.h",
+  "functions": [
+    {
+      "args": [
+        "LedgerHeader const& info"
+      ],
+      "lineno": 46,
+      "name": "getCloseAgree"
+    },
+    {
+      "args": [
+        "LedgerHeader const&",
+        "Serializer&",
+        "bool includeHash"
+      ],
+      "lineno": 51,
+      "name": "addRaw"
+    },
+    {
+      "args": [
+        "Slice data",
+        "bool hasHash"
+      ],
+      "lineno": 54,
+      "name": "deserializeHeader"
+    },
+    {
+      "args": [
+        "Slice data",
+        "bool hasHash"
+      ],
+      "lineno": 57,
+      "name": "deserializePrefixedHeader"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info"
+      ],
+      "lineno": 60,
+      "name": "calculateLedgerHash"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

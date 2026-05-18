@@ -1,0 +1,378 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 16,
+      "name": "src"
+    },
+    {
+      "lineno": 17,
+      "name": "dst"
+    },
+    {
+      "lineno": 18,
+      "name": "mpt"
+    },
+    {
+      "lineno": 32,
+      "name": "in_"
+    },
+    {
+      "lineno": 33,
+      "name": "srcToDst_"
+    },
+    {
+      "lineno": 34,
+      "name": "out_"
+    },
+    {
+      "lineno": 35,
+      "name": "srcDebtDir_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "MPTID const& mpt"
+      ],
+      "lineno": 13,
+      "name": "MPTEndpointStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "MPTID const& mpt"
+      ],
+      "lineno": 168,
+      "name": "MPTEndpointPaymentStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "MPTID const& mpt"
+      ],
+      "lineno": 198,
+      "name": "MPTEndpointOfferCrossingStep"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "make_MPTEndpointStep",
+        "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor)",
+        "XRPL_ASSERT (src_ and dst_ validation)"
+      ],
+      "entry_point": "make_MPTEndpointStep",
+      "purpose": "Creates an MPTEndpointStep instance, initializing source, destination, and MPT issue. Validates that either src or dst is the issuer.",
+      "validation_points": [
+        "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor): XRPL_ASSERT(src_ == mptIssue_.getIssuer() || dst_ == mptIssue_.getIssuer())"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTEndpointPaymentStep::check",
+        "MPTEndpointStep<TDerived>::src() / dst() / mptID() / other accessors"
+      ],
+      "entry_point": "MPTEndpointPaymentStep::check",
+      "purpose": "Checks the validity of the payment step, likely using the validated fields.",
+      "validation_points": [
+        "Relies on constructor validation (no additional validation in check itself)"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTEndpointOfferCrossingStep::check",
+        "MPTEndpointStep<TDerived>::src() / dst() / mptID() / other accessors"
+      ],
+      "entry_point": "MPTEndpointOfferCrossingStep::check",
+      "purpose": "Checks the validity of the offer crossing step, using the validated fields.",
+      "validation_points": [
+        "Relies on constructor validation (no additional validation in check itself)"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTEndpointOfferCrossingStep::checkCreateMPT",
+        "MPTEndpointStep<TDerived>::src() / dst() / mptID() / other accessors"
+      ],
+      "entry_point": "MPTEndpointOfferCrossingStep::checkCreateMPT",
+      "purpose": "Checks and possibly creates an MPT endpoint during offer crossing.",
+      "validation_points": [
+        "Relies on constructor validation (no additional validation in check itself)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "src_",
+      "flow": [
+        "make_MPTEndpointStep (or similar)",
+        "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor)",
+        "stored in src_",
+        "used in accessors (src(), directStepSrcAcct(), directStepAccts())",
+        "used in logic (e.g., isDirectBetweenHolders_, validation, etc.)"
+      ],
+      "origin": "Passed as 'src' argument to MPTEndpointStep constructor (from make_MPTEndpointStep or similar factory)",
+      "transformations": [
+        "None (direct assignment and usage)"
+      ],
+      "validated_at": "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor) via XRPL_ASSERT"
+    },
+    {
+      "field": "dst_",
+      "flow": [
+        "make_MPTEndpointStep (or similar)",
+        "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor)",
+        "stored in dst_",
+        "used in accessors (dst(), directStepAccts())",
+        "used in logic (e.g., isDirectBetweenHolders_, validation, etc.)"
+      ],
+      "origin": "Passed as 'dst' argument to MPTEndpointStep constructor (from make_MPTEndpointStep or similar factory)",
+      "transformations": [
+        "None (direct assignment and usage)"
+      ],
+      "validated_at": "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor) via XRPL_ASSERT"
+    },
+    {
+      "field": "mptIssue_",
+      "flow": [
+        "make_MPTEndpointStep (or similar)",
+        "MPTEndpointStep<TDerived>::MPTEndpointStep (constructor)",
+        "stored in mptIssue_",
+        "used in isDirectBetweenHolders_ logic",
+        "used in accessors (mptID())"
+      ],
+      "origin": "Constructed from 'mpt' argument in MPTEndpointStep constructor",
+      "transformations": [
+        "None (direct assignment and usage)"
+      ],
+      "validated_at": "Indirectly validated as part of XRPL_ASSERT (since src_ or dst_ must match mptIssue_.getIssuer())"
+    },
+    {
+      "field": "cache_",
+      "flow": [
+        "Initially std::nullopt",
+        "Set by internal logic (e.g., after calculation)",
+        "Read by cachedIn(), cachedOut()"
+      ],
+      "origin": "Set internally by MPTEndpointStep methods (not shown in provided code)",
+      "transformations": [
+        "Set to Cache struct with calculated values"
+      ],
+      "validated_at": "Not directly validated; assumed correct by internal logic"
+    }
+  ],
+  "description": "Implements MPTEndpointStep and its derivatives for handling Multi-Party Token (MPT) endpoints in payment and offer crossing flows in the XRPL transaction pathfinding logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "src_ and dst_ (source and destination AccountID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at MPTEndpointStep constructor",
+      "issue_pattern": "Missing empty string validation for src_ and dst_ (source and destination AccountID)",
+      "why_false_positive": "XRPL_ASSERT macro validates src_ and dst_ (source and destination AccountID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/MPTEndpointStep.cpp",
+  "functions": [
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "std::shared_ptr<const SLE> const& sleSrc"
+      ],
+      "lineno": 222,
+      "name": "MPTEndpointPaymentStep::check"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "std::shared_ptr<const SLE> const&"
+      ],
+      "lineno": 273,
+      "name": "MPTEndpointOfferCrossingStep::check"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "xrpl::DebtDirection srcDebtDir"
+      ],
+      "lineno": 277,
+      "name": "MPTEndpointOfferCrossingStep::checkCreateMPT"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "MPTID const& mpt"
+      ],
+      "lineno": 563,
+      "name": "make_MPTEndpointStep"
+    },
+    {
+      "args": [
+        "Step const& step",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "MPTID const& mptid"
+      ],
+      "lineno": 587,
+      "name": "test::mptEndpointStepEqual"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 585,
+      "name": "test"
+    }
+  ],
+  "test_coverage_notes": "The code provides a test utility function test::mptEndpointStepEqual, suggesting some unit test coverage. However, the actual test files are not shown. The critical validation (XRPL_ASSERT in the constructor) is only triggered when an MPTEndpointStep is constructed, so tests must cover construction with both valid and invalid src/dst/issuer combinations. If tests do not explicitly construct MPTEndpointStep with invalid src/dst, this validation path may not be fully tested. There is no evidence in this file of negative tests (i.e., tests that expect the assertion to fail). Test coverage for data flow through accessors and cache_ is likely, but coverage for error/exception paths and assertion failures is unclear.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a third-party framework)",
+    "notes": "No explicit input validation framework (like jss:: or template engine) is used in this file. Validation is performed via assertions in the constructor, enforcing business logic constraints. No type, range, or format validation is present in the visible code. Exception handling is via assertion failure (likely throws or aborts).",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "src_ and dst_ (source and destination AccountID)",
+      "location": "MPTEndpointStep constructor",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Either src_ or dst_ must be the issuer of the MPTIssue (mptIssue_.getIssuer())"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

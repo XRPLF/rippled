@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "lpAccepted"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Value"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "ReadView"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "Transaction"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "TxMeta"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "STTx"
+    }
+  ],
+  "description": "Defines a function to compute and summarize changes to order books (book changes) in an XRPL ledger, extracting volume and rate information for affected offers, and returning the result as a JSON object.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/BookChanges.h",
+  "functions": [
+    {
+      "args": [
+        "lpAccepted"
+      ],
+      "lineno": 22,
+      "name": "computeBookChanges"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "Json"
+    },
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 21,
+      "name": "RPC"
+    }
+  ]
+}

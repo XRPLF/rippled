@@ -1,0 +1,42 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "size",
+        "data",
+        "other",
+        "s"
+      ],
+      "lineno": 10,
+      "name": "Buffer"
+    }
+  ],
+  "description": "Defines a Buffer class for managing dynamic byte arrays, similar to std::vector<char> but optimized for use as a BufferFactory, including copy/move semantics, assignment from slices, and comparison operators.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Buffer.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 120,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 130,
+      "name": "operator!="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "initStateDB"
+      ],
+      "entry_point": "initStateDB",
+      "purpose": "Initializes the DbState and CanDelete tables if they do not exist, and ensures a row with Key=1 exists in each.",
+      "validation_points": [
+        "Manual SQL query: SELECT COUNT(Key) FROM DbState WHERE Key = 1; (checks if row exists)",
+        "Manual SQL query: SELECT COUNT(Key) FROM CanDelete WHERE Key = 1; (checks if row exists)",
+        "Validation: If boost::optional is empty, throws runtime_error"
+      ]
+    },
+    {
+      "call_chain": [
+        "getCanDelete"
+      ],
+      "entry_point": "getCanDelete",
+      "purpose": "Fetches the CanDeleteSeq value from the CanDelete table.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "setCanDelete"
+      ],
+      "entry_point": "setCanDelete",
+      "purpose": "Updates the CanDeleteSeq value in the CanDelete table.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "getSavedState"
+      ],
+      "entry_point": "getSavedState",
+      "purpose": "Fetches WritableDb, ArchiveDb, and LastRotatedLedger from DbState.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "setSavedState"
+      ],
+      "entry_point": "setSavedState",
+      "purpose": "Updates WritableDb, ArchiveDb, and LastRotatedLedger in DbState.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "setLastRotated"
+      ],
+      "entry_point": "setLastRotated",
+      "purpose": "Updates LastRotatedLedger in DbState.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "DbState.Key",
+      "flow": [
+        "initStateDB: SELECT COUNT(Key) FROM DbState WHERE Key = 1;",
+        "If count == 0, INSERT INTO DbState VALUES (1, '', '', 0);"
+      ],
+      "origin": "Database table DbState, column Key",
+      "transformations": [
+        "Validation: Checks if row exists, inserts if not"
+      ],
+      "validated_at": "initStateDB (manual SQL + boost::optional check)"
+    },
+    {
+      "field": "CanDelete.Key",
+      "flow": [
+        "initStateDB: SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;",
+        "If count == 0, INSERT INTO CanDelete VALUES (1, 0);"
+      ],
+      "origin": "Database table CanDelete, column Key",
+      "transformations": [
+        "Validation: Checks if row exists, inserts if not"
+      ],
+      "validated_at": "initStateDB (manual SQL + boost::optional check)"
+    },
+    {
+      "field": "CanDeleteSeq",
+      "flow": [
+        "getCanDelete: SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;",
+        "setCanDelete: UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;"
+      ],
+      "origin": "Database table CanDelete, column CanDeleteSeq",
+      "transformations": [
+        "Read and write via SQL"
+      ],
+      "validated_at": "No explicit validation beyond DB constraints"
+    },
+    {
+      "field": "WritableDb, ArchiveDb, LastRotatedLedger",
+      "flow": [
+        "getSavedState: SELECT ... FROM DbState WHERE Key = 1;",
+        "setSavedState: UPDATE DbState SET ... WHERE Key = 1;",
+        "setLastRotated: UPDATE DbState SET LastRotatedLedger = :seq WHERE Key = 1;"
+      ],
+      "origin": "Database table DbState, columns WritableDb, ArchiveDb, LastRotatedLedger",
+      "transformations": [
+        "Read and write via SQL"
+      ],
+      "validated_at": "No explicit validation beyond DB constraints"
+    }
+  ],
+  "description": "This file provides functions to initialize and manage state-related tables in a database for the XRPL server, including functions to get/set deletion markers and saved state information.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Key count in DbState",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual SQL query + boost::optional at initStateDB",
+      "issue_pattern": "Missing empty string validation for Key count in DbState",
+      "why_false_positive": "manual SQL query + boost::optional validates Key count in DbState for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Key count in CanDelete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual SQL query + boost::optional at initStateDB",
+      "issue_pattern": "Missing empty string validation for Key count in CanDelete",
+      "why_false_positive": "manual SQL query + boost::optional validates Key count in CanDelete for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/State.cpp",
+  "functions": [
+    {
+      "args": [
+        "session",
+        "config",
+        "dbName"
+      ],
+      "lineno": 5,
+      "name": "initStateDB"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 44,
+      "name": "getCanDelete"
+    },
+    {
+      "args": [
+        "session",
+        "canDelete"
+      ],
+      "lineno": 51,
+      "name": "setCanDelete"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 58,
+      "name": "getSavedState"
+    },
+    {
+      "args": [
+        "session",
+        "state"
+      ],
+      "lineno": 67,
+      "name": "setSavedState"
+    },
+    {
+      "args": [
+        "session",
+        "seq"
+      ],
+      "lineno": 76,
+      "name": "setLastRotated"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is low-level and likely tested indirectly via higher-level integration or database state tests. There is no evidence of direct unit tests for these functions in this file. Validation logic (row existence) is only checked in initStateDB; other functions assume the row exists. Gaps: No tests for error handling (e.g., missing rows after init), no tests for SQL injection or malformed input, no tests for exception paths. Test files that might cover this: database initialization/integration tests, possibly in test suites for ledger or state management (e.g., LedgerCleaner, Database tests in rippled).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation using boost::optional and SQL queries)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Key count in DbState",
+      "location": "initStateDB",
+      "validated_by": "manual SQL query + boost::optional",
+      "validates": [
+        "Checks if SELECT COUNT(Key) FROM DbState WHERE Key = 1 returns a value",
+        "Ensures the query result is not null (boost::optional is set)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Key count in CanDelete",
+      "location": "initStateDB",
+      "validated_by": "manual SQL query + boost::optional",
+      "validates": [
+        "Checks if SELECT COUNT(Key) FROM CanDelete WHERE Key = 1 returns a value",
+        "Ensures the query result is not null (boost::optional is set)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

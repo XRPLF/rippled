@@ -1,0 +1,507 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultSet::preflight"
+      ],
+      "entry_point": "VaultSet::preflight",
+      "purpose": "Performs initial stateless validation of the VaultSet transaction fields before any ledger access.",
+      "validation_points": [
+        "sfVaultID checked for zero/empty",
+        "sfData checked for size constraints",
+        "sfAssetsMaximum checked for negative values",
+        "At least one of sfDomainID, sfAssetsMaximum, sfData must be present"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultSet::preclaim"
+      ],
+      "entry_point": "VaultSet::preclaim",
+      "purpose": "Performs stateful validation, checking ledger state and permissions before applying the transaction.",
+      "validation_points": [
+        "Vault existence (keylet::vault)",
+        "Submitter is owner (sfAccount == vault->at(sfOwner))",
+        "Issuance object existence (keylet::mptIssuance)",
+        "If sfDomainID present: vault is private, domain exists, issuance is private"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultSet::doApply"
+      ],
+      "entry_point": "VaultSet::doApply",
+      "purpose": "Applies the transaction to the ledger, updating fields if all validations pass.",
+      "validation_points": [
+        "Vault existence (peek)",
+        "Issuance object existence (peek)"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultSet::checkExtraFeatures"
+      ],
+      "entry_point": "VaultSet::checkExtraFeatures",
+      "purpose": "Checks if extra features (like permissioned domains) are enabled if sfDomainID is present.",
+      "validation_points": [
+        "sfDomainID present requires featurePermissionedDomains enabled"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for zero",
+        "preclaim: used to read vault from ledger",
+        "doApply: used to peek vault from ledger"
+      ],
+      "origin": "ctx.tx[sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for zero value",
+        "Used as key to lookup vault object"
+      ],
+      "validated_at": "preflight (zero check), preclaim (vault existence), doApply (vault existence)"
+    },
+    {
+      "field": "sfData",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for presence, size constraints",
+        "doApply: if present, updates vault->at(sfData)"
+      ],
+      "origin": "ctx.tx[~sfData] (optional transaction input)",
+      "transformations": [
+        "Checked for empty or oversized payload",
+        "Written to vault object if present"
+      ],
+      "validated_at": "preflight (size check)"
+    },
+    {
+      "field": "sfAssetsMaximum",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for negative value",
+        "doApply: (not shown in snippet, but would be updated if present)"
+      ],
+      "origin": "ctx.tx[~sfAssetsMaximum] (optional transaction input)",
+      "transformations": [
+        "Checked for negative value"
+      ],
+      "validated_at": "preflight (negative check)"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for presence (at least one field must be present)",
+        "preclaim: if present, checks vault is private, domain exists, issuance is private"
+      ],
+      "origin": "ctx.tx[~sfDomainID] (optional transaction input)",
+      "transformations": [
+        "Checked for presence",
+        "If present, triggers further permission checks"
+      ],
+      "validated_at": "preflight (presence), preclaim (permission and existence checks)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "preclaim: compared to vault->at(sfOwner) to check ownership"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared for equality"
+      ],
+      "validated_at": "preclaim (ownership check)"
+    }
+  ],
+  "description": "Implements the VaultSet transaction logic for updating mutable fields of a vault in the XRPL ledger, including preflight, preclaim, and apply steps.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfVaultID] == beast::zero) at VaultSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "explicit check (ctx.tx[sfVaultID] == beast::zero) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfData",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[~sfData]) at VaultSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfData",
+      "why_false_positive": "explicit check (ctx.tx[~sfData]) validates sfData for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfData",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[~sfData]) at VaultSet::preflight",
+      "issue_pattern": "Missing range validation for sfData",
+      "why_false_positive": "explicit check (ctx.tx[~sfData]) validates sfData range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAssetsMaximum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[~sfAssetsMaximum]) at VaultSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfAssetsMaximum",
+      "why_false_positive": "explicit check (ctx.tx[~sfAssetsMaximum]) validates sfAssetsMaximum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAssetsMaximum",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[~sfAssetsMaximum]) at VaultSet::preflight",
+      "issue_pattern": "Missing range validation for sfAssetsMaximum",
+      "why_false_positive": "explicit check (ctx.tx[~sfAssetsMaximum]) validates sfAssetsMaximum range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID, sfAssetsMaximum, sfData",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (!ctx.tx.isFieldPresent(sfDomainID) && ...) at VaultSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfDomainID, sfAssetsMaximum, sfData",
+      "why_false_positive": "explicit check (!ctx.tx.isFieldPresent(sfDomainID) && ...) validates sfDomainID, sfAssetsMaximum, sfData for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID])) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[sfAccount] != vault->at(sfOwner) at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.tx[sfAccount] != vault->at(sfOwner) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfShareMPTID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfShareMPTID",
+      "why_false_positive": "ctx.view.read(keylet::mptIssuance(mptIssuanceID)) validates sfShareMPTID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[~sfDomainID] at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.tx[~sfDomainID] validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::permissionedDomain(*domain)) at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "ctx.view.read(keylet::permissionedDomain(*domain)) validates sfDomainID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfShareMPTID/lsfMPTRequireAuth",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(sleIssuance->getFlags() & lsfMPTRequireAuth) == 0 at VaultSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfShareMPTID/lsfMPTRequireAuth",
+      "why_false_positive": "(sleIssuance->getFlags() & lsfMPTRequireAuth) == 0 validates sfShareMPTID/lsfMPTRequireAuth for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "VaultSet::checkExtraFeatures at VaultSet::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfDomainID",
+      "why_false_positive": "VaultSet::checkExtraFeatures validates sfDomainID for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 10,
+      "name": "VaultSet::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "VaultSet::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 41,
+      "name": "VaultSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "VaultSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is split between preflight (stateless checks), preclaim (stateful/permission checks), and doApply (final application). Typical test files would be in the unit/integration test directories, e.g., 'test/tx/VaultSet_test.cpp' or similar. Tests should cover: zero/empty sfVaultID, missing/invalid sfData, negative sfAssetsMaximum, missing all updatable fields, non-existent vault, non-owner submitter, missing issuance, domain permission checks, and successful updates. Gaps may exist if there are no tests for edge cases like oversized sfData, non-existent domains, or internal errors (tefINTERNAL). LCOV_EXCL_START/STOP comments indicate some error paths may not be covered by tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfVaultID",
+      "location": "VaultSet::preflight",
+      "validated_by": "explicit check (ctx.tx[sfVaultID] == beast::zero)",
+      "validates": [
+        "Vault ID must not be zero/empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfData",
+      "location": "VaultSet::preflight",
+      "validated_by": "explicit check (ctx.tx[~sfData])",
+      "validates": [
+        "If sfData is present, it must not be empty",
+        "If sfData is present, its length must not exceed maxDataPayloadLength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAssetsMaximum",
+      "location": "VaultSet::preflight",
+      "validated_by": "explicit check (ctx.tx[~sfAssetsMaximum])",
+      "validates": [
+        "If sfAssetsMaximum is present, it must not be negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfDomainID, sfAssetsMaximum, sfData",
+      "location": "VaultSet::preflight",
+      "validated_by": "explicit check (!ctx.tx.isFieldPresent(sfDomainID) && ...)",
+      "validates": [
+        "At least one of sfDomainID, sfAssetsMaximum, or sfData must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfVaultID",
+      "location": "VaultSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(ctx.tx[sfVaultID]))",
+      "validates": [
+        "Vault with given sfVaultID must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount",
+      "location": "VaultSet::preclaim",
+      "validated_by": "ctx.tx[sfAccount] != vault->at(sfOwner)",
+      "validates": [
+        "Transaction submitter must be the owner of the vault"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfShareMPTID",
+      "location": "VaultSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::mptIssuance(mptIssuanceID))",
+      "validates": [
+        "Issuance entry for vault shares must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfDomainID",
+      "location": "VaultSet::preclaim",
+      "validated_by": "ctx.tx[~sfDomainID]",
+      "validates": [
+        "Can only set domain if vault is private (lsfVaultPrivate flag set)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfDomainID",
+      "location": "VaultSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::permissionedDomain(*domain))",
+      "validates": [
+        "If sfDomainID is nonzero, the referenced domain must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfShareMPTID/lsfMPTRequireAuth",
+      "location": "VaultSet::preclaim",
+      "validated_by": "(sleIssuance->getFlags() & lsfMPTRequireAuth) == 0",
+      "validates": [
+        "Issuance of vault shares must be private (lsfMPTRequireAuth flag set)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (returns bool, used as a feature check)",
+      "field": "sfDomainID",
+      "location": "VaultSet::checkExtraFeatures",
+      "validated_by": "VaultSet::checkExtraFeatures",
+      "validates": [
+        "If sfDomainID is present, featurePermissionedDomains must be enabled"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

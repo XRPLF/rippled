@@ -1,0 +1,119 @@
+{
+  "args": [
+    {
+      "lineno": 35,
+      "name": "good"
+    },
+    {
+      "lineno": 35,
+      "name": "bad"
+    },
+    {
+      "lineno": 35,
+      "name": "duplicate"
+    },
+    {
+      "lineno": 26,
+      "name": "n"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "SHAMapAddNode"
+    }
+  ],
+  "description": "Defines the SHAMapAddNode class, which tracks the results of adding nodes to a SHAMap, including counts of good, bad, and duplicate nodes, and provides utility methods for manipulating and querying these counts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapAddNode.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "SHAMapAddNode"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "incInvalid"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "incUseful"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "incDuplicate"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "reset"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "getGood"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "isGood"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "isInvalid"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "isUseful"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "get"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 26,
+      "name": "operator+="
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "duplicate"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "useful"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "invalid"
+    },
+    {
+      "args": [
+        "good",
+        "bad",
+        "duplicate"
+      ],
+      "lineno": 35,
+      "name": "SHAMapAddNode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

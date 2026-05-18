@@ -1,0 +1,376 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DatabaseNodeImp::fetchNodeObject",
+        "backend_->fetch",
+        "switch(status)",
+        "JLOG / Rethrow"
+      ],
+      "entry_point": "DatabaseNodeImp::fetchNodeObject",
+      "purpose": "Fetches a single NodeObject from the backend by hash, validates backend status and handles errors.",
+      "validation_points": [
+        "try-catch block around backend_->fetch (exception validation)",
+        "switch(status) (status validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "DatabaseNodeImp::fetchBatch",
+        "backend_->fetchBatch",
+        "XRPL_ASSERT on results.size() vs hashes.size()",
+        "results.resize",
+        "for loop: JLOG if !results[i]"
+      ],
+      "entry_point": "DatabaseNodeImp::fetchBatch",
+      "purpose": "Fetches a batch of NodeObjects by hash, validates that the number of results matches the number of input hashes.",
+      "validation_points": [
+        "XRPL_ASSERT (results.size() == hashes.size() || results.empty())"
+      ]
+    },
+    {
+      "call_chain": [
+        "DatabaseNodeImp::store",
+        "NodeObject::createObject",
+        "backend_->store"
+      ],
+      "entry_point": "DatabaseNodeImp::store",
+      "purpose": "Stores a NodeObject in the backend. No explicit validation in this path.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "DatabaseNodeImp::asyncFetch",
+        "Database::asyncFetch"
+      ],
+      "entry_point": "DatabaseNodeImp::asyncFetch",
+      "purpose": "Asynchronously fetches a NodeObject. No explicit validation in this path.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hash",
+      "flow": [
+        "function argument",
+        "passed to backend_->fetch or backend_->fetchBatch",
+        "used as key to retrieve NodeObject",
+        "used in logging if errors occur"
+      ],
+      "origin": "Function argument (passed into fetchNodeObject, fetchBatch, asyncFetch, store)",
+      "transformations": [
+        "None (passed through unchanged)"
+      ],
+      "validated_at": "Indirectly validated by backend status and by XRPL_ASSERT in fetchBatch"
+    },
+    {
+      "field": "results (vector of NodeObject ptrs)",
+      "flow": [
+        "backend_->fetchBatch",
+        "results",
+        "XRPL_ASSERT on size",
+        "resize to hashes.size()",
+        "for loop: check for missing objects",
+        "returned to caller"
+      ],
+      "origin": "Returned from backend_->fetchBatch(hashes).first",
+      "transformations": [
+        "Resized to match input hashes",
+        "Missing entries set to nullptr"
+      ],
+      "validated_at": "XRPL_ASSERT (results.size() == hashes.size() || results.empty())"
+    },
+    {
+      "field": "status",
+      "flow": [
+        "backend_->fetch",
+        "status variable",
+        "switch(status)",
+        "logging/error handling"
+      ],
+      "origin": "Returned from backend_->fetch(hash, &nodeObject)",
+      "transformations": [
+        "None (used for control flow)"
+      ],
+      "validated_at": "switch(status) in fetchNodeObject"
+    },
+    {
+      "field": "nodeObject",
+      "flow": [
+        "backend_->fetch",
+        "nodeObject",
+        "if (nodeObject) fetchReport.wasFound = true",
+        "returned to caller"
+      ],
+      "origin": "Output parameter from backend_->fetch",
+      "transformations": [
+        "Set by backend_->fetch"
+      ],
+      "validated_at": "Indirectly validated by status and by null check"
+    }
+  ],
+  "description": "Implements the DatabaseNodeImp class methods for storing and fetching node objects from a backend in the XRPL NodeStore.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "results.size() vs hashes.size()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at fetchBatch",
+      "issue_pattern": "Missing empty string validation for results.size() vs hashes.size()",
+      "why_false_positive": "XRPL_ASSERT macro validates results.size() vs hashes.size() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "backend_->fetch(hash, &nodeObject) return status",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch-case on Status at fetchNodeObject",
+      "issue_pattern": "Missing empty string validation for backend_->fetch(hash, &nodeObject) return status",
+      "why_false_positive": "switch-case on Status validates backend_->fetch(hash, &nodeObject) return status for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "backend_->fetch(hash, &nodeObject) exception",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "try-catch block at fetchNodeObject",
+      "issue_pattern": "Missing empty string validation for backend_->fetch(hash, &nodeObject) exception",
+      "why_false_positive": "try-catch block validates backend_->fetch(hash, &nodeObject) exception for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "backend_->fetch(hash, &nodeObject) exception",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "try-catch block at fetchNodeObject",
+      "issue_pattern": "Missing type validation for backend_->fetch(hash, &nodeObject) exception",
+      "why_false_positive": "try-catch block validates backend_->fetch(hash, &nodeObject) exception type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/DatabaseNodeImp.cpp",
+  "functions": [
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "std::uint32_t"
+      ],
+      "lineno": 6,
+      "name": "DatabaseNodeImp::store"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq",
+        "std::function<void(std::shared_ptr<NodeObject> const&)>&& callback"
+      ],
+      "lineno": 13,
+      "name": "DatabaseNodeImp::asyncFetch"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t",
+        "FetchReport& fetchReport",
+        "bool duplicate"
+      ],
+      "lineno": 20,
+      "name": "DatabaseNodeImp::fetchNodeObject"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& hashes"
+      ],
+      "lineno": 48,
+      "name": "DatabaseNodeImp::fetchBatch"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests in the NodeStore or DatabaseNodeImp test suites, such as 'nodestore/DatabaseNodeImp_test.cpp', 'nodestore/Backend_test.cpp', or integration tests that exercise ledger fetch/store paths. Validation logic (e.g., XRPL_ASSERT, status switch, exception handling) may not be directly tested unless tests explicitly simulate backend errors, mismatched batch sizes, or corrupt data. Gaps may exist in testing exception handling and assertion failures, as these are often harder to trigger in standard test cases. There may also be limited coverage for edge cases where the backend returns more/fewer results than requested, or throws exceptions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro, manual switch-case, try-catch",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely throws or aborts)",
+      "field": "results.size() vs hashes.size()",
+      "location": "fetchBatch",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures that the number of output NodeObjects from backend_->fetchBatch matches the number of input hashes, or is empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "logs error, may throw via Rethrow() on exception",
+      "field": "backend_->fetch(hash, &nodeObject) return status",
+      "location": "fetchNodeObject",
+      "validated_by": "switch-case on Status",
+      "validates": [
+        "Checks for dataCorrupt status and logs fatal error",
+        "Handles unknown status with warning log"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rethrows caught std::exception",
+      "field": "backend_->fetch(hash, &nodeObject) exception",
+      "location": "fetchNodeObject",
+      "validated_by": "try-catch block",
+      "validates": [
+        "Catches and logs any std::exception thrown by backend_->fetch"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

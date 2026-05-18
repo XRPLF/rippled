@@ -1,0 +1,176 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doFetchInfo"
+      ],
+      "entry_point": "doFetchInfo",
+      "purpose": "Handles the 'fetch_info' RPC command, optionally clearing ledger fetch info and returning current fetch info.",
+      "validation_points": [
+        "if (context.params.isMember(jss::clear) && context.params[jss::clear].asBool())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "clear",
+      "flow": [
+        "context.params",
+        "context.params[jss::clear]",
+        "context.netOps.clearLedgerFetch() (if validated)",
+        "ret[jss::clear] = true"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Checked for presence with isMember",
+        "Converted to bool with asBool",
+        "Triggers clearLedgerFetch() if true"
+      ],
+      "validated_at": "if (context.params.isMember(jss::clear) && context.params[jss::clear].asBool())"
+    },
+    {
+      "field": "info",
+      "flow": [
+        "context.netOps.getLedgerFetchInfo()",
+        "ret[jss::info]"
+      ],
+      "origin": "context.netOps.getLedgerFetchInfo()",
+      "transformations": [
+        "No transformation; direct assignment"
+      ],
+      "validated_at": "N/A (no validation in this function)"
+    }
+  ],
+  "description": "Implements the doFetchInfo RPC handler, which returns information about ledger fetch operations and optionally clears fetch state if requested.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "clear",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value::isMember, Json::Value::asBool at doFetchInfo",
+      "issue_pattern": "Missing empty string validation for clear",
+      "why_false_positive": "Json::Value::isMember, Json::Value::asBool validates clear for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "clear",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "Json::Value::isMember, Json::Value::asBool at doFetchInfo",
+      "issue_pattern": "Missing type validation for clear",
+      "why_false_positive": "Json::Value::isMember, Json::Value::asBool validates clear type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/FetchInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doFetchInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test coverage in this file. Typical test coverage would be in RPC handler integration or unit tests, likely under test/rpc/ or test/handlers/ directories. Tests should cover: (1) 'clear' present and true, (2) 'clear' present and false, (3) 'clear' absent, (4) malformed 'clear' (non-bool). Gaps: No explicit validation for type of 'clear' (e.g., if not bool), and no error handling for malformed input in this function.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for field names, Json::Value for type access)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (implicit validation, no error thrown)",
+      "field": "clear",
+      "location": "doFetchInfo",
+      "validated_by": "Json::Value::isMember, Json::Value::asBool",
+      "validates": [
+        "Checks if 'clear' field exists in input JSON",
+        "Checks if 'clear' field is truthy (interpreted as boolean)"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

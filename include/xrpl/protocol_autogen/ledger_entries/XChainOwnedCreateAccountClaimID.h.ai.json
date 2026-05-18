@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 108,
+      "name": "account"
+    },
+    {
+      "lineno": 109,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 110,
+      "name": "xChainAccountCreateCount"
+    },
+    {
+      "lineno": 111,
+      "name": "xChainCreateAccountAttestations"
+    },
+    {
+      "lineno": 112,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 113,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 114,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 120,
+      "name": "sle"
+    },
+    {
+      "lineno": 126,
+      "name": "value"
+    },
+    {
+      "lineno": 135,
+      "name": "value"
+    },
+    {
+      "lineno": 144,
+      "name": "value"
+    },
+    {
+      "lineno": 153,
+      "name": "value"
+    },
+    {
+      "lineno": 162,
+      "name": "value"
+    },
+    {
+      "lineno": 171,
+      "name": "value"
+    },
+    {
+      "lineno": 180,
+      "name": "value"
+    },
+    {
+      "lineno": 189,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 23,
+      "name": "XChainOwnedCreateAccountClaimID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account",
+        "std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount",
+        "STArray const& xChainCreateAccountAttestations",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq"
+      ],
+      "lineno": 104,
+      "name": "XChainOwnedCreateAccountClaimIDBuilder"
+    }
+  ],
+  "description": "Defines the XChainOwnedCreateAccountClaimID ledger entry and its builder for XRPL, providing type-safe field access and fluent construction for cross-chain account creation claim IDs.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/XChainOwnedCreateAccountClaimID.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getXChainAccountCreateCount"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getXChainCreateAccountAttestations"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 124,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 133,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 142,
+      "name": "setXChainAccountCreateCount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 151,
+      "name": "setXChainCreateAccountAttestations"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 160,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 169,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 178,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 187,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

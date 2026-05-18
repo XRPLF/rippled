@@ -1,0 +1,415 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "sle"
+    },
+    {
+      "lineno": 8,
+      "name": "viewAccount"
+    },
+    {
+      "lineno": 27,
+      "name": "accountID"
+    },
+    {
+      "lineno": 36,
+      "name": "view"
+    },
+    {
+      "lineno": 36,
+      "name": "direction"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sle",
+        "AccountID const& viewAccount"
+      ],
+      "lineno": 8,
+      "name": "TrustLineBase"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "PathFindTrustLine"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const& sle",
+        "AccountID const& viewAccount"
+      ],
+      "lineno": 59,
+      "name": "RPCTrustLine"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PathFindTrustLine::getItems",
+        "detail::getTrustLineItems<PathFindTrustLine>",
+        "PathFindTrustLine::makeItem"
+      ],
+      "entry_point": "PathFindTrustLine::getItems",
+      "purpose": "Fetches all PathFindTrustLine items for an account from a ledger view, validating each SLE before constructing a PathFindTrustLine.",
+      "validation_points": [
+        "PathFindTrustLine::makeItem: Validates sle is non-null and sle->getType() == ltRIPPLE_STATE"
+      ]
+    },
+    {
+      "call_chain": [
+        "RPCTrustLine::getItems",
+        "detail::getTrustLineItems<RPCTrustLine>",
+        "RPCTrustLine::makeItem"
+      ],
+      "entry_point": "RPCTrustLine::getItems",
+      "purpose": "Fetches all RPCTrustLine items for an account from a ledger view, validating each SLE before constructing an RPCTrustLine.",
+      "validation_points": [
+        "RPCTrustLine::makeItem: Validates sle is non-null and sle->getType() == ltRIPPLE_STATE"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sle (shared_ptr<SLE const>)",
+      "flow": [
+        "forEachItem yields sleCur",
+        "detail::getTrustLineItems receives sleCur",
+        "T::makeItem (PathFindTrustLine::makeItem or RPCTrustLine::makeItem) receives sle",
+        "Validation: if (!sle || sle->getType() != ltRIPPLE_STATE) return {}",
+        "If valid, construct TrustLine object"
+      ],
+      "origin": "forEachItem callback parameter (from ledger view)",
+      "transformations": [
+        "Checked for null",
+        "Checked for correct type"
+      ],
+      "validated_at": "PathFindTrustLine::makeItem and RPCTrustLine::makeItem"
+    },
+    {
+      "field": "mLowLimit, mHighLimit, mBalance, mFlags",
+      "flow": [
+        "sle (validated in makeItem)",
+        "TrustLineBase(sle, viewAccount) extracts fields via getFieldAmount/getFieldU32",
+        "Stored in TrustLineBase members"
+      ],
+      "origin": "Fields extracted from sle in TrustLineBase constructor",
+      "transformations": [
+        "mBalance.negate() if mViewLowest is false"
+      ],
+      "validated_at": "sle validated before TrustLineBase constructed"
+    },
+    {
+      "field": "lowQualityIn_, lowQualityOut_, highQualityIn_, highQualityOut_",
+      "flow": [
+        "sle (validated in RPCTrustLine::makeItem)",
+        "RPCTrustLine(sle, viewAccount) extracts fields via getFieldU32",
+        "Stored in RPCTrustLine members"
+      ],
+      "origin": "Fields extracted from sle in RPCTrustLine constructor",
+      "transformations": [],
+      "validated_at": "sle validated before RPCTrustLine constructed"
+    }
+  ],
+  "description": "Implements trust line handling for XRPL, including base and derived classes for trust lines, methods to extract trust line data from ledger entries, and utilities to retrieve trust lines for accounts.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at PathFindTrustLine::makeItem",
+      "issue_pattern": "Missing empty string validation for sle (shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates sle (shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE const>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at PathFindTrustLine::makeItem",
+      "issue_pattern": "Missing type validation for sle (shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates sle (shared_ptr<SLE const>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit type check at PathFindTrustLine::makeItem",
+      "issue_pattern": "Missing empty string validation for sle->getType()",
+      "why_false_positive": "explicit type check validates sle->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit type check at PathFindTrustLine::makeItem",
+      "issue_pattern": "Missing type validation for sle->getType()",
+      "why_false_positive": "explicit type check validates sle->getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at RPCTrustLine::makeItem",
+      "issue_pattern": "Missing empty string validation for sle (shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates sle (shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE const>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit null check at RPCTrustLine::makeItem",
+      "issue_pattern": "Missing type validation for sle (shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates sle (shared_ptr<SLE const>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit type check at RPCTrustLine::makeItem",
+      "issue_pattern": "Missing empty string validation for sle->getType()",
+      "why_false_positive": "explicit type check validates sle->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit type check at RPCTrustLine::makeItem",
+      "issue_pattern": "Missing type validation for sle->getType()",
+      "why_false_positive": "explicit type check validates sle->getType() type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/TrustLine.cpp",
+  "functions": [
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 20,
+      "name": "TrustLineBase::getJson"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "std::shared_ptr<SLE const> const& sle"
+      ],
+      "lineno": 27,
+      "name": "PathFindTrustLine::makeItem"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "ReadView const& view",
+        "LineDirection direction"
+      ],
+      "lineno": 36,
+      "name": "detail::getTrustLineItems"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "ReadView const& view",
+        "LineDirection direction"
+      ],
+      "lineno": 54,
+      "name": "PathFindTrustLine::getItems"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "std::shared_ptr<SLE const> const& sle"
+      ],
+      "lineno": 65,
+      "name": "RPCTrustLine::makeItem"
+    },
+    {
+      "args": [
+        "AccountID const& accountID",
+        "ReadView const& view"
+      ],
+      "lineno": 71,
+      "name": "RPCTrustLine::getItems"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 34,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This code is typically tested via higher-level RPC or ledger tests that exercise trust line listing, pathfinding, and account lines. Likely test files: rpc/AccountLines_test.cpp, rpc/PathFind_test.cpp, ledger/TrustLine_test.cpp. Direct unit tests for makeItem validation (null/type) may not exist; coverage may be indirect via tests that pass invalid SLEs or malformed ledger entries. Gaps: No explicit unit tests for makeItem's validation logic; edge cases (null SLE, wrong type) may not be directly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, C++ idioms)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "sle (shared_ptr<SLE const>)",
+      "location": "PathFindTrustLine::makeItem",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if sle is not null before proceeding"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "sle->getType()",
+      "location": "PathFindTrustLine::makeItem",
+      "validated_by": "explicit type check",
+      "validates": [
+        "Checks if SLE type is ltRIPPLE_STATE"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "sle (shared_ptr<SLE const>)",
+      "location": "RPCTrustLine::makeItem",
+      "validated_by": "explicit null check",
+      "validates": [
+        "Checks if sle is not null before proceeding"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "sle->getType()",
+      "location": "RPCTrustLine::makeItem",
+      "validated_by": "explicit type check",
+      "validates": [
+        "Checks if SLE type is ltRIPPLE_STATE"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,338 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenCancelOffer::preflight"
+      ],
+      "entry_point": "NFTokenCancelOffer::preflight",
+      "purpose": "Initial stateless validation of the NFTokenCancelOffer transaction. Checks for malformed input, such as empty or oversized offer lists and duplicate offer IDs.",
+      "validation_points": [
+        "Check if sfNFTokenOffers is empty or exceeds maxTokenOfferCancelCount",
+        "Check for duplicate IDs in sfNFTokenOffers using std::sort + std::adjacent_find"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenCancelOffer::preclaim"
+      ],
+      "entry_point": "NFTokenCancelOffer::preclaim",
+      "purpose": "Stateful validation: checks ledger state to ensure the account has permission to cancel each offer.",
+      "validation_points": [
+        "For each id in sfNFTokenOffers: check if offer exists in ledger",
+        "Check if offer is of type ltNFTOKEN_OFFER",
+        "Check if offer is expired (hasExpired)",
+        "Check if account is owner or destination"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenCancelOffer::doApply"
+      ],
+      "entry_point": "NFTokenCancelOffer::doApply",
+      "purpose": "Applies the transaction: attempts to delete each offer from the ledger.",
+      "validation_points": [
+        "No new validation; assumes preflight and preclaim have passed"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfNFTokenOffers",
+      "flow": [
+        "Transaction input",
+        "Read in preflight for size and duplicate checks",
+        "Read in preclaim for per-offer permission checks",
+        "Used in doApply to delete offers"
+      ],
+      "origin": "ctx.tx[sfNFTokenOffers] (transaction input)",
+      "transformations": [
+        "In preflight: copied to STVector256, sorted, checked for duplicates",
+        "In preclaim: iterated, each id used to lookup ledger entry",
+        "In doApply: iterated, each id used to delete offer"
+      ],
+      "validated_at": "preflight (size, duplicates), preclaim (existence, type, permissions)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "Read in preclaim for permission checks"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "preclaim (used to check ownership/permission)"
+    },
+    {
+      "field": "Offer Ledger Entry",
+      "flow": [
+        "Looked up in preclaim for each id",
+        "Checked for type, expiration, owner, destination"
+      ],
+      "origin": "ctx.view.read(keylet::child(id))",
+      "transformations": [
+        "Checked for existence",
+        "Type checked (ltNFTOKEN_OFFER)",
+        "Fields extracted: sfOwner, ~sfExpiration, ~sfDestination"
+      ],
+      "validated_at": "preclaim (existence, type, expiration, owner, destination)"
+    }
+  ],
+  "description": "Implements the logic for the NFTokenCancelOffer transaction, including preflight, preclaim, and apply steps for cancelling NFT offers on the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ids.empty() || ids.size() > maxTokenOfferCancelCount) at NFTokenCancelOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers",
+      "why_false_positive": "explicit check (ids.empty() || ids.size() > maxTokenOfferCancelCount) validates sfNFTokenOffers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfNFTokenOffers",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (ids.empty() || ids.size() > maxTokenOfferCancelCount) at NFTokenCancelOffer::preflight",
+      "issue_pattern": "Missing range validation for sfNFTokenOffers",
+      "why_false_positive": "explicit check (ids.empty() || ids.size() > maxTokenOfferCancelCount) validates sfNFTokenOffers range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::sort + std::adjacent_find at NFTokenCancelOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers",
+      "why_false_positive": "std::sort + std::adjacent_find validates sfNFTokenOffers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers (each id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::child(id)) at NFTokenCancelOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers (each id)",
+      "why_false_positive": "ctx.view.read(keylet::child(id)) validates sfNFTokenOffers (each id) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers (each id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasExpired(ctx.view, (*offer)[~sfExpiration]) at NFTokenCancelOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers (each id)",
+      "why_false_positive": "hasExpired(ctx.view, (*offer)[~sfExpiration]) validates sfNFTokenOffers (each id) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers (each id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*offer)[sfOwner] == account at NFTokenCancelOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers (each id)",
+      "why_false_positive": "(*offer)[sfOwner] == account validates sfNFTokenOffers (each id) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers (each id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*offer)[~sfDestination] == account at NFTokenCancelOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers (each id)",
+      "why_false_positive": "(*offer)[~sfDestination] == account validates sfNFTokenOffers (each id) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenOffers (each id)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "offer && !nft::deleteTokenOffer(view(), offer) at NFTokenCancelOffer::doApply",
+      "issue_pattern": "Missing empty string validation for sfNFTokenOffers (each id)",
+      "why_false_positive": "offer && !nft::deleteTokenOffer(view(), offer) validates sfNFTokenOffers (each id) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenCancelOffer.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 10,
+      "name": "NFTokenCancelOffer::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "NFTokenCancelOffer::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "NFTokenCancelOffer::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "NFTokenCancelOffer is a core transaction type and is likely covered by integration and unit tests in the rippled codebase, especially in files like 'test/tx/NFTokenCancelOffer_test.cpp' or similar. Tests should cover: empty offers, too many offers, duplicate offers, non-existent offers, offers not owned by the account, expired offers, and successful cancellation. Gaps may exist if edge cases (e.g., malformed offers, offers with missing fields, or concurrent offer consumption) are not explicitly tested. Code coverage tools (LCOV) are referenced in doApply, suggesting some error paths may not be fully covered by tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in transaction preflight/preclaim/apply pattern (Rippled transaction engine)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfNFTokenOffers",
+      "location": "NFTokenCancelOffer::preflight",
+      "validated_by": "explicit check (ids.empty() || ids.size() > maxTokenOfferCancelCount)",
+      "validates": [
+        "Ensures the sfNFTokenOffers field is not empty",
+        "Ensures the sfNFTokenOffers field does not exceed maxTokenOfferCancelCount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfNFTokenOffers",
+      "location": "NFTokenCancelOffer::preflight",
+      "validated_by": "std::sort + std::adjacent_find",
+      "validates": [
+        "Ensures there are no duplicate offer IDs in sfNFTokenOffers"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenOffers (each id)",
+      "location": "NFTokenCancelOffer::preclaim",
+      "validated_by": "ctx.view.read(keylet::child(id))",
+      "validates": [
+        "Checks if the offer exists in the ledger (if not, it's assumed consumed and skipped)",
+        "Checks if the offer is of type ltNFTOKEN_OFFER (if not, permission denied)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenOffers (each id)",
+      "location": "NFTokenCancelOffer::preclaim",
+      "validated_by": "hasExpired(ctx.view, (*offer)[~sfExpiration])",
+      "validates": [
+        "Allows anyone to cancel if the offer is expired"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenOffers (each id)",
+      "location": "NFTokenCancelOffer::preclaim",
+      "validated_by": "(*offer)[sfOwner] == account",
+      "validates": [
+        "Allows the owner of the offer to cancel"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfNFTokenOffers (each id)",
+      "location": "NFTokenCancelOffer::preclaim",
+      "validated_by": "(*offer)[~sfDestination] == account",
+      "validates": [
+        "Allows the destination (recipient) of the offer to cancel"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "sfNFTokenOffers (each id)",
+      "location": "NFTokenCancelOffer::doApply",
+      "validated_by": "offer && !nft::deleteTokenOffer(view(), offer)",
+      "validates": [
+        "Checks that the offer can be deleted from the ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

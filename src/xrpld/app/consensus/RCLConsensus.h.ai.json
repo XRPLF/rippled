@@ -1,0 +1,130 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "feeVote",
+        "ledgerMaster",
+        "localTxs",
+        "inboundTransactions",
+        "clock",
+        "validatorKeys",
+        "journal"
+      ],
+      "lineno": 27,
+      "name": "RCLConsensus"
+    },
+    {
+      "args": [
+        "label",
+        "validating",
+        "j"
+      ],
+      "lineno": 205,
+      "name": "RclConsensusLogger"
+    }
+  ],
+  "description": "Defines the RCLConsensus class, which manages the consensus algorithm for the Ripple Consensus Ledger (RCL), including its adaptor for the generic consensus engine, and logging utilities for consensus activities.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLConsensus.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "validating"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "prevProposers"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "prevRoundTime"
+    },
+    {
+      "args": [],
+      "lineno": 142,
+      "name": "mode"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "phase"
+    },
+    {
+      "args": [
+        "full"
+      ],
+      "lineno": 152,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "now",
+        "prevLgrId",
+        "prevLgr",
+        "nowUntrusted",
+        "nowTrusted",
+        "clog"
+      ],
+      "lineno": 158,
+      "name": "startRound"
+    },
+    {
+      "args": [
+        "now",
+        "clog"
+      ],
+      "lineno": 167,
+      "name": "timerEntry"
+    },
+    {
+      "args": [
+        "now",
+        "txSet"
+      ],
+      "lineno": 172,
+      "name": "gotTxSet"
+    },
+    {
+      "args": [],
+      "lineno": 177,
+      "name": "prevLedgerID"
+    },
+    {
+      "args": [
+        "now",
+        "consensusDelay"
+      ],
+      "lineno": 184,
+      "name": "simulate"
+    },
+    {
+      "args": [
+        "now",
+        "newProposal"
+      ],
+      "lineno": 190,
+      "name": "peerProposal"
+    },
+    {
+      "args": [],
+      "lineno": 195,
+      "name": "parms"
+    },
+    {
+      "args": [],
+      "lineno": 217,
+      "name": "ss"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

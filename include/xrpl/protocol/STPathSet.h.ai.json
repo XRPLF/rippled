@@ -1,0 +1,395 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "STPathElement"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "STPath"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "STPathSet"
+    }
+  ],
+  "description": "Defines classes and logic for representing and manipulating payment paths, path elements, and sets of paths in the XRPL protocol, including serialization, type handling, and JSON conversion.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STPathSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "STPathElement"
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 20,
+      "name": "STPathElement"
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 21,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::optional<AccountID> const&",
+        "std::optional<PathAsset> const&",
+        "std::optional<AccountID> const&"
+      ],
+      "lineno": 23,
+      "name": "STPathElement"
+    },
+    {
+      "args": [
+        "AccountID const&",
+        "PathAsset const&",
+        "AccountID const&",
+        "bool"
+      ],
+      "lineno": 28,
+      "name": "STPathElement"
+    },
+    {
+      "args": [
+        "unsigned int",
+        "AccountID const&",
+        "PathAsset const&",
+        "AccountID const&"
+      ],
+      "lineno": 34,
+      "name": "STPathElement"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getNodeType"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "isOffer"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "isAccount"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "hasIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "hasCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "hasMPT"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "hasAsset"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "isNone"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getAccountID"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "getPathAsset"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "getMPTID"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "getIssuerID"
+    },
+    {
+      "args": [
+        "Type const&"
+      ],
+      "lineno": 72,
+      "name": "isType"
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 74,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 76,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 80,
+      "name": "get_hash"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "STPath"
+    },
+    {
+      "args": [
+        "std::vector<STPathElement>"
+      ],
+      "lineno": 86,
+      "name": "STPath"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "STPathElement const&"
+      ],
+      "lineno": 92,
+      "name": "push_back"
+    },
+    {
+      "args": [
+        "Args&&..."
+      ],
+      "lineno": 95,
+      "name": "emplace_back"
+    },
+    {
+      "args": [
+        "AccountID const&",
+        "PathAsset const&",
+        "AccountID const&"
+      ],
+      "lineno": 98,
+      "name": "hasSeen"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 100,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "end"
+    },
+    {
+      "args": [
+        "STPath const&"
+      ],
+      "lineno": 106,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "back"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "front"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 112,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 115,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "size_t"
+      ],
+      "lineno": 118,
+      "name": "reserve"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "STPathSet"
+    },
+    {
+      "args": [
+        "SField const&"
+      ],
+      "lineno": 126,
+      "name": "STPathSet"
+    },
+    {
+      "args": [
+        "SerialIter&",
+        "SField const&"
+      ],
+      "lineno": 127,
+      "name": "STPathSet"
+    },
+    {
+      "args": [
+        "Serializer&"
+      ],
+      "lineno": 129,
+      "name": "add"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 131,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "STPath const&",
+        "STPathElement const&"
+      ],
+      "lineno": 135,
+      "name": "assembleAdd"
+    },
+    {
+      "args": [
+        "STBase const&"
+      ],
+      "lineno": 137,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "std::vector<STPath>::size_type"
+      ],
+      "lineno": 142,
+      "name": "operator[]"
+    },
+    {
+      "args": [
+        "std::vector<STPath>::size_type"
+      ],
+      "lineno": 145,
+      "name": "operator[]"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 152,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "empty"
+    },
+    {
+      "args": [
+        "STPath const&"
+      ],
+      "lineno": 156,
+      "name": "push_back"
+    },
+    {
+      "args": [
+        "Args&&..."
+      ],
+      "lineno": 159,
+      "name": "emplace_back"
+    },
+    {
+      "args": [
+        "std::size_t",
+        "void*"
+      ],
+      "lineno": 163,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t",
+        "void*"
+      ],
+      "lineno": 164,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

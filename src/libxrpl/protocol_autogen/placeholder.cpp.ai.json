@@ -1,0 +1,41 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [],
+      "entry_point": "N/A (No functions defined in placeholder.cpp)",
+      "purpose": "This file is a placeholder and does not implement any logic or functions. It only includes header files to ensure the protocol_autogen module can be built.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "N/A",
+      "flow": [],
+      "origin": "No fields are defined or manipulated in this file.",
+      "transformations": [],
+      "validated_at": "N/A"
+    }
+  ],
+  "description": "This file is a placeholder to ensure the protocol_autogen module can be built and includes necessary header files.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol_autogen/placeholder.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [],
+  "test_coverage_notes": "There is no logic, data, or validation in this placeholder file, so there are no code paths to test. Test coverage is not applicable. Any validation logic would exist in the included headers (LedgerEntryBase.h, LedgerEntryBuilderBase.h, TransactionBase.h, TransactionBuilderBase.h), and would be tested in their respective test files, not here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

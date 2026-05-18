@@ -1,0 +1,98 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "keyBytes"
+    },
+    {
+      "lineno": 23,
+      "name": "parameters"
+    },
+    {
+      "lineno": 24,
+      "name": "burstSize"
+    },
+    {
+      "lineno": 25,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 26,
+      "name": "journal"
+    },
+    {
+      "lineno": 35,
+      "name": "keyBytes"
+    },
+    {
+      "lineno": 36,
+      "name": "parameters"
+    },
+    {
+      "lineno": 37,
+      "name": "burstSize"
+    },
+    {
+      "lineno": 38,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 39,
+      "name": "context"
+    },
+    {
+      "lineno": 40,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "Factory"
+    }
+  ],
+  "description": "Defines the base class Factory for backend factories in the NodeStore module, providing interfaces for creating backend instances with various parameters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Factory.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "keyBytes",
+        "parameters",
+        "burstSize",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 21,
+      "name": "createInstance"
+    },
+    {
+      "args": [
+        "keyBytes",
+        "parameters",
+        "burstSize",
+        "scheduler",
+        "context",
+        "journal"
+      ],
+      "lineno": 34,
+      "name": "createInstance"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "NodeStore"
+    }
+  ]
+}

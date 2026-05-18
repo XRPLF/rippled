@@ -1,0 +1,323 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "name"
+    },
+    {
+      "lineno": 32,
+      "name": "size"
+    },
+    {
+      "lineno": 32,
+      "name": "expiration"
+    },
+    {
+      "lineno": 32,
+      "name": "clock"
+    },
+    {
+      "lineno": 32,
+      "name": "journal"
+    },
+    {
+      "lineno": 32,
+      "name": "collector"
+    },
+    {
+      "lineno": 64,
+      "name": "key"
+    },
+    {
+      "lineno": 86,
+      "name": "data"
+    },
+    {
+      "lineno": 86,
+      "name": "replaceCallback"
+    },
+    {
+      "lineno": 106,
+      "name": "value"
+    },
+    {
+      "lineno": 132,
+      "name": "digest"
+    },
+    {
+      "lineno": 132,
+      "name": "h"
+    },
+    {
+      "lineno": 139,
+      "name": "l"
+    },
+    {
+      "lineno": 144,
+      "name": "prefix"
+    },
+    {
+      "lineno": 144,
+      "name": "handler"
+    },
+    {
+      "lineno": 163,
+      "name": "last_access_"
+    },
+    {
+      "lineno": 175,
+      "name": "ptr_"
+    },
+    {
+      "lineno": 181,
+      "name": "when_expire"
+    },
+    {
+      "lineno": 181,
+      "name": "now"
+    },
+    {
+      "lineno": 181,
+      "name": "partition"
+    },
+    {
+      "lineno": 181,
+      "name": "stuffToSweep"
+    },
+    {
+      "lineno": 181,
+      "name": "allRemovals"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "size",
+        "expiration",
+        "clock",
+        "journal",
+        "collector"
+      ],
+      "lineno": 18,
+      "name": "TaggedCache"
+    },
+    {
+      "args": [
+        "prefix",
+        "handler",
+        "collector"
+      ],
+      "lineno": 144,
+      "name": "Stats"
+    },
+    {
+      "args": [
+        "last_access_"
+      ],
+      "lineno": 163,
+      "name": "KeyOnlyEntry"
+    },
+    {
+      "args": [
+        "last_access_",
+        "ptr_"
+      ],
+      "lineno": 175,
+      "name": "ValueEntry"
+    }
+  ],
+  "description": "Implements a thread-safe tagged cache/map combination for storing and managing objects with strong and weak references, supporting cache expiration, concurrency, and metrics collection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/TaggedCache.h",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "size",
+        "expiration",
+        "clock",
+        "journal",
+        "collector"
+      ],
+      "lineno": 32,
+      "name": "TaggedCache"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "clock"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getCacheSize"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "getTrackSize"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getHitRate"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "clear"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "reset"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 64,
+      "name": "touch_if_exists"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "sweep"
+    },
+    {
+      "args": [
+        "key",
+        "valid"
+      ],
+      "lineno": 73,
+      "name": "del"
+    },
+    {
+      "args": [
+        "key",
+        "data",
+        "replaceCallback"
+      ],
+      "lineno": 86,
+      "name": "canonicalize"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 95,
+      "name": "canonicalize_replace_cache"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 97,
+      "name": "canonicalize_replace_client"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 99,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 106,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 110,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "key",
+        "data"
+      ],
+      "lineno": 117,
+      "name": "retrieve"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "peekMutex"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "getKeys"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "rate"
+    },
+    {
+      "args": [
+        "digest",
+        "h"
+      ],
+      "lineno": 132,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "key",
+        "l"
+      ],
+      "lineno": 139,
+      "name": "initialFetch"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "collect_metrics"
+    },
+    {
+      "args": [
+        "when_expire",
+        "now",
+        "partition",
+        "stuffToSweep",
+        "allRemovals",
+        ""
+      ],
+      "lineno": 181,
+      "name": "sweepHelper"
+    },
+    {
+      "args": [
+        "when_expire",
+        "now",
+        "partition",
+        "stuffToSweep",
+        "allRemovals",
+        ""
+      ],
+      "lineno": 190,
+      "name": "sweepHelper"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,221 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "makeRulesGivenLedger(ledger, current)",
+        "makeRulesGivenLedger(ledger, current.presets())"
+      ],
+      "entry_point": "makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)",
+      "purpose": "Creates a Rules object based on the current ledger state and preset amendments.",
+      "validation_points": [
+        "makeRulesGivenLedger(DigestAwareReadView const&, std::unordered_set<uint256, beast::uhash<>> const&) - checks if digest is present (if (digest)), then checks if sle is present (if (sle))"
+      ]
+    },
+    {
+      "call_chain": [
+        "makeRulesGivenLedger(ledger, presets)"
+      ],
+      "entry_point": "makeRulesGivenLedger(DigestAwareReadView const&, std::unordered_set<uint256, beast::uhash<>> const&)",
+      "purpose": "Creates a Rules object using a set of amendment presets, validating the presence of digest and SLE.",
+      "validation_points": [
+        "if (digest)",
+        "if (sle)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "digest",
+      "flow": [
+        "ledger.digest(k.key)",
+        "std::optional digest",
+        "if (digest) validation",
+        "used as argument to Rules constructor"
+      ],
+      "origin": "ledger.digest(k.key)",
+      "transformations": [
+        "digest is wrapped in std::optional",
+        "validated for presence (if (digest))"
+      ],
+      "validated_at": "if (digest) in makeRulesGivenLedger"
+    },
+    {
+      "field": "sle",
+      "flow": [
+        "ledger.read(k)",
+        "std::optional sle",
+        "if (sle) validation",
+        "sle->getFieldV256(sfAmendments)",
+        "used as argument to Rules constructor"
+      ],
+      "origin": "ledger.read(k)",
+      "transformations": [
+        "sle is wrapped in std::optional",
+        "validated for presence (if (sle))",
+        "getFieldV256 extracts amendment field"
+      ],
+      "validated_at": "if (sle) in makeRulesGivenLedger"
+    },
+    {
+      "field": "presets",
+      "flow": [
+        "current.presets() or direct argument",
+        "passed to makeRulesGivenLedger",
+        "used as argument to Rules constructor"
+      ],
+      "origin": "current.presets() or direct argument",
+      "transformations": [
+        "none (passed through)"
+      ],
+      "validated_at": "not explicitly validated"
+    }
+  ],
+  "description": "Implements types and functions for iterating over state ledger entries (SLEs) and transactions in a ReadView, and provides utility functions for creating Rules objects based on ledger state.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "digest (from ledger.digest(k.key))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional check (if (digest)) at makeRulesGivenLedger (DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets)",
+      "issue_pattern": "Missing empty string validation for digest (from ledger.digest(k.key))",
+      "why_false_positive": "std::optional check (if (digest)) validates digest (from ledger.digest(k.key)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (from ledger.read(k))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional check (if (sle)) at makeRulesGivenLedger (DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets)",
+      "issue_pattern": "Missing empty string validation for sle (from ledger.read(k))",
+      "why_false_positive": "std::optional check (if (sle)) validates sle (from ledger.read(k)) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/ReadView.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 5,
+      "name": "ReadView::sles_type::sles_type"
+    },
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "ReadView::sles_type::begin"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "ReadView::sles_type::end"
+    },
+    {
+      "args": [
+        "key_type const& key"
+      ],
+      "lineno": 19,
+      "name": "ReadView::sles_type::upper_bound"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 24,
+      "name": "ReadView::txs_type::txs_type"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "ReadView::txs_type::empty"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "ReadView::txs_type::begin"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "ReadView::txs_type::end"
+    },
+    {
+      "args": [
+        "DigestAwareReadView const& ledger",
+        "Rules const& current"
+      ],
+      "lineno": 43,
+      "name": "makeRulesGivenLedger"
+    },
+    {
+      "args": [
+        "DigestAwareReadView const& ledger",
+        "std::unordered_set<uint256, beast::uhash<>> const& presets"
+      ],
+      "lineno": 48,
+      "name": "makeRulesGivenLedger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file contains utility and adapter code for ledger views and rules construction. The main validation logic (digest and sle presence) is likely tested indirectly via higher-level ledger/rules tests. Look for tests in files such as 'test/rules_test.cpp', 'test/ledger_test.cpp', or integration tests that exercise amendment/rules logic. There is no direct evidence of unit tests for these specific functions in this file. Potential gaps: absence of direct unit tests for negative cases (missing digest or sle), and for edge cases in Rules construction from ledger state.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "std::optional (C++17 standard library), manual checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branching, not exception)",
+      "field": "digest (from ledger.digest(k.key))",
+      "location": "makeRulesGivenLedger (DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets)",
+      "validated_by": "std::optional check (if (digest))",
+      "validates": [
+        "Checks if digest exists before using it",
+        "Prevents null/empty digest usage"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branching, not exception)",
+      "field": "sle (from ledger.read(k))",
+      "location": "makeRulesGivenLedger (DigestAwareReadView const& ledger, std::unordered_set<uint256, beast::uhash<>> const& presets)",
+      "validated_by": "std::optional check (if (sle))",
+      "validates": [
+        "Checks if SLE (serialized ledger entry) exists before accessing fields",
+        "Prevents null/empty SLE usage"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

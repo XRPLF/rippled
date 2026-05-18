@@ -1,0 +1,52 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "s"
+    },
+    {
+      "lineno": 15,
+      "name": "b"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "Value"
+    }
+  ],
+  "description": "Provides utilities for efficiently outputting minimal JSON representations, including streaming output and string conversion, for Json::Value objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/Output.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 13,
+      "name": "stringOutput"
+    },
+    {
+      "args": [
+        "Json::Value const&",
+        "Output const&"
+      ],
+      "lineno": 22,
+      "name": "outputJson"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 29,
+      "name": "jsonAsString"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "Json"
+    }
+  ]
+}

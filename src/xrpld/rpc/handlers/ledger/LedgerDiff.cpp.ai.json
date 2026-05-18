@@ -1,0 +1,379 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerDiffGrpc",
+        "RPC::ledgerFromSpecifier",
+        "std::dynamic_pointer_cast<Ledger const>",
+        "baseLedger->stateMap().compare"
+      ],
+      "entry_point": "doLedgerDiffGrpc",
+      "purpose": "Handles a gRPC request to compute the difference between two ledgers, validating both ledgers and the diff operation.",
+      "validation_points": [
+        "RPC::ledgerFromSpecifier (validates base_ledger and desired_ledger existence)",
+        "std::dynamic_pointer_cast<Ledger const> (validates that the ReadView is a validated Ledger)",
+        "baseLedger->stateMap().compare (validates that the diff is computable and not too large)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "base_ledger",
+      "flow": [
+        "request.base_ledger()",
+        "RPC::ledgerFromSpecifier(baseLedgerRv, ...)",
+        "std::dynamic_pointer_cast<Ledger const>(baseLedgerRv)",
+        "baseLedger->stateMap()"
+      ],
+      "origin": "request.base_ledger() (from gRPC request)",
+      "transformations": [
+        "Parsed from gRPC request",
+        "Looked up as a ledger (ReadView) via ledgerFromSpecifier",
+        "Casted to Ledger const* (must be validated ledger)"
+      ],
+      "validated_at": "RPC::ledgerFromSpecifier, std::dynamic_pointer_cast<Ledger const>"
+    },
+    {
+      "field": "desired_ledger",
+      "flow": [
+        "request.desired_ledger()",
+        "RPC::ledgerFromSpecifier(desiredLedgerRv, ...)",
+        "std::dynamic_pointer_cast<Ledger const>(desiredLedgerRv)",
+        "desiredLedger->stateMap()"
+      ],
+      "origin": "request.desired_ledger() (from gRPC request)",
+      "transformations": [
+        "Parsed from gRPC request",
+        "Looked up as a ledger (ReadView) via ledgerFromSpecifier",
+        "Casted to Ledger const* (must be validated ledger)"
+      ],
+      "validated_at": "RPC::ledgerFromSpecifier, std::dynamic_pointer_cast<Ledger const>"
+    },
+    {
+      "field": "differences",
+      "flow": [
+        "baseLedger->stateMap().compare(desiredLedger->stateMap(), differences, maxDifferences)",
+        "differences (SHAMap::Delta) populated",
+        "for loop over differences",
+        "response.mutable_ledger_objects()->add_objects()"
+      ],
+      "origin": "baseLedger->stateMap().compare(desiredLedger->stateMap(), ...)",
+      "transformations": [
+        "Computed as a diff between two SHAMaps",
+        "Each difference is mapped to a proto response object"
+      ],
+      "validated_at": "baseLedger->stateMap().compare (returns false if too many differences)"
+    },
+    {
+      "field": "include_blobs",
+      "flow": [
+        "request.include_blobs()",
+        "if (request.include_blobs()) { diff->set_data(...) }"
+      ],
+      "origin": "request.include_blobs() (from gRPC request)",
+      "transformations": [
+        "Boolean flag controls whether blob data is included in response"
+      ],
+      "validated_at": "No explicit validation (assumed boolean from proto)"
+    }
+  ],
+  "description": "Implements a gRPC handler function to compute and return the differences between two XRPL ledger states, given their specifiers, for use in the XRPL gRPC API.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "base_ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::ledgerFromSpecifier at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for base_ledger",
+      "why_false_positive": "RPC::ledgerFromSpecifier validates base_ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "desired_ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::ledgerFromSpecifier at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for desired_ledger",
+      "why_false_positive": "RPC::ledgerFromSpecifier validates desired_ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "base_ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::dynamic_pointer_cast<Ledger const> at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for base_ledger",
+      "why_false_positive": "std::dynamic_pointer_cast<Ledger const> validates base_ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "base_ledger",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::dynamic_pointer_cast<Ledger const> at doLedgerDiffGrpc",
+      "issue_pattern": "Missing type validation for base_ledger",
+      "why_false_positive": "std::dynamic_pointer_cast<Ledger const> validates base_ledger type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "desired_ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::dynamic_pointer_cast<Ledger const> at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for desired_ledger",
+      "why_false_positive": "std::dynamic_pointer_cast<Ledger const> validates desired_ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "desired_ledger",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::dynamic_pointer_cast<Ledger const> at doLedgerDiffGrpc",
+      "issue_pattern": "Missing type validation for desired_ledger",
+      "why_false_positive": "std::dynamic_pointer_cast<Ledger const> validates desired_ledger type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "differences (between ledgers)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "baseLedger->stateMap().compare at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for differences (between ledgers)",
+      "why_false_positive": "baseLedger->stateMap().compare validates differences (between ledgers) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "inDesired (ledger object blob)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(inDesired->size() > 0, ...) at doLedgerDiffGrpc",
+      "issue_pattern": "Missing empty string validation for inDesired (ledger object blob)",
+      "why_false_positive": "XRPL_ASSERT(inDesired->size() > 0, ...) validates inDesired (ledger object blob) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "inDesired (ledger object blob)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(inDesired->size() > 0, ...) at doLedgerDiffGrpc",
+      "issue_pattern": "Missing range validation for inDesired (ledger object blob)",
+      "why_false_positive": "XRPL_ASSERT(inDesired->size() > 0, ...) validates inDesired (ledger object blob) range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerDiff.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 5,
+      "name": "doLedgerDiffGrpc"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function doLedgerDiffGrpc is likely tested via integration or gRPC handler tests, possibly in files like test/rpc/ledger_diff_test.cpp or test/rpc/GRPCHandlers_test.cpp. Validation paths (ledger existence, type, diff size) should be covered by tests for missing/invalid ledgers and large diffs. However, edge cases such as malformed ledger specifiers, non-Ledger ReadViews, and extremely large diffs may not be exhaustively tested unless specifically targeted. There is no evidence in this file of direct unit tests; coverage depends on higher-level RPC/gRPC test suites.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (RPC::ledgerFromSpecifier, gRPC error handling, XRPL_ASSERT)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "grpc::Status(NOT_FOUND, 'base ledger not found')",
+      "field": "base_ledger",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "RPC::ledgerFromSpecifier",
+      "validates": [
+        "Checks if the base_ledger specified in the request exists and can be loaded"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "grpc::Status(NOT_FOUND, 'desired ledger not found')",
+      "field": "desired_ledger",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "RPC::ledgerFromSpecifier",
+      "validates": [
+        "Checks if the desired_ledger specified in the request exists and can be loaded"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "grpc::Status(NOT_FOUND, 'base ledger not validated')",
+      "field": "base_ledger",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "std::dynamic_pointer_cast<Ledger const>",
+      "validates": [
+        "Checks that the loaded base_ledger is of type Ledger and is validated"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "grpc::Status(NOT_FOUND, 'desired ledger not validated')",
+      "field": "desired_ledger",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "std::dynamic_pointer_cast<Ledger const>",
+      "validates": [
+        "Checks that the loaded desired_ledger is of type Ledger and is validated"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "grpc::Status(RESOURCE_EXHAUSTED, 'too many differences between specified ledgers')",
+      "field": "differences (between ledgers)",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "baseLedger->stateMap().compare",
+      "validates": [
+        "Checks that the number of differences between ledgers does not exceed maxDifferences (int max)"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "assertion failure (likely aborts process)",
+      "field": "inDesired (ledger object blob)",
+      "location": "doLedgerDiffGrpc",
+      "validated_by": "XRPL_ASSERT(inDesired->size() > 0, ...)",
+      "validates": [
+        "Ensures that the ledger object blob in desired ledger is non-empty before using"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

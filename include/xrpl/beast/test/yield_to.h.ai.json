@@ -1,0 +1,86 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "concurrency"
+    },
+    {
+      "lineno": 67,
+      "name": "f0"
+    },
+    {
+      "lineno": 67,
+      "name": "fn..."
+    },
+    {
+      "lineno": 78,
+      "name": "f"
+    },
+    {
+      "lineno": 78,
+      "name": "fn..."
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "concurrency"
+      ],
+      "lineno": 18,
+      "name": "enable_yield_to"
+    }
+  ],
+  "description": "Provides a mix-in class to support testing asynchronous Boost.Asio code using coroutines, allowing test functions to be launched inside coroutines and synchronizing their completion.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/test/yield_to.h",
+  "functions": [
+    {
+      "args": [
+        "concurrency"
+      ],
+      "lineno": 32,
+      "name": "enable_yield_to"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "~enable_yield_to"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "get_io_context"
+    },
+    {
+      "args": [
+        "f0",
+        "fn..."
+      ],
+      "lineno": 67,
+      "name": "yield_to"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "spawn"
+    },
+    {
+      "args": [
+        "f",
+        "fn..."
+      ],
+      "lineno": 78,
+      "name": "spawn"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "beast"
+    },
+    {
+      "lineno": 14,
+      "name": "test"
+    }
+  ]
+}

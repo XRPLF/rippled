@@ -1,0 +1,507 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application&",
+        "Stopwatch&",
+        "beast::insight::Collector::ptr const&",
+        "beast::Journal"
+      ],
+      "lineno": 25,
+      "name": "LedgerMaster"
+    },
+    {
+      "args": [
+        "Handler const&",
+        "beast::insight::Collector::ptr const&"
+      ],
+      "lineno": 241,
+      "name": "Stats"
+    }
+  ],
+  "description": "Defines the LedgerMaster class, which manages the current, closed, and validated ledgers, tracks ledger history, handles held transactions, and manages fetch packs in the XRPL server.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerMaster.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "getCurrentLedgerIndex"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "getValidLedgerIndex"
+    },
+    {
+      "args": [
+        "ReadView const&",
+        "beast::Journal::Stream",
+        "char const*"
+      ],
+      "lineno": 36,
+      "name": "isCompatible"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "peekMutex"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getCurrentLedger"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "getClosedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "getValidatedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getValidatedRules"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getPublishedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getPublishedLedgerAge"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getValidatedLedgerAge"
+    },
+    {
+      "args": [
+        "std::string&"
+      ],
+      "lineno": 63,
+      "name": "isCaughtUp"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "getEarliestFetch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const>"
+      ],
+      "lineno": 68,
+      "name": "storeLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&",
+        "bool",
+        "bool"
+      ],
+      "lineno": 71,
+      "name": "setFullLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&"
+      ],
+      "lineno": 77,
+      "name": "canBeCurrent"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&"
+      ],
+      "lineno": 81,
+      "name": "switchLCL"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "uint256 const&"
+      ],
+      "lineno": 84,
+      "name": "failedSave"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getCompleteLedgers"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "applyHeldTransactions"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const&"
+      ],
+      "lineno": 99,
+      "name": "popAcctTransaction"
+    },
+    {
+      "args": [
+        "std::uint32_t"
+      ],
+      "lineno": 104,
+      "name": "getHashBySeq"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "InboundLedger::Reason"
+      ],
+      "lineno": 108,
+      "name": "walkHashBySeq"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "std::shared_ptr<ReadView const> const&",
+        "InboundLedger::Reason"
+      ],
+      "lineno": 115,
+      "name": "walkHashBySeq"
+    },
+    {
+      "args": [
+        "std::uint32_t"
+      ],
+      "lineno": 123,
+      "name": "getLedgerBySeq"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 126,
+      "name": "getLedgerByHash"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "std::uint32_t"
+      ],
+      "lineno": 129,
+      "name": "setLedgerRangePresent"
+    },
+    {
+      "args": [
+        "LedgerIndex"
+      ],
+      "lineno": 132,
+      "name": "getCloseTimeBySeq"
+    },
+    {
+      "args": [
+        "LedgerHash const&",
+        "LedgerIndex"
+      ],
+      "lineno": 135,
+      "name": "getCloseTimeByHash"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction> const&"
+      ],
+      "lineno": 138,
+      "name": "addHeldTransaction"
+    },
+    {
+      "args": [
+        "ReadView const&"
+      ],
+      "lineno": 139,
+      "name": "fixMismatch"
+    },
+    {
+      "args": [
+        "std::uint32_t"
+      ],
+      "lineno": 141,
+      "name": "haveLedger"
+    },
+    {
+      "args": [
+        "std::uint32_t"
+      ],
+      "lineno": 142,
+      "name": "clearLedger"
+    },
+    {
+      "args": [
+        "ReadView const&"
+      ],
+      "lineno": 143,
+      "name": "isValidated"
+    },
+    {
+      "args": [
+        "std::uint32_t&",
+        "std::uint32_t&"
+      ],
+      "lineno": 144,
+      "name": "getValidatedRange"
+    },
+    {
+      "args": [
+        "std::uint32_t&",
+        "std::uint32_t&"
+      ],
+      "lineno": 145,
+      "name": "getFullValidatedRange"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 148,
+      "name": "getCacheHitRate"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&"
+      ],
+      "lineno": 150,
+      "name": "checkAccept"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::uint32_t"
+      ],
+      "lineno": 151,
+      "name": "checkAccept"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&",
+        "uint256 const&",
+        "Json::Value"
+      ],
+      "lineno": 153,
+      "name": "consensusBuilt"
+    },
+    {
+      "args": [
+        "LedgerIndex"
+      ],
+      "lineno": 157,
+      "name": "setBuildingLedger"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "tryAdvance"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "newPathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "isNewPathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 162,
+      "name": "newOrderBookDB"
+    },
+    {
+      "args": [
+        "LedgerIndex",
+        "LedgerHash const&"
+      ],
+      "lineno": 164,
+      "name": "fixIndex"
+    },
+    {
+      "args": [
+        "LedgerIndex"
+      ],
+      "lineno": 166,
+      "name": "clearPriorLedgers"
+    },
+    {
+      "args": [
+        "LedgerIndex"
+      ],
+      "lineno": 168,
+      "name": "clearLedgerCachePrior"
+    },
+    {
+      "args": [
+        "std::unique_ptr<LedgerReplay>"
+      ],
+      "lineno": 171,
+      "name": "takeReplay"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "releaseReplay"
+    },
+    {
+      "args": [
+        "bool",
+        "std::uint32_t"
+      ],
+      "lineno": 175,
+      "name": "gotFetchPack"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::shared_ptr<Blob>"
+      ],
+      "lineno": 177,
+      "name": "addFetchPack"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 180,
+      "name": "getFetchPack"
+    },
+    {
+      "args": [
+        "std::weak_ptr<Peer> const&",
+        "std::shared_ptr<protocol::TMGetObjectByHash> const&",
+        "uint256",
+        "UptimeClock::time_point"
+      ],
+      "lineno": 183,
+      "name": "makeFetchPack"
+    },
+    {
+      "args": [],
+      "lineno": 189,
+      "name": "getFetchPackCacheSize"
+    },
+    {
+      "args": [],
+      "lineno": 192,
+      "name": "haveValidated"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "minSqlSeq"
+    },
+    {
+      "args": [
+        "uint32_t",
+        "uint32_t"
+      ],
+      "lineno": 200,
+      "name": "txnIdFromIndex"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&"
+      ],
+      "lineno": 205,
+      "name": "setValidLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const&"
+      ],
+      "lineno": 206,
+      "name": "setPubLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const>"
+      ],
+      "lineno": 208,
+      "name": "tryFill"
+    },
+    {
+      "args": [
+        "LedgerIndex",
+        "InboundLedger::Reason"
+      ],
+      "lineno": 210,
+      "name": "getFetchPack"
+    },
+    {
+      "args": [
+        "LedgerIndex",
+        "InboundLedger::Reason"
+      ],
+      "lineno": 212,
+      "name": "getLedgerHashForHistory"
+    },
+    {
+      "args": [],
+      "lineno": 214,
+      "name": "getNeededValidations"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "bool&",
+        "InboundLedger::Reason",
+        "std::unique_lock<std::recursive_mutex>&"
+      ],
+      "lineno": 215,
+      "name": "fetchForHistory"
+    },
+    {
+      "args": [
+        "std::unique_lock<std::recursive_mutex>&"
+      ],
+      "lineno": 219,
+      "name": "doAdvance"
+    },
+    {
+      "args": [
+        "std::unique_lock<std::recursive_mutex>&"
+      ],
+      "lineno": 222,
+      "name": "findNewLedgersToPublish"
+    },
+    {
+      "args": [],
+      "lineno": 225,
+      "name": "updatePaths"
+    },
+    {
+      "args": [
+        "char const*",
+        "std::unique_lock<std::recursive_mutex>&"
+      ],
+      "lineno": 228,
+      "name": "newPFWork"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "collect_metrics"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

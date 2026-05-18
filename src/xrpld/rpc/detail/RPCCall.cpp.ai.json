@@ -1,0 +1,588 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "strHost"
+    },
+    {
+      "lineno": 15,
+      "name": "strPath"
+    },
+    {
+      "lineno": 15,
+      "name": "strMsg"
+    },
+    {
+      "lineno": 15,
+      "name": "mapRequestHeaders"
+    },
+    {
+      "lineno": 38,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 38,
+      "name": "j"
+    },
+    {
+      "lineno": 671,
+      "name": "strMethod"
+    },
+    {
+      "lineno": 671,
+      "name": "params"
+    },
+    {
+      "lineno": 671,
+      "name": "id"
+    },
+    {
+      "lineno": 765,
+      "name": "args"
+    },
+    {
+      "lineno": 765,
+      "name": "retParams"
+    },
+    {
+      "lineno": 765,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 765,
+      "name": "j"
+    },
+    {
+      "lineno": 813,
+      "name": "args"
+    },
+    {
+      "lineno": 813,
+      "name": "config"
+    },
+    {
+      "lineno": 813,
+      "name": "logs"
+    },
+    {
+      "lineno": 813,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 813,
+      "name": "headers"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "apiVersion",
+        "j"
+      ],
+      "lineno": 38,
+      "name": "RPCParser"
+    },
+    {
+      "args": [
+        "std::string"
+      ],
+      "lineno": 677,
+      "name": "RequestNotParsable"
+    },
+    {
+      "args": [],
+      "lineno": 683,
+      "name": "RPCCallImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "rpcClient",
+        "JSONRPCRequest",
+        "rpcCmdToJson",
+        "RPCParser::jvParseLedger / RPCParser::jvParseCurrencyIssuer",
+        "createHTTPPost"
+      ],
+      "entry_point": "rpcClient",
+      "purpose": "Handles an RPC client request, parses and validates input, constructs JSON-RPC message, and builds HTTP POST for transmission.",
+      "validation_points": [
+        "RPCParser::jvParseLedger (validates strLedger)",
+        "RPCParser::jvParseCurrencyIssuer (validates strCurrencyIssuer)",
+        "createHTTPPost (validates strMsg and mapRequestHeaders implicitly)"
+      ]
+    },
+    {
+      "call_chain": [
+        "createHTTPPost"
+      ],
+      "entry_point": "createHTTPPost",
+      "purpose": "Formats an HTTP POST request with headers and body, including validation of message length and header formatting.",
+      "validation_points": [
+        "createHTTPPost (validates strMsg size, iterates mapRequestHeaders for header format)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "strLedger",
+      "flow": [
+        "User input",
+        "rpcClient",
+        "rpcCmdToJson",
+        "RPCParser::jvParseLedger",
+        "jvRequest (JSON object)"
+      ],
+      "origin": "User/client input (e.g., command line, API call)",
+      "transformations": [
+        "Checked for special values ('current', 'closed', 'validated')",
+        "If 64 chars, treated as hash",
+        "Otherwise, cast to uint32_t"
+      ],
+      "validated_at": "RPCParser::jvParseLedger"
+    },
+    {
+      "field": "strCurrencyIssuer",
+      "flow": [
+        "User input",
+        "rpcClient",
+        "rpcCmdToJson",
+        "RPCParser::jvParseCurrencyIssuer",
+        "jvRequest (JSON object)"
+      ],
+      "origin": "User/client input (e.g., command line, API call)",
+      "transformations": [
+        "Regex match for currency/issuer format",
+        "Splits into currency and issuer fields"
+      ],
+      "validated_at": "RPCParser::jvParseCurrencyIssuer"
+    },
+    {
+      "field": "strMsg",
+      "flow": [
+        "rpcCmdToJson",
+        "createHTTPPost",
+        "HTTP POST body"
+      ],
+      "origin": "Output of rpcCmdToJson (JSON string)",
+      "transformations": [
+        "Used as HTTP POST body",
+        "Content-Length header set to strMsg.size()"
+      ],
+      "validated_at": "createHTTPPost (Content-Length, format)"
+    },
+    {
+      "field": "mapRequestHeaders",
+      "flow": [
+        "rpcClient",
+        "createHTTPPost",
+        "HTTP POST headers"
+      ],
+      "origin": "User/client input or internal construction",
+      "transformations": [
+        "Iterated and inserted as HTTP headers"
+      ],
+      "validated_at": "createHTTPPost (header format)"
+    }
+  ],
+  "description": "This file implements the XRPL RPC command-line and network client logic, including parsing command-line arguments into JSON-RPC requests, handling various RPC commands, and sending/receiving requests over HTTP(S). It defines a parser for RPC commands, request/response handling, and utility functions for interacting with an XRPL server.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "currency",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field currency validated by xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic",
+      "issue_pattern": "Missing validation for currency",
+      "why_false_positive": "xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic validates currency automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "issuer",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field issuer validated by xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic",
+      "issue_pattern": "Missing validation for issuer",
+      "why_false_positive": "xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic validates issuer automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "strLedger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jvParseLedger (explicit logic) at jvParseLedger",
+      "issue_pattern": "Missing empty string validation for strLedger",
+      "why_false_positive": "jvParseLedger (explicit logic) validates strLedger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "strMsg",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "createHTTPPost (implicit via Content-Length and HTTP format) at createHTTPPost",
+      "issue_pattern": "Missing empty string validation for strMsg",
+      "why_false_positive": "createHTTPPost (implicit via Content-Length and HTTP format) validates strMsg for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "strMsg",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "createHTTPPost (implicit via Content-Length and HTTP format) at createHTTPPost",
+      "issue_pattern": "Missing format validation for strMsg",
+      "why_false_positive": "createHTTPPost (implicit via Content-Length and HTTP format) validates strMsg format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.5,
+      "detection_keywords": [
+        "mapRequestHeaders",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "createHTTPPost (implicit via iteration and string insertion) at createHTTPPost",
+      "issue_pattern": "Missing empty string validation for mapRequestHeaders",
+      "why_false_positive": "createHTTPPost (implicit via iteration and string insertion) validates mapRequestHeaders for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "mapRequestHeaders",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "createHTTPPost (implicit via iteration and string insertion) at createHTTPPost",
+      "issue_pattern": "Missing format validation for mapRequestHeaders",
+      "why_false_positive": "createHTTPPost (implicit via iteration and string insertion) validates mapRequestHeaders format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "strCurrencyIssuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jvParseCurrencyIssuer (regex/format, partial code shown) at jvParseCurrencyIssuer",
+      "issue_pattern": "Missing empty string validation for strCurrencyIssuer",
+      "why_false_positive": "jvParseCurrencyIssuer (regex/format, partial code shown) validates strCurrencyIssuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "strCurrencyIssuer",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "jvParseCurrencyIssuer (regex/format, partial code shown) at jvParseCurrencyIssuer",
+      "issue_pattern": "Missing format validation for strCurrencyIssuer",
+      "why_false_positive": "jvParseCurrencyIssuer (regex/format, partial code shown) validates strCurrencyIssuer format"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCCall.cpp",
+  "functions": [
+    {
+      "args": [
+        "strHost",
+        "strPath",
+        "strMsg",
+        "mapRequestHeaders"
+      ],
+      "lineno": 15,
+      "name": "createHTTPPost"
+    },
+    {
+      "args": [
+        "strMethod",
+        "params",
+        "id"
+      ],
+      "lineno": 671,
+      "name": "JSONRPCRequest"
+    },
+    {
+      "args": [
+        "args",
+        "retParams",
+        "apiVersion",
+        "j"
+      ],
+      "lineno": 765,
+      "name": "rpcCmdToJson"
+    },
+    {
+      "args": [
+        "args",
+        "config",
+        "logs",
+        "apiVersion",
+        "headers"
+      ],
+      "lineno": 813,
+      "name": "rpcClient"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 29,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 1002,
+      "name": "RPCCall"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for these paths would be in integration/system tests for RPC client (e.g., tests exercising command-line or HTTP RPC calls). Unit tests may exist for createHTTPPost and RPCParser methods, but regex and ledger parsing edge cases (invalid hashes, malformed currency/issuer) may not be fully covered. Tests for error handling (exceptions on invalid input) are likely but not guaranteed. Look for test files in test/rpc, test/unittest/rpc, or similar directories. Gaps may exist in negative testing (malformed headers, invalid Content-Length, non-string ledger values).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger_index",
+      "ledger_hash",
+      "currency",
+      "issuer"
+    ],
+    "framework": "xrpl::jss (JSON field validation), beast::lexicalCast (type validation), explicit C++ logic",
+    "validation_layer": "business_logic (inside RPCParser and HTTP construction)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::exception (via beast::lexicalCast if not uint32_t)",
+      "field": "strLedger",
+      "location": "jvParseLedger",
+      "validated_by": "jvParseLedger (explicit logic)",
+      "validates": [
+        "Checks if strLedger is one of 'current', 'closed', 'validated' (string match)",
+        "Checks if strLedger is 64 characters (potentially a uint256 hash)",
+        "Attempts to cast strLedger to uint32_t (throws if not a valid integer)"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (relies on downstream HTTP/JSON parsing)",
+      "field": "strMsg",
+      "location": "createHTTPPost",
+      "validated_by": "createHTTPPost (implicit via Content-Length and HTTP format)",
+      "validates": [
+        "Ensures Content-Length matches strMsg.size()",
+        "Ensures HTTP headers are well-formed"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.5,
+      "error_thrown": "None (assumes keys/values are valid strings)",
+      "field": "mapRequestHeaders",
+      "location": "createHTTPPost",
+      "validated_by": "createHTTPPost (implicit via iteration and string insertion)",
+      "validates": [
+        "Assumes all keys and values are valid HTTP header strings"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "Unknown (code incomplete, likely throws or returns error if format invalid)",
+      "field": "strCurrencyIssuer",
+      "location": "jvParseCurrencyIssuer",
+      "validated_by": "jvParseCurrencyIssuer (regex/format, partial code shown)",
+      "validates": [
+        "Checks if input matches expected currency/issuer format (likely regex or string split)"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

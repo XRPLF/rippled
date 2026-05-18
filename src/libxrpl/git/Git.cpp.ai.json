@@ -1,0 +1,194 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Preprocessor",
+        "#error directive (GIT_COMMIT_HASH)",
+        "#error directive (GIT_BUILD_BRANCH)"
+      ],
+      "entry_point": "Compilation/Build",
+      "purpose": "Ensures that required Git metadata macros are defined at build time.",
+      "validation_points": [
+        "#error \"GIT_COMMIT_HASH must be defined\"",
+        "#error \"GIT_BUILD_BRANCH must be defined\""
+      ]
+    },
+    {
+      "call_chain": [
+        "getCommitHash()"
+      ],
+      "entry_point": "xrpl::git::getCommitHash()",
+      "purpose": "Returns the Git commit hash as a string.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "getBuildBranch()"
+      ],
+      "entry_point": "xrpl::git::getBuildBranch()",
+      "purpose": "Returns the Git build branch as a string.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "GIT_COMMIT_HASH",
+      "flow": [
+        "Build system defines GIT_COMMIT_HASH",
+        "Preprocessor checks for definition (#ifndef/#error)",
+        "static constexpr char kGIT_COMMIT_HASH[] = GIT_COMMIT_HASH",
+        "getCommitHash() returns static std::string const kVALUE = kGIT_COMMIT_HASH"
+      ],
+      "origin": "Preprocessor macro (typically defined by build system, e.g., CMake or Makefile)",
+      "transformations": [
+        "Macro value is assigned to a constexpr char array",
+        "Char array is used to initialize a static std::string"
+      ],
+      "validated_at": "#error directive at compile time"
+    },
+    {
+      "field": "GIT_BUILD_BRANCH",
+      "flow": [
+        "Build system defines GIT_BUILD_BRANCH",
+        "Preprocessor checks for definition (#ifndef/#error)",
+        "static constexpr char kGIT_BUILD_BRANCH[] = GIT_BUILD_BRANCH",
+        "getBuildBranch() returns static std::string const kVALUE = kGIT_BUILD_BRANCH"
+      ],
+      "origin": "Preprocessor macro (typically defined by build system, e.g., CMake or Makefile)",
+      "transformations": [
+        "Macro value is assigned to a constexpr char array",
+        "Char array is used to initialize a static std::string"
+      ],
+      "validated_at": "#error directive at compile time"
+    }
+  ],
+  "description": "Provides functions to retrieve the current Git commit hash and build branch for the xrpl project, using compile-time macros.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "GIT_COMMIT_HASH",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field GIT_COMMIT_HASH validated by C++ preprocessor",
+      "issue_pattern": "Missing validation for GIT_COMMIT_HASH",
+      "why_false_positive": "C++ preprocessor validates GIT_COMMIT_HASH automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "GIT_BUILD_BRANCH",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field GIT_BUILD_BRANCH validated by C++ preprocessor",
+      "issue_pattern": "Missing validation for GIT_BUILD_BRANCH",
+      "why_false_positive": "C++ preprocessor validates GIT_BUILD_BRANCH automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "GIT_COMMIT_HASH",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "#error preprocessor directive at global scope (top of file, before namespace)",
+      "issue_pattern": "Missing empty string validation for GIT_COMMIT_HASH",
+      "why_false_positive": "#error preprocessor directive validates GIT_COMMIT_HASH for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "GIT_BUILD_BRANCH",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "#error preprocessor directive at global scope (top of file, before namespace)",
+      "issue_pattern": "Missing empty string validation for GIT_BUILD_BRANCH",
+      "why_false_positive": "#error preprocessor directive validates GIT_BUILD_BRANCH for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/git/Git.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "getCommitHash"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "getBuildBranch"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl::git"
+    }
+  ],
+  "test_coverage_notes": "There is no runtime validation logic; all validation occurs at compile time via preprocessor directives. As such, there are likely no unit or integration tests directly covering the validation logic in this file. Tests for getCommitHash() and getBuildBranch() would only verify that the returned values match the macros defined at build time, but would not test the validation paths (i.e., missing macro definitions). Test coverage gaps: No automated tests can verify the #error validation paths, as these are enforced by the compiler and would cause build failures if triggered. Any test files would likely be in the form of build system tests or CI scripts that ensure the macros are always defined.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "GIT_COMMIT_HASH",
+      "GIT_BUILD_BRANCH"
+    ],
+    "framework": "C++ preprocessor",
+    "validation_layer": "entry_point (compile-time validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "preprocessor error (compilation fails)",
+      "field": "GIT_COMMIT_HASH",
+      "location": "global scope (top of file, before namespace)",
+      "validated_by": "#error preprocessor directive",
+      "validates": [
+        "checks that GIT_COMMIT_HASH macro is defined at compile time"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "preprocessor error (compilation fails)",
+      "field": "GIT_BUILD_BRANCH",
+      "location": "global scope (top of file, before namespace)",
+      "validated_by": "#error preprocessor directive",
+      "validates": [
+        "checks that GIT_BUILD_BRANCH macro is defined at compile time"
+      ],
+      "validation_type": "presence"
+    }
+  ]
+}

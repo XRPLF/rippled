@@ -1,0 +1,124 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Application"
+    },
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "LoadFeeTrack"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "Transaction"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "TxQ"
+    }
+  ],
+  "description": "This header file declares functions and types for handling transaction signing, fee calculation, and submission in the XRPL server's RPC subsystem.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/TransactionSign.h",
+  "functions": [
+    {
+      "args": [
+        "role",
+        "config",
+        "feeTrack",
+        "txQ",
+        "app",
+        "tx",
+        "mult",
+        "div"
+      ],
+      "lineno": 15,
+      "name": "getCurrentNetworkFee"
+    },
+    {
+      "args": [
+        "request",
+        "role",
+        "doAutoFill",
+        "config",
+        "feeTrack",
+        "txQ",
+        "app"
+      ],
+      "lineno": 38,
+      "name": "checkFee"
+    },
+    {
+      "args": [
+        "netOPs"
+      ],
+      "lineno": 59,
+      "name": "getProcessTxnFn"
+    },
+    {
+      "args": [
+        "params",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app"
+      ],
+      "lineno": 71,
+      "name": "transactionSign"
+    },
+    {
+      "args": [
+        "params",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app",
+        "processTransaction"
+      ],
+      "lineno": 79,
+      "name": "transactionSubmit"
+    },
+    {
+      "args": [
+        "params",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app"
+      ],
+      "lineno": 88,
+      "name": "transactionSignFor"
+    },
+    {
+      "args": [
+        "params",
+        "apiVersion",
+        "failType",
+        "role",
+        "validatedLedgerAge",
+        "app",
+        "processTransaction"
+      ],
+      "lineno": 96,
+      "name": "transactionSubmitMultiSigned"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 18,
+      "name": "RPC"
+    }
+  ]
+}

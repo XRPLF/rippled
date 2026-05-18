@@ -1,0 +1,1349 @@
+{
+  "args": [
+    {
+      "lineno": 4317,
+      "name": "uTipIndex"
+    },
+    {
+      "lineno": 4317,
+      "name": "sleOfferDir"
+    },
+    {
+      "lineno": 4318,
+      "name": "saDirRate"
+    },
+    {
+      "lineno": 4318,
+      "name": "amountFromQuality"
+    },
+    {
+      "lineno": 4318,
+      "name": "getQuality"
+    },
+    {
+      "lineno": 4320,
+      "name": "cdirFirst"
+    },
+    {
+      "lineno": 4320,
+      "name": "view"
+    },
+    {
+      "lineno": 4320,
+      "name": "uBookEntry"
+    },
+    {
+      "lineno": 4320,
+      "name": "offerIndex"
+    },
+    {
+      "lineno": 4322,
+      "name": "JLOG"
+    },
+    {
+      "lineno": 4322,
+      "name": "m_journal"
+    },
+    {
+      "lineno": 4328,
+      "name": "bDone"
+    },
+    {
+      "lineno": 4330,
+      "name": "sleOffer"
+    },
+    {
+      "lineno": 4330,
+      "name": "keylet"
+    },
+    {
+      "lineno": 4333,
+      "name": "uOfferOwnerID"
+    },
+    {
+      "lineno": 4333,
+      "name": "sfAccount"
+    },
+    {
+      "lineno": 4334,
+      "name": "saTakerGets"
+    },
+    {
+      "lineno": 4334,
+      "name": "sfTakerGets"
+    },
+    {
+      "lineno": 4335,
+      "name": "saTakerPays"
+    },
+    {
+      "lineno": 4335,
+      "name": "sfTakerPays"
+    },
+    {
+      "lineno": 4336,
+      "name": "STAmount"
+    },
+    {
+      "lineno": 4336,
+      "name": "saOwnerFunds"
+    },
+    {
+      "lineno": 4337,
+      "name": "firstOwnerOffer"
+    },
+    {
+      "lineno": 4339,
+      "name": "book"
+    },
+    {
+      "lineno": 4345,
+      "name": "bGlobalFreeze"
+    },
+    {
+      "lineno": 4352,
+      "name": "umBalanceEntry"
+    },
+    {
+      "lineno": 4352,
+      "name": "umBalance"
+    },
+    {
+      "lineno": 4361,
+      "name": "accountHolds"
+    },
+    {
+      "lineno": 4364,
+      "name": "fhZERO_IF_FROZEN"
+    },
+    {
+      "lineno": 4365,
+      "name": "ahZERO_IF_UNAUTHORIZED"
+    },
+    {
+      "lineno": 4366,
+      "name": "viewJ"
+    },
+    {
+      "lineno": 4369,
+      "name": "beast"
+    },
+    {
+      "lineno": 4373,
+      "name": "Json"
+    },
+    {
+      "lineno": 4373,
+      "name": "jvOffer"
+    },
+    {
+      "lineno": 4373,
+      "name": "JsonOptions"
+    },
+    {
+      "lineno": 4375,
+      "name": "saTakerGetsFunded"
+    },
+    {
+      "lineno": 4376,
+      "name": "saOwnerFundsLimit"
+    },
+    {
+      "lineno": 4377,
+      "name": "Rate"
+    },
+    {
+      "lineno": 4377,
+      "name": "offerRate"
+    },
+    {
+      "lineno": 4377,
+      "name": "parityRate"
+    },
+    {
+      "lineno": 4379,
+      "name": "rate"
+    },
+    {
+      "lineno": 4381,
+      "name": "uTakerID"
+    },
+    {
+      "lineno": 4387,
+      "name": "divide"
+    },
+    {
+      "lineno": 4397,
+      "name": "multiply"
+    },
+    {
+      "lineno": 4397,
+      "name": "asset"
+    },
+    {
+      "lineno": 4397,
+      "name": "std"
+    },
+    {
+      "lineno": 4403,
+      "name": "saOwnerPays"
+    },
+    {
+      "lineno": 4408,
+      "name": "jvOffers"
+    },
+    {
+      "lineno": 4409,
+      "name": "jvOf"
+    },
+    {
+      "lineno": 4410,
+      "name": "jss"
+    },
+    {
+      "lineno": 4415,
+      "name": "cdirNext"
+    },
+    {
+      "lineno": 4417,
+      "name": "bDirectAdvance"
+    },
+    {
+      "lineno": 4436,
+      "name": "lpLedger"
+    },
+    {
+      "lineno": 4439,
+      "name": "bProof"
+    },
+    {
+      "lineno": 4440,
+      "name": "iLimit"
+    },
+    {
+      "lineno": 4441,
+      "name": "jvMarker"
+    },
+    {
+      "lineno": 4442,
+      "name": "jvResult"
+    },
+    {
+      "lineno": 4446,
+      "name": "MetaView"
+    },
+    {
+      "lineno": 4446,
+      "name": "lesActive"
+    },
+    {
+      "lineno": 4446,
+      "name": "tapNONE"
+    },
+    {
+      "lineno": 4447,
+      "name": "OrderBookIterator"
+    },
+    {
+      "lineno": 4447,
+      "name": "obIterator"
+    },
+    {
+      "lineno": 4449,
+      "name": "transferRate"
+    },
+    {
+      "lineno": 4451,
+      "name": "bGlobalFreeze"
+    },
+    {
+      "lineno": 4455,
+      "name": "SLE"
+    },
+    {
+      "lineno": 4455,
+      "name": "pointer"
+    },
+    {
+      "lineno": 4455,
+      "name": "sleOffer"
+    },
+    {
+      "lineno": 4470,
+      "name": "currency"
+    },
+    {
+      "lineno": 4474,
+      "name": "isNegative"
+    },
+    {
+      "lineno": 4477,
+      "name": "zero"
+    },
+    {
+      "lineno": 4502,
+      "name": "isZero"
+    },
+    {
+      "lineno": 4516,
+      "name": "collect_metrics"
+    },
+    {
+      "lineno": 4517,
+      "name": "counters"
+    },
+    {
+      "lineno": 4517,
+      "name": "mode"
+    },
+    {
+      "lineno": 4517,
+      "name": "start"
+    },
+    {
+      "lineno": 4517,
+      "name": "initialSync"
+    },
+    {
+      "lineno": 4517,
+      "name": "accounting_"
+    },
+    {
+      "lineno": 4518,
+      "name": "current"
+    },
+    {
+      "lineno": 4518,
+      "name": "chrono"
+    },
+    {
+      "lineno": 4518,
+      "name": "steady_clock"
+    },
+    {
+      "lineno": 4518,
+      "name": "microseconds"
+    },
+    {
+      "lineno": 4521,
+      "name": "m_statsMutex"
+    },
+    {
+      "lineno": 4522,
+      "name": "m_stats"
+    },
+    {
+      "lineno": 4524,
+      "name": "OperatingMode"
+    },
+    {
+      "lineno": 4524,
+      "name": "DISCONNECTED"
+    },
+    {
+      "lineno": 4526,
+      "name": "CONNECTED"
+    },
+    {
+      "lineno": 4528,
+      "name": "SYNCING"
+    },
+    {
+      "lineno": 4530,
+      "name": "TRACKING"
+    },
+    {
+      "lineno": 4532,
+      "name": "FULL"
+    },
+    {
+      "lineno": 4538,
+      "name": "StateAccounting"
+    },
+    {
+      "lineno": 4538,
+      "name": "om"
+    },
+    {
+      "lineno": 4539,
+      "name": "now"
+    },
+    {
+      "lineno": 4541,
+      "name": "lock"
+    },
+    {
+      "lineno": 4541,
+      "name": "mutex_"
+    },
+    {
+      "lineno": 4542,
+      "name": "counters_"
+    },
+    {
+      "lineno": 4545,
+      "name": "initialSyncUs_"
+    },
+    {
+      "lineno": 4546,
+      "name": "processStart_"
+    },
+    {
+      "lineno": 4549,
+      "name": "dur"
+    },
+    {
+      "lineno": 4549,
+      "name": "start_"
+    },
+    {
+      "lineno": 4551,
+      "name": "mode_"
+    },
+    {
+      "lineno": 4555,
+      "name": "json"
+    },
+    {
+      "lineno": 4555,
+      "name": "obj"
+    },
+    {
+      "lineno": 4556,
+      "name": "getCounterData"
+    },
+    {
+      "lineno": 4563,
+      "name": "states_"
+    },
+    {
+      "lineno": 4565,
+      "name": "state"
+    },
+    {
+      "lineno": 4567,
+      "name": "to_string"
+    },
+    {
+      "lineno": 4568,
+      "name": "count"
+    },
+    {
+      "lineno": 4579,
+      "name": "make_NetworkOPs"
+    },
+    {
+      "lineno": 4580,
+      "name": "ServiceRegistry"
+    },
+    {
+      "lineno": 4580,
+      "name": "registry"
+    },
+    {
+      "lineno": 4581,
+      "name": "clock_type"
+    },
+    {
+      "lineno": 4581,
+      "name": "clock"
+    },
+    {
+      "lineno": 4582,
+      "name": "standalone"
+    },
+    {
+      "lineno": 4583,
+      "name": "minPeerCount"
+    },
+    {
+      "lineno": 4584,
+      "name": "startValid"
+    },
+    {
+      "lineno": 4585,
+      "name": "JobQueue"
+    },
+    {
+      "lineno": 4585,
+      "name": "jobQueue"
+    },
+    {
+      "lineno": 4586,
+      "name": "LedgerMaster"
+    },
+    {
+      "lineno": 4586,
+      "name": "ledgerMaster"
+    },
+    {
+      "lineno": 4587,
+      "name": "ValidatorKeys"
+    },
+    {
+      "lineno": 4587,
+      "name": "validatorKeys"
+    },
+    {
+      "lineno": 4588,
+      "name": "boost"
+    },
+    {
+      "lineno": 4588,
+      "name": "asio"
+    },
+    {
+      "lineno": 4588,
+      "name": "io_context"
+    },
+    {
+      "lineno": 4588,
+      "name": "ioCtx"
+    },
+    {
+      "lineno": 4589,
+      "name": "beast"
+    },
+    {
+      "lineno": 4589,
+      "name": "Journal"
+    },
+    {
+      "lineno": 4589,
+      "name": "journal"
+    },
+    {
+      "lineno": 4590,
+      "name": "insight"
+    },
+    {
+      "lineno": 4590,
+      "name": "Collector"
+    },
+    {
+      "lineno": 4590,
+      "name": "ptr"
+    },
+    {
+      "lineno": 4590,
+      "name": "collector"
+    },
+    {
+      "lineno": 4592,
+      "name": "make_unique"
+    },
+    {
+      "lineno": 4592,
+      "name": "NetworkOPsImp"
+    }
+  ],
+  "chunked": true,
+  "classes": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "NetworkOPsImp"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "TransactionStatus"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "StateAccounting"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "ServerFeeSummary"
+    },
+    {
+      "args": [],
+      "lineno": 453,
+      "name": "SubAccountHistoryIndex"
+    },
+    {
+      "args": [],
+      "lineno": 464,
+      "name": "SubAccountHistoryInfo"
+    },
+    {
+      "args": [],
+      "lineno": 468,
+      "name": "SubAccountHistoryInfoWeak"
+    },
+    {
+      "args": [],
+      "lineno": 799,
+      "name": "Stats"
+    }
+  ],
+  "description": "NetworkOPs.cpp implements the core network operations logic for an XRPL server node, managing transaction processing (including batching, validation, and application), consensus state transitions, ledger publication, and real-time event subscriptions for clients. It handles server state management, peer and validator communications, fee reporting, and provides interfaces for monitoring, account history streaming, and various subscription types (ledger, transactions, validations, etc.). The file defines the main NetworkOPsImp class, which coordinates these activities, ensuring the node stays in sync with the network, processes transactions efficiently, and provides up-to-date information to connected clients and monitoring tools. This section of NetworkOPs.cpp implements core logic for retrieving and formatting order book offers (getBookPage), tracking and reporting server operational state metrics (collect_metrics, StateAccounting::mode, StateAccounting::json), and constructing the main NetworkOPs object (make_NetworkOPs) for the XRPL server. The getBookPage function fetches offers from the ledger, calculates available funds, applies transfer fees, and formats the results as JSON. The metrics functions track server state durations and transitions for monitoring and diagnostics.",
+  "file_path": "/root/projects/transia/athenah-ai/workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/NetworkOPs.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 181,
+      "name": "getOperatingMode"
+    },
+    {
+      "args": [
+        "bool const admin"
+      ],
+      "lineno": 186,
+      "name": "strOperatingMode"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "setStandAlone"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "setNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "clearNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 206,
+      "name": "isNeedNetworkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "isFull"
+    },
+    {
+      "args": [
+        "bool forAdmin"
+      ],
+      "lineno": 216,
+      "name": "getHostId"
+    },
+    {
+      "args": [],
+      "lineno": 229,
+      "name": "setStateTimer"
+    },
+    {
+      "args": [
+        "boost::asio::steady_timer& timer",
+        "std::chrono::milliseconds const& expiry_time",
+        "std::function<void()> onExpire",
+        "std::function<void()> onError"
+      ],
+      "lineno": 237,
+      "name": "setTimer"
+    },
+    {
+      "args": [],
+      "lineno": 255,
+      "name": "setHeartbeatTimer"
+    },
+    {
+      "args": [],
+      "lineno": 265,
+      "name": "setClusterTimer"
+    },
+    {
+      "args": [
+        "SubAccountHistoryInfoWeak subInfo"
+      ],
+      "lineno": 277,
+      "name": "setAccountHistoryJobTimer"
+    },
+    {
+      "args": [],
+      "lineno": 287,
+      "name": "processHeartbeatTimer"
+    },
+    {
+      "args": [],
+      "lineno": 340,
+      "name": "processClusterTimer"
+    },
+    {
+      "args": [
+        "OperatingMode const mode",
+        "bool const admin"
+      ],
+      "lineno": 362,
+      "name": "strOperatingMode"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& iTrans"
+      ],
+      "lineno": 374,
+      "name": "submitTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction>& transaction"
+      ],
+      "lineno": 414,
+      "name": "preProcessTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction>& transaction",
+        "bool bUnlimited",
+        "bool bLocal",
+        "FailHard failType"
+      ],
+      "lineno": 447,
+      "name": "processTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction> transaction",
+        "bool bUnlimited",
+        "FailHard failType"
+      ],
+      "lineno": 460,
+      "name": "doTransactionAsync"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction> transaction",
+        "bool bUnlimited",
+        "FailHard failType"
+      ],
+      "lineno": 476,
+      "name": "doTransactionSync"
+    },
+    {
+      "args": [
+        "std::unique_lock<std::mutex>& lock",
+        "std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback"
+      ],
+      "lineno": 489,
+      "name": "doTransactionSyncBatch"
+    },
+    {
+      "args": [
+        "CanonicalTXSet const& set"
+      ],
+      "lineno": 507,
+      "name": "processTransactionSet"
+    },
+    {
+      "args": [],
+      "lineno": 547,
+      "name": "transactionBatch"
+    },
+    {
+      "args": [
+        "std::unique_lock<std::mutex>& batchLock"
+      ],
+      "lineno": 555,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> lpLedger",
+        "AccountID const& account"
+      ],
+      "lineno": 677,
+      "name": "getOwnerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 713,
+      "name": "isBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 718,
+      "name": "isAmendmentBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 723,
+      "name": "setAmendmentBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 729,
+      "name": "isAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 734,
+      "name": "setAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 739,
+      "name": "clearAmendmentWarned"
+    },
+    {
+      "args": [],
+      "lineno": 744,
+      "name": "isUNLBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 749,
+      "name": "setUNLBlocked"
+    },
+    {
+      "args": [],
+      "lineno": 754,
+      "name": "clearUNLBlocked"
+    },
+    {
+      "args": [
+        "Overlay::PeerSequence const& peerList",
+        "uint256& networkClosed"
+      ],
+      "lineno": 759,
+      "name": "checkLastClosedLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& newLCL"
+      ],
+      "lineno": 819,
+      "name": "switchLastClosedLedger"
+    },
+    {
+      "args": [
+        "uint256 const& networkClosed",
+        "std::unique_ptr<std::stringstream> const& clog"
+      ],
+      "lineno": 857,
+      "name": "beginConsensus"
+    },
+    {
+      "args": [
+        "RCLCxPeerPos peerPos"
+      ],
+      "lineno": 911,
+      "name": "processTrustedProposal"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SHAMap> const& map",
+        "bool fromAcquire"
+      ],
+      "lineno": 930,
+      "name": "mapComplete"
+    },
+    {
+      "args": [
+        "std::unique_ptr<std::stringstream> const& clog"
+      ],
+      "lineno": 945,
+      "name": "endConsensus"
+    },
+    {
+      "args": [],
+      "lineno": 991,
+      "name": "consensusViewChange"
+    },
+    {
+      "args": [
+        "Manifest const& mo"
+      ],
+      "lineno": 997,
+      "name": "pubManifest"
+    },
+    {
+      "args": [
+        "XRPAmount fee",
+        "TxQ::Metrics escalationMetrics",
+        "LoadFeeTrack const& loadFeeTrack"
+      ],
+      "lineno": 1022,
+      "name": "ServerFeeSummary"
+    },
+    {
+      "args": [
+        "NetworkOPsImp::ServerFeeSummary const& b"
+      ],
+      "lineno": 1029,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "std::uint64_t v"
+      ],
+      "lineno": 1045,
+      "name": "trunc32"
+    },
+    {
+      "args": [],
+      "lineno": 1052,
+      "name": "pubServer"
+    },
+    {
+      "args": [
+        "ConsensusPhase phase"
+      ],
+      "lineno": 1087,
+      "name": "pubConsensus"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STValidation> const& val"
+      ],
+      "lineno": 1107,
+      "name": "pubValidation"
+    },
+    {
+      "args": [
+        "std::function<Json::Value(void)> const& func"
+      ],
+      "lineno": 1167,
+      "name": "pubPeerStatus"
+    },
+    {
+      "args": [
+        "OperatingMode om"
+      ],
+      "lineno": 1191,
+      "name": "setMode"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STValidation> const& val",
+        "std::string const& source"
+      ],
+      "lineno": 1212,
+      "name": "recvValidation"
+    },
+    {
+      "args": [],
+      "lineno": 1247,
+      "name": "getConsensusInfo"
+    },
+    {
+      "args": [
+        "bool human",
+        "bool admin",
+        "bool counters"
+      ],
+      "lineno": 1252,
+      "name": "getServerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 1437,
+      "name": "clearLedgerFetch"
+    },
+    {
+      "args": [],
+      "lineno": 1442,
+      "name": "getLedgerFetchInfo"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "std::shared_ptr<STTx const> const& transaction",
+        "TER result"
+      ],
+      "lineno": 1447,
+      "name": "pubProposedTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& lpAccepted"
+      ],
+      "lineno": 1477,
+      "name": "pubLedger"
+    },
+    {
+      "args": [],
+      "lineno": 1537,
+      "name": "reportFeeChange"
+    },
+    {
+      "args": [
+        "ConsensusPhase phase"
+      ],
+      "lineno": 1547,
+      "name": "reportConsensusStateChange"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 1552,
+      "name": "updateLocalTx"
+    },
+    {
+      "args": [],
+      "lineno": 1556,
+      "name": "getLocalTxCount"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& transaction",
+        "TER result",
+        "bool validated",
+        "std::shared_ptr<ReadView const> const& ledger",
+        "std::optional<std::reference_wrapper<TxMeta const>> meta"
+      ],
+      "lineno": 1562,
+      "name": "transJson"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "AcceptedLedgerTx const& transaction",
+        "bool last"
+      ],
+      "lineno": 1622,
+      "name": "pubValidatedTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "AcceptedLedgerTx const& transaction",
+        "bool last"
+      ],
+      "lineno": 1662,
+      "name": "pubAccountTransaction"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "std::shared_ptr<STTx const> const& tx",
+        "TER result"
+      ],
+      "lineno": 1747,
+      "name": "pubProposedAccountTransaction"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool rt"
+      ],
+      "lineno": 1787,
+      "name": "subAccount"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool rt"
+      ],
+      "lineno": 1812,
+      "name": "unsubAccount"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq",
+        "hash_set<AccountID> const& vnaAccountIDs",
+        "bool rt"
+      ],
+      "lineno": 1825,
+      "name": "unsubAccountInternal"
+    },
+    {
+      "args": [
+        "SubAccountHistoryInfoWeak subInfo"
+      ],
+      "lineno": 1843,
+      "name": "addAccountHistoryJob"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger",
+        "SubAccountHistoryInfoWeak& subInfo"
+      ],
+      "lineno": 2027,
+      "name": "subAccountHistoryStart"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "AccountID const& accountId"
+      ],
+      "lineno": 2057,
+      "name": "subAccountHistory"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "AccountID const& account",
+        "bool historyOnly"
+      ],
+      "lineno": 2087,
+      "name": "unsubAccountHistory"
+    },
+    {
+      "args": [
+        "std::uint64_t seq",
+        "AccountID const& account",
+        "bool historyOnly"
+      ],
+      "lineno": 2097,
+      "name": "unsubAccountHistoryInternal"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "Book const& book"
+      ],
+      "lineno": 2117,
+      "name": "subBook"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq",
+        "Book const& book"
+      ],
+      "lineno": 2128,
+      "name": "unsubBook"
+    },
+    {
+      "args": [
+        "std::optional<std::chrono::milliseconds> consensusDelay"
+      ],
+      "lineno": 2135,
+      "name": "acceptLedger"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "Json::Value& jvResult"
+      ],
+      "lineno": 2152,
+      "name": "subLedger"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2172,
+      "name": "subBookChanges"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2178,
+      "name": "unsubLedger"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2184,
+      "name": "unsubBookChanges"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2190,
+      "name": "subManifests"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2196,
+      "name": "unsubManifests"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener",
+        "Json::Value& jvResult",
+        "bool admin"
+      ],
+      "lineno": 2202,
+      "name": "subServer"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2221,
+      "name": "unsubServer"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2227,
+      "name": "subTransactions"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2233,
+      "name": "unsubTransactions"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2239,
+      "name": "subRTTransactions"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2245,
+      "name": "unsubRTTransactions"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2251,
+      "name": "subValidations"
+    },
+    {
+      "args": [
+        "Json::Value& obj"
+      ],
+      "lineno": 2256,
+      "name": "stateAccounting"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2261,
+      "name": "unsubValidations"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2267,
+      "name": "subPeerStatus"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2273,
+      "name": "unsubPeerStatus"
+    },
+    {
+      "args": [
+        "InfoSub::ref isrListener"
+      ],
+      "lineno": 2279,
+      "name": "subConsensus"
+    },
+    {
+      "args": [
+        "std::uint64_t uSeq"
+      ],
+      "lineno": 2285,
+      "name": "unsubConsensus"
+    },
+    {
+      "args": [
+        "std::string const& strUrl"
+      ],
+      "lineno": 2291,
+      "name": "findRpcSub"
+    },
+    {
+      "args": [
+        "std::string const& strUrl",
+        "InfoSub::ref rspEntry"
+      ],
+      "lineno": 2301,
+      "name": "addRpcSub"
+    },
+    {
+      "args": [
+        "std::string const& strUrl"
+      ],
+      "lineno": 2308,
+      "name": "tryRemoveRpcSub"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const>& lpLedger",
+        "Book const& book",
+        "AccountID const& uTakerID",
+        "bool const bProof",
+        "unsigned int iLimit",
+        "Json::Value const& jvMarker",
+        "Json::Value& jvResult"
+      ],
+      "lineno": 2332,
+      "name": "getBookPage"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> lpLedger",
+        "Book const& book",
+        "AccountID const& uTakerID",
+        "bool const bProof",
+        "unsigned int iLimit",
+        "Json::Value const& jvMarker",
+        "Json::Value& jvResult"
+      ],
+      "lineno": 4403,
+      "name": "NetworkOPsImp::getBookPage"
+    },
+    {
+      "args": [],
+      "lineno": 4497,
+      "name": "NetworkOPsImp::collect_metrics"
+    },
+    {
+      "args": [
+        "OperatingMode om"
+      ],
+      "lineno": 4526,
+      "name": "NetworkOPsImp::StateAccounting::mode"
+    },
+    {
+      "args": [
+        "Json::Value& obj"
+      ],
+      "lineno": 4545,
+      "name": "NetworkOPsImp::StateAccounting::json"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "NetworkOPs::clock_type& clock",
+        "bool standalone",
+        "std::size_t minPeerCount",
+        "bool startValid",
+        "JobQueue& jobQueue",
+        "LedgerMaster& ledgerMaster",
+        "ValidatorKeys const& validatorKeys",
+        "boost::asio::io_context& ioCtx",
+        "beast::Journal journal",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 4570,
+      "name": "make_NetworkOPs"
+    }
+  ],
+  "language": "cpp",
+  "namespaces": [
+    {
+      "lineno": 54,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 233,
+      "name": "xrpl"
+    }
+  ],
+  "num_chunks": 2
+}

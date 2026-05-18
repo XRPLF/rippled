@@ -1,0 +1,122 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 16,
+      "name": "Amendments"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "AmendmentsBuilder"
+    }
+  ],
+  "description": "Provides an auto-generated, type-safe C++ wrapper and builder for the Amendments ledger entry in the XRPL, including field accessors and mutators.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Amendments.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 23,
+      "name": "Amendments"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "hasAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getMajorities"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "hasMajorities"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "hasPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "AmendmentsBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 122,
+      "name": "AmendmentsBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VECTOR256::type::value_type> const& value"
+      ],
+      "lineno": 136,
+      "name": "setAmendments"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 144,
+      "name": "setMajorities"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 152,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 160,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "uint256 const& index"
+      ],
+      "lineno": 168,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

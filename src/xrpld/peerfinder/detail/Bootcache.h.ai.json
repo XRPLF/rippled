@@ -1,0 +1,155 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Store& store",
+        "clock_type& clock",
+        "beast::Journal journal"
+      ],
+      "lineno": 27,
+      "name": "Bootcache"
+    },
+    {
+      "args": [
+        "int valence"
+      ],
+      "lineno": 29,
+      "name": "Entry"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "Transform"
+    }
+  ],
+  "description": "Defines the Bootcache class, which manages a cache of IP addresses useful for establishing initial peer connections in the XRPL PeerFinder subsystem. Each entry tracks connection success/failure (valence) and supports persistence, ranking, and periodic updates.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Bootcache.h",
+  "functions": [
+    {
+      "args": [
+        "Store& store",
+        "clock_type& clock",
+        "beast::Journal journal"
+      ],
+      "lineno": 56,
+      "name": "Bootcache"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "~Bootcache"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "cend"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "clear"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "load"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 84,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 87,
+      "name": "insertStatic"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 90,
+      "name": "on_success"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 93,
+      "name": "on_failure"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "periodicActivity"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& map"
+      ],
+      "lineno": 99,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "prune"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "update"
+    },
+    {
+      "args": [],
+      "lineno": 105,
+      "name": "checkUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "flagForUpdate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "PeerFinder"
+    }
+  ]
+}

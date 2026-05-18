@@ -1,0 +1,220 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "attestationSignerAccount_"
+    },
+    {
+      "lineno": 29,
+      "name": "publicKey_"
+    },
+    {
+      "lineno": 30,
+      "name": "signature_"
+    },
+    {
+      "lineno": 31,
+      "name": "sendingAccount_"
+    },
+    {
+      "lineno": 32,
+      "name": "sendingAmount_"
+    },
+    {
+      "lineno": 33,
+      "name": "rewardAccount_"
+    },
+    {
+      "lineno": 34,
+      "name": "wasLockingChainSend_"
+    },
+    {
+      "lineno": 83,
+      "name": "claimID_"
+    },
+    {
+      "lineno": 84,
+      "name": "dst_"
+    },
+    {
+      "lineno": 90,
+      "name": "bridge"
+    },
+    {
+      "lineno": 92,
+      "name": "secretKey_"
+    },
+    {
+      "lineno": 139,
+      "name": "createCount_"
+    },
+    {
+      "lineno": 141,
+      "name": "toCreate_"
+    },
+    {
+      "lineno": 142,
+      "name": "rewardAmount_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "AccountID attestationSignerAccount_",
+        "PublicKey const& publicKey_",
+        "Buffer signature_",
+        "AccountID const& sendingAccount_",
+        "STAmount const& sendingAmount_",
+        "AccountID const& rewardAccount_",
+        "bool wasLockingChainSend_"
+      ],
+      "lineno": 18,
+      "name": "AttestationBase"
+    },
+    {
+      "args": [
+        "AccountID attestationSignerAccount_",
+        "PublicKey const& publicKey_",
+        "Buffer signature_",
+        "AccountID const& sendingAccount_",
+        "STAmount const& sendingAmount_",
+        "AccountID const& rewardAccount_",
+        "bool wasLockingChainSend_",
+        "std::uint64_t claimID_",
+        "std::optional<AccountID> const& dst_"
+      ],
+      "lineno": 74,
+      "name": "AttestationClaim"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "CmpByClaimID"
+    },
+    {
+      "args": [
+        "STObject const& o"
+      ],
+      "lineno": 128,
+      "name": "AttestationCreateAccount"
+    },
+    {
+      "args": [],
+      "lineno": 180,
+      "name": "CmpByCreateCount"
+    },
+    {
+      "args": [
+        "AccountID const& keyAccount_",
+        "PublicKey const& publicKey_",
+        "STAmount const& amount_",
+        "AccountID const& rewardAccount_",
+        "bool wasLockingChainSend_",
+        "std::optional<AccountID> const& dst"
+      ],
+      "lineno": 200,
+      "name": "XChainClaimAttestation"
+    },
+    {
+      "args": [
+        "AccountID const& keyAccount_",
+        "PublicKey const& publicKey_",
+        "STAmount const& amount_",
+        "STAmount const& rewardAmount_",
+        "AccountID const& rewardAccount_",
+        "bool wasLockingChainSend_",
+        "AccountID const& dst_"
+      ],
+      "lineno": 308,
+      "name": "XChainCreateAccountAttestation"
+    },
+    {
+      "args": [
+        "AttCollection&& sigs"
+      ],
+      "lineno": 349,
+      "name": "XChainAttestationsBase"
+    },
+    {
+      "args": [],
+      "lineno": 400,
+      "name": "XChainClaimAttestations"
+    },
+    {
+      "args": [],
+      "lineno": 406,
+      "name": "XChainCreateAccountAttestations"
+    }
+  ],
+  "description": "Defines data structures and logic for cross-chain attestations in the XRPL protocol, including attestation types, comparison, serialization, and collections for claims and account creation events.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/XChainAttestations.h",
+  "functions": [
+    {
+      "args": [
+        "AttestationClaim const& lhs",
+        "AttestationClaim const& rhs"
+      ],
+      "lineno": 120,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AttestationCreateAccount const& lhs",
+        "AttestationCreateAccount const& rhs"
+      ],
+      "lineno": 181,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "AttestationClaim const& lhs",
+        "AttestationClaim const& rhs"
+      ],
+      "lineno": 157,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "AttestationCreateAccount const& lhs",
+        "AttestationCreateAccount const& rhs"
+      ],
+      "lineno": 217,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "XChainClaimAttestation const& lhs",
+        "XChainClaimAttestation const& rhs"
+      ],
+      "lineno": 295,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "XChainCreateAccountAttestation const& lhs",
+        "XChainCreateAccountAttestation const& rhs"
+      ],
+      "lineno": 340,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "XChainAttestationsBase<TAttestation> const& lhs",
+        "XChainAttestationsBase<TAttestation> const& rhs"
+      ],
+      "lineno": 357,
+      "name": "operator=="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 15,
+      "name": "Attestations"
+    }
+  ]
+}

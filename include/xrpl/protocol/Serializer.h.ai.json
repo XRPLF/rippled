@@ -1,0 +1,521 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 13,
+      "name": "Serializer"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 222,
+      "name": "SerialIter"
+    }
+  ],
+  "description": "Provides serialization and deserialization utilities for XRPL protocol objects, including the Serializer and SerialIter classes for assembling and parsing binary data.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Serializer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "Serializer::slice"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "Serializer::size"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "Serializer::data"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 43,
+      "name": "Serializer::add8"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 44,
+      "name": "Serializer::add16"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 48,
+      "name": "Serializer::add32"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 59,
+      "name": "Serializer::add32"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 62,
+      "name": "Serializer::add64"
+    },
+    {
+      "args": [
+        "Integer"
+      ],
+      "lineno": 75,
+      "name": "Serializer::addInteger"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 78,
+      "name": "Serializer::addBitString"
+    },
+    {
+      "args": [
+        "vector"
+      ],
+      "lineno": 83,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 84,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "ptr",
+        "len"
+      ],
+      "lineno": 85,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 86,
+      "name": "Serializer::addRaw"
+    },
+    {
+      "args": [
+        "vector"
+      ],
+      "lineno": 88,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 89,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "begin",
+        "end",
+        "len"
+      ],
+      "lineno": 91,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "ptr",
+        "len"
+      ],
+      "lineno": 94,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "int&",
+        "offset"
+      ],
+      "lineno": 97,
+      "name": "Serializer::get8"
+    },
+    {
+      "args": [
+        "number",
+        "offset"
+      ],
+      "lineno": 100,
+      "name": "Serializer::getInteger"
+    },
+    {
+      "args": [
+        "data",
+        "offset"
+      ],
+      "lineno": 116,
+      "name": "Serializer::getBitString"
+    },
+    {
+      "args": [
+        "type",
+        "name"
+      ],
+      "lineno": 124,
+      "name": "Serializer::addFieldID"
+    },
+    {
+      "args": [
+        "type",
+        "name"
+      ],
+      "lineno": 126,
+      "name": "Serializer::addFieldID"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "Serializer::getSHA512Half"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "Serializer::peekData"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "Serializer::getData"
+    },
+    {
+      "args": [],
+      "lineno": 140,
+      "name": "Serializer::modData"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "Serializer::getDataLength"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "Serializer::getDataPtr"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "Serializer::getDataPtr"
+    },
+    {
+      "args": [],
+      "lineno": 153,
+      "name": "Serializer::getLength"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "Serializer::getString"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "Serializer::erase"
+    },
+    {
+      "args": [
+        "num"
+      ],
+      "lineno": 163,
+      "name": "Serializer::chop"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "Serializer::begin"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "Serializer::end"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "Serializer::begin"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "Serializer::end"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 178,
+      "name": "Serializer::reserve"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 181,
+      "name": "Serializer::resize"
+    },
+    {
+      "args": [],
+      "lineno": 184,
+      "name": "Serializer::capacity"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 187,
+      "name": "Serializer::operator=="
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 190,
+      "name": "Serializer::operator!="
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 193,
+      "name": "Serializer::operator=="
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 196,
+      "name": "Serializer::operator!="
+    },
+    {
+      "args": [
+        "b1"
+      ],
+      "lineno": 199,
+      "name": "Serializer::decodeLengthLength"
+    },
+    {
+      "args": [
+        "b1"
+      ],
+      "lineno": 200,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "b1",
+        "b2"
+      ],
+      "lineno": 201,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "b1",
+        "b2",
+        "b3"
+      ],
+      "lineno": 202,
+      "name": "Serializer::decodeVLLength"
+    },
+    {
+      "args": [
+        "length"
+      ],
+      "lineno": 206,
+      "name": "Serializer::encodeLengthLength"
+    },
+    {
+      "args": [
+        "length"
+      ],
+      "lineno": 207,
+      "name": "Serializer::addEncoded"
+    },
+    {
+      "args": [
+        "begin",
+        "end",
+        "len"
+      ],
+      "lineno": 211,
+      "name": "Serializer::addVL"
+    },
+    {
+      "args": [
+        "data",
+        "size"
+      ],
+      "lineno": 229,
+      "name": "SerialIter::SerialIter"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 231,
+      "name": "SerialIter::SerialIter"
+    },
+    {
+      "args": [
+        "data"
+      ],
+      "lineno": 236,
+      "name": "SerialIter::SerialIter"
+    },
+    {
+      "args": [],
+      "lineno": 240,
+      "name": "SerialIter::empty"
+    },
+    {
+      "args": [],
+      "lineno": 244,
+      "name": "SerialIter::reset"
+    },
+    {
+      "args": [],
+      "lineno": 247,
+      "name": "SerialIter::getBytesLeft"
+    },
+    {
+      "args": [],
+      "lineno": 252,
+      "name": "SerialIter::get8"
+    },
+    {
+      "args": [],
+      "lineno": 254,
+      "name": "SerialIter::get16"
+    },
+    {
+      "args": [],
+      "lineno": 256,
+      "name": "SerialIter::get32"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "SerialIter::geti32"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "SerialIter::get64"
+    },
+    {
+      "args": [],
+      "lineno": 260,
+      "name": "SerialIter::geti64"
+    },
+    {
+      "args": [],
+      "lineno": 262,
+      "name": "SerialIter::getBitString"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "SerialIter::get128"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "SerialIter::get160"
+    },
+    {
+      "args": [],
+      "lineno": 274,
+      "name": "SerialIter::get192"
+    },
+    {
+      "args": [],
+      "lineno": 278,
+      "name": "SerialIter::get256"
+    },
+    {
+      "args": [
+        "type",
+        "name"
+      ],
+      "lineno": 282,
+      "name": "SerialIter::getFieldID"
+    },
+    {
+      "args": [],
+      "lineno": 287,
+      "name": "SerialIter::getVLDataLength"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 291,
+      "name": "SerialIter::getSlice"
+    },
+    {
+      "args": [
+        "size"
+      ],
+      "lineno": 295,
+      "name": "SerialIter::getRaw"
+    },
+    {
+      "args": [],
+      "lineno": 298,
+      "name": "SerialIter::getVL"
+    },
+    {
+      "args": [
+        "num"
+      ],
+      "lineno": 301,
+      "name": "SerialIter::skip"
+    },
+    {
+      "args": [],
+      "lineno": 304,
+      "name": "SerialIter::getVLBuffer"
+    },
+    {
+      "args": [
+        "size"
+      ],
+      "lineno": 307,
+      "name": "SerialIter::getRawHelper"
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "SerialIter::getBitString"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

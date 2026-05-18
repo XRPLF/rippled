@@ -1,0 +1,73 @@
+{
+  "args": [
+    {
+      "lineno": 49,
+      "name": "ctx"
+    },
+    {
+      "lineno": 54,
+      "name": "ctx"
+    },
+    {
+      "lineno": 57,
+      "name": "ctx"
+    },
+    {
+      "lineno": 60,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 47,
+      "name": "AMMBid"
+    }
+  ],
+  "description": "Implements the AMMBid transactor for XRPL, enabling auctioning of AMM trading fee slots to LPToken holders, handling slot states, bid pricing, and revenue distribution.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMBid.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 49,
+      "name": "AMMBid"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 54,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 57,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 60,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

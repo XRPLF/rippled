@@ -1,0 +1,40 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "ePtr"
+    },
+    {
+      "lineno": 46,
+      "name": "ctx"
+    },
+    {
+      "lineno": 46,
+      "name": "func"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to spawn Boost.Asio coroutines with exception propagation and strand support, restoring behavior from Boost 1.83.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/Spawn.h",
+  "functions": [
+    {
+      "args": [
+        "ctx",
+        "func"
+      ],
+      "lineno": 44,
+      "name": "spawn"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl::util::impl"
+    },
+    {
+      "lineno": 7,
+      "name": "xrpl::util"
+    }
+  ]
+}

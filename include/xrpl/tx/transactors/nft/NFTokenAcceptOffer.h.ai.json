@@ -1,0 +1,123 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "from"
+    },
+    {
+      "lineno": 9,
+      "name": "to"
+    },
+    {
+      "lineno": 9,
+      "name": "amount"
+    },
+    {
+      "lineno": 13,
+      "name": "offer"
+    },
+    {
+      "lineno": 17,
+      "name": "buy"
+    },
+    {
+      "lineno": 17,
+      "name": "sell"
+    },
+    {
+      "lineno": 21,
+      "name": "buyer"
+    },
+    {
+      "lineno": 21,
+      "name": "seller"
+    },
+    {
+      "lineno": 21,
+      "name": "nfTokenID"
+    },
+    {
+      "lineno": 27,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "NFTokenAcceptOffer"
+    }
+  ],
+  "description": "Defines the NFTokenAcceptOffer transaction processor for handling NFT offer acceptance in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/nft/NFTokenAcceptOffer.h",
+  "functions": [
+    {
+      "args": [
+        "from",
+        "to",
+        "amount"
+      ],
+      "lineno": 9,
+      "name": "pay"
+    },
+    {
+      "args": [
+        "offer"
+      ],
+      "lineno": 13,
+      "name": "acceptOffer"
+    },
+    {
+      "args": [
+        "buy",
+        "sell"
+      ],
+      "lineno": 17,
+      "name": "bridgeOffers"
+    },
+    {
+      "args": [
+        "buyer",
+        "seller",
+        "nfTokenID"
+      ],
+      "lineno": 21,
+      "name": "transferNFToken"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 27,
+      "name": "NFTokenAcceptOffer"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 32,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 36,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

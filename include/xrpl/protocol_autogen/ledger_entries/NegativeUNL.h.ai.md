@@ -1,0 +1,37 @@
+# `NegativeUNL.h` — Type-Safe Wrapper for the Negative UNL Ledger Entry
+
+## Role in the System
+
+The Negative UNL (Unique Node List) is a XRPL consensus mechanism that allows the network to temporarily mark validators as offline or unreliable, reducing the effective quorum threshold and preventing consensus stalls during validator outages. The `ltNEGATIVE_UNL` ledger entry (type code `0x004e`, RPC name `nunl`) is the singleton on-ledger object that records which validators are currently disabled, and which validator is currently being proposed for disable or re-enable during an in-progress vote.
+
+This file is **auto-generated** (the header comment states this explicitly) and lives in `include/xrpl/protocol_autogen/ledger_entries/`, alongside analogous wrappers for every other ledger entry type. Its purpose is to provide a type-safe C++ interface over the raw `SLE` (Serialized Ledger Entry) storage layer, replacing scattered, error-prone `getField*()` calls with checked accessors and a fluent builder.
+
+## Fields
+
+Every field in this ledger entry is `soeOPTIONAL`, matching the macro definition in `ledger_entries.macro`:
+
+- **`sfDisabledValidators`** — An `STArray` of objects, each recording a validator that is currently disabled. Accessed via `getDisabledValidators()` which returns `std::optional<std::reference_wrapper<STArray const>>`. The `reference_wrapper` return (rather than a value copy) is intentional: `STArray` objects can be large, and the wrapper is immutable, so returning a const reference avoids a deep copy while still safely expressing optionality.
+- **`sfValidatorToDisable`** — A variable-length blob (`SF_VL`) holding the public key of a candidate for disabling in the current flag ledger voting round.
+- **`sfValidatorToReEnable`** — A variable-length blob (`SF_VL`) holding the public key of a candidate for re-enablement.
+- **`sfPreviousTxnID`** — A `uint256` hash linking this entry to the last transaction that modified it. This and `sfPreviousTxnLgrSeq` were added retroactively via the `fixPreviousTxnID` amendment, which is why they remain optional rather than required — the `STLedgerEntry` threading machinery in `isThreadedType()` guards their use behind amendment activation.
+- **`sfPreviousTxnLgrSeq`** — A `uint32` identifying the ledger sequence number of that modifying transaction.
+
+## Class Design
+
+The file defines two classes in `namespace xrpl::ledger_entries`.
+
+`NegativeUNL` extends `LedgerEntryBase` and acts as an immutable read-only view. It stores a `std::shared_ptr<SLE const>` (ownership shared with the caller) and exposes typed `get*()` / `has*()` pairs for every field. The constructor enforces correct type at runtime: if the passed `sle->getType()` does not equal `ltNEGATIVE_UNL`, it throws `std::runtime_error`. This guards against accidentally wrapping a wrong SLE type — something impossible to detect at compile time since all SLE objects share the same concrete type.
+
+`NegativeUNLBuilder` extends the CRTP base `LedgerEntryBuilderBase<NegativeUNLBuilder>`, which provides common field setters (`setLedgerIndex`, `setFlags`) and an internal `STObject object_{sfLedgerEntry}`. The builder deliberately does **not** call `object_.set(soTemplate)` on construction. This is a non-obvious but important detail documented in the base class: calling `set(soTemplate)` would pre-populate placeholder `STBase` entries for `soeDEFAULT` fields, which then causes `applyTemplate()` inside the `SLE` constructor to throw a "may not be explicitly set to default" error. By keeping `object_` as a free, template-less object, the builder lets the `SLE` constructor handle default-field initialization cleanly.
+
+The `build(uint256 const& index)` method finalises construction by move-constructing an `SLE` from the accumulated `STObject` and the provided ledger key, then wrapping it in a `NegativeUNL`. The builder also accepts an existing `std::shared_ptr<SLE const>` to copy-initialise from, enabling mutation workflows where a read-modify-write round-trip is needed.
+
+## Relationship to the Negative UNL Subsystem
+
+The `NegativeUNLVote` class in `src/xrpld/app/misc/NegativeUNLVote.cpp` is the primary consumer of this ledger entry's semantics. It reads `sfDisabledValidators` to determine the currently offline set and writes `sfValidatorToDisable` / `sfValidatorToReEnable` when the voting algorithm selects a candidate. The vote happens over flag ledger intervals; only one validator can be added to or removed from the Negative UNL per flag period, which is why the "candidate" fields are singletons rather than arrays.
+
+Worth noting: `NegativeUNL` as a feature (`XRPL_RETIRE_FEATURE(NegativeUNL)` in `features.macro`) is retired — it is permanently active. The ledger entry type and its associated vote machinery are therefore always enabled.
+
+## Type Safety and Error Handling
+
+The paired `has*()` / `get*()` pattern on the wrapper class is the idiomatic approach across all autogenerated entry types: `has*()` is a cheap presence check, while `get*()` returns `std::nullopt` for absent optional fields rather than throwing or returning a default value. All getter methods are marked `[[nodiscard]]` to catch silent discards of optional values. The builder-side type check in the SLE-copying constructor mirrors the wrapper's constructor check, ensuring that both entry points into this type enforce the `ltNEGATIVE_UNL` invariant immediately, rather than allowing a silently wrong object to propagate until a field access fails.

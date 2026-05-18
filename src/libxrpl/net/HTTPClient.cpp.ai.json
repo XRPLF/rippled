@@ -1,0 +1,959 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "sslVerifyDir"
+    },
+    {
+      "lineno": 15,
+      "name": "sslVerifyFile"
+    },
+    {
+      "lineno": 16,
+      "name": "sslVerify"
+    },
+    {
+      "lineno": 17,
+      "name": "j"
+    },
+    {
+      "lineno": 53,
+      "name": "bSSL"
+    },
+    {
+      "lineno": 54,
+      "name": "deqSites"
+    },
+    {
+      "lineno": 55,
+      "name": "build"
+    },
+    {
+      "lineno": 56,
+      "name": "timeout"
+    },
+    {
+      "lineno": 57,
+      "name": "complete"
+    },
+    {
+      "lineno": 42,
+      "name": "strPath"
+    },
+    {
+      "lineno": 43,
+      "name": "sb"
+    },
+    {
+      "lineno": 44,
+      "name": "strHost"
+    },
+    {
+      "lineno": 110,
+      "name": "ecResult"
+    },
+    {
+      "lineno": 138,
+      "name": "result"
+    },
+    {
+      "lineno": 206,
+      "name": "bytes_transferred"
+    },
+    {
+      "lineno": 288,
+      "name": "iStatus"
+    },
+    {
+      "lineno": 289,
+      "name": "strData"
+    },
+    {
+      "lineno": 325,
+      "name": "io_context"
+    },
+    {
+      "lineno": 328,
+      "name": "responseMax"
+    },
+    {
+      "lineno": 338,
+      "name": "strSite"
+    },
+    {
+      "lineno": 353,
+      "name": "setRequest"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "io_context",
+        "port",
+        "maxResponseSize",
+        "j"
+      ],
+      "lineno": 27,
+      "name": "HTTPClientImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "HTTPClient::initializeSSLContext",
+        "httpClientSSLContext.emplace"
+      ],
+      "entry_point": "HTTPClient::initializeSSLContext",
+      "purpose": "Initializes the global SSL context for HTTP clients, validating SSL parameters.",
+      "validation_points": [
+        "httpClientSSLContext validated by std::optional emplace (ensures context is constructed with valid parameters)"
+      ]
+    },
+    {
+      "call_chain": [
+        "HTTPClient::cleanupSSLContext",
+        "httpClientSSLContext.reset"
+      ],
+      "entry_point": "HTTPClient::cleanupSSLContext",
+      "purpose": "Cleans up the global SSL context, ensuring no stale context remains.",
+      "validation_points": [
+        "httpClientSSLContext validated by std::optional::reset (ensures context is destroyed)"
+      ]
+    },
+    {
+      "call_chain": [
+        "HTTPClientImp::request",
+        "HTTPClientImp::httpsNext",
+        "HTTPClientImp::handleResolve",
+        "HTTPClientImp::handleConnect",
+        "HTTPClientImp::handleShutdown"
+      ],
+      "entry_point": "HTTPClientImp::request",
+      "purpose": "Performs an HTTP(S) request, handling async resolution, connection, and shutdown.",
+      "validation_points": [
+        "bSSL validated by type (bool)",
+        "httpClientSSLContext validated by httpClientSSLContext->context() dereference in HTTPClientImp constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "HTTPClientImp::get",
+        "HTTPClientImp::request",
+        "HTTPClientImp::httpsNext"
+      ],
+      "entry_point": "HTTPClientImp::get",
+      "purpose": "Convenience wrapper for GET requests, builds request and delegates to request().",
+      "validation_points": [
+        "bSSL validated by type (bool)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "httpClientSSLContext",
+      "flow": [
+        "initializeSSLContext (emplace)",
+        "HTTPClientImp constructor (httpClientSSLContext->context())",
+        "used in mSocket initialization"
+      ],
+      "origin": "static std::optional<HTTPClientSSLContext> httpClientSSLContext (file-scope variable)",
+      "transformations": [
+        "Constructed with sslVerifyDir, sslVerifyFile, sslVerify, Journal",
+        "Dereferenced for context()"
+      ],
+      "validated_at": "initializeSSLContext (emplace), HTTPClientImp constructor (dereference)"
+    },
+    {
+      "field": "bSSL",
+      "flow": [
+        "HTTPClientImp::request (parameter)",
+        "assigned to mSSL",
+        "used in connection logic (not shown in snippet, but implied in connection handling)"
+      ],
+      "origin": "request/get function parameter",
+      "transformations": [
+        "Direct assignment"
+      ],
+      "validated_at": "request/get (type validation: bool)"
+    },
+    {
+      "field": "io_context",
+      "flow": [
+        "passed to HTTPClientImp constructor",
+        "used to initialize mSocket, mResolver, mDeadline"
+      ],
+      "origin": "HTTPClientImp constructor parameter",
+      "transformations": [
+        "No transformation, direct usage"
+      ],
+      "validated_at": "constructor parameter type"
+    },
+    {
+      "field": "port",
+      "flow": [
+        "passed to HTTPClientImp constructor",
+        "assigned to mPort",
+        "used in Query construction in httpsNext"
+      ],
+      "origin": "HTTPClientImp constructor parameter",
+      "transformations": [
+        "converted to string for Query"
+      ],
+      "validated_at": "constructor parameter type"
+    },
+    {
+      "field": "maxResponseSize",
+      "flow": [
+        "passed to HTTPClientImp constructor",
+        "assigned to maxResponseSize_"
+      ],
+      "origin": "HTTPClientImp constructor parameter",
+      "transformations": [
+        "No transformation"
+      ],
+      "validated_at": "constructor parameter type"
+    },
+    {
+      "field": "Journal j",
+      "flow": [
+        "passed to HTTPClientImp constructor",
+        "assigned to j_",
+        "used in JLOG(j_.trace())"
+      ],
+      "origin": "HTTPClientImp constructor parameter",
+      "transformations": [
+        "No transformation"
+      ],
+      "validated_at": "constructor parameter type"
+    }
+  ],
+  "description": "Implements an HTTP/HTTPS client for fetching web pages, with SSL support, asynchronous operations, and timeout handling, as part of the xrpl (XRP Ledger) codebase.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "bSSL",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field bSSL validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for bSSL",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates bSSL automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "deqSites",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field deqSites validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for deqSites",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates deqSites automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "timeout",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field timeout validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for timeout",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates timeout automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strPath",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strPath validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for strPath",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates strPath automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "strHost",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field strHost validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for strHost",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates strHost automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "io_context",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field io_context validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for io_context",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates io_context automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "port",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field port validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for port",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates port automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "maxResponseSize",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field maxResponseSize validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for maxResponseSize",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates maxResponseSize automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Journal",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Journal validated by C++ type system, std::optional, constructor exceptions",
+      "issue_pattern": "Missing validation for Journal",
+      "why_false_positive": "C++ type system, std::optional, constructor exceptions validates Journal automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "httpClientSSLContext",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional emplace at HTTPClient::initializeSSLContext",
+      "issue_pattern": "Missing empty string validation for httpClientSSLContext",
+      "why_false_positive": "std::optional emplace validates httpClientSSLContext for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "httpClientSSLContext",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::optional emplace at HTTPClient::initializeSSLContext",
+      "issue_pattern": "Missing type validation for httpClientSSLContext",
+      "why_false_positive": "std::optional emplace validates httpClientSSLContext type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "httpClientSSLContext",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional::reset at HTTPClient::cleanupSSLContext",
+      "issue_pattern": "Missing empty string validation for httpClientSSLContext",
+      "why_false_positive": "std::optional::reset validates httpClientSSLContext for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "httpClientSSLContext",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::optional::reset at HTTPClient::cleanupSSLContext",
+      "issue_pattern": "Missing type validation for httpClientSSLContext",
+      "why_false_positive": "std::optional::reset validates httpClientSSLContext type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "io_context, port, maxResponseSize, Journal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "constructor parameter types at HTTPClientImp::HTTPClientImp (constructor)",
+      "issue_pattern": "Missing empty string validation for io_context, port, maxResponseSize, Journal",
+      "why_false_positive": "constructor parameter types validates io_context, port, maxResponseSize, Journal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "io_context, port, maxResponseSize, Journal",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "constructor parameter types at HTTPClientImp::HTTPClientImp (constructor)",
+      "issue_pattern": "Missing type validation for io_context, port, maxResponseSize, Journal",
+      "why_false_positive": "constructor parameter types validates io_context, port, maxResponseSize, Journal type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "httpClientSSLContext",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "httpClientSSLContext->context() dereference at HTTPClientImp::HTTPClientImp (constructor)",
+      "issue_pattern": "Missing empty string validation for httpClientSSLContext",
+      "why_false_positive": "httpClientSSLContext->context() dereference validates httpClientSSLContext for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "bSSL",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type (bool) at HTTPClientImp::request",
+      "issue_pattern": "Missing empty string validation for bSSL",
+      "why_false_positive": "type (bool) validates bSSL for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "bSSL",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type (bool) at HTTPClientImp::request",
+      "issue_pattern": "Missing type validation for bSSL",
+      "why_false_positive": "type (bool) validates bSSL type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "deqSites",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type (std::deque<std::string>) at HTTPClientImp::request",
+      "issue_pattern": "Missing empty string validation for deqSites",
+      "why_false_positive": "type (std::deque<std::string>) validates deqSites for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "deqSites",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type (std::deque<std::string>) at HTTPClientImp::request",
+      "issue_pattern": "Missing type validation for deqSites",
+      "why_false_positive": "type (std::deque<std::string>) validates deqSites type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "timeout",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type (std::chrono::seconds) at HTTPClientImp::request",
+      "issue_pattern": "Missing empty string validation for timeout",
+      "why_false_positive": "type (std::chrono::seconds) validates timeout for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "timeout",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type (std::chrono::seconds) at HTTPClientImp::request",
+      "issue_pattern": "Missing type validation for timeout",
+      "why_false_positive": "type (std::chrono::seconds) validates timeout type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "strPath, strHost",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type (std::string) at HTTPClientImp::makeGet",
+      "issue_pattern": "Missing empty string validation for strPath, strHost",
+      "why_false_positive": "type (std::string) validates strPath, strHost for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "strPath, strHost",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type (std::string) at HTTPClientImp::makeGet",
+      "issue_pattern": "Missing type validation for strPath, strHost",
+      "why_false_positive": "type (std::string) validates strPath, strHost type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/net/HTTPClient.cpp",
+  "functions": [
+    {
+      "args": [
+        "sslVerifyDir",
+        "sslVerifyFile",
+        "sslVerify",
+        "j"
+      ],
+      "lineno": 13,
+      "name": "HTTPClient::initializeSSLContext"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "HTTPClient::cleanupSSLContext"
+    },
+    {
+      "args": [
+        "strPath",
+        "sb",
+        "strHost"
+      ],
+      "lineno": 41,
+      "name": "HTTPClientImp::makeGet"
+    },
+    {
+      "args": [
+        "bSSL",
+        "deqSites",
+        "build",
+        "timeout",
+        "complete"
+      ],
+      "lineno": 52,
+      "name": "HTTPClientImp::request"
+    },
+    {
+      "args": [
+        "bSSL",
+        "deqSites",
+        "strPath",
+        "timeout",
+        "complete"
+      ],
+      "lineno": 67,
+      "name": "HTTPClientImp::get"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "HTTPClientImp::httpsNext"
+    },
+    {
+      "args": [
+        "ecResult"
+      ],
+      "lineno": 109,
+      "name": "HTTPClientImp::handleDeadline"
+    },
+    {
+      "args": [
+        "ecResult"
+      ],
+      "lineno": 130,
+      "name": "HTTPClientImp::handleShutdown"
+    },
+    {
+      "args": [
+        "ecResult",
+        "result"
+      ],
+      "lineno": 137,
+      "name": "HTTPClientImp::handleResolve"
+    },
+    {
+      "args": [
+        "ecResult"
+      ],
+      "lineno": 159,
+      "name": "HTTPClientImp::handleConnect"
+    },
+    {
+      "args": [
+        "ecResult"
+      ],
+      "lineno": 186,
+      "name": "HTTPClientImp::handleRequest"
+    },
+    {
+      "args": [
+        "ecResult",
+        "bytes_transferred"
+      ],
+      "lineno": 205,
+      "name": "HTTPClientImp::handleWrite"
+    },
+    {
+      "args": [
+        "ecResult",
+        "bytes_transferred"
+      ],
+      "lineno": 222,
+      "name": "HTTPClientImp::handleHeader"
+    },
+    {
+      "args": [
+        "ecResult",
+        "bytes_transferred"
+      ],
+      "lineno": 266,
+      "name": "HTTPClientImp::handleData"
+    },
+    {
+      "args": [
+        "ecResult",
+        "iStatus",
+        "strData"
+      ],
+      "lineno": 287,
+      "name": "HTTPClientImp::invokeComplete"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "deqSites",
+        "port",
+        "strPath",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 324,
+      "name": "HTTPClient::get"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "strSite",
+        "port",
+        "strPath",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 337,
+      "name": "HTTPClient::get"
+    },
+    {
+      "args": [
+        "bSSL",
+        "io_context",
+        "strSite",
+        "port",
+        "setRequest",
+        "responseMax",
+        "timeout",
+        "complete",
+        "j"
+      ],
+      "lineno": 351,
+      "name": "HTTPClient::request"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested via integration or functional tests that exercise HTTP(S) client behavior, such as in test files named HTTPClient_test.cpp or integration tests for network fetches. However, direct unit tests for validation logic (e.g., SSL context initialization, parameter type validation) may be limited or absent. Edge cases such as invalid SSL parameters, missing context, or improper cleanup may not be fully covered unless explicitly tested in negative test cases. Exception handling paths (e.g., boost::system::system_error) may also lack direct test coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "bSSL",
+      "deqSites",
+      "timeout",
+      "strPath",
+      "strHost",
+      "io_context",
+      "port",
+      "maxResponseSize",
+      "Journal"
+    ],
+    "framework": "C++ type system, std::optional, constructor exceptions",
+    "validation_layer": "entry_point (constructor/initialization), business_logic (SSL context usage)"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::bad_alloc or constructor exception",
+      "field": "httpClientSSLContext",
+      "location": "HTTPClient::initializeSSLContext",
+      "validated_by": "std::optional emplace",
+      "validates": [
+        "Ensures HTTPClientSSLContext can be constructed with given parameters"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "none (safe reset)",
+      "field": "httpClientSSLContext",
+      "location": "HTTPClient::cleanupSSLContext",
+      "validated_by": "std::optional::reset",
+      "validates": [
+        "Ensures SSL context is cleaned up and not used after reset"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::bad_alloc or constructor exception",
+      "field": "io_context, port, maxResponseSize, Journal",
+      "location": "HTTPClientImp::HTTPClientImp (constructor)",
+      "validated_by": "constructor parameter types",
+      "validates": [
+        "Ensures correct types for constructor parameters"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::bad_optional_access (if not initialized)",
+      "field": "httpClientSSLContext",
+      "location": "HTTPClientImp::HTTPClientImp (constructor)",
+      "validated_by": "httpClientSSLContext->context() dereference",
+      "validates": [
+        "Ensures SSL context is initialized before use"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (C++ type system)",
+      "field": "bSSL",
+      "location": "HTTPClientImp::request",
+      "validated_by": "type (bool)",
+      "validates": [
+        "Ensures SSL flag is boolean"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (C++ type system)",
+      "field": "deqSites",
+      "location": "HTTPClientImp::request",
+      "validated_by": "type (std::deque<std::string>)",
+      "validates": [
+        "Ensures list of sites is a deque of strings"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (C++ type system)",
+      "field": "timeout",
+      "location": "HTTPClientImp::request",
+      "validated_by": "type (std::chrono::seconds)",
+      "validates": [
+        "Ensures timeout is a chrono duration"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (C++ type system)",
+      "field": "strPath, strHost",
+      "location": "HTTPClientImp::makeGet",
+      "validated_by": "type (std::string)",
+      "validates": [
+        "Ensures path and host are strings"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

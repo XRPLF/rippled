@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "amount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "CounterImpl"
+    }
+  ],
+  "description": "Defines the CounterImpl abstract base class for implementing a counter metric in the beast::insight namespace, providing an interface for incrementing the counter and managing its lifetime via shared pointers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/CounterImpl.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~CounterImpl"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 14,
+      "name": "increment"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 5,
+      "name": "insight"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "LivecacheBase"
+    },
+    {
+      "args": [
+        "endpoint_"
+      ],
+      "lineno": 28,
+      "name": "Element"
+    },
+    {
+      "args": [
+        "list"
+      ],
+      "lineno": 44,
+      "name": "Hop"
+    },
+    {
+      "args": [
+        "clock",
+        "journal",
+        "alloc"
+      ],
+      "lineno": 98,
+      "name": "Livecache"
+    },
+    {
+      "args": [
+        "alloc"
+      ],
+      "lineno": 120,
+      "name": "hops_t"
+    }
+  ],
+  "description": "Implements the Livecache class for PeerFinder, which manages a short-lived cache of relayed Endpoint messages, organizing them by hop count and providing expiration, insertion, and statistics functionality.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Livecache.h",
+  "functions": [
+    {
+      "args": [
+        "clock",
+        "journal",
+        "alloc"
+      ],
+      "lineno": 109,
+      "name": "Livecache"
+    },
+    {
+      "args": [],
+      "lineno": 163,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "expire"
+    },
+    {
+      "args": [
+        "ep"
+      ],
+      "lineno": 191,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 227,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 253,
+      "name": "shuffle"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "histogram"
+    },
+    {
+      "args": [
+        "alloc"
+      ],
+      "lineno": 274,
+      "name": "hops_t"
+    },
+    {
+      "args": [
+        "e"
+      ],
+      "lineno": 279,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "e",
+        "numHops"
+      ],
+      "lineno": 292,
+      "name": "reinsert"
+    },
+    {
+      "args": [
+        "e"
+      ],
+      "lineno": 307,
+      "name": "remove"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 17,
+      "name": "PeerFinder"
+    },
+    {
+      "lineno": 20,
+      "name": "detail"
+    }
+  ]
+}

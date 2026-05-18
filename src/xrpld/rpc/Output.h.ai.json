@@ -1,0 +1,35 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "s"
+    },
+    {
+      "lineno": 11,
+      "name": "b"
+    }
+  ],
+  "classes": [],
+  "description": "Defines a utility for outputting strings in the xrpl::RPC namespace, including a function to create an output functor that appends to a std::string.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/Output.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 9,
+      "name": "stringOutput"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "RPC"
+    }
+  ]
+}

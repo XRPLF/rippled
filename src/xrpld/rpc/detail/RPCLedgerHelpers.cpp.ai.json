@@ -1,0 +1,505 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ledgerFromRequest",
+        "ledgerFromHash | ledgerFromIndex | getLedger"
+      ],
+      "entry_point": "ledgerFromRequest",
+      "purpose": "Validates and resolves a ledger reference from RPC JSON parameters (ledger, ledger_hash, ledger_index) and retrieves the corresponding ledger object.",
+      "validation_points": [
+        "ledgerFromRequest: checks for mutually exclusive fields, type checks, and dispatches to ledgerFromHash or ledgerFromIndex for further validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "ledgerFromHash",
+        "getLedger"
+      ],
+      "entry_point": "ledgerFromHash",
+      "purpose": "Validates a ledger hash (hex string), parses it, and retrieves the ledger by hash.",
+      "validation_points": [
+        "ledgerFromHash: validates hex string, parses hash"
+      ]
+    },
+    {
+      "call_chain": [
+        "ledgerFromIndex",
+        "getLedger"
+      ],
+      "entry_point": "ledgerFromIndex",
+      "purpose": "Validates a ledger index (string or number), parses it, and retrieves the ledger by index or shortcut.",
+      "validation_points": [
+        "ledgerFromIndex: validates string/number, checks for special values (current, validated, closed), parses to uint32"
+      ]
+    },
+    {
+      "call_chain": [
+        "isValidatedOld"
+      ],
+      "entry_point": "isValidatedOld",
+      "purpose": "Checks if the validated ledger is considered 'old' based on age.",
+      "validation_points": [
+        "isValidatedOld: checks standalone mode, compares ledger age"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger",
+      "flow": [
+        "context.params['ledger']",
+        "ledgerFromRequest",
+        "ledgerFromHash or ledgerFromIndex",
+        "getLedger"
+      ],
+      "origin": "context.params['ledger']",
+      "transformations": [
+        "Type checked (string/number)",
+        "If string of length 64: treated as hash",
+        "Else: treated as index or shortcut"
+      ],
+      "validated_at": "ledgerFromRequest"
+    },
+    {
+      "field": "ledger_hash",
+      "flow": [
+        "context.params['ledger_hash']",
+        "ledgerFromRequest",
+        "ledgerFromHash",
+        "getLedger"
+      ],
+      "origin": "context.params['ledger_hash']",
+      "transformations": [
+        "Type checked (string)",
+        "Parsed as hex string to uint256"
+      ],
+      "validated_at": "ledgerFromHash"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "context.params['ledger_index']",
+        "ledgerFromRequest",
+        "ledgerFromIndex",
+        "getLedger"
+      ],
+      "origin": "context.params['ledger_index']",
+      "transformations": [
+        "Type checked (string/number)",
+        "If string: checked for 'current', 'validated', 'closed'",
+        "Else: parsed as uint32"
+      ],
+      "validated_at": "ledgerFromIndex"
+    }
+  ],
+  "description": "This file provides helper functions for looking up and acquiring ledgers in the XRPL server, handling both JSON and gRPC contexts, validating input parameters, and returning appropriate error codes or ledger data.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger validated by jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex",
+      "issue_pattern": "Missing validation for ledger",
+      "why_false_positive": "jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex validates ledger automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledgerFromHash (template function) at ledgerFromHash",
+      "issue_pattern": "Missing empty string validation for ledger_hash",
+      "why_false_positive": "ledgerFromHash (template function) validates ledger_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger_hash",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "ledgerFromHash (template function) at ledgerFromHash",
+      "issue_pattern": "Missing format validation for ledger_hash",
+      "why_false_positive": "ledgerFromHash (template function) validates ledger_hash format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledgerFromIndex (template function) at ledgerFromIndex",
+      "issue_pattern": "Missing empty string validation for ledger_index",
+      "why_false_positive": "ledgerFromIndex (template function) validates ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledgerFromRequest (template function) at ledgerFromRequest",
+      "issue_pattern": "Missing empty string validation for ledger",
+      "why_false_positive": "ledgerFromRequest (template function) validates ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger, ledger_hash, ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledgerFromRequest (template function) at ledgerFromRequest",
+      "issue_pattern": "Missing empty string validation for ledger, ledger_hash, ledger_index",
+      "why_false_positive": "ledgerFromRequest (template function) validates ledger, ledger_hash, ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCLedgerHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "LedgerMaster& ledgerMaster",
+        "bool standalone"
+      ],
+      "lineno": 10,
+      "name": "isValidatedOld"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "Json::Value hash",
+        "Context const& context",
+        "Json::StaticString const fieldName"
+      ],
+      "lineno": 16,
+      "name": "ledgerFromHash"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "Json::Value indexValue",
+        "Context const& context",
+        "Json::StaticString const fieldName"
+      ],
+      "lineno": 27,
+      "name": "ledgerFromIndex"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "JsonContext const& context"
+      ],
+      "lineno": 44,
+      "name": "ledgerFromRequest"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "GRPCContext<R> const& context"
+      ],
+      "lineno": 104,
+      "name": "ledgerFromRequest"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "org::xrpl::rpc::v1::LedgerSpecifier const& specifier",
+        "Context const& context"
+      ],
+      "lineno": 120,
+      "name": "ledgerFromSpecifier"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "uint256 const& ledgerHash",
+        "Context const& context"
+      ],
+      "lineno": 157,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "uint32_t ledgerIndex",
+        "Context const& context"
+      ],
+      "lineno": 165,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "T& ledger",
+        "LedgerShortcut shortcut",
+        "Context const& context"
+      ],
+      "lineno": 188,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const>& ledger",
+        "JsonContext const& context",
+        "Json::Value& result"
+      ],
+      "lineno": 241,
+      "name": "lookupLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<ReadView const>& ledger",
+        "JsonContext const& context"
+      ],
+      "lineno": 259,
+      "name": "lookupLedger"
+    },
+    {
+      "args": [
+        "RPC::JsonContext const& context"
+      ],
+      "lineno": 266,
+      "name": "getOrAcquireLedger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "The validation logic is central to RPC ledger resolution. Typical test coverage would be in unit tests for RPC handlers (e.g., ledger, account_info, tx, etc.), likely in files such as 'test/rpc/ledger_test.cpp', 'test/rpc/account_info_test.cpp', or similar. These tests should cover valid and invalid combinations of 'ledger', 'ledger_hash', and 'ledger_index', including type errors, mutually exclusive field errors, and edge cases (e.g., invalid hash, out-of-range index, legacy field usage). Gaps may exist if there are no tests for deprecated 'ledger' field, or for malformed input types (e.g., non-string, non-number). Direct unit tests for RPCLedgerHelpers.cpp may be missing if only tested via higher-level RPC tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger",
+      "ledger_hash",
+      "ledger_index"
+    ],
+    "framework": "jss:: (JSON Static String), template-based validation, beast::lexicalCastChecked, uint256::parseHex",
+    "validation_layer": "business_logic (in RPC detail helpers, not at entry point)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "{rpcINVALID_PARAMS, expected_field_message(fieldName, \"hex string\")}",
+      "field": "ledger_hash",
+      "location": "ledgerFromHash",
+      "validated_by": "ledgerFromHash (template function)",
+      "validates": [
+        "Checks if ledger_hash parses as a valid hex string (uint256::parseHex)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "{rpcINVALID_PARAMS, expected_field_message(fieldName, \"string or number\")}",
+      "field": "ledger_index",
+      "location": "ledgerFromIndex",
+      "validated_by": "ledgerFromIndex (template function)",
+      "validates": [
+        "Checks if ledger_index is one of the strings: 'current', 'validated', 'closed'",
+        "If not, attempts to parse as uint32_t using beast::lexicalCastChecked"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "{rpcINVALID_PARAMS, expected_field_message(jss::ledger, \"string or number\")}",
+      "field": "ledger",
+      "location": "ledgerFromRequest",
+      "validated_by": "ledgerFromRequest (template function)",
+      "validates": [
+        "Checks if legacy 'ledger' field is string, unsigned int, or int",
+        "If string and length is 64, treats as hash (delegates to ledgerFromHash)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "{rpcINVALID_PARAMS, \"Exactly one of ... can be specified.\"}",
+      "field": "ledger, ledger_hash, ledger_index",
+      "location": "ledgerFromRequest",
+      "validated_by": "ledgerFromRequest (template function)",
+      "validates": [
+        "Checks that at most one of 'ledger', 'ledger_hash', or 'ledger_index' is present"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

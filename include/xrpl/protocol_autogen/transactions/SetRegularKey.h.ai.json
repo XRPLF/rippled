@@ -1,0 +1,89 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 76,
+      "name": "account"
+    },
+    {
+      "lineno": 76,
+      "name": "sequence"
+    },
+    {
+      "lineno": 76,
+      "name": "fee"
+    },
+    {
+      "lineno": 85,
+      "name": "tx"
+    },
+    {
+      "lineno": 90,
+      "name": "value"
+    },
+    {
+      "lineno": 99,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 99,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "SetRegularKey"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 69,
+      "name": "SetRegularKeyBuilder"
+    }
+  ],
+  "description": "Provides an immutable wrapper and builder for the SetRegularKey transaction type in XRPL, enabling type-safe field access and fluent transaction construction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/SetRegularKey.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getRegularKey"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "hasRegularKey"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 89,
+      "name": "setRegularKey"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 98,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

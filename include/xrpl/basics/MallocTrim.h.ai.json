@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "tag"
+    },
+    {
+      "lineno": 54,
+      "name": "journal"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a facility to attempt to return freed memory to the operating system by invoking malloc_trim on Linux/glibc, along with a report structure for before/after memory metrics.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/MallocTrim.h",
+  "functions": [
+    {
+      "args": [
+        "tag",
+        "journal"
+      ],
+      "lineno": 54,
+      "name": "mallocTrim"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

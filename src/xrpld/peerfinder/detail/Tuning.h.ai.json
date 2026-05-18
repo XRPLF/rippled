@@ -1,0 +1,22 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines heuristically tuned constants and configuration parameters for the PeerFinder component in the XRPL project, including connection policies, bootcache, and livecache settings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Tuning.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "PeerFinder"
+    },
+    {
+      "lineno": 9,
+      "name": "Tuning"
+    }
+  ]
+}

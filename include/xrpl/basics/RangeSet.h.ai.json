@@ -1,0 +1,91 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "low"
+    },
+    {
+      "lineno": 22,
+      "name": "high"
+    },
+    {
+      "lineno": 39,
+      "name": "ci"
+    },
+    {
+      "lineno": 54,
+      "name": "rs"
+    },
+    {
+      "lineno": 73,
+      "name": "rs"
+    },
+    {
+      "lineno": 73,
+      "name": "s"
+    },
+    {
+      "lineno": 120,
+      "name": "rs"
+    },
+    {
+      "lineno": 120,
+      "name": "t"
+    },
+    {
+      "lineno": 120,
+      "name": "minVal"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utilities for working with closed intervals and sets of intervals (ranges) over a domain T, including conversion to/from styled strings and finding missing values in a range set. Uses Boost ICL for interval management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/RangeSet.h",
+  "functions": [
+    {
+      "args": [
+        "low",
+        "high"
+      ],
+      "lineno": 22,
+      "name": "range"
+    },
+    {
+      "args": [
+        "ci"
+      ],
+      "lineno": 39,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "rs"
+      ],
+      "lineno": 54,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "rs",
+        "s"
+      ],
+      "lineno": 73,
+      "name": "from_string"
+    },
+    {
+      "args": [
+        "rs",
+        "t",
+        "minVal"
+      ],
+      "lineno": 120,
+      "name": "prevMissing"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

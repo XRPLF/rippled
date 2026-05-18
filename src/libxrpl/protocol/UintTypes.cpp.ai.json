@@ -1,0 +1,374 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "currency"
+    },
+    {
+      "lineno": 44,
+      "name": "currency"
+    },
+    {
+      "lineno": 44,
+      "name": "code"
+    },
+    {
+      "lineno": 67,
+      "name": "code"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "to_currency(std::string const& code)",
+        "to_currency(Currency& currency, std::string const& code)"
+      ],
+      "entry_point": "to_currency(std::string const& code)",
+      "purpose": "Converts a string currency code to a Currency object, validating the code format.",
+      "validation_points": [
+        "to_currency(Currency&, std::string const&) - Validates code for emptiness, system currency, and allowed charset for 3-char codes"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_currency(Currency& currency, std::string const& code)"
+      ],
+      "entry_point": "to_currency(Currency& currency, std::string const& code)",
+      "purpose": "Directly converts and validates a string code into a Currency object.",
+      "validation_points": [
+        "Checks for empty/system code, 3-char ISO code charset, and falls back to parseHex"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_string(Currency const& currency)"
+      ],
+      "entry_point": "to_string(Currency const& currency)",
+      "purpose": "Converts a Currency object to its string representation, validating internal ISO code if present.",
+      "validation_points": [
+        "Checks for system currency, noCurrency, and validates extracted ISO code for allowed charset"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "code (currency code string)",
+      "flow": [
+        "External input",
+        "to_currency(std::string const& code)",
+        "to_currency(Currency& currency, std::string const& code)",
+        "Currency object"
+      ],
+      "origin": "External input (user, config, network, etc.)",
+      "transformations": [
+        "Checked for emptiness or system code",
+        "If 3-char: validated for allowed charset, copied into Currency at offset",
+        "Else: parsed as hex"
+      ],
+      "validated_at": "to_currency(Currency&, std::string const&)"
+    },
+    {
+      "field": "currency (Currency object)",
+      "flow": [
+        "Constructed Currency",
+        "to_string(Currency const& currency)",
+        "String output"
+      ],
+      "origin": "Constructed via to_currency or direct construction",
+      "transformations": [
+        "Checked for beast::zero (system currency)",
+        "Checked for noCurrency()",
+        "If ISO bits: extract 3-char code, validate charset",
+        "Else: hex string"
+      ],
+      "validated_at": "to_string(Currency const&)"
+    },
+    {
+      "field": "iso (3-char extracted from currency)",
+      "flow": [
+        "Currency object",
+        "to_string(Currency const&)",
+        "Extracted iso string",
+        "Validated and possibly returned"
+      ],
+      "origin": "Extracted from Currency.data() at offset 12",
+      "transformations": [
+        "Extracted as substring",
+        "Validated for allowed charset"
+      ],
+      "validated_at": "to_string(Currency const&)"
+    }
+  ],
+  "description": "Implements functions for converting between string representations and internal representations of XRPL currency codes, including handling ISO-4217 codes and special XRPL currency constants.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "code (currency code string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing empty string validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "code (currency code string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing format validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "code (currency code string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing empty string validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "code (currency code string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing format validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "code (currency code string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing empty string validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "code (currency code string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "to_currency (explicit code) at to_currency(Currency& currency, std::string const& code)",
+      "issue_pattern": "Missing format validation for code (currency code string)",
+      "why_false_positive": "to_currency (explicit code) validates code (currency code string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency (Currency object)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_string (explicit code) at to_string(Currency const& currency)",
+      "issue_pattern": "Missing empty string validation for currency (Currency object)",
+      "why_false_positive": "to_string (explicit code) validates currency (Currency object) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "iso (3-char extracted from currency)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_string (explicit code) at to_string(Currency const& currency)",
+      "issue_pattern": "Missing empty string validation for iso (3-char extracted from currency)",
+      "why_false_positive": "to_string (explicit code) validates iso (3-char extracted from currency) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "iso (3-char extracted from currency)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "to_string (explicit code) at to_string(Currency const& currency)",
+      "issue_pattern": "Missing format validation for iso (3-char extracted from currency)",
+      "why_false_positive": "to_string (explicit code) validates iso (3-char extracted from currency) format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/UintTypes.cpp",
+  "functions": [
+    {
+      "args": [
+        "currency"
+      ],
+      "lineno": 19,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "currency",
+        "code"
+      ],
+      "lineno": 44,
+      "name": "to_currency"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 67,
+      "name": "to_currency"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "xrpCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "noCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "badCurrency"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage would be in protocol or serialization unit tests, e.g., CurrencyTests.cpp, ProtocolTests.cpp, or similar. Tests should cover: valid/invalid 3-char codes, system currency, noCurrency, hex parsing, and to_string roundtrips. Gaps may exist for edge cases: invalid charset in 3-char codes, malformed hex strings, and boundary values for Currency. No test code is shown here, so actual coverage must be checked in the test/ or unittest/ directories.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual/explicit validation)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "code (currency code string)",
+      "location": "to_currency(Currency& currency, std::string const& code)",
+      "validated_by": "to_currency (explicit code)",
+      "validates": [
+        "Checks if code is empty",
+        "Checks if code equals systemCurrencyCode()"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "code (currency code string)",
+      "location": "to_currency(Currency& currency, std::string const& code)",
+      "validated_by": "to_currency (explicit code)",
+      "validates": [
+        "Checks if code contains only allowed characters (isoCharSet) when code.size() == 3"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns value of currency.parseHex(code) (no exception in this file)",
+      "field": "code (currency code string)",
+      "location": "to_currency(Currency& currency, std::string const& code)",
+      "validated_by": "to_currency (explicit code)",
+      "validates": [
+        "If code is not empty and not 3 chars, attempts to parse as hex"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns systemCurrencyCode() or '1' (no exception)",
+      "field": "currency (Currency object)",
+      "location": "to_string(Currency const& currency)",
+      "validated_by": "to_string (explicit code)",
+      "validates": [
+        "Checks if currency == beast::zero (system currency)",
+        "Checks if currency == noCurrency()"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns strHex(currency) (no exception)",
+      "field": "iso (3-char extracted from currency)",
+      "location": "to_string(Currency const& currency)",
+      "validated_by": "to_string (explicit code)",
+      "validates": [
+        "Checks if iso != systemCurrencyCode()",
+        "Checks if iso contains only allowed characters (isoCharSet)"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

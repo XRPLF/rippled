@@ -1,0 +1,135 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "sink"
+    },
+    {
+      "lineno": 13,
+      "name": "prefix"
+    },
+    {
+      "lineno": 18,
+      "name": "journal"
+    },
+    {
+      "lineno": 18,
+      "name": "prefix"
+    },
+    {
+      "lineno": 23,
+      "name": "s"
+    },
+    {
+      "lineno": 28,
+      "name": "level"
+    },
+    {
+      "lineno": 36,
+      "name": "output"
+    },
+    {
+      "lineno": 44,
+      "name": "thresh"
+    },
+    {
+      "lineno": 48,
+      "name": "level"
+    },
+    {
+      "lineno": 48,
+      "name": "text"
+    },
+    {
+      "lineno": 53,
+      "name": "level"
+    },
+    {
+      "lineno": 53,
+      "name": "text"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sink",
+        "prefix"
+      ],
+      "lineno": 10,
+      "name": "WrappedSink"
+    },
+    {
+      "args": [
+        "journal",
+        "prefix"
+      ],
+      "lineno": 17,
+      "name": "WrappedSink"
+    }
+  ],
+  "description": "Defines the WrappedSink class, which wraps a Journal::Sink to prefix its output with a string, allowing log messages to be prefixed while preserving the original sink's behavior.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/WrappedSink.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 23,
+      "name": "prefix"
+    },
+    {
+      "args": [
+        "level"
+      ],
+      "lineno": 28,
+      "name": "active"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "console"
+    },
+    {
+      "args": [
+        "output"
+      ],
+      "lineno": 36,
+      "name": "console"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "threshold"
+    },
+    {
+      "args": [
+        "thresh"
+      ],
+      "lineno": 44,
+      "name": "threshold"
+    },
+    {
+      "args": [
+        "level",
+        "text"
+      ],
+      "lineno": 48,
+      "name": "write"
+    },
+    {
+      "args": [
+        "level",
+        "text"
+      ],
+      "lineno": 53,
+      "name": "writeAlways"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    }
+  ]
+}

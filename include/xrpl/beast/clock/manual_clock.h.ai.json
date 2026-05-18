@@ -1,0 +1,61 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "time_point const& now = time_point(duration(0))"
+      ],
+      "lineno": 15,
+      "name": "manual_clock"
+    }
+  ],
+  "description": "Implements a manual clock for unit testing, allowing manual advancement and setting of time, based on an abstract clock interface.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/clock/manual_clock.h",
+  "functions": [
+    {
+      "args": [
+        "time_point const& now = time_point(duration(0))"
+      ],
+      "lineno": 20,
+      "name": "manual_clock"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "now"
+    },
+    {
+      "args": [
+        "time_point const& when"
+      ],
+      "lineno": 29,
+      "name": "set"
+    },
+    {
+      "args": [
+        "Integer seconds_from_epoch"
+      ],
+      "lineno": 36,
+      "name": "set"
+    },
+    {
+      "args": [
+        "std::chrono::duration<Rep, Period> const& elapsed"
+      ],
+      "lineno": 42,
+      "name": "advance"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "operator++"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    }
+  ]
+}

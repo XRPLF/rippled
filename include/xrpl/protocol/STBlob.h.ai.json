@@ -1,0 +1,141 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "STBlob"
+    }
+  ],
+  "description": "Defines the STBlob class, a variable-length byte string type used in the XRPL protocol, providing serialization, copying, and assignment operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STBlob.h",
+  "functions": [
+    {
+      "args": [
+        "STBlob const& rhs"
+      ],
+      "lineno": 27,
+      "name": "STBlob"
+    },
+    {
+      "args": [
+        "SField const& f",
+        "void const* data",
+        "std::size_t size"
+      ],
+      "lineno": 29,
+      "name": "STBlob"
+    },
+    {
+      "args": [
+        "SField const& f",
+        "Buffer&& b"
+      ],
+      "lineno": 30,
+      "name": "STBlob"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 31,
+      "name": "STBlob"
+    },
+    {
+      "args": [
+        "SerialIter&",
+        "SField const& name"
+      ],
+      "lineno": 32,
+      "name": "STBlob"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "data"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 46,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 49,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "Slice const& slice"
+      ],
+      "lineno": 55,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "value"
+    },
+    {
+      "args": [
+        "Buffer&& buffer"
+      ],
+      "lineno": 61,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "Buffer&& b"
+      ],
+      "lineno": 64,
+      "name": "setValue"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 68,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 69,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

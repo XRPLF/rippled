@@ -1,0 +1,420 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "checkTxPermission"
+      ],
+      "entry_point": "checkTxPermission",
+      "purpose": "Checks if a delegate has permission for a given transaction type.",
+      "validation_points": [
+        "Explicit null check on delegate at function start",
+        "Implicit validation of permissionArray by iterating over it",
+        "Implicit validation of permission[sfPermissionValue] by field access"
+      ]
+    },
+    {
+      "call_chain": [
+        "loadGranularPermission"
+      ],
+      "entry_point": "loadGranularPermission",
+      "purpose": "Loads granular permissions for a delegate and transaction type into a set.",
+      "validation_points": [
+        "Explicit null check on delegate at function start",
+        "Implicit validation of permissionArray by iterating over it",
+        "Implicit validation of permission[sfPermissionValue] by field access"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "delegate (std::shared_ptr<SLE const>)",
+      "flow": [
+        "Input argument",
+        "Explicit null check",
+        "Used to call getFieldArray(sfPermissions)"
+      ],
+      "origin": "Passed as argument to both functions (likely from ledger lookup elsewhere)",
+      "transformations": [
+        "Checked for null",
+        "Used to extract permissionArray"
+      ],
+      "validated_at": "Function entry (explicit null check)"
+    },
+    {
+      "field": "permissionArray (STArray)",
+      "flow": [
+        "Extracted from delegate",
+        "Iterated over in for loop"
+      ],
+      "origin": "delegate->getFieldArray(sfPermissions)",
+      "transformations": [
+        "None (assumed valid if present)"
+      ],
+      "validated_at": "Implicitly validated by iteration (no explicit check for array existence or type)"
+    },
+    {
+      "field": "permission[sfPermissionValue]",
+      "flow": [
+        "Accessed in for loop",
+        "Compared to txPermission (in checkTxPermission)",
+        "Cast to GranularPermissionType and compared to txType (in loadGranularPermission)"
+      ],
+      "origin": "Each element of permissionArray",
+      "transformations": [
+        "Read as integer",
+        "Cast to enum (GranularPermissionType) in loadGranularPermission"
+      ],
+      "validated_at": "Implicitly validated by field access (no explicit check for field existence)"
+    },
+    {
+      "field": "txPermission",
+      "flow": [
+        "Computed from transaction",
+        "Compared to permissionValue"
+      ],
+      "origin": "tx.getTxnType() + 1",
+      "transformations": [
+        "Incremented by 1"
+      ],
+      "validated_at": "Not explicitly validated (assumes tx.getTxnType() returns valid value)"
+    },
+    {
+      "field": "granularPermissions (std::unordered_set<GranularPermissionType>&)",
+      "flow": [
+        "Initially empty",
+        "granularValue inserted if type matches txType"
+      ],
+      "origin": "Output parameter to loadGranularPermission",
+      "transformations": [
+        "granularValue cast and inserted"
+      ],
+      "validated_at": "No explicit validation (assumes set is valid)"
+    }
+  ],
+  "description": "This file provides helper functions for checking and loading delegate permissions related to transaction types in the XRPL ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "delegate (std::shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at checkTxPermission",
+      "issue_pattern": "Missing empty string validation for delegate (std::shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates delegate (std::shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit: iterated over, assumed valid if present at checkTxPermission",
+      "issue_pattern": "Missing empty string validation for permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+      "why_false_positive": "implicit: iterated over, assumed valid if present validates permissionArray (STArray from delegate->getFieldArray(sfPermissions)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "permission[sfPermissionValue]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit: field access, assumes field exists in each permission at checkTxPermission",
+      "issue_pattern": "Missing empty string validation for permission[sfPermissionValue]",
+      "why_false_positive": "implicit: field access, assumes field exists in each permission validates permission[sfPermissionValue] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "delegate (std::shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null check at loadGranularPermission",
+      "issue_pattern": "Missing empty string validation for delegate (std::shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null check validates delegate (std::shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit: iterated over, assumed valid if present at loadGranularPermission",
+      "issue_pattern": "Missing empty string validation for permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+      "why_false_positive": "implicit: iterated over, assumed valid if present validates permissionArray (STArray from delegate->getFieldArray(sfPermissions)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "permission[sfPermissionValue]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit: field access, assumes field exists in each permission at loadGranularPermission",
+      "issue_pattern": "Missing empty string validation for permission[sfPermissionValue]",
+      "why_false_positive": "implicit: field access, assumes field exists in each permission validates permission[sfPermissionValue] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "granularValue (cast from permissionValue)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_cast<GranularPermissionType> at loadGranularPermission",
+      "issue_pattern": "Missing empty string validation for granularValue (cast from permissionValue)",
+      "why_false_positive": "static_cast<GranularPermissionType> validates granularValue (cast from permissionValue) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "granularValue (cast from permissionValue)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "static_cast<GranularPermissionType> at loadGranularPermission",
+      "issue_pattern": "Missing type validation for granularValue (cast from permissionValue)",
+      "why_false_positive": "static_cast<GranularPermissionType> validates granularValue (cast from permissionValue) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "type (Permission::getInstance().getGranularTxType(granularValue))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer check (if type && *type == txType) at loadGranularPermission",
+      "issue_pattern": "Missing empty string validation for type (Permission::getInstance().getGranularTxType(granularValue))",
+      "why_false_positive": "pointer check (if type && *type == txType) validates type (Permission::getInstance().getGranularTxType(granularValue)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/delegate/DelegateUtils.cpp",
+  "functions": [
+    {
+      "args": [
+        "delegate",
+        "tx"
+      ],
+      "lineno": 5,
+      "name": "checkTxPermission"
+    },
+    {
+      "args": [
+        "delegate",
+        "txType",
+        "granularPermissions"
+      ],
+      "lineno": 20,
+      "name": "loadGranularPermission"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These utility functions are likely tested indirectly via higher-level transaction processing or permission-checking tests. Direct unit tests for checkTxPermission and loadGranularPermission may exist in files such as 'test/tx/Delegate_test.cpp', 'test/ledger/DelegateHelpers_test.cpp', or similar. However, the code relies on implicit validation for permissionArray and permission fields, which may not be robustly tested for malformed or missing data. There is no explicit test coverage for cases where permissionArray is missing or contains malformed entries. Null delegate handling is explicitly tested by the code, but test coverage for edge cases (e.g., empty permissionArray, missing sfPermissionValue) should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, some use of xrpl/protocol types)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_DELEGATE_PERMISSION (error code, not exception)",
+      "field": "delegate (std::shared_ptr<SLE const>)",
+      "location": "checkTxPermission",
+      "validated_by": "explicit null check",
+      "validates": [
+        "delegate pointer is not null"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (empty array just results in error code)",
+      "field": "permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+      "location": "checkTxPermission",
+      "validated_by": "implicit: iterated over, assumed valid if present",
+      "validates": [
+        "permission array exists and is iterable"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (if field missing, likely throws or returns default)",
+      "field": "permission[sfPermissionValue]",
+      "location": "checkTxPermission",
+      "validated_by": "implicit: field access, assumes field exists in each permission",
+      "validates": [
+        "permission entry contains sfPermissionValue"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (function returns early)",
+      "field": "delegate (std::shared_ptr<SLE const>)",
+      "location": "loadGranularPermission",
+      "validated_by": "explicit null check",
+      "validates": [
+        "delegate pointer is not null"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (empty array just results in no permissions loaded)",
+      "field": "permissionArray (STArray from delegate->getFieldArray(sfPermissions))",
+      "location": "loadGranularPermission",
+      "validated_by": "implicit: iterated over, assumed valid if present",
+      "validates": [
+        "permission array exists and is iterable"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (if field missing, likely throws or returns default)",
+      "field": "permission[sfPermissionValue]",
+      "location": "loadGranularPermission",
+      "validated_by": "implicit: field access, assumes field exists in each permission",
+      "validates": [
+        "permission entry contains sfPermissionValue"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "none (C++ static_cast, may cause UB if out of range)",
+      "field": "granularValue (cast from permissionValue)",
+      "location": "loadGranularPermission",
+      "validated_by": "static_cast<GranularPermissionType>",
+      "validates": [
+        "permissionValue is convertible to GranularPermissionType"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (skips if not matching)",
+      "field": "type (Permission::getInstance().getGranularTxType(granularValue))",
+      "location": "loadGranularPermission",
+      "validated_by": "pointer check (if type && *type == txType)",
+      "validates": [
+        "granular permission type matches txType"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

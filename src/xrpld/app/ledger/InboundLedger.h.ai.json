@@ -1,0 +1,233 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "app"
+    },
+    {
+      "lineno": 24,
+      "name": "hash"
+    },
+    {
+      "lineno": 25,
+      "name": "seq"
+    },
+    {
+      "lineno": 26,
+      "name": "reason"
+    },
+    {
+      "lineno": 27,
+      "name": "clock_type"
+    },
+    {
+      "lineno": 28,
+      "name": "peerSet"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "hash",
+        "seq",
+        "reason",
+        "clock_type",
+        "peerSet"
+      ],
+      "lineno": 11,
+      "name": "InboundLedger"
+    }
+  ],
+  "description": "Defines the InboundLedger class, which manages the acquisition of a ledger from peers in the XRPL network, handling data reception, peer management, and completion/failure states.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/InboundLedger.h",
+  "functions": [
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 32,
+      "name": "update"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "isComplete"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "isFailed"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getLedger"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getSeq"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "checkLocal"
+    },
+    {
+      "args": [
+        "collectionLock"
+      ],
+      "lineno": 57,
+      "name": "init"
+    },
+    {
+      "args": [
+        "Peer",
+        "TMLedgerData"
+      ],
+      "lineno": 59,
+      "name": "gotData"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 65,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "runData"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "touch"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "getLastAction"
+    },
+    {
+      "args": [
+        "nodes",
+        "reason"
+      ],
+      "lineno": 82,
+      "name": "filterNodes"
+    },
+    {
+      "args": [
+        "Peer",
+        "TriggerReason"
+      ],
+      "lineno": 85,
+      "name": "trigger"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getNeededHashes"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "addPeers"
+    },
+    {
+      "args": [
+        "srcDB"
+      ],
+      "lineno": 91,
+      "name": "tryDB"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "done"
+    },
+    {
+      "args": [
+        "progress",
+        "peerSetLock"
+      ],
+      "lineno": 95,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getPeerCount"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "pmDowncast"
+    },
+    {
+      "args": [
+        "peer",
+        "data"
+      ],
+      "lineno": 102,
+      "name": "processData"
+    },
+    {
+      "args": [
+        "data"
+      ],
+      "lineno": 104,
+      "name": "takeHeader"
+    },
+    {
+      "args": [
+        "packet",
+        "SHAMapAddNode"
+      ],
+      "lineno": 106,
+      "name": "receiveNode"
+    },
+    {
+      "args": [
+        "data",
+        "SHAMapAddNode"
+      ],
+      "lineno": 108,
+      "name": "takeTxRootNode"
+    },
+    {
+      "args": [
+        "data",
+        "SHAMapAddNode"
+      ],
+      "lineno": 110,
+      "name": "takeAsRootNode"
+    },
+    {
+      "args": [
+        "max",
+        "filter"
+      ],
+      "lineno": 112,
+      "name": "neededTxHashes"
+    },
+    {
+      "args": [
+        "max",
+        "filter"
+      ],
+      "lineno": 114,
+      "name": "neededStateHashes"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

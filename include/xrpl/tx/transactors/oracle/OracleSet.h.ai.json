@@ -1,0 +1,62 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 22,
+      "name": "ctx"
+    },
+    {
+      "lineno": 25,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 15,
+      "name": "OracleSet"
+    }
+  ],
+  "description": "Defines the OracleSet transactor class for creating or updating Oracle objects in the XRPL, conforming to XLS-47d.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/oracle/OracleSet.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 18,
+      "name": "OracleSet"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

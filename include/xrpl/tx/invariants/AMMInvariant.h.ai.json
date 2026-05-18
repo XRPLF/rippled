@@ -1,0 +1,119 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "ValidAMM"
+    }
+  ],
+  "description": "Defines the ValidAMM class for validating Automated Market Maker (AMM) operations in the XRPL ledger, including methods for finalizing and checking invariants on AMM-related transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/AMMInvariant.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "ValidAMM"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 20,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 23,
+      "name": "finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 27,
+      "name": "finalizeBid"
+    },
+    {
+      "args": [
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 28,
+      "name": "finalizeVote"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "ReadView const&",
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 29,
+      "name": "finalizeCreate"
+    },
+    {
+      "args": [
+        "bool",
+        "TER",
+        "beast::Journal const&"
+      ],
+      "lineno": 30,
+      "name": "finalizeDelete"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "ReadView const&",
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 31,
+      "name": "finalizeDeposit"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "ReadView const&",
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 34,
+      "name": "finalizeWithdraw"
+    },
+    {
+      "args": [
+        "bool",
+        "beast::Journal const&"
+      ],
+      "lineno": 36,
+      "name": "finalizeDEX"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "ReadView const&",
+        "ZeroAllowed",
+        "beast::Journal const&"
+      ],
+      "lineno": 37,
+      "name": "generalInvariant"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

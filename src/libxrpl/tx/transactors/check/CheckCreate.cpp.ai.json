@@ -1,0 +1,531 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "CheckCreate::preflight"
+      ],
+      "entry_point": "CheckCreate::preflight",
+      "purpose": "Performs stateless validation of the CheckCreate transaction before it is accepted for further processing.",
+      "validation_points": [
+        "Check for sfAccount == sfDestination (self-check)",
+        "Check sendMax is legal and positive",
+        "Check sendMax asset is not badAsset",
+        "Check sfExpiration is present and nonzero"
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCreate::preclaim"
+      ],
+      "entry_point": "CheckCreate::preclaim",
+      "purpose": "Performs contextual validation (requires ledger state) before the transaction is applied.",
+      "validation_points": [
+        "Check destination account exists",
+        "Check destination account flags (lsfDisallowIncomingCheck, lsfRequireDestTag)",
+        "Check destination is not a pseudo-account",
+        "Check sendMax is not globally frozen",
+        "Check trustline is not frozen (if exists)"
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCreate::doApply"
+      ],
+      "entry_point": "CheckCreate::doApply",
+      "purpose": "Applies the transaction to the ledger (not shown in provided code, but standard for XRPL transactors).",
+      "validation_points": [
+        "Assumes preflight and preclaim have passed; may have additional checks"
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCreate::checkExtraFeatures"
+      ],
+      "entry_point": "CheckCreate::checkExtraFeatures",
+      "purpose": "Checks for feature flags and transaction field compatibility (e.g., MPTokens).",
+      "validation_points": [
+        "Checks if featureMPTokensV2 is enabled or if sendMax does not hold MPTIssue"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfAccount]",
+        "Compared to sfDestination in preflight",
+        "Used as srcId in preclaim"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Direct comparison",
+        "Assignment to srcId"
+      ],
+      "validated_at": "preflight (self-check), preclaim (used for trustline checks)"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfDestination]",
+        "Compared to sfAccount in preflight",
+        "Used as dstId in preclaim",
+        "Used to look up destination account in ledger"
+      ],
+      "origin": "ctx.tx[sfDestination] (transaction input)",
+      "transformations": [
+        "Direct comparison",
+        "Assignment to dstId",
+        "Ledger lookup"
+      ],
+      "validated_at": "preflight (self-check), preclaim (account existence, flags, pseudo-account, dest tag)"
+    },
+    {
+      "field": "sfSendMax",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx.getFieldAmount(sfSendMax)",
+        "STAmount sendMax in preflight and preclaim"
+      ],
+      "origin": "ctx.tx.getFieldAmount(sfSendMax) (transaction input)",
+      "transformations": [
+        "isLegalNet(sendMax)",
+        "sendMax.signum()",
+        "sendMax.asset()",
+        "sendMax.native()",
+        "sendMax.getIssuer()"
+      ],
+      "validated_at": "preflight (isLegalNet, signum, badAsset), preclaim (frozen checks, trustline checks)"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "Transaction JSON (optional)",
+        "ctx.tx[~sfExpiration]",
+        "optExpiry in preflight"
+      ],
+      "origin": "ctx.tx[~sfExpiration] (optional transaction input)",
+      "transformations": [
+        "Optional presence check",
+        "Value check (*optExpiry == 0)"
+      ],
+      "validated_at": "preflight (nonzero check)"
+    },
+    {
+      "field": "sfDestinationTag",
+      "flow": [
+        "Transaction JSON (optional)",
+        "ctx.tx.isFieldPresent(sfDestinationTag)",
+        "Checked in preclaim if lsfRequireDestTag is set"
+      ],
+      "origin": "ctx.tx[sfDestinationTag] (optional transaction input)",
+      "transformations": [
+        "Presence check"
+      ],
+      "validated_at": "preclaim (required if lsfRequireDestTag is set on destination)"
+    }
+  ],
+  "description": "Implements the CheckCreate transaction logic for the XRPL, including preflight validation, preclaim checks, and ledger application for creating a Check object.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by Custom validation in transaction preflight/preclaim methods",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "Custom validation in transaction preflight/preclaim methods validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDestination",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDestination validated by Custom validation in transaction preflight/preclaim methods",
+      "issue_pattern": "Missing validation for sfDestination",
+      "why_false_positive": "Custom validation in transaction preflight/preclaim methods validates sfDestination automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSendMax",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSendMax validated by Custom validation in transaction preflight/preclaim methods",
+      "issue_pattern": "Missing validation for sfSendMax",
+      "why_false_positive": "Custom validation in transaction preflight/preclaim methods validates sfSendMax automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfExpiration",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfExpiration validated by Custom validation in transaction preflight/preclaim methods",
+      "issue_pattern": "Missing validation for sfExpiration",
+      "why_false_positive": "Custom validation in transaction preflight/preclaim methods validates sfExpiration automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDestinationTag",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDestinationTag validated by Custom validation in transaction preflight/preclaim methods",
+      "issue_pattern": "Missing validation for sfDestinationTag",
+      "why_false_positive": "Custom validation in transaction preflight/preclaim methods validates sfDestinationTag automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount, sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison at CheckCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfDestination",
+      "why_false_positive": "explicit comparison validates sfAccount, sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSendMax",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet(sendMax), sendMax.signum() > 0 at CheckCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfSendMax",
+      "why_false_positive": "isLegalNet(sendMax), sendMax.signum() > 0 validates sfSendMax for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSendMax.asset()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "badAsset() == sendMax.asset() at CheckCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfSendMax.asset()",
+      "why_false_positive": "badAsset() == sendMax.asset() validates sfSendMax.asset() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[~sfExpiration], *optExpiry == 0 at CheckCreate::preflight",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "ctx.tx[~sfExpiration], *optExpiry == 0 validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfExpiration",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "ctx.tx[~sfExpiration], *optExpiry == 0 at CheckCreate::preflight",
+      "issue_pattern": "Missing range validation for sfExpiration",
+      "why_false_positive": "ctx.tx[~sfExpiration], *optExpiry == 0 validates sfExpiration range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(dstId)) at CheckCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "ctx.view.read(keylet::account(dstId)) validates sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfDisallowIncomingCheck (destination account flags)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "flags & lsfDisallowIncomingCheck at CheckCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for lsfDisallowIncomingCheck (destination account flags)",
+      "why_false_positive": "flags & lsfDisallowIncomingCheck validates lsfDisallowIncomingCheck (destination account flags) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "pseudo-account discriminator (destination)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isPseudoAccount(sleDst) at CheckCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for pseudo-account discriminator (destination)",
+      "why_false_positive": "isPseudoAccount(sleDst) validates pseudo-account discriminator (destination) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestinationTag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "flags & lsfRequireDestTag, ctx.tx.isFieldPresent(sfDestinationTag) at CheckCreate::preclaim",
+      "issue_pattern": "Missing empty string validation for sfDestinationTag",
+      "why_false_positive": "flags & lsfRequireDestTag, ctx.tx.isFieldPresent(sfDestinationTag) validates sfDestinationTag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSendMax (MPTIssue)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!ctx.tx[sfSendMax].holds<MPTIssue>() at CheckCreate::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfSendMax (MPTIssue)",
+      "why_false_positive": "!ctx.tx[sfSendMax].holds<MPTIssue>() validates sfSendMax (MPTIssue) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/check/CheckCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "xrpl::PreflightContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "CheckCreate::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "CheckCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 44,
+      "name": "CheckCreate::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "CheckCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "CheckCreate is a core XRPL transaction type. Typical test coverage is found in unit/integration test files such as 'test/tx/Check_test.cpp', 'test/tx/CheckCreate_test.cpp', or similar. These tests usually cover: self-checks, bad sendMax, bad asset, missing/zero expiration, destination account existence, disallow flags, pseudo-account, dest tag requirements, and frozen asset/trustline scenarios. Gaps may exist for edge cases involving new features (e.g., MPTokens), pseudo-accounts, or complex trustline/freeze interactions. Tests for feature flag gating (featureMPTokensV2) may be missing or incomplete if the feature is new.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAccount",
+      "sfDestination",
+      "sfSendMax",
+      "sfExpiration",
+      "sfDestinationTag"
+    ],
+    "framework": "Custom validation in transaction preflight/preclaim methods",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temREDUNDANT",
+      "field": "sfAccount, sfDestination",
+      "location": "CheckCreate::preflight",
+      "validated_by": "explicit comparison",
+      "validates": [
+        "Check that sender and destination are not the same account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfSendMax",
+      "location": "CheckCreate::preflight",
+      "validated_by": "isLegalNet(sendMax), sendMax.signum() > 0",
+      "validates": [
+        "Check that sendMax is a legal network amount",
+        "Check that sendMax is positive"
+      ],
+      "validation_type": "format, range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_CURRENCY",
+      "field": "sfSendMax.asset()",
+      "location": "CheckCreate::preflight",
+      "validated_by": "badAsset() == sendMax.asset()",
+      "validates": [
+        "Check that sendMax asset is not a bad/currency"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_EXPIRATION",
+      "field": "sfExpiration",
+      "location": "CheckCreate::preflight",
+      "validated_by": "ctx.tx[~sfExpiration], *optExpiry == 0",
+      "validates": [
+        "Check that expiration, if present, is not zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_DST",
+      "field": "sfDestination",
+      "location": "CheckCreate::preclaim",
+      "validated_by": "ctx.view.read(keylet::account(dstId))",
+      "validates": [
+        "Check that destination account exists"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "lsfDisallowIncomingCheck (destination account flags)",
+      "location": "CheckCreate::preclaim",
+      "validated_by": "flags & lsfDisallowIncomingCheck",
+      "validates": [
+        "Check that destination does not disallow incoming checks"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "pseudo-account discriminator (destination)",
+      "location": "CheckCreate::preclaim",
+      "validated_by": "isPseudoAccount(sleDst)",
+      "validates": [
+        "Check that destination is not a pseudo-account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecDST_TAG_NEEDED",
+      "field": "sfDestinationTag",
+      "location": "CheckCreate::preclaim",
+      "validated_by": "flags & lsfRequireDestTag, ctx.tx.isFieldPresent(sfDestinationTag)",
+      "validates": [
+        "Check that destination tag is present if required by destination account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (returns bool, used for feature gating)",
+      "field": "sfSendMax (MPTIssue)",
+      "location": "CheckCreate::checkExtraFeatures",
+      "validated_by": "!ctx.tx[sfSendMax].holds<MPTIssue>()",
+      "validates": [
+        "Check that sendMax is not an MPTIssue unless featureMPTokensV2 is enabled"
+      ],
+      "validation_type": "type, business_logic"
+    }
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "mallocTrim",
+        "readFile (lambda)",
+        "detail::parseStatmRSSkB",
+        "detail::mallocTrimWithPad",
+        "getRusageThread"
+      ],
+      "entry_point": "mallocTrim",
+      "purpose": "Performs a memory trim operation, collects before/after memory usage and page fault stats, and logs/report results.",
+      "validation_points": [
+        "readFile: Validates statm file open with ifs.is_open()",
+        "detail::parseStatmRSSkB: Validates statm file format with istringstream >> long",
+        "detail::parseStatmRSSkB: Validates page size with sysconf(_SC_PAGESIZE)",
+        "getRusageThread: Validates getrusage success by return value"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "statm file contents",
+      "flow": [
+        "readFile",
+        "detail::parseStatmRSSkB"
+      ],
+      "origin": "readFile('/proc/self/statm')",
+      "transformations": [
+        "File is opened and read as string",
+        "String is parsed into fields using istringstream",
+        "Second field (resident pages) is extracted and converted to kB"
+      ],
+      "validated_at": "readFile (file open), detail::parseStatmRSSkB (format and page size)"
+    },
+    {
+      "field": "resident set size (rssBeforeKB, rssAfterKB)",
+      "flow": [
+        "parseStatmRSSkB",
+        "assigned to report.rssBeforeKB / report.rssAfterKB"
+      ],
+      "origin": "detail::parseStatmRSSkB output",
+      "transformations": [
+        "Extracted from statm string, converted from pages to kB"
+      ],
+      "validated_at": "parseStatmRSSkB (format and page size)"
+    },
+    {
+      "field": "struct rusage ru0 / ru1",
+      "flow": [
+        "getRusageThread",
+        "ru0/ru1 fields used for minfltDelta/majfltDelta"
+      ],
+      "origin": "getRusageThread",
+      "transformations": [
+        "getrusage fills struct rusage",
+        "ru_minflt and ru_majflt deltas computed"
+      ],
+      "validated_at": "getRusageThread (return value checked)"
+    },
+    {
+      "field": "report.trimResult",
+      "flow": [
+        "mallocTrimWithPad",
+        "assigned to report.trimResult"
+      ],
+      "origin": "detail::mallocTrimWithPad",
+      "transformations": [
+        "Result of ::malloc_trim syscall"
+      ],
+      "validated_at": "No explicit validation, but only called on supported platforms"
+    }
+  ],
+  "description": "Implements memory trimming and reporting utilities for Linux/glibc platforms, including instrumentation for memory usage and page faults before and after malloc_trim, with logging support.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "statm file open",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::ifstream::is_open() at lambda readFile in mallocTrim",
+      "issue_pattern": "Missing empty string validation for statm file open",
+      "why_false_positive": "std::ifstream::is_open() validates statm file open for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "statm file format",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::istringstream >> long at detail::parseStatmRSSkB",
+      "issue_pattern": "Missing empty string validation for statm file format",
+      "why_false_positive": "std::istringstream >> long validates statm file format for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "statm file format",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::istringstream >> long at detail::parseStatmRSSkB",
+      "issue_pattern": "Missing format validation for statm file format",
+      "why_false_positive": "std::istringstream >> long validates statm file format format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "page size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sysconf(_SC_PAGESIZE) at detail::parseStatmRSSkB",
+      "issue_pattern": "Missing empty string validation for page size",
+      "why_false_positive": "sysconf(_SC_PAGESIZE) validates page size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "page size",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "sysconf(_SC_PAGESIZE) at detail::parseStatmRSSkB",
+      "issue_pattern": "Missing range validation for page size",
+      "why_false_positive": "sysconf(_SC_PAGESIZE) validates page size range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getrusage success",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getrusage return value at getRusageThread",
+      "issue_pattern": "Missing empty string validation for getrusage success",
+      "why_false_positive": "getrusage return value validates getrusage success for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "file handle",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::ifstream",
+      "issue_pattern": "Missing file handle cleanup",
+      "why_false_positive": "std::ifstream provides automatic file handle cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/MallocTrim.cpp",
+  "functions": [
+    {
+      "args": [
+        "ru"
+      ],
+      "lineno": 18,
+      "name": "getRusageThread"
+    },
+    {
+      "args": [
+        "padBytes"
+      ],
+      "lineno": 38,
+      "name": "mallocTrimWithPad"
+    },
+    {
+      "args": [
+        "statm"
+      ],
+      "lineno": 42,
+      "name": "parseStatmRSSkB"
+    },
+    {
+      "args": [
+        "tag",
+        "journal"
+      ],
+      "lineno": 56,
+      "name": "mallocTrim"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic file handle cleanup",
+        "false_positive_risk": "Missing file handle cleanup",
+        "resource": "file handle",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::ifstream"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 33,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 35,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This code is platform-specific (Linux/glibc only). The main entry point is mallocTrim. There is no evidence in this file of direct unit tests or test hooks. The validation code (file open, statm parsing, sysconf, getrusage) is not covered by LCOV (see LCOV_EXCL_LINE/START), suggesting these paths are not exercised by automated tests. Integration or system tests may exist elsewhere, but direct unit test coverage for error/validation paths is likely missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Standard C++/POSIX (no custom validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns empty string",
+      "field": "statm file open",
+      "location": "lambda readFile in mallocTrim",
+      "validated_by": "std::ifstream::is_open()",
+      "validates": [
+        "Checks if /proc/self/statm can be opened before reading"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns -1",
+      "field": "statm file format",
+      "location": "detail::parseStatmRSSkB",
+      "validated_by": "std::istringstream >> long",
+      "validates": [
+        "Checks if statm string can be parsed into two long integers (size, resident)"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns -1",
+      "field": "page size",
+      "location": "detail::parseStatmRSSkB",
+      "validated_by": "sysconf(_SC_PAGESIZE)",
+      "validates": [
+        "Checks if page size is positive"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false",
+      "field": "getrusage success",
+      "location": "getRusageThread",
+      "validated_by": "getrusage return value",
+      "validates": [
+        "Checks if getrusage call for RUSAGE_THREAD succeeds"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

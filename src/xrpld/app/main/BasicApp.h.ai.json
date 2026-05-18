@@ -1,0 +1,33 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "numberOfThreads"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::size_t numberOfThreads"
+      ],
+      "lineno": 8,
+      "name": "BasicApp"
+    }
+  ],
+  "description": "Defines the BasicApp class, which manages a boost::asio::io_context and a thread pool for asynchronous operations, allowing the io_context to outlive its child threads.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/BasicApp.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "get_io_context"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "get_number_of_threads"
+    }
+  ],
+  "language": "c header",
+  "namespaces": []
+}

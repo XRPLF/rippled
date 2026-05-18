@@ -1,0 +1,58 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "STTx"
+    }
+  ],
+  "description": "Defines the STTx class representing a transaction in the XRPL protocol, including methods for construction, serialization, signing, signature checking, and metadata handling.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STTx.h",
+  "functions": [
+    {
+      "args": [
+        "STObject const& st",
+        "std::string&"
+      ],
+      "lineno": 110,
+      "name": "passesLocalChecks"
+    },
+    {
+      "args": [
+        "STTx const& stx"
+      ],
+      "lineno": 119,
+      "name": "sterilize"
+    },
+    {
+      "args": [
+        "STObject const& tx"
+      ],
+      "lineno": 126,
+      "name": "isPseudoTx"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "STTx::getTxnType"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "STTx::getSigningPubKey"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "STTx::getTransactionID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "account"
+    },
+    {
+      "lineno": 31,
+      "name": "multiPath"
+    },
+    {
+      "lineno": 41,
+      "name": "fs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "AccountID const& account, bool multiPath"
+      ],
+      "lineno": 13,
+      "name": "AMMContext"
+    }
+  ],
+  "description": "Defines the AMMContext class, which maintains Automated Market Maker (AMM) state and context during payment engine execution and iterations in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMContext.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "multiPath"
+    },
+    {
+      "args": [
+        "fs"
+      ],
+      "lineno": 41,
+      "name": "setMultiPath"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "setAMMUsed"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "update"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "maxItersReached"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "curIters"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "account"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "clear"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

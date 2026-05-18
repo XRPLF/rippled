@@ -1,0 +1,48 @@
+{
+  "args": [
+    {
+      "lineno": 49,
+      "name": "lhs"
+    },
+    {
+      "lineno": 49,
+      "name": "rhs"
+    },
+    {
+      "lineno": 57,
+      "name": "tx"
+    },
+    {
+      "lineno": 57,
+      "name": "priv"
+    }
+  ],
+  "classes": [],
+  "description": "Defines transaction privilege flags and related utility functions for XRPL invariant checks.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/InvariantCheckPrivilege.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 49,
+      "name": "operator|"
+    },
+    {
+      "args": [
+        "tx",
+        "priv"
+      ],
+      "lineno": 57,
+      "name": "hasPrivilege"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

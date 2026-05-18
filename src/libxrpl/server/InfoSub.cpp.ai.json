@@ -1,0 +1,482 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "source"
+    },
+    {
+      "lineno": 19,
+      "name": "consumer"
+    },
+    {
+      "lineno": 53,
+      "name": "account"
+    },
+    {
+      "lineno": 53,
+      "name": "rt"
+    },
+    {
+      "lineno": 65,
+      "name": "account"
+    },
+    {
+      "lineno": 65,
+      "name": "rt"
+    },
+    {
+      "lineno": 77,
+      "name": "account"
+    },
+    {
+      "lineno": 83,
+      "name": "account"
+    },
+    {
+      "lineno": 93,
+      "name": "req"
+    },
+    {
+      "lineno": 103,
+      "name": "apiVersion"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InfoSub::getApiVersion"
+      ],
+      "entry_point": "InfoSub::getApiVersion",
+      "purpose": "Returns the API version for this InfoSub instance, with validation.",
+      "validation_points": [
+        "XRPL_ASSERT(apiVersion_ > 0) in getApiVersion"
+      ]
+    },
+    {
+      "call_chain": [
+        "InfoSub::setApiVersion"
+      ],
+      "entry_point": "InfoSub::setApiVersion",
+      "purpose": "Sets the API version for this InfoSub instance.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InfoSub::insertSubAccountInfo"
+      ],
+      "entry_point": "InfoSub::insertSubAccountInfo",
+      "purpose": "Adds an account to either realTimeSubscriptions_ or normalSubscriptions_ based on 'rt' flag.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InfoSub::deleteSubAccountInfo"
+      ],
+      "entry_point": "InfoSub::deleteSubAccountInfo",
+      "purpose": "Removes an account from either realTimeSubscriptions_ or normalSubscriptions_ based on 'rt' flag.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InfoSub::insertSubAccountHistory"
+      ],
+      "entry_point": "InfoSub::insertSubAccountHistory",
+      "purpose": "Adds an account to accountHistorySubscriptions_.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InfoSub::deleteSubAccountHistory"
+      ],
+      "entry_point": "InfoSub::deleteSubAccountHistory",
+      "purpose": "Removes an account from accountHistorySubscriptions_.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InfoSub::~InfoSub",
+        "m_source.unsubTransactions",
+        "m_source.unsubRTTransactions",
+        "m_source.unsubLedger",
+        "m_source.unsubManifests",
+        "m_source.unsubServer",
+        "m_source.unsubValidations",
+        "m_source.unsubPeerStatus",
+        "m_source.unsubConsensus",
+        "m_source.unsubAccountInternal",
+        "m_source.unsubAccountHistoryInternal"
+      ],
+      "entry_point": "InfoSub::~InfoSub",
+      "purpose": "Destructor: Unsubscribes this InfoSub from all subscriptions.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "apiVersion_",
+      "flow": [
+        "setApiVersion (external call, likely from RPC or server setup)",
+        "apiVersion_ field is set",
+        "getApiVersion (external/internal call)",
+        "XRPL_ASSERT(apiVersion_ > 0)",
+        "apiVersion_ returned"
+      ],
+      "origin": "Set via InfoSub::setApiVersion(unsigned int apiVersion)",
+      "transformations": [
+        "Direct assignment in setApiVersion",
+        "Validation in getApiVersion"
+      ],
+      "validated_at": "getApiVersion (XRPL_ASSERT)"
+    },
+    {
+      "field": "realTimeSubscriptions_ / normalSubscriptions_",
+      "flow": [
+        "insertSubAccountInfo (external call, likely from subscription logic)",
+        "AccountID inserted into realTimeSubscriptions_ or normalSubscriptions_",
+        "deleteSubAccountInfo (external call)",
+        "AccountID erased from respective set",
+        "~InfoSub (destructor)",
+        "unsubAccountInternal called with current sets"
+      ],
+      "origin": "insertSubAccountInfo(AccountID, bool rt)",
+      "transformations": [
+        "Insertion/removal in sets"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "accountHistorySubscriptions_",
+      "flow": [
+        "insertSubAccountHistory (external call)",
+        "AccountID inserted into accountHistorySubscriptions_",
+        "deleteSubAccountHistory (external call)",
+        "AccountID erased from set",
+        "~InfoSub (destructor)",
+        "unsubAccountHistoryInternal called for each account"
+      ],
+      "origin": "insertSubAccountHistory(AccountID)",
+      "transformations": [
+        "Insertion/removal in set"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "request_",
+      "flow": [
+        "setRequest (external call)",
+        "request_ field set",
+        "getRequest (external/internal call)",
+        "request_ returned",
+        "clearRequest (external/internal call)",
+        "request_ reset"
+      ],
+      "origin": "setRequest(std::shared_ptr<InfoSubRequest>)",
+      "transformations": [
+        "Assignment, reset"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "mSeq",
+      "flow": [
+        "InfoSub constructor",
+        "mSeq assigned",
+        "Used in all subscription/unsubscription calls",
+        "getSeq returns mSeq"
+      ],
+      "origin": "Assigned in InfoSub constructor via assign_id()",
+      "transformations": [
+        "Assignment from assign_id()"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements the InfoSub class, which serves as the primary interface for client operations on the XRPL network, handling subscriptions to various network events and managing client requests.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mSeq (type: std::uint64_t, assigned by assign_id())",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mSeq (type: std::uint64_t, assigned by assign_id()) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for mSeq (type: std::uint64_t, assigned by assign_id())",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates mSeq (type: std::uint64_t, assigned by assign_id()) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "apiVersion_ (unsigned int, but only runtime checked in getApiVersion())",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field apiVersion_ (unsigned int, but only runtime checked in getApiVersion()) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for apiVersion_ (unsigned int, but only runtime checked in getApiVersion())",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates apiVersion_ (unsigned int, but only runtime checked in getApiVersion()) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountID (type safety for account fields in insert/delete functions)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field AccountID (type safety for account fields in insert/delete functions) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for AccountID (type safety for account fields in insert/delete functions)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates AccountID (type safety for account fields in insert/delete functions) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "apiVersion_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at getApiVersion()",
+      "issue_pattern": "Missing empty string validation for apiVersion_",
+      "why_false_positive": "XRPL_ASSERT macro validates apiVersion_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "apiVersion_",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at getApiVersion()",
+      "issue_pattern": "Missing range validation for apiVersion_",
+      "why_false_positive": "XRPL_ASSERT macro validates apiVersion_ range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/InfoSub.cpp",
+  "functions": [
+    {
+      "args": [
+        "Source& source"
+      ],
+      "lineno": 15,
+      "name": "InfoSub"
+    },
+    {
+      "args": [
+        "Source& source",
+        "Consumer consumer"
+      ],
+      "lineno": 19,
+      "name": "InfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "~InfoSub"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getConsumer"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getSeq"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "onSendEmpty"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "bool rt"
+      ],
+      "lineno": 53,
+      "name": "insertSubAccountInfo"
+    },
+    {
+      "args": [
+        "AccountID const& account",
+        "bool rt"
+      ],
+      "lineno": 65,
+      "name": "deleteSubAccountInfo"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 77,
+      "name": "insertSubAccountHistory"
+    },
+    {
+      "args": [
+        "AccountID const& account"
+      ],
+      "lineno": 83,
+      "name": "deleteSubAccountHistory"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "clearRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<InfoSubRequest> const& req"
+      ],
+      "lineno": 93,
+      "name": "setRequest"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getRequest"
+    },
+    {
+      "args": [
+        "unsigned int apiVersion"
+      ],
+      "lineno": 103,
+      "name": "setApiVersion"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "getApiVersion"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, InfoSub is tested indirectly via higher-level server or RPC tests (e.g., subscription/unsubscription, API versioning). The only explicit validation is XRPL_ASSERT in getApiVersion, which would only be tested if getApiVersion is called with an unset or zero apiVersion_. There is likely a gap in direct unit tests for InfoSub's validation logic, especially for apiVersion_ (e.g., negative or zero values). Subscription management is likely covered by integration tests, but explicit validation paths (like XRPL_ASSERT) may not be directly tested unless negative test cases are written.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "mSeq (type: std::uint64_t, assigned by assign_id())",
+      "apiVersion_ (unsigned int, but only runtime checked in getApiVersion())",
+      "AccountID (type safety for account fields in insert/delete functions)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "apiVersion_",
+      "location": "getApiVersion()",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "apiVersion_ must be > 0"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

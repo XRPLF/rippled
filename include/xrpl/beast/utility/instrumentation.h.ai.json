@@ -1,0 +1,9 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines instrumentation and assertion macros for use in XRPL code, providing wrappers for assertions and fuzzing instrumentation, with conditional support for Antithesis SDK or fallback to assert-based macros.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/utility/instrumentation.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": []
+}

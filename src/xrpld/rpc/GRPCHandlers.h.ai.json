@@ -1,0 +1,43 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file declares gRPC handler functions for XRPL ledger-related RPCs, each taking a GRPCContext with a specific protobuf request type and returning a response and gRPC status.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/GRPCHandlers.h",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 17,
+      "name": "doLedgerGrpc"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 20,
+      "name": "doLedgerEntryGrpc"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 23,
+      "name": "doLedgerDataGrpc"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 26,
+      "name": "doLedgerDiffGrpc"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

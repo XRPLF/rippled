@@ -1,0 +1,41 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "ValidLoan"
+    }
+  ],
+  "description": "Defines the ValidLoan class, which enforces invariants to ensure loans are internally consistent, specifically that if PaymentRemaining is zero, PrincipalOutstanding must also be zero.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/LoanInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 22,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 25,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

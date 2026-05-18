@@ -1,0 +1,262 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "name"
+    },
+    {
+      "lineno": 7,
+      "name": "strings"
+    },
+    {
+      "lineno": 17,
+      "name": "results"
+    },
+    {
+      "lineno": 17,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "strings"
+      ],
+      "lineno": 6,
+      "name": "SourceStringsImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SourceStrings::New",
+        "SourceStringsImp::SourceStringsImp",
+        "SourceStringsImp::fetch"
+      ],
+      "entry_point": "SourceStrings::New",
+      "purpose": "Creates a new SourceStringsImp instance and later fetches peer addresses from string list, validating them.",
+      "validation_points": [
+        "SourceStringsImp::fetch: beast::IP::Endpoint::from_string (validates m_strings[i])",
+        "SourceStringsImp::fetch: is_unspecified (validates endpoint validity)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_strings (peer address strings)",
+      "flow": [
+        "SourceStrings::New (input)",
+        "SourceStringsImp::SourceStringsImp (constructor stores in m_strings)",
+        "SourceStringsImp::fetch (reads m_strings[i])",
+        "beast::IP::Endpoint::from_string (parses string to endpoint)",
+        "is_unspecified (checks endpoint validity)",
+        "results.addresses.push_back (stores valid endpoint)"
+      ],
+      "origin": "Passed as 'strings' argument to SourceStrings::New, then to SourceStringsImp::SourceStringsImp",
+      "transformations": [
+        "String parsed to Endpoint object",
+        "Endpoint checked for 'unspecified' (invalid) status"
+      ],
+      "validated_at": "SourceStringsImp::fetch (via from_string and is_unspecified)"
+    },
+    {
+      "field": "ep (beast::IP::Endpoint)",
+      "flow": [
+        "from_string (parses m_strings[i] to ep)",
+        "is_unspecified (checks if ep is valid)",
+        "If valid, pushed to results.addresses"
+      ],
+      "origin": "Created from m_strings[i] via from_string",
+      "transformations": [
+        "String to Endpoint conversion",
+        "Validity check"
+      ],
+      "validated_at": "Immediately after creation in fetch loop"
+    }
+  ],
+  "description": "Implements a source of peer addresses from a list of strings, providing methods to fetch and return valid endpoints for use in peer discovery.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_strings[i] (peer address string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string at SourceStringsImp::fetch",
+      "issue_pattern": "Missing empty string validation for m_strings[i] (peer address string)",
+      "why_false_positive": "beast::IP::Endpoint::from_string validates m_strings[i] (peer address string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m_strings[i] (peer address string)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string at SourceStringsImp::fetch",
+      "issue_pattern": "Missing format validation for m_strings[i] (peer address string)",
+      "why_false_positive": "beast::IP::Endpoint::from_string validates m_strings[i] (peer address string) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ep (endpoint validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "is_unspecified at SourceStringsImp::fetch",
+      "issue_pattern": "Missing empty string validation for ep (endpoint validity)",
+      "why_false_positive": "is_unspecified validates ep (endpoint validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/SourceStrings.cpp",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "strings"
+      ],
+      "lineno": 7,
+      "name": "SourceStringsImp::SourceStringsImp"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "SourceStringsImp::~SourceStringsImp"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "SourceStringsImp::name"
+    },
+    {
+      "args": [
+        "results",
+        "journal"
+      ],
+      "lineno": 17,
+      "name": "SourceStringsImp::fetch"
+    },
+    {
+      "args": [
+        "name",
+        "strings"
+      ],
+      "lineno": 36,
+      "name": "SourceStrings::New"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, this code would be tested via higher-level PeerFinder or SourceStrings tests, possibly in files like 'test/peerfinder/SourceStrings.test.cpp' or integration tests that exercise peer source loading. Gaps: No explicit unit tests for validation logic in this file; edge cases (malformed addresses, duplicates, unspecified endpoints) may not be directly tested unless covered by broader PeerFinder tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "beast::IP::Endpoint",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (invalid endpoints are skipped, not thrown)",
+      "field": "m_strings[i] (peer address string)",
+      "location": "SourceStringsImp::fetch",
+      "validated_by": "beast::IP::Endpoint::from_string",
+      "validates": [
+        "Checks if m_strings[i] is a valid IP endpoint string (IP address and optional port)",
+        "If from_string fails (endpoint is unspecified), the entry is skipped"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (unspecified endpoints are skipped)",
+      "field": "ep (endpoint validity)",
+      "location": "SourceStringsImp::fetch",
+      "validated_by": "is_unspecified",
+      "validates": [
+        "Ensures only specified (valid) endpoints are added to results.addresses"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "Bits"
+    },
+    {
+      "lineno": 23,
+      "name": "n"
+    },
+    {
+      "lineno": 24,
+      "name": "v"
+    },
+    {
+      "lineno": 25,
+      "name": "n"
+    },
+    {
+      "lineno": 25,
+      "name": "v"
+    },
+    {
+      "lineno": 26,
+      "name": "sit"
+    },
+    {
+      "lineno": 26,
+      "name": "name"
+    },
+    {
+      "lineno": 34,
+      "name": "t"
+    },
+    {
+      "lineno": 37,
+      "name": "s"
+    },
+    {
+      "lineno": 44,
+      "name": "Tag"
+    },
+    {
+      "lineno": 44,
+      "name": "v"
+    },
+    {
+      "lineno": 54,
+      "name": "n"
+    },
+    {
+      "lineno": 54,
+      "name": "buf"
+    },
+    {
+      "lineno": 56,
+      "name": "n"
+    },
+    {
+      "lineno": 56,
+      "name": "buf"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SField const& n",
+        "value_type const& v",
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 13,
+      "name": "STBitString"
+    }
+  ],
+  "description": "Defines the STBitString template class for representing fixed-size bit strings as serialized types in the XRPL protocol, along with type aliases for common bit lengths and related methods for serialization, comparison, and value access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STBitString.h",
+  "functions": [
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 23,
+      "name": "STBitString"
+    },
+    {
+      "args": [
+        "value_type const& v"
+      ],
+      "lineno": 24,
+      "name": "STBitString"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "value_type const& v"
+      ],
+      "lineno": 25,
+      "name": "STBitString"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 26,
+      "name": "STBitString"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 34,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 37,
+      "name": "add"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "base_uint<Bits, Tag> const& v"
+      ],
+      "lineno": 44,
+      "name": "setValue"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "value"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "operator value_type"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 54,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 56,
+      "name": "move"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

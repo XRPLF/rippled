@@ -1,0 +1,314 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "lhs"
+    },
+    {
+      "lineno": 23,
+      "name": "rhs"
+    },
+    {
+      "lineno": 29,
+      "name": "lhs"
+    },
+    {
+      "lineno": 29,
+      "name": "rhs"
+    },
+    {
+      "lineno": 35,
+      "name": "lhs"
+    },
+    {
+      "lineno": 35,
+      "name": "rhs"
+    },
+    {
+      "lineno": 41,
+      "name": "lhs"
+    },
+    {
+      "lineno": 41,
+      "name": "rhs"
+    },
+    {
+      "lineno": 47,
+      "name": "flags"
+    },
+    {
+      "lineno": 71,
+      "name": "peer"
+    },
+    {
+      "lineno": 81,
+      "name": "flagsToSet"
+    },
+    {
+      "lineno": 98,
+      "name": "now"
+    },
+    {
+      "lineno": 98,
+      "name": "relayTime"
+    },
+    {
+      "lineno": 106,
+      "name": "now"
+    },
+    {
+      "lineno": 106,
+      "name": "interval"
+    },
+    {
+      "lineno": 132,
+      "name": "key"
+    },
+    {
+      "lineno": 134,
+      "name": "key"
+    },
+    {
+      "lineno": 134,
+      "name": "peer"
+    },
+    {
+      "lineno": 139,
+      "name": "key"
+    },
+    {
+      "lineno": 139,
+      "name": "peer"
+    },
+    {
+      "lineno": 144,
+      "name": "key"
+    },
+    {
+      "lineno": 144,
+      "name": "peer"
+    },
+    {
+      "lineno": 144,
+      "name": "flags"
+    },
+    {
+      "lineno": 148,
+      "name": "key"
+    },
+    {
+      "lineno": 148,
+      "name": "peer"
+    },
+    {
+      "lineno": 148,
+      "name": "flags"
+    },
+    {
+      "lineno": 148,
+      "name": "tx_interval"
+    },
+    {
+      "lineno": 157,
+      "name": "key"
+    },
+    {
+      "lineno": 157,
+      "name": "flags"
+    },
+    {
+      "lineno": 162,
+      "name": "key"
+    },
+    {
+      "lineno": 170,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Setup const& setup",
+        "Stopwatch& clock"
+      ],
+      "lineno": 54,
+      "name": "HashRouter"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "Setup"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "Entry"
+    }
+  ],
+  "description": "Implements a HashRouter class for tracking which hashes have been received by which peers, managing message routing and suppression in a peer-to-peer overlay network. Includes flag management, relay timing, and peer tracking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/HashRouter.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 23,
+      "name": "operator|"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 29,
+      "name": "operator|="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 35,
+      "name": "operator&"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 41,
+      "name": "operator&="
+    },
+    {
+      "args": [
+        "flags"
+      ],
+      "lineno": 47,
+      "name": "any"
+    },
+    {
+      "args": [
+        "peer"
+      ],
+      "lineno": 71,
+      "name": "addPeer"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "getFlags"
+    },
+    {
+      "args": [
+        "flagsToSet"
+      ],
+      "lineno": 81,
+      "name": "setFlags"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "releasePeerSet"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "relayed"
+    },
+    {
+      "args": [
+        "now",
+        "relayTime"
+      ],
+      "lineno": 98,
+      "name": "shouldRelay"
+    },
+    {
+      "args": [
+        "now",
+        "interval"
+      ],
+      "lineno": 106,
+      "name": "shouldProcess"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 132,
+      "name": "addSuppression"
+    },
+    {
+      "args": [
+        "key",
+        "peer"
+      ],
+      "lineno": 134,
+      "name": "addSuppressionPeer"
+    },
+    {
+      "args": [
+        "key",
+        "peer"
+      ],
+      "lineno": 139,
+      "name": "addSuppressionPeerWithStatus"
+    },
+    {
+      "args": [
+        "key",
+        "peer",
+        "flags"
+      ],
+      "lineno": 144,
+      "name": "addSuppressionPeer"
+    },
+    {
+      "args": [
+        "key",
+        "peer",
+        "flags",
+        "tx_interval"
+      ],
+      "lineno": 148,
+      "name": "shouldProcess"
+    },
+    {
+      "args": [
+        "key",
+        "flags"
+      ],
+      "lineno": 157,
+      "name": "setFlags"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 162,
+      "name": "getFlags"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 170,
+      "name": "shouldRelay"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 177,
+      "name": "emplace"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

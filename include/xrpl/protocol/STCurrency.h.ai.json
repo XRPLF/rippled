@@ -1,0 +1,86 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "STCurrency"
+    }
+  ],
+  "description": "Defines the STCurrency class for representing and manipulating currency types in the XRPL protocol, including serialization, comparison, and JSON conversion utilities.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STCurrency.h",
+  "functions": [
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 56,
+      "name": "currencyFromJson"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "STCurrency::currency"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "STCurrency::value"
+    },
+    {
+      "args": [
+        "Currency const& currency"
+      ],
+      "lineno": 69,
+      "name": "STCurrency::setCurrency"
+    },
+    {
+      "args": [
+        "STCurrency const& lhs",
+        "STCurrency const& rhs"
+      ],
+      "lineno": 74,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STCurrency const& lhs",
+        "STCurrency const& rhs"
+      ],
+      "lineno": 79,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "STCurrency const& lhs",
+        "STCurrency const& rhs"
+      ],
+      "lineno": 84,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "STCurrency const& lhs",
+        "Currency const& rhs"
+      ],
+      "lineno": 89,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STCurrency const& lhs",
+        "Currency const& rhs"
+      ],
+      "lineno": 94,
+      "name": "operator<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

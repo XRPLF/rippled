@@ -1,0 +1,217 @@
+{
+  "args": [
+    {
+      "lineno": 61,
+      "name": "os"
+    },
+    {
+      "lineno": 61,
+      "name": "pk"
+    },
+    {
+      "lineno": 66,
+      "name": "lhs"
+    },
+    {
+      "lineno": 66,
+      "name": "rhs"
+    },
+    {
+      "lineno": 77,
+      "name": "h"
+    },
+    {
+      "lineno": 93,
+      "name": "type"
+    },
+    {
+      "lineno": 112,
+      "name": "sig"
+    },
+    {
+      "lineno": 132,
+      "name": "slice"
+    },
+    {
+      "lineno": 135,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 142,
+      "name": "digest"
+    },
+    {
+      "lineno": 142,
+      "name": "mustBeFullyCanonical"
+    },
+    {
+      "lineno": 149,
+      "name": "m"
+    },
+    {
+      "lineno": 153,
+      "name": "PublicKey"
+    },
+    {
+      "lineno": 157,
+      "name": "pk"
+    },
+    {
+      "lineno": 160,
+      "name": "address"
+    },
+    {
+      "lineno": 160,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 160,
+      "name": "id"
+    },
+    {
+      "lineno": 179,
+      "name": "v"
+    },
+    {
+      "lineno": 179,
+      "name": "field"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "PublicKey(const& other)",
+        "operator=(const PublicKey& other)",
+        "PublicKey(Slice const& slice)"
+      ],
+      "lineno": 27,
+      "name": "PublicKey"
+    }
+  ],
+  "description": "Defines the PublicKey class and related functions for handling XRPL public keys, including creation, serialization, comparison, hashing, signature verification, and type detection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/PublicKey.h",
+  "functions": [
+    {
+      "args": [
+        "os",
+        "pk"
+      ],
+      "lineno": 61,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 66,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 71,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "h",
+        "pk"
+      ],
+      "lineno": 77,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "type",
+        "pk"
+      ],
+      "lineno": 93,
+      "name": "toBase58"
+    },
+    {
+      "args": [
+        "sig"
+      ],
+      "lineno": 112,
+      "name": "ecdsaCanonicality"
+    },
+    {
+      "args": [
+        "slice"
+      ],
+      "lineno": 132,
+      "name": "publicKeyType"
+    },
+    {
+      "args": [
+        "publicKey"
+      ],
+      "lineno": 135,
+      "name": "publicKeyType"
+    },
+    {
+      "args": [
+        "publicKey",
+        "digest",
+        "sig",
+        "mustBeFullyCanonical"
+      ],
+      "lineno": 142,
+      "name": "verifyDigest"
+    },
+    {
+      "args": [
+        "publicKey",
+        "m",
+        "sig"
+      ],
+      "lineno": 149,
+      "name": "verify"
+    },
+    {
+      "args": [
+        "PublicKey"
+      ],
+      "lineno": 153,
+      "name": "calcNodeID"
+    },
+    {
+      "args": [
+        "pk"
+      ],
+      "lineno": 157,
+      "name": "calcAccountID"
+    },
+    {
+      "args": [
+        "address",
+        "publicKey",
+        "id"
+      ],
+      "lineno": 160,
+      "name": "getFingerprint"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 179,
+      "name": "getOrThrow"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 177,
+      "name": "Json"
+    }
+  ]
+}

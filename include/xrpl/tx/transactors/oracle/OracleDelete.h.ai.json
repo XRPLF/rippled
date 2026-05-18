@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "ApplyContext& ctx"
+    },
+    {
+      "lineno": 24,
+      "name": "PreflightContext const& ctx"
+    },
+    {
+      "lineno": 27,
+      "name": "PreclaimContext const& ctx"
+    },
+    {
+      "lineno": 33,
+      "name": "ApplyView& view"
+    },
+    {
+      "lineno": 33,
+      "name": "std::shared_ptr<SLE> const& sle"
+    },
+    {
+      "lineno": 33,
+      "name": "AccountID const& account"
+    },
+    {
+      "lineno": 33,
+      "name": "beast::Journal j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 17,
+      "name": "OracleDelete"
+    }
+  ],
+  "description": "Implements the OracleDelete transactor for deleting Oracle objects in the XRPL, conforming to XLS-47d requirements.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/oracle/OracleDelete.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 20,
+      "name": "OracleDelete"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& sle",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 33,
+      "name": "deleteOracle"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

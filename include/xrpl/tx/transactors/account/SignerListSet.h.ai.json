@@ -1,0 +1,95 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 13,
+      "name": "SignerListSet"
+    }
+  ],
+  "description": "Implements the SignerListSet transaction for the XRPL, handling the setting and removal of signer lists for multi-signature accounts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/account/SignerListSet.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 30,
+      "name": "preflight"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "doApply"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "preCompute"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "ApplyView& view",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 39,
+      "name": "removeFromLedger"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 46,
+      "name": "determineOperation"
+    },
+    {
+      "args": [
+        "std::uint32_t quorum",
+        "std::vector<SignerEntries::SignerEntry> const& signers",
+        "AccountID const& account",
+        "beast::Journal j",
+        "Rules const&"
+      ],
+      "lineno": 51,
+      "name": "validateQuorumAndSignerEntries"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "replaceSignerList"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "destroySignerList"
+    },
+    {
+      "args": [
+        "SLE::pointer const& ledgerEntry",
+        "std::uint32_t flags"
+      ],
+      "lineno": 62,
+      "name": "writeSignersToSLE"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

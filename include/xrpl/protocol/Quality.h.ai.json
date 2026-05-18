@@ -1,0 +1,103 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "TAmounts"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "Quality"
+    }
+  ],
+  "description": "Defines types and logic for representing and manipulating currency exchange qualities and paired amounts in the XRPL protocol, including the Quality class for offer book calculations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Quality.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 54,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 61,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "q1",
+        "q2"
+      ],
+      "lineno": 210,
+      "name": "relativeDistance"
+    },
+    {
+      "args": [
+        "amount",
+        "limit",
+        "limit_cmp",
+        "ceil_function",
+        "roundUp"
+      ],
+      "lineno": 229,
+      "name": "ceil_TAmounts_helper"
+    },
+    {
+      "args": [
+        "amount",
+        "limit"
+      ],
+      "lineno": 246,
+      "name": "ceil_in"
+    },
+    {
+      "args": [
+        "amount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 256,
+      "name": "ceil_in_strict"
+    },
+    {
+      "args": [
+        "amount",
+        "limit"
+      ],
+      "lineno": 266,
+      "name": "ceil_out"
+    },
+    {
+      "args": [
+        "amount",
+        "limit",
+        "roundUp"
+      ],
+      "lineno": 276,
+      "name": "ceil_out_strict"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 285,
+      "name": "composed_quality"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

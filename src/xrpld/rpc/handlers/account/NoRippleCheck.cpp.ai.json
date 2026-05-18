@@ -1,0 +1,558 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "context"
+    },
+    {
+      "lineno": 11,
+      "name": "txArray"
+    },
+    {
+      "lineno": 12,
+      "name": "accountID"
+    },
+    {
+      "lineno": 13,
+      "name": "sequence"
+    },
+    {
+      "lineno": 14,
+      "name": "ledger"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doNoRippleCheck",
+        "readLimitField",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "ledger->read(keylet::account(accountID))",
+        "fillTransaction (conditionally)"
+      ],
+      "entry_point": "doNoRippleCheck",
+      "purpose": "Handles the 'noripple_check' RPC request, validates input, fetches ledger/account, checks trust lines, and optionally prepares recommended transactions.",
+      "validation_points": [
+        "doNoRippleCheck: params.isMember(jss::account)",
+        "doNoRippleCheck: params.isMember(\"role\")",
+        "doNoRippleCheck: params[jss::account].isString()",
+        "doNoRippleCheck: role == \"gateway\" || role == \"user\"",
+        "doNoRippleCheck: readLimitField(limit, ...)",
+        "doNoRippleCheck: params[jss::transactions].isBool() (apiVersion > 1)",
+        "parseBase58<AccountID>: validates account string format",
+        "ledger->read(keylet::account(accountID)): validates account exists"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "params[jss::account]",
+        "doNoRippleCheck: isMember, isString validation",
+        "parseBase58<AccountID>: string \u2192 AccountID",
+        "ledger->read(keylet::account(accountID)): fetch SLE",
+        "used for trust line checks, transaction construction"
+      ],
+      "origin": "params[jss::account] (JSON RPC input)",
+      "transformations": [
+        "String validated as present and string type",
+        "Parsed to AccountID (base58 decode)",
+        "Used as key to fetch ledger entry"
+      ],
+      "validated_at": "doNoRippleCheck (isMember, isString), parseBase58<AccountID> (format), ledger->read (existence)"
+    },
+    {
+      "field": "role",
+      "flow": [
+        "params[\"role\"]",
+        "doNoRippleCheck: isMember validation",
+        "doNoRippleCheck: asString()",
+        "doNoRippleCheck: compared to \"gateway\"/\"user\""
+      ],
+      "origin": "params[\"role\"] (JSON RPC input)",
+      "transformations": [
+        "String validated as present",
+        "String compared to allowed values"
+      ],
+      "validated_at": "doNoRippleCheck (isMember, value check)"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "params[\"limit\"]",
+        "doNoRippleCheck: readLimitField(limit, ...)",
+        "limit used to restrict number of problems reported"
+      ],
+      "origin": "params[\"limit\"] (JSON RPC input, optional)",
+      "transformations": [
+        "Validated and clamped by readLimitField"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "transactions",
+      "flow": [
+        "params[\"transactions\"]",
+        "doNoRippleCheck: isMember, asBool()",
+        "doNoRippleCheck: isBool() check for apiVersion > 1",
+        "Controls whether recommended transactions are generated"
+      ],
+      "origin": "params[\"transactions\"] (JSON RPC input, optional)",
+      "transformations": [
+        "Boolean validated (apiVersion > 1: must be bool)",
+        "Used as flag for transaction generation"
+      ],
+      "validated_at": "doNoRippleCheck (isBool() for apiVersion > 1)"
+    }
+  ],
+  "description": "Implements the doNoRippleCheck RPC handler for the XRPL, which checks an account's no ripple settings and recommends or generates transactions to fix configuration issues.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account (presence, type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account (presence, type) validated by xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+      "issue_pattern": "Missing validation for account (presence, type)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger) validates account (presence, type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "role (presence, enum)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field role (presence, enum) validated by xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+      "issue_pattern": "Missing validation for role (presence, enum)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger) validates role (presence, enum) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "limit (type, range via readLimitField)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field limit (type, range via readLimitField) validated by xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+      "issue_pattern": "Missing validation for limit (type, range via readLimitField)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger) validates limit (type, range via readLimitField) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transactions (type for API v2+)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transactions (type for API v2+) validated by xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+      "issue_pattern": "Missing validation for transactions (type for API v2+)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger) validates transactions (type for API v2+) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash|ledger_index (existence, format via lookupLedger)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash|ledger_index (existence, format via lookupLedger) validated by xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+      "issue_pattern": "Missing validation for ledger_hash|ledger_index (existence, format via lookupLedger)",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger) validates ledger_hash|ledger_index (existence, format via lookupLedger) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::account) at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params.isMember(jss::account) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(\"role\") at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for role",
+      "why_false_positive": "params.isMember(\"role\") validates role for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::account].isString() at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "account",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::account].isString() at doNoRippleCheck",
+      "issue_pattern": "Missing type validation for account",
+      "why_false_positive": "params[jss::account].isString() validates account type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "role == \"gateway\" || role == \"user\" at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for role",
+      "why_false_positive": "role == \"gateway\" || role == \"user\" validates role for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "limit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "readLimitField(limit, RPC::Tuning::noRippleCheck, context) at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for limit",
+      "why_false_positive": "readLimitField(limit, RPC::Tuning::noRippleCheck, context) validates limit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transactions",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::transactions].isBool() (for apiVersion > 1u) at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for transactions",
+      "why_false_positive": "params[jss::transactions].isBool() (for apiVersion > 1u) validates transactions for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "transactions",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::transactions].isBool() (for apiVersion > 1u) at doNoRippleCheck",
+      "issue_pattern": "Missing type validation for transactions",
+      "why_false_positive": "params[jss::transactions].isBool() (for apiVersion > 1u) validates transactions type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash|ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger(ledger, context) at doNoRippleCheck",
+      "issue_pattern": "Missing empty string validation for ledger_hash|ledger_index",
+      "why_false_positive": "RPC::lookupLedger(ledger, context) validates ledger_hash|ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/NoRippleCheck.cpp",
+  "functions": [
+    {
+      "args": [
+        "context",
+        "txArray",
+        "accountID",
+        "sequence",
+        "ledger"
+      ],
+      "lineno": 9,
+      "name": "fillTransaction"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 27,
+      "name": "doNoRippleCheck"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in files like 'noripple_check_test.cpp', 'Account_test.cpp', or generic RPC handler test suites. Tests should cover: missing/invalid 'account' and 'role', invalid account format, non-existent account, invalid 'limit', invalid 'transactions' type (especially for apiVersion > 1), and correct/incorrect role values. Gaps may exist if tests do not cover all combinations of missing/invalid fields, or do not test apiVersion-specific validation (e.g., 'transactions' type enforcement).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "account (presence, type)",
+      "role (presence, enum)",
+      "limit (type, range via readLimitField)",
+      "transactions (type for API v2+)",
+      "ledger_hash|ledger_index (existence, format via lookupLedger)"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, readLimitField, lookupLedger)",
+    "validation_layer": "entry_point (doNoRippleCheck is the RPC handler)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(\"account\")",
+      "field": "account",
+      "location": "doNoRippleCheck",
+      "validated_by": "params.isMember(jss::account)",
+      "validates": [
+        "Checks if 'account' field is present in input params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(\"role\")",
+      "field": "role",
+      "location": "doNoRippleCheck",
+      "validated_by": "params.isMember(\"role\")",
+      "validates": [
+        "Checks if 'role' field is present in input params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::account)",
+      "field": "account",
+      "location": "doNoRippleCheck",
+      "validated_by": "params[jss::account].isString()",
+      "validates": [
+        "Checks if 'account' field is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(\"role\")",
+      "field": "role",
+      "location": "doNoRippleCheck",
+      "validated_by": "role == \"gateway\" || role == \"user\"",
+      "validates": [
+        "Checks if 'role' is either 'gateway' or 'user'"
+      ],
+      "validation_type": "business_logic|enum"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "*err (error returned by readLimitField)",
+      "field": "limit",
+      "location": "doNoRippleCheck",
+      "validated_by": "readLimitField(limit, RPC::Tuning::noRippleCheck, context)",
+      "validates": [
+        "Checks if 'limit' is a valid integer",
+        "Checks if 'limit' is within allowed range (as per RPC::Tuning::noRippleCheck)"
+      ],
+      "validation_type": "range|type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error(jss::transactions)",
+      "field": "transactions",
+      "location": "doNoRippleCheck",
+      "validated_by": "params[jss::transactions].isBool() (for apiVersion > 1u)",
+      "validates": [
+        "Checks if 'transactions' field is a boolean (for API version > 1)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "result (error returned by lookupLedger)",
+      "field": "ledger_hash|ledger_index",
+      "location": "doNoRippleCheck",
+      "validated_by": "RPC::lookupLedger(ledger, context)",
+      "validates": [
+        "Checks if ledger_hash or ledger_index (if provided) are valid and refer to an existing ledger"
+      ],
+      "validation_type": "format|existence|business_logic"
+    }
+  ]
+}

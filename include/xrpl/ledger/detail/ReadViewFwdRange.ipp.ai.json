@@ -1,0 +1,406 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "other"
+    },
+    {
+      "lineno": 12,
+      "name": "other"
+    },
+    {
+      "lineno": 18,
+      "name": "view"
+    },
+    {
+      "lineno": 18,
+      "name": "impl"
+    },
+    {
+      "lineno": 25,
+      "name": "other"
+    },
+    {
+      "lineno": 37,
+      "name": "other"
+    },
+    {
+      "lineno": 48,
+      "name": "other"
+    },
+    {
+      "lineno": 62,
+      "name": "other"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ReadViewFwdRange<ValueType>::iterator::operator=="
+      ],
+      "entry_point": "ReadViewFwdRange<ValueType>::iterator::operator==",
+      "purpose": "Compares two iterators for equality, ensuring they refer to the same view and position.",
+      "validation_points": [
+        "XRPL_ASSERT(view_ == other.view_, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ReadViewFwdRange<ValueType>::iterator::operator*",
+        "impl_->dereference()"
+      ],
+      "entry_point": "ReadViewFwdRange<ValueType>::iterator::operator*",
+      "purpose": "Dereferences the iterator to access the value it points to, using a cache for efficiency.",
+      "validation_points": [
+        "impl_ is assumed non-null (no explicit validation here, but dereference would crash if null)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ReadViewFwdRange<ValueType>::iterator::operator++",
+        "impl_->increment()"
+      ],
+      "entry_point": "ReadViewFwdRange<ValueType>::iterator::operator++",
+      "purpose": "Advances the iterator to the next element.",
+      "validation_points": [
+        "impl_ is assumed non-null (no explicit validation here, but increment would crash if null)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ReadViewFwdRange<ValueType>::iterator::operator!=",
+        "ReadViewFwdRange<ValueType>::iterator::operator=="
+      ],
+      "entry_point": "ReadViewFwdRange<ValueType>::iterator::operator!=",
+      "purpose": "Checks if two iterators are not equal by negating operator==.",
+      "validation_points": [
+        "XRPL_ASSERT in operator=="
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "view_",
+      "flow": [
+        "constructor parameter",
+        "assigned to view_",
+        "used in operator== for validation"
+      ],
+      "origin": "Passed into iterator constructor (ReadView const* view)",
+      "transformations": [
+        "Copied or moved in copy/move constructors and assignment operators"
+      ],
+      "validated_at": "operator== (XRPL_ASSERT)"
+    },
+    {
+      "field": "impl_",
+      "flow": [
+        "constructor parameter",
+        "assigned to impl_",
+        "copied/moved in copy/move constructors and assignment operators",
+        "used in operator==, operator*, operator++, etc."
+      ],
+      "origin": "Passed into iterator constructor (std::unique_ptr<iter_base> impl)",
+      "transformations": [
+        "Moved, copied (via impl_->copy()), dereferenced, incremented"
+      ],
+      "validated_at": "operator== (nullptr check), copy/assignment (nullptr check)"
+    },
+    {
+      "field": "cache_",
+      "flow": [
+        "default-initialized",
+        "assigned in operator* if not set (cache_ = impl_->dereference())",
+        "reset in operator++"
+      ],
+      "origin": "Default-initialized (likely std::optional or similar)",
+      "transformations": [
+        "Set, moved, reset"
+      ],
+      "validated_at": "No explicit validation; usage guarded by logic"
+    }
+  ],
+  "description": "This file implements the methods for the iterator class nested within the ReadViewFwdRange template, providing forward iteration over a range in a type-erased manner for the XRPL ledger's ReadView.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "RAII-managed pointers (std::unique_ptr, std::optional-like cache_)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field RAII-managed pointers (std::unique_ptr, std::optional-like cache_) validated by XRPL_ASSERT macro (custom assertion, not a validation framework)",
+      "issue_pattern": "Missing validation for RAII-managed pointers (std::unique_ptr, std::optional-like cache_)",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a validation framework) validates RAII-managed pointers (std::unique_ptr, std::optional-like cache_) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "view_ (ReadView const*)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at operator== (equality operator)",
+      "issue_pattern": "Missing empty string validation for view_ (ReadView const*)",
+      "why_false_positive": "XRPL_ASSERT macro validates view_ (ReadView const*) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "impl_ (std::unique_ptr<iter_base>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at operator== (equality operator)",
+      "issue_pattern": "Missing empty string validation for impl_ (std::unique_ptr<iter_base>)",
+      "why_false_positive": "nullptr check validates impl_ (std::unique_ptr<iter_base>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "impl_ (std::unique_ptr<iter_base>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "nullptr check at operator== (equality operator)",
+      "issue_pattern": "Missing type validation for impl_ (std::unique_ptr<iter_base>)",
+      "why_false_positive": "nullptr check validates impl_ (std::unique_ptr<iter_base>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "impl_ (std::unique_ptr<iter_base>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at operator* (dereference operator)",
+      "issue_pattern": "Missing empty string validation for impl_ (std::unique_ptr<iter_base>)",
+      "why_false_positive": "nullptr check validates impl_ (std::unique_ptr<iter_base>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "impl_ (std::unique_ptr<iter_base>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "nullptr check at operator* (dereference operator)",
+      "issue_pattern": "Missing type validation for impl_ (std::unique_ptr<iter_base>)",
+      "why_false_positive": "nullptr check validates impl_ (std::unique_ptr<iter_base>) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/detail/ReadViewFwdRange.ipp",
+  "functions": [
+    {
+      "args": [
+        "iterator const& other"
+      ],
+      "lineno": 6,
+      "name": "ReadViewFwdRange<ValueType>::iterator::iterator"
+    },
+    {
+      "args": [
+        "iterator&& other"
+      ],
+      "lineno": 12,
+      "name": "ReadViewFwdRange<ValueType>::iterator::iterator"
+    },
+    {
+      "args": [
+        "ReadView const* view",
+        "std::unique_ptr<iter_base> impl"
+      ],
+      "lineno": 18,
+      "name": "ReadViewFwdRange<ValueType>::iterator::iterator"
+    },
+    {
+      "args": [
+        "iterator const& other"
+      ],
+      "lineno": 25,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator="
+    },
+    {
+      "args": [
+        "iterator&& other"
+      ],
+      "lineno": 37,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator="
+    },
+    {
+      "args": [
+        "iterator const& other"
+      ],
+      "lineno": 48,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator=="
+    },
+    {
+      "args": [
+        "iterator const& other"
+      ],
+      "lineno": 62,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator!="
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator*"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator->"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 89,
+      "name": "ReadViewFwdRange<ValueType>::iterator::operator++"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file is a template implementation and likely tested indirectly via higher-level ReadViewFwdRange or ledger iteration tests. Direct unit tests for iterator behavior (copy, move, equality, dereference, increment) should exist in test files such as 'ReadViewFwdRange_test.cpp', 'Ledger_test.cpp', or similar. However, explicit validation of XRPL_ASSERT (view_ match) may not be directly tested unless tests intentionally compare iterators from different views. Null impl_ handling is partially tested via copy/move/assignment, but dereference/increment on null impl_ may not be robustly tested. Gaps may exist in negative testing (invalid/null inputs, assertion failures).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "RAII-managed pointers (std::unique_ptr, std::optional-like cache_)"
+    ],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "view_ (ReadView const*)",
+      "location": "operator== (equality operator)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures both iterators being compared belong to the same ReadView (input view match)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (safe nullptr comparison)",
+      "field": "impl_ (std::unique_ptr<iter_base>)",
+      "location": "operator== (equality operator)",
+      "validated_by": "nullptr check",
+      "validates": [
+        "Checks if both impl_ pointers are non-null before dereferencing"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "Undefined behavior if impl_ is nullptr (no explicit error thrown in this code)",
+      "field": "impl_ (std::unique_ptr<iter_base>)",
+      "location": "operator* (dereference operator)",
+      "validated_by": "nullptr check",
+      "validates": [
+        "Assumes impl_ is non-null before calling dereference()"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

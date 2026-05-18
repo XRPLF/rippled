@@ -1,0 +1,192 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "tx"
+    },
+    {
+      "lineno": 146,
+      "name": "account"
+    },
+    {
+      "lineno": 147,
+      "name": "destination"
+    },
+    {
+      "lineno": 147,
+      "name": "amount"
+    },
+    {
+      "lineno": 148,
+      "name": "sequence"
+    },
+    {
+      "lineno": 149,
+      "name": "fee"
+    },
+    {
+      "lineno": 154,
+      "name": "tx"
+    },
+    {
+      "lineno": 159,
+      "name": "value"
+    },
+    {
+      "lineno": 169,
+      "name": "value"
+    },
+    {
+      "lineno": 179,
+      "name": "value"
+    },
+    {
+      "lineno": 189,
+      "name": "value"
+    },
+    {
+      "lineno": 199,
+      "name": "value"
+    },
+    {
+      "lineno": 209,
+      "name": "value"
+    },
+    {
+      "lineno": 219,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 219,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "EscrowCreate"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 143,
+      "name": "EscrowCreateBuilder"
+    }
+  ],
+  "description": "Defines the EscrowCreate transaction type for the XRPL protocol, providing an immutable wrapper for type-safe field access and a builder class for constructing EscrowCreate transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/EscrowCreate.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "getCondition"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "hasCondition"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "hasCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getFinishAfter"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "hasFinishAfter"
+    },
+    {
+      "args": [],
+      "lineno": 122,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 133,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 157,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 167,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 177,
+      "name": "setCondition"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 187,
+      "name": "setCancelAfter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 197,
+      "name": "setFinishAfter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 207,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 217,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

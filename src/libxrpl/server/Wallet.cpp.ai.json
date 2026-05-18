@@ -1,0 +1,344 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getManifests",
+        "deserializeManifest",
+        "Manifest::verify",
+        "mCache.applyManifest"
+      ],
+      "entry_point": "getManifests",
+      "purpose": "Loads manifests from the database, validates them, and applies them to the manifest cache.",
+      "validation_points": [
+        "deserializeManifest (checks manifest structure/format)",
+        "Manifest::verify (cryptographic signature validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "saveManifests",
+        "isTrusted",
+        "Manifest::revoked",
+        "saveManifest"
+      ],
+      "entry_point": "saveManifests",
+      "purpose": "Saves manifests to the database, but only if they are trusted or revoked.",
+      "validation_points": [
+        "isTrusted (checks if manifest is from a trusted validator)",
+        "Manifest::revoked (checks if manifest is a revocation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "addValidatorManifest",
+        "saveManifest"
+      ],
+      "entry_point": "addValidatorManifest",
+      "purpose": "Adds a validator manifest to the ValidatorManifests table.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "manifest (serialized)",
+      "flow": [
+        "Database",
+        "getManifests (loads as soci::blob)",
+        "convert (blob to std::string)",
+        "deserializeManifest (parses string to Manifest object)",
+        "Manifest::verify (validates signature)",
+        "mCache.applyManifest (stores in cache)"
+      ],
+      "origin": "Database (RawData column in manifest table)",
+      "transformations": [
+        "Deserialization from blob to string",
+        "Parsing string to Manifest object"
+      ],
+      "validated_at": "deserializeManifest, Manifest::verify"
+    },
+    {
+      "field": "manifest (trusted status)",
+      "flow": [
+        "ManifestCache",
+        "saveManifests (iterates map)",
+        "isTrusted (checks trust status)",
+        "Manifest::revoked (checks revocation)",
+        "saveManifest (writes to DB if trusted or revoked)"
+      ],
+      "origin": "ManifestCache (in-memory map of manifests)",
+      "transformations": [
+        "Trust check",
+        "Revocation check"
+      ],
+      "validated_at": "isTrusted, Manifest::revoked"
+    },
+    {
+      "field": "NodeIdentity (PublicKey, PrivateKey)",
+      "flow": [
+        "Database",
+        "getNodeIdentity (loads keys as strings)",
+        "parseBase58 (decodes base58 to key objects)",
+        "derivePublicKey (verifies key pair)",
+        "return to caller"
+      ],
+      "origin": "Database (NodeIdentity table)",
+      "transformations": [
+        "Base58 decoding",
+        "Key pair verification"
+      ],
+      "validated_at": "derivePublicKey (checks key pair match)"
+    }
+  ],
+  "description": "This file provides utility functions for managing the Wallet database in the XRPL server, including creation, reading, writing, and manipulation of manifests, node identities, peer reservations, and feature votes using SOCI for database access.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "manifest (serialized manifest data from DB)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "deserializeManifest() and Manifest::verify() at getManifests",
+      "issue_pattern": "Missing empty string validation for manifest (serialized manifest data from DB)",
+      "why_false_positive": "deserializeManifest() and Manifest::verify() validates manifest (serialized manifest data from DB) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "manifest (trusted status and revocation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTrusted() and Manifest::revoked() at saveManifests",
+      "issue_pattern": "Missing empty string validation for manifest (trusted status and revocation)",
+      "why_false_positive": "isTrusted() and Manifest::revoked() validates manifest (trusted status and revocation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/Wallet.cpp",
+  "functions": [
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 7,
+      "name": "makeWalletDB"
+    },
+    {
+      "args": [
+        "setup",
+        "dbname",
+        "j"
+      ],
+      "lineno": 13,
+      "name": "makeTestWalletDB"
+    },
+    {
+      "args": [
+        "session",
+        "dbTable",
+        "mCache",
+        "j"
+      ],
+      "lineno": 20,
+      "name": "getManifests"
+    },
+    {
+      "args": [
+        "session",
+        "dbTable",
+        "serialized"
+      ],
+      "lineno": 46,
+      "name": "saveManifest"
+    },
+    {
+      "args": [
+        "session",
+        "dbTable",
+        "isTrusted",
+        "map",
+        "j"
+      ],
+      "lineno": 56,
+      "name": "saveManifests"
+    },
+    {
+      "args": [
+        "session",
+        "serialized"
+      ],
+      "lineno": 75,
+      "name": "addValidatorManifest"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 81,
+      "name": "clearNodeIdentity"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 85,
+      "name": "getNodeIdentity"
+    },
+    {
+      "args": [
+        "session",
+        "j"
+      ],
+      "lineno": 110,
+      "name": "getPeerReservationTable"
+    },
+    {
+      "args": [
+        "session",
+        "nodeId",
+        "description"
+      ],
+      "lineno": 137,
+      "name": "insertPeerReservation"
+    },
+    {
+      "args": [
+        "session",
+        "nodeId"
+      ],
+      "lineno": 147,
+      "name": "deletePeerReservation"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 154,
+      "name": "createFeatureVotes"
+    },
+    {
+      "args": [
+        "session",
+        "callback"
+      ],
+      "lineno": 171,
+      "name": "readAmendments"
+    },
+    {
+      "args": [
+        "session",
+        "amendment",
+        "name",
+        "vote"
+      ],
+      "lineno": 200,
+      "name": "voteAmendment"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code in Wallet.cpp is typically tested via integration and unit tests in the rippled codebase, especially in test files related to manifest handling, validator management, and wallet DB operations. Likely test files include Manifest_test.cpp, ManifestCache_test.cpp, and possibly integration tests for validator key management. However, direct tests for database error handling, malformed manifest data, and edge cases (e.g., untrusted manifests, revoked manifests) may be limited or absent. The cryptographic validation (Manifest::verify) is likely tested elsewhere, but the full DB-to-cache-to-validation path may not be exhaustively covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (logs warning, skips invalid entry)",
+      "field": "manifest (serialized manifest data from DB)",
+      "location": "getManifests",
+      "validated_by": "deserializeManifest() and Manifest::verify()",
+      "validates": [
+        "Checks if manifest data can be deserialized (format validation)",
+        "Checks if deserialized manifest is cryptographically valid (business logic: verify signature)"
+      ],
+      "validation_type": "format, business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (logs info, skips untrusted non-revocation manifests)",
+      "field": "manifest (trusted status and revocation)",
+      "location": "saveManifests",
+      "validated_by": "isTrusted() and Manifest::revoked()",
+      "validates": [
+        "Checks if manifest is revoked (business logic)",
+        "Checks if manifest is trusted (business logic)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

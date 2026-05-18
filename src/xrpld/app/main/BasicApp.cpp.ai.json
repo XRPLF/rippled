@@ -1,0 +1,97 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "numberOfThreads"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BasicApp::BasicApp",
+        "boost::asio::make_work_guard",
+        "std::thread::emplace_back (lambda)",
+        "beast::setCurrentThreadName",
+        "boost::asio::io_context::run"
+      ],
+      "entry_point": "BasicApp::BasicApp",
+      "purpose": "Initializes the BasicApp, sets up the io_context work guard, spawns threads to run the io_context event loop.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "BasicApp::~BasicApp",
+        "work_.reset",
+        "std::thread::join"
+      ],
+      "entry_point": "BasicApp::~BasicApp",
+      "purpose": "Cleans up the BasicApp, stops the io_context work guard, joins all threads.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "numberOfThreads",
+      "flow": [
+        "Constructor argument",
+        "threads_.reserve(numberOfThreads)",
+        "while loop decrements numberOfThreads",
+        "threads_.emplace_back (lambda captures numberOfThreads)"
+      ],
+      "origin": "Constructor argument to BasicApp::BasicApp",
+      "transformations": [
+        "Used to reserve thread vector capacity",
+        "Decremented in loop to control thread creation",
+        "Passed to lambda for thread naming"
+      ],
+      "validated_at": "No explicit validation; assumes caller provides a sensible value"
+    },
+    {
+      "field": "io_context_",
+      "flow": [
+        "work_.emplace(boost::asio::make_work_guard(io_context_))",
+        "threads_.emplace_back (lambda calls io_context_.run())"
+      ],
+      "origin": "Member variable of BasicApp",
+      "transformations": [
+        "Wrapped in a work guard to keep io_context_ alive",
+        "Run in multiple threads"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements the BasicApp class, which manages an io_context and a thread pool for asynchronous operations, including thread naming and proper shutdown.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/BasicApp.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::size_t numberOfThreads"
+      ],
+      "lineno": 6,
+      "name": "BasicApp::BasicApp"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "BasicApp::~BasicApp"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [],
+  "test_coverage_notes": "This code is a low-level infrastructure component (thread and io_context management). There are no explicit validation code paths (e.g., input checking, error handling) in this file. Test coverage would likely be indirect, via higher-level integration or system tests that exercise server startup/shutdown and concurrency. There are probably no unit tests directly for BasicApp, and no validation-specific tests. Gaps: No checks for zero or excessive thread counts, no error handling for thread creation failures, no validation of io_context_ state.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

@@ -1,0 +1,293 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "key"
+    },
+    {
+      "lineno": 23,
+      "name": "key"
+    },
+    {
+      "lineno": 23,
+      "name": "value"
+    },
+    {
+      "lineno": 25,
+      "name": "key"
+    },
+    {
+      "lineno": 25,
+      "name": "value"
+    },
+    {
+      "lineno": 27,
+      "name": "key"
+    },
+    {
+      "lineno": 27,
+      "name": "value"
+    },
+    {
+      "lineno": 29,
+      "name": "key"
+    },
+    {
+      "lineno": 29,
+      "name": "value"
+    },
+    {
+      "lineno": 31,
+      "name": "key"
+    },
+    {
+      "lineno": 31,
+      "name": "value"
+    },
+    {
+      "lineno": 33,
+      "name": "key"
+    },
+    {
+      "lineno": 33,
+      "name": "v"
+    },
+    {
+      "lineno": 35,
+      "name": "key"
+    },
+    {
+      "lineno": 35,
+      "name": "v"
+    },
+    {
+      "lineno": 37,
+      "name": "key"
+    },
+    {
+      "lineno": 37,
+      "name": "v"
+    },
+    {
+      "lineno": 41,
+      "name": "key"
+    },
+    {
+      "lineno": 46,
+      "name": "value"
+    },
+    {
+      "lineno": 48,
+      "name": "value"
+    },
+    {
+      "lineno": 50,
+      "name": "value"
+    },
+    {
+      "lineno": 52,
+      "name": "value"
+    },
+    {
+      "lineno": 54,
+      "name": "value"
+    },
+    {
+      "lineno": 56,
+      "name": "v"
+    },
+    {
+      "lineno": 58,
+      "name": "v"
+    },
+    {
+      "lineno": 60,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JsonPropertyStream()",
+        "Json::Value const& top()"
+      ],
+      "lineno": 8,
+      "name": "JsonPropertyStream"
+    }
+  ],
+  "description": "Defines the JsonPropertyStream class, a PropertyStream::Sink that produces a Json::Value object for structured property streaming in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/JsonPropertyStream.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "JsonPropertyStream"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "top"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "map_begin"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 19,
+      "name": "map_begin"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "map_end"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 23,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 25,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 27,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 29,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "value"
+      ],
+      "lineno": 31,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "v"
+      ],
+      "lineno": 33,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "v"
+      ],
+      "lineno": 35,
+      "name": "add"
+    },
+    {
+      "args": [
+        "key",
+        "v"
+      ],
+      "lineno": 37,
+      "name": "add"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "array_begin"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 41,
+      "name": "array_begin"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "array_end"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 46,
+      "name": "add"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 48,
+      "name": "add"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 50,
+      "name": "add"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 52,
+      "name": "add"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 54,
+      "name": "add"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 56,
+      "name": "add"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 58,
+      "name": "add"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 60,
+      "name": "add"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

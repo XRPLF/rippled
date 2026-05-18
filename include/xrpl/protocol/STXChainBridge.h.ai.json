@@ -1,0 +1,342 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "ct"
+    },
+    {
+      "lineno": 30,
+      "name": "wasLockingChainSend"
+    },
+    {
+      "lineno": 33,
+      "name": "wasLockingChainSend"
+    },
+    {
+      "lineno": 37,
+      "name": "name"
+    },
+    {
+      "lineno": 39,
+      "name": "rhs"
+    },
+    {
+      "lineno": 41,
+      "name": "o"
+    },
+    {
+      "lineno": 43,
+      "name": "srcChainDoor"
+    },
+    {
+      "lineno": 43,
+      "name": "srcChainIssue"
+    },
+    {
+      "lineno": 43,
+      "name": "dstChainDoor"
+    },
+    {
+      "lineno": 43,
+      "name": "dstChainIssue"
+    },
+    {
+      "lineno": 48,
+      "name": "v"
+    },
+    {
+      "lineno": 50,
+      "name": "name"
+    },
+    {
+      "lineno": 50,
+      "name": "v"
+    },
+    {
+      "lineno": 52,
+      "name": "sit"
+    },
+    {
+      "lineno": 52,
+      "name": "name"
+    },
+    {
+      "lineno": 54,
+      "name": "rhs"
+    },
+    {
+      "lineno": 84,
+      "name": "s"
+    },
+    {
+      "lineno": 87,
+      "name": "t"
+    },
+    {
+      "lineno": 100,
+      "name": "n"
+    },
+    {
+      "lineno": 100,
+      "name": "buf"
+    },
+    {
+      "lineno": 102,
+      "name": "n"
+    },
+    {
+      "lineno": 102,
+      "name": "buf"
+    },
+    {
+      "lineno": 106,
+      "name": "lhs"
+    },
+    {
+      "lineno": 106,
+      "name": "rhs"
+    },
+    {
+      "lineno": 115,
+      "name": "lhs"
+    },
+    {
+      "lineno": 115,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "void",
+        "SField const& name",
+        "STXChainBridge const& rhs",
+        "STObject const& o",
+        "AccountID const& srcChainDoor, Issue const& srcChainIssue, AccountID const& dstChainDoor, Issue const& dstChainIssue",
+        "Json::Value const& v",
+        "SField const& name, Json::Value const& v",
+        "SerialIter& sit, SField const& name"
+      ],
+      "lineno": 9,
+      "name": "STXChainBridge"
+    }
+  ],
+  "description": "Defines the STXChainBridge class, representing a cross-chain bridge object in the XRPL protocol, including its fields, constructors, and utility methods for serialization, comparison, and access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STXChainBridge.h",
+  "functions": [
+    {
+      "args": [
+        "ct"
+      ],
+      "lineno": 27,
+      "name": "otherChain"
+    },
+    {
+      "args": [
+        "wasLockingChainSend"
+      ],
+      "lineno": 30,
+      "name": "srcChain"
+    },
+    {
+      "args": [
+        "wasLockingChainSend"
+      ],
+      "lineno": 33,
+      "name": "dstChain"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 37,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "STXChainBridge const& rhs"
+      ],
+      "lineno": 39,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "STObject const& o"
+      ],
+      "lineno": 41,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "AccountID const& srcChainDoor",
+        "Issue const& srcChainIssue",
+        "AccountID const& dstChainDoor",
+        "Issue const& dstChainIssue"
+      ],
+      "lineno": 43,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "Json::Value const& v"
+      ],
+      "lineno": 48,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 50,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 52,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "STXChainBridge const& rhs"
+      ],
+      "lineno": 54,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getText"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "toSTObject"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "lockingChainDoor"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "lockingChainIssue"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "issuingChainDoor"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "issuingChainIssue"
+    },
+    {
+      "args": [
+        "ChainType ct"
+      ],
+      "lineno": 73,
+      "name": "door"
+    },
+    {
+      "args": [
+        "ChainType ct"
+      ],
+      "lineno": 76,
+      "name": "issue"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 81,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 84,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 87,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "isDefault"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "value"
+    },
+    {
+      "args": [
+        "SerialIter&",
+        "SField const& name"
+      ],
+      "lineno": 97,
+      "name": "construct"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 100,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 102,
+      "name": "move"
+    },
+    {
+      "args": [
+        "STXChainBridge const& lhs",
+        "STXChainBridge const& rhs"
+      ],
+      "lineno": 106,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STXChainBridge const& lhs",
+        "STXChainBridge const& rhs"
+      ],
+      "lineno": 115,
+      "name": "operator<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

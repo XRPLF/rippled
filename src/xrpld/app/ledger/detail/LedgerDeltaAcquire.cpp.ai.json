@@ -1,0 +1,635 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "app"
+    },
+    {
+      "lineno": 12,
+      "name": "inboundLedgers"
+    },
+    {
+      "lineno": 13,
+      "name": "ledgerHash"
+    },
+    {
+      "lineno": 14,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 15,
+      "name": "peerSet"
+    },
+    {
+      "lineno": 26,
+      "name": "numPeers"
+    },
+    {
+      "lineno": 34,
+      "name": "limit"
+    },
+    {
+      "lineno": 34,
+      "name": "sl"
+    },
+    {
+      "lineno": 74,
+      "name": "progress"
+    },
+    {
+      "lineno": 91,
+      "name": "info"
+    },
+    {
+      "lineno": 91,
+      "name": "orderedTxns"
+    },
+    {
+      "lineno": 112,
+      "name": "reason"
+    },
+    {
+      "lineno": 112,
+      "name": "cb"
+    },
+    {
+      "lineno": 127,
+      "name": "parent"
+    },
+    {
+      "lineno": 154,
+      "name": "reason"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "uint256 const& ledgerHash",
+        "std::uint32_t ledgerSeq",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 10,
+      "name": "LedgerDeltaAcquire"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerDeltaAcquire::init",
+        "LedgerDeltaAcquire::trigger",
+        "peerSet_->addPeers (with two lambdas)",
+        "peer->supportsFeature",
+        "peer->hasLedger",
+        "app_.getLedgerMaster().getLedgerByHash"
+      ],
+      "entry_point": "LedgerDeltaAcquire::init",
+      "purpose": "Initializes the delta acquire process, triggers peer selection and validation, and attempts to acquire the ledger delta from peers or fallback.",
+      "validation_points": [
+        "LedgerDeltaAcquire::trigger: app_.getLedgerMaster().getLedgerByHash(hash_) (validates ledger existence)",
+        "peerSet_->addPeers: peer->supportsFeature(ProtocolFeature::LedgerReplay) (validates peer feature support)",
+        "peerSet_->addPeers: peer->hasLedger(hash_, ledgerSeq_) (validates peer has requested ledger)",
+        "peerSet_->addPeers: ++noFeaturePeerCount >= MAX_NO_FEATURE_PEER_COUNT (validates peer count for fallback)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerDeltaAcquire::onTimer",
+        "LedgerDeltaAcquire::trigger"
+      ],
+      "entry_point": "LedgerDeltaAcquire::onTimer",
+      "purpose": "Handles timeouts, re-triggers peer selection or marks as failed if too many timeouts.",
+      "validation_points": [
+        "LedgerDeltaAcquire::onTimer: timeouts_ > SUB_TASK_MAX_TIMEOUTS (validates timeout threshold)",
+        "LedgerDeltaAcquire::trigger: (see above for validations)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerDeltaAcquire::processData"
+      ],
+      "entry_point": "LedgerDeltaAcquire::processData",
+      "purpose": "Processes received ledger data, validates sequence, and prepares for replay.",
+      "validation_points": [
+        "LedgerDeltaAcquire::processData: info.seq == ledgerSeq_ (validates correct ledger sequence)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "fullLedger_",
+      "flow": [
+        "LedgerDeltaAcquire::trigger",
+        "fullLedger_ assignment",
+        "if (fullLedger_) { complete_ = true; notify(sl); }"
+      ],
+      "origin": "app_.getLedgerMaster().getLedgerByHash(hash_)",
+      "transformations": [
+        "Assigned from getLedgerByHash",
+        "Checked for existence"
+      ],
+      "validated_at": "LedgerDeltaAcquire::trigger"
+    },
+    {
+      "field": "peer->supportsFeature(ProtocolFeature::LedgerReplay)",
+      "flow": [
+        "peerSet_->addPeers (lambda filter)",
+        "if (peer->supportsFeature(...)) { ... } else { ... }"
+      ],
+      "origin": "peer object in peerSet_->addPeers",
+      "transformations": [
+        "Boolean check for feature support"
+      ],
+      "validated_at": "peerSet_->addPeers (lambda filter and action)"
+    },
+    {
+      "field": "peer->hasLedger(hash_, ledgerSeq_)",
+      "flow": [
+        "peerSet_->addPeers (lambda filter)"
+      ],
+      "origin": "peer object in peerSet_->addPeers",
+      "transformations": [
+        "Boolean check for ledger presence"
+      ],
+      "validated_at": "peerSet_->addPeers (lambda filter)"
+    },
+    {
+      "field": "noFeaturePeerCount",
+      "flow": [
+        "peerSet_->addPeers (lambda action)",
+        "if (++noFeaturePeerCount >= MAX_NO_FEATURE_PEER_COUNT) { fallBack_ = true; }"
+      ],
+      "origin": "Class member, incremented in peerSet_->addPeers",
+      "transformations": [
+        "Incremented per peer without feature",
+        "Compared to threshold"
+      ],
+      "validated_at": "peerSet_->addPeers (lambda action)"
+    },
+    {
+      "field": "timeouts_",
+      "flow": [
+        "LedgerDeltaAcquire::onTimer",
+        "if (timeouts_ > SUB_TASK_MAX_TIMEOUTS) { failed_ = true; notify(sl); }"
+      ],
+      "origin": "Class member, incremented on timeout",
+      "transformations": [
+        "Incremented on each timeout",
+        "Compared to threshold"
+      ],
+      "validated_at": "LedgerDeltaAcquire::onTimer"
+    },
+    {
+      "field": "orderedTxns_",
+      "flow": [
+        "LedgerDeltaAcquire::processData",
+        "if (info.seq == ledgerSeq_) { orderedTxns_ = std::move(orderedTxns); }"
+      ],
+      "origin": "processData argument",
+      "transformations": [
+        "Moved from argument to member"
+      ],
+      "validated_at": "LedgerDeltaAcquire::processData (info.seq == ledgerSeq_)"
+    }
+  ],
+  "description": "Implements the LedgerDeltaAcquire class, which manages the acquisition and replay of ledger deltas in the XRPL node, handling peer communication, data processing, and ledger building for ledger replay operations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fullLedger_ (ledger existence by hash)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "app_.getLedgerMaster().getLedgerByHash(hash_) at LedgerDeltaAcquire::trigger",
+      "issue_pattern": "Missing empty string validation for fullLedger_ (ledger existence by hash)",
+      "why_false_positive": "app_.getLedgerMaster().getLedgerByHash(hash_) validates fullLedger_ (ledger existence by hash) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer supports LedgerReplay feature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peer->supportsFeature(ProtocolFeature::LedgerReplay) at LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "issue_pattern": "Missing empty string validation for peer supports LedgerReplay feature",
+      "why_false_positive": "peer->supportsFeature(ProtocolFeature::LedgerReplay) validates peer supports LedgerReplay feature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "peer has requested ledger",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "peer->hasLedger(hash_, ledgerSeq_) at LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "issue_pattern": "Missing empty string validation for peer has requested ledger",
+      "why_false_positive": "peer->hasLedger(hash_, ledgerSeq_) validates peer has requested ledger for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "noFeaturePeerCount (number of peers without LedgerReplay support)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT at LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "issue_pattern": "Missing empty string validation for noFeaturePeerCount (number of peers without LedgerReplay support)",
+      "why_false_positive": "++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT validates noFeaturePeerCount (number of peers without LedgerReplay support) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "noFeaturePeerCount (number of peers without LedgerReplay support)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT at LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "issue_pattern": "Missing range validation for noFeaturePeerCount (number of peers without LedgerReplay support)",
+      "why_false_positive": "++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT validates noFeaturePeerCount (number of peers without LedgerReplay support) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "timeouts_ (number of timeouts)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS at LedgerDeltaAcquire::onTimer",
+      "issue_pattern": "Missing empty string validation for timeouts_ (number of timeouts)",
+      "why_false_positive": "timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS validates timeouts_ (number of timeouts) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "timeouts_ (number of timeouts)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS at LedgerDeltaAcquire::onTimer",
+      "issue_pattern": "Missing range validation for timeouts_ (number of timeouts)",
+      "why_false_positive": "timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS validates timeouts_ (number of timeouts) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isDone() (completion state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isDone() at LedgerDeltaAcquire::init",
+      "issue_pattern": "Missing empty string validation for isDone() (completion state)",
+      "why_false_positive": "isDone() validates isDone() (completion state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerDeltaAcquire.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "uint256 const& ledgerHash",
+        "std::uint32_t ledgerSeq",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 10,
+      "name": "LedgerDeltaAcquire"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "~LedgerDeltaAcquire"
+    },
+    {
+      "args": [
+        "int numPeers"
+      ],
+      "lineno": 26,
+      "name": "init"
+    },
+    {
+      "args": [
+        "std::size_t limit",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 34,
+      "name": "trigger"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 74,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "pmDowncast"
+    },
+    {
+      "args": [
+        "LedgerHeader const& info",
+        "std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns"
+      ],
+      "lineno": 91,
+      "name": "processData"
+    },
+    {
+      "args": [
+        "InboundLedger::Reason reason",
+        "OnDeltaDataCB&& cb"
+      ],
+      "lineno": 112,
+      "name": "addDataCallback"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& parent"
+      ],
+      "lineno": 127,
+      "name": "tryBuild"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl",
+        "std::optional<InboundLedger::Reason> reason"
+      ],
+      "lineno": 154,
+      "name": "onLedgerBuilt"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 181,
+      "name": "notify"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is likely tested indirectly via integration tests for ledger replay and acquisition, such as in test files under `src/test/ledger/`, `src/test/app/`, or `src/test/overlay/`. However, the specific validation branches (e.g., fallback on too many non-feature peers, timeout handling, and correct peer selection) may not be fully covered by unit tests, especially edge cases like exceeding MAX_NO_FEATURE_PEER_COUNT or SUB_TASK_MAX_TIMEOUTS. Direct unit tests for LedgerDeltaAcquire are likely missing or minimal, as much of the logic depends on peer/network simulation and application state.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic, PeerSet, LedgerMaster",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return, sets complete_ = true)",
+      "field": "fullLedger_ (ledger existence by hash)",
+      "location": "LedgerDeltaAcquire::trigger",
+      "validated_by": "app_.getLedgerMaster().getLedgerByHash(hash_)",
+      "validates": [
+        "Checks if the requested ledger already exists in local storage by hash"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (peer is skipped if not supported, fallback logic triggered if too many)",
+      "field": "peer supports LedgerReplay feature",
+      "location": "LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "validated_by": "peer->supportsFeature(ProtocolFeature::LedgerReplay)",
+      "validates": [
+        "Checks if peer supports the LedgerReplay protocol feature"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (peer is skipped if not present)",
+      "field": "peer has requested ledger",
+      "location": "LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "validated_by": "peer->hasLedger(hash_, ledgerSeq_)",
+      "validates": [
+        "Checks if peer has the requested ledger by hash and sequence"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets fallBack_ = true, changes timerInterval_)",
+      "field": "noFeaturePeerCount (number of peers without LedgerReplay support)",
+      "location": "LedgerDeltaAcquire::trigger (lambda in peerSet_->addPeers)",
+      "validated_by": "++noFeaturePeerCount >= LedgerReplayParameters::MAX_NO_FEATURE_PEER_COUNT",
+      "validates": [
+        "Checks if the number of peers without LedgerReplay support exceeds a maximum threshold"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets failed_ = true, likely triggers failure handling elsewhere)",
+      "field": "timeouts_ (number of timeouts)",
+      "location": "LedgerDeltaAcquire::onTimer",
+      "validated_by": "timeouts_ > LedgerReplayParameters::SUB_TASK_MAX_TIMEOUTS",
+      "validates": [
+        "Checks if the number of timeouts exceeds a maximum allowed value"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return if already done)",
+      "field": "isDone() (completion state)",
+      "location": "LedgerDeltaAcquire::init",
+      "validated_by": "isDone()",
+      "validates": [
+        "Checks if the acquisition process is already complete before triggering"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

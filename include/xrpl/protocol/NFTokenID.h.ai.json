@@ -1,0 +1,46 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides helper functions to extract and insert NFToken IDs into transaction metadata and JSON responses for specific XRPL NFT-related transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/NFTokenID.h",
+  "functions": [
+    {
+      "args": [
+        "serializedTx",
+        "transactionMeta"
+      ],
+      "lineno": 18,
+      "name": "canHaveNFTokenID"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 21,
+      "name": "getNFTokenIDFromPage"
+    },
+    {
+      "args": [
+        "transactionMeta"
+      ],
+      "lineno": 24,
+      "name": "getNFTokenIDFromDeletedOffer"
+    },
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 27,
+      "name": "insertNFTokenID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

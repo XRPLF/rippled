@@ -1,0 +1,569 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ApplyContext::checkInvariants",
+        "InvariantChecker::visitEntry",
+        "ValidMPTIssuance::visitEntry"
+      ],
+      "entry_point": "ValidMPTIssuance::visitEntry",
+      "purpose": "Called for each ledger entry modified by a transaction to track MPT issuance/token creation/deletion and validate invariants.",
+      "validation_points": [
+        "ValidMPTIssuance::visitEntry: after->getType() == ltMPTOKEN_ISSUANCE",
+        "ValidMPTIssuance::visitEntry: after->getType() == ltMPTOKEN",
+        "ValidMPTIssuance::visitEntry: after->at(sfMPTokenIssuanceID) (field presence)",
+        "ValidMPTIssuance::visitEntry: after->at(sfAccount) (field presence)",
+        "ValidMPTIssuance::visitEntry: mptIssue.getIssuer() == after->at(sfAccount)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ApplyContext::checkInvariants",
+        "InvariantChecker::finalize",
+        "ValidMPTIssuance::finalize"
+      ],
+      "entry_point": "ValidMPTIssuance::finalize",
+      "purpose": "Called after all ledger modifications for a transaction to enforce that only valid MPT issuance/token changes occurred.",
+      "validation_points": [
+        "ValidMPTIssuance::finalize: mptCreatedByIssuer_ (business logic check)",
+        "ValidMPTIssuance::finalize: mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0 (for createMPTIssuance)",
+        "ValidMPTIssuance::finalize: mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1 (for destroyMPTIssuance)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "after->getType()",
+      "flow": [
+        "SLE::getType()",
+        "ValidMPTIssuance::visitEntry",
+        "Type checked for ltMPTOKEN_ISSUANCE or ltMPTOKEN"
+      ],
+      "origin": "Ledger entry (SLE) after modification",
+      "transformations": [
+        "Type is compared to constants to determine what kind of ledger entry is being processed"
+      ],
+      "validated_at": "ValidMPTIssuance::visitEntry"
+    },
+    {
+      "field": "after->at(sfMPTokenIssuanceID)",
+      "flow": [
+        "SLE::at(sfMPTokenIssuanceID)",
+        "MPTIssue constructor",
+        "mptIssue.getIssuer()"
+      ],
+      "origin": "Ledger entry (SLE) after modification",
+      "transformations": [
+        "Field is extracted and used to construct an MPTIssue object"
+      ],
+      "validated_at": "ValidMPTIssuance::visitEntry (field presence and extraction)"
+    },
+    {
+      "field": "after->at(sfAccount)",
+      "flow": [
+        "SLE::at(sfAccount)",
+        "Compared to mptIssue.getIssuer()"
+      ],
+      "origin": "Ledger entry (SLE) after modification",
+      "transformations": [
+        "Field is extracted and compared to issuer"
+      ],
+      "validated_at": "ValidMPTIssuance::visitEntry (field presence and business logic)"
+    },
+    {
+      "field": "mptCreatedByIssuer_",
+      "flow": [
+        "Set in visitEntry",
+        "Checked in finalize"
+      ],
+      "origin": "Set in ValidMPTIssuance::visitEntry if mptIssue.getIssuer() == after->at(sfAccount)",
+      "transformations": [
+        "Boolean flag set based on business logic"
+      ],
+      "validated_at": "ValidMPTIssuance::finalize"
+    },
+    {
+      "field": "mptIssuancesCreated_, mptIssuancesDeleted_, mptokensCreated_, mptokensDeleted_",
+      "flow": [
+        "Incremented in visitEntry",
+        "Checked in finalize"
+      ],
+      "origin": "Counters incremented in visitEntry based on ledger entry type and operation",
+      "transformations": [
+        "Simple integer counters"
+      ],
+      "validated_at": "ValidMPTIssuance::finalize"
+    }
+  ],
+  "description": "Implements invariant checks for Multi-Purpose Token (MPT) issuance and payment transactions in the XRPL ledger, ensuring correct creation, deletion, and balance updates of MPT-related ledger entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Ledger entry type (via getType())",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Ledger entry type (via getType()) validated by Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks",
+      "issue_pattern": "Missing validation for Ledger entry type (via getType())",
+      "why_false_positive": "Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks validates Ledger entry type (via getType()) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Presence of sfMPTokenIssuanceID and sfAccount (via at())",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Presence of sfMPTokenIssuanceID and sfAccount (via at()) validated by Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks",
+      "issue_pattern": "Missing validation for Presence of sfMPTokenIssuanceID and sfAccount (via at())",
+      "why_false_positive": "Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks validates Presence of sfMPTokenIssuanceID and sfAccount (via at()) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction result code (via isTesSuccess, tecINCOMPLETE)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Transaction result code (via isTesSuccess, tecINCOMPLETE) validated by Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks",
+      "issue_pattern": "Missing validation for Transaction result code (via isTesSuccess, tecINCOMPLETE)",
+      "why_false_positive": "Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks validates Transaction result code (via isTesSuccess, tecINCOMPLETE) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "after->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit type check (== ltMPTOKEN_ISSUANCE) at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->getType()",
+      "why_false_positive": "explicit type check (== ltMPTOKEN_ISSUANCE) validates after->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "after->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit type check (== ltMPTOKEN_ISSUANCE) at visitEntry",
+      "issue_pattern": "Missing type validation for after->getType()",
+      "why_false_positive": "explicit type check (== ltMPTOKEN_ISSUANCE) validates after->getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "after->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit type check (== ltMPTOKEN) at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->getType()",
+      "why_false_positive": "explicit type check (== ltMPTOKEN) validates after->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "after->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "explicit type check (== ltMPTOKEN) at visitEntry",
+      "issue_pattern": "Missing type validation for after->getType()",
+      "why_false_positive": "explicit type check (== ltMPTOKEN) validates after->getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "after->at(sfMPTokenIssuanceID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "field presence and extraction (MPTIssue constructor) at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->at(sfMPTokenIssuanceID)",
+      "why_false_positive": "field presence and extraction (MPTIssue constructor) validates after->at(sfMPTokenIssuanceID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "after->at(sfAccount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "field presence and extraction at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->at(sfAccount)",
+      "why_false_positive": "field presence and extraction validates after->at(sfAccount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptCreatedByIssuer_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (comparison: mptIssue.getIssuer() == after->at(sfAccount)) at visitEntry",
+      "issue_pattern": "Missing empty string validation for mptCreatedByIssuer_",
+      "why_false_positive": "business logic (comparison: mptIssue.getIssuer() == after->at(sfAccount)) validates mptCreatedByIssuer_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptCreatedByIssuer_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (flag check and assertion) at finalize",
+      "issue_pattern": "Missing empty string validation for mptCreatedByIssuer_",
+      "why_false_positive": "business logic (flag check and assertion) validates mptCreatedByIssuer_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptIssuancesCreated_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (counter check) at finalize",
+      "issue_pattern": "Missing empty string validation for mptIssuancesCreated_",
+      "why_false_positive": "business logic (counter check) validates mptIssuancesCreated_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptIssuancesDeleted_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (counter check) at finalize",
+      "issue_pattern": "Missing empty string validation for mptIssuancesDeleted_",
+      "why_false_positive": "business logic (counter check) validates mptIssuancesDeleted_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptIssuancesCreated_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic (counter check) at finalize",
+      "issue_pattern": "Missing empty string validation for mptIssuancesCreated_",
+      "why_false_positive": "business logic (counter check) validates mptIssuancesCreated_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess(result) or (mptV2Enabled && result == tecINCOMPLETE) at finalize",
+      "issue_pattern": "Missing empty string validation for result",
+      "why_false_positive": "isTesSuccess(result) or (mptV2Enabled && result == tecINCOMPLETE) validates result for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/MPTInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 10,
+      "name": "ValidMPTIssuance::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "_fee",
+        "view",
+        "j"
+      ],
+      "lineno": 44,
+      "name": "ValidMPTIssuance::finalize"
+    },
+    {
+      "args": [
+        "",
+        "before",
+        "after"
+      ],
+      "lineno": 232,
+      "name": "ValidMPTPayment::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "result",
+        "",
+        "view",
+        "j"
+      ],
+      "lineno": 292,
+      "name": "ValidMPTPayment::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is likely found in integration and invariant test suites, such as 'invariant_test.cpp', 'MPTInvariant_test.cpp', or broader transaction/ledger tests in the rippled codebase. These would test that invalid MPT issuance/token creation/deletion is caught and that valid operations succeed. However, edge cases (e.g., multiple issuances in one tx, issuer/account mismatches, privilege checks) may not be exhaustively tested. There may be gaps in testing for all combinations of feature flags (featureMPTokensV2, featureSingleAssetVault, featureLendingProtocol) and for all possible transaction types that could interact with these invariants.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "Ledger entry type (via getType())",
+      "Presence of sfMPTokenIssuanceID and sfAccount (via at())",
+      "Transaction result code (via isTesSuccess, tecINCOMPLETE)"
+    ],
+    "framework": "Custom business logic, XRPL assertion macros (XRPL_ASSERT_PARTS), field accessors (at()), type checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (increments counters only)",
+      "field": "after->getType()",
+      "location": "visitEntry",
+      "validated_by": "explicit type check (== ltMPTOKEN_ISSUANCE)",
+      "validates": [
+        "Checks if the ledger entry is of type MPTOKEN_ISSUANCE before counting creation/deletion"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (increments counters only)",
+      "field": "after->getType()",
+      "location": "visitEntry",
+      "validated_by": "explicit type check (== ltMPTOKEN)",
+      "validates": [
+        "Checks if the ledger entry is of type MPTOKEN before counting creation/deletion"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "exception if field missing (likely assertion or throw in at())",
+      "field": "after->at(sfMPTokenIssuanceID)",
+      "location": "visitEntry",
+      "validated_by": "field presence and extraction (MPTIssue constructor)",
+      "validates": [
+        "Ensures MPToken has an associated IssuanceID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "exception if field missing (likely assertion or throw in at())",
+      "field": "after->at(sfAccount)",
+      "location": "visitEntry",
+      "validated_by": "field presence and extraction",
+      "validates": [
+        "Ensures MPToken has an associated Account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets flag)",
+      "field": "mptCreatedByIssuer_",
+      "location": "visitEntry",
+      "validated_by": "business logic (comparison: mptIssue.getIssuer() == after->at(sfAccount))",
+      "validates": [
+        "Checks if the MPToken is created by its own issuer (which is forbidden)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT_PARTS (assertion failure if enforceCreatedByIssuer is true)",
+      "field": "mptCreatedByIssuer_",
+      "location": "finalize",
+      "validated_by": "business logic (flag check and assertion)",
+      "validates": [
+        "Ensures no MPToken is created for its own issuer if certain features are enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs fatal error, returns false)",
+      "field": "mptIssuancesCreated_",
+      "location": "finalize",
+      "validated_by": "business logic (counter check)",
+      "validates": [
+        "Ensures at least one MPT issuance is created if transaction has createMPTIssuance privilege"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs fatal error, returns false)",
+      "field": "mptIssuancesDeleted_",
+      "location": "finalize",
+      "validated_by": "business logic (counter check)",
+      "validates": [
+        "Ensures no MPT issuance is deleted if transaction has createMPTIssuance privilege"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs fatal error, returns false)",
+      "field": "mptIssuancesCreated_",
+      "location": "finalize",
+      "validated_by": "business logic (counter check)",
+      "validates": [
+        "Ensures only one MPT issuance is created per transaction with createMPTIssuance privilege"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (controls whether further validation is performed)",
+      "field": "result",
+      "location": "finalize",
+      "validated_by": "isTesSuccess(result) or (mptV2Enabled && result == tecINCOMPLETE)",
+      "validates": [
+        "Ensures validations only run on successful or specific incomplete results"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,416 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 9,
+      "name": "signature"
+    },
+    {
+      "lineno": 10,
+      "name": "suppression"
+    },
+    {
+      "lineno": 11,
+      "name": "proposal"
+    },
+    {
+      "lineno": 39,
+      "name": "proposeHash"
+    },
+    {
+      "lineno": 40,
+      "name": "previousLedger"
+    },
+    {
+      "lineno": 41,
+      "name": "proposeSeq"
+    },
+    {
+      "lineno": 42,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 43,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 44,
+      "name": "signature"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RCLCxPeerPos::RCLCxPeerPos"
+      ],
+      "entry_point": "RCLCxPeerPos::RCLCxPeerPos",
+      "purpose": "Constructs a peer proposal object from received data, performs initial signature size validation, and stores fields.",
+      "validation_points": [
+        "XRPL_ASSERT macro: Validates signature size (not empty, <= capacity)",
+        "if statement: Re-validates signature size before assignment"
+      ]
+    },
+    {
+      "call_chain": [
+        "RCLCxPeerPos::checkSign",
+        "verifyDigest"
+      ],
+      "entry_point": "RCLCxPeerPos::checkSign",
+      "purpose": "Checks cryptographic validity of the signature against the proposal's signing hash and public key.",
+      "validation_points": [
+        "verifyDigest: Validates cryptographic signature"
+      ]
+    },
+    {
+      "call_chain": [
+        "RCLCxPeerPos::getJson",
+        "proposal().getJson()",
+        "toBase58"
+      ],
+      "entry_point": "RCLCxPeerPos::getJson",
+      "purpose": "Serializes the proposal to JSON, including peer_id if publicKey is non-empty.",
+      "validation_points": [
+        "if (publicKey().size() != 0u): Validates publicKey is non-empty before encoding"
+      ]
+    },
+    {
+      "call_chain": [
+        "proposalUniqueId",
+        "Serializer::addBitString/add32/addVL",
+        "Serializer::getSHA512Half"
+      ],
+      "entry_point": "proposalUniqueId",
+      "purpose": "Computes a unique identifier for a proposal based on its fields, public key, and signature.",
+      "validation_points": [
+        "No explicit validation in this function; assumes inputs are already validated"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "signature",
+      "flow": [
+        "Constructor argument",
+        "XRPL_ASSERT and if statement validate size",
+        "signature_.assign(signature.begin(), signature.end())",
+        "Stored in signature_ member",
+        "Used in checkSign() and proposalUniqueId()"
+      ],
+      "origin": "Constructor argument (Slice const& signature)",
+      "transformations": [
+        "Size checked (<= capacity)",
+        "Copied into signature_ vector"
+      ],
+      "validated_at": "RCLCxPeerPos::RCLCxPeerPos (XRPL_ASSERT and if statement)"
+    },
+    {
+      "field": "publicKey",
+      "flow": [
+        "Constructor argument",
+        "Stored in publicKey_ member",
+        "Used in checkSign(), getJson(), proposalUniqueId()"
+      ],
+      "origin": "Constructor argument (PublicKey const& publicKey)",
+      "transformations": [
+        "None in constructor",
+        "Size checked in getJson()"
+      ],
+      "validated_at": "RCLCxPeerPos::getJson (size check before toBase58)"
+    },
+    {
+      "field": "signature_",
+      "flow": [
+        "Assigned in constructor after validation",
+        "Used in checkSign()",
+        "Used in proposalUniqueId()"
+      ],
+      "origin": "Assigned from signature argument in constructor",
+      "transformations": [
+        "Copied from input Slice"
+      ],
+      "validated_at": "Constructor (size check before assignment)"
+    },
+    {
+      "field": "proposal_",
+      "flow": [
+        "Constructor argument",
+        "Stored in proposal_ member",
+        "Used in checkSign() (proposal_.signingHash())",
+        "Used in getJson()"
+      ],
+      "origin": "Constructor argument (Proposal const& proposal)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Not directly validated here"
+    }
+  ],
+  "description": "Implements the RCLCxPeerPos class for handling peer proposals in XRPL consensus, including construction, signature verification, JSON serialization, and unique proposal ID calculation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at RCLCxPeerPos constructor",
+      "issue_pattern": "Missing empty string validation for signature",
+      "why_false_positive": "XRPL_ASSERT macro validates signature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "signature",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at RCLCxPeerPos constructor",
+      "issue_pattern": "Missing range validation for signature",
+      "why_false_positive": "XRPL_ASSERT macro validates signature range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if statement at RCLCxPeerPos constructor",
+      "issue_pattern": "Missing empty string validation for signature",
+      "why_false_positive": "if statement validates signature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "signature",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if statement at RCLCxPeerPos constructor",
+      "issue_pattern": "Missing range validation for signature",
+      "why_false_positive": "if statement validates signature range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signature (cryptographic validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "verifyDigest function at RCLCxPeerPos::checkSign",
+      "issue_pattern": "Missing empty string validation for signature (cryptographic validity)",
+      "why_false_positive": "verifyDigest function validates signature (cryptographic validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "publicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "size check at RCLCxPeerPos::getJson",
+      "issue_pattern": "Missing empty string validation for publicKey",
+      "why_false_positive": "size check validates publicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "publicKey",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "size check at RCLCxPeerPos::getJson",
+      "issue_pattern": "Missing format validation for publicKey",
+      "why_false_positive": "size check validates publicKey format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLCxPeerPos.cpp",
+  "functions": [
+    {
+      "args": [
+        "publicKey",
+        "signature",
+        "suppression",
+        "proposal"
+      ],
+      "lineno": 7,
+      "name": "RCLCxPeerPos::RCLCxPeerPos"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "RCLCxPeerPos::checkSign"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "RCLCxPeerPos::getJson"
+    },
+    {
+      "args": [
+        "proposeHash",
+        "previousLedger",
+        "proposeSeq",
+        "closeTime",
+        "publicKey",
+        "signature"
+      ],
+      "lineno": 38,
+      "name": "proposalUniqueId"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by consensus and proposal validation tests in the XRPLF/rippled codebase, such as tests in 'src/test/consensus', 'src/test/app/consensus', or 'src/test/protocol'. Specifically, tests for proposal signature validation, malformed proposals, and peer position handling would exercise these paths. However, direct unit tests for RCLCxPeerPos constructor's signature size checks and checkSign() may be limited; fuzzing or malformed input tests may not cover all edge cases (e.g., oversized signatures, empty public keys). There may be gaps in testing for boundary conditions (e.g., signature size exactly at capacity, empty signature, invalid public key sizes).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL custom (XRPL_ASSERT, verifyDigest, jss:: for JSON keys)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "signature",
+      "location": "RCLCxPeerPos constructor",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "signature is not empty",
+        "signature size does not exceed signature_ capacity (max 72 bytes)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (assignment skipped if invalid)",
+      "field": "signature",
+      "location": "RCLCxPeerPos constructor",
+      "validated_by": "if statement",
+      "validates": [
+        "signature is not empty",
+        "signature size does not exceed signature_ capacity"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "signature (cryptographic validity)",
+      "location": "RCLCxPeerPos::checkSign",
+      "validated_by": "verifyDigest function",
+      "validates": [
+        "signature matches publicKey and proposal_.signingHash"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (field omitted if invalid)",
+      "field": "publicKey",
+      "location": "RCLCxPeerPos::getJson",
+      "validated_by": "size check",
+      "validates": [
+        "publicKey is not empty before encoding to Base58"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

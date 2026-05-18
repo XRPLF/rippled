@@ -1,0 +1,168 @@
+{
+  "args": [
+    {
+      "lineno": 49,
+      "name": "myId"
+    },
+    {
+      "lineno": 49,
+      "name": "j"
+    },
+    {
+      "lineno": 59,
+      "name": "prevLedger"
+    },
+    {
+      "lineno": 60,
+      "name": "unlKeys"
+    },
+    {
+      "lineno": 61,
+      "name": "validations"
+    },
+    {
+      "lineno": 62,
+      "name": "initialSet"
+    },
+    {
+      "lineno": 77,
+      "name": "seq"
+    },
+    {
+      "lineno": 77,
+      "name": "nowTrusted"
+    },
+    {
+      "lineno": 92,
+      "name": "vp"
+    },
+    {
+      "lineno": 93,
+      "name": "modify"
+    },
+    {
+      "lineno": 104,
+      "name": "randomPadData"
+    },
+    {
+      "lineno": 105,
+      "name": "candidates"
+    },
+    {
+      "lineno": 119,
+      "name": "unl"
+    },
+    {
+      "lineno": 136,
+      "name": "negUnl"
+    },
+    {
+      "lineno": 137,
+      "name": "scoreTable"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "NodeID const& myId",
+        "beast::Journal j"
+      ],
+      "lineno": 36,
+      "name": "NegativeUNLVote"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "Candidates"
+    }
+  ],
+  "description": "Defines the NegativeUNLVote class, which manages the process of voting to disable or re-enable validators on the Negative UNL (Unique Node List) in the XRPL consensus protocol, including reliability scoring and candidate selection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/NegativeUNLVote.h",
+  "functions": [
+    {
+      "args": [
+        "NodeID const& myId",
+        "beast::Journal j"
+      ],
+      "lineno": 49,
+      "name": "NegativeUNLVote"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "~NegativeUNLVote"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& prevLedger",
+        "hash_set<PublicKey> const& unlKeys",
+        "RCLValidations& validations",
+        "std::shared_ptr<SHAMap> const& initialSet"
+      ],
+      "lineno": 59,
+      "name": "doVoting"
+    },
+    {
+      "args": [
+        "LedgerIndex seq",
+        "hash_set<NodeID> const& nowTrusted"
+      ],
+      "lineno": 77,
+      "name": "newValidators"
+    },
+    {
+      "args": [
+        "LedgerIndex seq",
+        "PublicKey const& vp",
+        "NegativeUNLModify modify",
+        "std::shared_ptr<SHAMap> const& initialSet"
+      ],
+      "lineno": 92,
+      "name": "addTx"
+    },
+    {
+      "args": [
+        "uint256 const& randomPadData",
+        "std::vector<NodeID> const& candidates"
+      ],
+      "lineno": 104,
+      "name": "choose"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& prevLedger",
+        "hash_set<NodeID> const& unl",
+        "RCLValidations& validations"
+      ],
+      "lineno": 119,
+      "name": "buildScoreTable"
+    },
+    {
+      "args": [
+        "hash_set<NodeID> const& unl",
+        "hash_set<NodeID> const& negUnl",
+        "hash_map<NodeID, std::uint32_t> const& scoreTable"
+      ],
+      "lineno": 136,
+      "name": "findAllCandidates"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 149,
+      "name": "purgeNewValidators"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 19,
+      "name": "test"
+    }
+  ]
+}

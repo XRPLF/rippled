@@ -1,0 +1,111 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 11,
+      "name": "account"
+    },
+    {
+      "lineno": 12,
+      "name": "sequence"
+    },
+    {
+      "lineno": 13,
+      "name": "flags"
+    },
+    {
+      "lineno": 14,
+      "name": "maxAmount"
+    },
+    {
+      "lineno": 15,
+      "name": "assetScale"
+    },
+    {
+      "lineno": 16,
+      "name": "transferFee"
+    },
+    {
+      "lineno": 17,
+      "name": "metadata"
+    },
+    {
+      "lineno": 18,
+      "name": "domainId"
+    },
+    {
+      "lineno": 19,
+      "name": "mutableFlags"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "MPTCreateArgs"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 25,
+      "name": "MPTokenIssuanceCreate"
+    }
+  ],
+  "description": "Defines the MPTokenIssuanceCreate transactor class and supporting argument struct for creating a new Multi-Party Token (MPT) issuance on the XRPL, including preflight checks, flag handling, and creation logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/token/MPTokenIssuanceCreate.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 27,
+      "name": "MPTokenIssuanceCreate"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 35,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 38,
+      "name": "preflight"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "doApply"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "beast::Journal journal",
+        "MPTCreateArgs const& args"
+      ],
+      "lineno": 44,
+      "name": "create"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

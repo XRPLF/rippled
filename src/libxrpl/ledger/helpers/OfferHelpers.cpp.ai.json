@@ -1,0 +1,470 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "view"
+    },
+    {
+      "lineno": 8,
+      "name": "sle"
+    },
+    {
+      "lineno": 8,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "offerDelete"
+      ],
+      "entry_point": "offerDelete",
+      "purpose": "Deletes an offer from the ledger, removing it from owner and book directories, handling hybrid offers, and adjusting owner count.",
+      "validation_points": [
+        "if (!sle) return tesSUCCESS;",
+        "if (!view.dirRemove(keylet::ownerDir(owner), ...)) return tefBAD_LEDGER;",
+        "if (!view.dirRemove(keylet::page(uDirectory), ...)) return tefBAD_LEDGER;",
+        "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...)",
+        "if (!view.dirRemove(keylet::page(dirIndex), ...)) return tefBAD_LEDGER;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sle (shared_ptr<SLE>)",
+      "flow": [
+        "offerDelete parameter",
+        "validated by if (!sle)",
+        "used to extract offerIndex, owner, uDirectory, and fields"
+      ],
+      "origin": "Input parameter to offerDelete",
+      "transformations": [
+        "Checked for null",
+        "Fields extracted for further processing"
+      ],
+      "validated_at": "if (!sle)"
+    },
+    {
+      "field": "sfOwnerNode",
+      "flow": [
+        "sle->getFieldU64(sfOwnerNode)",
+        "passed to view.dirRemove for owner directory"
+      ],
+      "origin": "Field in sle",
+      "transformations": [
+        "Extracted as uint64"
+      ],
+      "validated_at": "Implicitly validated by dirRemove return value"
+    },
+    {
+      "field": "sfBookDirectory",
+      "flow": [
+        "sle->getFieldH256(sfBookDirectory)",
+        "used as uDirectory for book directory removal"
+      ],
+      "origin": "Field in sle",
+      "transformations": [
+        "Extracted as uint256"
+      ],
+      "validated_at": "Implicitly validated by dirRemove return value"
+    },
+    {
+      "field": "sfBookNode",
+      "flow": [
+        "sle->getFieldU64(sfBookNode)",
+        "passed to view.dirRemove for book directory"
+      ],
+      "origin": "Field in sle",
+      "transformations": [
+        "Extracted as uint64"
+      ],
+      "validated_at": "Implicitly validated by dirRemove return value"
+    },
+    {
+      "field": "sfAdditionalBooks",
+      "flow": [
+        "sle->isFieldPresent(sfAdditionalBooks)",
+        "if present, getFieldArray(sfAdditionalBooks)",
+        "iterate over array, extract sfBookDirectory and sfBookNode"
+      ],
+      "origin": "Field in sle",
+      "transformations": [
+        "Checked for presence",
+        "Array extracted and iterated"
+      ],
+      "validated_at": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...)"
+    },
+    {
+      "field": "sfDomainID",
+      "flow": [
+        "sle->isFieldPresent(sfDomainID)",
+        "checked in XRPL_ASSERT for hybrid offers"
+      ],
+      "origin": "Field in sle",
+      "transformations": [
+        "Checked for presence"
+      ],
+      "validated_at": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...)"
+    },
+    {
+      "field": "lsfHybrid",
+      "flow": [
+        "sle->isFlag(lsfHybrid)",
+        "checked in XRPL_ASSERT for hybrid offers"
+      ],
+      "origin": "Flag in sle",
+      "transformations": [
+        "Checked for flag presence"
+      ],
+      "validated_at": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...)"
+    },
+    {
+      "field": "offerIndex",
+      "flow": [
+        "extracted from sle",
+        "passed to all dirRemove calls"
+      ],
+      "origin": "sle->key()",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Used in dirRemove, which returns error if not found"
+    },
+    {
+      "field": "owner",
+      "flow": [
+        "extracted from sle",
+        "used for ownerDir keylet and adjustOwnerCount"
+      ],
+      "origin": "sle->getAccountID(sfAccount)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "Not directly validated, but used in directory operations"
+    }
+  ],
+  "description": "Provides helper functions for deleting offers from the XRPL ledger, handling directory removals and owner count adjustments.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount (type: AccountID, via getAccountID)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount (type: AccountID, via getAccountID) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfAccount (type: AccountID, via getAccountID)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfAccount (type: AccountID, via getAccountID) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBookDirectory (type: uint256, via getFieldH256)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBookDirectory (type: uint256, via getFieldH256) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfBookDirectory (type: uint256, via getFieldH256)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfBookDirectory (type: uint256, via getFieldH256) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOwnerNode (type: uint64, via getFieldU64)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfOwnerNode (type: uint64, via getFieldU64) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfOwnerNode (type: uint64, via getFieldU64)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfOwnerNode (type: uint64, via getFieldU64) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBookNode (type: uint64, via getFieldU64)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBookNode (type: uint64, via getFieldU64) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfBookNode (type: uint64, via getFieldU64)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfBookNode (type: uint64, via getFieldU64) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAdditionalBooks (type: STArray, via getFieldArray)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAdditionalBooks (type: STArray, via getFieldArray) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfAdditionalBooks (type: STArray, via getFieldArray)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfAdditionalBooks (type: STArray, via getFieldArray) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDomainID (type: present/absent, via isFieldPresent)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDomainID (type: present/absent, via isFieldPresent) validated by Custom business logic (XRPL core, no external validation framework)",
+      "issue_pattern": "Missing validation for sfDomainID (type: present/absent, via isFieldPresent)",
+      "why_false_positive": "Custom business logic (XRPL core, no external validation framework) validates sfDomainID (type: present/absent, via isFieldPresent) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!sle) at offerDelete",
+      "issue_pattern": "Missing empty string validation for sle (shared_ptr<SLE>)",
+      "why_false_positive": "if (!sle) validates sle (shared_ptr<SLE>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false) at offerDelete",
+      "issue_pattern": "Missing empty string validation for owner directory removal",
+      "why_false_positive": "view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false) validates owner directory removal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove(keylet::page(uDirectory), sle->getFieldU64(sfBookNode), offerIndex, false) at offerDelete",
+      "issue_pattern": "Missing empty string validation for book directory removal",
+      "why_false_positive": "view.dirRemove(keylet::page(uDirectory), sle->getFieldU64(sfBookNode), offerIndex, false) validates book directory removal for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hybrid domain offer structure",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...) at offerDelete",
+      "issue_pattern": "Missing empty string validation for hybrid domain offer structure",
+      "why_false_positive": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...) validates hybrid domain offer structure for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "additional book directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.dirRemove(keylet::page(dirIndex), dirNode, offerIndex, false) at offerDelete (inside for loop over sfAdditionalBooks)",
+      "issue_pattern": "Missing empty string validation for additional book directory removal",
+      "why_false_positive": "view.dirRemove(keylet::page(dirIndex), dirNode, offerIndex, false) validates additional book directory removal for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/OfferHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "sle",
+        "j"
+      ],
+      "lineno": 8,
+      "name": "offerDelete"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function is likely tested indirectly via offer cancellation, offer expiration, and ledger mutation tests. Look for tests in files such as 'Offer.test.cpp', 'LedgerView.test.cpp', or integration tests that exercise offer creation and deletion. The LCOV_EXCL_LINE comments indicate that error paths (dirRemove failures) are not covered by standard tests. Hybrid domain offer logic (XRPL_ASSERT) may not be fully covered unless there are explicit hybrid offer tests. Null sle input is likely covered by basic offer deletion tests. AdditionalBooks logic may be under-tested if hybrid offers are rare in test suites.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAccount (type: AccountID, via getAccountID)",
+      "sfBookDirectory (type: uint256, via getFieldH256)",
+      "sfOwnerNode (type: uint64, via getFieldU64)",
+      "sfBookNode (type: uint64, via getFieldU64)",
+      "sfAdditionalBooks (type: STArray, via getFieldArray)",
+      "sfDomainID (type: present/absent, via isFieldPresent)"
+    ],
+    "framework": "Custom business logic (XRPL core, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns tesSUCCESS (early exit)",
+      "field": "sle (shared_ptr<SLE>)",
+      "location": "offerDelete",
+      "validated_by": "if (!sle)",
+      "validates": [
+        "checks if the pointer to the offer SLE is non-null before proceeding"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns tefBAD_LEDGER",
+      "field": "owner directory removal",
+      "location": "offerDelete",
+      "validated_by": "view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false)",
+      "validates": [
+        "checks if the offer can be removed from the owner's directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns tefBAD_LEDGER",
+      "field": "book directory removal",
+      "location": "offerDelete",
+      "validated_by": "view.dirRemove(keylet::page(uDirectory), sle->getFieldU64(sfBookNode), offerIndex, false)",
+      "validates": [
+        "checks if the offer can be removed from the book directory"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts in debug, may throw in release)",
+      "field": "hybrid domain offer structure",
+      "location": "offerDelete",
+      "validated_by": "XRPL_ASSERT(sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID), ...)",
+      "validates": [
+        "if sfAdditionalBooks is present, ensures lsfHybrid flag is set",
+        "if sfAdditionalBooks is present, ensures sfDomainID field is present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns tefBAD_LEDGER",
+      "field": "additional book directory removal",
+      "location": "offerDelete (inside for loop over sfAdditionalBooks)",
+      "validated_by": "view.dirRemove(keylet::page(dirIndex), dirNode, offerIndex, false)",
+      "validates": [
+        "checks if the offer can be removed from each additional book directory"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

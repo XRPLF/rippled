@@ -1,0 +1,434 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "view"
+    },
+    {
+      "lineno": 38,
+      "name": "asset"
+    },
+    {
+      "lineno": 41,
+      "name": "account"
+    },
+    {
+      "lineno": 48,
+      "name": "depth"
+    },
+    {
+      "lineno": 54,
+      "name": "issue"
+    },
+    {
+      "lineno": 57,
+      "name": "mptIssue"
+    },
+    {
+      "lineno": 63,
+      "name": "accounts"
+    },
+    {
+      "lineno": 191,
+      "name": "from"
+    },
+    {
+      "lineno": 191,
+      "name": "to"
+    },
+    {
+      "lineno": 202,
+      "name": "uSenderID"
+    },
+    {
+      "lineno": 202,
+      "name": "uReceiverID"
+    },
+    {
+      "lineno": 202,
+      "name": "saAmount"
+    },
+    {
+      "lineno": 202,
+      "name": "bCheckIssuer"
+    },
+    {
+      "lineno": 104,
+      "name": "j"
+    },
+    {
+      "lineno": 104,
+      "name": "zeroIfFrozen"
+    },
+    {
+      "lineno": 104,
+      "name": "includeFullBalance"
+    },
+    {
+      "lineno": 104,
+      "name": "currency"
+    },
+    {
+      "lineno": 104,
+      "name": "issuer"
+    },
+    {
+      "lineno": 122,
+      "name": "zeroIfUnauthorized"
+    },
+    {
+      "lineno": 143,
+      "name": "id"
+    },
+    {
+      "lineno": 143,
+      "name": "saDefault"
+    },
+    {
+      "lineno": 143,
+      "name": "freezeHandling"
+    },
+    {
+      "lineno": 151,
+      "name": "authHandling"
+    },
+    {
+      "lineno": 159,
+      "name": "amount"
+    },
+    {
+      "lineno": 170,
+      "name": "accountID"
+    },
+    {
+      "lineno": 170,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 170,
+      "name": "journal"
+    },
+    {
+      "lineno": 185,
+      "name": "authType"
+    },
+    {
+      "lineno": 222,
+      "name": "senderID"
+    },
+    {
+      "lineno": 222,
+      "name": "receivers"
+    },
+    {
+      "lineno": 210,
+      "name": "waiveFee"
+    },
+    {
+      "lineno": 210,
+      "name": "allowOverflow"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides helper functions and enums for handling token balances, freezes, authorizations, and transfers in the XRPL ledger, supporting both IOU and MPT (Multi-Party Token) assets.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/TokenHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "asset"
+      ],
+      "lineno": 38,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset"
+      ],
+      "lineno": 41,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset",
+        "depth"
+      ],
+      "lineno": 48,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue"
+      ],
+      "lineno": 54,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue"
+      ],
+      "lineno": 57,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset"
+      ],
+      "lineno": 60,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "accounts",
+        "issue"
+      ],
+      "lineno": 63,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "accounts",
+        "asset",
+        "depth"
+      ],
+      "lineno": 69,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue",
+        "depth"
+      ],
+      "lineno": 76,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset",
+        "depth"
+      ],
+      "lineno": 84,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue"
+      ],
+      "lineno": 91,
+      "name": "checkDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset"
+      ],
+      "lineno": 94,
+      "name": "checkDeepFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "currency",
+        "issuer",
+        "zeroIfFrozen",
+        "j",
+        "includeFullBalance"
+      ],
+      "lineno": 104,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "issue",
+        "zeroIfFrozen",
+        "j",
+        "includeFullBalance"
+      ],
+      "lineno": 113,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue",
+        "zeroIfFrozen",
+        "zeroIfUnauthorized",
+        "j",
+        "includeFullBalance"
+      ],
+      "lineno": 122,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset",
+        "zeroIfFrozen",
+        "zeroIfUnauthorized",
+        "j",
+        "includeFullBalance"
+      ],
+      "lineno": 132,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "saDefault",
+        "freezeHandling",
+        "j"
+      ],
+      "lineno": 143,
+      "name": "accountFunds"
+    },
+    {
+      "args": [
+        "view",
+        "id",
+        "saDefault",
+        "freezeHandling",
+        "authHandling",
+        "j"
+      ],
+      "lineno": 151,
+      "name": "accountFunds"
+    },
+    {
+      "args": [
+        "view",
+        "amount"
+      ],
+      "lineno": 159,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "view",
+        "asset"
+      ],
+      "lineno": 167,
+      "name": "canAddHolding"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "priorBalance",
+        "asset",
+        "journal"
+      ],
+      "lineno": 170,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "asset",
+        "journal"
+      ],
+      "lineno": 177,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "asset",
+        "account",
+        "authType"
+      ],
+      "lineno": 185,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "view",
+        "asset",
+        "from",
+        "to"
+      ],
+      "lineno": 191,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "view",
+        "uSenderID",
+        "uReceiverID",
+        "saAmount",
+        "bCheckIssuer",
+        "j"
+      ],
+      "lineno": 202,
+      "name": "directSendNoFee"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "saAmount",
+        "j",
+        "waiveFee",
+        "allowOverflow"
+      ],
+      "lineno": 210,
+      "name": "accountSend"
+    },
+    {
+      "args": [
+        "view",
+        "senderID",
+        "asset",
+        "receivers",
+        "j",
+        "waiveFee"
+      ],
+      "lineno": 222,
+      "name": "accountSendMulti"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "amount",
+        "j"
+      ],
+      "lineno": 233,
+      "name": "transferXRP"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ]
+}

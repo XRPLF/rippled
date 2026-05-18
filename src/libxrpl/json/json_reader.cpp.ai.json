@@ -1,0 +1,471 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Reader::parse(std::string const&, Value&)",
+        "Reader::parse(char const*, char const*, Value&)",
+        "Reader::readValue(unsigned)",
+        "Reader::skipCommentTokens(Token&)",
+        "Reader::readToken(Token&)",
+        "Reader::readObject/readArray/decodeNumber/decodeDouble/decodeString"
+      ],
+      "entry_point": "Reader::parse(std::string const&, Value&)",
+      "purpose": "Parses a JSON document from a string into a Value object, validating structure and types.",
+      "validation_points": [
+        "Reader::parse(char const*, char const*, Value&) (root type validation)",
+        "Reader::readValue(unsigned) (type and structure validation)",
+        "decodeString (string/UTF-8 validation via codePointToUTF8)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Reader::parse(std::istream&, Value&)",
+        "Reader::parse(std::string const&, Value&)",
+        "Reader::parse(char const*, char const*, Value&)",
+        "Reader::readValue(unsigned)"
+      ],
+      "entry_point": "Reader::parse(std::istream&, Value&)",
+      "purpose": "Parses a JSON document from an input stream, validating structure and types.",
+      "validation_points": [
+        "Reader::parse(char const*, char const*, Value&) (root type validation)",
+        "Reader::readValue(unsigned) (type and structure validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Reader::parse(char const*, char const*, Value&)",
+        "Reader::readValue(unsigned)"
+      ],
+      "entry_point": "Reader::parse(char const*, char const*, Value&)",
+      "purpose": "Core parsing logic for JSON, called by all public parse entry points.",
+      "validation_points": [
+        "Manual check: root.isNull(), root.isArray(), root.isObject() (root type validation)",
+        "readValue: type/structure validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "Reader::readValue(unsigned)",
+        "decodeString",
+        "codePointToUTF8(unsigned int)"
+      ],
+      "entry_point": "decodeString (called from readValue)",
+      "purpose": "Decodes JSON string values, including Unicode escape sequences.",
+      "validation_points": [
+        "codePointToUTF8(unsigned int) (validates Unicode code point range)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "document_",
+      "flow": [
+        "parse(std::string const&, Value&) (sets document_)",
+        "parse(char const*, char const*, Value&) (uses document_.c_str())",
+        "readValue(unsigned) (parses into Value)"
+      ],
+      "origin": "Reader::parse(std::string const&, Value&)",
+      "transformations": [
+        "Copied from input string",
+        "Pointer arithmetic to get begin/end",
+        "Tokenized and parsed"
+      ],
+      "validated_at": "parse(char const*, char const*, Value&) (root type validation)"
+    },
+    {
+      "field": "root (Value&)",
+      "flow": [
+        "parse() argument",
+        "nodes_.push(&root)",
+        "readValue(unsigned) (populates root)"
+      ],
+      "origin": "parse() argument",
+      "transformations": [
+        "Initially empty",
+        "Populated by parsing logic"
+      ],
+      "validated_at": "parse(char const*, char const*, Value&) (root type validation)"
+    },
+    {
+      "field": "Unicode code point",
+      "flow": [
+        "decodeString",
+        "codePointToUTF8(unsigned int)",
+        "string result"
+      ],
+      "origin": "decodeString (parsing \\uXXXX escapes)",
+      "transformations": [
+        "Parsed from escape sequence",
+        "Converted to UTF-8 bytes"
+      ],
+      "validated_at": "codePointToUTF8(unsigned int) (range check: cp <= 0x10FFFF)"
+    },
+    {
+      "field": "Token",
+      "flow": [
+        "readToken (parses next token)",
+        "skipCommentTokens (skips comments)",
+        "readValue (dispatches on token type)"
+      ],
+      "origin": "readToken",
+      "transformations": [
+        "Lexical analysis",
+        "Type assignment"
+      ],
+      "validated_at": "readValue (switch on token.type_, error if unexpected)"
+    }
+  ],
+  "description": "This file implements a JSON parser (Reader) for parsing JSON documents into Value objects, including support for error reporting, Unicode, comments, and various JSON types.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "JSON root value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check in Reader::parse(char const*, char const*, Value&) at Reader::parse(char const*, char const*, Value&)",
+      "issue_pattern": "Missing empty string validation for JSON root value",
+      "why_false_positive": "manual check in Reader::parse(char const*, char const*, Value&) validates JSON root value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "JSON root value",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "manual check in Reader::parse(char const*, char const*, Value&) at Reader::parse(char const*, char const*, Value&)",
+      "issue_pattern": "Missing type validation for JSON root value",
+      "why_false_positive": "manual check in Reader::parse(char const*, char const*, Value&) validates JSON root value type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "Unicode code point (for UTF-8 encoding)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual range check in codePointToUTF8(unsigned int) at codePointToUTF8(unsigned int)",
+      "issue_pattern": "Missing empty string validation for Unicode code point (for UTF-8 encoding)",
+      "why_false_positive": "manual range check in codePointToUTF8(unsigned int) validates Unicode code point (for UTF-8 encoding) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Unicode code point (for UTF-8 encoding)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual range check in codePointToUTF8(unsigned int) at codePointToUTF8(unsigned int)",
+      "issue_pattern": "Missing range validation for Unicode code point (for UTF-8 encoding)",
+      "why_false_positive": "manual range check in codePointToUTF8(unsigned int) validates Unicode code point (for UTF-8 encoding) range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/json/json_reader.cpp",
+  "functions": [
+    {
+      "args": [
+        "unsigned int cp"
+      ],
+      "lineno": 10,
+      "name": "codePointToUTF8"
+    },
+    {
+      "args": [
+        "std::string const& document",
+        "Value& root"
+      ],
+      "lineno": 32,
+      "name": "Reader::parse"
+    },
+    {
+      "args": [
+        "std::istream& sin",
+        "Value& root"
+      ],
+      "lineno": 39,
+      "name": "Reader::parse"
+    },
+    {
+      "args": [
+        "char const* beginDoc",
+        "char const* endDoc",
+        "Value& root"
+      ],
+      "lineno": 50,
+      "name": "Reader::parse"
+    },
+    {
+      "args": [
+        "unsigned depth"
+      ],
+      "lineno": 72,
+      "name": "Reader::readValue"
+    },
+    {
+      "args": [
+        "Token& token"
+      ],
+      "lineno": 98,
+      "name": "Reader::skipCommentTokens"
+    },
+    {
+      "args": [
+        "TokenType type",
+        "Token& token",
+        "char const* message"
+      ],
+      "lineno": 105,
+      "name": "Reader::expectToken"
+    },
+    {
+      "args": [
+        "Token& token"
+      ],
+      "lineno": 112,
+      "name": "Reader::readToken"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "Reader::skipSpaces"
+    },
+    {
+      "args": [
+        "Location pattern",
+        "int patternLength"
+      ],
+      "lineno": 167,
+      "name": "Reader::match"
+    },
+    {
+      "args": [],
+      "lineno": 179,
+      "name": "Reader::readComment"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "Reader::readCStyleComment"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "Reader::readCppStyleComment"
+    },
+    {
+      "args": [],
+      "lineno": 204,
+      "name": "Reader::readNumber"
+    },
+    {
+      "args": [],
+      "lineno": 229,
+      "name": "Reader::readString"
+    },
+    {
+      "args": [
+        "Token& tokenStart",
+        "unsigned depth"
+      ],
+      "lineno": 242,
+      "name": "Reader::readObject"
+    },
+    {
+      "args": [
+        "Token& tokenStart",
+        "unsigned depth"
+      ],
+      "lineno": 292,
+      "name": "Reader::readArray"
+    },
+    {
+      "args": [
+        "Token& token"
+      ],
+      "lineno": 332,
+      "name": "Reader::decodeNumber"
+    },
+    {
+      "args": [
+        "Token& token"
+      ],
+      "lineno": 387,
+      "name": "Reader::decodeDouble"
+    },
+    {
+      "args": [
+        "Token& token"
+      ],
+      "lineno": 419,
+      "name": "Reader::decodeString"
+    },
+    {
+      "args": [
+        "Token& token",
+        "std::string& decoded"
+      ],
+      "lineno": 427,
+      "name": "Reader::decodeString"
+    },
+    {
+      "args": [
+        "Token& token",
+        "Location& current",
+        "Location end",
+        "unsigned int& unicode"
+      ],
+      "lineno": 478,
+      "name": "Reader::decodeUnicodeCodePoint"
+    },
+    {
+      "args": [
+        "Token& token",
+        "Location& current",
+        "Location end",
+        "unsigned int& unicode"
+      ],
+      "lineno": 507,
+      "name": "Reader::decodeUnicodeEscapeSequence"
+    },
+    {
+      "args": [
+        "std::string const& message",
+        "Token& token",
+        "Location extra"
+      ],
+      "lineno": 535,
+      "name": "Reader::addError"
+    },
+    {
+      "args": [
+        "TokenType skipUntilToken"
+      ],
+      "lineno": 545,
+      "name": "Reader::recoverFromError"
+    },
+    {
+      "args": [
+        "std::string const& message",
+        "Token& token",
+        "TokenType skipUntilToken"
+      ],
+      "lineno": 561,
+      "name": "Reader::addErrorAndRecover"
+    },
+    {
+      "args": [],
+      "lineno": 567,
+      "name": "Reader::currentValue"
+    },
+    {
+      "args": [],
+      "lineno": 572,
+      "name": "Reader::getNextChar"
+    },
+    {
+      "args": [
+        "Location location",
+        "int& line",
+        "int& column"
+      ],
+      "lineno": 579,
+      "name": "Reader::getLocationLineAndColumn"
+    },
+    {
+      "args": [
+        "Location location"
+      ],
+      "lineno": 599,
+      "name": "Reader::getLocationLineAndColumn"
+    },
+    {
+      "args": [],
+      "lineno": 606,
+      "name": "Reader::getFormattedErrorMessages"
+    },
+    {
+      "args": [
+        "std::istream& sin",
+        "Value& root"
+      ],
+      "lineno": 622,
+      "name": "operator>>"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "Json"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic (root type, Unicode code point range, token type checks) is typically covered by unit tests for JSON parsing. Likely test files: json_reader_test.cpp, json_value_test.cpp, or similar in the test suite. Gaps may exist for edge cases: deeply nested structures (nest_limit), malformed Unicode escapes, or non-object/array root values. Manual validation checks (e.g., root type) should be explicitly tested for error reporting. Exception paths (addError) should be covered by negative tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework)",
+    "validation_layer": "business_logic (inside Reader::parse and utility functions)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "addError (internal error collection, not exception); returns false",
+      "field": "JSON root value",
+      "location": "Reader::parse(char const*, char const*, Value&)",
+      "validated_by": "manual check in Reader::parse(char const*, char const*, Value&)",
+      "validates": [
+        "Checks that the root value is either an array or an object",
+        "If not, adds error: 'A valid JSON document must be either an array or an object value.'"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (no error thrown for out-of-range, just returns empty string)",
+      "field": "Unicode code point (for UTF-8 encoding)",
+      "location": "codePointToUTF8(unsigned int)",
+      "validated_by": "manual range check in codePointToUTF8(unsigned int)",
+      "validates": [
+        "Checks if code point is within valid Unicode ranges for UTF-8 encoding (<= 0x10FFFF)",
+        "No explicit error for out-of-range, but only valid ranges are encoded"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

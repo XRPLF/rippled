@@ -1,0 +1,251 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "jsonLines"
+    },
+    {
+      "lineno": 13,
+      "name": "line"
+    },
+    {
+      "lineno": 46,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountLines",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "ledger->exists",
+        "readLimitField",
+        "addLine"
+      ],
+      "entry_point": "doAccountLines",
+      "purpose": "Handles the 'account_lines' RPC request, validates input, fetches trust lines for an account, and formats the response.",
+      "validation_points": [
+        "doAccountLines: params.isMember(jss::account)",
+        "doAccountLines: params[jss::account].isString()",
+        "RPC::lookupLedger: validates ledger parameters",
+        "parseBase58<AccountID>: validates account string format",
+        "ledger->exists: checks account existence in ledger",
+        "parseBase58<AccountID> (peer): validates peer account if present",
+        "readLimitField: validates 'limit' parameter"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "context.params[jss::account]",
+        "doAccountLines: isMember/isString validation",
+        "parseBase58<AccountID>",
+        "ledger->exists(keylet::account(accountID))",
+        "used as accountID for trust line lookup"
+      ],
+      "origin": "context.params[jss::account]",
+      "transformations": [
+        "Checked for presence and type",
+        "Parsed from base58 string to AccountID",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "doAccountLines (isMember, isString, parseBase58, ledger->exists)"
+    },
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger"
+      ],
+      "origin": "context.params",
+      "transformations": [
+        "Validated and used to select ledger"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "peer",
+      "flow": [
+        "context.params[jss::peer]",
+        "doAccountLines: isMember check",
+        "parseBase58<AccountID> (if present)",
+        "used as filter for trust lines"
+      ],
+      "origin": "context.params[jss::peer]",
+      "transformations": [
+        "Checked for presence",
+        "Parsed from base58 string to AccountID (if present)"
+      ],
+      "validated_at": "doAccountLines (parseBase58 for peer)"
+    },
+    {
+      "field": "limit",
+      "flow": [
+        "context.params[jss::limit]",
+        "readLimitField",
+        "used to limit number of trust lines returned"
+      ],
+      "origin": "context.params[jss::limit]",
+      "transformations": [
+        "Validated for type and range"
+      ],
+      "validated_at": "readLimitField"
+    },
+    {
+      "field": "ignore_default",
+      "flow": [
+        "context.params[jss::ignore_default]",
+        "doAccountLines: isMember check and asBool()",
+        "used to filter out default trust lines"
+      ],
+      "origin": "context.params[jss::ignore_default]",
+      "transformations": [
+        "Checked for presence",
+        "Converted to bool"
+      ],
+      "validated_at": "doAccountLines (isMember, asBool)"
+    }
+  ],
+  "description": "Implements the doAccountLines RPC handler for XRPL, which retrieves trust lines (credit lines) for a given account, supporting pagination, filtering, and various trust line flags.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountLines.cpp",
+  "functions": [
+    {
+      "args": [
+        "jsonLines",
+        "line"
+      ],
+      "lineno": 13,
+      "name": "addLine"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 46,
+      "name": "doAccountLines"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in the RPC test suite, e.g., 'account_lines' tests in files like 'rpc-account-lines-test.cpp' or similar. These tests likely cover valid/invalid 'account', 'peer', 'limit', and 'ignore_default' parameters, as well as ledger selection. Gaps may exist for edge cases such as malformed base58 strings, non-existent accounts, or extreme 'limit' values. There may be limited coverage for error injection paths (e.g., malformed peer, missing ledger, etc.).",
+  "validation_architecture": {},
+  "validations": []
+}

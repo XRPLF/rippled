@@ -1,0 +1,116 @@
+{
+  "args": [
+    {
+      "lineno": 65,
+      "name": "serialized_"
+    },
+    {
+      "lineno": 66,
+      "name": "masterKey_"
+    },
+    {
+      "lineno": 67,
+      "name": "signingKey_"
+    },
+    {
+      "lineno": 68,
+      "name": "seq"
+    },
+    {
+      "lineno": 69,
+      "name": "domain_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "Manifest"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "ValidatorToken"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 178,
+      "name": "ManifestCache"
+    }
+  ],
+  "description": "Defines structures and utilities for managing XRPL validator manifests, including manifest serialization, verification, revocation, and a cache for tracking the most recent valid manifests for each validator.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Manifest.h",
+  "functions": [
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 97,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "s",
+        "journal"
+      ],
+      "lineno": 109,
+      "name": "deserializeManifest"
+    },
+    {
+      "args": [
+        "s",
+        "journal"
+      ],
+      "lineno": 113,
+      "name": "deserializeManifest"
+    },
+    {
+      "args": [
+        "v",
+        "journal"
+      ],
+      "lineno": 120,
+      "name": "deserializeManifest"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 130,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 137,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "blob",
+        "journal"
+      ],
+      "lineno": 144,
+      "name": "loadValidatorToken"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 163,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

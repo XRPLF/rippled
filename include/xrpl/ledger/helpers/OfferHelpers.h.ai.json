@@ -1,0 +1,37 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "view"
+    },
+    {
+      "lineno": 22,
+      "name": "sle"
+    },
+    {
+      "lineno": 22,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to delete an offer from the ledger in the XRPL codebase, ensuring the offer exists and permissions are checked.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/OfferHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "sle",
+        "j"
+      ],
+      "lineno": 22,
+      "name": "offerDelete"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

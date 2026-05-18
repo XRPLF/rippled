@@ -1,0 +1,82 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "Book"
+    }
+  ],
+  "description": "Defines the xrpl::Book class representing an order book (pair of assets) and provides hashing, comparison, and utility functions for Book, Issue, MPTIssue, and Asset types, along with their std and boost hash specializations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Book.h",
+  "functions": [
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 29,
+      "name": "isConsistent"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 31,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 33,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "h",
+        "b"
+      ],
+      "lineno": 37,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "book"
+      ],
+      "lineno": 48,
+      "name": "reversed"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 52,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 60,
+      "name": "operator<=>"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 81,
+      "name": "std"
+    },
+    {
+      "lineno": 148,
+      "name": "boost"
+    }
+  ]
+}

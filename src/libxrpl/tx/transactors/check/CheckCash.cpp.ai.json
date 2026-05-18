@@ -1,0 +1,450 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "ctx"
+    },
+    {
+      "lineno": 19,
+      "name": "ctx"
+    },
+    {
+      "lineno": 46,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "CheckCash::preflight"
+      ],
+      "entry_point": "CheckCash::preflight",
+      "purpose": "Performs initial stateless validation of the CheckCash transaction. Ensures only one of Amount or DeliverMin is present, validates amount, and checks for bad asset/currency.",
+      "validation_points": [
+        "CheckCash::preflight: Exactly one of Amount or DeliverMin must be present.",
+        "CheckCash::preflight: Amount must be legal and positive.",
+        "CheckCash::preflight: Asset must not be bad."
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCash::preclaim"
+      ],
+      "entry_point": "CheckCash::preclaim",
+      "purpose": "Performs contextual validation using the current ledger state. Checks that the referenced Check exists, the destination matches, accounts exist, destination tag requirements, and expiration.",
+      "validation_points": [
+        "CheckCash::preclaim: Check exists in ledger.",
+        "CheckCash::preclaim: Transaction account matches Check destination.",
+        "CheckCash::preclaim: Source and destination accounts exist.",
+        "CheckCash::preclaim: DestinationTag required if lsfRequireDestTag is set.",
+        "CheckCash::preclaim: Check has not expired."
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCash::doApply"
+      ],
+      "entry_point": "CheckCash::doApply",
+      "purpose": "Executes the transaction after all validations pass. (Not shown in full context, but standard for XRPL transactors.)",
+      "validation_points": [
+        "Relies on preflight and preclaim having validated all inputs."
+      ]
+    },
+    {
+      "call_chain": [
+        "CheckCash::checkExtraFeatures"
+      ],
+      "entry_point": "CheckCash::checkExtraFeatures",
+      "purpose": "Checks if the transaction uses features (like MPTokensV2) that are enabled or not.",
+      "validation_points": [
+        "CheckCash::checkExtraFeatures: Validates feature flags and token types."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount / sfDeliverMin",
+      "flow": [
+        "Transaction input",
+        "CheckCash::preflight (optAmount/optDeliverMin extracted)",
+        "STAmount value constructed",
+        "isLegalNet(value), value.signum(), badAsset() checks",
+        "Passed to CheckCash::preclaim as part of ctx.tx"
+      ],
+      "origin": "ctx.tx[~sfAmount] / ctx.tx[~sfDeliverMin] (transaction input)",
+      "transformations": [
+        "Optional extraction (may be absent)",
+        "STAmount construction (type conversion)",
+        "Checked for legality, positivity, and asset validity"
+      ],
+      "validated_at": "CheckCash::preflight"
+    },
+    {
+      "field": "sfCheckID",
+      "flow": [
+        "Transaction input",
+        "CheckCash::preclaim (used to look up Check in ledger: ctx.view.read(keylet::check(ctx.tx[sfCheckID])))"
+      ],
+      "origin": "ctx.tx[sfCheckID] (transaction input)",
+      "transformations": [
+        "Used as key to fetch Check object from ledger"
+      ],
+      "validated_at": "CheckCash::preclaim"
+    },
+    {
+      "field": "sfAccount (transaction) vs sfDestination (check)",
+      "flow": [
+        "Transaction input and ledger Check object",
+        "CheckCash::preclaim (compared for equality)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input), sleCheck->at(sfDestination) (ledger)",
+      "transformations": [
+        "Direct comparison"
+      ],
+      "validated_at": "CheckCash::preclaim"
+    },
+    {
+      "field": "sfDestinationTag",
+      "flow": [
+        "Ledger Check object",
+        "CheckCash::preclaim (checked if required by destination account flags)"
+      ],
+      "origin": "sleCheck->isFieldPresent(sfDestinationTag) (ledger Check object)",
+      "transformations": [
+        "Presence check"
+      ],
+      "validated_at": "CheckCash::preclaim"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "Ledger Check object",
+        "CheckCash::preclaim (hasExpired(ctx.view, ...))"
+      ],
+      "origin": "sleCheck->at(~sfExpiration) (ledger Check object)",
+      "transformations": [
+        "Expiration time compared to current ledger time"
+      ],
+      "validated_at": "CheckCash::preclaim"
+    }
+  ],
+  "description": "Implements the CheckCash transaction logic for the XRPL ledger, including preflight, preclaim, and application of check cashing, handling both XRP and IOU/MPT tokens, trust lines, reserves, and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount / sfDeliverMin",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin)) at CheckCash::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount / sfDeliverMin",
+      "why_false_positive": "explicit logic (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin)) validates sfAmount / sfDeliverMin for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount / sfDeliverMin",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet(value), value.signum() > 0 at CheckCash::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount / sfDeliverMin",
+      "why_false_positive": "isLegalNet(value), value.signum() > 0 validates sfAmount / sfDeliverMin for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount / sfDeliverMin (asset)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "badAsset() == value.asset() at CheckCash::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount / sfDeliverMin (asset)",
+      "why_false_positive": "badAsset() == value.asset() validates sfAmount / sfDeliverMin (asset) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCheckID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::check(ctx.tx[sfCheckID])) at CheckCash::preclaim",
+      "issue_pattern": "Missing empty string validation for sfCheckID",
+      "why_false_positive": "ctx.view.read(keylet::check(ctx.tx[sfCheckID])) validates sfCheckID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (transaction) vs sfDestination (check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[sfAccount] != dstId at CheckCash::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount (transaction) vs sfDestination (check)",
+      "why_false_positive": "ctx.tx[sfAccount] != dstId validates sfAccount (transaction) vs sfDestination (check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (check) == sfDestination (check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "srcId == dstId at CheckCash::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount (check) == sfDestination (check)",
+      "why_false_positive": "srcId == dstId validates sfAccount (check) == sfDestination (check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount (check), sfDestination (check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(srcId)), ctx.view.read(keylet::account(dstId)) at CheckCash::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount (check), sfDestination (check)",
+      "why_false_positive": "ctx.view.read(keylet::account(srcId)), ctx.view.read(keylet::account(dstId)) validates sfAccount (check), sfDestination (check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount / sfDeliverMin (MPTIssue type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "optAmount->holds<MPTIssue>(), optDeliverMin->holds<MPTIssue>() at CheckCash::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for sfAmount / sfDeliverMin (MPTIssue type)",
+      "why_false_positive": "optAmount->holds<MPTIssue>(), optDeliverMin->holds<MPTIssue>() validates sfAmount / sfDeliverMin (MPTIssue type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/check/CheckCash.cpp",
+  "functions": [
+    {
+      "args": [
+        "xrpl::PreflightContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 46,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 168,
+      "name": "doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "CheckCash validation is typically covered by unit/integration tests in the rippled codebase, especially in files like 'test/tx/Check_test.cpp' or similar. These tests should cover malformed transactions (missing/extra fields), bad amounts, bad currencies, missing/expired checks, wrong destination, missing destination tags, and feature flag gating. Gaps may exist for edge cases like self-checks (srcId == dstId), which are rare and marked as 'should be caught when the check is created'. Some error paths (e.g., missing accounts when check exists) are marked as 'should never occur' and may not be directly tested. Feature flag logic (MPTokensV2) may require dedicated tests to ensure correct gating.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl protocol, custom logic, ledger view",
+    "validation_layer": "business_logic (preflight/preclaim methods)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAmount / sfDeliverMin",
+      "location": "CheckCash::preflight",
+      "validated_by": "explicit logic (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))",
+      "validates": [
+        "Exactly one of Amount or DeliverMin must be present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount / sfDeliverMin",
+      "location": "CheckCash::preflight",
+      "validated_by": "isLegalNet(value), value.signum() > 0",
+      "validates": [
+        "Amount is legal for network",
+        "Amount is positive"
+      ],
+      "validation_type": "format, range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_CURRENCY",
+      "field": "sfAmount / sfDeliverMin (asset)",
+      "location": "CheckCash::preflight",
+      "validated_by": "badAsset() == value.asset()",
+      "validates": [
+        "Asset is not a bad/currency"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfCheckID",
+      "location": "CheckCash::preclaim",
+      "validated_by": "ctx.view.read(keylet::check(ctx.tx[sfCheckID]))",
+      "validates": [
+        "Check exists in ledger"
+      ],
+      "validation_type": "business_logic, existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount (transaction) vs sfDestination (check)",
+      "location": "CheckCash::preclaim",
+      "validated_by": "ctx.tx[sfAccount] != dstId",
+      "validates": [
+        "Only destination account can cash the check"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfAccount (check) == sfDestination (check)",
+      "location": "CheckCash::preclaim",
+      "validated_by": "srcId == dstId",
+      "validates": [
+        "Check is not written to self"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "not shown (incomplete code), but logs warning",
+      "field": "sfAccount (check), sfDestination (check)",
+      "location": "CheckCash::preclaim",
+      "validated_by": "ctx.view.read(keylet::account(srcId)), ctx.view.read(keylet::account(dstId))",
+      "validates": [
+        "Source and destination accounts exist"
+      ],
+      "validation_type": "business_logic, existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (feature not enabled)",
+      "field": "sfAmount / sfDeliverMin (MPTIssue type)",
+      "location": "CheckCash::checkExtraFeatures",
+      "validated_by": "optAmount->holds<MPTIssue>(), optDeliverMin->holds<MPTIssue>()",
+      "validates": [
+        "MPTIssue type only allowed if featureMPTokensV2 enabled"
+      ],
+      "validation_type": "type, business_logic"
+    }
+  ]
+}

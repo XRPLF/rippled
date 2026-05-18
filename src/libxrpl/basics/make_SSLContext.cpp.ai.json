@@ -1,0 +1,342 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "context"
+    },
+    {
+      "lineno": 143,
+      "name": "context"
+    },
+    {
+      "lineno": 143,
+      "name": "key_file"
+    },
+    {
+      "lineno": 143,
+      "name": "cert_file"
+    },
+    {
+      "lineno": 143,
+      "name": "chain_file"
+    },
+    {
+      "lineno": 222,
+      "name": "cipherList"
+    },
+    {
+      "lineno": 246,
+      "name": "cipherList"
+    },
+    {
+      "lineno": 254,
+      "name": "keyFile"
+    },
+    {
+      "lineno": 254,
+      "name": "certFile"
+    },
+    {
+      "lineno": 254,
+      "name": "chainFile"
+    },
+    {
+      "lineno": 254,
+      "name": "cipherList"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "make_SSLContext",
+        "get_context",
+        "initAnonymous"
+      ],
+      "entry_point": "make_SSLContext",
+      "purpose": "Creates an anonymous SSL context for use in the server, initializing ephemeral keys and parameters.",
+      "validation_points": [
+        "RSA_new failure checked in initAnonymous",
+        "RSA_generate_key_ex failure checked in initAnonymous",
+        "EVP_PKEY_new failure checked in initAnonymous",
+        "RSA_up_ref failure checked in initAnonymous"
+      ]
+    },
+    {
+      "call_chain": [
+        "make_SSLContextAuthed",
+        "get_context",
+        "initAuthenticated"
+      ],
+      "entry_point": "make_SSLContextAuthed",
+      "purpose": "Creates an authenticated SSL context, likely with certificate and key, for use in the server.",
+      "validation_points": [
+        "Validation of certificate/key loading (not shown in provided code, but expected in initAuthenticated)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "defaultRSAKeyBits",
+      "flow": [
+        "defaultRSAKeyBits (constant)",
+        "used in RSA_generate_key_ex in initAnonymous",
+        "RSA key generated",
+        "assigned to EVP_PKEY"
+      ],
+      "origin": "Constant assignment in file (int defaultRSAKeyBits = 2048;)",
+      "transformations": [
+        "Used as key size parameter for RSA key generation"
+      ],
+      "validated_at": "No runtime validation; only checked for success/failure of RSA_generate_key_ex"
+    },
+    {
+      "field": "defaultDH",
+      "flow": [
+        "defaultDH (constant)",
+        "used in context setup (not shown in provided code, but likely in initAnonymous/initAuthenticated)",
+        "DH parameters loaded into SSL context"
+      ],
+      "origin": "Constant assignment in file (static constexpr char const defaultDH[])",
+      "transformations": [
+        "PEM string parsed to DH parameters"
+      ],
+      "validated_at": "No runtime validation; assumed correct as constant"
+    },
+    {
+      "field": "boost::asio::ssl::context",
+      "flow": [
+        "get_context creates context",
+        "passed to initAnonymous or initAuthenticated",
+        "context configured with keys, ciphers, DH params"
+      ],
+      "origin": "Created in get_context",
+      "transformations": [
+        "SSL context is configured with ephemeral keys, ciphers, and DH parameters"
+      ],
+      "validated_at": "Errors in context configuration throw exceptions (e.g., LogicError on failure)"
+    }
+  ],
+  "description": "This file provides functions to create and initialize SSL/TLS contexts for secure communication, including support for anonymous and authenticated modes, default cipher lists, and ephemeral self-signed certificates using OpenSSL and Boost.Asio.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.3,
+      "detection_keywords": [
+        "defaultRSAKeyBits",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "N/A (constant assignment, not runtime validation) at global variable initialization",
+      "issue_pattern": "Missing empty string validation for defaultRSAKeyBits",
+      "why_false_positive": "N/A (constant assignment, not runtime validation) validates defaultRSAKeyBits for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "defaultRSAKeyBits",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "N/A (constant assignment, not runtime validation) at global variable initialization",
+      "issue_pattern": "Missing range validation for defaultRSAKeyBits",
+      "why_false_positive": "N/A (constant assignment, not runtime validation) validates defaultRSAKeyBits range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.3,
+      "detection_keywords": [
+        "defaultDH",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "N/A (constant assignment, not runtime validation) at global variable initialization",
+      "issue_pattern": "Missing empty string validation for defaultDH",
+      "why_false_positive": "N/A (constant assignment, not runtime validation) validates defaultDH for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "defaultDH",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "N/A (constant assignment, not runtime validation) at global variable initialization",
+      "issue_pattern": "Missing format validation for defaultDH",
+      "why_false_positive": "N/A (constant assignment, not runtime validation) validates defaultDH format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/make_SSLContext.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 54,
+      "name": "initAnonymous"
+    },
+    {
+      "args": [
+        "context",
+        "key_file",
+        "cert_file",
+        "chain_file"
+      ],
+      "lineno": 143,
+      "name": "initAuthenticated"
+    },
+    {
+      "args": [
+        "cipherList"
+      ],
+      "lineno": 222,
+      "name": "get_context"
+    },
+    {
+      "args": [
+        "cipherList"
+      ],
+      "lineno": 246,
+      "name": "make_SSLContext"
+    },
+    {
+      "args": [
+        "keyFile",
+        "certFile",
+        "chainFile",
+        "cipherList"
+      ],
+      "lineno": 254,
+      "name": "make_SSLContextAuthed"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 19,
+      "name": "openssl"
+    },
+    {
+      "lineno": 20,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "There is no evidence in this file of direct unit tests or test hooks. The code is low-level and relies on runtime exceptions for error handling. Test coverage would likely exist in higher-level integration or system tests that exercise SSL/TLS connections (e.g., server startup, RPC over TLS). There is no explicit validation of the constants (defaultRSAKeyBits, defaultDH) at runtime, so tests would not catch misconfiguration unless the server fails to start. Gaps: No direct tests for failure modes of key/cert generation, no validation of DH parameter correctness, and no config-driven validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected in this file",
+    "validation_layer": "N/A (no runtime input validation in this file)"
+  },
+  "validations": [
+    {
+      "confidence": 0.3,
+      "error_thrown": "N/A",
+      "field": "defaultRSAKeyBits",
+      "location": "global variable initialization",
+      "validated_by": "N/A (constant assignment, not runtime validation)",
+      "validates": [
+        "RSA key bit length is set to 2048, which is considered secure per NIST"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.3,
+      "error_thrown": "N/A",
+      "field": "defaultDH",
+      "location": "global variable initialization",
+      "validated_by": "N/A (constant assignment, not runtime validation)",
+      "validates": [
+        "DH parameters are in PEM format"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

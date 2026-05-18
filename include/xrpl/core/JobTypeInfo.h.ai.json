@@ -1,0 +1,57 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "JobType type",
+        "std::string name",
+        "int limit",
+        "std::chrono::milliseconds avgLatency",
+        "std::chrono::milliseconds peakLatency"
+      ],
+      "lineno": 7,
+      "name": "JobTypeInfo"
+    }
+  ],
+  "description": "Defines the JobTypeInfo class, which holds static, immutable information about a job type in the XRPL job queue system, such as its type, name, concurrency limit, and latency expectations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/JobTypeInfo.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "type"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "limit"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "special"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAverageLatency"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getPeakLatency"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

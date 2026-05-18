@@ -1,0 +1,429 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidLoanBroker::visitEntry"
+      ],
+      "entry_point": "ValidLoanBroker::visitEntry",
+      "purpose": "Collects and classifies ledger entries (SLEs) relevant to Loan Brokers, Accounts, Trust Lines, and MPTokens for later invariant validation.",
+      "validation_points": [
+        "if (after->getType() == ltLOAN_BROKER)",
+        "else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))",
+        "else if (after->getType() == ltRIPPLE_STATE)",
+        "else if (after->getType() == ltMPTOKEN)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidLoanBroker::finalize",
+        "for (auto const& line : lines_)",
+        "for (auto const& field : {&sfLowLimit, &sfHighLimit})",
+        "view.read(keylet::account(line->at(*field).getIssuer()))",
+        "if (account && account->isFieldPresent(sfLoanBrokerID))",
+        "brokers_.emplace(loanBrokerID, BrokerInfo{})"
+      ],
+      "entry_point": "ValidLoanBroker::finalize",
+      "purpose": "Final validation pass after all entries have been visited; ensures that all relevant accounts and brokers are tracked and that invariants are enforced.",
+      "validation_points": [
+        "if (account && account->isFieldPresent(sfLoanBrokerID))"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidLoanBroker::goodZeroDirectory"
+      ],
+      "entry_point": "ValidLoanBroker::goodZeroDirectory",
+      "purpose": "Validates that a Loan Broker directory with zero OwnerCount is well-formed (no extra pages, only valid entries).",
+      "validation_points": [
+        "if ((prev && (*prev != 0u)) || (next && (*next != 0u)))",
+        "if (indexes.size() > 1)",
+        "if (indexes.size() == 1)",
+        "if (!sle)",
+        "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "after->getType()",
+      "flow": [
+        "visitEntry parameter 'after'",
+        "after->getType()",
+        "type-based branching in visitEntry",
+        "classification into brokers_, lines_, mpts_"
+      ],
+      "origin": "Ledger entry (SLE) passed to visitEntry",
+      "transformations": [
+        "Type is checked to determine how to classify the entry"
+      ],
+      "validated_at": "visitEntry: if (after->getType() == ...)"
+    },
+    {
+      "field": "after->isFieldPresent(sfLoanBrokerID)",
+      "flow": [
+        "visitEntry parameter 'after'",
+        "after->isFieldPresent(sfLoanBrokerID)",
+        "if true, after->at(sfLoanBrokerID) is used as key in brokers_"
+      ],
+      "origin": "AccountRoot SLE",
+      "transformations": [
+        "Presence check; value extracted if present"
+      ],
+      "validated_at": "visitEntry: else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))"
+    },
+    {
+      "field": "dir->at(~sfIndexNext), dir->at(~sfIndexPrevious)",
+      "flow": [
+        "goodZeroDirectory parameter 'dir'",
+        "dir->at(~sfIndexNext), dir->at(~sfIndexPrevious)",
+        "if ((prev && (*prev != 0u)) || (next && (*next != 0u)))"
+      ],
+      "origin": "Directory SLE passed to goodZeroDirectory",
+      "transformations": [
+        "Dereferenced and compared to 0u"
+      ],
+      "validated_at": "goodZeroDirectory: if ((prev && (*prev != 0u)) || (next && (*next != 0u)))"
+    },
+    {
+      "field": "dir->getFieldV256(sfIndexes)",
+      "flow": [
+        "goodZeroDirectory parameter 'dir'",
+        "dir->getFieldV256(sfIndexes)",
+        "indexes.size() > 1 or == 1",
+        "if == 1, index used to fetch SLE from ledger"
+      ],
+      "origin": "Directory SLE",
+      "transformations": [
+        "Size checked; if size==1, dereferenced to get index"
+      ],
+      "validated_at": "goodZeroDirectory: if (indexes.size() > 1), if (indexes.size() == 1)"
+    },
+    {
+      "field": "line->at(*field).getIssuer()",
+      "flow": [
+        "finalize: for (auto const& line : lines_)",
+        "for (auto const& field : {&sfLowLimit, &sfHighLimit})",
+        "line->at(*field).getIssuer()",
+        "view.read(keylet::account(...))"
+      ],
+      "origin": "Trust line SLE in lines_",
+      "transformations": [
+        "Issuer extracted from trust line field"
+      ],
+      "validated_at": "finalize: if (account && account->isFieldPresent(sfLoanBrokerID))"
+    },
+    {
+      "field": "mpt->at(sfAccount)",
+      "flow": [
+        "finalize: for (auto const& mpt : mpts_)",
+        "mpt->at(sfAccount)",
+        "view.read(keylet::account(...))"
+      ],
+      "origin": "MPTOKEN SLE in mpts_",
+      "transformations": [
+        "Account extracted from MPTOKEN"
+      ],
+      "validated_at": "finalize: if (account && account->isFieldPresent(sfLoanBrokerID))"
+    }
+  ],
+  "description": "Implements the ValidLoanBroker invariant check for the XRPL ledger, ensuring the integrity and correctness of Loan Broker objects and their related directory and account states.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "after->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (after->getType() == ...) at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->getType()",
+      "why_false_positive": "if (after->getType() == ...) validates after->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "after->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (after->getType() == ...) at visitEntry",
+      "issue_pattern": "Missing type validation for after->getType()",
+      "why_false_positive": "if (after->getType() == ...) validates after->getType() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "after->isFieldPresent(sfLoanBrokerID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "after->isFieldPresent(sfLoanBrokerID) at visitEntry",
+      "issue_pattern": "Missing empty string validation for after->isFieldPresent(sfLoanBrokerID)",
+      "why_false_positive": "after->isFieldPresent(sfLoanBrokerID) validates after->isFieldPresent(sfLoanBrokerID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dir->at(~sfIndexNext), dir->at(~sfIndexPrevious)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if ((prev && (*prev != 0u)) || (next && (*next != 0u))) at goodZeroDirectory",
+      "issue_pattern": "Missing empty string validation for dir->at(~sfIndexNext), dir->at(~sfIndexPrevious)",
+      "why_false_positive": "if ((prev && (*prev != 0u)) || (next && (*next != 0u))) validates dir->at(~sfIndexNext), dir->at(~sfIndexPrevious) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dir->getFieldV256(sfIndexes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (indexes.size() > 1) at goodZeroDirectory",
+      "issue_pattern": "Missing empty string validation for dir->getFieldV256(sfIndexes)",
+      "why_false_positive": "if (indexes.size() > 1) validates dir->getFieldV256(sfIndexes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "dir->getFieldV256(sfIndexes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (indexes.size() == 1) at goodZeroDirectory",
+      "issue_pattern": "Missing empty string validation for dir->getFieldV256(sfIndexes)",
+      "why_false_positive": "if (indexes.size() == 1) validates dir->getFieldV256(sfIndexes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle->getType()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN) at goodZeroDirectory",
+      "issue_pattern": "Missing empty string validation for sle->getType()",
+      "why_false_positive": "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN) validates sle->getType() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle->getType()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN) at goodZeroDirectory",
+      "issue_pattern": "Missing type validation for sle->getType()",
+      "why_false_positive": "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN) validates sle->getType() type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/LoanBrokerInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 13,
+      "name": "ValidLoanBroker::visitEntry"
+    },
+    {
+      "args": [
+        "view",
+        "dir",
+        "j"
+      ],
+      "lineno": 36,
+      "name": "ValidLoanBroker::goodZeroDirectory"
+    },
+    {
+      "args": [
+        "tx",
+        "TER",
+        "XRPAmount",
+        "view",
+        "j"
+      ],
+      "lineno": 62,
+      "name": "ValidLoanBroker::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is likely tested via invariant enforcement tests in the rippled codebase, particularly those that exercise ledger invariants during transaction application. Look for tests in files such as 'Invariant_test.cpp', 'LoanBrokerInvariant_test.cpp', or integration tests that enable the Lending Protocol amendment and perform operations involving Loan Brokers, Trust Lines, and MPTokens. Gaps may exist if there are no tests for edge cases like malformed directories, missing accounts, or unexpected SLE types in directories. Manual inspection of the test suite is needed to confirm coverage of all validation branches, especially error/failure paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic, SLE field accessors, no external validation framework",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branches on type, no exception)",
+      "field": "after->getType()",
+      "location": "visitEntry",
+      "validated_by": "if (after->getType() == ...)",
+      "validates": [
+        "Checks if SLE is of type ltLOAN_BROKER, ltACCOUNT_ROOT, ltRIPPLE_STATE, or ltMPTOKEN before processing"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (branches on presence, no exception)",
+      "field": "after->isFieldPresent(sfLoanBrokerID)",
+      "location": "visitEntry",
+      "validated_by": "after->isFieldPresent(sfLoanBrokerID)",
+      "validates": [
+        "Checks if sfLoanBrokerID field is present in ACCOUNT_ROOT"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "JLOG(j.fatal()), returns false",
+      "field": "dir->at(~sfIndexNext), dir->at(~sfIndexPrevious)",
+      "location": "goodZeroDirectory",
+      "validated_by": "if ((prev && (*prev != 0u)) || (next && (*next != 0u)))",
+      "validates": [
+        "Ensures Loan Broker with zero OwnerCount does not have multiple directory pages"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "JLOG(j.fatal()), returns false",
+      "field": "dir->getFieldV256(sfIndexes)",
+      "location": "goodZeroDirectory",
+      "validated_by": "if (indexes.size() > 1)",
+      "validates": [
+        "Ensures Loan Broker with zero OwnerCount does not have multiple indexes in the Directory root"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "JLOG(j.fatal()), returns false (if sle not found or type mismatch)",
+      "field": "dir->getFieldV256(sfIndexes)",
+      "location": "goodZeroDirectory",
+      "validated_by": "if (indexes.size() == 1)",
+      "validates": [
+        "If there is one index, checks that the referenced SLE exists and is of type ltRIPPLE_STATE or ltMPTOKEN"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "JLOG(j.fatal()), returns false",
+      "field": "sle->getType()",
+      "location": "goodZeroDirectory",
+      "validated_by": "if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)",
+      "validates": [
+        "Ensures directory entry is of expected type"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "ledger"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger"
+      ],
+      "lineno": 22,
+      "name": "AcceptedLedger"
+    }
+  ],
+  "description": "Defines the AcceptedLedger class, representing a ledger that has become irrevocable after passing a validation threshold, and provides access to its transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/AcceptedLedger.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger"
+      ],
+      "lineno": 27,
+      "name": "AcceptedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "getLedger"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "end"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "NFTokenCreateOffer"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 126,
+      "name": "NFTokenCreateOfferBuilder"
+    }
+  ],
+  "description": "Defines the NFTokenCreateOffer transaction type for the XRPL protocol, providing a type-safe wrapper and a builder class for constructing and signing NFTokenCreateOffer transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/NFTokenCreateOffer.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "NFTokenCreateOffer"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getNFTokenID"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "hasDestination"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "hasOwner"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID",
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& amount",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 134,
+      "name": "NFTokenCreateOfferBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 146,
+      "name": "NFTokenCreateOfferBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 157,
+      "name": "setNFTokenID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 166,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 175,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 184,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 193,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 202,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

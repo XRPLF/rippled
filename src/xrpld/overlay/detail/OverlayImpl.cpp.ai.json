@@ -1,0 +1,843 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 22,
+      "name": "OverlayImpl::Child"
+    },
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 31,
+      "name": "OverlayImpl::Timer"
+    },
+    {
+      "args": [
+        "Application& app",
+        "Setup const& setup",
+        "ServerHandler& serverHandler",
+        "Resource::Manager& resourceManager",
+        "Resolver& resolver",
+        "boost::asio::io_context& io_context",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 69,
+      "name": "OverlayImpl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OverlayImpl::Timer::async_wait",
+        "OverlayImpl::Timer::on_timer"
+      ],
+      "entry_point": "OverlayImpl::Timer::async_wait",
+      "purpose": "Schedules and handles periodic timer events for overlay maintenance tasks.",
+      "validation_points": [
+        "OverlayImpl::Timer::on_timer: if (ec || stopping_)",
+        "OverlayImpl::Timer::on_timer: if (ec && ec != boost::asio::error::operation_aborted)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OverlayImpl::Timer::on_timer",
+        "overlay_.m_peerFinder->once_per_second()",
+        "overlay_.sendEndpoints()",
+        "overlay_.autoConnect()",
+        "overlay_.sendTxQueue()",
+        "overlay_.deleteIdlePeers()",
+        "OverlayImpl::Timer::async_wait"
+      ],
+      "entry_point": "OverlayImpl::Timer::on_timer",
+      "purpose": "Handles timer expiration, runs periodic overlay tasks, and reschedules itself.",
+      "validation_points": [
+        "OverlayImpl::Timer::on_timer: if (ec || stopping_)",
+        "OverlayImpl::Timer::on_timer: if (ec && ec != boost::asio::error::operation_aborted)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OverlayImpl::Timer::stop",
+        "timer_.cancel()"
+      ],
+      "entry_point": "OverlayImpl::Timer::stop",
+      "purpose": "Stops the timer and cancels any pending asynchronous wait.",
+      "validation_points": [
+        "OverlayImpl::Timer::on_timer: if (ec || stopping_)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ec (error_code)",
+      "flow": [
+        "async_wait schedules on_timer with error_code",
+        "on_timer receives ec",
+        "on_timer checks ec for errors and operation_aborted"
+      ],
+      "origin": "Passed as argument to OverlayImpl::Timer::on_timer by boost::asio::async_wait",
+      "transformations": [
+        "Checked for truthiness (error present)",
+        "Compared against boost::asio::error::operation_aborted"
+      ],
+      "validated_at": "OverlayImpl::Timer::on_timer"
+    },
+    {
+      "field": "stopping_ (bool)",
+      "flow": [
+        "stop() sets stopping_",
+        "on_timer checks stopping_",
+        "If stopping_ is true, on_timer returns early"
+      ],
+      "origin": "OverlayImpl::Timer::stop sets stopping_ = true",
+      "transformations": [
+        "Set to true to indicate timer should stop"
+      ],
+      "validated_at": "OverlayImpl::Timer::on_timer"
+    },
+    {
+      "field": "timer_ (boost::asio::steady_timer)",
+      "flow": [
+        "Timer constructed with timer_",
+        "async_wait sets timer_ expiration and schedules on_timer",
+        "stop cancels timer_"
+      ],
+      "origin": "Constructed in OverlayImpl::Timer::Timer",
+      "transformations": [
+        "expires_after sets expiration",
+        "cancel aborts pending waits"
+      ],
+      "validated_at": "N/A (timer_ is not validated, but its state is checked via ec)"
+    },
+    {
+      "field": "overlay_.timer_count_",
+      "flow": [
+        "on_timer increments timer_count_",
+        "Used to determine when to call deleteIdlePeers"
+      ],
+      "origin": "OverlayImpl instance field, incremented in on_timer",
+      "transformations": [
+        "Incremented each timer tick",
+        "Modulo check for periodic action"
+      ],
+      "validated_at": "N/A (used as counter, not validated)"
+    }
+  ],
+  "description": "Implements the OverlayImpl class, which manages peer connections, peer discovery, message relaying, and network overlay operations for the XRPL node. Handles peer handshakes, connection attempts, traffic metrics, crawl/server info endpoints, and peer management logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ec (error_code)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (ec || stopping_)) at OverlayImpl::Timer::on_timer",
+      "issue_pattern": "Missing empty string validation for ec (error_code)",
+      "why_false_positive": "explicit check (if (ec || stopping_)) validates ec (error_code) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ec (error_code)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (if (ec && ec != boost::asio::error::operation_aborted)) at OverlayImpl::Timer::on_timer",
+      "issue_pattern": "Missing empty string validation for ec (error_code)",
+      "why_false_positive": "explicit check (if (ec && ec != boost::asio::error::operation_aborted)) validates ec (error_code) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/OverlayImpl.cpp",
+  "functions": [
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 23,
+      "name": "OverlayImpl::Child::Child"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "OverlayImpl::Child::~Child"
+    },
+    {
+      "args": [
+        "OverlayImpl& overlay"
+      ],
+      "lineno": 32,
+      "name": "OverlayImpl::Timer::Timer"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "OverlayImpl::Timer::stop"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "OverlayImpl::Timer::async_wait"
+    },
+    {
+      "args": [
+        "error_code ec"
+      ],
+      "lineno": 51,
+      "name": "OverlayImpl::Timer::on_timer"
+    },
+    {
+      "args": [
+        "Application& app",
+        "Setup const& setup",
+        "ServerHandler& serverHandler",
+        "Resource::Manager& resourceManager",
+        "Resolver& resolver",
+        "boost::asio::io_context& io_context",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 70,
+      "name": "OverlayImpl::OverlayImpl"
+    },
+    {
+      "args": [
+        "std::unique_ptr<stream_type>&& stream_ptr",
+        "http_request_type&& request",
+        "endpoint_type remote_endpoint"
+      ],
+      "lineno": 101,
+      "name": "OverlayImpl::onHandoff"
+    },
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 202,
+      "name": "OverlayImpl::isPeerUpgrade"
+    },
+    {
+      "args": [
+        "std::uint32_t id"
+      ],
+      "lineno": 208,
+      "name": "OverlayImpl::makePrefix"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type const& request",
+        "address_type remote_address"
+      ],
+      "lineno": 215,
+      "name": "OverlayImpl::makeRedirectResponse"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerFinder::Slot> const& slot",
+        "http_request_type const& request",
+        "address_type remote_address",
+        "std::string text"
+      ],
+      "lineno": 233,
+      "name": "OverlayImpl::makeErrorResponse"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& remote_endpoint"
+      ],
+      "lineno": 249,
+      "name": "OverlayImpl::connect"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerImp> const& peer"
+      ],
+      "lineno": 273,
+      "name": "OverlayImpl::add_active"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerFinder::Slot> const& slot"
+      ],
+      "lineno": 299,
+      "name": "OverlayImpl::remove"
+    },
+    {
+      "args": [],
+      "lineno": 307,
+      "name": "OverlayImpl::start"
+    },
+    {
+      "args": [],
+      "lineno": 372,
+      "name": "OverlayImpl::stop"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& stream"
+      ],
+      "lineno": 386,
+      "name": "OverlayImpl::onWrite"
+    },
+    {
+      "args": [
+        "std::shared_ptr<PeerImp> const& peer"
+      ],
+      "lineno": 404,
+      "name": "OverlayImpl::activate"
+    },
+    {
+      "args": [
+        "Peer::id_t id"
+      ],
+      "lineno": 422,
+      "name": "OverlayImpl::onPeerDeactivate"
+    },
+    {
+      "args": [
+        "std::shared_ptr<protocol::TMManifests> const& m",
+        "std::shared_ptr<PeerImp> const& from"
+      ],
+      "lineno": 427,
+      "name": "OverlayImpl::onManifests"
+    },
+    {
+      "args": [
+        "TrafficCount::category cat",
+        "int size"
+      ],
+      "lineno": 470,
+      "name": "OverlayImpl::reportInboundTraffic"
+    },
+    {
+      "args": [
+        "TrafficCount::category cat",
+        "int size"
+      ],
+      "lineno": 474,
+      "name": "OverlayImpl::reportOutboundTraffic"
+    },
+    {
+      "args": [],
+      "lineno": 480,
+      "name": "OverlayImpl::size"
+    },
+    {
+      "args": [],
+      "lineno": 486,
+      "name": "OverlayImpl::limit"
+    },
+    {
+      "args": [],
+      "lineno": 491,
+      "name": "OverlayImpl::getOverlayInfo"
+    },
+    {
+      "args": [],
+      "lineno": 515,
+      "name": "OverlayImpl::getServerInfo"
+    },
+    {
+      "args": [],
+      "lineno": 540,
+      "name": "OverlayImpl::getServerCounts"
+    },
+    {
+      "args": [],
+      "lineno": 545,
+      "name": "OverlayImpl::getUnlInfo"
+    },
+    {
+      "args": [],
+      "lineno": 567,
+      "name": "OverlayImpl::json"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 574,
+      "name": "OverlayImpl::processCrawl"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 599,
+      "name": "OverlayImpl::processValidatorList"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 646,
+      "name": "OverlayImpl::processHealth"
+    },
+    {
+      "args": [
+        "http_request_type const& req",
+        "Handoff& handoff"
+      ],
+      "lineno": 701,
+      "name": "OverlayImpl::processRequest"
+    },
+    {
+      "args": [],
+      "lineno": 705,
+      "name": "OverlayImpl::getActivePeers"
+    },
+    {
+      "args": [
+        "std::set<Peer::id_t> const& toSkip",
+        "std::size_t& active",
+        "std::size_t& disabled",
+        "std::size_t& enabledInSkip"
+      ],
+      "lineno": 714,
+      "name": "OverlayImpl::getActivePeers"
+    },
+    {
+      "args": [
+        "std::uint32_t index"
+      ],
+      "lineno": 739,
+      "name": "OverlayImpl::checkTracking"
+    },
+    {
+      "args": [
+        "Peer::id_t const& id"
+      ],
+      "lineno": 744,
+      "name": "OverlayImpl::findPeerByShortID"
+    },
+    {
+      "args": [
+        "PublicKey const& pubKey"
+      ],
+      "lineno": 754,
+      "name": "OverlayImpl::findPeerByPublicKey"
+    },
+    {
+      "args": [
+        "protocol::TMProposeSet& m"
+      ],
+      "lineno": 765,
+      "name": "OverlayImpl::broadcast"
+    },
+    {
+      "args": [
+        "protocol::TMProposeSet& m",
+        "uint256 const& uid",
+        "PublicKey const& validator"
+      ],
+      "lineno": 770,
+      "name": "OverlayImpl::relay"
+    },
+    {
+      "args": [
+        "protocol::TMValidation& m"
+      ],
+      "lineno": 782,
+      "name": "OverlayImpl::broadcast"
+    },
+    {
+      "args": [
+        "protocol::TMValidation& m",
+        "uint256 const& uid",
+        "PublicKey const& validator"
+      ],
+      "lineno": 787,
+      "name": "OverlayImpl::relay"
+    },
+    {
+      "args": [],
+      "lineno": 799,
+      "name": "OverlayImpl::getManifestsMessage"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::optional<std::reference_wrapper<protocol::TMTransaction>> tx",
+        "std::set<Peer::id_t> const& toSkip"
+      ],
+      "lineno": 819,
+      "name": "OverlayImpl::relay"
+    },
+    {
+      "args": [
+        "Child& child"
+      ],
+      "lineno": 872,
+      "name": "OverlayImpl::remove"
+    },
+    {
+      "args": [],
+      "lineno": 879,
+      "name": "OverlayImpl::stopChildren"
+    },
+    {
+      "args": [],
+      "lineno": 900,
+      "name": "OverlayImpl::autoConnect"
+    },
+    {
+      "args": [],
+      "lineno": 907,
+      "name": "OverlayImpl::sendEndpoints"
+    },
+    {
+      "args": [],
+      "lineno": 921,
+      "name": "OverlayImpl::sendTxQueue"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "bool squelch",
+        "uint32_t squelchDuration"
+      ],
+      "lineno": 927,
+      "name": "makeSquelchMessage"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "Peer::id_t id"
+      ],
+      "lineno": 935,
+      "name": "OverlayImpl::unsquelch"
+    },
+    {
+      "args": [
+        "PublicKey const& validator",
+        "Peer::id_t id",
+        "uint32_t squelchDuration"
+      ],
+      "lineno": 942,
+      "name": "OverlayImpl::squelch"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "std::set<Peer::id_t>&& peers",
+        "protocol::MessageType type"
+      ],
+      "lineno": 949,
+      "name": "OverlayImpl::updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "uint256 const& key",
+        "PublicKey const& validator",
+        "Peer::id_t peer",
+        "protocol::MessageType type"
+      ],
+      "lineno": 974,
+      "name": "OverlayImpl::updateSlotAndSquelch"
+    },
+    {
+      "args": [
+        "Peer::id_t id"
+      ],
+      "lineno": 995,
+      "name": "OverlayImpl::deletePeer"
+    },
+    {
+      "args": [],
+      "lineno": 1006,
+      "name": "OverlayImpl::deleteIdlePeers"
+    },
+    {
+      "args": [
+        "BasicConfig const& config"
+      ],
+      "lineno": 1017,
+      "name": "setup_Overlay"
+    },
+    {
+      "args": [
+        "Application& app",
+        "Overlay::Setup const& setup",
+        "ServerHandler& serverHandler",
+        "Resource::Manager& resourceManager",
+        "Resolver& resolver",
+        "boost::asio::io_context& io_context",
+        "BasicConfig const& config",
+        "beast::insight::Collector::ptr const& collector"
+      ],
+      "lineno": 1102,
+      "name": "make_Overlay"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 18,
+      "name": "CrawlOptions"
+    }
+  ],
+  "test_coverage_notes": "The code shown is primarily internal implementation for overlay timer management. Typical test coverage would be in integration or system tests that exercise overlay peer management, timer events, and error handling. Unit tests may exist for OverlayImpl and Timer, but explicit validation of error_code handling (ec) and stopping_ logic may not be directly tested unless there are tests that simulate timer errors or forced stops. Test files likely to cover this code include overlay/Overlay_test.cpp, overlay/PeerFinder_test.cpp, and possibly integration tests for peer connectivity and timer-driven events. Gaps may exist in testing rare error paths (e.g., specific boost::asio error codes) and concurrent stop/timer edge cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Boost.Asio error handling, custom logging (JLOG), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return, logs error if not operation_aborted)",
+      "field": "ec (error_code)",
+      "location": "OverlayImpl::Timer::on_timer",
+      "validated_by": "explicit check (if (ec || stopping_))",
+      "validates": [
+        "Checks if timer operation resulted in error or is stopping",
+        "Logs error if error_code is not operation_aborted"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs error)",
+      "field": "ec (error_code)",
+      "location": "OverlayImpl::Timer::on_timer",
+      "validated_by": "explicit check (if (ec && ec != boost::asio::error::operation_aborted))",
+      "validates": [
+        "Checks if error_code is not operation_aborted",
+        "Logs error message"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

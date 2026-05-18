@@ -1,0 +1,365 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "ctx"
+    },
+    {
+      "lineno": 25,
+      "name": "ctx"
+    },
+    {
+      "lineno": 25,
+      "name": "account"
+    },
+    {
+      "lineno": 25,
+      "name": "amount"
+    },
+    {
+      "lineno": 41,
+      "name": "ctx"
+    },
+    {
+      "lineno": 41,
+      "name": "account"
+    },
+    {
+      "lineno": 41,
+      "name": "amount"
+    },
+    {
+      "lineno": 62,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "EscrowCancel::preflight"
+      ],
+      "entry_point": "EscrowCancel::preflight",
+      "purpose": "Initial preflight check for EscrowCancel transaction. Currently, this is a stub that always returns success.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "EscrowCancel::preclaim",
+        "escrowCancelPreclaimHelper<Issue> or escrowCancelPreclaimHelper<MPTIssue>"
+      ],
+      "entry_point": "EscrowCancel::preclaim",
+      "purpose": "Performs preclaim validation for EscrowCancel, including existence and authorization checks for non-XRP escrows.",
+      "validation_points": [
+        "escrowCancelPreclaimHelper<Issue>: issuer == account check, requireAuth check",
+        "escrowCancelPreclaimHelper<MPTIssue>: issuer == account check, existence of MPT issuance object, requireAuth (WeakAuth) check"
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowCancel::doApply"
+      ],
+      "entry_point": "EscrowCancel::doApply",
+      "purpose": "Applies the EscrowCancel transaction, including final checks (escrow existence, cancel time, directory removal) and state mutation.",
+      "validation_points": [
+        "Escrow existence check (peek)",
+        "CancelAfter field presence and time check"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfOwner",
+      "flow": [
+        "ctx.tx[sfOwner]",
+        "keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence])",
+        "ctx.view.read(k) or ctx_.view().peek(k)"
+      ],
+      "origin": "ctx.tx[sfOwner] (transaction input)",
+      "transformations": [
+        "Used to construct escrow keylet"
+      ],
+      "validated_at": "Escrow existence check in preclaim and doApply"
+    },
+    {
+      "field": "sfOfferSequence",
+      "flow": [
+        "ctx.tx[sfOfferSequence]",
+        "keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence])",
+        "ctx.view.read(k) or ctx_.view().peek(k)"
+      ],
+      "origin": "ctx.tx[sfOfferSequence] (transaction input)",
+      "transformations": [
+        "Used to construct escrow keylet"
+      ],
+      "validated_at": "Escrow existence check in preclaim and doApply"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "(*slep)[sfAmount]",
+        "amount",
+        "if (!isXRP(amount)) { ... }",
+        "escrowCancelPreclaimHelper<T>(ctx, account, amount)"
+      ],
+      "origin": "(*slep)[sfAmount] (from escrow ledger entry)",
+      "transformations": [
+        "Type-checked for XRP vs. IOU/MPT",
+        "Passed to helper for further validation"
+      ],
+      "validated_at": "escrowCancelPreclaimHelper<Issue> or escrowCancelPreclaimHelper<MPTIssue>"
+    },
+    {
+      "field": "issuer (of amount)",
+      "flow": [
+        "amount.getIssuer()",
+        "escrowCancelPreclaimHelper<T>",
+        "issuer == account check",
+        "requireAuth check"
+      ],
+      "origin": "amount.getIssuer()",
+      "transformations": [
+        "Compared to escrow account",
+        "Used for authorization check"
+      ],
+      "validated_at": "escrowCancelPreclaimHelper<Issue> or escrowCancelPreclaimHelper<MPTIssue>"
+    },
+    {
+      "field": "MPT issuance object",
+      "flow": [
+        "amount.get<MPTIssue>().getMptID()",
+        "keylet::mptIssuance(...)",
+        "ctx.view.read(issuanceKey)"
+      ],
+      "origin": "amount.get<MPTIssue>().getMptID()",
+      "transformations": [
+        "Used to look up MPT issuance ledger entry"
+      ],
+      "validated_at": "escrowCancelPreclaimHelper<MPTIssue> (existence check)"
+    },
+    {
+      "field": "requireAuth flag",
+      "flow": [
+        "requireAuth(ctx.view, ...)",
+        "Checks authorization for account"
+      ],
+      "origin": "Issuer account or MPT issuance object",
+      "transformations": [
+        "Checked for both Issue and MPTIssue (with AuthType::WeakAuth for MPT)"
+      ],
+      "validated_at": "escrowCancelPreclaimHelper<Issue> or escrowCancelPreclaimHelper<MPTIssue>"
+    },
+    {
+      "field": "sfCancelAfter",
+      "flow": [
+        "(*slep)[~sfCancelAfter]",
+        "Checked for presence and compared to now"
+      ],
+      "origin": "(*slep)[~sfCancelAfter] (from escrow ledger entry)",
+      "transformations": [
+        "Optional field, checked for existence and time"
+      ],
+      "validated_at": "EscrowCancel::doApply"
+    }
+  ],
+  "description": "Implements the logic for the EscrowCancel transaction in the XRPL codebase, including preflight, preclaim, and apply logic for canceling escrows, supporting both XRP and token escrows.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issuer (of amount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (issuer == account) at escrowCancelPreclaimHelper<Issue> and escrowCancelPreclaimHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for issuer (of amount)",
+      "why_false_positive": "manual check (issuer == account) validates issuer (of amount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "authorization (requireAuth flag on issuer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "requireAuth function at escrowCancelPreclaimHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for authorization (requireAuth flag on issuer)",
+      "why_false_positive": "requireAuth function validates authorization (requireAuth flag on issuer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "existence of MPT issuance object",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(issuanceKey) at escrowCancelPreclaimHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for existence of MPT issuance object",
+      "why_false_positive": "ctx.view.read(issuanceKey) validates existence of MPT issuance object for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "authorization (requireAuth flag on MPT issuer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "requireAuth function (with AuthType::WeakAuth) at escrowCancelPreclaimHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for authorization (requireAuth flag on MPT issuer)",
+      "why_false_positive": "requireAuth function (with AuthType::WeakAuth) validates authorization (requireAuth flag on MPT issuer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "existence of escrow object",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(k) at EscrowCancel::preclaim",
+      "issue_pattern": "Missing empty string validation for existence of escrow object",
+      "why_false_positive": "ctx.view.read(k) validates existence of escrow object for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/escrow/EscrowCancel.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 12,
+      "name": "EscrowCancel::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& account",
+        "STAmount const& amount"
+      ],
+      "lineno": 25,
+      "name": "escrowCancelPreclaimHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& account",
+        "STAmount const& amount"
+      ],
+      "lineno": 41,
+      "name": "escrowCancelPreclaimHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 62,
+      "name": "EscrowCancel::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "EscrowCancel::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in escrowCancelPreclaimHelper<Issue> and escrowCancelPreclaimHelper<MPTIssue>, as well as in EscrowCancel::doApply. Typical test files would be in the rippled codebase under 'src/test/app/Escrow_test.cpp', 'src/test/app/TokenEscrow_test.cpp', or similar. Coverage for XRP escrows is likely high, but MPT/IOU paths (especially requireAuth and MPT issuance existence) may have less coverage, especially for edge cases (issuer == account, missing MPT issuance, WeakAuth). The preflight function is a stub and likely not tested. Directory removal failure in doApply is likely not covered (LCOV_EXCL).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation, XRPL transaction engine",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "issuer (of amount)",
+      "location": "escrowCancelPreclaimHelper<Issue> and escrowCancelPreclaimHelper<MPTIssue>",
+      "validated_by": "manual check (issuer == account)",
+      "validates": [
+        "issuer must not be the same as the account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "result of requireAuth (various TER codes)",
+      "field": "authorization (requireAuth flag on issuer)",
+      "location": "escrowCancelPreclaimHelper<Issue>",
+      "validated_by": "requireAuth function",
+      "validates": [
+        "if issuer has requireAuth, account must be authorized"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "existence of MPT issuance object",
+      "location": "escrowCancelPreclaimHelper<MPTIssue>",
+      "validated_by": "ctx.view.read(issuanceKey)",
+      "validates": [
+        "MPT issuance object must exist for the given MPT ID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "result of requireAuth (various TER codes)",
+      "field": "authorization (requireAuth flag on MPT issuer)",
+      "location": "escrowCancelPreclaimHelper<MPTIssue>",
+      "validated_by": "requireAuth function (with AuthType::WeakAuth)",
+      "validates": [
+        "if MPT issuer has requireAuth, account must be authorized (weak auth)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_TARGET",
+      "field": "existence of escrow object",
+      "location": "EscrowCancel::preclaim",
+      "validated_by": "ctx.view.read(k)",
+      "validates": [
+        "escrow object must exist for given owner and offer sequence"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

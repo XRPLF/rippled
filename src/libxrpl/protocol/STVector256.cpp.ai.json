@@ -1,0 +1,296 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 13,
+      "name": "STVector256"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STVector256::STVector256",
+        "sit.getVLDataLength",
+        "sit.getSlice",
+        "Throw<std::runtime_error> (if invalid)",
+        "mValue.emplace_back"
+      ],
+      "entry_point": "STVector256(SerialIter& sit, SField const& name)",
+      "purpose": "Constructs an STVector256 from serialized data, validates VL data length, and populates mValue.",
+      "validation_points": [
+        "STVector256::STVector256: Checks if slice.size() % uint256::size() != 0, throws if invalid"
+      ]
+    },
+    {
+      "call_chain": [
+        "STVector256::add",
+        "XRPL_ASSERT(getFName().isBinary())",
+        "XRPL_ASSERT(getFName().fieldType == STI_VECTOR256)",
+        "s.addVL"
+      ],
+      "entry_point": "STVector256::add(Serializer& s) const",
+      "purpose": "Serializes the STVector256, validating field type and binary property before serialization.",
+      "validation_points": [
+        "STVector256::add: XRPL_ASSERT(getFName().isBinary())",
+        "STVector256::add: XRPL_ASSERT(getFName().fieldType == STI_VECTOR256)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "VL data (slice)",
+      "flow": [
+        "SerialIter (input buffer)",
+        "getVLDataLength() (gets length)",
+        "getSlice() (extracts data)",
+        "Validation: slice.size() % uint256::size()",
+        "mValue.emplace_back (stores as uint256)"
+      ],
+      "origin": "SerialIter::getSlice(sit.getVLDataLength())",
+      "transformations": [
+        "Extracted from serialized buffer",
+        "Checked for correct length (multiple of 32 bytes)",
+        "Split into 32-byte chunks and stored as uint256"
+      ],
+      "validated_at": "STVector256::STVector256 (constructor)"
+    },
+    {
+      "field": "Field type and binary property",
+      "flow": [
+        "getFName()",
+        "isBinary()",
+        "fieldType",
+        "XRPL_ASSERT checks in add()"
+      ],
+      "origin": "getFName() (SField)",
+      "transformations": [
+        "Checked for binary property",
+        "Checked for correct field type (STI_VECTOR256)"
+      ],
+      "validated_at": "STVector256::add"
+    }
+  ],
+  "description": "Implements the STVector256 class for handling arrays of 256-bit values (uint256) in the XRPL protocol, including serialization, deserialization, JSON conversion, and comparison.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "VL data length (slice.size())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check with exception at STVector256(SerialIter& sit, SField const& name) constructor",
+      "issue_pattern": "Missing empty string validation for VL data length (slice.size())",
+      "why_false_positive": "manual check with exception validates VL data length (slice.size()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "VL data length (slice.size())",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "manual check with exception at STVector256(SerialIter& sit, SField const& name) constructor",
+      "issue_pattern": "Missing format validation for VL data length (slice.size())",
+      "why_false_positive": "manual check with exception validates VL data length (slice.size()) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "field is binary",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVector256::add",
+      "issue_pattern": "Missing empty string validation for field is binary",
+      "why_false_positive": "XRPL_ASSERT macro validates field is binary for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "field is binary",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVector256::add",
+      "issue_pattern": "Missing type validation for field is binary",
+      "why_false_positive": "XRPL_ASSERT macro validates field is binary type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "field type is STI_VECTOR256",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVector256::add",
+      "issue_pattern": "Missing empty string validation for field type is STI_VECTOR256",
+      "why_false_positive": "XRPL_ASSERT macro validates field type is STI_VECTOR256 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "field type is STI_VECTOR256",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVector256::add",
+      "issue_pattern": "Missing type validation for field type is STI_VECTOR256",
+      "why_false_positive": "XRPL_ASSERT macro validates field type is STI_VECTOR256 type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STVector256.cpp",
+  "functions": [
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 13,
+      "name": "STVector256"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 29,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 34,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 49,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 56,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 62,
+      "name": "getJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage is not shown in this file. Typically, STVector256 is tested in protocol serialization/deserialization and transaction processing tests. Likely test files: 'test/protocol/STVector256_test.cpp', 'test/protocol/SerializedType_test.cpp', or integration tests involving ledger objects with vector256 fields. Gaps: Direct negative tests for invalid VL length (not multiple of 32) and field type/binary property assertions may be missing if not explicitly tested for exceptions/assertions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Manual validation, XRPL_ASSERT macro, Throw<> template for exceptions",
+    "validation_layer": "constructor (input/format validation), business_logic (add method type checks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<> template)",
+      "field": "VL data length (slice.size())",
+      "location": "STVector256(SerialIter& sit, SField const& name) constructor",
+      "validated_by": "manual check with exception",
+      "validates": [
+        "Checks that the serialized data length is a multiple of uint256::size() (32 bytes)",
+        "Ensures the input data can be parsed into an integral number of 256-bit values"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "assertion failure (likely contract violation, may throw or abort)",
+      "field": "field is binary",
+      "location": "STVector256::add",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the SField associated with this object is marked as binary"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "assertion failure (likely contract violation, may throw or abort)",
+      "field": "field type is STI_VECTOR256",
+      "location": "STVector256::add",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the SField type matches STI_VECTOR256"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "v"
+    },
+    {
+      "lineno": 87,
+      "name": "ledger"
+    },
+    {
+      "lineno": 87,
+      "name": "j"
+    },
+    {
+      "lineno": 113,
+      "name": "app"
+    },
+    {
+      "lineno": 113,
+      "name": "j"
+    },
+    {
+      "lineno": 124,
+      "name": "id"
+    },
+    {
+      "lineno": 139,
+      "name": "app"
+    },
+    {
+      "lineno": 140,
+      "name": "val"
+    },
+    {
+      "lineno": 141,
+      "name": "source"
+    },
+    {
+      "lineno": 142,
+      "name": "bypassAccept"
+    },
+    {
+      "lineno": 143,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 19,
+      "name": "RCLValidation"
+    },
+    {
+      "args": [
+        "MakeGenesis",
+        "ledger",
+        "j"
+      ],
+      "lineno": 74,
+      "name": "RCLValidatedLedger"
+    },
+    {
+      "args": [
+        "app",
+        "j"
+      ],
+      "lineno": 110,
+      "name": "RCLValidationsAdaptor"
+    }
+  ],
+  "description": "This file provides wrapper classes and adaptors for handling validations in the XRPL consensus process, including RCLValidation (a wrapper over STValidation), RCLValidatedLedger (a wrapper for ledgers for use in validation trie structures), and RCLValidationsAdaptor (an adaptor for managing validations and ledger acquisition). It also defines utility functions and types for managing and processing validations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLValidations.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "val",
+        "source",
+        "bypassAccept",
+        "j"
+      ],
+      "lineno": 137,
+      "name": "handleNewValidation"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 159,
+      "name": "account"
+    },
+    {
+      "lineno": 159,
+      "name": "mPTokenIssuanceID"
+    },
+    {
+      "lineno": 159,
+      "name": "sequence"
+    },
+    {
+      "lineno": 159,
+      "name": "fee"
+    },
+    {
+      "lineno": 170,
+      "name": "tx"
+    },
+    {
+      "lineno": 181,
+      "name": "value"
+    },
+    {
+      "lineno": 191,
+      "name": "value"
+    },
+    {
+      "lineno": 201,
+      "name": "value"
+    },
+    {
+      "lineno": 211,
+      "name": "value"
+    },
+    {
+      "lineno": 221,
+      "name": "value"
+    },
+    {
+      "lineno": 231,
+      "name": "value"
+    },
+    {
+      "lineno": 241,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 241,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 21,
+      "name": "MPTokenIssuanceSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 151,
+      "name": "MPTokenIssuanceSetBuilder"
+    }
+  ],
+  "description": "Defines the MPTokenIssuanceSet transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/MPTokenIssuanceSet.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "MPTokenIssuanceSet"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getMPTokenIssuanceID"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "getHolder"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "hasHolder"
+    },
+    {
+      "args": [],
+      "lineno": 72,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "getMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "hasMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "getTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "hasTransferFee"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "getMutableFlags"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "hasMutableFlags"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 159,
+      "name": "MPTokenIssuanceSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 170,
+      "name": "MPTokenIssuanceSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT192::type::value_type> const& value"
+      ],
+      "lineno": 181,
+      "name": "setMPTokenIssuanceID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 191,
+      "name": "setHolder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 201,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 211,
+      "name": "setMPTokenMetadata"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT16::type::value_type> const& value"
+      ],
+      "lineno": 221,
+      "name": "setTransferFee"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 231,
+      "name": "setMutableFlags"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 241,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

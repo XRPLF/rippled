@@ -1,0 +1,227 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanSet::preflight",
+        "xrpl::detail::preflightCheckSigningKey (optional)",
+        "xrpl::detail::preflightCheckSimulateKeys (optional)"
+      ],
+      "entry_point": "LoanSet::preflight",
+      "purpose": "Performs initial validation of a LoanSet transaction before it is processed. Checks flags, required fields, numeric ranges, and signatures.",
+      "validation_points": [
+        "LoanSet::preflight: Checks for tfInnerBatchTxn, presence of sfCounterparty, and CounterpartySignature.",
+        "LoanSet::preflight: Validates data length, numeric minimums, and numeric ranges for various fields.",
+        "LoanSet::preflight: Calls preflightCheckSigningKey and preflightCheckSimulateKeys for signature validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanSet::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanSet::checkExtraFeatures",
+      "purpose": "Checks if lending protocol dependencies are met for the transaction.",
+      "validation_points": [
+        "checkLendingProtocolDependencies"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanSet::checkSign",
+        "Transactor::checkSign"
+      ],
+      "entry_point": "LoanSet::checkSign",
+      "purpose": "Validates the transaction's signature(s) after preflight.",
+      "validation_points": [
+        "Transactor::checkSign"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfCounterpartySignature",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: tx.isFieldPresent(sfCounterpartySignature)",
+        "LoanSet::preflight: tx.getFieldObject(sfCounterpartySignature)",
+        "xrpl::detail::preflightCheckSigningKey (if present)",
+        "xrpl::detail::preflightCheckSimulateKeys (if present)"
+      ],
+      "origin": "ctx.tx (the transaction object)",
+      "transformations": [
+        "Checked for presence",
+        "Extracted as STObject",
+        "Passed to signature validation functions"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfPrincipalRequested",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: auto const p = tx[sfPrincipalRequested]",
+        "LoanSet::preflight: if (p <= 0) return temINVALID"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as numeric value",
+        "Checked for > 0"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfLoanOriginationFee",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: tx[~sfLoanOriginationFee]",
+        "LoanSet::preflight: validNumericRange(tx[~sfLoanOriginationFee], p)"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as optional numeric value",
+        "Checked for valid numeric range (<= principal requested)"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfData",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: tx[~sfData]",
+        "LoanSet::preflight: validDataLength(tx[~sfData], maxDataPayloadLength)"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as optional blob",
+        "Checked for non-empty and valid length"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfPaymentInterval",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: tx[~sfPaymentInterval]",
+        "LoanSet::preflight: validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval)"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as optional numeric value",
+        "Checked for minimum value"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfGracePeriod",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: tx[~sfGracePeriod]",
+        "LoanSet::preflight: validNumericRange(gracePeriod, paymentInterval.value_or(default), defaultGracePeriod)"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as optional numeric value",
+        "Checked for valid range relative to payment interval"
+      ],
+      "validated_at": "LoanSet::preflight"
+    },
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "ctx.tx",
+        "LoanSet::preflight: ctx.tx[~sfLoanBrokerID]",
+        "LoanSet::preflight: if (brokerID && *brokerID == beast::zero) return temINVALID"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Extracted as optional ID",
+        "Checked for non-zero"
+      ],
+      "validated_at": "LoanSet::preflight"
+    }
+  ],
+  "description": "Implements the LoanSet transaction logic for the XRPL lending protocol, including preflight, preclaim, signature checks, fee calculation, and application of a new loan to the ledger.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "LoanSet::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "LoanSet::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 19,
+      "name": "LoanSet::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 87,
+      "name": "LoanSet::checkSign"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 110,
+      "name": "LoanSet::calculateBaseFee"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "LoanSet::getValueFields"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 144,
+      "name": "getStartDate"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 148,
+      "name": "LoanSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 232,
+      "name": "LoanSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LoanSet transaction validation is likely covered by unit/integration tests in the rippled codebase, especially in files such as 'test/tx/LoanSet_test.cpp', 'test/lending/Lending_test.cpp', or similar. These tests should cover valid and invalid transactions, missing required fields, invalid numeric ranges, and signature checks. However, edge cases such as malformed CounterpartySignature, maximum/minimum numeric values, and batch transaction scenarios may not be exhaustively tested unless explicitly present in the test suite. There may also be gaps in testing for protocol feature toggles (e.g., featureBatch) and for all possible combinations of optional fields.",
+  "validation_architecture": {},
+  "validations": []
+}

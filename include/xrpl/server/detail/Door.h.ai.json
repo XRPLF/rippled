@@ -1,0 +1,124 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Handler& handler",
+        "boost::asio::io_context& io_context",
+        "Port const& port",
+        "beast::Journal j"
+      ],
+      "lineno": 22,
+      "name": "Door"
+    },
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::io_context& ioc",
+        "stream_type&& stream",
+        "endpoint_type remote_address",
+        "beast::Journal j"
+      ],
+      "lineno": 36,
+      "name": "Detector"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "FDStats"
+    }
+  ],
+  "description": "Defines the xrpl::Door class template, which represents a listening socket for accepting incoming TCP connections (HTTP/HTTPS/WebSocket) in the XRPL server, including SSL detection, resource management, and connection throttling based on file descriptor usage.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/Door.h",
+  "functions": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::io_context& ioc",
+        "stream_type&& stream",
+        "endpoint_type remote_address",
+        "beast::Journal j"
+      ],
+      "lineno": 70,
+      "name": "Door<Handler>::Detector::Detector"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "Door<Handler>::Detector::run"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "Door<Handler>::Detector::close"
+    },
+    {
+      "args": [
+        "boost::asio::yield_context do_yield"
+      ],
+      "lineno": 93,
+      "name": "Door<Handler>::Detector::do_detect"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "Door<Handler>::reOpen"
+    },
+    {
+      "args": [
+        "Handler& handler",
+        "boost::asio::io_context& io_context",
+        "Port const& port",
+        "beast::Journal j"
+      ],
+      "lineno": 157,
+      "name": "Door<Handler>::Door"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "Door<Handler>::run"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "Door<Handler>::close"
+    },
+    {
+      "args": [
+        "bool ssl",
+        "ConstBufferSequence const& buffers",
+        "stream_type&& stream",
+        "endpoint_type remote_address"
+      ],
+      "lineno": 185,
+      "name": "Door<Handler>::create"
+    },
+    {
+      "args": [
+        "boost::asio::yield_context do_yield"
+      ],
+      "lineno": 197,
+      "name": "Door<Handler>::do_accept"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "Door<Handler>::query_fd_stats"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "Door<Handler>::should_throttle_for_fds"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

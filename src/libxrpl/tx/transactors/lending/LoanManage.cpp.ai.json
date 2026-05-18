@@ -1,0 +1,466 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanManage::doApply",
+        "LoanManage::preflight",
+        "LoanManage::preclaim",
+        "LoanManage::defaultLoan / impairLoan / unimpairLoan"
+      ],
+      "entry_point": "LoanManage::doApply",
+      "purpose": "Processes a LoanManage transaction, validating input and applying state changes to a loan.",
+      "validation_points": [
+        "LoanManage::preflight",
+        "LoanManage::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanManage::preflight"
+      ],
+      "entry_point": "LoanManage::preflight",
+      "purpose": "Performs stateless validation of the transaction (field presence, flag exclusivity).",
+      "validation_points": [
+        "LoanManage::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanManage::preclaim"
+      ],
+      "entry_point": "LoanManage::preclaim",
+      "purpose": "Performs contextual validation (loan existence, state transitions, permissions).",
+      "validation_points": [
+        "LoanManage::preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfLoanID",
+      "flow": [
+        "ctx.tx[sfLoanID]",
+        "LoanManage::preflight (checked for zero)",
+        "LoanManage::preclaim (used to look up loanSle)",
+        "loanSle (used for further validation and state changes)"
+      ],
+      "origin": "ctx.tx[sfLoanID] (transaction input)",
+      "transformations": [
+        "Checked for zero (invalid)",
+        "Used as key to fetch loan ledger entry"
+      ],
+      "validated_at": "LoanManage::preflight, LoanManage::preclaim"
+    },
+    {
+      "field": "sfFlags",
+      "flow": [
+        "ctx.tx[~sfFlags]",
+        "LoanManage::preflight (checked for mutual exclusivity)"
+      ],
+      "origin": "ctx.tx[~sfFlags] (transaction input, optional)",
+      "transformations": [
+        "Bitmask applied (tfUniversalMask)",
+        "Checked that only one flag is set"
+      ],
+      "validated_at": "LoanManage::preflight"
+    },
+    {
+      "field": "loan state (lsfLoanDefault, lsfLoanImpaired)",
+      "flow": [
+        "loanSle (from ctx.view.read(keylet::loan(loanID)))",
+        "LoanManage::preclaim (checked for allowed state transitions)"
+      ],
+      "origin": "loanSle->isFlag(lsfLoanDefault/lsfLoanImpaired) (ledger entry)",
+      "transformations": [
+        "Boolean checks for state",
+        "Used to restrict allowed transitions"
+      ],
+      "validated_at": "LoanManage::preclaim"
+    },
+    {
+      "field": "sfPaymentRemaining",
+      "flow": [
+        "loanSle",
+        "LoanManage::preclaim (checked for zero)"
+      ],
+      "origin": "loanSle->at(sfPaymentRemaining) (ledger entry)",
+      "transformations": [
+        "Compared to zero to block modification if fully paid"
+      ],
+      "validated_at": "LoanManage::preclaim"
+    },
+    {
+      "field": "sfNextPaymentDueDate, sfGracePeriod",
+      "flow": [
+        "loanSle",
+        "LoanManage::preclaim (used to check if loan can be defaulted)"
+      ],
+      "origin": "loanSle->at(sfNextPaymentDueDate), loanSle->at(sfGracePeriod) (ledger entry)",
+      "transformations": [
+        "Summed and passed to hasExpired()"
+      ],
+      "validated_at": "LoanManage::preclaim"
+    },
+    {
+      "field": "sfLoanBrokerID, sfOwner",
+      "flow": [
+        "loanSle",
+        "loanBrokerSle (from ctx.view.read(keylet::loanbroker(loanBrokerID)))",
+        "LoanManage::preclaim (checked for ownership)"
+      ],
+      "origin": "loanSle->at(sfLoanBrokerID), loanBrokerSle->at(sfOwner) (ledger entries)",
+      "transformations": [
+        "Used to fetch broker ledger entry",
+        "Compared to tx[sfAccount]"
+      ],
+      "validated_at": "LoanManage::preclaim"
+    }
+  ],
+  "description": "Implements the LoanManage transaction logic for managing loan state transitions (default, impair, unimpair) in the XRPL lending protocol, including preflight checks, permission validation, and ledger updates for loans, brokers, and vaults.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (ctx.tx[sfLoanID] == beast::zero) at LoanManage::preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanID",
+      "why_false_positive": "explicit check (ctx.tx[sfLoanID] == beast::zero) validates sfLoanID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (flags mutually exclusive) at LoanManage::preflight",
+      "issue_pattern": "Missing empty string validation for sfFlags",
+      "why_false_positive": "explicit check (flags mutually exclusive) validates sfFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loan(loanID)) at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanID",
+      "why_false_positive": "ctx.view.read(keylet::loan(loanID)) validates sfLoanID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "loan state (lsfLoanDefault)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loanSle->isFlag(lsfLoanDefault) at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for loan state (lsfLoanDefault)",
+      "why_false_positive": "loanSle->isFlag(lsfLoanDefault) validates loan state (lsfLoanDefault) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "loan state (lsfLoanImpaired) and tx flag (tfLoanImpair)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loanSle->isFlag(lsfLoanImpaired) && tx.isFlag(tfLoanImpair) at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for loan state (lsfLoanImpaired) and tx flag (tfLoanImpair)",
+      "why_false_positive": "loanSle->isFlag(lsfLoanImpaired) && tx.isFlag(tfLoanImpair) validates loan state (lsfLoanImpaired) and tx flag (tfLoanImpair) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "loan state (not impaired/default) and tx flag (tfLoanUnimpair)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) && (tx.isFlag(tfLoanUnimpair)) at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for loan state (not impaired/default) and tx flag (tfLoanUnimpair)",
+      "why_false_positive": "!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) && (tx.isFlag(tfLoanUnimpair)) validates loan state (not impaired/default) and tx flag (tfLoanUnimpair) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPaymentRemaining",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loanSle->at(sfPaymentRemaining) == 0 at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for sfPaymentRemaining",
+      "why_false_positive": "loanSle->at(sfPaymentRemaining) == 0 validates sfPaymentRemaining for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfLoanDefault flag and payment due date",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx.isFlag(tfLoanDefault) && !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)) at LoanManage::preclaim",
+      "issue_pattern": "Missing empty string validation for tfLoanDefault flag and payment due date",
+      "why_false_positive": "tx.isFlag(tfLoanDefault) && !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod)) validates tfLoanDefault flag and payment due date for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loanbroker(loanBrokerID)) at LoanManage::preclaim (partial, code cut off)",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "ctx.view.read(keylet::loanbroker(loanBrokerID)) validates sfLoanBrokerID for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanManage.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanManage::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "LoanManage::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "LoanManage::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 36,
+      "name": "LoanManage::preclaim"
+    },
+    {
+      "args": [
+        "SLE::ref loanSle"
+      ],
+      "lineno": 74,
+      "name": "owedToVault"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref brokerSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 89,
+      "name": "LoanManage::defaultLoan"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 197,
+      "name": "LoanManage::impairLoan"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 232,
+      "name": "LoanManage::unimpairLoan"
+    },
+    {
+      "args": [],
+      "lineno": 266,
+      "name": "LoanManage::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LoanManage is a new feature, so test coverage may be limited. Typical test files would be in 'workflow/XRPLF-rippled-develop/test/src/tx/lending/' or similar, e.g., LoanManage_test.cpp or Lending_test.cpp. Tests should cover: missing/zero sfLoanID, mutually exclusive flags, non-existent loan, invalid state transitions (double impair, default after default, unimpair when unimpaired), fully paid loans, defaulting before due date, and broker ownership. Gaps may exist for edge cases (e.g., malformed flags, race conditions, or internal errors). No explicit test references are present in the code, so coverage should be verified in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (Ripple/XRPL transaction engine)",
+    "validation_layer": "business_logic (preflight and preclaim transaction hooks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanID",
+      "location": "LoanManage::preflight",
+      "validated_by": "explicit check (ctx.tx[sfLoanID] == beast::zero)",
+      "validates": [
+        "LoanID must not be zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "sfFlags",
+      "location": "LoanManage::preflight",
+      "validated_by": "explicit check (flags mutually exclusive)",
+      "validates": [
+        "Only one of tfLoanDefault, tfLoanImpair, or tfLoanUnimpair can be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfLoanID",
+      "location": "LoanManage::preclaim",
+      "validated_by": "ctx.view.read(keylet::loan(loanID))",
+      "validates": [
+        "Loan must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "loan state (lsfLoanDefault)",
+      "location": "LoanManage::preclaim",
+      "validated_by": "loanSle->isFlag(lsfLoanDefault)",
+      "validates": [
+        "Loan in default cannot be modified"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "loan state (lsfLoanImpaired) and tx flag (tfLoanImpair)",
+      "location": "LoanManage::preclaim",
+      "validated_by": "loanSle->isFlag(lsfLoanImpaired) && tx.isFlag(tfLoanImpair)",
+      "validates": [
+        "Loan cannot be impaired twice"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "loan state (not impaired/default) and tx flag (tfLoanUnimpair)",
+      "location": "LoanManage::preclaim",
+      "validated_by": "!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) && (tx.isFlag(tfLoanUnimpair))",
+      "validates": [
+        "Unimpaired loan cannot be unimpaired again"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfPaymentRemaining",
+      "location": "LoanManage::preclaim",
+      "validated_by": "loanSle->at(sfPaymentRemaining) == 0",
+      "validates": [
+        "Loan cannot be modified after fully paid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecTOO_SOON",
+      "field": "tfLoanDefault flag and payment due date",
+      "location": "LoanManage::preclaim",
+      "validated_by": "tx.isFlag(tfLoanDefault) && !hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate) + loanSle->at(sfGracePeriod))",
+      "validates": [
+        "Loan cannot be defaulted before next payment due date + grace period"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "not shown, but likely tecNO_ENTRY or similar",
+      "field": "sfLoanBrokerID",
+      "location": "LoanManage::preclaim (partial, code cut off)",
+      "validated_by": "ctx.view.read(keylet::loanbroker(loanBrokerID))",
+      "validates": [
+        "Loan broker must exist"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,742 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "section"
+    },
+    {
+      "lineno": 61,
+      "name": "allTrusted"
+    },
+    {
+      "lineno": 61,
+      "name": "lock"
+    },
+    {
+      "lineno": 84,
+      "name": "rules"
+    },
+    {
+      "lineno": 84,
+      "name": "valSet"
+    },
+    {
+      "lineno": 84,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 84,
+      "name": "j"
+    },
+    {
+      "lineno": 217,
+      "name": "amendment"
+    },
+    {
+      "lineno": 292,
+      "name": "amendmentHash"
+    },
+    {
+      "lineno": 388,
+      "name": "name"
+    },
+    {
+      "lineno": 312,
+      "name": "vote"
+    },
+    {
+      "lineno": 307,
+      "name": "state"
+    },
+    {
+      "lineno": 307,
+      "name": "isAdmin"
+    },
+    {
+      "lineno": 307,
+      "name": "v"
+    },
+    {
+      "lineno": 592,
+      "name": "id"
+    },
+    {
+      "lineno": 592,
+      "name": "fs"
+    },
+    {
+      "lineno": 466,
+      "name": "enabled"
+    },
+    {
+      "lineno": 492,
+      "name": "enabledAmendments"
+    },
+    {
+      "lineno": 492,
+      "name": "majorityAmendments"
+    },
+    {
+      "lineno": 492,
+      "name": "valSet"
+    },
+    {
+      "lineno": 555,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 563,
+      "name": "majority"
+    },
+    {
+      "lineno": 622,
+      "name": "amendmentID"
+    },
+    {
+      "lineno": 316,
+      "name": "registry"
+    },
+    {
+      "lineno": 316,
+      "name": "majorityTime"
+    },
+    {
+      "lineno": 316,
+      "name": "supported"
+    },
+    {
+      "lineno": 316,
+      "name": "vetoed"
+    },
+    {
+      "lineno": 316,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "TrustedVotes"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "AmendmentState"
+    },
+    {
+      "args": [
+        "rules",
+        "trustedVotes",
+        "lock"
+      ],
+      "lineno": 202,
+      "name": "AmendmentSet"
+    },
+    {
+      "args": [
+        "registry",
+        "majorityTime",
+        "supported",
+        "enabled",
+        "vetoed",
+        "journal"
+      ],
+      "lineno": 259,
+      "name": "AmendmentTableImpl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseSection"
+      ],
+      "entry_point": "parseSection",
+      "purpose": "Parses a Section object containing amendment lines, validates and extracts amendment IDs and descriptions.",
+      "validation_points": [
+        "boost::regex_match(line, match, re1) - validates line format",
+        "id.parseHex(match[1]) - validates amendment ID is valid hex"
+      ]
+    },
+    {
+      "call_chain": [
+        "AmendmentTable::add",
+        "parseSection"
+      ],
+      "entry_point": "AmendmentTable::add",
+      "purpose": "Adds amendments from a Section to the AmendmentTable, parsing and validating each entry.",
+      "validation_points": [
+        "parseSection: regex and hex validation"
+      ]
+    },
+    {
+      "call_chain": [
+        "AmendmentTable::AmendmentTable",
+        "parseSection"
+      ],
+      "entry_point": "AmendmentTable::AmendmentTable (constructor)",
+      "purpose": "Initializes the AmendmentTable, parsing and validating amendments from config/Section.",
+      "validation_points": [
+        "parseSection: regex and hex validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "line (from section.lines())",
+      "flow": [
+        "Section::lines()",
+        "parseSection (for loop over lines)",
+        "regex_match(line, match, re1)",
+        "match[1] (amendment ID), match[2] (description)"
+      ],
+      "origin": "Section::lines() (likely from config file or similar source)",
+      "transformations": [
+        "Regex extraction of amendment ID and description"
+      ],
+      "validated_at": "regex_match(line, match, re1)"
+    },
+    {
+      "field": "match[1] (amendment ID)",
+      "flow": [
+        "regex_match(line, match, re1)",
+        "match[1]",
+        "id.parseHex(match[1])",
+        "uint256 id"
+      ],
+      "origin": "Extracted from line by regex",
+      "transformations": [
+        "String (hex) to uint256"
+      ],
+      "validated_at": "id.parseHex(match[1])"
+    },
+    {
+      "field": "names (vector of (id, description))",
+      "flow": [
+        "parseSection",
+        "return value",
+        "used by AmendmentTable::add or AmendmentTable::AmendmentTable"
+      ],
+      "origin": "Built in parseSection from validated lines",
+      "transformations": [
+        "Aggregation of validated amendments"
+      ],
+      "validated_at": "parseSection (both regex and parseHex)"
+    }
+  ],
+  "description": "Implements the AmendmentTable and related logic for tracking, voting, and enabling protocol amendments in the XRPL server. Handles amendment state, validator votes, persistence, and JSON reporting.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "line (from section.lines())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::regex_match with re1 at parseSection",
+      "issue_pattern": "Missing empty string validation for line (from section.lines())",
+      "why_false_positive": "boost::regex_match with re1 validates line (from section.lines()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "line (from section.lines())",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::regex_match with re1 at parseSection",
+      "issue_pattern": "Missing format validation for line (from section.lines())",
+      "why_false_positive": "boost::regex_match with re1 validates line (from section.lines()) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "match[1] (amendment ID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uint256::parseHex at parseSection",
+      "issue_pattern": "Missing empty string validation for match[1] (amendment ID)",
+      "why_false_positive": "uint256::parseHex validates match[1] (amendment ID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/AmendmentTable.cpp",
+  "functions": [
+    {
+      "args": [
+        "section"
+      ],
+      "lineno": 9,
+      "name": "parseSection"
+    },
+    {
+      "args": [
+        "allTrusted",
+        "lock"
+      ],
+      "lineno": 61,
+      "name": "trustChanged"
+    },
+    {
+      "args": [
+        "rules",
+        "valSet",
+        "closeTime",
+        "j",
+        "lock"
+      ],
+      "lineno": 84,
+      "name": "recordVotes"
+    },
+    {
+      "args": [
+        "rules",
+        "lock"
+      ],
+      "lineno": 168,
+      "name": "getVotes"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 217,
+      "name": "passes"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 229,
+      "name": "votes"
+    },
+    {
+      "args": [],
+      "lineno": 237,
+      "name": "trustedValidations"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "threshold"
+    },
+    {
+      "args": [
+        "amendment",
+        "lock"
+      ],
+      "lineno": 292,
+      "name": "add"
+    },
+    {
+      "args": [
+        "amendment",
+        "lock"
+      ],
+      "lineno": 297,
+      "name": "get"
+    },
+    {
+      "args": [
+        "amendment",
+        "lock"
+      ],
+      "lineno": 302,
+      "name": "get"
+    },
+    {
+      "args": [
+        "v",
+        "amendment",
+        "state",
+        "isAdmin",
+        "lock"
+      ],
+      "lineno": 307,
+      "name": "injectJson"
+    },
+    {
+      "args": [
+        "amendment",
+        "name",
+        "vote"
+      ],
+      "lineno": 312,
+      "name": "persistVote"
+    },
+    {
+      "args": [
+        "registry",
+        "majorityTime",
+        "supported",
+        "enabled",
+        "vetoed",
+        "journal"
+      ],
+      "lineno": 316,
+      "name": "AmendmentTableImpl"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 388,
+      "name": "find"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 406,
+      "name": "veto"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 418,
+      "name": "unVeto"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 430,
+      "name": "enable"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 444,
+      "name": "isEnabled"
+    },
+    {
+      "args": [
+        "amendment"
+      ],
+      "lineno": 450,
+      "name": "isSupported"
+    },
+    {
+      "args": [],
+      "lineno": 456,
+      "name": "hasUnsupportedEnabled"
+    },
+    {
+      "args": [],
+      "lineno": 461,
+      "name": "firstUnsupportedExpected"
+    },
+    {
+      "args": [
+        "enabled"
+      ],
+      "lineno": 466,
+      "name": "doValidation"
+    },
+    {
+      "args": [],
+      "lineno": 487,
+      "name": "getDesired"
+    },
+    {
+      "args": [
+        "rules",
+        "closeTime",
+        "enabledAmendments",
+        "majorityAmendments",
+        "valSet"
+      ],
+      "lineno": 492,
+      "name": "doVoting"
+    },
+    {
+      "args": [
+        "ledgerSeq"
+      ],
+      "lineno": 555,
+      "name": "needValidatedLedger"
+    },
+    {
+      "args": [
+        "ledgerSeq",
+        "enabled",
+        "majority"
+      ],
+      "lineno": 563,
+      "name": "doValidatedLedger"
+    },
+    {
+      "args": [
+        "allTrusted"
+      ],
+      "lineno": 587,
+      "name": "trustChanged"
+    },
+    {
+      "args": [
+        "v",
+        "id",
+        "fs",
+        "isAdmin",
+        "lock"
+      ],
+      "lineno": 592,
+      "name": "injectJson"
+    },
+    {
+      "args": [
+        "isAdmin"
+      ],
+      "lineno": 610,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "amendmentID",
+        "isAdmin"
+      ],
+      "lineno": 622,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "registry",
+        "majorityTime",
+        "supported",
+        "enabled",
+        "vetoed",
+        "journal"
+      ],
+      "lineno": 635,
+      "name": "make_AmendmentTable"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in parseSection is critical for config/Section parsing. Typical test coverage would be in unit tests for AmendmentTable or config parsing, e.g., AmendmentTable_test.cpp or ConfigSections_test.cpp. Tests should cover valid/invalid lines, invalid hex, and malformed entries. Gaps may exist if there are no tests for malformed amendment lines or invalid hex IDs. Exception handling paths (Throw<std::runtime_error>) should be tested for negative cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "boost::regex, custom Throw<> exception, uint256::parseHex",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "line (from section.lines())",
+      "location": "parseSection",
+      "validated_by": "boost::regex_match with re1",
+      "validates": [
+        "Line matches regex: optional whitespace, 64 hex chars, whitespace, non-whitespace description"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "match[1] (amendment ID)",
+      "location": "parseSection",
+      "validated_by": "uint256::parseHex",
+      "validates": [
+        "match[1] is a valid hexadecimal string for uint256"
+      ],
+      "validation_type": "format|type"
+    }
+  ]
+}

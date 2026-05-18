@@ -1,0 +1,163 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "SHAMapNodeID"
+    }
+  ],
+  "description": "Defines the SHAMapNodeID class and related functions for identifying and manipulating nodes within a SHAMap (a specialized Merkle tree used in XRPL). Provides serialization, deserialization, comparison, and utility functions for node IDs.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapNodeID.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "SHAMapNodeID"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& other"
+      ],
+      "lineno": 16,
+      "name": "SHAMapNodeID"
+    },
+    {
+      "args": [
+        "unsigned int depth",
+        "uint256 const& hash"
+      ],
+      "lineno": 17,
+      "name": "SHAMapNodeID"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& other"
+      ],
+      "lineno": 19,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "isRoot"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "getRawString"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "getDepth"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "getNodeID"
+    },
+    {
+      "args": [
+        "unsigned int m"
+      ],
+      "lineno": 37,
+      "name": "getChildNodeID"
+    },
+    {
+      "args": [
+        "int depth",
+        "uint256 const& key"
+      ],
+      "lineno": 45,
+      "name": "createID"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 53,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 58,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 63,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 68,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 73,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& n"
+      ],
+      "lineno": 78,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& node"
+      ],
+      "lineno": 83,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "std::ostream& out",
+        "SHAMapNodeID const& node"
+      ],
+      "lineno": 90,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "void const* data",
+        "std::size_t size"
+      ],
+      "lineno": 101,
+      "name": "deserializeSHAMapNodeID"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 104,
+      "name": "deserializeSHAMapNodeID"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& id",
+        "uint256 const& hash"
+      ],
+      "lineno": 111,
+      "name": "selectBranch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

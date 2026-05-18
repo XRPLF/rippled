@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "cipherList"
+    },
+    {
+      "lineno": 15,
+      "name": "keyFile"
+    },
+    {
+      "lineno": 16,
+      "name": "certFile"
+    },
+    {
+      "lineno": 17,
+      "name": "chainFile"
+    },
+    {
+      "lineno": 18,
+      "name": "cipherList"
+    }
+  ],
+  "classes": [],
+  "description": "This file declares functions for creating SSL contexts (both self-signed and authenticated) for use with Boost.Asio in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/make_SSLContext.h",
+  "functions": [
+    {
+      "args": [
+        "cipherList"
+      ],
+      "lineno": 10,
+      "name": "make_SSLContext"
+    },
+    {
+      "args": [
+        "keyFile",
+        "certFile",
+        "chainFile",
+        "cipherList"
+      ],
+      "lineno": 14,
+      "name": "make_SSLContextAuthed"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

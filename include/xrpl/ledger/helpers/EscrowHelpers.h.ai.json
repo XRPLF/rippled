@@ -1,0 +1,47 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides helper functions for applying escrow unlock logic for different issue types (Issue and MPTIssue) in the XRPL ledger, handling trust line creation, transfer fees, and asset transfers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/EscrowHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyView& view",
+        "Rate lockedRate",
+        "std::shared_ptr<SLE> const& sleDest",
+        "STAmount const& xrpBalance",
+        "STAmount const& amount",
+        "AccountID const& issuer",
+        "AccountID const& sender",
+        "AccountID const& receiver",
+        "bool createAsset",
+        "beast::Journal journal"
+      ],
+      "lineno": 19,
+      "name": "escrowUnlockApplyHelper<Issue>"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "Rate lockedRate",
+        "std::shared_ptr<SLE> const& sleDest",
+        "STAmount const& xrpBalance",
+        "STAmount const& amount",
+        "AccountID const& issuer",
+        "AccountID const& sender",
+        "AccountID const& receiver",
+        "bool createAsset",
+        "beast::Journal journal"
+      ],
+      "lineno": 99,
+      "name": "escrowUnlockApplyHelper<MPTIssue>"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "view"
+    },
+    {
+      "lineno": 7,
+      "name": "account"
+    },
+    {
+      "lineno": 7,
+      "name": "domainID"
+    },
+    {
+      "lineno": 11,
+      "name": "offerID"
+    },
+    {
+      "lineno": 14,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides helper functions to check if an account or offer is within a specified permissioned domain in the XRPL ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/PermissionedDEXHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "account",
+        "domainID"
+      ],
+      "lineno": 7,
+      "name": "accountInDomain"
+    },
+    {
+      "args": [
+        "view",
+        "offerID",
+        "domainID",
+        "j"
+      ],
+      "lineno": 11,
+      "name": "offerInDomain"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "permissioned_dex"
+    }
+  ]
+}

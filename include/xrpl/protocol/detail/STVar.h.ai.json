@@ -1,0 +1,280 @@
+{
+  "args": [
+    {
+      "lineno": 39,
+      "name": "other"
+    },
+    {
+      "lineno": 40,
+      "name": "other"
+    },
+    {
+      "lineno": 41,
+      "name": "rhs"
+    },
+    {
+      "lineno": 43,
+      "name": "rhs"
+    },
+    {
+      "lineno": 45,
+      "name": "t"
+    },
+    {
+      "lineno": 50,
+      "name": "t"
+    },
+    {
+      "lineno": 54,
+      "name": "name"
+    },
+    {
+      "lineno": 55,
+      "name": "name"
+    },
+    {
+      "lineno": 56,
+      "name": "sit"
+    },
+    {
+      "lineno": 56,
+      "name": "name"
+    },
+    {
+      "lineno": 56,
+      "name": "depth"
+    },
+    {
+      "lineno": 87,
+      "name": "T"
+    },
+    {
+      "lineno": 87,
+      "name": "args"
+    },
+    {
+      "lineno": 97,
+      "name": "id"
+    },
+    {
+      "lineno": 97,
+      "name": "depth"
+    },
+    {
+      "lineno": 97,
+      "name": "arg"
+    },
+    {
+      "lineno": 114,
+      "name": "lhs"
+    },
+    {
+      "lineno": 114,
+      "name": "rhs"
+    },
+    {
+      "lineno": 119,
+      "name": "lhs"
+    },
+    {
+      "lineno": 119,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "defaultObject_t"
+    },
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "nonPresentObject_t"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "STVar"
+    }
+  ],
+  "description": "Defines the STVar class and related utilities for holding and managing serialized XRPL protocol objects with small-object optimization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/detail/STVar.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "~STVar"
+    },
+    {
+      "args": [
+        "STVar const& other"
+      ],
+      "lineno": 39,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "STVar&& other"
+      ],
+      "lineno": 40,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "STVar const& rhs"
+      ],
+      "lineno": 41,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "STVar&& rhs"
+      ],
+      "lineno": 43,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "STBase&& t"
+      ],
+      "lineno": 45,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 50,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "defaultObject_t",
+        "SField const& name"
+      ],
+      "lineno": 54,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "nonPresentObject_t",
+        "SField const& name"
+      ],
+      "lineno": 55,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name",
+        "int depth"
+      ],
+      "lineno": 56,
+      "name": "STVar"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "STVar"
+    },
+    {
+      "args": [
+        "SerializedTypeID id",
+        "SField const& name"
+      ],
+      "lineno": 82,
+      "name": "STVar"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "destroy"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 87,
+      "name": "construct"
+    },
+    {
+      "args": [
+        "SerializedTypeID id",
+        "int depth",
+        "Args&&... arg"
+      ],
+      "lineno": 97,
+      "name": "constructST"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "on_heap"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 108,
+      "name": "make_stvar"
+    },
+    {
+      "args": [
+        "STVar const& lhs",
+        "STVar const& rhs"
+      ],
+      "lineno": 114,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STVar const& lhs",
+        "STVar const& rhs"
+      ],
+      "lineno": 119,
+      "name": "operator!="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "detail"
+    }
+  ]
+}

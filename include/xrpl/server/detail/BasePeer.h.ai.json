@@ -1,0 +1,69 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "port"
+    },
+    {
+      "lineno": 29,
+      "name": "handler"
+    },
+    {
+      "lineno": 29,
+      "name": "executor"
+    },
+    {
+      "lineno": 29,
+      "name": "remote_address"
+    },
+    {
+      "lineno": 29,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::executor const& executor",
+        "endpoint_type remote_address",
+        "beast::Journal journal"
+      ],
+      "lineno": 13,
+      "name": "BasePeer"
+    }
+  ],
+  "description": "Defines the BasePeer template class, providing common functionality for all peer connections in the XRPL server, including resource management, strand handling, and connection closing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/BasePeer.h",
+  "functions": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "boost::asio::executor const& executor",
+        "endpoint_type remote_address",
+        "beast::Journal journal"
+      ],
+      "lineno": 29,
+      "name": "BasePeer"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "close"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "impl"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

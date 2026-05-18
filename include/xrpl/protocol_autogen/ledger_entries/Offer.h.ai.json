@@ -1,0 +1,204 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 33,
+      "name": "Offer"
+    },
+    {
+      "args": [
+        "account",
+        "sequence",
+        "takerPays",
+        "takerGets",
+        "bookDirectory",
+        "bookNode",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 186,
+      "name": "OfferBuilder"
+    }
+  ],
+  "description": "Defines the Offer ledger entry and its builder for XRPL, providing type-safe field access and construction for Offer objects in the ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Offer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getTakerPays"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getTakerGets"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getBookDirectory"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "getBookNode"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 145,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 165,
+      "name": "getAdditionalBooks"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "hasAdditionalBooks"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 210,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 219,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 228,
+      "name": "setTakerPays"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 237,
+      "name": "setTakerGets"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 246,
+      "name": "setBookDirectory"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 255,
+      "name": "setBookNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 264,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 273,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 282,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 291,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 300,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 309,
+      "name": "setAdditionalBooks"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 318,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

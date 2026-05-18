@@ -1,0 +1,428 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "uFlags"
+    },
+    {
+      "lineno": 9,
+      "name": "bHigh"
+    },
+    {
+      "lineno": 10,
+      "name": "bNoFreeze"
+    },
+    {
+      "lineno": 11,
+      "name": "bSetFreeze"
+    },
+    {
+      "lineno": 12,
+      "name": "bClearFreeze"
+    },
+    {
+      "lineno": 13,
+      "name": "bSetDeepFreeze"
+    },
+    {
+      "lineno": 14,
+      "name": "bClearDeepFreeze"
+    },
+    {
+      "lineno": 33,
+      "name": "ctx"
+    },
+    {
+      "lineno": 71,
+      "name": "view"
+    },
+    {
+      "lineno": 71,
+      "name": "tx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Transactor::preflight (framework)",
+        "TrustSet::preflight"
+      ],
+      "entry_point": "TrustSet::preflight",
+      "purpose": "Performs stateless validation of TrustSet transaction fields before further processing.",
+      "validation_points": [
+        "Manual bitmask check of transaction flags (uTxFlags)",
+        "isLegalNet(saLimitAmount)",
+        "saLimitAmount.native()",
+        "badCurrency() == saLimitAmount.get<Issue>().currency",
+        "saLimitAmount < beast::zero",
+        "issuer == noAccount()"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::checkPermission (framework)",
+        "TrustSet::checkPermission"
+      ],
+      "entry_point": "TrustSet::checkPermission",
+      "purpose": "Checks if the transaction has permission to perform TrustSet, especially with delegate fields.",
+      "validation_points": [
+        "Delegate existence and permission checks",
+        "Granular permission flags validation",
+        "Trustline existence for granular permissions"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::preclaim (framework)",
+        "TrustSet::preclaim"
+      ],
+      "entry_point": "TrustSet::preclaim",
+      "purpose": "Performs contextual validation (not shown in provided code, but standard in XRPL transactor pattern).",
+      "validation_points": [
+        "Likely checks for account existence, trustline state, etc. (not shown in snippet)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::doApply (framework)",
+        "TrustSet::doApply"
+      ],
+      "entry_point": "TrustSet::doApply",
+      "purpose": "Applies the TrustSet transaction to the ledger after all validations pass.",
+      "validation_points": [
+        "Assumes all previous validations have passed"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "uTxFlags",
+      "flow": [
+        "Transaction input",
+        "TrustSet::preflight",
+        "Manual bitmask check",
+        "Used to determine allowed/forbidden flags"
+      ],
+      "origin": "tx.getFlags() (from transaction input)",
+      "transformations": [
+        "Bitmask AND/OR with tfTrustSetMask, tfSetDeepFreeze, tfClearDeepFreeze"
+      ],
+      "validated_at": "TrustSet::preflight"
+    },
+    {
+      "field": "sfLimitAmount",
+      "flow": [
+        "Transaction input",
+        "TrustSet::preflight",
+        "saLimitAmount variable",
+        "Multiple validation checks"
+      ],
+      "origin": "tx.getFieldAmount(sfLimitAmount) (from transaction input)",
+      "transformations": [
+        "Checked with isLegalNet()",
+        "Checked for native() (XRP)",
+        "Checked for badCurrency()",
+        "Compared to beast::zero (negative check)",
+        "Issuer extracted for further validation"
+      ],
+      "validated_at": "TrustSet::preflight"
+    },
+    {
+      "field": "issuer (from sfLimitAmount)",
+      "flow": [
+        "Extracted from saLimitAmount",
+        "Checked for null or noAccount()"
+      ],
+      "origin": "saLimitAmount.getIssuer()",
+      "transformations": [
+        "None (direct extraction and comparison)"
+      ],
+      "validated_at": "TrustSet::preflight"
+    },
+    {
+      "field": "delegate (sfDelegate)",
+      "flow": [
+        "Transaction input",
+        "TrustSet::checkPermission",
+        "If present, used to look up delegateKey and SLE"
+      ],
+      "origin": "tx[~sfDelegate] (optional field in transaction)",
+      "transformations": [
+        "Used to construct keylet::delegate",
+        "Used to read SLE from ledger"
+      ],
+      "validated_at": "TrustSet::checkPermission"
+    },
+    {
+      "field": "TrustSet permission flags",
+      "flow": [
+        "Transaction input",
+        "TrustSet::checkPermission",
+        "Bitmask check for tfTrustSetPermissionMask"
+      ],
+      "origin": "tx.getFlags()",
+      "transformations": [
+        "Bitmask AND"
+      ],
+      "validated_at": "TrustSet::checkPermission"
+    }
+  ],
+  "description": "Implements the TrustSet transaction logic for the XRPL, including preflight checks, permission checks, preclaim validation, and application of trust line changes (creation, modification, deletion), with support for granular permissions, freeze/deep freeze, and reserve management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Transaction Flags (uTxFlags)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual bitmask check at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for Transaction Flags (uTxFlags)",
+      "why_false_positive": "manual bitmask check validates Transaction Flags (uTxFlags) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLimitAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isLegalNet(saLimitAmount) at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLimitAmount",
+      "why_false_positive": "isLegalNet(saLimitAmount) validates sfLimitAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLimitAmount (native check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "saLimitAmount.native() at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLimitAmount (native check)",
+      "why_false_positive": "saLimitAmount.native() validates sfLimitAmount (native check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLimitAmount.currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "badCurrency() == saLimitAmount.get<Issue>().currency at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLimitAmount.currency",
+      "why_false_positive": "badCurrency() == saLimitAmount.get<Issue>().currency validates sfLimitAmount.currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLimitAmount (negative check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "saLimitAmount < beast::zero at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLimitAmount (negative check)",
+      "why_false_positive": "saLimitAmount < beast::zero validates sfLimitAmount (negative check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfLimitAmount (negative check)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "saLimitAmount < beast::zero at TrustSet::preflight",
+      "issue_pattern": "Missing range validation for sfLimitAmount (negative check)",
+      "why_false_positive": "saLimitAmount < beast::zero validates sfLimitAmount (negative check) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLimitAmount.issuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!issuer || issuer == noAccount() at TrustSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLimitAmount.issuer",
+      "why_false_positive": "!issuer || issuer == noAccount() validates sfLimitAmount.issuer for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/TrustSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "uFlags",
+        "bHigh",
+        "bNoFreeze",
+        "bSetFreeze",
+        "bClearFreeze",
+        "bSetDeepFreeze",
+        "bClearDeepFreeze"
+      ],
+      "lineno": 7,
+      "name": "computeFreezeFlags"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 32,
+      "name": "TrustSet::getFlagsMask"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 36,
+      "name": "TrustSet::preflight"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 70,
+      "name": "TrustSet::checkPermission"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 120,
+      "name": "TrustSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 232,
+      "name": "TrustSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 1,
+      "name": ""
+    },
+    {
+      "lineno": 30,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "TrustSet transaction validation is typically covered in unit/integration tests under the rippled codebase, especially in files like 'test/tx/TrustSet_test.cpp', 'test/tx/SetTrust_test.cpp', or similar. These tests usually cover flag validation, amount validation, currency checks, and permission checks. However, coverage gaps may exist for edge cases such as deep freeze flags when the amendment is disabled, negative or malformed sfLimitAmount, and granular delegate permission scenarios. Tests for new features (like DeepFreeze) may be missing if the feature is recent or not yet widely tested. Manual review of test files is recommended to confirm coverage of all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework detected)",
+    "validation_layer": "business_logic (preflight transaction validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "Transaction Flags (uTxFlags)",
+      "location": "TrustSet::preflight",
+      "validated_by": "manual bitmask check",
+      "validates": [
+        "If featureDeepFreeze is not enabled, tfSetDeepFreeze and tfClearDeepFreeze flags must not be set"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfLimitAmount",
+      "location": "TrustSet::preflight",
+      "validated_by": "isLegalNet(saLimitAmount)",
+      "validates": [
+        "Checks if the amount is a legal network amount (not negative, not too large, etc.)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_LIMIT",
+      "field": "sfLimitAmount (native check)",
+      "location": "TrustSet::preflight",
+      "validated_by": "saLimitAmount.native()",
+      "validates": [
+        "Checks that the limit amount is not in the native currency (XRP)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_CURRENCY",
+      "field": "sfLimitAmount.currency",
+      "location": "TrustSet::preflight",
+      "validated_by": "badCurrency() == saLimitAmount.get<Issue>().currency",
+      "validates": [
+        "Checks that the currency is not XRP (XRP as IOU is not allowed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_LIMIT",
+      "field": "sfLimitAmount (negative check)",
+      "location": "TrustSet::preflight",
+      "validated_by": "saLimitAmount < beast::zero",
+      "validates": [
+        "Checks that the limit amount is not negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDST_NEEDED",
+      "field": "sfLimitAmount.issuer",
+      "location": "TrustSet::preflight",
+      "validated_by": "!issuer || issuer == noAccount()",
+      "validates": [
+        "Checks that the issuer field is present and not the 'no account' value"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

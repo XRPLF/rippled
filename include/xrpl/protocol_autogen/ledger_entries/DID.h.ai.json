@@ -1,0 +1,194 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "sle"
+    },
+    {
+      "lineno": 144,
+      "name": "account"
+    },
+    {
+      "lineno": 144,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 144,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 144,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 151,
+      "name": "sle"
+    },
+    {
+      "lineno": 156,
+      "name": "value"
+    },
+    {
+      "lineno": 165,
+      "name": "value"
+    },
+    {
+      "lineno": 174,
+      "name": "value"
+    },
+    {
+      "lineno": 183,
+      "name": "value"
+    },
+    {
+      "lineno": 192,
+      "name": "value"
+    },
+    {
+      "lineno": 201,
+      "name": "value"
+    },
+    {
+      "lineno": 210,
+      "name": "value"
+    },
+    {
+      "lineno": 219,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 28,
+      "name": "DID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 139,
+      "name": "DIDBuilder"
+    }
+  ],
+  "description": "Defines the DID ledger entry type and its builder for the XRPL, providing type-safe accessors and a fluent builder interface for constructing and manipulating DID ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/DID.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getDIDDocument"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "hasDIDDocument"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getURI"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "hasURI"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "getData"
+    },
+    {
+      "args": [],
+      "lineno": 98,
+      "name": "hasData"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 154,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 163,
+      "name": "setDIDDocument"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 172,
+      "name": "setURI"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 181,
+      "name": "setData"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 190,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 199,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 208,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 217,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

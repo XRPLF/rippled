@@ -1,0 +1,33 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "InnerObjectFormats"
+    }
+  ],
+  "description": "Defines the InnerObjectFormats class, which manages the list of known inner object formats in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/InnerObjectFormats.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "getInstance"
+    },
+    {
+      "args": [
+        "sField"
+      ],
+      "lineno": 19,
+      "name": "findSOTemplateBySField"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

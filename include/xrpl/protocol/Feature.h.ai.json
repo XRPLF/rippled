@@ -1,0 +1,128 @@
+{
+  "args": [
+    {
+      "lineno": 54,
+      "name": "fn"
+    },
+    {
+      "lineno": 66,
+      "name": "fn"
+    },
+    {
+      "lineno": 139,
+      "name": "name"
+    },
+    {
+      "lineno": 142,
+      "name": "f"
+    },
+    {
+      "lineno": 145,
+      "name": "i"
+    },
+    {
+      "lineno": 148,
+      "name": "f"
+    },
+    {
+      "lineno": 263,
+      "name": "bs"
+    },
+    {
+      "lineno": 263,
+      "name": "f"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "FeatureBitset"
+    }
+  ],
+  "description": "This file defines the feature/amendment management system for the XRPL protocol, including compile-time and runtime utilities for registering, validating, and manipulating protocol features and amendments, as well as the FeatureBitset class for efficient feature set operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Feature.h",
+  "functions": [
+    {
+      "args": [
+        "fn"
+      ],
+      "lineno": 54,
+      "name": "validFeatureNameSize"
+    },
+    {
+      "args": [
+        "fn"
+      ],
+      "lineno": 66,
+      "name": "validFeatureName"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "allAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "supportedAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "numDownVotedAmendments"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "numUpVotedAmendments"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 139,
+      "name": "getRegisteredFeature"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 142,
+      "name": "featureToBitsetIndex"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 145,
+      "name": "bitsetIndexToFeature"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 148,
+      "name": "featureToName"
+    },
+    {
+      "args": [
+        "bs",
+        "f"
+      ],
+      "lineno": 263,
+      "name": "foreachFeature"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 44,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 87,
+      "name": "detail"
+    }
+  ]
+}

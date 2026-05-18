@@ -1,0 +1,54 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "ValidationParms"
+    },
+    {
+      "args": [
+        "Seq"
+      ],
+      "lineno": 56,
+      "name": "SeqEnforcer"
+    },
+    {
+      "args": [
+        "ValidationParms const& p",
+        "beast::abstract_clock<std::chrono::steady_clock>& c",
+        "Ts&&... ts"
+      ],
+      "lineno": 137,
+      "name": "Validations"
+    }
+  ],
+  "description": "This file implements the core logic for managing and tracking ledger validations in the XRPL consensus process. It defines timing parameters for validation staleness, enforces validation sequence requirements, and provides a generic Validations class template for storing, querying, and updating validations from network nodes, including trusted/untrusted status, expiration, and trie-based ancestry tracking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/Validations.h",
+  "functions": [
+    {
+      "args": [
+        "ValidationParms const& p",
+        "NetClock::time_point now",
+        "NetClock::time_point signTime",
+        "NetClock::time_point seenTime"
+      ],
+      "lineno": 87,
+      "name": "isCurrent"
+    },
+    {
+      "args": [
+        "ValStatus m"
+      ],
+      "lineno": 109,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

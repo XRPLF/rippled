@@ -1,0 +1,101 @@
+{
+  "args": [
+    {
+      "lineno": 33,
+      "name": "s"
+    },
+    {
+      "lineno": 33,
+      "name": "ec"
+    },
+    {
+      "lineno": 49,
+      "name": "t"
+    },
+    {
+      "lineno": 49,
+      "name": "c"
+    },
+    {
+      "lineno": 49,
+      "name": "fp"
+    },
+    {
+      "lineno": 53,
+      "name": "t"
+    },
+    {
+      "lineno": 53,
+      "name": "c"
+    },
+    {
+      "lineno": 53,
+      "name": "fp"
+    },
+    {
+      "lineno": 67,
+      "name": "lhs"
+    },
+    {
+      "lineno": 67,
+      "name": "rhs"
+    },
+    {
+      "lineno": 74,
+      "name": "lhs"
+    },
+    {
+      "lineno": 74,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Type t, std::uint32_t c, Slice fp",
+        "Type t, std::uint32_t c, Buffer&& fp"
+      ],
+      "lineno": 15,
+      "name": "Condition"
+    }
+  ],
+  "description": "Defines the Condition class and related types for representing and handling crypto-conditions in the xrpl::cryptoconditions namespace, including serialization, deserialization, and comparison operators.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/conditions/Condition.h",
+  "functions": [
+    {
+      "args": [
+        "Slice s",
+        "std::error_code& ec"
+      ],
+      "lineno": 32,
+      "name": "deserialize"
+    },
+    {
+      "args": [
+        "Condition const& lhs",
+        "Condition const& rhs"
+      ],
+      "lineno": 66,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Condition const& lhs",
+        "Condition const& rhs"
+      ],
+      "lineno": 73,
+      "name": "operator!="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "cryptoconditions"
+    }
+  ]
+}

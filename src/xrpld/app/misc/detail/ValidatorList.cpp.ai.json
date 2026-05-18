@@ -1,0 +1,863 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidatorList::load",
+        "boost::regex (parsing keys)",
+        "ValidatorList::PublisherListStats (constructed)",
+        "ValidatorList::PublisherListStats::mergeDispositions",
+        "ValidatorList::PublisherListStats::bestDisposition / worstDisposition"
+      ],
+      "entry_point": "ValidatorList::load",
+      "purpose": "Loads validator and publisher keys from configuration, parses and validates them, updates internal validator list state.",
+      "validation_points": [
+        "boost::regex used to validate and parse publisher keys",
+        "dispositions.empty() check in bestDisposition/worstDisposition",
+        "minimumQuorum validated via std::optional::value_or(1) in ValidatorList constructor"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_string(ListDisposition)",
+        "switch statement on ListDisposition"
+      ],
+      "entry_point": "to_string(ListDisposition)",
+      "purpose": "Converts ListDisposition enum to string, validates enum value.",
+      "validation_points": [
+        "switch statement ensures only valid enum values are handled, returns 'unknown' for invalid"
+      ]
+    },
+    {
+      "call_chain": [
+        "ValidatorList::ValidatorList",
+        "minimumQuorum.value_or(1)"
+      ],
+      "entry_point": "ValidatorList::ValidatorList (constructor)",
+      "purpose": "Constructs ValidatorList, validates minimumQuorum parameter.",
+      "validation_points": [
+        "minimumQuorum validated via value_or(1) to ensure non-zero quorum"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ListDisposition",
+      "flow": [
+        "Created in PublisherListStats or as function argument",
+        "Passed to to_string, bestDisposition, worstDisposition, mergeDispositions",
+        "Used in switch statement or map"
+      ],
+      "origin": "Function arguments, internal state",
+      "transformations": [
+        "Enum value checked in switch (to_string)",
+        "Counted in map (dispositions)"
+      ],
+      "validated_at": "to_string (switch), bestDisposition/worstDisposition (dispositions.empty() check)"
+    },
+    {
+      "field": "dispositions (map<ListDisposition, int>)",
+      "flow": [
+        "Incremented in PublisherListStats constructor",
+        "Merged in mergeDispositions",
+        "Checked in bestDisposition/worstDisposition"
+      ],
+      "origin": "PublisherListStats constructor",
+      "transformations": [
+        "Incremented, merged, checked for emptiness"
+      ],
+      "validated_at": "bestDisposition/worstDisposition (dispositions.empty())"
+    },
+    {
+      "field": "minimumQuorum",
+      "flow": [
+        "Passed to ValidatorList constructor",
+        "Set to quorum_ via value_or(1)"
+      ],
+      "origin": "ValidatorList constructor argument (std::optional)",
+      "transformations": [
+        "If not set, defaults to 1"
+      ],
+      "validated_at": "ValidatorList constructor (minimumQuorum.value_or(1))"
+    },
+    {
+      "field": "publisherKeys",
+      "flow": [
+        "Passed to ValidatorList::load",
+        "Iterated and parsed with boost::regex",
+        "Used to construct PublisherListStats"
+      ],
+      "origin": "ValidatorList::load argument",
+      "transformations": [
+        "Regex parsing, whitespace trimming"
+      ],
+      "validated_at": "Regex match in ValidatorList::load"
+    }
+  ],
+  "description": "Implements the ValidatorList class for managing trusted validator lists, publisher lists, quorum calculation, validator list propagation, and related logic in the XRPL (XRP Ledger) server.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "enum ListDisposition (type safety)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field enum ListDisposition (type safety) validated by C++ type system, enum, std::optional, custom logic",
+      "issue_pattern": "Missing validation for enum ListDisposition (type safety)",
+      "why_false_positive": "C++ type system, enum, std::optional, custom logic validates enum ListDisposition (type safety) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "minimumQuorum (std::optional defaulting)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field minimumQuorum (std::optional defaulting) validated by C++ type system, enum, std::optional, custom logic",
+      "issue_pattern": "Missing validation for minimumQuorum (std::optional defaulting)",
+      "why_false_positive": "C++ type system, enum, std::optional, custom logic validates minimumQuorum (std::optional defaulting) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "dispositions map (checked for emptiness)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field dispositions map (checked for emptiness) validated by C++ type system, enum, std::optional, custom logic",
+      "issue_pattern": "Missing validation for dispositions map (checked for emptiness)",
+      "why_false_positive": "C++ type system, enum, std::optional, custom logic validates dispositions map (checked for emptiness) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ListDisposition enum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "to_string switch statement at to_string(ListDisposition disposition)",
+      "issue_pattern": "Missing empty string validation for ListDisposition enum",
+      "why_false_positive": "to_string switch statement validates ListDisposition enum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "dispositions map",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dispositions.empty() check at PublisherListStats::bestDisposition, PublisherListStats::worstDisposition",
+      "issue_pattern": "Missing empty string validation for dispositions map",
+      "why_false_positive": "dispositions.empty() check validates dispositions map for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "minimumQuorum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional::value_or(1) at ValidatorList constructor",
+      "issue_pattern": "Missing empty string validation for minimumQuorum",
+      "why_false_positive": "std::optional::value_or(1) validates minimumQuorum for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/ValidatorList.cpp",
+  "functions": [
+    {
+      "args": [
+        "disposition"
+      ],
+      "lineno": 9,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "d"
+      ],
+      "lineno": 38,
+      "name": "ValidatorList::PublisherListStats::PublisherListStats"
+    },
+    {
+      "args": [
+        "d",
+        "key",
+        "stat",
+        "seq"
+      ],
+      "lineno": 42,
+      "name": "ValidatorList::PublisherListStats::PublisherListStats"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "ValidatorList::PublisherListStats::bestDisposition"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "ValidatorList::PublisherListStats::worstDisposition"
+    },
+    {
+      "args": [
+        "src"
+      ],
+      "lineno": 56,
+      "name": "ValidatorList::PublisherListStats::mergeDispositions"
+    },
+    {
+      "args": [
+        "message_",
+        "hash_",
+        "num_"
+      ],
+      "lineno": 63,
+      "name": "ValidatorList::MessageWithHash::MessageWithHash"
+    },
+    {
+      "args": [
+        "validatorManifests",
+        "publisherManifests",
+        "timeKeeper",
+        "databasePath",
+        "j",
+        "minimumQuorum"
+      ],
+      "lineno": 68,
+      "name": "ValidatorList::ValidatorList"
+    },
+    {
+      "args": [
+        "localSigningKey",
+        "configKeys",
+        "publisherKeys",
+        "listThreshold"
+      ],
+      "lineno": 78,
+      "name": "ValidatorList::load"
+    },
+    {
+      "args": [
+        "lock",
+        "pubKey"
+      ],
+      "lineno": 134,
+      "name": "ValidatorList::getCacheFileName"
+    },
+    {
+      "args": [
+        "pubKey",
+        "pubCollection",
+        "j"
+      ],
+      "lineno": 141,
+      "name": "ValidatorList::buildFileData"
+    },
+    {
+      "args": [
+        "pubKey",
+        "pubCollection",
+        "forceVersion",
+        "j"
+      ],
+      "lineno": 148,
+      "name": "ValidatorList::buildFileData"
+    },
+    {
+      "args": [
+        "lock",
+        "pubKey"
+      ],
+      "lineno": 185,
+      "name": "ValidatorList::cacheValidatorFile"
+    },
+    {
+      "args": [
+        "version",
+        "body"
+      ],
+      "lineno": 202,
+      "name": "ValidatorList::parseBlobs"
+    },
+    {
+      "args": [
+        "body"
+      ],
+      "lineno": 246,
+      "name": "ValidatorList::parseBlobs"
+    },
+    {
+      "args": [
+        "body"
+      ],
+      "lineno": 253,
+      "name": "ValidatorList::parseBlobs"
+    },
+    {
+      "args": [
+        "messages",
+        "largeMsg",
+        "maxSize",
+        "begin",
+        "end"
+      ],
+      "lineno": 271,
+      "name": "splitMessageParts"
+    },
+    {
+      "args": [
+        "messages",
+        "largeMsg",
+        "maxSize",
+        "begin",
+        "end"
+      ],
+      "lineno": 277,
+      "name": "splitMessage"
+    },
+    {
+      "args": [
+        "messages",
+        "largeMsg",
+        "maxSize",
+        "begin",
+        "end"
+      ],
+      "lineno": 292,
+      "name": "splitMessageParts"
+    },
+    {
+      "args": [
+        "messages",
+        "rawVersion",
+        "rawManifest",
+        "currentBlob",
+        "maxSize"
+      ],
+      "lineno": 324,
+      "name": "buildValidatorListMessage"
+    },
+    {
+      "args": [
+        "messages",
+        "peerSequence",
+        "rawVersion",
+        "rawManifest",
+        "blobInfos",
+        "maxSize"
+      ],
+      "lineno": 345,
+      "name": "buildValidatorListMessage"
+    },
+    {
+      "args": [
+        "messageVersion",
+        "peerSequence",
+        "maxSequence",
+        "rawVersion",
+        "rawManifest",
+        "blobInfos",
+        "messages",
+        "maxSize"
+      ],
+      "lineno": 372,
+      "name": "ValidatorList::buildValidatorListMessages"
+    },
+    {
+      "args": [
+        "peer",
+        "peerSequence",
+        "publisherKey",
+        "maxSequence",
+        "rawVersion",
+        "rawManifest",
+        "blobInfos",
+        "messages",
+        "hashRouter",
+        "j"
+      ],
+      "lineno": 410,
+      "name": "ValidatorList::sendValidatorList"
+    },
+    {
+      "args": [
+        "peer",
+        "peerSequence",
+        "publisherKey",
+        "maxSequence",
+        "rawVersion",
+        "rawManifest",
+        "blobInfos",
+        "hashRouter",
+        "j"
+      ],
+      "lineno": 445,
+      "name": "ValidatorList::sendValidatorList"
+    },
+    {
+      "args": [
+        "blobInfos",
+        "lists"
+      ],
+      "lineno": 457,
+      "name": "ValidatorList::buildBlobInfos"
+    },
+    {
+      "args": [
+        "lists"
+      ],
+      "lineno": 466,
+      "name": "ValidatorList::buildBlobInfos"
+    },
+    {
+      "args": [
+        "publisherKey",
+        "lists",
+        "maxSequence",
+        "hash",
+        "overlay",
+        "hashRouter",
+        "j"
+      ],
+      "lineno": 474,
+      "name": "ValidatorList::broadcastBlobs"
+    },
+    {
+      "args": [
+        "manifest",
+        "version",
+        "blobs",
+        "siteUri",
+        "hash",
+        "overlay",
+        "hashRouter",
+        "networkOPs"
+      ],
+      "lineno": 511,
+      "name": "ValidatorList::applyListsAndBroadcast"
+    },
+    {
+      "args": [
+        "manifest",
+        "version",
+        "blobs",
+        "siteUri",
+        "hash"
+      ],
+      "lineno": 541,
+      "name": "ValidatorList::applyLists"
+    },
+    {
+      "args": [
+        "pubKey",
+        "current",
+        "oldList",
+        "lock"
+      ],
+      "lineno": 589,
+      "name": "ValidatorList::updatePublisherList"
+    },
+    {
+      "args": [
+        "globalManifest",
+        "localManifest",
+        "blob",
+        "signature",
+        "version",
+        "siteUri",
+        "hash",
+        "lock"
+      ],
+      "lineno": 627,
+      "name": "ValidatorList::applyList"
+    },
+    {
+      "args": [],
+      "lineno": 735,
+      "name": "ValidatorList::loadLists"
+    },
+    {
+      "args": [
+        "lock",
+        "list",
+        "manifest",
+        "blob",
+        "signature"
+      ],
+      "lineno": 779,
+      "name": "ValidatorList::verify"
+    },
+    {
+      "args": [
+        "identity"
+      ],
+      "lineno": 834,
+      "name": "ValidatorList::listed"
+    },
+    {
+      "args": [
+        "read_lock",
+        "identity"
+      ],
+      "lineno": 841,
+      "name": "ValidatorList::trusted"
+    },
+    {
+      "args": [
+        "identity"
+      ],
+      "lineno": 846,
+      "name": "ValidatorList::trusted"
+    },
+    {
+      "args": [
+        "identity"
+      ],
+      "lineno": 851,
+      "name": "ValidatorList::getListedKey"
+    },
+    {
+      "args": [
+        "read_lock",
+        "identity"
+      ],
+      "lineno": 858,
+      "name": "ValidatorList::getTrustedKey"
+    },
+    {
+      "args": [
+        "identity"
+      ],
+      "lineno": 864,
+      "name": "ValidatorList::getTrustedKey"
+    },
+    {
+      "args": [
+        "identity"
+      ],
+      "lineno": 869,
+      "name": "ValidatorList::trustedPublisher"
+    },
+    {
+      "args": [],
+      "lineno": 875,
+      "name": "ValidatorList::localPublicKey"
+    },
+    {
+      "args": [
+        "lock",
+        "publisherKey",
+        "reason"
+      ],
+      "lineno": 880,
+      "name": "ValidatorList::removePublisherList"
+    },
+    {
+      "args": [
+        "read_lock"
+      ],
+      "lineno": 900,
+      "name": "ValidatorList::count"
+    },
+    {
+      "args": [],
+      "lineno": 905,
+      "name": "ValidatorList::count"
+    },
+    {
+      "args": [
+        "read_lock"
+      ],
+      "lineno": 910,
+      "name": "ValidatorList::expires"
+    },
+    {
+      "args": [],
+      "lineno": 950,
+      "name": "ValidatorList::expires"
+    },
+    {
+      "args": [],
+      "lineno": 955,
+      "name": "ValidatorList::getJson"
+    },
+    {
+      "args": [
+        "func"
+      ],
+      "lineno": 1037,
+      "name": "ValidatorList::for_each_listed"
+    },
+    {
+      "args": [
+        "func"
+      ],
+      "lineno": 1044,
+      "name": "ValidatorList::for_each_available"
+    },
+    {
+      "args": [
+        "pubKey",
+        "forceVersion"
+      ],
+      "lineno": 1062,
+      "name": "ValidatorList::getAvailable"
+    },
+    {
+      "args": [
+        "unlSize",
+        "effectiveUnlSize",
+        "seenSize"
+      ],
+      "lineno": 1082,
+      "name": "ValidatorList::calculateQuorum"
+    },
+    {
+      "args": [
+        "seenValidators",
+        "closeTime",
+        "ops",
+        "overlay",
+        "hashRouter"
+      ],
+      "lineno": 1127,
+      "name": "ValidatorList::updateTrusted"
+    },
+    {
+      "args": [],
+      "lineno": 1247,
+      "name": "ValidatorList::getTrustedMasterKeys"
+    },
+    {
+      "args": [],
+      "lineno": 1252,
+      "name": "ValidatorList::getListThreshold"
+    },
+    {
+      "args": [],
+      "lineno": 1257,
+      "name": "ValidatorList::getNegativeUNL"
+    },
+    {
+      "args": [
+        "negUnl"
+      ],
+      "lineno": 1262,
+      "name": "ValidatorList::setNegativeUNL"
+    },
+    {
+      "args": [
+        "validations"
+      ],
+      "lineno": 1267,
+      "name": "ValidatorList::negativeUNLFilter"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by integration and unit tests for validator list loading and management. Tests would exist in files like ValidatorList_test.cpp or ValidatorList_test.py (if bindings exist). Key validation paths (enum handling, minimumQuorum defaulting, regex parsing) should be covered, but edge cases (invalid enum, empty publisherKeys, minimumQuorum=0) may not be fully tested unless explicitly checked. No test code is shown here, so coverage of error/edge cases is uncertain.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "enum ListDisposition (type safety)",
+      "minimumQuorum (std::optional defaulting)",
+      "dispositions map (checked for emptiness)"
+    ],
+    "framework": "C++ type system, enum, std::optional, custom logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "returns 'unknown' for invalid enum",
+      "field": "ListDisposition enum",
+      "location": "to_string(ListDisposition disposition)",
+      "validated_by": "to_string switch statement",
+      "validates": [
+        "enum value is recognized"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "returns ListDisposition::invalid if empty",
+      "field": "dispositions map",
+      "location": "PublisherListStats::bestDisposition, PublisherListStats::worstDisposition",
+      "validated_by": "dispositions.empty() check",
+      "validates": [
+        "dispositions map is not empty before accessing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (defaults to 1 if not set)",
+      "field": "minimumQuorum",
+      "location": "ValidatorList constructor",
+      "validated_by": "std::optional::value_or(1)",
+      "validates": [
+        "minimumQuorum is set, otherwise uses default"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "out"
+    },
+    {
+      "lineno": 22,
+      "name": "in"
+    },
+    {
+      "lineno": 28,
+      "name": "out"
+    },
+    {
+      "lineno": 28,
+      "name": "in"
+    },
+    {
+      "lineno": 43,
+      "name": "out"
+    },
+    {
+      "lineno": 43,
+      "name": "in"
+    },
+    {
+      "lineno": 52,
+      "name": "out"
+    },
+    {
+      "lineno": 52,
+      "name": "in"
+    },
+    {
+      "lineno": 78,
+      "name": "out"
+    },
+    {
+      "lineno": 78,
+      "name": "in"
+    },
+    {
+      "lineno": 89,
+      "name": "out"
+    },
+    {
+      "lineno": 89,
+      "name": "in"
+    },
+    {
+      "lineno": 99,
+      "name": "out"
+    },
+    {
+      "lineno": 99,
+      "name": "in"
+    },
+    {
+      "lineno": 109,
+      "name": "out"
+    },
+    {
+      "lineno": 109,
+      "name": "in"
+    },
+    {
+      "lineno": 120,
+      "name": "in"
+    },
+    {
+      "lineno": 135,
+      "name": "in"
+    },
+    {
+      "lineno": 135,
+      "name": "defaultValue"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "LexicalCast<std::string, In>"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "LexicalCast<Out, std::string_view>"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "LexicalCast<Out, boost::core::basic_string_view<char>>"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "LexicalCast<Out, std::string>"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "LexicalCast<Out, char const*>"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "LexicalCast<Out, char*>"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "BadLexicalCast"
+    }
+  ],
+  "description": "Provides type-safe lexical casting utilities for converting between strings and arithmetic/enum/integral types, with error checking and exception support.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/core/LexicalCast.h",
+  "functions": [
+    {
+      "args": [
+        "out",
+        "in"
+      ],
+      "lineno": 109,
+      "name": "lexicalCastChecked"
+    },
+    {
+      "args": [
+        "in"
+      ],
+      "lineno": 120,
+      "name": "lexicalCastThrow"
+    },
+    {
+      "args": [
+        "in",
+        "defaultValue"
+      ],
+      "lineno": 135,
+      "name": "lexicalCast"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ]
+}

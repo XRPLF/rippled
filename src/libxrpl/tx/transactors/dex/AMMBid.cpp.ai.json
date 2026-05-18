@@ -1,0 +1,571 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "ctx"
+    },
+    {
+      "lineno": 18,
+      "name": "ctx"
+    },
+    {
+      "lineno": 54,
+      "name": "ctx"
+    },
+    {
+      "lineno": 97,
+      "name": "ctx_"
+    },
+    {
+      "lineno": 97,
+      "name": "sb"
+    },
+    {
+      "lineno": 97,
+      "name": "account_"
+    },
+    {
+      "lineno": 97,
+      "name": "j_"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMBid::doApply",
+        "AMMBid::preflight",
+        "AMMBid::preclaim",
+        "applyBid"
+      ],
+      "entry_point": "AMMBid::doApply",
+      "purpose": "Processes an AMM Bid transaction, validating and applying it to the ledger.",
+      "validation_points": [
+        "AMMBid::preflight",
+        "AMMBid::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMBid::preflight"
+      ],
+      "entry_point": "AMMBid::preflight",
+      "purpose": "Performs stateless validation of the transaction fields before any ledger access.",
+      "validation_points": [
+        "AMMBid::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMBid::preclaim"
+      ],
+      "entry_point": "AMMBid::preclaim",
+      "purpose": "Performs contextual validation using the current ledger state.",
+      "validation_points": [
+        "AMMBid::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMBid::checkExtraFeatures"
+      ],
+      "entry_point": "AMMBid::checkExtraFeatures",
+      "purpose": "Checks feature flags and asset type compatibility before further processing.",
+      "validation_points": [
+        "AMMBid::checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAsset / sfAsset2",
+      "flow": [
+        "ctx.tx[sfAsset], ctx.tx[sfAsset2]",
+        "invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+        "keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+        "ctx.view.read(keylet::amm(...))"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for validity as an asset pair",
+        "Used to look up AMM ledger entry"
+      ],
+      "validated_at": "AMMBid::preflight (invalidAMMAssetPair), AMMBid::preclaim (AMM existence)"
+    },
+    {
+      "field": "sfBidMin / sfBidMax",
+      "flow": [
+        "ctx.tx[~sfBidMin], ctx.tx[~sfBidMax]",
+        "invalidAMMAmount(*bidMin), invalidAMMAmount(*bidMax)",
+        "Compared to lpTokens and lpTokensBalance"
+      ],
+      "origin": "ctx.tx (transaction input, optional fields)",
+      "transformations": [
+        "Type and value checked for AMM compatibility",
+        "Compared against account's LP token balance"
+      ],
+      "validated_at": "AMMBid::preflight (invalidAMMAmount), AMMBid::preclaim (asset match, balance check)"
+    },
+    {
+      "field": "sfAuthAccounts",
+      "flow": [
+        "ctx.tx.isFieldPresent(sfAuthAccounts)",
+        "ctx.tx.getFieldArray(sfAuthAccounts)",
+        "Loop over accounts for uniqueness and existence"
+      ],
+      "origin": "ctx.tx (transaction input, optional)",
+      "transformations": [
+        "Checked for max size",
+        "Checked for uniqueness (if fixAMMv1_3 enabled)",
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "AMMBid::preflight (size, uniqueness), AMMBid::preclaim (existence)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "Used for uniqueness check in sfAuthAccounts",
+        "Used to check LP token holdings"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Compared to auth accounts for uniqueness",
+        "Used to look up LP token balance"
+      ],
+      "validated_at": "AMMBid::preflight (uniqueness), AMMBid::preclaim (LP token check)"
+    },
+    {
+      "field": "feature flags (ammEnabled, featureMPTokensV2, fixAMMv1_3)",
+      "flow": [
+        "ctx.rules.enabled(feature)",
+        "Used to gate logic and validation"
+      ],
+      "origin": "ctx.rules",
+      "transformations": [
+        "Enable/disable code paths and validation logic"
+      ],
+      "validated_at": "AMMBid::checkExtraFeatures, AMMBid::preflight"
+    }
+  ],
+  "description": "Implements the logic for handling AMM (Automated Market Maker) Bid transactions in the XRPL ledger, including preflight checks, preclaim validation, and applying bids to the ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset validated by Custom validation via helper functions and protocol rules",
+      "issue_pattern": "Missing validation for sfAsset",
+      "why_false_positive": "Custom validation via helper functions and protocol rules validates sfAsset automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset2",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset2 validated by Custom validation via helper functions and protocol rules",
+      "issue_pattern": "Missing validation for sfAsset2",
+      "why_false_positive": "Custom validation via helper functions and protocol rules validates sfAsset2 automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBidMin",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBidMin validated by Custom validation via helper functions and protocol rules",
+      "issue_pattern": "Missing validation for sfBidMin",
+      "why_false_positive": "Custom validation via helper functions and protocol rules validates sfBidMin automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBidMax",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBidMax validated by Custom validation via helper functions and protocol rules",
+      "issue_pattern": "Missing validation for sfBidMax",
+      "why_false_positive": "Custom validation via helper functions and protocol rules validates sfBidMax automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAuthAccounts",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAuthAccounts validated by Custom validation via helper functions and protocol rules",
+      "issue_pattern": "Missing validation for sfAuthAccounts",
+      "why_false_positive": "Custom validation via helper functions and protocol rules validates sfAuthAccounts automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM feature enabled",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMBid::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for AMM feature enabled",
+      "why_false_positive": "ammEnabled(ctx.rules) validates AMM feature enabled for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "MPTokensV2 feature and asset types",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) && holds<MPTIssue>() at AMMBid::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for MPTokensV2 feature and asset types",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) && holds<MPTIssue>() validates MPTokensV2 feature and asset types for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAsset and sfAsset2 (asset pair)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]) at AMMBid::preflight",
+      "issue_pattern": "Missing empty string validation for sfAsset and sfAsset2 (asset pair)",
+      "why_false_positive": "invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]) validates sfAsset and sfAsset2 (asset pair) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBidMin",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAmount(*bidMin) at AMMBid::preflight",
+      "issue_pattern": "Missing empty string validation for sfBidMin",
+      "why_false_positive": "invalidAMMAmount(*bidMin) validates sfBidMin for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBidMax",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAmount(*bidMax) at AMMBid::preflight",
+      "issue_pattern": "Missing empty string validation for sfBidMax",
+      "why_false_positive": "invalidAMMAmount(*bidMax) validates sfBidMax for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthAccounts (array size)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS at AMMBid::preflight",
+      "issue_pattern": "Missing empty string validation for sfAuthAccounts (array size)",
+      "why_false_positive": "authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS validates sfAuthAccounts (array size) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthAccounts (uniqueness and not self)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "unique.contains(authAccount) || authAccount == account at AMMBid::preflight (if fixAMMv1_3 enabled)",
+      "issue_pattern": "Missing empty string validation for sfAuthAccounts (uniqueness and not self)",
+      "why_false_positive": "unique.contains(authAccount) || authAccount == account validates sfAuthAccounts (uniqueness and not self) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM existence (asset pair)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])) at AMMBid::preclaim",
+      "issue_pattern": "Missing empty string validation for AMM existence (asset pair)",
+      "why_false_positive": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])) validates AMM existence (asset pair) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM LP token balance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*ammSle)[sfLPTokenBalance] == beast::zero at AMMBid::preclaim",
+      "issue_pattern": "Missing empty string validation for AMM LP token balance",
+      "why_false_positive": "(*ammSle)[sfLPTokenBalance] == beast::zero validates AMM LP token balance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthAccounts (account existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(account[sfAccount])) at AMMBid::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAuthAccounts (account existence)",
+      "why_false_positive": "ctx.view.read(keylet::account(account[sfAccount])) validates sfAuthAccounts (account existence) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMBid.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "AMMBid::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "AMMBid::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 54,
+      "name": "AMMBid::preclaim"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx_",
+        "Sandbox& sb",
+        "AccountID const& account_",
+        "beast::Journal j_"
+      ],
+      "lineno": 97,
+      "name": "applyBid"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "AMMBid::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMBid validation is likely covered by integration and unit tests in files such as 'test/tx/AMMBid_test.cpp', 'test/AMM_test.cpp', or similar. These tests should cover valid/invalid asset pairs, bid min/max logic, auth accounts, and feature flag gating. However, edge cases such as malformed auth accounts, feature flag transitions, and rare asset types (e.g., MPTIssue) may not be exhaustively tested. There may be gaps in negative testing for all combinations of optional fields and feature flags.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAsset",
+      "sfAsset2",
+      "sfBidMin",
+      "sfBidMax",
+      "sfAuthAccounts"
+    ],
+    "framework": "Custom validation via helper functions and protocol rules",
+    "validation_layer": "business_logic (preflight/preclaim transaction validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "AMM feature enabled",
+      "location": "AMMBid::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "Checks if AMM feature is enabled in protocol rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "MPTokensV2 feature and asset types",
+      "location": "AMMBid::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) && holds<MPTIssue>()",
+      "validates": [
+        "If MPTokensV2 is not enabled, ensures sfAsset and sfAsset2 do not hold MPTIssue"
+      ],
+      "validation_type": "business_logic|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code from invalidAMMAssetPair",
+      "field": "sfAsset and sfAsset2 (asset pair)",
+      "location": "AMMBid::preflight",
+      "validated_by": "invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+      "validates": [
+        "Checks that the asset pair is valid for AMM"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code from invalidAMMAmount",
+      "field": "sfBidMin",
+      "location": "AMMBid::preflight",
+      "validated_by": "invalidAMMAmount(*bidMin)",
+      "validates": [
+        "If present, checks that sfBidMin is a valid AMM amount"
+      ],
+      "validation_type": "format|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code from invalidAMMAmount",
+      "field": "sfBidMax",
+      "location": "AMMBid::preflight",
+      "validated_by": "invalidAMMAmount(*bidMax)",
+      "validates": [
+        "If present, checks that sfBidMax is a valid AMM amount"
+      ],
+      "validation_type": "format|range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAuthAccounts (array size)",
+      "location": "AMMBid::preflight",
+      "validated_by": "authAccounts.size() > AUCTION_SLOT_MAX_AUTH_ACCOUNTS",
+      "validates": [
+        "Checks that the number of AuthAccounts does not exceed maximum allowed"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAuthAccounts (uniqueness and not self)",
+      "location": "AMMBid::preflight (if fixAMMv1_3 enabled)",
+      "validated_by": "unique.contains(authAccount) || authAccount == account",
+      "validates": [
+        "Checks that no AuthAccount is duplicated and none is the submitting account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_AMM",
+      "field": "AMM existence (asset pair)",
+      "location": "AMMBid::preclaim",
+      "validated_by": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]))",
+      "validates": [
+        "Checks that an AMM exists for the given asset pair"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecAMM_EMPTY",
+      "field": "AMM LP token balance",
+      "location": "AMMBid::preclaim",
+      "validated_by": "(*ammSle)[sfLPTokenBalance] == beast::zero",
+      "validates": [
+        "Checks that the AMM has a non-zero LP token balance"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAuthAccounts (account existence)",
+      "location": "AMMBid::preclaim",
+      "validated_by": "ctx.view.read(keylet::account(account[sfAccount]))",
+      "validates": [
+        "Checks that each AuthAccount exists in the ledger"
+      ],
+      "validation_type": "business_logic|existence"
+    }
+  ]
+}

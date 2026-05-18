@@ -1,0 +1,50 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "TimeKeeper"
+    }
+  ],
+  "description": "Manages various times used by the server, including network time and predicted close time, with adjustments for the XRPL epoch.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/TimeKeeper.h",
+  "functions": [
+    {
+      "args": [
+        "when"
+      ],
+      "lineno": 13,
+      "name": "adjust"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "closeTime"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "closeOffset"
+    },
+    {
+      "args": [
+        "by"
+      ],
+      "lineno": 68,
+      "name": "adjustCloseTime"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

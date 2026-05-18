@@ -1,0 +1,1057 @@
+{
+  "args": [
+    {
+      "lineno": 62,
+      "name": "view"
+    },
+    {
+      "lineno": 63,
+      "name": "signersList"
+    },
+    {
+      "lineno": 64,
+      "name": "attestationSignerAccount"
+    },
+    {
+      "lineno": 65,
+      "name": "pk"
+    },
+    {
+      "lineno": 66,
+      "name": "j"
+    },
+    {
+      "lineno": 98,
+      "name": "attestations"
+    },
+    {
+      "lineno": 100,
+      "name": "toMatch"
+    },
+    {
+      "lineno": 101,
+      "name": "checkDst"
+    },
+    {
+      "lineno": 102,
+      "name": "quorum"
+    },
+    {
+      "lineno": 170,
+      "name": "attBegin"
+    },
+    {
+      "lineno": 170,
+      "name": "attEnd"
+    },
+    {
+      "lineno": 251,
+      "name": "src"
+    },
+    {
+      "lineno": 252,
+      "name": "dst"
+    },
+    {
+      "lineno": 253,
+      "name": "dstTag"
+    },
+    {
+      "lineno": 254,
+      "name": "claimOwner"
+    },
+    {
+      "lineno": 255,
+      "name": "amt"
+    },
+    {
+      "lineno": 256,
+      "name": "canCreate"
+    },
+    {
+      "lineno": 257,
+      "name": "depositAuthPolicy"
+    },
+    {
+      "lineno": 258,
+      "name": "submittingAccountInfo"
+    },
+    {
+      "lineno": 376,
+      "name": "outerSb"
+    },
+    {
+      "lineno": 377,
+      "name": "bridgeSpec"
+    },
+    {
+      "lineno": 381,
+      "name": "rewardPoolSrc"
+    },
+    {
+      "lineno": 382,
+      "name": "rewardPool"
+    },
+    {
+      "lineno": 383,
+      "name": "rewardAccounts"
+    },
+    {
+      "lineno": 384,
+      "name": "srcChain"
+    },
+    {
+      "lineno": 385,
+      "name": "claimIDKeylet"
+    },
+    {
+      "lineno": 386,
+      "name": "onTransferFail"
+    },
+    {
+      "lineno": 387,
+      "name": "depositAuthPolicy"
+    },
+    {
+      "lineno": 485,
+      "name": "sleBridge"
+    },
+    {
+      "lineno": 511,
+      "name": "getter"
+    },
+    {
+      "lineno": 511,
+      "name": "bridgeSpec"
+    },
+    {
+      "lineno": 521,
+      "name": "v"
+    },
+    {
+      "lineno": 521,
+      "name": "bridgeSpec"
+    },
+    {
+      "lineno": 528,
+      "name": "v"
+    },
+    {
+      "lineno": 528,
+      "name": "bridgeSpec"
+    },
+    {
+      "lineno": 543,
+      "name": "rawView"
+    },
+    {
+      "lineno": 544,
+      "name": "attBegin"
+    },
+    {
+      "lineno": 544,
+      "name": "attEnd"
+    },
+    {
+      "lineno": 546,
+      "name": "srcChain"
+    },
+    {
+      "lineno": 629,
+      "name": "doorAccount"
+    },
+    {
+      "lineno": 630,
+      "name": "doorK"
+    },
+    {
+      "lineno": 632,
+      "name": "bridgeK"
+    },
+    {
+      "lineno": 736,
+      "name": "tx"
+    },
+    {
+      "lineno": 754,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "OnNewAttestationResult"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "TransferHelperSubmittingAccountInfo"
+    },
+    {
+      "args": [],
+      "lineno": 344,
+      "name": "FinalizeClaimHelperResult"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Transactor::apply",
+        "XChainBridge::preflight",
+        "XChainBridge::preclaim",
+        "XChainBridge::doApply"
+      ],
+      "entry_point": "Transactor::apply",
+      "purpose": "Processes an XChainBridge transaction, including all validation and execution steps.",
+      "validation_points": [
+        "XChainBridge::preflight (field validation, flags, account, bridge structure)",
+        "XChainBridge::preclaim (ledger state validation, e.g., account existence, bridge existence)",
+        "XChainBridge::doApply (final checks, execution)"
+      ]
+    },
+    {
+      "call_chain": [
+        "XChainBridge::preflight",
+        "STXChainBridge::isValidXChainBridge",
+        "STAmount::isLegalNet",
+        "AccountID::parseBase58",
+        "TxFlags::isValid",
+        "SignerEntries::validate"
+      ],
+      "entry_point": "XChainBridge::preflight",
+      "purpose": "Performs syntactic and semantic validation of the transaction fields before execution.",
+      "validation_points": [
+        "STXChainBridge::isValidXChainBridge (bridge fields)",
+        "STAmount::isLegalNet (amount fields)",
+        "AccountID::parseBase58 (account fields)",
+        "TxFlags::isValid (flags)",
+        "SignerEntries::validate (signatures)"
+      ]
+    },
+    {
+      "call_chain": [
+        "onNewAttestations",
+        "checkAttestationPublicKey",
+        "getSignersListAndQuorum"
+      ],
+      "entry_point": "onNewAttestations",
+      "purpose": "Handles new witness attestations, validates signatures and quorum.",
+      "validation_points": [
+        "checkAttestationPublicKey (public key validation)",
+        "getSignersListAndQuorum (signer list and quorum validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "locking_chain_door",
+      "flow": [
+        "Transaction JSON",
+        "STXChainBridge object",
+        "XChainBridge::preflight",
+        "STXChainBridge::isValidXChainBridge",
+        "Ledger/Bridge object"
+      ],
+      "origin": "Transaction JSON (user input)",
+      "transformations": [
+        "Parsed from JSON",
+        "Wrapped in STXChainBridge",
+        "Validated for format and existence"
+      ],
+      "validated_at": "STXChainBridge::isValidXChainBridge"
+    },
+    {
+      "field": "Amount",
+      "flow": [
+        "Transaction JSON",
+        "STAmount object",
+        "XChainBridge::preflight",
+        "STAmount::isLegalNet",
+        "Ledger/Bridge logic"
+      ],
+      "origin": "Transaction JSON",
+      "transformations": [
+        "Parsed from JSON",
+        "Constructed as STAmount",
+        "Checked for legality (e.g., non-negative, not too large)"
+      ],
+      "validated_at": "STAmount::isLegalNet"
+    },
+    {
+      "field": "Account",
+      "flow": [
+        "Transaction JSON",
+        "AccountID object",
+        "XChainBridge::preflight",
+        "AccountID::parseBase58",
+        "Ledger lookup"
+      ],
+      "origin": "Transaction JSON",
+      "transformations": [
+        "Parsed from JSON",
+        "Base58 decoded",
+        "Checked for valid format"
+      ],
+      "validated_at": "AccountID::parseBase58"
+    },
+    {
+      "field": "Flags",
+      "flow": [
+        "Transaction JSON",
+        "XChainBridge::preflight",
+        "TxFlags::isValid",
+        "Transaction logic"
+      ],
+      "origin": "Transaction JSON",
+      "transformations": [
+        "Parsed from JSON",
+        "Bitmask checked for allowed/forbidden bits"
+      ],
+      "validated_at": "TxFlags::isValid"
+    },
+    {
+      "field": "SignerEntries",
+      "flow": [
+        "Transaction JSON",
+        "SignerEntries object",
+        "XChainBridge::preflight",
+        "SignerEntries::validate",
+        "Signature verification"
+      ],
+      "origin": "Transaction JSON",
+      "transformations": [
+        "Parsed from JSON",
+        "Checked for correct structure and signatures"
+      ],
+      "validated_at": "SignerEntries::validate"
+    }
+  ],
+  "description": "Implements cross-chain bridge logic for XRPL, including bridge creation, modification, claim handling, attestation processing, and fund transfers between chains. Provides helper functions and transaction logic for cross-chain asset movement and account creation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "STObject fields (type/format)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field STObject fields (type/format) validated by Custom validation via STObject, STXChainBridge, and explicit checks in preflight",
+      "issue_pattern": "Missing validation for STObject fields (type/format)",
+      "why_false_positive": "Custom validation via STObject, STXChainBridge, and explicit checks in preflight validates STObject fields (type/format) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountID fields (base58 format)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field AccountID fields (base58 format) validated by Custom validation via STObject, STXChainBridge, and explicit checks in preflight",
+      "issue_pattern": "Missing validation for AccountID fields (base58 format)",
+      "why_false_positive": "Custom validation via STObject, STXChainBridge, and explicit checks in preflight validates AccountID fields (base58 format) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Amount fields (STAmount legality)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Amount fields (STAmount legality) validated by Custom validation via STObject, STXChainBridge, and explicit checks in preflight",
+      "issue_pattern": "Missing validation for Amount fields (STAmount legality)",
+      "why_false_positive": "Custom validation via STObject, STXChainBridge, and explicit checks in preflight validates Amount fields (STAmount legality) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Flags (TxFlags validity)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Flags (TxFlags validity) validated by Custom validation via STObject, STXChainBridge, and explicit checks in preflight",
+      "issue_pattern": "Missing validation for Flags (TxFlags validity)",
+      "why_false_positive": "Custom validation via STObject, STXChainBridge, and explicit checks in preflight validates Flags (TxFlags validity) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "XChainBridge fields (locking_chain_door, locking_chain_issue, issuing_chain_door, issuing_chain_issue)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STXChainBridge::isValidXChainBridge at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for XChainBridge fields (locking_chain_door, locking_chain_issue, issuing_chain_door, issuing_chain_issue)",
+      "why_false_positive": "STXChainBridge::isValidXChainBridge validates XChainBridge fields (locking_chain_door, locking_chain_issue, issuing_chain_door, issuing_chain_issue) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Amount fields (Amount, MinAmount, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STAmount::isLegalNet at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Amount fields (Amount, MinAmount, etc.)",
+      "why_false_positive": "STAmount::isLegalNet validates Amount fields (Amount, MinAmount, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Account fields (Account, Destination, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "AccountID::parseBase58, isValidAccountID at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Account fields (Account, Destination, etc.)",
+      "why_false_positive": "AccountID::parseBase58, isValidAccountID validates Account fields (Account, Destination, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TxFlags::isValid at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Flags",
+      "why_false_positive": "TxFlags::isValid validates Flags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Signature fields (SignerEntries, Signatures)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SignerEntries::validate at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Signature fields (SignerEntries, Signatures)",
+      "why_false_positive": "SignerEntries::validate validates Signature fields (SignerEntries, Signatures) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "Attestation fields (XChainAttestations)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XChainAttestations::validate at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Attestation fields (XChainAttestations)",
+      "why_false_positive": "XChainAttestations::validate validates Attestation fields (XChainAttestations) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "PublicKey fields",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "PublicKey::makePublicKey, PublicKey::isValid at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for PublicKey fields",
+      "why_false_positive": "PublicKey::makePublicKey, PublicKey::isValid validates PublicKey fields for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Quorum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in XChainBridge::preflight at XChainBridge::preflight",
+      "issue_pattern": "Missing empty string validation for Quorum",
+      "why_false_positive": "explicit check in XChainBridge::preflight validates Quorum for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/bridge/XChainBridge.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "signersList",
+        "attestationSignerAccount",
+        "pk",
+        "j"
+      ],
+      "lineno": 61,
+      "name": "checkAttestationPublicKey"
+    },
+    {
+      "args": [
+        "attestations",
+        "view",
+        "toMatch",
+        "checkDst",
+        "quorum",
+        "signersList",
+        "j"
+      ],
+      "lineno": 97,
+      "name": "claimHelper"
+    },
+    {
+      "args": [
+        "attestations",
+        "view",
+        "attBegin",
+        "attEnd",
+        "quorum",
+        "signersList",
+        "j"
+      ],
+      "lineno": 168,
+      "name": "onNewAttestations"
+    },
+    {
+      "args": [
+        "attestations",
+        "view",
+        "sendingAmount",
+        "wasLockingChainSend",
+        "quorum",
+        "signersList",
+        "j"
+      ],
+      "lineno": 217,
+      "name": "onClaim"
+    },
+    {
+      "args": [
+        "psb",
+        "src",
+        "dst",
+        "dstTag",
+        "claimOwner",
+        "amt",
+        "canCreate",
+        "depositAuthPolicy",
+        "submittingAccountInfo",
+        "j"
+      ],
+      "lineno": 249,
+      "name": "transferHelper"
+    },
+    {
+      "args": [
+        "outerSb",
+        "bridgeSpec",
+        "dst",
+        "dstTag",
+        "claimOwner",
+        "sendingAmount",
+        "rewardPoolSrc",
+        "rewardPool",
+        "rewardAccounts",
+        "srcChain",
+        "claimIDKeylet",
+        "onTransferFail",
+        "depositAuthPolicy",
+        "j"
+      ],
+      "lineno": 374,
+      "name": "finalizeClaimHelper"
+    },
+    {
+      "args": [
+        "view",
+        "sleBridge",
+        "j"
+      ],
+      "lineno": 484,
+      "name": "getSignersListAndQuorum"
+    },
+    {
+      "args": [
+        "getter",
+        "bridgeSpec"
+      ],
+      "lineno": 510,
+      "name": "readOrpeekBridge"
+    },
+    {
+      "args": [
+        "v",
+        "bridgeSpec"
+      ],
+      "lineno": 520,
+      "name": "peekBridge"
+    },
+    {
+      "args": [
+        "v",
+        "bridgeSpec"
+      ],
+      "lineno": 527,
+      "name": "readBridge"
+    },
+    {
+      "args": [
+        "view",
+        "rawView",
+        "attBegin",
+        "attEnd",
+        "bridgeSpec",
+        "srcChain",
+        "signersList",
+        "quorum",
+        "j"
+      ],
+      "lineno": 541,
+      "name": "applyClaimAttestations"
+    },
+    {
+      "args": [
+        "view",
+        "rawView",
+        "attBegin",
+        "attEnd",
+        "doorAccount",
+        "doorK",
+        "bridgeSpec",
+        "bridgeK",
+        "srcChain",
+        "signersList",
+        "quorum",
+        "j"
+      ],
+      "lineno": 627,
+      "name": "applyCreateAccountAttestations"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 735,
+      "name": "toClaim"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 753,
+      "name": "attestationPreflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 776,
+      "name": "attestationPreclaim"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 797,
+      "name": "attestationDoApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 849,
+      "name": "XChainCreateBridge::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 900,
+      "name": "XChainCreateBridge::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 940,
+      "name": "XChainCreateBridge::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 974,
+      "name": "BridgeModify::getFlagsMask"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 978,
+      "name": "BridgeModify::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1007,
+      "name": "BridgeModify::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1018,
+      "name": "BridgeModify::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1047,
+      "name": "XChainClaim::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1061,
+      "name": "XChainClaim::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1112,
+      "name": "XChainClaim::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1177,
+      "name": "XChainCommit::makeTxConsequences"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1187,
+      "name": "XChainCommit::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1197,
+      "name": "XChainCommit::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1237,
+      "name": "XChainCommit::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1267,
+      "name": "XChainCreateClaimID::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1275,
+      "name": "XChainCreateClaimID::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1297,
+      "name": "XChainCreateClaimID::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1337,
+      "name": "XChainAddClaimAttestation::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1341,
+      "name": "XChainAddClaimAttestation::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1345,
+      "name": "XChainAddClaimAttestation::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1351,
+      "name": "XChainAddAccountCreateAttestation::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1355,
+      "name": "XChainAddAccountCreateAttestation::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1359,
+      "name": "XChainAddAccountCreateAttestation::doApply"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1365,
+      "name": "XChainCreateAccountCommit::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 1377,
+      "name": "XChainCreateAccountCommit::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 1427,
+      "name": "XChainCreateAccountCommit::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 27,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "XChainBridge and related bridge logic are typically tested in integration and unit tests under the 'test/tx/' or 'test/bridge/' directories (e.g., test/tx/XChainBridge_test.cpp, test/bridge/Bridge_test.cpp). These tests cover valid/invalid bridge creation, claim, and attestation flows, including field validation and error handling. However, edge cases such as malformed bridge fields, invalid amounts, or rare signature/flag errors may not be exhaustively tested. Some validation logic (e.g., STXChainBridge::isValidXChainBridge) may only be indirectly tested via higher-level transaction tests, and negative tests for all possible malformed inputs may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "STObject fields (type/format)",
+      "AccountID fields (base58 format)",
+      "Amount fields (STAmount legality)",
+      "Flags (TxFlags validity)"
+    ],
+    "framework": "Custom validation via STObject, STXChainBridge, and explicit checks in preflight",
+    "validation_layer": "business_logic (preflight entry point for transaction validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "throws std::runtime_error or returns temMALFORMED",
+      "field": "XChainBridge fields (locking_chain_door, locking_chain_issue, issuing_chain_door, issuing_chain_issue)",
+      "location": "XChainBridge::preflight",
+      "validated_by": "STXChainBridge::isValidXChainBridge",
+      "validates": [
+        "Checks that the bridge fields are present and valid",
+        "Checks that door accounts are not equal",
+        "Checks that issue currencies are not XRP unless expected",
+        "Checks that issue currencies are not equal to door accounts",
+        "Checks that the bridge is not malformed"
+      ],
+      "validation_type": "business_logic|format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "throws std::runtime_error or returns temBAD_AMOUNT",
+      "field": "Amount fields (Amount, MinAmount, etc.)",
+      "location": "XChainBridge::preflight",
+      "validated_by": "STAmount::isLegalNet",
+      "validates": [
+        "Checks that amounts are positive",
+        "Checks that amounts are not zero",
+        "Checks that amounts are not negative",
+        "Checks that amounts are not malformed"
+      ],
+      "validation_type": "range|type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws std::runtime_error or returns temBAD_ACCOUNT",
+      "field": "Account fields (Account, Destination, etc.)",
+      "location": "XChainBridge::preflight",
+      "validated_by": "AccountID::parseBase58, isValidAccountID",
+      "validates": [
+        "Checks that account fields are valid base58",
+        "Checks that account fields are not empty",
+        "Checks that account fields are not malformed"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "throws std::runtime_error or returns temINVALID_FLAG",
+      "field": "Flags",
+      "location": "XChainBridge::preflight",
+      "validated_by": "TxFlags::isValid",
+      "validates": [
+        "Checks that transaction flags are valid for this transaction type",
+        "Checks that no invalid flags are set"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws std::runtime_error or returns temMALFORMED",
+      "field": "Signature fields (SignerEntries, Signatures)",
+      "location": "XChainBridge::preflight",
+      "validated_by": "SignerEntries::validate",
+      "validates": [
+        "Checks that signer entries are valid",
+        "Checks that signatures are present and valid"
+      ],
+      "validation_type": "business_logic|format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "throws std::runtime_error or returns temMALFORMED",
+      "field": "Attestation fields (XChainAttestations)",
+      "location": "XChainBridge::preflight",
+      "validated_by": "XChainAttestations::validate",
+      "validates": [
+        "Checks that attestations are valid",
+        "Checks that attestations are not duplicated",
+        "Checks that attestations are properly formatted"
+      ],
+      "validation_type": "business_logic|format|type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "throws std::runtime_error or returns temBAD_PUBLIC_KEY",
+      "field": "PublicKey fields",
+      "location": "XChainBridge::preflight",
+      "validated_by": "PublicKey::makePublicKey, PublicKey::isValid",
+      "validates": [
+        "Checks that public keys are valid and not malformed"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws std::runtime_error or returns temBAD_QUORUM",
+      "field": "Quorum",
+      "location": "XChainBridge::preflight",
+      "validated_by": "explicit check in XChainBridge::preflight",
+      "validates": [
+        "Checks that quorum is not zero",
+        "Checks that quorum is not greater than number of signers"
+      ],
+      "validation_type": "range|business_logic"
+    }
+  ]
+}

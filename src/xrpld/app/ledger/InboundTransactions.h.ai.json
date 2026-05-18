@@ -1,0 +1,67 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "setHash"
+    },
+    {
+      "lineno": 27,
+      "name": "acquire"
+    },
+    {
+      "lineno": 36,
+      "name": "setHash"
+    },
+    {
+      "lineno": 37,
+      "name": "peer"
+    },
+    {
+      "lineno": 38,
+      "name": "message"
+    },
+    {
+      "lineno": 46,
+      "name": "setHash"
+    },
+    {
+      "lineno": 46,
+      "name": "set"
+    },
+    {
+      "lineno": 46,
+      "name": "acquired"
+    },
+    {
+      "lineno": 53,
+      "name": "seq"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "InboundTransactions"
+    }
+  ],
+  "description": "Defines the InboundTransactions interface for managing the acquisition and lifetime of transaction sets in the XRPL system, including methods for retrieving, adding, and managing transaction sets, as well as a factory function for creating instances.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/InboundTransactions.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "collector",
+        "gotSet"
+      ],
+      "lineno": 61,
+      "name": "make_InboundTransactions"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

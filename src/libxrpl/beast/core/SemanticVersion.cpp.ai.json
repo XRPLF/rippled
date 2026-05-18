@@ -1,0 +1,428 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "SemanticVersion"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SemanticVersion::SemanticVersion(std::string_view)",
+        "SemanticVersion::parse",
+        "chopUInt",
+        "chop",
+        "chopUInt",
+        "chop",
+        "chopUInt",
+        "chop",
+        "extract_identifiers",
+        "extract_identifier"
+      ],
+      "entry_point": "SemanticVersion::SemanticVersion(std::string_view version)",
+      "purpose": "Constructs a SemanticVersion from a version string, validating format and extracting major, minor, patch, prerelease, and build identifiers.",
+      "validation_points": [
+        "SemanticVersion::parse (validates whitespace, structure)",
+        "chopUInt (validates numeric fields: major, minor, patch)",
+        "extract_identifiers/extract_identifier (validates prerelease/build identifiers)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SemanticVersion::parse",
+        "chopUInt",
+        "chop",
+        "chopUInt",
+        "chop",
+        "chopUInt",
+        "chop",
+        "extract_identifiers",
+        "extract_identifier"
+      ],
+      "entry_point": "SemanticVersion::parse(std::string_view input)",
+      "purpose": "Parses and validates a version string, populating the SemanticVersion fields.",
+      "validation_points": [
+        "Whitespace check at start",
+        "chopUInt (major, minor, patch)",
+        "extract_identifiers (prerelease/build)"
+      ]
+    },
+    {
+      "call_chain": [
+        "extract_identifiers",
+        "extract_identifier"
+      ],
+      "entry_point": "extract_identifiers",
+      "purpose": "Splits a dot-separated identifier list and validates each identifier.",
+      "validation_points": [
+        "extract_identifier (validates each identifier: allowed chars, leading zeroes)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "majorVersion",
+      "flow": [
+        "version string",
+        "SemanticVersion::parse",
+        "chopUInt (extracts and validates)",
+        "majorVersion field"
+      ],
+      "origin": "Input version string (constructor or parse)",
+      "transformations": [
+        "String to int conversion",
+        "Validation: numeric, no leading zeroes, in range"
+      ],
+      "validated_at": "chopUInt"
+    },
+    {
+      "field": "minorVersion",
+      "flow": [
+        "version string",
+        "SemanticVersion::parse",
+        "chopUInt (extracts and validates)",
+        "minorVersion field"
+      ],
+      "origin": "Input version string",
+      "transformations": [
+        "String to int conversion",
+        "Validation: numeric, no leading zeroes, in range"
+      ],
+      "validated_at": "chopUInt"
+    },
+    {
+      "field": "patchVersion",
+      "flow": [
+        "version string",
+        "SemanticVersion::parse",
+        "chopUInt (extracts and validates)",
+        "patchVersion field"
+      ],
+      "origin": "Input version string",
+      "transformations": [
+        "String to int conversion",
+        "Validation: numeric, no leading zeroes, in range"
+      ],
+      "validated_at": "chopUInt"
+    },
+    {
+      "field": "prerelease",
+      "flow": [
+        "version string",
+        "SemanticVersion::parse",
+        "chop('-')",
+        "extract_identifiers (splits and validates)",
+        "prerelease field"
+      ],
+      "origin": "Input version string (after '-')",
+      "transformations": [
+        "String split on '.'",
+        "Validation: allowed chars, no leading zeroes (unless allowed)"
+      ],
+      "validated_at": "extract_identifiers/extract_identifier"
+    },
+    {
+      "field": "build",
+      "flow": [
+        "version string",
+        "SemanticVersion::parse",
+        "chop('+')",
+        "extract_identifiers (splits and validates)",
+        "build field"
+      ],
+      "origin": "Input version string (after '+')",
+      "transformations": [
+        "String split on '.'",
+        "Validation: allowed chars, leading zeroes allowed"
+      ],
+      "validated_at": "extract_identifiers/extract_identifier"
+    }
+  ],
+  "description": "Implements parsing, printing, and comparison logic for semantic version strings according to the Semantic Versioning specification, including handling of pre-release and metadata identifiers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "version string (constructor input)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SemanticVersion::parse at SemanticVersion(std::string_view version) constructor",
+      "issue_pattern": "Missing empty string validation for version string (constructor input)",
+      "why_false_positive": "SemanticVersion::parse validates version string (constructor input) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "version string (constructor input)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "SemanticVersion::parse at SemanticVersion(std::string_view version) constructor",
+      "issue_pattern": "Missing format validation for version string (constructor input)",
+      "why_false_positive": "SemanticVersion::parse validates version string (constructor input) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "numeric identifier (string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isNumeric at isNumeric",
+      "issue_pattern": "Missing empty string validation for numeric identifier (string)",
+      "why_false_positive": "isNumeric validates numeric identifier (string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "input string for unsigned integer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "chopUInt at chopUInt",
+      "issue_pattern": "Missing empty string validation for input string for unsigned integer",
+      "why_false_positive": "chopUInt validates input string for unsigned integer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "identifier (string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "extract_identifier at extract_identifier",
+      "issue_pattern": "Missing empty string validation for identifier (string)",
+      "why_false_positive": "extract_identifier validates identifier (string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "identifier list (string)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "extract_identifiers at extract_identifiers",
+      "issue_pattern": "Missing empty string validation for identifier list (string)",
+      "why_false_positive": "extract_identifiers validates identifier list (string) for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/core/SemanticVersion.cpp",
+  "functions": [
+    {
+      "args": [
+        "SemanticVersion::identifier_list const& list"
+      ],
+      "lineno": 8,
+      "name": "print_identifiers"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 19,
+      "name": "isNumeric"
+    },
+    {
+      "args": [
+        "std::string const& what",
+        "std::string& input"
+      ],
+      "lineno": 29,
+      "name": "chop"
+    },
+    {
+      "args": [
+        "int& value",
+        "int limit",
+        "std::string& input"
+      ],
+      "lineno": 38,
+      "name": "chopUInt"
+    },
+    {
+      "args": [
+        "std::string& value",
+        "bool allowLeadingZeroes",
+        "std::string& input"
+      ],
+      "lineno": 65,
+      "name": "extract_identifier"
+    },
+    {
+      "args": [
+        "SemanticVersion::identifier_list& identifiers",
+        "bool allowLeadingZeroes",
+        "std::string& input"
+      ],
+      "lineno": 83,
+      "name": "extract_identifiers"
+    },
+    {
+      "args": [
+        "SemanticVersion const& lhs",
+        "SemanticVersion const& rhs"
+      ],
+      "lineno": 154,
+      "name": "compare"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for SemanticVersion would be in files like SemanticVersion_test.cpp or similar. Tests should cover valid/invalid version strings, edge cases (leading zeroes, empty identifiers, invalid characters, out-of-range numbers), and exception throwing. Gaps may exist if tests do not cover all invalid input cases (e.g., whitespace, numeric overflow, invalid identifier chars, empty prerelease/build). No test files are shown here, so actual coverage cannot be confirmed.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation functions (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::invalid_argument",
+      "field": "version string (constructor input)",
+      "location": "SemanticVersion(std::string_view version) constructor",
+      "validated_by": "SemanticVersion::parse",
+      "validates": [
+        "Checks if the version string is valid according to SemanticVersion::parse",
+        "Throws if parse returns false"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw)",
+      "field": "numeric identifier (string)",
+      "location": "isNumeric",
+      "validated_by": "isNumeric",
+      "validates": [
+        "Checks if string is convertible to integer",
+        "Checks for no leading zeroes"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw)",
+      "field": "input string for unsigned integer",
+      "location": "chopUInt",
+      "validated_by": "chopUInt",
+      "validates": [
+        "Input not empty",
+        "Extracts leading digits",
+        "Digits must be convertible to integer",
+        "No leading zeroes",
+        "Value in [0, limit]"
+      ],
+      "validation_type": "type|format|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw)",
+      "field": "identifier (string)",
+      "location": "extract_identifier",
+      "validated_by": "extract_identifier",
+      "validates": [
+        "Input not empty",
+        "No leading zero unless allowed",
+        "Only [a-zA-Z0-9-] allowed",
+        "Identifier not empty"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw)",
+      "field": "identifier list (string)",
+      "location": "extract_identifiers",
+      "validated_by": "extract_identifiers",
+      "validates": [
+        "Input not empty",
+        "Each identifier validated by extract_identifier",
+        "Identifiers separated by '.'"
+      ],
+      "validation_type": "format|business_logic"
+    }
+  ]
+}

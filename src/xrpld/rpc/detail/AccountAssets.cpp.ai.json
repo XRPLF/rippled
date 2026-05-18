@@ -1,0 +1,500 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "account"
+    },
+    {
+      "lineno": 8,
+      "name": "lrCache"
+    },
+    {
+      "lineno": 9,
+      "name": "includeXRP"
+    },
+    {
+      "lineno": 42,
+      "name": "account"
+    },
+    {
+      "lineno": 43,
+      "name": "lrCache"
+    },
+    {
+      "lineno": 44,
+      "name": "includeXRP"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "accountSourceAssets",
+        "lrCache->getRippleLines",
+        "rspEntry.getBalance",
+        "rspEntry.getLimitPeer",
+        "assets.insert",
+        "assets.erase",
+        "lrCache->getMPTs",
+        "rspEntry.isZeroBalance",
+        "rspEntry.isMaxedOut",
+        "assets.insert"
+      ],
+      "entry_point": "accountSourceAssets",
+      "purpose": "Collects all source assets (currencies) an account can send, including XRP if requested, IOUs with positive balance or available credit, and MPTs with nonzero, non-maxed balances.",
+      "validation_points": [
+        "if (includeXRP)",
+        "if (auto const lines = lrCache->getRippleLines(account, ...))",
+        "if (saBalance > beast::zero || (rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer())))",
+        "assets.erase(badCurrency())",
+        "if (auto const mpts = lrCache->getMPTs(account))",
+        "if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())"
+      ]
+    },
+    {
+      "call_chain": [
+        "accountDestAssets",
+        "lrCache->getRippleLines",
+        "rspEntry.getBalance",
+        "rspEntry.getLimit",
+        "assets.insert",
+        "assets.erase",
+        "lrCache->getMPTs",
+        "rspEntry.isZeroBalance",
+        "rspEntry.isMaxedOut",
+        "assets.insert"
+      ],
+      "entry_point": "accountDestAssets",
+      "purpose": "Collects all destination assets (currencies) an account can receive, including XRP if requested, IOUs with available limit, and MPTs with zero balance and not maxed out.",
+      "validation_points": [
+        "if (includeXRP)",
+        "if (auto const lines = lrCache->getRippleLines(account, ...))",
+        "if (saBalance < rspEntry.getLimit())",
+        "assets.erase(badCurrency())",
+        "if (auto const mpts = lrCache->getMPTs(account))",
+        "if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "includeXRP",
+      "flow": [
+        "accountSourceAssets/accountDestAssets argument",
+        "if (includeXRP)",
+        "assets.insert(xrpCurrency())"
+      ],
+      "origin": "Function argument",
+      "transformations": [
+        "Boolean check to determine if XRP should be included in assets"
+      ],
+      "validated_at": "if (includeXRP)"
+    },
+    {
+      "field": "account",
+      "flow": [
+        "accountSourceAssets/accountDestAssets argument",
+        "lrCache->getRippleLines(account, ...)",
+        "lrCache->getMPTs(account)"
+      ],
+      "origin": "Function argument",
+      "transformations": [
+        "Used as key to fetch trust lines and MPTs"
+      ],
+      "validated_at": "Indirectly validated by existence in cache; no explicit validation"
+    },
+    {
+      "field": "saBalance",
+      "flow": [
+        "rspEntry.getBalance()",
+        "if (saBalance > beast::zero || ...)",
+        "assets.insert(saBalance.get<Issue>().currency)"
+      ],
+      "origin": "rspEntry.getBalance()",
+      "transformations": [
+        "Compared to zero and to peer limit; negated for credit check"
+      ],
+      "validated_at": "if (saBalance > beast::zero || ...)"
+    },
+    {
+      "field": "rspEntry.getLimitPeer()",
+      "flow": [
+        "rspEntry.getLimitPeer()",
+        "if (rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer()))"
+      ],
+      "origin": "rspEntry.getLimitPeer()",
+      "transformations": [
+        "Checked for existence and compared to negative balance"
+      ],
+      "validated_at": "if (rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer()))"
+    },
+    {
+      "field": "currency",
+      "flow": [
+        "saBalance.get<Issue>().currency",
+        "assets.insert(...)",
+        "assets.erase(badCurrency())"
+      ],
+      "origin": "saBalance.get<Issue>().currency",
+      "transformations": [
+        "Inserted into set, then possibly erased if matches badCurrency()"
+      ],
+      "validated_at": "assets.erase(badCurrency())"
+    },
+    {
+      "field": "MPTs (Multi-Party Trustlines)",
+      "flow": [
+        "lrCache->getMPTs(account)",
+        "for (auto const& rspEntry : *mpts)",
+        "if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut()) / if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())",
+        "assets.insert(rspEntry.getMptID())"
+      ],
+      "origin": "lrCache->getMPTs(account)",
+      "transformations": [
+        "Filtered by balance and maxed-out status"
+      ],
+      "validated_at": "if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut()) / if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())"
+    }
+  ],
+  "description": "This file defines functions to determine the set of assets (currencies or tokens) that a given account can send (source assets) or receive (destination assets) on the XRPL, using cached ledger data.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "includeXRP",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (includeXRP) at accountSourceAssets, accountDestAssets",
+      "issue_pattern": "Missing empty string validation for includeXRP",
+      "why_false_positive": "if (includeXRP) validates includeXRP for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lrCache->getRippleLines(account, ...) at accountSourceAssets, accountDestAssets",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "lrCache->getRippleLines(account, ...) validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "saBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "saBalance > beast::zero at accountSourceAssets",
+      "issue_pattern": "Missing empty string validation for saBalance",
+      "why_false_positive": "saBalance > beast::zero validates saBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "saBalance",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "saBalance > beast::zero at accountSourceAssets",
+      "issue_pattern": "Missing range validation for saBalance",
+      "why_false_positive": "saBalance > beast::zero validates saBalance range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rspEntry.getLimitPeer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer()) at accountSourceAssets",
+      "issue_pattern": "Missing empty string validation for rspEntry.getLimitPeer()",
+      "why_false_positive": "rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer()) validates rspEntry.getLimitPeer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "assets.erase(badCurrency()) at accountSourceAssets, accountDestAssets",
+      "issue_pattern": "Missing empty string validation for currency",
+      "why_false_positive": "assets.erase(badCurrency()) validates currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "saBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "saBalance < rspEntry.getLimit() at accountDestAssets",
+      "issue_pattern": "Missing empty string validation for saBalance",
+      "why_false_positive": "saBalance < rspEntry.getLimit() validates saBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "saBalance",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "saBalance < rspEntry.getLimit() at accountDestAssets",
+      "issue_pattern": "Missing range validation for saBalance",
+      "why_false_positive": "saBalance < rspEntry.getLimit() validates saBalance range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rspEntry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut() at accountSourceAssets",
+      "issue_pattern": "Missing empty string validation for rspEntry",
+      "why_false_positive": "!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut() validates rspEntry for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rspEntry",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "rspEntry.isZeroBalance() && !rspEntry.isMaxedOut() at accountDestAssets",
+      "issue_pattern": "Missing empty string validation for rspEntry",
+      "why_false_positive": "rspEntry.isZeroBalance() && !rspEntry.isMaxedOut() validates rspEntry for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/AccountAssets.cpp",
+  "functions": [
+    {
+      "args": [
+        "account",
+        "lrCache",
+        "includeXRP"
+      ],
+      "lineno": 6,
+      "name": "accountSourceAssets"
+    },
+    {
+      "args": [
+        "account",
+        "lrCache",
+        "includeXRP"
+      ],
+      "lineno": 41,
+      "name": "accountDestAssets"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested indirectly via higher-level RPC or ledger tests, such as those in 'test/rpc/AccountAssets_test.cpp', 'test/rpc/AccountLines_test.cpp', or integration tests that exercise account asset queries. However, there is no evidence of direct unit tests for these specific validation branches (e.g., edge cases for badCurrency, MPTs, or limit/credit logic). Test coverage may be lacking for: (1) badCurrency filtering, (2) MPTs with edge-case balances, (3) accounts with no trust lines, (4) includeXRP=false scenarios, and (5) negative/zero balances with/without peer credit. Manual or fuzz testing may be needed for full validation path coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (custom logic, no explicit validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "includeXRP",
+      "location": "accountSourceAssets, accountDestAssets",
+      "validated_by": "if (includeXRP)",
+      "validates": [
+        "Checks if XRP should be included as an asset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (returns nullptr if not found)",
+      "field": "account",
+      "location": "accountSourceAssets, accountDestAssets",
+      "validated_by": "lrCache->getRippleLines(account, ...)",
+      "validates": [
+        "Checks if account has ripple lines (trust lines)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "saBalance",
+      "location": "accountSourceAssets",
+      "validated_by": "saBalance > beast::zero",
+      "validates": [
+        "Checks if balance is positive (has IOUs to send)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "rspEntry.getLimitPeer()",
+      "location": "accountSourceAssets",
+      "validated_by": "rspEntry.getLimitPeer() && ((-saBalance) < rspEntry.getLimitPeer())",
+      "validates": [
+        "Checks if peer extends credit and if there is credit left"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "currency",
+      "location": "accountSourceAssets, accountDestAssets",
+      "validated_by": "assets.erase(badCurrency())",
+      "validates": [
+        "Removes any asset with a 'bad' currency code"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "saBalance",
+      "location": "accountDestAssets",
+      "validated_by": "saBalance < rspEntry.getLimit()",
+      "validates": [
+        "Checks if account can take more of the asset (below trust line limit)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "rspEntry",
+      "location": "accountSourceAssets",
+      "validated_by": "!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut()",
+      "validates": [
+        "Checks if MPT entry is not zero balance and not maxed out"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "rspEntry",
+      "location": "accountDestAssets",
+      "validated_by": "rspEntry.isZeroBalance() && !rspEntry.isMaxedOut()",
+      "validates": [
+        "Checks if MPT entry is zero balance and not maxed out"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

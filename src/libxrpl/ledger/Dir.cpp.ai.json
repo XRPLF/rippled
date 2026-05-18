@@ -1,0 +1,367 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Dir::Dir"
+      ],
+      "entry_point": "Dir::Dir",
+      "purpose": "Constructs a Dir object, initializes pointers to SLE and indexes.",
+      "validation_points": [
+        "if (sle_ != nullptr) // Validates sle_ before dereferencing",
+        "if (!indexes_->empty()) // Validates indexes_ before use"
+      ]
+    },
+    {
+      "call_chain": [
+        "Dir::begin",
+        "const_iterator::const_iterator"
+      ],
+      "entry_point": "Dir::begin",
+      "purpose": "Creates a const_iterator at the beginning of the directory.",
+      "validation_points": [
+        "if (sle_ != nullptr) // Validates sle_ before use",
+        "if (!indexes_->empty()) // Validates indexes_ before use"
+      ]
+    },
+    {
+      "call_chain": [
+        "const_iterator::operator*"
+      ],
+      "entry_point": "const_iterator::operator*",
+      "purpose": "Dereferences the iterator to access the current ledger entry.",
+      "validation_points": [
+        "XRPL_ASSERT(index_ != beast::zero, ...) // Validates index_ before use"
+      ]
+    },
+    {
+      "call_chain": [
+        "const_iterator::operator++",
+        "const_iterator::next_page"
+      ],
+      "entry_point": "const_iterator::operator++",
+      "purpose": "Advances the iterator to the next entry, possibly to the next page.",
+      "validation_points": [
+        "XRPL_ASSERT(index_ != beast::zero, ...) // Validates index_ before increment",
+        "XRPL_ASSERT(sle_, ...) // Validates sle_ after reading next page"
+      ]
+    },
+    {
+      "call_chain": [
+        "const_iterator::operator=="
+      ],
+      "entry_point": "const_iterator::operator==",
+      "purpose": "Compares two iterators for equality.",
+      "validation_points": [
+        "XRPL_ASSERT(view_ == other.view_ && root_.key == other.root_.key, ...) // Validates views and roots"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sle_",
+      "flow": [
+        "Dir::Dir: sle_ = view_->read(root_)",
+        "Dir::begin: if (sle_ != nullptr) { it.sle_ = sle_; ... }",
+        "const_iterator::next_page: sle_ = view_->read(page_)"
+      ],
+      "origin": "view_->read(root_) in Dir::Dir",
+      "transformations": [
+        "Assigned from view_->read",
+        "Passed to iterator",
+        "Reassigned on page change"
+      ],
+      "validated_at": "Dir::Dir (nullptr check), Dir::begin (nullptr check), const_iterator::next_page (XRPL_ASSERT)"
+    },
+    {
+      "field": "indexes_",
+      "flow": [
+        "Dir::Dir: indexes_ = &sle_->getFieldV256(sfIndexes)",
+        "Dir::begin: if (!indexes_->empty()) { ... }",
+        "const_iterator::next_page: indexes_ = &sle_->getFieldV256(sfIndexes)"
+      ],
+      "origin": "sle_->getFieldV256(sfIndexes) in Dir::Dir",
+      "transformations": [
+        "Pointer to V256 field extracted from SLE",
+        "Checked for emptiness before use",
+        "Reassigned on page change"
+      ],
+      "validated_at": "Dir::begin (empty() check), const_iterator::next_page (empty() check)"
+    },
+    {
+      "field": "index_",
+      "flow": [
+        "Dir::begin: index_ = *it_",
+        "const_iterator::operator*: XRPL_ASSERT(index_ != beast::zero)",
+        "const_iterator::operator++: XRPL_ASSERT(index_ != beast::zero)",
+        "const_iterator::next_page: index_ = *it_ or beast::zero"
+      ],
+      "origin": "Set from *it_ in Dir::begin or next_page",
+      "transformations": [
+        "Set from iterator over indexes_",
+        "Checked for nonzero before dereference/increment"
+      ],
+      "validated_at": "const_iterator::operator*, operator++, operator++(int), next_page (XRPL_ASSERT)"
+    },
+    {
+      "field": "view_",
+      "flow": [
+        "Dir::Dir: view_ = &view",
+        "const_iterator::const_iterator: view_ = &view",
+        "const_iterator::operator==: XRPL_ASSERT(view_ == other.view_)"
+      ],
+      "origin": "Passed to Dir::Dir and const_iterator",
+      "transformations": [
+        "Pointer assignment",
+        "Compared for equality"
+      ],
+      "validated_at": "const_iterator::operator== (XRPL_ASSERT)"
+    },
+    {
+      "field": "root_.key",
+      "flow": [
+        "Dir::Dir: root_ = key",
+        "const_iterator::const_iterator: root_ = root",
+        "const_iterator::operator==: XRPL_ASSERT(root_.key == other.root_.key)"
+      ],
+      "origin": "Passed to Dir::Dir from Keylet",
+      "transformations": [
+        "Assignment",
+        "Compared for equality"
+      ],
+      "validated_at": "const_iterator::operator== (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the Dir and Dir::const_iterator classes for iterating over directory nodes in the XRPL ledger, providing methods for traversal and access to ledger entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle_ (pointer to SLE)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at Dir::Dir (constructor), Dir::begin",
+      "issue_pattern": "Missing empty string validation for sle_ (pointer to SLE)",
+      "why_false_positive": "nullptr check validates sle_ (pointer to SLE) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sle_ (pointer to SLE)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "nullptr check at Dir::Dir (constructor), Dir::begin",
+      "issue_pattern": "Missing type validation for sle_ (pointer to SLE)",
+      "why_false_positive": "nullptr check validates sle_ (pointer to SLE) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "indexes_ (pointer to V256 field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "empty() check at Dir::begin, const_iterator::next_page",
+      "issue_pattern": "Missing empty string validation for indexes_ (pointer to V256 field)",
+      "why_false_positive": "empty() check validates indexes_ (pointer to V256 field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "index_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at const_iterator::operator*(), const_iterator::operator++(), const_iterator::operator++(int)",
+      "issue_pattern": "Missing empty string validation for index_",
+      "why_false_positive": "XRPL_ASSERT validates index_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle_ (pointer to SLE)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at const_iterator::next_page",
+      "issue_pattern": "Missing empty string validation for sle_ (pointer to SLE)",
+      "why_false_positive": "XRPL_ASSERT validates sle_ (pointer to SLE) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "view_ and other.view_, root_.key and other.root_.key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at const_iterator::operator==",
+      "issue_pattern": "Missing empty string validation for view_ and other.view_, root_.key and other.root_.key",
+      "why_false_positive": "XRPL_ASSERT validates view_ and other.view_, root_.key and other.root_.key for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/Dir.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "Keylet const& key"
+      ],
+      "lineno": 6,
+      "name": "Dir::Dir"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "Dir::begin"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "Dir::end"
+    },
+    {
+      "args": [
+        "const_iterator const& other"
+      ],
+      "lineno": 33,
+      "name": "const_iterator::operator=="
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "const_iterator::operator*"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "const_iterator::operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 61,
+      "name": "const_iterator::operator++"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "const_iterator::next_page"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "const_iterator::page_size"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is core ledger iteration logic. Typical test coverage would be in integration and unit tests for directory traversal, such as in 'test/ledger/Directory_test.cpp', 'test/ledger/ReadView_test.cpp', or higher-level transaction/ledger tests. Direct validation paths (e.g., XRPL_ASSERTs, nullptr checks) are not always directly tested unless assertions are triggered by malformed data or edge cases (e.g., empty directories, missing SLEs, zero indexes). Gaps may exist in negative testing (e.g., what happens if sle_ is nullptr, or indexes_ is empty), and in coverage of multi-page directory traversal. Fuzzing or property-based tests may be needed for full validation path coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), nullptr checks, STL container checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic, not exception)",
+      "field": "sle_ (pointer to SLE)",
+      "location": "Dir::Dir (constructor), Dir::begin",
+      "validated_by": "nullptr check",
+      "validates": [
+        "Checks if sle_ is not nullptr before dereferencing or accessing fields"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (conditional logic, not exception)",
+      "field": "indexes_ (pointer to V256 field)",
+      "location": "Dir::begin, const_iterator::next_page",
+      "validated_by": "empty() check",
+      "validates": [
+        "Checks if indexes_ is not empty before iterating"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "index_",
+      "location": "const_iterator::operator*(), const_iterator::operator++(), const_iterator::operator++(int)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures index_ is not beast::zero before dereferencing or incrementing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "sle_ (pointer to SLE)",
+      "location": "const_iterator::next_page",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures sle_ is not null after reading next page"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "view_ and other.view_, root_.key and other.root_.key",
+      "location": "const_iterator::operator==",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures both iterators have matching views and roots before comparing"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

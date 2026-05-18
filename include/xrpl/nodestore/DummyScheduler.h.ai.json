@@ -1,0 +1,56 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "DummyScheduler"
+    }
+  ],
+  "description": "Defines a DummyScheduler class in the xrpl::NodeStore namespace that implements the Scheduler interface by performing tasks synchronously.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/DummyScheduler.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "DummyScheduler"
+    },
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "~DummyScheduler"
+    },
+    {
+      "args": [
+        "task"
+      ],
+      "lineno": 12,
+      "name": "scheduleTask"
+    },
+    {
+      "args": [
+        "report"
+      ],
+      "lineno": 14,
+      "name": "onFetch"
+    },
+    {
+      "args": [
+        "report"
+      ],
+      "lineno": 16,
+      "name": "onBatchWrite"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "NodeStore"
+    }
+  ]
+}

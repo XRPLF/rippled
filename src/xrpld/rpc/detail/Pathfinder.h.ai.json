@@ -1,0 +1,198 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "cache"
+    },
+    {
+      "lineno": 20,
+      "name": "srcAccount"
+    },
+    {
+      "lineno": 21,
+      "name": "dstAccount"
+    },
+    {
+      "lineno": 22,
+      "name": "uSrcPathAsset"
+    },
+    {
+      "lineno": 23,
+      "name": "uSrcIssuer"
+    },
+    {
+      "lineno": 24,
+      "name": "dstAmount"
+    },
+    {
+      "lineno": 25,
+      "name": "srcAmount"
+    },
+    {
+      "lineno": 26,
+      "name": "domain"
+    },
+    {
+      "lineno": 27,
+      "name": "app"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "AccountID const& srcAccount",
+        "AccountID const& dstAccount",
+        "PathAsset const& uSrcPathAsset",
+        "std::optional<AccountID> const& uSrcIssuer",
+        "STAmount const& dstAmount",
+        "std::optional<STAmount> const& srcAmount",
+        "std::optional<uint256> const& domain",
+        "Application& app"
+      ],
+      "lineno": 15,
+      "name": "Pathfinder"
+    }
+  ],
+  "description": "Defines the Pathfinder class, which calculates payment paths in the XRPL ledger, including path ranking and liquidity analysis for payments.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Pathfinder.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<AssetCache> const& cache",
+        "AccountID const& srcAccount",
+        "AccountID const& dstAccount",
+        "PathAsset const& uSrcPathAsset",
+        "std::optional<AccountID> const& uSrcIssuer",
+        "STAmount const& dstAmount",
+        "std::optional<STAmount> const& srcAmount",
+        "std::optional<uint256> const& domain",
+        "Application& app"
+      ],
+      "lineno": 18,
+      "name": "Pathfinder"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "initPathTable"
+    },
+    {
+      "args": [
+        "int searchLevel",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 34,
+      "name": "findPaths"
+    },
+    {
+      "args": [
+        "int maxPaths",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 38,
+      "name": "computePathRanks"
+    },
+    {
+      "args": [
+        "int maxPaths",
+        "STPath& fullLiquidityPath",
+        "STPathSet const& extraPaths",
+        "AccountID const& srcIssuer",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 44,
+      "name": "getBestPaths"
+    },
+    {
+      "args": [
+        "PathType const& type",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 87,
+      "name": "addPathsForType"
+    },
+    {
+      "args": [
+        "Asset const&"
+      ],
+      "lineno": 90,
+      "name": "issueMatchesOrigin"
+    },
+    {
+      "args": [
+        "PathAsset const& pathAsset",
+        "AccountID const& account",
+        "LineDirection direction",
+        "bool isDestPathAsset",
+        "AccountID const& dest",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 93,
+      "name": "getPathsOut"
+    },
+    {
+      "args": [
+        "STPath const& currentPath",
+        "STPathSet& incompletePaths",
+        "int addFlags",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 100,
+      "name": "addLink"
+    },
+    {
+      "args": [
+        "STPathSet const& currentPaths",
+        "STPathSet& incompletePaths",
+        "int addFlags",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 107,
+      "name": "addLinks"
+    },
+    {
+      "args": [
+        "STPath const& path",
+        "STAmount const& minDstAmount",
+        "STAmount& amountOut",
+        "uint64_t& qualityOut"
+      ],
+      "lineno": 113,
+      "name": "getPathLiquidity"
+    },
+    {
+      "args": [
+        "STPath const& currentPath"
+      ],
+      "lineno": 120,
+      "name": "isNoRippleOut"
+    },
+    {
+      "args": [
+        "AccountID const& fromAccount",
+        "AccountID const& toAccount",
+        "Currency const& currency"
+      ],
+      "lineno": 124,
+      "name": "isNoRipple"
+    },
+    {
+      "args": [
+        "int maxPaths",
+        "STPathSet const& paths",
+        "std::vector<PathRank>& rankedPaths",
+        "std::function<bool(void)> const& continueCallback"
+      ],
+      "lineno": 128,
+      "name": "rankPaths"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "seconds_clock_thread"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "basic_seconds_clock::now",
+        "seconds_clock_thread::now"
+      ],
+      "entry_point": "basic_seconds_clock::now",
+      "purpose": "Provides the current time in seconds, using a background thread to update the time point.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "seconds_clock_thread::~seconds_clock_thread",
+        "XRPL_ASSERT(thread_.joinable())",
+        "thread_.join()"
+      ],
+      "entry_point": "seconds_clock_thread::~seconds_clock_thread",
+      "purpose": "Destructor for the clock thread, ensures the thread is joinable before joining and cleaning up.",
+      "validation_points": [
+        "XRPL_ASSERT(thread_.joinable())"
+      ]
+    },
+    {
+      "call_chain": [
+        "seconds_clock_thread::run",
+        "cv_.wait_until(lock, when, [this] { return stop_; })"
+      ],
+      "entry_point": "seconds_clock_thread::run",
+      "purpose": "Background thread loop that updates the atomic time point every second, exits when stop_ is set.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "stop_",
+      "flow": [
+        "constructor (false)",
+        "set to true in destructor under lock",
+        "checked in run()'s wait_until predicate"
+      ],
+      "origin": "Initialized as false in seconds_clock_thread",
+      "transformations": [
+        "Set to true to signal thread to stop"
+      ],
+      "validated_at": "Not directly validated, but used as a predicate for thread exit"
+    },
+    {
+      "field": "thread_",
+      "flow": [
+        "constructor (std::thread created)",
+        "checked for joinable in destructor",
+        "joined in destructor"
+      ],
+      "origin": "Constructed in seconds_clock_thread constructor",
+      "transformations": [
+        "Created, checked for joinability, joined"
+      ],
+      "validated_at": "XRPL_ASSERT(thread_.joinable()) in destructor"
+    },
+    {
+      "field": "tp_",
+      "flow": [
+        "constructor (set to Clock::now().time_since_epoch().count())",
+        "updated in run() loop every second",
+        "read in now()"
+      ],
+      "origin": "Initialized in constructor with current time",
+      "transformations": [
+        "Atomic store of time value, atomic load for reads"
+      ],
+      "validated_at": "No explicit validation, but atomic for thread safety"
+    }
+  ],
+  "description": "Implements a thread-based clock that updates once per second, providing a thread-safe way to get the current time in seconds for the beast library.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "thread_.joinable()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at seconds_clock_thread::~seconds_clock_thread",
+      "issue_pattern": "Missing empty string validation for thread_.joinable()",
+      "why_false_positive": "XRPL_ASSERT macro validates thread_.joinable() for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/clock/basic_seconds_clock.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "~seconds_clock_thread"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "seconds_clock_thread"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "~seconds_clock_thread"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "seconds_clock_thread"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "now"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "now"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). The destructor's XRPL_ASSERT is only triggered if the thread is not joinable at destruction, which would require a test that constructs and destructs basic_seconds_clock or seconds_clock_thread. Likely, tests would exist in higher-level clock or timing tests, possibly in files like 'test/clock_test.cpp' or similar. There is no explicit test for the validation path (XRPL_ASSERT) in this file, and error paths (e.g., thread not joinable) may not be covered unless specifically tested for destructor edge cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic (resource cleanup/destruction)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "thread_.joinable()",
+      "location": "seconds_clock_thread::~seconds_clock_thread",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the internal thread is joinable before attempting to join it in the destructor"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

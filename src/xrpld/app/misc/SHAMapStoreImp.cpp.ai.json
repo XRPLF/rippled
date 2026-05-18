@@ -1,0 +1,691 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMapStoreImp::SHAMapStoreImp",
+        "Config& config{app.config()}",
+        "Section& section{config.section(ConfigSection::nodeDatabase())}",
+        "Validation checks on section and its fields",
+        "state_db_.init(config, dbName_)"
+      ],
+      "entry_point": "SHAMapStoreImp::SHAMapStoreImp",
+      "purpose": "Constructs the SHAMapStoreImp object, validates configuration, sets up state DB and parameters for online deletion.",
+      "validation_points": [
+        "section.empty()",
+        "boost::iequals(get(section, \"type\"), \"RocksDB\")",
+        "!section.exists(\"cache_mb\")",
+        "!section.exists(\"filter_bits\") && (config.NODE_SIZE >= 2)",
+        "get_if_exists(section, \"online_delete\", deleteInterval_)",
+        "deleteInterval_ < minInterval",
+        "config.LEDGER_HISTORY > deleteInterval_"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapStoreImp::SavedStateDB::init",
+        "initStateDB(sqlDb_, config, dbName)"
+      ],
+      "entry_point": "SHAMapStoreImp::SavedStateDB::init",
+      "purpose": "Initializes the SavedStateDB with the provided config and database name.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "SHAMapStoreImp::SavedStateDB::getCanDelete",
+        "xrpl::getCanDelete(sqlDb_)"
+      ],
+      "entry_point": "SHAMapStoreImp::SavedStateDB::getCanDelete",
+      "purpose": "Fetches the current canDelete ledger index from the state DB.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "SHAMapStoreImp::SavedStateDB::setCanDelete",
+        "xrpl::setCanDelete(sqlDb_, canDelete)"
+      ],
+      "entry_point": "SHAMapStoreImp::SavedStateDB::setCanDelete",
+      "purpose": "Sets the canDelete ledger index in the state DB.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "section (Config Section)",
+      "flow": [
+        "config.section(ConfigSection::nodeDatabase())",
+        "section",
+        "Validation checks (empty, type, cache_mb, filter_bits, online_delete, etc.)",
+        "Used to set up NodeStore and deletion parameters"
+      ],
+      "origin": "config.section(ConfigSection::nodeDatabase())",
+      "transformations": [
+        "Checked for emptiness",
+        "Type checked for 'RocksDB'",
+        "Defaults set for cache_mb and filter_bits if missing",
+        "online_delete and related fields extracted"
+      ],
+      "validated_at": "SHAMapStoreImp::SHAMapStoreImp"
+    },
+    {
+      "field": "deleteInterval_",
+      "flow": [
+        "get_if_exists(section, \"online_delete\", deleteInterval_)",
+        "deleteInterval_",
+        "Used in further validation (minInterval, LEDGER_HISTORY)",
+        "Passed to state_db_.init and dbPaths()"
+      ],
+      "origin": "get_if_exists(section, \"online_delete\", deleteInterval_)",
+      "transformations": [
+        "Set from config if exists",
+        "Compared to minInterval and LEDGER_HISTORY"
+      ],
+      "validated_at": "SHAMapStoreImp::SHAMapStoreImp"
+    },
+    {
+      "field": "cache_mb",
+      "flow": [
+        "section.exists(\"cache_mb\")",
+        "If missing, set to config.getValueFor(SizedItem::hashNodeDBCache)",
+        "Used in NodeStore configuration"
+      ],
+      "origin": "section[\"cache_mb\"]",
+      "transformations": [
+        "Defaulted if missing"
+      ],
+      "validated_at": "SHAMapStoreImp::SHAMapStoreImp"
+    },
+    {
+      "field": "filter_bits",
+      "flow": [
+        "section.exists(\"filter_bits\")",
+        "If missing and NODE_SIZE >= 2, set to '10'",
+        "Used in NodeStore configuration"
+      ],
+      "origin": "section[\"filter_bits\"]",
+      "transformations": [
+        "Defaulted if missing and NODE_SIZE >= 2"
+      ],
+      "validated_at": "SHAMapStoreImp::SHAMapStoreImp"
+    },
+    {
+      "field": "type",
+      "flow": [
+        "get(section, \"type\")",
+        "Compared with 'RocksDB' (case-insensitive)",
+        "If RocksDB, triggers cache_mb and filter_bits defaults"
+      ],
+      "origin": "section[\"type\"]",
+      "transformations": [
+        "Case-insensitive comparison"
+      ],
+      "validated_at": "SHAMapStoreImp::SHAMapStoreImp"
+    }
+  ],
+  "description": "Implements the SHAMapStoreImp class, which manages the online deletion and rotation of ledger data in the XRPL node database, including database initialization, backend rotation, cache management, and health checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ConfigSection::nodeDatabase() (config section)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (section.empty()) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for ConfigSection::nodeDatabase() (config section)",
+      "why_false_positive": "explicit check (section.empty()) validates ConfigSection::nodeDatabase() (config section) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "section['type']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::iequals(get(section, \"type\"), \"RocksDB\") at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['type']",
+      "why_false_positive": "boost::iequals(get(section, \"type\"), \"RocksDB\") validates section['type'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "section['cache_mb']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!section.exists(\"cache_mb\") at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['cache_mb']",
+      "why_false_positive": "!section.exists(\"cache_mb\") validates section['cache_mb'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "section['filter_bits']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!section.exists(\"filter_bits\") && (config.NODE_SIZE >= 2) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['filter_bits']",
+      "why_false_positive": "!section.exists(\"filter_bits\") && (config.NODE_SIZE >= 2) validates section['filter_bits'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "section['online_delete']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_if_exists(section, \"online_delete\", deleteInterval_) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['online_delete']",
+      "why_false_positive": "get_if_exists(section, \"online_delete\", deleteInterval_) validates section['online_delete'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "section['online_delete']",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get_if_exists(section, \"online_delete\", deleteInterval_) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing type validation for section['online_delete']",
+      "why_false_positive": "get_if_exists(section, \"online_delete\", deleteInterval_) validates section['online_delete'] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "section['delete_batch']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_if_exists(section, \"delete_batch\", deleteBatch_) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['delete_batch']",
+      "why_false_positive": "get_if_exists(section, \"delete_batch\", deleteBatch_) validates section['delete_batch'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "section['delete_batch']",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get_if_exists(section, \"delete_batch\", deleteBatch_) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing type validation for section['delete_batch']",
+      "why_false_positive": "get_if_exists(section, \"delete_batch\", deleteBatch_) validates section['delete_batch'] type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "section['back_off_milliseconds'] / section['backOff']",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get_if_exists(section, ..., temp) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing empty string validation for section['back_off_milliseconds'] / section['backOff']",
+      "why_false_positive": "get_if_exists(section, ..., temp) validates section['back_off_milliseconds'] / section['backOff'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "section['back_off_milliseconds'] / section['backOff']",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "get_if_exists(section, ..., temp) at SHAMapStoreImp constructor",
+      "issue_pattern": "Missing type validation for section['back_off_milliseconds'] / section['backOff']",
+      "why_false_positive": "get_if_exists(section, ..., temp) validates section['back_off_milliseconds'] / section['backOff'] type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/SHAMapStoreImp.cpp",
+  "functions": [
+    {
+      "args": [
+        "BasicConfig const& config",
+        "std::string const& dbName"
+      ],
+      "lineno": 11,
+      "name": "SHAMapStoreImp::SavedStateDB::init"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "SHAMapStoreImp::SavedStateDB::getCanDelete"
+    },
+    {
+      "args": [
+        "LedgerIndex canDelete"
+      ],
+      "lineno": 23,
+      "name": "SHAMapStoreImp::SavedStateDB::setCanDelete"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "SHAMapStoreImp::SavedStateDB::getState"
+    },
+    {
+      "args": [
+        "SavedState const& state"
+      ],
+      "lineno": 35,
+      "name": "SHAMapStoreImp::SavedStateDB::setState"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 41,
+      "name": "SHAMapStoreImp::SavedStateDB::setLastRotated"
+    },
+    {
+      "args": [
+        "Application& app",
+        "NodeStore::Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 47,
+      "name": "SHAMapStoreImp::SHAMapStoreImp"
+    },
+    {
+      "args": [
+        "int readThreads"
+      ],
+      "lineno": 84,
+      "name": "SHAMapStoreImp::makeNodeStore"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger"
+      ],
+      "lineno": 112,
+      "name": "SHAMapStoreImp::onLedgerClosed"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "SHAMapStoreImp::rendezvous"
+    },
+    {
+      "args": [],
+      "lineno": 127,
+      "name": "SHAMapStoreImp::fdRequired"
+    },
+    {
+      "args": [
+        "std::uint64_t& nodeCount",
+        "SHAMapTreeNode const& node"
+      ],
+      "lineno": 131,
+      "name": "SHAMapStoreImp::copyNode"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "SHAMapStoreImp::run"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "SHAMapStoreImp::dbPaths"
+    },
+    {
+      "args": [
+        "std::string path"
+      ],
+      "lineno": 271,
+      "name": "SHAMapStoreImp::makeBackendRotating"
+    },
+    {
+      "args": [
+        "LedgerIndex lastRotated",
+        "std::string const& TableName",
+        "std::function<std::optional<LedgerIndex>()> const& getMinSeq",
+        "std::function<void(LedgerIndex)> const& deleteBeforeSeq"
+      ],
+      "lineno": 288,
+      "name": "SHAMapStoreImp::clearSql"
+    },
+    {
+      "args": [
+        "LedgerIndex validatedSeq"
+      ],
+      "lineno": 320,
+      "name": "SHAMapStoreImp::clearCaches"
+    },
+    {
+      "args": [],
+      "lineno": 327,
+      "name": "SHAMapStoreImp::freshenCaches"
+    },
+    {
+      "args": [
+        "LedgerIndex lastRotated"
+      ],
+      "lineno": 334,
+      "name": "SHAMapStoreImp::clearPrior"
+    },
+    {
+      "args": [],
+      "lineno": 366,
+      "name": "SHAMapStoreImp::healthWait"
+    },
+    {
+      "args": [],
+      "lineno": 386,
+      "name": "SHAMapStoreImp::stop"
+    },
+    {
+      "args": [],
+      "lineno": 399,
+      "name": "SHAMapStoreImp::minimumOnline"
+    },
+    {
+      "args": [
+        "Application& app",
+        "NodeStore::Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 412,
+      "name": "make_SHAMapStore"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is likely found in integration and configuration tests for SHAMapStore, online_delete, and NodeStore configuration. Look for test files such as 'SHAMapStore_test.cpp', 'OnlineDelete_test.cpp', or configuration validation tests in the 'test' or 'unittest' directories. Gaps: There may be limited coverage for negative cases (e.g., missing config sections, invalid values for online_delete, or type mismatches). Exception paths (Throw<std::runtime_error>) should be explicitly tested for robust coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework)",
+    "validation_layer": "business_logic (constructor-level config validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>)",
+      "field": "ConfigSection::nodeDatabase() (config section)",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "explicit check (section.empty())",
+      "validates": [
+        "Presence of [nodeDatabase] section in config file"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (conditional logic only)",
+      "field": "section['type']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "boost::iequals(get(section, \"type\"), \"RocksDB\")",
+      "validates": [
+        "Checks if backend type is RocksDB to apply further defaults"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (sets default if missing)",
+      "field": "section['cache_mb']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "!section.exists(\"cache_mb\")",
+      "validates": [
+        "If missing, sets default cache_mb value"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (sets default if missing)",
+      "field": "section['filter_bits']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "!section.exists(\"filter_bits\") && (config.NODE_SIZE >= 2)",
+      "validates": [
+        "If missing and NODE_SIZE >= 2, sets default filter_bits"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (optional assignment)",
+      "field": "section['online_delete']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "get_if_exists(section, \"online_delete\", deleteInterval_)",
+      "validates": [
+        "Assigns online_delete to deleteInterval_ if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (optional assignment)",
+      "field": "section['delete_batch']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "get_if_exists(section, \"delete_batch\", deleteBatch_)",
+      "validates": [
+        "Assigns delete_batch to deleteBatch_ if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (optional assignment)",
+      "field": "section['back_off_milliseconds'] / section['backOff']",
+      "location": "SHAMapStoreImp constructor",
+      "validated_by": "get_if_exists(section, ..., temp)",
+      "validates": [
+        "Assigns back_off_milliseconds or backOff to temp if present"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

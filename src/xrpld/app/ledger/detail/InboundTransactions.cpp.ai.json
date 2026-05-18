@@ -1,0 +1,613 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "seq"
+    },
+    {
+      "lineno": 19,
+      "name": "set"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::uint32_t seq",
+        "std::shared_ptr<SHAMap> const& set"
+      ],
+      "lineno": 15,
+      "name": "InboundTransactionSet"
+    },
+    {
+      "args": [
+        "Application& app",
+        "beast::insight::Collector::ptr const& collector",
+        "std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet",
+        "std::unique_ptr<PeerSetBuilder> peerSetBuilder"
+      ],
+      "lineno": 33,
+      "name": "InboundTransactionsImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getSet"
+      ],
+      "entry_point": "getSet",
+      "purpose": "Retrieves or acquires a transaction set (SHAMap) for a given hash. Optionally starts acquisition if not present.",
+      "validation_points": [
+        "m_map.find(hash) - checks if hash exists in map",
+        "if (!acquire || stopping_) - validates acquire flag and stopping state"
+      ]
+    },
+    {
+      "call_chain": [
+        "gotData",
+        "getAcquire"
+      ],
+      "entry_point": "gotData",
+      "purpose": "Handles incoming ledger data from a peer, validates and processes it for transaction acquisition.",
+      "validation_points": [
+        "getAcquire(hash) - checks if acquisition object exists for hash",
+        "if (ta == nullptr) - validates acquisition presence",
+        "if (!node.has_nodeid() || !node.has_nodedata()) - validates node fields in packet",
+        "if (!id) - validates deserialization of node id"
+      ]
+    },
+    {
+      "call_chain": [
+        "InboundTransactionsImp"
+      ],
+      "entry_point": "InboundTransactionsImp (constructor)",
+      "purpose": "Initializes the InboundTransactions implementation, sets up zero set and peer set builder.",
+      "validation_points": [
+        "std::move(peerSetBuilder) - validates/moves builder",
+        "std::make_shared<SHAMap>(...) - validates SHAMap creation"
+      ]
+    },
+    {
+      "call_chain": [
+        "getAcquire"
+      ],
+      "entry_point": "getAcquire",
+      "purpose": "Retrieves the TransactionAcquire pointer for a given hash if it exists.",
+      "validation_points": [
+        "m_map.find(hash) - validates existence of hash"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hash (uint256)",
+      "flow": [
+        "Function argument",
+        "m_map.find(hash) - lookup",
+        "If not found and acquire==true, create TransactionAcquire and insert into m_map[hash]",
+        "Used to retrieve or create SHAMap/TransactionAcquire"
+      ],
+      "origin": "Function argument (getSet, getAcquire, gotData)",
+      "transformations": [
+        "Used as key for map lookup",
+        "Triggers creation of TransactionAcquire if not present"
+      ],
+      "validated_at": "m_map.find(hash)"
+    },
+    {
+      "field": "acquire (bool)",
+      "flow": [
+        "Function argument",
+        "if (!acquire || stopping_) - early return if false",
+        "If true, may create TransactionAcquire"
+      ],
+      "origin": "Function argument (getSet)",
+      "transformations": [
+        "Controls whether to start acquisition"
+      ],
+      "validated_at": "if (!acquire || stopping_)"
+    },
+    {
+      "field": "peerSetBuilder",
+      "flow": [
+        "Constructor argument",
+        "std::move(peerSetBuilder) - stored in m_peerSetBuilder",
+        "Used in TransactionAcquire creation"
+      ],
+      "origin": "Constructor argument (InboundTransactionsImp)",
+      "transformations": [
+        "Moved into member variable"
+      ],
+      "validated_at": "std::move(peerSetBuilder)"
+    },
+    {
+      "field": "set (std::shared_ptr<SHAMap>)",
+      "flow": [
+        "Created via std::make_shared<SHAMap>",
+        "Assigned to m_zeroSet.mSet or obj.mSet",
+        "Returned by getSet"
+      ],
+      "origin": "Created in InboundTransactionsImp constructor and getSet",
+      "transformations": [
+        "Constructed with SHAMapType and uint256",
+        "setUnbacked() called for zero set"
+      ],
+      "validated_at": "std::make_shared<SHAMap>(...)"
+    },
+    {
+      "field": "ta (TransactionAcquire::pointer)",
+      "flow": [
+        "Created via std::make_shared<TransactionAcquire>",
+        "Assigned to obj.mAcquire in m_map[hash]",
+        "init(startPeers) called",
+        "Returned by getAcquire"
+      ],
+      "origin": "Created in getSet",
+      "transformations": [
+        "Constructed with app_, hash, and peer set",
+        "init() called to start acquisition"
+      ],
+      "validated_at": "std::make_shared<TransactionAcquire>(...)"
+    },
+    {
+      "field": "packet.nodes()",
+      "flow": [
+        "Iterated in gotData",
+        "Each node validated for has_nodeid() and has_nodedata()",
+        "nodeid deserialized and validated"
+      ],
+      "origin": "gotData argument (protocol::TMLedgerData)",
+      "transformations": [
+        "Deserialization of nodeid",
+        "Validation of presence"
+      ],
+      "validated_at": "if (!node.has_nodeid() || !node.has_nodedata()), if (!id)"
+    }
+  ],
+  "description": "Implements the InboundTransactions subsystem for acquiring, tracking, and managing transaction sets (SHAMaps) from peers in the XRPL network, including logic for acquiring transaction sets, handling incoming data, and managing transaction set lifetimes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "unique_ptr/shared_ptr types (RAII)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field unique_ptr/shared_ptr types (RAII) validated by C++ STL, custom business logic",
+      "issue_pattern": "Missing validation for unique_ptr/shared_ptr types (RAII)",
+      "why_false_positive": "C++ STL, custom business logic validates unique_ptr/shared_ptr types (RAII) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "map key existence (m_map.find)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field map key existence (m_map.find) validated by C++ STL, custom business logic",
+      "issue_pattern": "Missing validation for map key existence (m_map.find)",
+      "why_false_positive": "C++ STL, custom business logic validates map key existence (m_map.find) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "bool flags (acquire, stopping_)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field bool flags (acquire, stopping_) validated by C++ STL, custom business logic",
+      "issue_pattern": "Missing validation for bool flags (acquire, stopping_)",
+      "why_false_positive": "C++ STL, custom business logic validates bool flags (acquire, stopping_) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hash (uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_map.find(hash); checks for existence at getAcquire, getSet",
+      "issue_pattern": "Missing empty string validation for hash (uint256)",
+      "why_false_positive": "m_map.find(hash); checks for existence validates hash (uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "acquire (bool)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!acquire || stopping_) at getSet",
+      "issue_pattern": "Missing empty string validation for acquire (bool)",
+      "why_false_positive": "if (!acquire || stopping_) validates acquire (bool) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "peerSetBuilder",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::move(peerSetBuilder) in constructor at InboundTransactionsImp constructor",
+      "issue_pattern": "Missing empty string validation for peerSetBuilder",
+      "why_false_positive": "std::move(peerSetBuilder) in constructor validates peerSetBuilder for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "peerSetBuilder",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::move(peerSetBuilder) in constructor at InboundTransactionsImp constructor",
+      "issue_pattern": "Missing type validation for peerSetBuilder",
+      "why_false_positive": "std::move(peerSetBuilder) in constructor validates peerSetBuilder type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "set (std::shared_ptr<SHAMap>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::make_shared<SHAMap>(...) at InboundTransactionsImp constructor",
+      "issue_pattern": "Missing empty string validation for set (std::shared_ptr<SHAMap>)",
+      "why_false_positive": "std::make_shared<SHAMap>(...) validates set (std::shared_ptr<SHAMap>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "set (std::shared_ptr<SHAMap>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::make_shared<SHAMap>(...) at InboundTransactionsImp constructor",
+      "issue_pattern": "Missing type validation for set (std::shared_ptr<SHAMap>)",
+      "why_false_positive": "std::make_shared<SHAMap>(...) validates set (std::shared_ptr<SHAMap>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ta (TransactionAcquire::pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::make_shared<TransactionAcquire>(...) at getSet",
+      "issue_pattern": "Missing empty string validation for ta (TransactionAcquire::pointer)",
+      "why_false_positive": "std::make_shared<TransactionAcquire>(...) validates ta (TransactionAcquire::pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ta (TransactionAcquire::pointer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::make_shared<TransactionAcquire>(...) at getSet",
+      "issue_pattern": "Missing type validation for ta (TransactionAcquire::pointer)",
+      "why_false_positive": "std::make_shared<TransactionAcquire>(...) validates ta (TransactionAcquire::pointer) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/InboundTransactions.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "beast::insight::Collector::ptr const& collector",
+        "std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet",
+        "std::unique_ptr<PeerSetBuilder> peerSetBuilder"
+      ],
+      "lineno": 34,
+      "name": "InboundTransactionsImp"
+    },
+    {
+      "args": [
+        "uint256 const& hash"
+      ],
+      "lineno": 49,
+      "name": "getAcquire"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "bool acquire"
+      ],
+      "lineno": 59,
+      "name": "getSet"
+    },
+    {
+      "args": [
+        "LedgerHash const& hash",
+        "std::shared_ptr<Peer> peer",
+        "std::shared_ptr<protocol::TMLedgerData> packet_ptr"
+      ],
+      "lineno": 89,
+      "name": "gotData"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::shared_ptr<SHAMap> const& set",
+        "bool fromAcquire"
+      ],
+      "lineno": 123,
+      "name": "giveSet"
+    },
+    {
+      "args": [
+        "std::uint32_t seq"
+      ],
+      "lineno": 143,
+      "name": "newRound"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 184,
+      "name": "~InboundTransactions"
+    },
+    {
+      "args": [
+        "Application& app",
+        "beast::insight::Collector::ptr const& collector",
+        "std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet"
+      ],
+      "lineno": 186,
+      "name": "make_InboundTransactions"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by integration and unit tests for transaction set acquisition and peer data handling. Look for test files in the xrpld/test or xrpld/app/ledger/test directories, such as InboundTransactions_test.cpp, TransactionAcquire_test.cpp, or SHAMap_test.cpp. However, specific validation branches (e.g., malformed node data, missing hash in map, stopping_ flag) may not be exhaustively tested unless negative/edge-case tests are present. Test coverage for peer resource charging and error handling may be limited.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "unique_ptr/shared_ptr types (RAII)",
+      "map key existence (m_map.find)",
+      "bool flags (acquire, stopping_)"
+    ],
+    "framework": "C++ STL, custom business logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (returns empty pointer or nullptr)",
+      "field": "hash (uint256)",
+      "location": "getAcquire, getSet",
+      "validated_by": "m_map.find(hash); checks for existence",
+      "validates": [
+        "hash must exist in m_map to retrieve TransactionAcquire or SHAMap"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (returns nullptr)",
+      "field": "acquire (bool)",
+      "location": "getSet",
+      "validated_by": "if (!acquire || stopping_)",
+      "validates": [
+        "acquire must be true and not stopping_ to proceed with acquisition"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (assumes unique_ptr is valid)",
+      "field": "peerSetBuilder",
+      "location": "InboundTransactionsImp constructor",
+      "validated_by": "std::move(peerSetBuilder) in constructor",
+      "validates": [
+        "peerSetBuilder must be a valid unique_ptr"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (relies on std::make_shared to throw if allocation fails)",
+      "field": "set (std::shared_ptr<SHAMap>)",
+      "location": "InboundTransactionsImp constructor",
+      "validated_by": "std::make_shared<SHAMap>(...)",
+      "validates": [
+        "set must be a valid SHAMap pointer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "std::bad_alloc if allocation fails",
+      "field": "ta (TransactionAcquire::pointer)",
+      "location": "getSet",
+      "validated_by": "std::make_shared<TransactionAcquire>(...)",
+      "validates": [
+        "ta must be a valid TransactionAcquire pointer"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

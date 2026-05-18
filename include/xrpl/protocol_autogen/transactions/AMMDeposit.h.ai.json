@@ -1,0 +1,213 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "tx"
+    },
+    {
+      "lineno": 175,
+      "name": "account"
+    },
+    {
+      "lineno": 175,
+      "name": "asset"
+    },
+    {
+      "lineno": 175,
+      "name": "asset2"
+    },
+    {
+      "lineno": 175,
+      "name": "sequence"
+    },
+    {
+      "lineno": 175,
+      "name": "fee"
+    },
+    {
+      "lineno": 185,
+      "name": "tx"
+    },
+    {
+      "lineno": 192,
+      "name": "value"
+    },
+    {
+      "lineno": 203,
+      "name": "value"
+    },
+    {
+      "lineno": 214,
+      "name": "value"
+    },
+    {
+      "lineno": 225,
+      "name": "value"
+    },
+    {
+      "lineno": 236,
+      "name": "value"
+    },
+    {
+      "lineno": 247,
+      "name": "value"
+    },
+    {
+      "lineno": 258,
+      "name": "value"
+    },
+    {
+      "lineno": 269,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 269,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "AMMDeposit"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::decay_t<typename SF_ISSUE::type::value_type> const& asset2, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 170,
+      "name": "AMMDepositBuilder"
+    }
+  ],
+  "description": "Defines the AMMDeposit transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing AMMDeposit transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMDeposit.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "hasAmount"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "getAmount2"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "hasAmount2"
+    },
+    {
+      "args": [],
+      "lineno": 102,
+      "name": "getEPrice"
+    },
+    {
+      "args": [],
+      "lineno": 114,
+      "name": "hasEPrice"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "getLPTokenOut"
+    },
+    {
+      "args": [],
+      "lineno": 136,
+      "name": "hasLPTokenOut"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "hasTradingFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 191,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 202,
+      "name": "setAsset2"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 213,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 224,
+      "name": "setAmount2"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 235,
+      "name": "setEPrice"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 246,
+      "name": "setLPTokenOut"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 257,
+      "name": "setTradingFee"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 268,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

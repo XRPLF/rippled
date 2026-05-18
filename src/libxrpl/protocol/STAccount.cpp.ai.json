@@ -1,0 +1,333 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "STAccount"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STAccount::STAccount(SField const& n, Buffer const& v)",
+        "if (v.size() != uint160::bytes) Throw<std::runtime_error>(...)"
+      ],
+      "entry_point": "STAccount::STAccount(SField const& n, Buffer const& v)",
+      "purpose": "Constructs an STAccount from a Buffer (account id bytes) and validates the size of the Buffer.",
+      "validation_points": [
+        "Explicit size check: if (v.size() != uint160::bytes) Throw<std::runtime_error>(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STAccount::add(Serializer& s) const",
+        "XRPL_ASSERT(getFName().isBinary(), ...)",
+        "XRPL_ASSERT(getFName().fieldType == STI_ACCOUNT, ...)",
+        "s.addVL(value_.data(), size)"
+      ],
+      "entry_point": "STAccount::add(Serializer& s) const",
+      "purpose": "Serializes the STAccount, validating that the field is binary and of the correct type before serialization.",
+      "validation_points": [
+        "XRPL_ASSERT(getFName().isBinary(), ...)",
+        "XRPL_ASSERT(getFName().fieldType == STI_ACCOUNT, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STAccount::STAccount(SerialIter& sit, SField const& name)",
+        "STAccount::STAccount(SField const& n, Buffer const& v)",
+        "if (v.size() != uint160::bytes) Throw<std::runtime_error>(...)"
+      ],
+      "entry_point": "STAccount::STAccount(SerialIter& sit, SField const& name)",
+      "purpose": "Constructs an STAccount from serialized data, validating the Buffer size.",
+      "validation_points": [
+        "Explicit size check in STAccount(SField const& n, Buffer const& v)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_ (AccountID)",
+      "flow": [
+        "Buffer v (input to constructor)",
+        "Validated for size in STAccount(SField const& n, Buffer const& v)",
+        "memcpy to value_",
+        "Used in serialization (add), comparison (isEquivalent), and text conversion (getText)"
+      ],
+      "origin": "Buffer v (from serialized data or direct input)",
+      "transformations": [
+        "Buffer is checked for correct size",
+        "Copied into value_ (AccountID, uint160)",
+        "Serialized as VL or converted to Base58"
+      ],
+      "validated_at": "STAccount(SField const& n, Buffer const& v) constructor"
+    },
+    {
+      "field": "n (SField)",
+      "flow": [
+        "SField n (input to constructor)",
+        "Stored in STBase",
+        "Accessed via getFName() in add()"
+      ],
+      "origin": "Passed to constructor by caller",
+      "transformations": [
+        "Checked for isBinary and fieldType in add()"
+      ],
+      "validated_at": "STAccount::add (via XRPL_ASSERT)"
+    },
+    {
+      "field": "default_ (bool)",
+      "flow": [
+        "Set to true if Buffer is empty or value is beast::zero",
+        "Used in add() to determine serialization size",
+        "Used in isEquivalent and getText"
+      ],
+      "origin": "Set in constructors based on input",
+      "transformations": [
+        "Set based on input Buffer or AccountID"
+      ],
+      "validated_at": "Implicitly validated by logic in constructors"
+    }
+  ],
+  "description": "Implements the STAccount class for representing and serializing XRPL account IDs, including constructors, serialization, and comparison logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Buffer v (account id bytes)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit size check in constructor at STAccount::STAccount(SField const& n, Buffer const& v)",
+      "issue_pattern": "Missing empty string validation for Buffer v (account id bytes)",
+      "why_false_positive": "explicit size check in constructor validates Buffer v (account id bytes) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Buffer v (account id bytes)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit size check in constructor at STAccount::STAccount(SField const& n, Buffer const& v)",
+      "issue_pattern": "Missing format validation for Buffer v (account id bytes)",
+      "why_false_positive": "explicit size check in constructor validates Buffer v (account id bytes) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SField n (field type and binary property)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STAccount::add(Serializer& s) const",
+      "issue_pattern": "Missing empty string validation for SField n (field type and binary property)",
+      "why_false_positive": "XRPL_ASSERT macro validates SField n (field type and binary property) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SField n (field type and binary property)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STAccount::add(Serializer& s) const",
+      "issue_pattern": "Missing type validation for SField n (field type and binary property)",
+      "why_false_positive": "XRPL_ASSERT macro validates SField n (field type and binary property) type"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STAccount.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 17,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "Buffer const& v"
+      ],
+      "lineno": 21,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 35,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "AccountID const& v"
+      ],
+      "lineno": 39,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 43,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 48,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 58,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 68,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "isDefault"
+    },
+    {
+      "args": [],
+      "lineno": 78,
+      "name": "getText"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STAccount is a core serialization/field type in XRPL. Typical test coverage would be in protocol/ or serialization test suites, e.g., STAccount_test.cpp, STObject_test.cpp, or broader transaction/serialization tests. Tests should cover: construction from valid/invalid Buffers (size mismatch), serialization (add), and field property assertions. Gaps may exist if: (1) Buffer size errors are not tested (invalid input), (2) SField property assertions are not tested (e.g., non-binary or wrong type), (3) edge cases for default_ logic are not covered. Review of test files is needed to confirm coverage of these validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (Throw<>, XRPL_ASSERT), no external validation framework",
+    "validation_layer": "business_logic (constructor and serialization logic)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<std::runtime_error>(\"Invalid STAccount size\"))",
+      "field": "Buffer v (account id bytes)",
+      "location": "STAccount::STAccount(SField const& n, Buffer const& v)",
+      "validated_by": "explicit size check in constructor",
+      "validates": [
+        "Checks that if Buffer v is not empty, its size must be exactly uint160::bytes (20 bytes)",
+        "Prevents invalid-length account IDs from being accepted"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "assertion failure (likely contract violation, may throw or abort depending on XRPL_ASSERT implementation)",
+      "field": "SField n (field type and binary property)",
+      "location": "STAccount::add(Serializer& s) const",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the field is binary (getFName().isBinary())",
+        "Checks that the field type is STI_ACCOUNT (getFName().fieldType == STI_ACCOUNT)"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,317 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "st"
+    },
+    {
+      "lineno": 10,
+      "name": "name"
+    },
+    {
+      "lineno": 15,
+      "name": "n"
+    },
+    {
+      "lineno": 15,
+      "name": "buf"
+    },
+    {
+      "lineno": 35,
+      "name": "s"
+    },
+    {
+      "lineno": 44,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SerialIter& st",
+        "SField const& name"
+      ],
+      "lineno": 9,
+      "name": "STBlob"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STBlob::add"
+      ],
+      "entry_point": "STBlob::add",
+      "purpose": "Serializes the blob value into a Serializer, after validating the field type and binary status.",
+      "validation_points": [
+        "XRPL_ASSERT(getFName().isBinary(), ...)",
+        "XRPL_ASSERT(getFName().fieldType == STI_VL || getFName().fieldType == STI_ACCOUNT, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STBlob::STBlob"
+      ],
+      "entry_point": "STBlob::STBlob (constructor)",
+      "purpose": "Constructs an STBlob from a SerialIter and SField, extracting the value from the iterator.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STBlob::copy",
+        "STBlob::emplace"
+      ],
+      "entry_point": "STBlob::copy / STBlob::move",
+      "purpose": "Creates a copy or moved instance of STBlob.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STBlob::isEquivalent"
+      ],
+      "entry_point": "STBlob::isEquivalent",
+      "purpose": "Checks if another STBase is an equivalent STBlob (same value).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STBlob::isDefault"
+      ],
+      "entry_point": "STBlob::isDefault",
+      "purpose": "Checks if the blob is empty.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_",
+      "flow": [
+        "SerialIter (input)",
+        "STBlob::STBlob (extracts value_)",
+        "STBlob::add (serializes value_)",
+        "Serializer::addVL (writes value_)"
+      ],
+      "origin": "SerialIter::getVLBuffer() in STBlob::STBlob constructor",
+      "transformations": [
+        "Extracted as a buffer from SerialIter",
+        "Stored as value_ in STBlob",
+        "Serialized as variable-length data"
+      ],
+      "validated_at": "STBlob::add (field type and binary status validated before serialization)"
+    },
+    {
+      "field": "getFName()",
+      "flow": [
+        "SField (input to STBlob)",
+        "STBase (base class stores SField)",
+        "STBlob::add (calls getFName() for validation)"
+      ],
+      "origin": "SField passed to STBlob constructor",
+      "transformations": [
+        "None (passed through as reference)"
+      ],
+      "validated_at": "STBlob::add (isBinary() and fieldType checked via XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the STBlob class for handling variable-length binary data fields in the XRPL protocol, including serialization, copying, comparison, and textual representation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "getFName().isBinary()",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field getFName().isBinary() validated by XRPL_ASSERT macro (custom assertion, not a full validation framework)",
+      "issue_pattern": "Missing validation for getFName().isBinary()",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a full validation framework) validates getFName().isBinary() automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "getFName().fieldType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field getFName().fieldType validated by XRPL_ASSERT macro (custom assertion, not a full validation framework)",
+      "issue_pattern": "Missing validation for getFName().fieldType",
+      "why_false_positive": "XRPL_ASSERT macro (custom assertion, not a full validation framework) validates getFName().fieldType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getFName().isBinary()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STBlob::add",
+      "issue_pattern": "Missing empty string validation for getFName().isBinary()",
+      "why_false_positive": "XRPL_ASSERT macro validates getFName().isBinary() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "getFName().isBinary()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STBlob::add",
+      "issue_pattern": "Missing type validation for getFName().isBinary()",
+      "why_false_positive": "XRPL_ASSERT macro validates getFName().isBinary() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "getFName().fieldType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STBlob::add",
+      "issue_pattern": "Missing empty string validation for getFName().fieldType",
+      "why_false_positive": "XRPL_ASSERT macro validates getFName().fieldType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "getFName().fieldType",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STBlob::add",
+      "issue_pattern": "Missing type validation for getFName().fieldType",
+      "why_false_positive": "XRPL_ASSERT macro validates getFName().fieldType type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STBlob.cpp",
+  "functions": [
+    {
+      "args": [
+        "SerialIter& st",
+        "SField const& name"
+      ],
+      "lineno": 10,
+      "name": "STBlob"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 15,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 20,
+      "name": "move"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 35,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 44,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "isDefault"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STBlob is a low-level serialization class. Typical test coverage would be in protocol serialization/deserialization tests, likely in files such as 'test/protocol/STBlob_test.cpp', 'test/protocol/Serializer_test.cpp', or integration tests involving transaction or ledger serialization. The validation code (XRPL_ASSERT) is only triggered in STBlob::add, so tests must exercise serialization of STBlob fields with both valid and invalid SField configurations. Gaps may exist if tests do not cover non-binary fields or fields with incorrect fieldType (not STI_VL or STI_ACCOUNT), as these would trigger assertions. There is no evidence in this file of direct test hooks or coverage annotations.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "getFName().isBinary()",
+      "getFName().fieldType"
+    ],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a full validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "getFName().isBinary()",
+      "location": "STBlob::add",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the field name is of binary type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws, depending on XRPL_ASSERT implementation)",
+      "field": "getFName().fieldType",
+      "location": "STBlob::add",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that the field type is either STI_VL (variable length) or STI_ACCOUNT"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Slot"
+    }
+  ],
+  "description": "Defines the Slot class, representing properties and state associated with a peer-to-peer overlay connection in the XRPL PeerFinder module.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/Slot.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "~Slot"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "inbound"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "fixed"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "reserved"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "state"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "remote_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "local_endpoint"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "listening_port"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "public_key"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "PeerFinder"
+    }
+  ]
+}

@@ -1,0 +1,590 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NFTokenCreateOffer::preflight",
+        "nft::getFlags",
+        "nft::tokenOfferCreatePreflight"
+      ],
+      "entry_point": "NFTokenCreateOffer::preflight",
+      "purpose": "Performs initial transaction validation (syntax, field presence, basic checks) before ledger access.",
+      "validation_points": [
+        "nft::getFlags (validates sfNFTokenID)",
+        "nft::tokenOfferCreatePreflight (validates sfAccount, sfAmount, sfDestination, sfExpiration)"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenCreateOffer::preclaim",
+        "hasExpired",
+        "nft::findToken",
+        "nft::tokenOfferCreatePreclaim"
+      ],
+      "entry_point": "NFTokenCreateOffer::preclaim",
+      "purpose": "Performs contextual validation (ledger state, token existence, expiration) before applying transaction.",
+      "validation_points": [
+        "hasExpired (validates sfExpiration)",
+        "nft::findToken (validates existence of NFT by sfNFTokenID and owner)",
+        "nft::tokenOfferCreatePreclaim (further contextual checks)"
+      ]
+    },
+    {
+      "call_chain": [
+        "NFTokenCreateOffer::doApply",
+        "nft::tokenOfferCreateApply"
+      ],
+      "entry_point": "NFTokenCreateOffer::doApply",
+      "purpose": "Applies the transaction to the ledger after all validations pass.",
+      "validation_points": [
+        "Assumes all prior validations passed; does not perform new validation here."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfNFTokenID",
+      "flow": [
+        "ctx.tx[sfNFTokenID]",
+        "nft::getFlags",
+        "nft::findToken",
+        "nft::getIssuer",
+        "nft::getTransferFee",
+        "nft::tokenOfferCreatePreflight",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[sfNFTokenID] (transaction input)",
+      "transformations": [
+        "Parsed for flags, issuer, transfer fee; checked for existence in ledger"
+      ],
+      "validated_at": "nft::getFlags (preflight), nft::findToken (preclaim)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "nft::tokenOfferCreatePreflight",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for validity, permissions, and used as offer creator"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "nft::tokenOfferCreatePreflight",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for valid amount, type, and limits"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "ctx.tx[~sfDestination]",
+        "nft::tokenOfferCreatePreflight",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[~sfDestination] (optional transaction input)",
+      "transformations": [
+        "Optional; checked for validity if present"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "ctx.tx[~sfExpiration]",
+        "nft::tokenOfferCreatePreflight",
+        "hasExpired",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[~sfExpiration] (optional transaction input)",
+      "transformations": [
+        "Optional; checked for validity and expiration"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight, hasExpired (preclaim)"
+    },
+    {
+      "field": "sfOwner",
+      "flow": [
+        "ctx.tx[~sfOwner]",
+        "nft::tokenOfferCreatePreflight",
+        "nft::tokenOfferCreatePreclaim",
+        "nft::tokenOfferCreateApply"
+      ],
+      "origin": "ctx.tx[~sfOwner] (optional transaction input)",
+      "transformations": [
+        "Optional; used to determine offer type (buy/sell)"
+      ],
+      "validated_at": "nft::tokenOfferCreatePreflight"
+    }
+  ],
+  "description": "Implements the NFTokenCreateOffer transaction logic for creating NFT offers on the XRPL, including preflight, preclaim, and apply steps.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmount validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfAmount",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfAmount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfNFTokenID validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfNFTokenID",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfNFTokenID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDestination",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDestination validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfDestination",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfDestination automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfExpiration",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfExpiration validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfExpiration",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfExpiration automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOwner",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfOwner validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for sfOwner",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates sfOwner automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txFlags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txFlags validated by xrpl core validation (custom, not external framework)",
+      "issue_pattern": "Missing validation for txFlags",
+      "why_false_positive": "xrpl core validation (custom, not external framework) validates txFlags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::getFlags at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::getFlags validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfDestination (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfDestination (optional)",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates sfDestination (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfExpiration (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfExpiration (optional)",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates sfExpiration (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfOwner (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for sfOwner (optional)",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates sfOwner (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "txFlags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreflight at NFTokenCreateOffer::preflight",
+      "issue_pattern": "Missing empty string validation for txFlags",
+      "why_false_positive": "nft::tokenOfferCreatePreflight validates txFlags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration (optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasExpired at NFTokenCreateOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfExpiration (optional)",
+      "why_false_positive": "hasExpired validates sfExpiration (optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNFTokenID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::findToken at NFTokenCreateOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfNFTokenID",
+      "why_false_positive": "nft::findToken validates sfNFTokenID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfAccount, sfAmount, sfDestination, sfOwner, txFlags, nftokenID, issuer, transferFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nft::tokenOfferCreatePreclaim at NFTokenCreateOffer::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfAmount, sfDestination, sfOwner, txFlags, nftokenID, issuer, transferFee",
+      "why_false_positive": "nft::tokenOfferCreatePreclaim validates sfAccount, sfAmount, sfDestination, sfOwner, txFlags, nftokenID, issuer, transferFee for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/nft/NFTokenCreateOffer.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "NFTokenCreateOffer::getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "NFTokenCreateOffer::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 33,
+      "name": "NFTokenCreateOffer::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "NFTokenCreateOffer::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "NFTokenCreateOffer is typically tested in integration/functional test suites for NFT offer creation. Likely test files: 'test/tx/NFTokenCreateOffer_test.cpp', 'test/tx/NFToken_test.cpp', or similar. These tests should cover valid/invalid field combinations, missing/invalid sfNFTokenID, sfAccount, sfAmount, expiration logic, and offer creation flows. Gaps may exist in edge cases for optional fields (sfDestination, sfOwner), malformed sfAmount, or rare flag combinations. Direct unit tests for internal helpers (nft::tokenOfferCreatePreflight, nft::getFlags) may be limited; most validation is exercised via transaction-level tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAccount",
+      "sfAmount",
+      "sfNFTokenID",
+      "sfDestination",
+      "sfExpiration",
+      "sfOwner",
+      "txFlags"
+    ],
+    "framework": "xrpl core validation (custom, not external framework)",
+    "validation_layer": "business_logic (preflight/preclaim/apply)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfNFTokenID",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::getFlags",
+      "validates": [
+        "Checks that NFTokenID is present and valid",
+        "Extracts flags from NFTokenID",
+        "May check format and existence"
+      ],
+      "validation_type": "type|format|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfAccount",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that Account is present and valid",
+        "Checks permissions/ownership"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfAmount",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that Amount is present and valid",
+        "Checks amount is positive and within allowed range"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfDestination (optional)",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that Destination, if present, is valid",
+        "Checks address format"
+      ],
+      "validation_type": "type|format|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfExpiration (optional)",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that Expiration, if present, is valid",
+        "Checks expiration is in the future"
+      ],
+      "validation_type": "type|range|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "sfOwner (optional)",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that Owner, if present, is valid",
+        "Checks ownership rules"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "NotTEC (via tokenOfferCreatePreflight)",
+      "field": "txFlags",
+      "location": "NFTokenCreateOffer::preflight",
+      "validated_by": "nft::tokenOfferCreatePreflight",
+      "validates": [
+        "Checks that transaction flags are valid for this operation"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecEXPIRED",
+      "field": "sfExpiration (optional)",
+      "location": "NFTokenCreateOffer::preclaim",
+      "validated_by": "hasExpired",
+      "validates": [
+        "Checks if the offer has already expired"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfNFTokenID",
+      "location": "NFTokenCreateOffer::preclaim",
+      "validated_by": "nft::findToken",
+      "validates": [
+        "Checks that the referenced NFToken exists in the ledger for the correct owner"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "TER (various error codes)",
+      "field": "sfAccount, sfAmount, sfDestination, sfOwner, txFlags, nftokenID, issuer, transferFee",
+      "location": "NFTokenCreateOffer::preclaim",
+      "validated_by": "nft::tokenOfferCreatePreclaim",
+      "validates": [
+        "Checks business logic for offer creation",
+        "Checks account and ownership rules",
+        "Checks amount and transfer fee validity",
+        "Checks destination and owner fields"
+      ],
+      "validation_type": "business_logic|type|range|format"
+    }
+  ]
+}

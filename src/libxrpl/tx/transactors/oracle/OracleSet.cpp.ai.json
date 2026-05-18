@@ -1,0 +1,543 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OracleSet::preflight"
+      ],
+      "entry_point": "OracleSet::preflight",
+      "purpose": "Initial stateless validation of OracleSet transaction fields before further processing.",
+      "validation_points": [
+        "Checks if sfPriceDataSeries is empty (temARRAY_EMPTY)",
+        "Checks if sfPriceDataSeries size exceeds maxOracleDataSeries (temARRAY_TOO_LARGE)",
+        "Checks if sfProvider, sfURI, sfAssetClass have invalid lengths (temMALFORMED)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OracleSet::preclaim"
+      ],
+      "entry_point": "OracleSet::preclaim",
+      "purpose": "Stateful validation, including account existence, time checks, and per-entry validation in sfPriceDataSeries.",
+      "validation_points": [
+        "Checks if account exists (terNO_ACCOUNT)",
+        "Checks if sfLastUpdateTime is within allowed range (tecINVALID_UPDATE_TIME, tecINTERNAL)",
+        "Iterates sfPriceDataSeries: validates base/quote asset difference, uniqueness, scale, presence of price (temMALFORMED)",
+        "Checks if update time is more recent than previous (tecINVALID_UPDATE_TIME)",
+        "Checks consistency of sfProvider and sfAssetClass (temMALFORMED)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OracleSet::doApply"
+      ],
+      "entry_point": "OracleSet::doApply",
+      "purpose": "Applies the transaction after preflight and preclaim have succeeded. Not shown in full, but would use validated data.",
+      "validation_points": [
+        "Relies on previous validations in preflight and preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfPriceDataSeries",
+      "flow": [
+        "ctx.tx.getFieldArray(sfPriceDataSeries)",
+        "OracleSet::preflight: checked for empty/size",
+        "OracleSet::preclaim: iterated for per-entry validation",
+        "Used in doApply to update ledger"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for emptiness and size",
+        "Each entry checked for base/quote asset, uniqueness, scale, price presence"
+      ],
+      "validated_at": "OracleSet::preflight, OracleSet::preclaim"
+    },
+    {
+      "field": "sfProvider",
+      "flow": [
+        "ctx.tx[sfProvider]",
+        "OracleSet::preflight: checked for length",
+        "OracleSet::preclaim: checked for consistency with ledger"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Length checked against maxOracleProvider",
+        "Compared to on-ledger value if present"
+      ],
+      "validated_at": "OracleSet::preflight, OracleSet::preclaim"
+    },
+    {
+      "field": "sfURI",
+      "flow": [
+        "ctx.tx[sfURI]",
+        "OracleSet::preflight: checked for length"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Length checked against maxOracleURI"
+      ],
+      "validated_at": "OracleSet::preflight"
+    },
+    {
+      "field": "sfAssetClass",
+      "flow": [
+        "ctx.tx[sfAssetClass]",
+        "OracleSet::preflight: checked for length",
+        "OracleSet::preclaim: checked for consistency with ledger"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Length checked against maxOracleSymbolClass",
+        "Compared to on-ledger value if present"
+      ],
+      "validated_at": "OracleSet::preflight, OracleSet::preclaim"
+    },
+    {
+      "field": "sfLastUpdateTime",
+      "flow": [
+        "ctx.tx[sfLastUpdateTime]",
+        "OracleSet::preclaim: checked for epoch offset, range, and recency"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Checked for being after epoch_offset",
+        "Checked for being within maxLastUpdateTimeDelta of closeTime",
+        "Compared to previous on-ledger value"
+      ],
+      "validated_at": "OracleSet::preclaim"
+    },
+    {
+      "field": "sfBaseAsset / sfQuoteAsset",
+      "flow": [
+        "entry[sfBaseAsset], entry[sfQuoteAsset]",
+        "OracleSet::preclaim: checked for equality (must differ), used to form tokenPairKey"
+      ],
+      "origin": "Each entry in sfPriceDataSeries",
+      "transformations": [
+        "Compared for equality",
+        "Used as key for uniqueness"
+      ],
+      "validated_at": "OracleSet::preclaim"
+    },
+    {
+      "field": "sfScale",
+      "flow": [
+        "entry[~sfScale]",
+        "OracleSet::preclaim: checked for exceeding maxPriceScale"
+      ],
+      "origin": "Each entry in sfPriceDataSeries",
+      "transformations": [
+        "Checked for value > maxPriceScale"
+      ],
+      "validated_at": "OracleSet::preclaim"
+    },
+    {
+      "field": "sfAssetPrice",
+      "flow": [
+        "entry.isFieldPresent(sfAssetPrice)",
+        "OracleSet::preclaim: determines if pair is added/updated or deleted"
+      ],
+      "origin": "Each entry in sfPriceDataSeries",
+      "transformations": [
+        "Presence determines add/update/delete logic"
+      ],
+      "validated_at": "OracleSet::preclaim"
+    }
+  ],
+  "description": "Implements the OracleSet transaction logic for creating and updating oracle price data objects in the XRPL ledger, including preflight, preclaim, and apply logic for validation and ledger mutation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPriceDataSeries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (dataSeries.empty()) at OracleSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfPriceDataSeries",
+      "why_false_positive": "explicit check (dataSeries.empty()) validates sfPriceDataSeries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPriceDataSeries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (dataSeries.size() > maxOracleDataSeries) at OracleSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfPriceDataSeries",
+      "why_false_positive": "explicit check (dataSeries.size() > maxOracleDataSeries) validates sfPriceDataSeries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfPriceDataSeries",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check (dataSeries.size() > maxOracleDataSeries) at OracleSet::preflight",
+      "issue_pattern": "Missing range validation for sfPriceDataSeries",
+      "why_false_positive": "explicit check (dataSeries.size() > maxOracleDataSeries) validates sfPriceDataSeries range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfProvider",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfProvider",
+      "why_false_positive": "isInvalidLength lambda validates sfProvider for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfProvider",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing range validation for sfProvider",
+      "why_false_positive": "isInvalidLength lambda validates sfProvider range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfURI",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfURI",
+      "why_false_positive": "isInvalidLength lambda validates sfURI for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfURI",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing range validation for sfURI",
+      "why_false_positive": "isInvalidLength lambda validates sfURI range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAssetClass",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfAssetClass",
+      "why_false_positive": "isInvalidLength lambda validates sfAssetClass for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAssetClass",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "isInvalidLength lambda at OracleSet::preflight",
+      "issue_pattern": "Missing range validation for sfAssetClass",
+      "why_false_positive": "isInvalidLength lambda validates sfAssetClass range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(...)) at OracleSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.view.read(keylet::account(...)) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLastUpdateTime",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range checks at OracleSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfLastUpdateTime",
+      "why_false_positive": "explicit range checks validates sfLastUpdateTime for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfLastUpdateTime",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range checks at OracleSet::preclaim",
+      "issue_pattern": "Missing range validation for sfLastUpdateTime",
+      "why_false_positive": "explicit range checks validates sfLastUpdateTime range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBaseAsset and sfQuoteAsset (in sfPriceDataSeries)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (entry[sfBaseAsset] == entry[sfQuoteAsset]) at OracleSet::preclaim (inside for loop over sfPriceDataSeries)",
+      "issue_pattern": "Missing empty string validation for sfBaseAsset and sfQuoteAsset (in sfPriceDataSeries)",
+      "why_false_positive": "explicit check (entry[sfBaseAsset] == entry[sfQuoteAsset]) validates sfBaseAsset and sfQuoteAsset (in sfPriceDataSeries) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "token pair uniqueness in sfPriceDataSeries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (pairs.contains(key) || pairsDel.contains(key)) at OracleSet::preclaim (inside for loop over sfPriceDataSeries)",
+      "issue_pattern": "Missing empty string validation for token pair uniqueness in sfPriceDataSeries",
+      "why_false_positive": "explicit check (pairs.contains(key) || pairsDel.contains(key)) validates token pair uniqueness in sfPriceDataSeries for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/oracle/OracleSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "pair"
+      ],
+      "lineno": 9,
+      "name": "tokenPairKey"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 15,
+      "name": "OracleSet::preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 32,
+      "name": "OracleSet::preclaim"
+    },
+    {
+      "args": [
+        "ctx",
+        "count"
+      ],
+      "lineno": 109,
+      "name": "adjustOwnerCount"
+    },
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 119,
+      "name": "setPriceDataInnerObjTemplate"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "OracleSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "OracleSet transaction logic is likely tested in integration/functional test files such as 'test/tx/OracleSet_test.cpp', 'test/tx/Oracle_test.cpp', or similar. Unit tests may exist for malformed transactions, field length violations, time window violations, duplicate/invalid pairs, and missing required fields. Gaps may include edge cases for maximum allowed values, simultaneous field errors, and rare ledger state transitions. Some error codes (e.g., tecINTERNAL, LCOV_EXCL_LINE) may not be directly tested. Coverage for all validation branches should be confirmed in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (no external validation framework)",
+    "validation_layer": "business_logic (preflight and preclaim transaction hooks)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temARRAY_EMPTY",
+      "field": "sfPriceDataSeries",
+      "location": "OracleSet::preflight",
+      "validated_by": "explicit check (dataSeries.empty())",
+      "validates": [
+        "array must not be empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temARRAY_TOO_LARGE",
+      "field": "sfPriceDataSeries",
+      "location": "OracleSet::preflight",
+      "validated_by": "explicit check (dataSeries.size() > maxOracleDataSeries)",
+      "validates": [
+        "array must not exceed maxOracleDataSeries"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfProvider",
+      "location": "OracleSet::preflight",
+      "validated_by": "isInvalidLength lambda",
+      "validates": [
+        "length must be > 0 and <= maxOracleProvider if present"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfURI",
+      "location": "OracleSet::preflight",
+      "validated_by": "isInvalidLength lambda",
+      "validates": [
+        "length must be > 0 and <= maxOracleURI if present"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAssetClass",
+      "location": "OracleSet::preflight",
+      "validated_by": "isInvalidLength lambda",
+      "validates": [
+        "length must be > 0 and <= maxOracleSymbolClass if present"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "OracleSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::account(...))",
+      "validates": [
+        "account must exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINVALID_UPDATE_TIME or tecINTERNAL",
+      "field": "sfLastUpdateTime",
+      "location": "OracleSet::preclaim",
+      "validated_by": "explicit range checks",
+      "validates": [
+        "must be >= epoch_offset",
+        "must be within maxLastUpdateTimeDelta seconds of closeTime"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfBaseAsset and sfQuoteAsset (in sfPriceDataSeries)",
+      "location": "OracleSet::preclaim (inside for loop over sfPriceDataSeries)",
+      "validated_by": "explicit check (entry[sfBaseAsset] == entry[sfQuoteAsset])",
+      "validates": [
+        "base asset and quote asset must not be the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "token pair uniqueness in sfPriceDataSeries",
+      "location": "OracleSet::preclaim (inside for loop over sfPriceDataSeries)",
+      "validated_by": "explicit check (pairs.contains(key) || pairsDel.contains(key))",
+      "validates": [
+        "no duplicate token pairs in add/update/delete sets"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

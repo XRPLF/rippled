@@ -1,0 +1,84 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "monitor"
+    },
+    {
+      "lineno": 15,
+      "name": "name"
+    },
+    {
+      "lineno": 15,
+      "name": "shouldStart"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "LoadMonitor& monitor",
+        "std::string const& name",
+        "bool shouldStart"
+      ],
+      "lineno": 11,
+      "name": "LoadEvent"
+    }
+  ],
+  "description": "Defines the LoadEvent class in the xrpl namespace, which measures and tracks elapsed time for waiting and running states, typically for monitoring load or performance.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/LoadEvent.h",
+  "functions": [
+    {
+      "args": [
+        "LoadMonitor& monitor",
+        "std::string const& name",
+        "bool shouldStart"
+      ],
+      "lineno": 15,
+      "name": "LoadEvent"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "~LoadEvent"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "waitTime"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "runTime"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 28,
+      "name": "setName"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "start"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "stop"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

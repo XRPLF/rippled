@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "db"
+    },
+    {
+      "lineno": 11,
+      "name": "fp"
+    },
+    {
+      "lineno": 16,
+      "name": "fromFilter"
+    },
+    {
+      "lineno": 17,
+      "name": "nodeHash"
+    },
+    {
+      "lineno": 18,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 19,
+      "name": "nodeData"
+    },
+    {
+      "lineno": 20,
+      "name": "type"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "db",
+        "fp"
+      ],
+      "lineno": 8,
+      "name": "AccountStateSF"
+    }
+  ],
+  "description": "Defines the AccountStateSF class, a sync filter for account state nodes used during ledger synchronization in the XRPL, facilitating node data storage and retrieval via a database and fetch pack container.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/AccountStateSF.h",
+  "functions": [
+    {
+      "args": [
+        "fromFilter",
+        "nodeHash",
+        "ledgerSeq",
+        "nodeData",
+        "type"
+      ],
+      "lineno": 16,
+      "name": "AccountStateSF::gotNode"
+    },
+    {
+      "args": [
+        "nodeHash"
+      ],
+      "lineno": 22,
+      "name": "AccountStateSF::getNode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

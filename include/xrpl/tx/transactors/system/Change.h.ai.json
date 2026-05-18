@@ -1,0 +1,87 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 20,
+      "name": "view"
+    },
+    {
+      "lineno": 20,
+      "name": "tx"
+    },
+    {
+      "lineno": 25,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "Change"
+    }
+  ],
+  "description": "Defines the Change transactor class for system-level transactions in the XRPL, including amendment, fee, and UNL modification operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/system/Change.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "Change::Change"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Change::doApply"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "Change::preCompute"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 20,
+      "name": "Change::calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "Change::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "Change::applyAmendment"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "Change::applyFee"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "Change::applyUNLModify"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

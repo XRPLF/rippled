@@ -1,0 +1,47 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "ledger"
+    },
+    {
+      "lineno": 34,
+      "name": "fetch_depth"
+    },
+    {
+      "lineno": 37,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 41,
+      "name": "canDelete"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "SHAMapStore"
+    }
+  ],
+  "description": "Defines the SHAMapStore interface for managing the database, online delete thread, and related SQLite database for XRPL ledger storage and deletion. Provides methods for ledger closure, starting/stopping the store, managing deletion, and querying storage state.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/SHAMapStore.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 74,
+      "name": "make_SHAMapStore"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

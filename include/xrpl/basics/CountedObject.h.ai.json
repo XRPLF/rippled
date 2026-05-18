@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "name"
+    },
+    {
+      "lineno": 16,
+      "name": "minimumThreshold"
+    },
+    {
+      "lineno": 65,
+      "name": "Object"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "CountedObjects"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 22,
+      "name": "Counter"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "CountedObject"
+    }
+  ],
+  "description": "Provides a mechanism to count and report the number of instances of various object types at runtime, using a lock-free linked list and atomic counters. Includes a base class for automatic instance counting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/CountedObject.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "getInstance"
+    },
+    {
+      "args": [
+        "minimumThreshold"
+      ],
+      "lineno": 16,
+      "name": "getCounts"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "increment"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "decrement"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getCount"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getNext"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getCounter"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "key"
+    },
+    {
+      "lineno": 18,
+      "name": "value"
+    },
+    {
+      "lineno": 18,
+      "name": "valueBytes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "key",
+        "value",
+        "valueBytes"
+      ],
+      "lineno": 15,
+      "name": "DecodedBlob"
+    }
+  ],
+  "description": "Defines the DecodedBlob class, which parses raw key/value blobs into NodeObject components, checks for consistency, and allows creation of NodeObject instances from the parsed data.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/DecodedBlob.h",
+  "functions": [
+    {
+      "args": [
+        "key",
+        "value",
+        "valueBytes"
+      ],
+      "lineno": 18,
+      "name": "DecodedBlob"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "wasOk"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "createObject"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "NodeStore"
+    }
+  ]
+}

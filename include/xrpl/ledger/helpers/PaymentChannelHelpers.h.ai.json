@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "slep"
+    },
+    {
+      "lineno": 10,
+      "name": "view"
+    },
+    {
+      "lineno": 11,
+      "name": "key"
+    },
+    {
+      "lineno": 12,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "description": "Declares the closeChannel function for closing a payment channel in the XRPL ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/PaymentChannelHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "slep",
+        "view",
+        "key",
+        "j"
+      ],
+      "lineno": 8,
+      "name": "closeChannel"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

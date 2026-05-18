@@ -1,0 +1,437 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doTransactionEntry",
+        "RPC::lookupLedger",
+        "lpLedger->txRead"
+      ],
+      "entry_point": "doTransactionEntry",
+      "purpose": "Handles the 'transaction_entry' RPC command: looks up a ledger, validates input, fetches a transaction by hash, and returns transaction details.",
+      "validation_points": [
+        "RPC::lookupLedger: Validates ledger_hash/ledger_index",
+        "doTransactionEntry: Checks for tx_hash presence (isMember)",
+        "doTransactionEntry: Checks for ledger_hash in jvResult",
+        "doTransactionEntry: Validates tx_hash format with uTransID.parseHex",
+        "doTransactionEntry: Validates transaction existence with lpLedger->txRead"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger_hash / ledger_index",
+      "flow": [
+        "context.params",
+        "RPC::lookupLedger",
+        "lpLedger (ReadView pointer)",
+        "used for transaction lookup and response"
+      ],
+      "origin": "context.params (JSON-RPC request)",
+      "transformations": [
+        "Parsed and validated by RPC::lookupLedger",
+        "If invalid, error returned in jvResult"
+      ],
+      "validated_at": "RPC::lookupLedger"
+    },
+    {
+      "field": "tx_hash",
+      "flow": [
+        "context.params[jss::tx_hash]",
+        "isMember check in doTransactionEntry",
+        "parseHex to uint256 uTransID",
+        "lpLedger->txRead(uTransID)",
+        "used for transaction lookup and response"
+      ],
+      "origin": "context.params (JSON-RPC request)",
+      "transformations": [
+        "Presence checked with isMember",
+        "String parsed to uint256 with parseHex",
+        "Used as key for transaction lookup"
+      ],
+      "validated_at": "isMember, parseHex, lpLedger->txRead"
+    },
+    {
+      "field": "jvResult",
+      "flow": [
+        "RPC::lookupLedger",
+        "doTransactionEntry (error propagation or augmentation)",
+        "returned as RPC response"
+      ],
+      "origin": "RPC::lookupLedger return value",
+      "transformations": [
+        "Populated with error or ledger info",
+        "Augmented with transaction info or error"
+      ],
+      "validated_at": "Throughout doTransactionEntry"
+    },
+    {
+      "field": "sttx (SerializedTransaction)",
+      "flow": [
+        "lpLedger->txRead",
+        "doTransactionEntry",
+        "sttx->getJson",
+        "jvResult[jss::tx_json]"
+      ],
+      "origin": "lpLedger->txRead(uTransID)",
+      "transformations": [
+        "Deserialized from ledger",
+        "Converted to JSON"
+      ],
+      "validated_at": "lpLedger->txRead (existence check)"
+    },
+    {
+      "field": "stobj (TransactionMeta)",
+      "flow": [
+        "lpLedger->txRead",
+        "doTransactionEntry",
+        "stobj->getJson",
+        "jvResult[json_meta]"
+      ],
+      "origin": "lpLedger->txRead(uTransID)",
+      "transformations": [
+        "Deserialized from ledger",
+        "Converted to JSON"
+      ],
+      "validated_at": "lpLedger->txRead (existence check)"
+    }
+  ],
+  "description": "Implements the doTransactionEntry RPC handler, which retrieves transaction details from a specified ledger based on a transaction hash, returning transaction and metadata information in JSON format.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by xrpld RPC framework, Json::Value, jss:: namespace",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "xrpld RPC framework, Json::Value, jss:: namespace validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by xrpld RPC framework, Json::Value, jss:: namespace",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "xrpld RPC framework, Json::Value, jss:: namespace validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx_hash validated by xrpld RPC framework, Json::Value, jss:: namespace",
+      "issue_pattern": "Missing validation for tx_hash",
+      "why_false_positive": "xrpld RPC framework, Json::Value, jss:: namespace validates tx_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doTransactionEntry (first lines)",
+      "issue_pattern": "Missing empty string validation for ledger_hash / ledger_index",
+      "why_false_positive": "RPC::lookupLedger validates ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isMember (Json::Value API) at doTransactionEntry (if (!context.params.isMember(jss::tx_hash)))",
+      "issue_pattern": "Missing empty string validation for tx_hash",
+      "why_false_positive": "isMember (Json::Value API) validates tx_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jvResult.get(jss::ledger_hash, Json::nullValue).isNull() at doTransactionEntry (else if ...)",
+      "issue_pattern": "Missing empty string validation for ledger_hash",
+      "why_false_positive": "jvResult.get(jss::ledger_hash, Json::nullValue).isNull() validates ledger_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uTransID.parseHex at doTransactionEntry (if (!uTransID.parseHex(...)))",
+      "issue_pattern": "Missing empty string validation for tx_hash",
+      "why_false_positive": "uTransID.parseHex validates tx_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "tx_hash",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "uTransID.parseHex at doTransactionEntry (if (!uTransID.parseHex(...)))",
+      "issue_pattern": "Missing format validation for tx_hash",
+      "why_false_positive": "uTransID.parseHex validates tx_hash format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_hash (as transaction existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lpLedger->txRead(uTransID) at doTransactionEntry (if (!sttx))",
+      "issue_pattern": "Missing empty string validation for tx_hash (as transaction existence)",
+      "why_false_positive": "lpLedger->txRead(uTransID) validates tx_hash (as transaction existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/transaction/TransactionEntry.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 14,
+      "name": "doTransactionEntry"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is typically tested via integration/functional tests for the 'transaction_entry' RPC. Likely test files: 'rpc/TransactionEntry_test.cpp', 'rpc/Transaction_test.cpp', or broader RPC test suites. Validation paths (missing tx_hash, malformed tx_hash, missing/invalid ledger, transaction not found) should be covered. Gaps may exist in edge cases: malformed ledger_hash, simultaneous missing ledger_hash and ledger_index, or malformed tx_hash not as string. No evidence of unit tests for parseHex or error propagation in this file; relies on upstream validation. Template-based validation is not explicit here, so coverage of template errors may be lacking.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger_hash",
+      "ledger_index",
+      "tx_hash"
+    ],
+    "framework": "xrpld RPC framework, Json::Value, jss:: namespace",
+    "validation_layer": "business_logic (handler function)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "returns error in jvResult (various: ledgerNotFound, etc.)",
+      "field": "ledger_hash / ledger_index",
+      "location": "doTransactionEntry (first lines)",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "ledger_hash or ledger_index must be present and valid",
+        "ledger must exist and be accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = 'fieldNotFoundTransaction'",
+      "field": "tx_hash",
+      "location": "doTransactionEntry (if (!context.params.isMember(jss::tx_hash)))",
+      "validated_by": "isMember (Json::Value API)",
+      "validates": [
+        "tx_hash field must be present in input"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "jvResult[jss::error] = 'notYetImplemented'",
+      "field": "ledger_hash",
+      "location": "doTransactionEntry (else if ...)",
+      "validated_by": "jvResult.get(jss::ledger_hash, Json::nullValue).isNull()",
+      "validates": [
+        "ledger_hash must be present (not null) in result"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = 'malformedRequest'",
+      "field": "tx_hash",
+      "location": "doTransactionEntry (if (!uTransID.parseHex(...)))",
+      "validated_by": "uTransID.parseHex",
+      "validates": [
+        "tx_hash must be a valid hex string"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = 'transactionNotFound'",
+      "field": "tx_hash (as transaction existence)",
+      "location": "doTransactionEntry (if (!sttx))",
+      "validated_by": "lpLedger->txRead(uTransID)",
+      "validates": [
+        "transaction with given tx_hash must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

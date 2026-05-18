@@ -1,0 +1,69 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "isRequest"
+    },
+    {
+      "lineno": 13,
+      "name": "Body"
+    },
+    {
+      "lineno": 13,
+      "name": "Fields"
+    },
+    {
+      "lineno": 13,
+      "name": "msg"
+    },
+    {
+      "lineno": 25,
+      "name": "bytes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::beast::http::message<isRequest, Body, Fields> const& msg"
+      ],
+      "lineno": 10,
+      "name": "SimpleWriter"
+    }
+  ],
+  "description": "Defines a deprecated SimpleWriter class in the xrpl namespace that serializes HTTP/1 messages using Boost.Beast, providing methods to manage and access the serialized data.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/SimpleWriter.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "complete"
+    },
+    {
+      "args": [
+        "bytes"
+      ],
+      "lineno": 24,
+      "name": "consume"
+    },
+    {
+      "args": [
+        "bytes",
+        ""
+      ],
+      "lineno": 28,
+      "name": "prepare"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "data"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

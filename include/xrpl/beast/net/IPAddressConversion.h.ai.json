@@ -1,0 +1,70 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "address"
+    },
+    {
+      "lineno": 15,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 19,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 23,
+      "name": "endpoint"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "IPAddressConversion"
+    }
+  ],
+  "description": "This file provides utility functions and a deprecated struct for converting between Boost.Asio IP address and endpoint types and the beast::IP::Endpoint type.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/net/IPAddressConversion.h",
+  "functions": [
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 11,
+      "name": "from_asio"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 15,
+      "name": "from_asio"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 19,
+      "name": "to_asio_address"
+    },
+    {
+      "args": [
+        "endpoint"
+      ],
+      "lineno": 23,
+      "name": "to_asio_endpoint"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "IP"
+    }
+  ]
+}

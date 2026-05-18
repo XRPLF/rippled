@@ -1,0 +1,32 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "ServiceRegistry"
+    }
+  ],
+  "description": "Defines the ServiceRegistry abstract interface in the xrpl namespace, providing access to various core, protocol, network, storage, ledger, transaction, server, and configuration services for dependency injection in the XRPL application.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/ServiceRegistry.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "NodeStore"
+    },
+    {
+      "lineno": 13,
+      "name": "Resource"
+    },
+    {
+      "lineno": 16,
+      "name": "perf"
+    }
+  ]
+}

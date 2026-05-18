@@ -1,0 +1,565 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TxMetrics::addMetrics(type, val)",
+        "switch(type) { ... add(tx, val) ... }",
+        "add(lambda)",
+        "m.addMetrics(val) (SingleMetrics/MultipleMetrics)"
+      ],
+      "entry_point": "TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)",
+      "purpose": "Adds a metric value to the appropriate metric bucket based on message type.",
+      "validation_points": [
+        "switch(type): Validates that 'type' is a known protocol::MessageType (validation by switch statement, default returns)",
+        "val: Validated by C++ type system (std::uint32_t), but no explicit range check"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxMetrics::addMetrics(selected, suppressed, notenabled)",
+        "selectedPeers.addMetrics(selected)",
+        "suppressedPeers.addMetrics(suppressed)",
+        "notEnabled.addMetrics(notenabled)"
+      ],
+      "entry_point": "TxMetrics::addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notenabled)",
+      "purpose": "Adds metrics for selected, suppressed, and not enabled peers.",
+      "validation_points": [
+        "selected, suppressed, notenabled: Validated by C++ type system (std::uint32_t), but no explicit range check"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxMetrics::addMetrics(missing)",
+        "missingTx.addMetrics(missing)"
+      ],
+      "entry_point": "TxMetrics::addMetrics(std::uint32_t missing)",
+      "purpose": "Adds a metric for missing transactions.",
+      "validation_points": [
+        "missing: Validated by C++ type system (std::uint32_t), but no explicit range check"
+      ]
+    },
+    {
+      "call_chain": [
+        "MultipleMetrics::addMetrics(val1, val2)",
+        "m1.addMetrics(val1)",
+        "m2.addMetrics(val2)"
+      ],
+      "entry_point": "MultipleMetrics::addMetrics(std::uint32_t val1, std::uint32_t val2)",
+      "purpose": "Adds two metric values to two separate SingleMetrics.",
+      "validation_points": [
+        "val1, val2: Validated by C++ type system (std::uint32_t), but no explicit range check"
+      ]
+    },
+    {
+      "call_chain": [
+        "SingleMetrics::addMetrics(val)",
+        "accum += val",
+        "if (timeElapsedInSecs >= 1s) { ... update rollingAvg ... }"
+      ],
+      "entry_point": "SingleMetrics::addMetrics(std::uint32_t val)",
+      "purpose": "Accumulates values and computes rolling averages over time.",
+      "validation_points": [
+        "val: Validated by C++ type system (std::uint32_t), but no explicit range check"
+      ]
+    },
+    {
+      "call_chain": [
+        "TxMetrics::json()",
+        "std::to_string(...rollingAvg...)",
+        "ret[jss::field] = ...",
+        "return ret"
+      ],
+      "entry_point": "TxMetrics::json() const",
+      "purpose": "Serializes all metrics to a JSON object for reporting.",
+      "validation_points": [
+        "Json field names: Validated by jss:: namespace (macro/constant)",
+        "Json output fields: Validated by std::to_string (type safety, but not semantic validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "val (metric value)",
+      "flow": [
+        "addMetrics(type, val)",
+        "switch(type) -> add(lambda)",
+        "m.addMetrics(val)",
+        "SingleMetrics::addMetrics(val)",
+        "accum += val",
+        "rollingAvg updated"
+      ],
+      "origin": "Function parameter to addMetrics (from caller, likely overlay network code)",
+      "transformations": [
+        "Accumulated in SingleMetrics",
+        "Averaged over time window",
+        "Stored as rollingAvg"
+      ],
+      "validated_at": "switch(type) (type), C++ type system (val)"
+    },
+    {
+      "field": "selected, suppressed, notenabled",
+      "flow": [
+        "addMetrics(selected, suppressed, notenabled)",
+        "selectedPeers.addMetrics(selected)",
+        "suppressedPeers.addMetrics(suppressed)",
+        "notEnabled.addMetrics(notenabled)",
+        "SingleMetrics::addMetrics(val)"
+      ],
+      "origin": "Function parameters to addMetrics (from caller)",
+      "transformations": [
+        "Accumulated and averaged in SingleMetrics"
+      ],
+      "validated_at": "C++ type system"
+    },
+    {
+      "field": "missing",
+      "flow": [
+        "addMetrics(missing)",
+        "missingTx.addMetrics(missing)",
+        "SingleMetrics::addMetrics(val)"
+      ],
+      "origin": "Function parameter to addMetrics (from caller)",
+      "transformations": [
+        "Accumulated and averaged in SingleMetrics"
+      ],
+      "validated_at": "C++ type system"
+    },
+    {
+      "field": "rollingAvg",
+      "flow": [
+        "SingleMetrics::addMetrics(val)",
+        "rollingAvg updated",
+        "TxMetrics::json() reads rollingAvg",
+        "std::to_string(rollingAvg)",
+        "Json::Value ret"
+      ],
+      "origin": "Computed in SingleMetrics::addMetrics",
+      "transformations": [
+        "Averaged over time window",
+        "Converted to string for JSON"
+      ],
+      "validated_at": "std::to_string (type safety only)"
+    },
+    {
+      "field": "Json field names (e.g., jss::txr_tx_cnt)",
+      "flow": [
+        "TxMetrics::json()",
+        "ret[jss::field] = ...",
+        "return ret"
+      ],
+      "origin": "jss:: namespace (likely macro/constants)",
+      "transformations": [
+        "None (field name mapping)"
+      ],
+      "validated_at": "jss:: namespace (macro/constant validation)"
+    }
+  ],
+  "description": "Implements transaction metrics collection and reporting for XRPL overlay, including methods to add and aggregate metrics for different message types and to export metrics as JSON.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "protocol::MessageType (enum)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field protocol::MessageType (enum) validated by C++ type system, jss:: for JSON field names",
+      "issue_pattern": "Missing validation for protocol::MessageType (enum)",
+      "why_false_positive": "C++ type system, jss:: for JSON field names validates protocol::MessageType (enum) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "std::uint32_t fields (val, selected, suppressed, notenabled, missing)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field std::uint32_t fields (val, selected, suppressed, notenabled, missing) validated by C++ type system, jss:: for JSON field names",
+      "issue_pattern": "Missing validation for std::uint32_t fields (val, selected, suppressed, notenabled, missing)",
+      "why_false_positive": "C++ type system, jss:: for JSON field names validates std::uint32_t fields (val, selected, suppressed, notenabled, missing) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "JSON field names via jss::",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field JSON field names via jss:: validated by C++ type system, jss:: for JSON field names",
+      "issue_pattern": "Missing validation for JSON field names via jss::",
+      "why_false_positive": "C++ type system, jss:: for JSON field names validates JSON field names via jss:: automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (protocol::MessageType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch statement at TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)",
+      "issue_pattern": "Missing empty string validation for type (protocol::MessageType)",
+      "why_false_positive": "switch statement validates type (protocol::MessageType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system at All addMetrics functions",
+      "issue_pattern": "Missing empty string validation for val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "why_false_positive": "C++ type system validates val, selected, suppressed, notenabled, missing (std::uint32_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system at All addMetrics functions",
+      "issue_pattern": "Missing type validation for val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "why_false_positive": "C++ type system validates val, selected, suppressed, notenabled, missing (std::uint32_t) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "No explicit range check at All addMetrics functions",
+      "issue_pattern": "Missing empty string validation for val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "why_false_positive": "No explicit range check validates val, selected, suppressed, notenabled, missing (std::uint32_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "No explicit range check at All addMetrics functions",
+      "issue_pattern": "Missing range validation for val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "why_false_positive": "No explicit range check validates val, selected, suppressed, notenabled, missing (std::uint32_t) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Json output fields (e.g., tx.m1.rollingAvg)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::to_string (C++ standard library) at TxMetrics::json()",
+      "issue_pattern": "Missing empty string validation for Json output fields (e.g., tx.m1.rollingAvg)",
+      "why_false_positive": "std::to_string (C++ standard library) validates Json output fields (e.g., tx.m1.rollingAvg) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Json output fields (e.g., tx.m1.rollingAvg)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "std::to_string (C++ standard library) at TxMetrics::json()",
+      "issue_pattern": "Missing format validation for Json output fields (e.g., tx.m1.rollingAvg)",
+      "why_false_positive": "std::to_string (C++ standard library) validates Json output fields (e.g., tx.m1.rollingAvg) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "Json field names (e.g., jss::txr_tx_cnt)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "jss:: namespace (likely macro or constant validation) at TxMetrics::json()",
+      "issue_pattern": "Missing empty string validation for Json field names (e.g., jss::txr_tx_cnt)",
+      "why_false_positive": "jss:: namespace (likely macro or constant validation) validates Json field names (e.g., jss::txr_tx_cnt) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Json field names (e.g., jss::txr_tx_cnt)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "jss:: namespace (likely macro or constant validation) at TxMetrics::json()",
+      "issue_pattern": "Missing format validation for Json field names (e.g., jss::txr_tx_cnt)",
+      "why_false_positive": "jss:: namespace (likely macro or constant validation) validates Json field names (e.g., jss::txr_tx_cnt) format"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/TxMetrics.cpp",
+  "functions": [
+    {
+      "args": [
+        "protocol::MessageType type",
+        "std::uint32_t val"
+      ],
+      "lineno": 9,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "std::uint32_t selected",
+        "std::uint32_t suppressed",
+        "std::uint32_t notenabled"
+      ],
+      "lineno": 38,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "std::uint32_t missing"
+      ],
+      "lineno": 46,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "std::uint32_t val2"
+      ],
+      "lineno": 51,
+      "name": "MultipleMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "std::uint32_t val1",
+        "std::uint32_t val2"
+      ],
+      "lineno": 55,
+      "name": "MultipleMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "std::uint32_t val"
+      ],
+      "lineno": 60,
+      "name": "SingleMetrics::addMetrics"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "TxMetrics::json"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "metrics"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, code in 'xrpld/overlay/detail' is tested via integration or unit tests in the 'test' or 'unittest' directories of the repository. The main validation paths (switch on MessageType, type safety via std::uint32_t, and JSON serialization) are not explicitly tested here. Potential gaps: No explicit range or semantic validation (e.g., negative values, overflow), and no tests for malformed or unexpected input types. Test coverage may rely on higher-level integration tests that exercise overlay metrics reporting, but direct unit tests for edge cases (e.g., invalid MessageType, large values) may be missing.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "protocol::MessageType (enum)",
+      "std::uint32_t fields (val, selected, suppressed, notenabled, missing)",
+      "JSON field names via jss::"
+    ],
+    "framework": "C++ type system, jss:: for JSON field names",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (default: return)",
+      "field": "type (protocol::MessageType)",
+      "location": "TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)",
+      "validated_by": "switch statement",
+      "validates": [
+        "Ensures only known protocol::MessageType values are processed",
+        "Unknown types are ignored"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time type error if wrong type",
+      "field": "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "location": "All addMetrics functions",
+      "validated_by": "C++ type system",
+      "validates": [
+        "Ensures only unsigned 32-bit integers are accepted"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none",
+      "field": "val, selected, suppressed, notenabled, missing (std::uint32_t)",
+      "location": "All addMetrics functions",
+      "validated_by": "No explicit range check",
+      "validates": [
+        "No negative values possible due to unsigned type",
+        "No upper bound check"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::invalid_argument or std::out_of_range (if conversion fails, but unlikely for unsigned integer)",
+      "field": "Json output fields (e.g., tx.m1.rollingAvg)",
+      "location": "TxMetrics::json()",
+      "validated_by": "std::to_string (C++ standard library)",
+      "validates": [
+        "Ensures numeric values are converted to string for JSON"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "compile-time error if undefined",
+      "field": "Json field names (e.g., jss::txr_tx_cnt)",
+      "location": "TxMetrics::json()",
+      "validated_by": "jss:: namespace (likely macro or constant validation)",
+      "validates": [
+        "Ensures only valid JSON field names are used"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

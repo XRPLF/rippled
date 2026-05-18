@@ -1,0 +1,55 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "c"
+    },
+    {
+      "lineno": 18,
+      "name": "obj"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JsonContext& c"
+      ],
+      "lineno": 7,
+      "name": "VersionHandler"
+    }
+  ],
+  "description": "Defines the VersionHandler class for handling API versioning in the XRPL RPC context, including version checks and result writing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/Version.h",
+  "functions": [
+    {
+      "args": [
+        "JsonContext& c"
+      ],
+      "lineno": 8,
+      "name": "VersionHandler"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "check"
+    },
+    {
+      "args": [
+        "Json::Value& obj"
+      ],
+      "lineno": 18,
+      "name": "writeResult"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "RPC"
+    }
+  ]
+}

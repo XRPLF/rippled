@@ -1,0 +1,450 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "ctx"
+    },
+    {
+      "lineno": 37,
+      "name": "ctx"
+    },
+    {
+      "lineno": 49,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PaymentChannelCreate::preflight"
+      ],
+      "entry_point": "PaymentChannelCreate::preflight",
+      "purpose": "Performs stateless validation of the PaymentChannelCreate transaction. Checks for basic field correctness and malformed transactions.",
+      "validation_points": [
+        "isXRP(ctx.tx[sfAmount])",
+        "ctx.tx[sfAmount] <= beast::zero",
+        "ctx.tx[sfAccount] == ctx.tx[sfDestination]",
+        "!publicKeyType(ctx.tx[sfPublicKey])"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentChannelCreate::preclaim"
+      ],
+      "entry_point": "PaymentChannelCreate::preclaim",
+      "purpose": "Performs contextual validation, checking ledger state and account conditions before transaction application.",
+      "validation_points": [
+        "ctx.view.read(keylet::account(account))",
+        "balance < reserve",
+        "balance < reserve + ctx.tx[sfAmount]",
+        "ctx.view.read(keylet::account(dst))",
+        "(flags & lsfDisallowIncomingPayChan) != 0u",
+        "((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag]",
+        "isPseudoAccount(sled)"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentChannelCreate::doApply"
+      ],
+      "entry_point": "PaymentChannelCreate::doApply",
+      "purpose": "Applies the transaction to the ledger after all validations pass. Assumes all validation is already complete.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfAmount]",
+        "PaymentChannelCreate::preflight",
+        "PaymentChannelCreate::preclaim",
+        "PaymentChannelCreate::doApply"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for isXRP type",
+        "Compared to beast::zero (must be > 0)",
+        "Used in reserve/funding checks"
+      ],
+      "validated_at": "preflight (type, >0), preclaim (funds available)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfAccount]",
+        "PaymentChannelCreate::preflight",
+        "PaymentChannelCreate::preclaim",
+        "PaymentChannelCreate::doApply"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to sfDestination (must not be same)",
+        "Used to look up account root in ledger"
+      ],
+      "validated_at": "preflight (not same as destination), preclaim (account exists)"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfDestination]",
+        "PaymentChannelCreate::preflight",
+        "PaymentChannelCreate::preclaim"
+      ],
+      "origin": "ctx.tx[sfDestination] (transaction input)",
+      "transformations": [
+        "Compared to sfAccount (must not be same)",
+        "Used to look up destination account in ledger"
+      ],
+      "validated_at": "preflight (not same as account), preclaim (destination exists, flags checked)"
+    },
+    {
+      "field": "sfPublicKey",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[sfPublicKey]",
+        "PaymentChannelCreate::preflight"
+      ],
+      "origin": "ctx.tx[sfPublicKey] (transaction input)",
+      "transformations": [
+        "Checked for valid public key type"
+      ],
+      "validated_at": "preflight"
+    },
+    {
+      "field": "sfDestinationTag",
+      "flow": [
+        "Transaction JSON",
+        "ctx.tx[~sfDestinationTag]",
+        "PaymentChannelCreate::preclaim"
+      ],
+      "origin": "ctx.tx[~sfDestinationTag] (optional transaction input)",
+      "transformations": [
+        "Checked for presence if destination requires it"
+      ],
+      "validated_at": "preclaim (if destination account has lsfRequireDestTag)"
+    }
+  ],
+  "description": "Implements the PaymentChannelCreate transaction logic for creating XRP payment channels, including preflight checks, preclaim checks, and ledger application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP(ctx.tx[sfAmount]) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isXRP(ctx.tx[sfAmount]) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isXRP(ctx.tx[sfAmount]) at preflight",
+      "issue_pattern": "Missing type validation for sfAmount",
+      "why_false_positive": "isXRP(ctx.tx[sfAmount]) validates sfAmount type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(ctx.tx[sfAmount] <= beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "(ctx.tx[sfAmount] <= beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "(ctx.tx[sfAmount] <= beast::zero) at preflight",
+      "issue_pattern": "Missing range validation for sfAmount",
+      "why_false_positive": "(ctx.tx[sfAmount] <= beast::zero) validates sfAmount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount, sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(ctx.tx[sfAccount] == ctx.tx[sfDestination]) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount, sfDestination",
+      "why_false_positive": "(ctx.tx[sfAccount] == ctx.tx[sfDestination]) validates sfAccount, sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPublicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!publicKeyType(ctx.tx[sfPublicKey]) at preflight",
+      "issue_pattern": "Missing empty string validation for sfPublicKey",
+      "why_false_positive": "!publicKeyType(ctx.tx[sfPublicKey]) validates sfPublicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfPublicKey",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "!publicKeyType(ctx.tx[sfPublicKey]) at preflight",
+      "issue_pattern": "Missing format validation for sfPublicKey",
+      "why_false_positive": "!publicKeyType(ctx.tx[sfPublicKey]) validates sfPublicKey format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(account)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.view.read(keylet::account(account)) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance, sfOwnerCount, sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balance < reserve at preclaim",
+      "issue_pattern": "Missing empty string validation for sfBalance, sfOwnerCount, sfAmount",
+      "why_false_positive": "balance < reserve validates sfBalance, sfOwnerCount, sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance, sfOwnerCount, sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balance < reserve + ctx.tx[sfAmount] at preclaim",
+      "issue_pattern": "Missing empty string validation for sfBalance, sfOwnerCount, sfAmount",
+      "why_false_positive": "balance < reserve + ctx.tx[sfAmount] validates sfBalance, sfOwnerCount, sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::account(dst)) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "ctx.view.read(keylet::account(dst)) validates sfDestination for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/payment_channel/PaymentChannelCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "PaymentChannelCreate::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 37,
+      "name": "PaymentChannelCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 49,
+      "name": "PaymentChannelCreate::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "PaymentChannelCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "PaymentChannelCreate is a core transaction type and is typically covered by unit/integration tests in the rippled codebase. Look for tests in files like 'test/tx/PaymentChannel_test.cpp', 'test/PaymentChannel_test.cpp', or similar. These tests should cover valid/invalid amounts, account existence, destination tag requirements, public key validation, and reserve/funding checks. Gaps may exist for edge cases (e.g., pseudo-accounts, rare flag combinations, or malformed public keys). Ensure tests cover all validation branches, especially error returns (temBAD_AMOUNT, temDST_IS_SRC, temMALFORMED, terNO_ACCOUNT, tecINSUFFICIENT_RESERVE, tecUNFUNDED, tecNO_DST, tecNO_PERMISSION, tecDST_TAG_NEEDED).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl core transaction processing (custom, not external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "isXRP(ctx.tx[sfAmount])",
+      "validates": [
+        "Checks that the Amount field is an XRP amount (not IOU or other type)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "(ctx.tx[sfAmount] <= beast::zero)",
+      "validates": [
+        "Checks that the Amount is greater than zero"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDST_IS_SRC",
+      "field": "sfAccount, sfDestination",
+      "location": "preflight",
+      "validated_by": "(ctx.tx[sfAccount] == ctx.tx[sfDestination])",
+      "validates": [
+        "Checks that the source and destination accounts are not the same"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfPublicKey",
+      "location": "preflight",
+      "validated_by": "!publicKeyType(ctx.tx[sfPublicKey])",
+      "validates": [
+        "Checks that the public key is a valid type/format"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::account(account))",
+      "validates": [
+        "Checks that the source account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "sfBalance, sfOwnerCount, sfAmount",
+      "location": "preclaim",
+      "validated_by": "balance < reserve",
+      "validates": [
+        "Checks that the account has enough balance to meet the reserve requirement for owning an additional object"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecUNFUNDED",
+      "field": "sfBalance, sfOwnerCount, sfAmount",
+      "location": "preclaim",
+      "validated_by": "balance < reserve + ctx.tx[sfAmount]",
+      "validates": [
+        "Checks that the account has enough balance to fund the channel after accounting for reserve"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_DST",
+      "field": "sfDestination",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::account(dst))",
+      "validates": [
+        "Checks that the destination account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 101,
+      "name": "account"
+    },
+    {
+      "lineno": 101,
+      "name": "authorize"
+    },
+    {
+      "lineno": 101,
+      "name": "permissions"
+    },
+    {
+      "lineno": 101,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 101,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 101,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 113,
+      "name": "sle"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    },
+    {
+      "lineno": 133,
+      "name": "value"
+    },
+    {
+      "lineno": 142,
+      "name": "value"
+    },
+    {
+      "lineno": 151,
+      "name": "value"
+    },
+    {
+      "lineno": 160,
+      "name": "value"
+    },
+    {
+      "lineno": 169,
+      "name": "value"
+    },
+    {
+      "lineno": 178,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 22,
+      "name": "Delegate"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize, STArray const& permissions, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 95,
+      "name": "DelegateBuilder"
+    }
+  ],
+  "description": "Defines the Delegate ledger entry type for the XRPL, providing an immutable wrapper for type-safe field access and a builder class for constructing Delegate ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/Delegate.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "Delegate::Delegate"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "Delegate::getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "Delegate::getAuthorize"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "Delegate::getPermissions"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "Delegate::getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "Delegate::getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "Delegate::getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account",
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize",
+        "STArray const& permissions",
+        "std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq"
+      ],
+      "lineno": 101,
+      "name": "DelegateBuilder::DelegateBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 113,
+      "name": "DelegateBuilder::DelegateBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 124,
+      "name": "DelegateBuilder::setAccount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 133,
+      "name": "DelegateBuilder::setAuthorize"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 142,
+      "name": "DelegateBuilder::setPermissions"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT64::type::value_type> const& value"
+      ],
+      "lineno": 151,
+      "name": "DelegateBuilder::setOwnerNode"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 160,
+      "name": "DelegateBuilder::setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 169,
+      "name": "DelegateBuilder::setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "uint256 const& index"
+      ],
+      "lineno": 178,
+      "name": "DelegateBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

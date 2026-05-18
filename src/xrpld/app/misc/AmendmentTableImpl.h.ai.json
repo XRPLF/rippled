@@ -1,0 +1,52 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "registry"
+    },
+    {
+      "lineno": 11,
+      "name": "majorityTime"
+    },
+    {
+      "lineno": 12,
+      "name": "supported"
+    },
+    {
+      "lineno": 13,
+      "name": "enabled"
+    },
+    {
+      "lineno": 14,
+      "name": "vetoed"
+    },
+    {
+      "lineno": 15,
+      "name": "journal"
+    }
+  ],
+  "classes": [],
+  "description": "Header file declaring the make_AmendmentTable function for creating an AmendmentTable in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/AmendmentTableImpl.h",
+  "functions": [
+    {
+      "args": [
+        "registry",
+        "majorityTime",
+        "supported",
+        "enabled",
+        "vetoed",
+        "journal"
+      ],
+      "lineno": 8,
+      "name": "make_AmendmentTable"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

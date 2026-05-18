@@ -1,0 +1,78 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "feature"
+    },
+    {
+      "lineno": 32,
+      "name": "presets"
+    },
+    {
+      "lineno": 44,
+      "name": "ledger"
+    },
+    {
+      "lineno": 44,
+      "name": "current"
+    },
+    {
+      "lineno": 52,
+      "name": "digest"
+    },
+    {
+      "lineno": 52,
+      "name": "amendments"
+    },
+    {
+      "lineno": 68,
+      "name": "r"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::unordered_set<uint256, beast::uhash<>> const& presets"
+      ],
+      "lineno": 14,
+      "name": "Rules"
+    },
+    {
+      "args": [
+        "Rules r"
+      ],
+      "lineno": 73,
+      "name": "CurrentTransactionRulesGuard"
+    }
+  ],
+  "description": "Defines the Rules class and related functions for managing protocol feature flags and rule sets in the XRPL (XRP Ledger) protocol, including feature enablement checks and transaction rule management.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Rules.h",
+  "functions": [
+    {
+      "args": [
+        "feature"
+      ],
+      "lineno": 10,
+      "name": "isFeatureEnabled"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getCurrentTransactionRules"
+    },
+    {
+      "args": [
+        "r"
+      ],
+      "lineno": 68,
+      "name": "setCurrentTransactionRules"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

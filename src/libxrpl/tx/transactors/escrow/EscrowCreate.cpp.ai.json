@@ -1,0 +1,454 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "ctx"
+    },
+    {
+      "lineno": 54,
+      "name": "ctx"
+    },
+    {
+      "lineno": 63,
+      "name": "ctx"
+    },
+    {
+      "lineno": 72,
+      "name": "ctx"
+    },
+    {
+      "lineno": 110,
+      "name": "ctx"
+    },
+    {
+      "lineno": 110,
+      "name": "account"
+    },
+    {
+      "lineno": 110,
+      "name": "dest"
+    },
+    {
+      "lineno": 110,
+      "name": "amount"
+    },
+    {
+      "lineno": 157,
+      "name": "ctx"
+    },
+    {
+      "lineno": 157,
+      "name": "account"
+    },
+    {
+      "lineno": 157,
+      "name": "dest"
+    },
+    {
+      "lineno": 157,
+      "name": "amount"
+    },
+    {
+      "lineno": 200,
+      "name": "ctx"
+    },
+    {
+      "lineno": 236,
+      "name": "view"
+    },
+    {
+      "lineno": 236,
+      "name": "issuer"
+    },
+    {
+      "lineno": 236,
+      "name": "sender"
+    },
+    {
+      "lineno": 236,
+      "name": "amount"
+    },
+    {
+      "lineno": 236,
+      "name": "journal"
+    },
+    {
+      "lineno": 247,
+      "name": "view"
+    },
+    {
+      "lineno": 247,
+      "name": "issuer"
+    },
+    {
+      "lineno": 247,
+      "name": "sender"
+    },
+    {
+      "lineno": 247,
+      "name": "amount"
+    },
+    {
+      "lineno": 247,
+      "name": "journal"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "EscrowCreate::preflight",
+        "escrowCreatePreflightHelper<Issue> or escrowCreatePreflightHelper<MPTIssue> (via std::visit)",
+        "isXRP",
+        "amount.native()",
+        "amount <= beast::zero",
+        "badCurrency() == amount.get<Issue>().currency",
+        "ctx.rules.enabled(featureMPTokensV1)",
+        "amount.mpt() > MPTAmount{maxMPTokenAmount}"
+      ],
+      "entry_point": "EscrowCreate::preflight",
+      "purpose": "Validates the EscrowCreate transaction before it is processed. Ensures the amount, currency, and feature flags are correct, and that required fields are present and logically consistent.",
+      "validation_points": [
+        "EscrowCreate::preflight: Checks isXRP(amount), featureTokenEscrow, amount <= beast::zero, presence and order of sfCancelAfter/sfFinishAfter",
+        "escrowCreatePreflightHelper<Issue>: Checks amount.native(), amount <= beast::zero, badCurrency()",
+        "escrowCreatePreflightHelper<MPTIssue>: Checks featureMPTokensV1, amount.native(), amount.mpt() > maxMPTokenAmount, amount <= beast::zero"
+      ]
+    },
+    {
+      "call_chain": [
+        "EscrowCreate::doApply",
+        "escrowLockApplyHelper<Issue> or escrowLockApplyHelper<MPTIssue> (not shown in snippet, but implied by naming and pattern)"
+      ],
+      "entry_point": "EscrowCreate::doApply",
+      "purpose": "Applies the escrow creation to the ledger after preflight/preclaim checks pass.",
+      "validation_points": [
+        "Relies on preflight/preclaim having validated the transaction; doApply itself is not shown to do further validation in this snippet."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "amount (local variable in preflight and helpers)",
+        "isXRP(amount) or amount.asset().value()",
+        "escrowCreatePreflightHelper<T>(ctx)",
+        "Validation checks (amount.native(), amount <= beast::zero, badCurrency(), amount.mpt() > maxMPTokenAmount)",
+        "Used in makeTxConsequences, doApply"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Casted to STAmount",
+        "Checked for native/XRP or MPT/Token",
+        "Compared to zero",
+        "Currency extracted and compared"
+      ],
+      "validated_at": "EscrowCreate::preflight, escrowCreatePreflightHelper<Issue>, escrowCreatePreflightHelper<MPTIssue>"
+    },
+    {
+      "field": "sfCancelAfter / sfFinishAfter",
+      "flow": [
+        "ctx.tx[~sfCancelAfter], ctx.tx[~sfFinishAfter]",
+        "Checked for presence in preflight",
+        "Compared for logical order (cancel > finish)"
+      ],
+      "origin": "ctx.tx[~sfCancelAfter], ctx.tx[~sfFinishAfter] (transaction input, optional fields)",
+      "transformations": [
+        "Optional field extraction",
+        "Comparison for logical consistency"
+      ],
+      "validated_at": "EscrowCreate::preflight"
+    },
+    {
+      "field": "sfAmount.currency",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "amount.get<Issue>().currency",
+        "Compared to badCurrency()"
+      ],
+      "origin": "amount.get<Issue>().currency",
+      "transformations": [
+        "Extraction from STAmount",
+        "Comparison"
+      ],
+      "validated_at": "escrowCreatePreflightHelper<Issue>"
+    },
+    {
+      "field": "feature flags (featureTokenEscrow, featureMPTokensV1)",
+      "flow": [
+        "ctx.rules.enabled(featureTokenEscrow)",
+        "ctx.rules.enabled(featureMPTokensV1)"
+      ],
+      "origin": "ctx.rules.enabled(feature...)",
+      "transformations": [
+        "Boolean gating of code paths"
+      ],
+      "validated_at": "EscrowCreate::preflight, escrowCreatePreflightHelper<MPTIssue>"
+    }
+  ],
+  "description": "Implements the logic for the EscrowCreate transaction in the XRP Ledger, including preflight checks, preclaim checks, and application of the transaction to the ledger. Handles both XRP and token escrows, with validation for conditions, timeouts, and account permissions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP(amount) at EscrowCreate::makeTxConsequences",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isXRP(amount) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfAmount",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isXRP(amount) at EscrowCreate::makeTxConsequences",
+      "issue_pattern": "Missing type validation for sfAmount",
+      "why_false_positive": "isXRP(amount) validates sfAmount type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amount.native() || amount <= beast::zero at escrowCreatePreflightHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "amount.native() || amount <= beast::zero validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount.currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "badCurrency() == amount.get<Issue>().currency at escrowCreatePreflightHelper<Issue>",
+      "issue_pattern": "Missing empty string validation for sfAmount.currency",
+      "why_false_positive": "badCurrency() == amount.get<Issue>().currency validates sfAmount.currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!ctx.rules.enabled(featureMPTokensV1) at escrowCreatePreflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "!ctx.rules.enabled(featureMPTokensV1) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero at escrowCreatePreflightHelper<MPTIssue>",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero validates sfAmount for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/escrow/EscrowCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 44,
+      "name": "EscrowCreate::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 54,
+      "name": "escrowCreatePreflightHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 63,
+      "name": "escrowCreatePreflightHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 72,
+      "name": "EscrowCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& account",
+        "AccountID const& dest",
+        "STAmount const& amount"
+      ],
+      "lineno": 110,
+      "name": "escrowCreatePreclaimHelper<Issue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "AccountID const& account",
+        "AccountID const& dest",
+        "STAmount const& amount"
+      ],
+      "lineno": 157,
+      "name": "escrowCreatePreclaimHelper<MPTIssue>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 200,
+      "name": "EscrowCreate::preclaim"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& issuer",
+        "AccountID const& sender",
+        "STAmount const& amount",
+        "beast::Journal journal"
+      ],
+      "lineno": 236,
+      "name": "escrowLockApplyHelper<Issue>"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& issuer",
+        "AccountID const& sender",
+        "STAmount const& amount",
+        "beast::Journal journal"
+      ],
+      "lineno": 247,
+      "name": "escrowLockApplyHelper<MPTIssue>"
+    },
+    {
+      "args": [],
+      "lineno": 257,
+      "name": "EscrowCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 24,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "EscrowCreate transaction validation is typically covered in unit/integration tests under the rippled codebase, often in files like 'Escrow_test.cpp', 'TxEscrow_test.cpp', or similar. These tests usually cover valid and invalid amounts, missing/invalid fields, feature flag gating, and logical errors in time fields. However, coverage gaps may exist for edge cases involving new token types (MPTIssue), feature flag transitions, and maximum token amount boundaries. Tests for badCurrency() and negative/zero amounts are likely present, but tests for all combinations of optional fields (sfCancelAfter/sfFinishAfter) and feature flag permutations should be reviewed for completeness.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (xrpl codebase)",
+    "validation_layer": "business_logic (preflight checks before transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (used for consequences, not erroring)",
+      "field": "sfAmount",
+      "location": "EscrowCreate::makeTxConsequences",
+      "validated_by": "isXRP(amount)",
+      "validates": [
+        "Checks if the amount is XRP (native) or not"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "escrowCreatePreflightHelper<Issue>",
+      "validated_by": "amount.native() || amount <= beast::zero",
+      "validates": [
+        "Checks that amount is not native (not XRP)",
+        "Checks that amount is greater than zero"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_CURRENCY",
+      "field": "sfAmount.currency",
+      "location": "escrowCreatePreflightHelper<Issue>",
+      "validated_by": "badCurrency() == amount.get<Issue>().currency",
+      "validates": [
+        "Checks that the currency is not a bad currency (e.g., illegal or disallowed currency code)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temDISABLED",
+      "field": "sfAmount",
+      "location": "escrowCreatePreflightHelper<MPTIssue>",
+      "validated_by": "!ctx.rules.enabled(featureMPTokensV1)",
+      "validates": [
+        "Checks that the MPTokensV1 feature is enabled before allowing MPTIssue"
+      ],
+      "validation_type": "business_logic|feature_flag"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "escrowCreatePreflightHelper<MPTIssue>",
+      "validated_by": "amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero",
+      "validates": [
+        "Checks that amount is not native (not XRP)",
+        "Checks that MPT amount does not exceed maxMPTokenAmount",
+        "Checks that amount is greater than zero"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

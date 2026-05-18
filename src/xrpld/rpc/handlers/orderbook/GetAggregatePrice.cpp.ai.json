@@ -1,0 +1,578 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doGetAggregatePrice",
+        "iteratePriceData",
+        "getStats"
+      ],
+      "entry_point": "doGetAggregatePrice",
+      "purpose": "Handles the RPC request to get aggregate price data from the orderbook, traverses historical price data, and computes statistics.",
+      "validation_points": [
+        "doGetAggregatePrice: Validates input parameters and ledger state before calling iteratePriceData.",
+        "iteratePriceData: Validates sle (shared_ptr<SLE const>) and chain (STObject const*) for nullptr, checks history count, validates prevTx (sfPreviousTxnID) and prevSeq (sfPreviousTxnLgrSeq) fields.",
+        "getStats: Assumes valid iterators and data, no explicit validation."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sle (shared_ptr<SLE const>)",
+      "flow": [
+        "doGetAggregatePrice: sle is fetched from ledger",
+        "iteratePriceData: sle is passed as argument and checked for nullptr",
+        "Used as oracle and chain pointers for further traversal"
+      ],
+      "origin": "Obtained from ledger lookup in doGetAggregatePrice",
+      "transformations": [
+        "Checked for nullptr before dereferencing",
+        "Used to access fields and traverse historical data"
+      ],
+      "validated_at": "iteratePriceData (nullptr check at function start)"
+    },
+    {
+      "field": "chain (STObject const*)",
+      "flow": [
+        "iteratePriceData: chain initialized from sle.get()",
+        "Used to access sfPreviousTxnID and sfPreviousTxnLgrSeq",
+        "Updated in loop to point to historical nodes"
+      ],
+      "origin": "Initially points to sle.get()",
+      "transformations": [
+        "Checked for nullptr before use",
+        "Updated to point to new/modified nodes in metadata"
+      ],
+      "validated_at": "iteratePriceData (nullptr check and loop exit conditions)"
+    },
+    {
+      "field": "history (iteration count)",
+      "flow": [
+        "iteratePriceData: history incremented each loop",
+        "Checked against maxHistory (3)"
+      ],
+      "origin": "Local variable in iteratePriceData",
+      "transformations": [
+        "Incremented per iteration"
+      ],
+      "validated_at": "iteratePriceData (if (++history > maxHistory) return;)"
+    },
+    {
+      "field": "prevTx (sfPreviousTxnID)",
+      "flow": [
+        "iteratePriceData: prevTx extracted from chain",
+        "Used to fetch transaction metadata from ledger"
+      ],
+      "origin": "Extracted from chain->getFieldH256(sfPreviousTxnID)",
+      "transformations": [
+        "Validated by getFieldH256 (throws if missing)"
+      ],
+      "validated_at": "iteratePriceData (getFieldH256 throws if field missing)"
+    },
+    {
+      "field": "prevSeq (sfPreviousTxnLgrSeq)",
+      "flow": [
+        "iteratePriceData: prevSeq extracted from chain",
+        "Used to fetch previous ledger"
+      ],
+      "origin": "Extracted from chain->getFieldU32(sfPreviousTxnLgrSeq)",
+      "transformations": [
+        "Validated by getFieldU32 (throws if missing)"
+      ],
+      "validated_at": "iteratePriceData (getFieldU32 throws if field missing)"
+    },
+    {
+      "field": "meta (transaction metadata)",
+      "flow": [
+        "iteratePriceData: meta assigned from txRead",
+        "Used to iterate sfAffectedNodes for historical price data"
+      ],
+      "origin": "Fetched from ledger->txRead(prevTx).second",
+      "transformations": [
+        "Checked for nullptr before use"
+      ],
+      "validated_at": "iteratePriceData (implicit: if meta is nullptr, loop will not proceed)"
+    }
+  ],
+  "description": "Provides an RPC handler for aggregating and returning price data from multiple oracles, including statistical calculations such as mean, median, and standard deviation, with support for trimming outliers and filtering by time threshold.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPreviousTxnID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPreviousTxnID validated by xrpl/protocol/jss, STObject field accessors, LedgerMaster",
+      "issue_pattern": "Missing validation for sfPreviousTxnID",
+      "why_false_positive": "xrpl/protocol/jss, STObject field accessors, LedgerMaster validates sfPreviousTxnID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPreviousTxnLgrSeq",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPreviousTxnLgrSeq validated by xrpl/protocol/jss, STObject field accessors, LedgerMaster",
+      "issue_pattern": "Missing validation for sfPreviousTxnLgrSeq",
+      "why_false_positive": "xrpl/protocol/jss, STObject field accessors, LedgerMaster validates sfPreviousTxnLgrSeq automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerEntryType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerEntryType validated by xrpl/protocol/jss, STObject field accessors, LedgerMaster",
+      "issue_pattern": "Missing validation for sfLedgerEntryType",
+      "why_false_positive": "xrpl/protocol/jss, STObject field accessors, LedgerMaster validates sfLedgerEntryType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfNewFields",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfNewFields validated by xrpl/protocol/jss, STObject field accessors, LedgerMaster",
+      "issue_pattern": "Missing validation for sfNewFields",
+      "why_false_positive": "xrpl/protocol/jss, STObject field accessors, LedgerMaster validates sfNewFields automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at iteratePriceData (while loop, oracle == nullptr)",
+      "issue_pattern": "Missing empty string validation for sle (shared_ptr<SLE const>)",
+      "why_false_positive": "nullptr check validates sle (shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "chain (STObject const*)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at iteratePriceData (while loop, chain == nullptr)",
+      "issue_pattern": "Missing empty string validation for chain (STObject const*)",
+      "why_false_positive": "nullptr check validates chain (STObject const*) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "history (iteration count)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "range check (history > maxHistory) at iteratePriceData (while loop)",
+      "issue_pattern": "Missing empty string validation for history (iteration count)",
+      "why_false_positive": "range check (history > maxHistory) validates history (iteration count) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "history (iteration count)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "range check (history > maxHistory) at iteratePriceData (while loop)",
+      "issue_pattern": "Missing range validation for history (iteration count)",
+      "why_false_positive": "range check (history > maxHistory) validates history (iteration count) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "prevTx (sfPreviousTxnID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldH256 at iteratePriceData",
+      "issue_pattern": "Missing empty string validation for prevTx (sfPreviousTxnID)",
+      "why_false_positive": "getFieldH256 validates prevTx (sfPreviousTxnID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "prevSeq (sfPreviousTxnLgrSeq)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU32 at iteratePriceData",
+      "issue_pattern": "Missing empty string validation for prevSeq (sfPreviousTxnLgrSeq)",
+      "why_false_positive": "getFieldU32 validates prevSeq (sfPreviousTxnLgrSeq) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger (LedgerMaster::getLedgerBySeq)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at iteratePriceData (if (!ledger))",
+      "issue_pattern": "Missing empty string validation for ledger (LedgerMaster::getLedgerBySeq)",
+      "why_false_positive": "nullptr check validates ledger (LedgerMaster::getLedgerBySeq) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "meta (ledger->txRead(prevTx).second)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at iteratePriceData (meta->getFieldArray)",
+      "issue_pattern": "Missing empty string validation for meta (ledger->txRead(prevTx).second)",
+      "why_false_positive": "nullptr check validates meta (ledger->txRead(prevTx).second) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "node.getFieldU16(sfLedgerEntryType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFieldU16 at iteratePriceData (for loop over meta->getFieldArray)",
+      "issue_pattern": "Missing empty string validation for node.getFieldU16(sfLedgerEntryType)",
+      "why_false_positive": "getFieldU16 validates node.getFieldU16(sfLedgerEntryType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node.isFieldPresent(sfNewFields)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent at iteratePriceData (for loop)",
+      "issue_pattern": "Missing empty string validation for node.isFieldPresent(sfNewFields)",
+      "why_false_positive": "isFieldPresent validates node.isFieldPresent(sfNewFields) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/GetAggregatePrice.cpp",
+  "functions": [
+    {
+      "args": [
+        "context",
+        "sle",
+        "f"
+      ],
+      "lineno": 18,
+      "name": "iteratePriceData"
+    },
+    {
+      "args": [
+        "begin",
+        "end"
+      ],
+      "lineno": 74,
+      "name": "getStats"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 104,
+      "name": "doGetAggregatePrice"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by integration and unit tests for the orderbook and price oracle RPC endpoints. Tests should exist for normal operation, missing fields (to trigger exceptions), and edge cases (e.g., history > maxHistory, missing metadata, or ledger not found). However, some error paths (e.g., ledger->txRead returning nullptr, or meta missing expected nodes) may not be fully covered, as indicated by LCOV_EXCL_LINE comments. Test files may include: rpc_orderbook_test.cpp, rpc_priceoracle_test.cpp, and possibly ledger/history traversal tests. Gaps may exist in negative/error path coverage, especially for rare or malformed ledger states.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfPreviousTxnID",
+      "sfPreviousTxnLgrSeq",
+      "sfLedgerEntryType",
+      "sfNewFields"
+    ],
+    "framework": "xrpl/protocol/jss, STObject field accessors, LedgerMaster",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception)",
+      "field": "sle (shared_ptr<SLE const>)",
+      "location": "iteratePriceData (while loop, oracle == nullptr)",
+      "validated_by": "nullptr check",
+      "validates": [
+        "checks if the ledger object exists before dereferencing"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception)",
+      "field": "chain (STObject const*)",
+      "location": "iteratePriceData (while loop, chain == nullptr)",
+      "validated_by": "nullptr check",
+      "validates": [
+        "checks if the chain object exists before dereferencing"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception)",
+      "field": "history (iteration count)",
+      "location": "iteratePriceData (while loop)",
+      "validated_by": "range check (history > maxHistory)",
+      "validates": [
+        "limits the number of historical lookups to maxHistory (3)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws if field missing or wrong type",
+      "field": "prevTx (sfPreviousTxnID)",
+      "location": "iteratePriceData",
+      "validated_by": "getFieldH256",
+      "validates": [
+        "ensures sfPreviousTxnID is present and is a 256-bit hash"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws if field missing or wrong type",
+      "field": "prevSeq (sfPreviousTxnLgrSeq)",
+      "location": "iteratePriceData",
+      "validated_by": "getFieldU32",
+      "validates": [
+        "ensures sfPreviousTxnLgrSeq is present and is a uint32"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "early return (no exception)",
+      "field": "ledger (LedgerMaster::getLedgerBySeq)",
+      "location": "iteratePriceData (if (!ledger))",
+      "validated_by": "nullptr check",
+      "validates": [
+        "ensures the referenced ledger exists before accessing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "would throw if meta is nullptr (not explicitly checked here)",
+      "field": "meta (ledger->txRead(prevTx).second)",
+      "location": "iteratePriceData (meta->getFieldArray)",
+      "validated_by": "nullptr check",
+      "validates": [
+        "ensures transaction metadata exists before accessing fields"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws if field missing or wrong type",
+      "field": "node.getFieldU16(sfLedgerEntryType)",
+      "location": "iteratePriceData (for loop over meta->getFieldArray)",
+      "validated_by": "getFieldU16",
+      "validates": [
+        "ensures sfLedgerEntryType is present and is a uint16"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false if not present (no exception)",
+      "field": "node.isFieldPresent(sfNewFields)",
+      "location": "iteratePriceData (for loop)",
+      "validated_by": "isFieldPresent",
+      "validates": [
+        "checks if sfNewFields exists in the node"
+      ],
+      "validation_type": "presence"
+    }
+  ]
+}

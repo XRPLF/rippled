@@ -1,0 +1,590 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "SHAMap"
+    },
+    {
+      "args": [],
+      "lineno": 241,
+      "name": "SHAMap::const_iterator"
+    },
+    {
+      "args": [
+        "max",
+        "filter",
+        "maxDefer",
+        "generation"
+      ],
+      "lineno": 349,
+      "name": "SHAMap::MissingNodes"
+    }
+  ],
+  "description": "Defines the SHAMap class, a radix/Merkle tree used in XRPL for efficient storage and verification of ledger data. Provides methods for traversal, modification, synchronization, and proof generation/verification.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMap.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "family"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "family"
+    },
+    {
+      "args": [],
+      "lineno": 377,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 382,
+      "name": "end"
+    },
+    {
+      "args": [
+        "isMutable"
+      ],
+      "lineno": 90,
+      "name": "snapShot"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "setFull"
+    },
+    {
+      "args": [
+        "lseq"
+      ],
+      "lineno": 98,
+      "name": "setLedgerSeq"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 101,
+      "name": "fetchRoot"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 104,
+      "name": "hasItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 107,
+      "name": "delItem"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 110,
+      "name": "addItem"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "getHash"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 117,
+      "name": "updateGiveItem"
+    },
+    {
+      "args": [
+        "type",
+        "item"
+      ],
+      "lineno": 120,
+      "name": "addGiveItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 124,
+      "name": "peekItem"
+    },
+    {
+      "args": [
+        "id",
+        "hash"
+      ],
+      "lineno": 126,
+      "name": "peekItem"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 132,
+      "name": "upper_bound"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 139,
+      "name": "lower_bound"
+    },
+    {
+      "args": [
+        "function"
+      ],
+      "lineno": 146,
+      "name": "visitNodes"
+    },
+    {
+      "args": [
+        "have",
+        "function"
+      ],
+      "lineno": 154,
+      "name": "visitDifferences"
+    },
+    {
+      "args": [
+        "function"
+      ],
+      "lineno": 162,
+      "name": "visitLeaves"
+    },
+    {
+      "args": [
+        "maxNodes",
+        "filter"
+      ],
+      "lineno": 172,
+      "name": "getMissingNodes"
+    },
+    {
+      "args": [
+        "wanted",
+        "data",
+        "fatLeaves",
+        "depth"
+      ],
+      "lineno": 177,
+      "name": "getNodeFat"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 185,
+      "name": "getProofPath"
+    },
+    {
+      "args": [
+        "rootHash",
+        "key",
+        "path"
+      ],
+      "lineno": 194,
+      "name": "verifyProofPath"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 201,
+      "name": "serializeRoot"
+    },
+    {
+      "args": [
+        "hash",
+        "rootNode",
+        "filter"
+      ],
+      "lineno": 204,
+      "name": "addRootNode"
+    },
+    {
+      "args": [
+        "nodeID",
+        "rawNode",
+        "filter"
+      ],
+      "lineno": 205,
+      "name": "addKnownNode"
+    },
+    {
+      "args": [],
+      "lineno": 208,
+      "name": "setImmutable"
+    },
+    {
+      "args": [],
+      "lineno": 209,
+      "name": "isSynching"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "setSynching"
+    },
+    {
+      "args": [],
+      "lineno": 211,
+      "name": "clearSynching"
+    },
+    {
+      "args": [],
+      "lineno": 212,
+      "name": "isValid"
+    },
+    {
+      "args": [
+        "otherMap",
+        "differences",
+        "maxCount"
+      ],
+      "lineno": 217,
+      "name": "compare"
+    },
+    {
+      "args": [],
+      "lineno": 220,
+      "name": "unshare"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 223,
+      "name": "flushDirty"
+    },
+    {
+      "args": [
+        "missingNodes",
+        "maxMissing"
+      ],
+      "lineno": 226,
+      "name": "walkMap"
+    },
+    {
+      "args": [
+        "missingNodes",
+        "maxMissing"
+      ],
+      "lineno": 227,
+      "name": "walkMapParallel"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 228,
+      "name": "deepCompare"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "setUnbacked"
+    },
+    {
+      "args": [
+        "withHashes"
+      ],
+      "lineno": 232,
+      "name": "dump"
+    },
+    {
+      "args": [],
+      "lineno": 233,
+      "name": "invariants"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 241,
+      "name": "cacheLookup"
+    },
+    {
+      "args": [
+        "hash",
+        "node"
+      ],
+      "lineno": 244,
+      "name": "canonicalize"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 247,
+      "name": "fetchNodeFromDB"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 249,
+      "name": "fetchNodeNT"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 251,
+      "name": "fetchNodeNT"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 253,
+      "name": "fetchNode"
+    },
+    {
+      "args": [
+        "hash",
+        "filter"
+      ],
+      "lineno": 255,
+      "name": "checkFilter"
+    },
+    {
+      "args": [
+        "stack",
+        "target",
+        "terminal"
+      ],
+      "lineno": 259,
+      "name": "dirtyUp"
+    },
+    {
+      "args": [
+        "id",
+        "stack"
+      ],
+      "lineno": 265,
+      "name": "walkTowardsKey"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 268,
+      "name": "findKey"
+    },
+    {
+      "args": [
+        "node",
+        "nodeID"
+      ],
+      "lineno": 271,
+      "name": "unshareNode"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 275,
+      "name": "preFlushNode"
+    },
+    {
+      "args": [
+        "t",
+        "node"
+      ],
+      "lineno": 279,
+      "name": "writeNode"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch"
+      ],
+      "lineno": 282,
+      "name": "firstBelow"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch"
+      ],
+      "lineno": 287,
+      "name": "lastBelow"
+    },
+    {
+      "args": [
+        "node",
+        "stack",
+        "branch",
+        "loopParams"
+      ],
+      "lineno": 292,
+      "name": "belowHelper"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 299,
+      "name": "descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 301,
+      "name": "descendThrow"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 303,
+      "name": "descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 305,
+      "name": "descendThrow"
+    },
+    {
+      "args": [
+        "parent",
+        "branch",
+        "filter",
+        "pending",
+        "callback"
+      ],
+      "lineno": 310,
+      "name": "descendAsync"
+    },
+    {
+      "args": [
+        "parent",
+        "parentID",
+        "branch",
+        "filter"
+      ],
+      "lineno": 316,
+      "name": "descend"
+    },
+    {
+      "args": [
+        "parent",
+        "branch"
+      ],
+      "lineno": 321,
+      "name": "descendNoStore"
+    },
+    {
+      "args": [
+        "node"
+      ],
+      "lineno": 324,
+      "name": "onlyBelow"
+    },
+    {
+      "args": [
+        "nodeID",
+        "hash"
+      ],
+      "lineno": 327,
+      "name": "hasInnerNode"
+    },
+    {
+      "args": [
+        "tag",
+        "hash"
+      ],
+      "lineno": 328,
+      "name": "hasLeafNode"
+    },
+    {
+      "args": [
+        "stack"
+      ],
+      "lineno": 330,
+      "name": "peekFirstItem"
+    },
+    {
+      "args": [
+        "id",
+        "stack"
+      ],
+      "lineno": 332,
+      "name": "peekNextItem"
+    },
+    {
+      "args": [
+        "node",
+        "otherMapItem",
+        "isFirstMap",
+        "differences",
+        "maxCount"
+      ],
+      "lineno": 334,
+      "name": "walkBranch"
+    },
+    {
+      "args": [
+        "doWrite",
+        "t"
+      ],
+      "lineno": 340,
+      "name": "walkSubTree"
+    },
+    {
+      "args": [
+        "MissingNodes",
+        "node"
+      ],
+      "lineno": 374,
+      "name": "gmn_ProcessNodes"
+    },
+    {
+      "args": [
+        "MissingNodes"
+      ],
+      "lineno": 376,
+      "name": "gmn_ProcessDeferredReads"
+    },
+    {
+      "args": [
+        "hash",
+        "object"
+      ],
+      "lineno": 379,
+      "name": "finishFetch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

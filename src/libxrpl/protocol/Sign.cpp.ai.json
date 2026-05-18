@@ -1,0 +1,229 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "st"
+    },
+    {
+      "lineno": 13,
+      "name": "prefix"
+    },
+    {
+      "lineno": 14,
+      "name": "type"
+    },
+    {
+      "lineno": 15,
+      "name": "sk"
+    },
+    {
+      "lineno": 16,
+      "name": "sigField"
+    },
+    {
+      "lineno": 23,
+      "name": "st"
+    },
+    {
+      "lineno": 23,
+      "name": "prefix"
+    },
+    {
+      "lineno": 23,
+      "name": "pk"
+    },
+    {
+      "lineno": 23,
+      "name": "sigField"
+    },
+    {
+      "lineno": 55,
+      "name": "obj"
+    },
+    {
+      "lineno": 55,
+      "name": "signingID"
+    },
+    {
+      "lineno": 62,
+      "name": "obj"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "verify (STObject, HashPrefix, PublicKey, SF_VL)",
+        "get(st, sigField)",
+        "verify(pk, Slice, Slice)"
+      ],
+      "entry_point": "verify",
+      "purpose": "Validates the signature in an STObject against a public key and prefix.",
+      "validation_points": [
+        "get(st, sigField): Checks if the signature field exists and retrieves it.",
+        "verify(pk, Slice, Slice): Cryptographically verifies the signature."
+      ]
+    },
+    {
+      "call_chain": [
+        "sign (STObject&, HashPrefix, KeyType, SecretKey, SF_VL)",
+        "Serializer::add32",
+        "STObject::addWithoutSigningFields",
+        "sign(type, sk, ss.slice())",
+        "set(st, sigField, ...)"
+      ],
+      "entry_point": "sign",
+      "purpose": "Signs an STObject and sets the signature field.",
+      "validation_points": [
+        "sign(type, sk, ss.slice()): Performs cryptographic signing (not validation, but signature creation)."
+      ]
+    },
+    {
+      "call_chain": [
+        "buildMultiSigningData",
+        "startMultiSigningData",
+        "finishMultiSigningData"
+      ],
+      "entry_point": "buildMultiSigningData",
+      "purpose": "Builds the data blob to be multi-signed, including relevant account fields.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sigField (signature field in STObject)",
+      "flow": [
+        "sign() creates signature",
+        "set(st, sigField, signature)",
+        "STObject now contains sigField",
+        "verify() retrieves sigField via get(st, sigField)",
+        "verify() uses sigField in cryptographic verification"
+      ],
+      "origin": "Set by sign() via set(st, sigField, ...)",
+      "transformations": [
+        "Signature is generated from serialized data and secret key",
+        "Signature is stored in STObject under sigField",
+        "Signature is retrieved and passed as a Slice to verify()"
+      ],
+      "validated_at": "verify(): get(st, sigField) checks presence and validity of signature field"
+    },
+    {
+      "field": "STObject (transaction or message object)",
+      "flow": [
+        "Input to sign() or verify()",
+        "addWithoutSigningFields() serializes object (excluding signature fields)",
+        "Used as basis for signature creation or verification"
+      ],
+      "origin": "Input to sign() or verify()",
+      "transformations": [
+        "Serialization (excluding signing fields)",
+        "Used as input to cryptographic functions"
+      ],
+      "validated_at": "Indirectly validated when signature is checked in verify()"
+    },
+    {
+      "field": "signingID (AccountID for multi-signing)",
+      "flow": [
+        "Input to buildMultiSigningData()",
+        "Passed to finishMultiSigningData()",
+        "Appended to serialized data blob for multi-signature"
+      ],
+      "origin": "Input to buildMultiSigningData()",
+      "transformations": [
+        "Appended to serialized data for multi-signature context"
+      ],
+      "validated_at": "Not directly validated in this code; assumed correct by caller"
+    }
+  ],
+  "description": "This file provides functions for signing and verifying XRPL protocol objects, as well as building multi-signing data for transactions. It handles serialization and cryptographic signing/verification for XRPL transactions, including support for multi-signature workflows.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sigField (signature field in STObject)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "get(st, sigField) at verify",
+      "issue_pattern": "Missing empty string validation for sigField (signature field in STObject)",
+      "why_false_positive": "get(st, sigField) validates sigField (signature field in STObject) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Sign.cpp",
+  "functions": [
+    {
+      "args": [
+        "st",
+        "prefix",
+        "type",
+        "sk",
+        "sigField"
+      ],
+      "lineno": 11,
+      "name": "sign"
+    },
+    {
+      "args": [
+        "st",
+        "prefix",
+        "pk",
+        "sigField"
+      ],
+      "lineno": 22,
+      "name": "verify"
+    },
+    {
+      "args": [
+        "obj",
+        "signingID"
+      ],
+      "lineno": 54,
+      "name": "buildMultiSigningData"
+    },
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 61,
+      "name": "startMultiSigningData"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code in Sign.cpp is core to signature creation and verification. Typical test coverage would be in unit tests for transaction signing and verification, likely in files such as 'test/protocol/Sign_test.cpp', 'test/protocol/STObject_test.cpp', or integration tests for transaction submission and validation. Gaps may exist in edge cases: malformed STObjects, missing sigField, or invalid key types. Multi-signing data construction may not be directly tested unless there are explicit multi-signature transaction tests. No explicit test references are present in this file, so coverage depends on broader protocol and transaction tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None detected (custom code, no explicit validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "sigField (signature field in STObject)",
+      "location": "verify",
+      "validated_by": "get(st, sigField)",
+      "validates": [
+        "checks if signature field exists in STObject"
+      ],
+      "validation_type": "presence"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "Key"
+    },
+    {
+      "lineno": 10,
+      "name": "T"
+    },
+    {
+      "lineno": 11,
+      "name": "Clock"
+    },
+    {
+      "lineno": 12,
+      "name": "Hash"
+    },
+    {
+      "lineno": 13,
+      "name": "KeyEqual"
+    },
+    {
+      "lineno": 14,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the aged_unordered_multimap template alias in the beast namespace, which is a time-aware unordered multimap container using a customizable clock, hash, key equality, and allocator.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_unordered_multimap.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

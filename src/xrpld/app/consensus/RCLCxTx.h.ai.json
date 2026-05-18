@@ -1,0 +1,147 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "txn"
+    },
+    {
+      "lineno": 44,
+      "name": "src"
+    },
+    {
+      "lineno": 51,
+      "name": "t"
+    },
+    {
+      "lineno": 59,
+      "name": "entry"
+    },
+    {
+      "lineno": 71,
+      "name": "m"
+    },
+    {
+      "lineno": 78,
+      "name": "m"
+    },
+    {
+      "lineno": 86,
+      "name": "entry"
+    },
+    {
+      "lineno": 97,
+      "name": "entry"
+    },
+    {
+      "lineno": 117,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "txn"
+      ],
+      "lineno": 13,
+      "name": "RCLCxTx"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 34,
+      "name": "RCLTxSet"
+    },
+    {
+      "args": [
+        "src"
+      ],
+      "lineno": 41,
+      "name": "MutableTxSet"
+    }
+  ],
+  "description": "Defines RCLCxTx and RCLTxSet, thin wrappers over SHAMapItem and SHAMap, representing transactions and transaction sets in RCLConsensus for XRPL.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLCxTx.h",
+  "functions": [
+    {
+      "args": [
+        "txn"
+      ],
+      "lineno": 17,
+      "name": "RCLCxTx"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "id"
+    },
+    {
+      "args": [
+        "src"
+      ],
+      "lineno": 44,
+      "name": "MutableTxSet"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 51,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 59,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 71,
+      "name": "RCLTxSet"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 78,
+      "name": "RCLTxSet"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 86,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 97,
+      "name": "find"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "id"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 117,
+      "name": "compare"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

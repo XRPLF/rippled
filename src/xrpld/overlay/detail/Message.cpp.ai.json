@@ -1,0 +1,269 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Message::Message",
+        "Message::messageSize",
+        "Message::setHeader",
+        "google::protobuf::Message::SerializeToArray",
+        "Message::getBufferSize",
+        "Message::totalSize"
+      ],
+      "entry_point": "Message::Message",
+      "purpose": "Constructs a Message object from a protobuf message, sets up buffer, header, and serializes payload.",
+      "validation_points": [
+        "XRPL_ASSERT(messageBytes, ...)",
+        "XRPL_ASSERT(getBufferSize() == totalSize(message), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Message::compress",
+        "Message::getType",
+        "xrpl::compression::compress",
+        "Message::setHeader"
+      ],
+      "entry_point": "Message::compress",
+      "purpose": "Compresses the message payload if eligible, resizes buffer, and sets compressed header.",
+      "validation_points": [
+        "lambda in compress: if (messageBytes <= 70) return false;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "messageBytes",
+      "flow": [
+        "Message::messageSize",
+        "Message::Message (local variable)",
+        "XRPL_ASSERT(messageBytes, ...)",
+        "buffer_.resize(headerBytes + messageBytes)",
+        "message.SerializeToArray(buffer_.data() + headerBytes, messageBytes)",
+        "XRPL_ASSERT(getBufferSize() == totalSize(message), ...)"
+      ],
+      "origin": "Message::messageSize(message)",
+      "transformations": [
+        "Calculated from protobuf message",
+        "Used to size buffer",
+        "Used to serialize payload"
+      ],
+      "validated_at": "XRPL_ASSERT(messageBytes, ...)"
+    },
+    {
+      "field": "buffer_",
+      "flow": [
+        "buffer_ (member)",
+        "buffer_.resize(headerBytes + messageBytes)",
+        "message.SerializeToArray(buffer_.data() + headerBytes, messageBytes)",
+        "used in compress()"
+      ],
+      "origin": "Message::Message (constructed as member)",
+      "transformations": [
+        "Resized to fit header + payload",
+        "Filled with header and serialized payload"
+      ],
+      "validated_at": "XRPL_ASSERT(getBufferSize() == totalSize(message), ...)"
+    },
+    {
+      "field": "message payload (protobuf)",
+      "flow": [
+        "Message::Message parameter",
+        "message.SerializeToArray",
+        "buffer_",
+        "Message::compress (payload extracted from buffer_)",
+        "xrpl::compression::compress"
+      ],
+      "origin": "Message::Message parameter",
+      "transformations": [
+        "Serialized to buffer_",
+        "Optionally compressed"
+      ],
+      "validated_at": "lambda in compress: if (messageBytes <= 70) return false;"
+    }
+  ],
+  "description": "Implements the xrpl::Message class for serializing, compressing, and handling protocol messages, including header formatting and buffer management for XRPL overlay network communication.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "messageBytes (size of protobuf message)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Message::Message (constructor)",
+      "issue_pattern": "Missing empty string validation for messageBytes (size of protobuf message)",
+      "why_false_positive": "XRPL_ASSERT validates messageBytes (size of protobuf message) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "buffer size vs. message size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at Message::Message (constructor)",
+      "issue_pattern": "Missing empty string validation for buffer size vs. message size",
+      "why_false_positive": "XRPL_ASSERT validates buffer size vs. message size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "messageBytes (size of message payload)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lambda in Message::compress at Message::compress",
+      "issue_pattern": "Missing empty string validation for messageBytes (size of message payload)",
+      "why_false_positive": "lambda in Message::compress validates messageBytes (size of message payload) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "messageBytes (size of message payload)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "lambda in Message::compress at Message::compress",
+      "issue_pattern": "Missing range validation for messageBytes (size of message payload)",
+      "why_false_positive": "lambda in Message::compress validates messageBytes (size of message payload) range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/Message.cpp",
+  "functions": [
+    {
+      "args": [
+        "::google::protobuf::Message const& message",
+        "protocol::MessageType type",
+        "std::optional<PublicKey> const& validator"
+      ],
+      "lineno": 6,
+      "name": "Message::Message"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message"
+      ],
+      "lineno": 23,
+      "name": "Message::messageSize"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message"
+      ],
+      "lineno": 32,
+      "name": "Message::totalSize"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "Message::compress"
+    },
+    {
+      "args": [
+        "std::uint8_t* in",
+        "std::uint32_t payloadBytes",
+        "int type",
+        "Algorithm compression",
+        "std::uint32_t uncompressedBytes"
+      ],
+      "lineno": 77,
+      "name": "Message::setHeader"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "Message::getBufferSize"
+    },
+    {
+      "args": [
+        "Compressed tryCompressed"
+      ],
+      "lineno": 114,
+      "name": "Message::getBuffer"
+    },
+    {
+      "args": [
+        "std::uint8_t const* in"
+      ],
+      "lineno": 126,
+      "name": "Message::getType"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by overlay/message-related unit and integration tests, possibly in files like test_overlay.cpp, test_Message.cpp, or protocol/message tests. However, the specific XRPL_ASSERT validations (e.g., non-empty message, buffer size matching, compressibility threshold) may not be directly tested unless there are explicit tests for malformed or edge-case messages. Compression logic may be tested indirectly via message send/receive tests, but edge cases (e.g., messageBytes == 0, buffer size mismatches, compressible vs. non-compressible types) may lack direct coverage. Review of test files is needed to confirm coverage of all validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system, protobuf serialization",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "messageBytes (size of protobuf message)",
+      "location": "Message::Message (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that messageBytes is non-zero (non-empty message input)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "buffer size vs. message size",
+      "location": "Message::Message (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the buffer size matches the expected total message size"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (used for logic branching, not error)",
+      "field": "messageBytes (size of message payload)",
+      "location": "Message::compress",
+      "validated_by": "lambda in Message::compress",
+      "validates": [
+        "Checks if messageBytes > 70 to determine compressibility"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

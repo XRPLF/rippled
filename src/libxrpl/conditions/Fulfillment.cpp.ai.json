@@ -1,0 +1,718 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "validate(Fulfillment, Condition, Slice)",
+        "match(Fulfillment, Condition)",
+        "Fulfillment::condition()",
+        "Fulfillment::validate(Slice)"
+      ],
+      "entry_point": "validate(Fulfillment const& f, Condition const& c, Slice m)",
+      "purpose": "Validates that a Fulfillment matches a Condition and is valid for a given message.",
+      "validation_points": [
+        "match: f.type() != c.type (type check)",
+        "match: c == f.condition() (condition equivalence)",
+        "Fulfillment::validate(m) (fulfillment-specific validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "validate(Fulfillment, Condition)",
+        "validate(Fulfillment, Condition, {})"
+      ],
+      "entry_point": "validate(Fulfillment const& f, Condition const& c)",
+      "purpose": "Validates a Fulfillment against a Condition with no message (empty Slice).",
+      "validation_points": [
+        "Delegates to validate(Fulfillment, Condition, Slice)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Fulfillment::deserialize(Slice, ec)",
+        "parsePreamble(s, ec)",
+        "PreimageSha256::deserialize(Slice, ec) (if applicable)"
+      ],
+      "entry_point": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "purpose": "Deserializes a Fulfillment from a binary buffer, validating structure and type.",
+      "validation_points": [
+        "if (s.empty()) (buffer non-empty check)",
+        "parsePreamble(s, ec) (DER preamble parse)",
+        "isConstructed(p), isContextSpecific(p) (DER structure checks)",
+        "p.length vs s.size() (buffer size checks)",
+        "p.length > maxSerializedFulfillment (size limit)",
+        "switch(p.tag) (type support and error handling)",
+        "if (!s.empty()) (trailing garbage check)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Fulfillment.type",
+      "flow": [
+        "Fulfillment (input)",
+        "match(f, c): f.type()",
+        "compared to c.type"
+      ],
+      "origin": "Fulfillment object (input param)",
+      "transformations": [
+        "Direct comparison"
+      ],
+      "validated_at": "match: if (f.type() != c.type)"
+    },
+    {
+      "field": "Condition.type",
+      "flow": [
+        "Condition (input)",
+        "match(f, c): c.type",
+        "compared to f.type()"
+      ],
+      "origin": "Condition object (input param)",
+      "transformations": [
+        "Direct comparison"
+      ],
+      "validated_at": "match: if (f.type() != c.type)"
+    },
+    {
+      "field": "Fulfillment-derived Condition",
+      "flow": [
+        "Fulfillment (input)",
+        "f.condition() (derives Condition)",
+        "compared to input Condition c"
+      ],
+      "origin": "f.condition()",
+      "transformations": [
+        "Derived from Fulfillment"
+      ],
+      "validated_at": "match: c == f.condition()"
+    },
+    {
+      "field": "Slice s (input buffer)",
+      "flow": [
+        "Slice s (input)",
+        "if (s.empty())",
+        "parsePreamble(s, ec)",
+        "p.length vs s.size() checks",
+        "switch(p.tag) for type",
+        "PreimageSha256::deserialize(Slice, ec) (if applicable)",
+        "s += p.length",
+        "if (!s.empty())"
+      ],
+      "origin": "deserialize(Slice s, ...)",
+      "transformations": [
+        "Checked for emptiness",
+        "Parsed for DER preamble",
+        "Sliced for type-specific deserialization",
+        "Advanced by p.length"
+      ],
+      "validated_at": "Multiple: empty, parsePreamble, length checks, trailing garbage"
+    },
+    {
+      "field": "DER preamble (p)",
+      "flow": [
+        "parsePreamble(s, ec)",
+        "p.tag, p.length used for type and size checks",
+        "switch(p.tag) for type dispatch"
+      ],
+      "origin": "parsePreamble(s, ec)",
+      "transformations": [
+        "Parsed from Slice s"
+      ],
+      "validated_at": "parsePreamble(s, ec) result checked for error"
+    },
+    {
+      "field": "std::error_code ec",
+      "flow": [
+        "deserialize(Slice, ec)",
+        "set on error conditions (empty, parse failure, malformed, unsupported, etc.)"
+      ],
+      "origin": "Passed by reference to deserialize",
+      "transformations": [
+        "Set to error values on validation failures"
+      ],
+      "validated_at": "Throughout Fulfillment::deserialize"
+    }
+  ],
+  "description": "Implements functions for matching and validating cryptographic conditions and fulfillments, as well as deserialization logic for Fulfillment objects in the context of the XRPL (XRP Ledger) cryptoconditions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Fulfillment.type vs Condition.type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "match() at match(Fulfillment const& f, Condition const& c)",
+      "issue_pattern": "Missing empty string validation for Fulfillment.type vs Condition.type",
+      "why_false_positive": "match() validates Fulfillment.type vs Condition.type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Fulfillment.type vs Condition.type",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "match() at match(Fulfillment const& f, Condition const& c)",
+      "issue_pattern": "Missing type validation for Fulfillment.type vs Condition.type",
+      "why_false_positive": "match() validates Fulfillment.type vs Condition.type type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Fulfillment-derived Condition vs input Condition",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "match() at match(Fulfillment const& f, Condition const& c)",
+      "issue_pattern": "Missing empty string validation for Fulfillment-derived Condition vs input Condition",
+      "why_false_positive": "match() validates Fulfillment-derived Condition vs input Condition for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Fulfillment validity against message",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Fulfillment::validate() at validate(Fulfillment const& f, Condition const& c, Slice m)",
+      "issue_pattern": "Missing empty string validation for Fulfillment validity against message",
+      "why_false_positive": "Fulfillment::validate() validates Fulfillment validity against message for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Slice s (input buffer) non-empty",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (s.empty()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for Slice s (input buffer) non-empty",
+      "why_false_positive": "if (s.empty()) validates Slice s (input buffer) non-empty for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Slice s (input buffer) non-empty",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (s.empty()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing format validation for Slice s (input buffer) non-empty",
+      "why_false_positive": "if (s.empty()) validates Slice s (input buffer) non-empty format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "DER preamble parse success",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parsePreamble(s, ec) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for DER preamble parse success",
+      "why_false_positive": "parsePreamble(s, ec) validates DER preamble parse success for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "DER preamble parse success",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parsePreamble(s, ec) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing format validation for DER preamble parse success",
+      "why_false_positive": "parsePreamble(s, ec) validates DER preamble parse success format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "DER preamble constructed/context-specific",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isConstructed(p), isContextSpecific(p) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for DER preamble constructed/context-specific",
+      "why_false_positive": "isConstructed(p), isContextSpecific(p) validates DER preamble constructed/context-specific for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "DER preamble constructed/context-specific",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isConstructed(p), isContextSpecific(p) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing format validation for DER preamble constructed/context-specific",
+      "why_false_positive": "isConstructed(p), isContextSpecific(p) validates DER preamble constructed/context-specific format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p.length vs s.size() (buffer underfull)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p.length > s.size()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for p.length vs s.size() (buffer underfull)",
+      "why_false_positive": "if (p.length > s.size()) validates p.length vs s.size() (buffer underfull) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "p.length vs s.size() (buffer underfull)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (p.length > s.size()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing range validation for p.length vs s.size() (buffer underfull)",
+      "why_false_positive": "if (p.length > s.size()) validates p.length vs s.size() (buffer underfull) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p.length vs s.size() (buffer overfull)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p.length < s.size()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for p.length vs s.size() (buffer overfull)",
+      "why_false_positive": "if (p.length < s.size()) validates p.length vs s.size() (buffer overfull) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "p.length vs s.size() (buffer overfull)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (p.length < s.size()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing range validation for p.length vs s.size() (buffer overfull)",
+      "why_false_positive": "if (p.length < s.size()) validates p.length vs s.size() (buffer overfull) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p.length vs maxSerializedFulfillment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (p.length > maxSerializedFulfillment) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for p.length vs maxSerializedFulfillment",
+      "why_false_positive": "if (p.length > maxSerializedFulfillment) validates p.length vs maxSerializedFulfillment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "p.length vs maxSerializedFulfillment",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (p.length > maxSerializedFulfillment) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing range validation for p.length vs maxSerializedFulfillment",
+      "why_false_positive": "if (p.length > maxSerializedFulfillment) validates p.length vs maxSerializedFulfillment range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "p.tag (fulfillment type tag)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch (p.tag) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for p.tag (fulfillment type tag)",
+      "why_false_positive": "switch (p.tag) validates p.tag (fulfillment type tag) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "p.tag (fulfillment type tag)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "switch (p.tag) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing type validation for p.tag (fulfillment type tag)",
+      "why_false_positive": "switch (p.tag) validates p.tag (fulfillment type tag) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "PreimageSha256::deserialize() error",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (ec) after PreimageSha256::deserialize at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for PreimageSha256::deserialize() error",
+      "why_false_positive": "if (ec) after PreimageSha256::deserialize validates PreimageSha256::deserialize() error for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Trailing data in Slice s",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!s.empty()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing empty string validation for Trailing data in Slice s",
+      "why_false_positive": "if (!s.empty()) validates Trailing data in Slice s for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Trailing data in Slice s",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "if (!s.empty()) at Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "issue_pattern": "Missing format validation for Trailing data in Slice s",
+      "why_false_positive": "if (!s.empty()) validates Trailing data in Slice s format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/conditions/Fulfillment.cpp",
+  "functions": [
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c"
+      ],
+      "lineno": 8,
+      "name": "match"
+    },
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c",
+        "Slice m"
+      ],
+      "lineno": 20,
+      "name": "validate"
+    },
+    {
+      "args": [
+        "Fulfillment const& f",
+        "Condition const& c"
+      ],
+      "lineno": 24,
+      "name": "validate"
+    },
+    {
+      "args": [
+        "Slice s",
+        "std::error_code& ec"
+      ],
+      "lineno": 28,
+      "name": "Fulfillment::deserialize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "cryptoconditions"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for Fulfillment and Condition validation, as well as deserialization. Tests should exist for: type mismatches, condition mismatches, invalid/empty buffers, malformed DER, unsupported types, and trailing garbage. However, only PreimageSha256 deserialization is supported; other types return unsupported errors, so those code paths may not be fully exercised. Edge cases like buffer over/underflow, large size, and unknown types should be tested. Test files likely include: test/conditions/Fulfillment_test.cpp, test/conditions/Condition_test.cpp, and possibly integration tests for transaction validation. Gaps may exist for unsupported types and error code propagation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation logic, DER parsing utilities",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "Fulfillment.type vs Condition.type",
+      "location": "match(Fulfillment const& f, Condition const& c)",
+      "validated_by": "match()",
+      "validates": [
+        "Checks that the fulfillment's type matches the condition's type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "Fulfillment-derived Condition vs input Condition",
+      "location": "match(Fulfillment const& f, Condition const& c)",
+      "validated_by": "match()",
+      "validates": [
+        "Checks that the condition derived from the fulfillment equals the input condition"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "Fulfillment validity against message",
+      "location": "validate(Fulfillment const& f, Condition const& c, Slice m)",
+      "validated_by": "Fulfillment::validate()",
+      "validates": [
+        "Checks that the fulfillment is valid for the given message"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::buffer_empty; returns nullptr",
+      "field": "Slice s (input buffer) non-empty",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (s.empty())",
+      "validates": [
+        "Checks that the input buffer is not empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec set by parsePreamble; returns nullptr",
+      "field": "DER preamble parse success",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "parsePreamble(s, ec)",
+      "validates": [
+        "Checks that the DER preamble can be parsed from the input buffer"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::malformed_encoding; returns nullptr",
+      "field": "DER preamble constructed/context-specific",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "isConstructed(p), isContextSpecific(p)",
+      "validates": [
+        "Checks that the DER preamble is constructed and context-specific"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::buffer_underfull; returns {}",
+      "field": "p.length vs s.size() (buffer underfull)",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (p.length > s.size())",
+      "validates": [
+        "Checks that the declared length does not exceed the buffer size"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::buffer_overfull; returns {}",
+      "field": "p.length vs s.size() (buffer overfull)",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (p.length < s.size())",
+      "validates": [
+        "Checks that the declared length is not less than the buffer size"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::large_size; returns {}",
+      "field": "p.length vs maxSerializedFulfillment",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (p.length > maxSerializedFulfillment)",
+      "validates": [
+        "Checks that the declared length does not exceed the maximum allowed size"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::unsupported_type or error::unknown_type; returns {}",
+      "field": "p.tag (fulfillment type tag)",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "switch (p.tag)",
+      "validates": [
+        "Checks that the tag corresponds to a supported fulfillment type",
+        "Returns error for unsupported or unknown types"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns {} if ec set",
+      "field": "PreimageSha256::deserialize() error",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (ec) after PreimageSha256::deserialize",
+      "validates": [
+        "Checks that PreimageSha256 deserialization succeeded"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "ec = error::trailing_garbage",
+      "field": "Trailing data in Slice s",
+      "location": "Fulfillment::deserialize(Slice s, std::error_code& ec)",
+      "validated_by": "if (!s.empty())",
+      "validates": [
+        "Checks that there is no extra data after the fulfillment"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

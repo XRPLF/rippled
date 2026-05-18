@@ -1,0 +1,38 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "LedgerHashPair"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "LedgerRange"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "RelationalDatabase"
+    }
+  ],
+  "description": "Defines the RelationalDatabase interface for interacting with ledger and transaction data in a relational database for the XRPL project, including methods for querying, saving, and deleting ledger and transaction records, as well as utility types and a range-checked casting template.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/rdb/RelationalDatabase.h",
+  "functions": [
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 343,
+      "name": "rangeCheckedCast"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

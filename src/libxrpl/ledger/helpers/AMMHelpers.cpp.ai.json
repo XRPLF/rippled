@@ -1,0 +1,1058 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "asset1"
+    },
+    {
+      "lineno": 7,
+      "name": "asset2"
+    },
+    {
+      "lineno": 7,
+      "name": "lptIssue"
+    },
+    {
+      "lineno": 22,
+      "name": "asset1Balance"
+    },
+    {
+      "lineno": 22,
+      "name": "asset1Deposit"
+    },
+    {
+      "lineno": 22,
+      "name": "lptAMMBalance"
+    },
+    {
+      "lineno": 22,
+      "name": "tfee"
+    },
+    {
+      "lineno": 54,
+      "name": "lpTokens"
+    },
+    {
+      "lineno": 97,
+      "name": "asset1Withdraw"
+    },
+    {
+      "lineno": 134,
+      "name": "assetBalance"
+    },
+    {
+      "lineno": 170,
+      "name": "n"
+    },
+    {
+      "lineno": 175,
+      "name": "lptAMMBalance"
+    },
+    {
+      "lineno": 175,
+      "name": "isDeposit"
+    },
+    {
+      "lineno": 186,
+      "name": "amountBalance"
+    },
+    {
+      "lineno": 186,
+      "name": "amount"
+    },
+    {
+      "lineno": 186,
+      "name": "amount2"
+    },
+    {
+      "lineno": 246,
+      "name": "a"
+    },
+    {
+      "lineno": 246,
+      "name": "b"
+    },
+    {
+      "lineno": 246,
+      "name": "c"
+    },
+    {
+      "lineno": 265,
+      "name": "frac"
+    },
+    {
+      "lineno": 265,
+      "name": "rm"
+    },
+    {
+      "lineno": 271,
+      "name": "rules"
+    },
+    {
+      "lineno": 271,
+      "name": "noRoundCb"
+    },
+    {
+      "lineno": 271,
+      "name": "balance"
+    },
+    {
+      "lineno": 271,
+      "name": "productCb"
+    },
+    {
+      "lineno": 284,
+      "name": "tokens"
+    },
+    {
+      "lineno": 360,
+      "name": "view"
+    },
+    {
+      "lineno": 360,
+      "name": "ammAccountID"
+    },
+    {
+      "lineno": 360,
+      "name": "freezeHandling"
+    },
+    {
+      "lineno": 360,
+      "name": "authHandling"
+    },
+    {
+      "lineno": 360,
+      "name": "j"
+    },
+    {
+      "lineno": 371,
+      "name": "ammSle"
+    },
+    {
+      "lineno": 371,
+      "name": "optAsset1"
+    },
+    {
+      "lineno": 371,
+      "name": "optAsset2"
+    },
+    {
+      "lineno": 414,
+      "name": "lpAccount"
+    },
+    {
+      "lineno": 414,
+      "name": "ammAccount"
+    },
+    {
+      "lineno": 450,
+      "name": "account"
+    },
+    {
+      "lineno": 474,
+      "name": "asset"
+    },
+    {
+      "lineno": 495,
+      "name": "sb"
+    },
+    {
+      "lineno": 495,
+      "name": "maxTrustlinesToDelete"
+    },
+    {
+      "lineno": 555,
+      "name": "asset2"
+    },
+    {
+      "lineno": 629,
+      "name": "ammIssue"
+    },
+    {
+      "lineno": 701,
+      "name": "lpTokens"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ammLPTokens"
+      ],
+      "entry_point": "ammLPTokens",
+      "purpose": "Calculates the number of LP tokens to mint based on two asset balances and the LP token issue.",
+      "validation_points": [
+        "asset1, asset2: validated by implicit type checking (STAmount)",
+        "lptIssue: validated by implicit type checking (Asset)"
+      ]
+    },
+    {
+      "call_chain": [
+        "lpTokensOut"
+      ],
+      "entry_point": "lpTokensOut",
+      "purpose": "Calculates the amount of LP tokens to mint when a deposit is made.",
+      "validation_points": [
+        "asset1Balance, asset1Deposit, lptAMMBalance: validated by implicit type checking (STAmount)",
+        "tfee: validated by implicit type checking (std::uint16_t)",
+        "asset1Deposit / asset1Balance: division operator (runtime, may throw if denominator is zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ammAssetIn",
+        "solveQuadraticEq"
+      ],
+      "entry_point": "ammAssetIn",
+      "purpose": "Calculates the amount of asset required for a given amount of LP tokens.",
+      "validation_points": [
+        "asset1Balance, lptAMMBalance, lpTokens: validated by implicit type checking (STAmount)",
+        "tfee: validated by implicit type checking (std::uint16_t)",
+        "lpTokens / lptAMMBalance: division operator (runtime, may throw if denominator is zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "lpTokensIn"
+      ],
+      "entry_point": "lpTokensIn",
+      "purpose": "Calculates the amount of LP tokens to burn when a withdrawal is made.",
+      "validation_points": [
+        "asset1Balance, asset1Withdraw, lptAMMBalance: validated by implicit type checking (STAmount)",
+        "tfee: validated by implicit type checking (std::uint16_t)",
+        "asset1Withdraw / asset1Balance: division operator (runtime, may throw if denominator is zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "ammAssetOut"
+      ],
+      "entry_point": "ammAssetOut",
+      "purpose": "Calculates the amount of asset to withdraw for a given amount of LP tokens burned.",
+      "validation_points": [
+        "assetBalance, lptAMMBalance, lpTokens: validated by implicit type checking (STAmount)",
+        "tfee: validated by implicit type checking (std::uint16_t)",
+        "lpTokens / lptAMMBalance: division operator (runtime, may throw if denominator is zero)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "asset1",
+      "flow": [
+        "Function argument",
+        "root2(asset1 * asset2)",
+        "toSTAmount(lptIssue, tokens)",
+        "return"
+      ],
+      "origin": "Function argument to ammLPTokens",
+      "transformations": [
+        "Multiplied with asset2",
+        "Square root taken",
+        "Converted to STAmount"
+      ],
+      "validated_at": "Function entry (implicit type checking)"
+    },
+    {
+      "field": "asset1Deposit",
+      "flow": [
+        "Function argument",
+        "asset1Deposit / asset1Balance",
+        "used in further calculations",
+        "toSTAmount or multiply",
+        "return"
+      ],
+      "origin": "Function argument to lpTokensOut",
+      "transformations": [
+        "Divided by asset1Balance",
+        "Used in quadratic formula",
+        "Converted to STAmount"
+      ],
+      "validated_at": "Function entry (implicit type checking), division operator (runtime)"
+    },
+    {
+      "field": "lptAMMBalance",
+      "flow": [
+        "Function argument",
+        "used in division and multiplication",
+        "toSTAmount or multiply",
+        "return"
+      ],
+      "origin": "Function argument to lpTokensOut, ammAssetIn, lpTokensIn, ammAssetOut",
+      "transformations": [
+        "Divided by or multiplied with other values",
+        "Converted to STAmount"
+      ],
+      "validated_at": "Function entry (implicit type checking), division operator (runtime)"
+    },
+    {
+      "field": "tfee",
+      "flow": [
+        "Function argument",
+        "feeMult, feeMultHalf, getFee",
+        "used in calculations",
+        "affects output"
+      ],
+      "origin": "Function argument to all main functions",
+      "transformations": [
+        "Converted to fee multipliers",
+        "Used in arithmetic"
+      ],
+      "validated_at": "Function entry (implicit type checking)"
+    },
+    {
+      "field": "lpTokens",
+      "flow": [
+        "Function argument",
+        "lpTokens / lptAMMBalance",
+        "used in quadratic formula",
+        "toSTAmount or multiply",
+        "return"
+      ],
+      "origin": "Function argument to ammAssetIn, ammAssetOut",
+      "transformations": [
+        "Divided by lptAMMBalance",
+        "Used in quadratic equation",
+        "Converted to STAmount"
+      ],
+      "validated_at": "Function entry (implicit type checking), division operator (runtime)"
+    }
+  ],
+  "description": "This file provides helper functions for Automated Market Maker (AMM) operations in the XRPL ledger, including calculations for LP tokens, asset deposits/withdrawals, rounding, AMM pool/account holds, trustline/MPT cleanup, fee auction initialization, and liquidity provider verification.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "STAmount (type, arithmetic validity)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field STAmount (type, arithmetic validity) validated by None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+      "issue_pattern": "Missing validation for STAmount (type, arithmetic validity)",
+      "why_false_positive": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers validates STAmount (type, arithmetic validity) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Asset (type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Asset (type) validated by None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+      "issue_pattern": "Missing validation for Asset (type)",
+      "why_false_positive": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers validates Asset (type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "std::uint16_t (type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field std::uint16_t (type) validated by None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+      "issue_pattern": "Missing validation for std::uint16_t (type)",
+      "why_false_positive": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers validates std::uint16_t (type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "root2 argument (likely non-negative)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field root2 argument (likely non-negative) validated by None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+      "issue_pattern": "Missing validation for root2 argument (likely non-negative)",
+      "why_false_positive": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers validates root2 argument (likely non-negative) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "division denominators (likely non-zero)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field division denominators (likely non-zero) validated by None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+      "issue_pattern": "Missing validation for division denominators (likely non-zero)",
+      "why_false_positive": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers validates division denominators (likely non-zero) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "asset1, asset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (STAmount) at ammLPTokens",
+      "issue_pattern": "Missing empty string validation for asset1, asset2",
+      "why_false_positive": "implicit type checking (STAmount) validates asset1, asset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "asset1, asset2",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (STAmount) at ammLPTokens",
+      "issue_pattern": "Missing type validation for asset1, asset2",
+      "why_false_positive": "implicit type checking (STAmount) validates asset1, asset2 type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "lptIssue",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (Asset) at ammLPTokens",
+      "issue_pattern": "Missing empty string validation for lptIssue",
+      "why_false_positive": "implicit type checking (Asset) validates lptIssue for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "lptIssue",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (Asset) at ammLPTokens",
+      "issue_pattern": "Missing type validation for lptIssue",
+      "why_false_positive": "implicit type checking (Asset) validates lptIssue type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "asset1Balance, asset1Deposit, lptAMMBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (STAmount) at lpTokensOut",
+      "issue_pattern": "Missing empty string validation for asset1Balance, asset1Deposit, lptAMMBalance",
+      "why_false_positive": "implicit type checking (STAmount) validates asset1Balance, asset1Deposit, lptAMMBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "asset1Balance, asset1Deposit, lptAMMBalance",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (STAmount) at lpTokensOut",
+      "issue_pattern": "Missing type validation for asset1Balance, asset1Deposit, lptAMMBalance",
+      "why_false_positive": "implicit type checking (STAmount) validates asset1Balance, asset1Deposit, lptAMMBalance type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tfee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (std::uint16_t) at lpTokensOut, ammAssetIn, lpTokensIn",
+      "issue_pattern": "Missing empty string validation for tfee",
+      "why_false_positive": "implicit type checking (std::uint16_t) validates tfee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "tfee",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (std::uint16_t) at lpTokensOut, ammAssetIn, lpTokensIn",
+      "issue_pattern": "Missing type validation for tfee",
+      "why_false_positive": "implicit type checking (std::uint16_t) validates tfee type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "asset1Deposit / asset1Balance, lpTokens / lptAMMBalance, asset1Withdraw / asset1Balance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "division operator (runtime) at lpTokensOut, ammAssetIn, lpTokensIn",
+      "issue_pattern": "Missing empty string validation for asset1Deposit / asset1Balance, lpTokens / lptAMMBalance, asset1Withdraw / asset1Balance",
+      "why_false_positive": "division operator (runtime) validates asset1Deposit / asset1Balance, lpTokens / lptAMMBalance, asset1Withdraw / asset1Balance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "root2 argument",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "root2 function (likely asserts non-negative input) at ammLPTokens, lpTokensOut, lpTokensIn",
+      "issue_pattern": "Missing empty string validation for root2 argument",
+      "why_false_positive": "root2 function (likely asserts non-negative input) validates root2 argument for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "solveQuadraticEq arguments",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "solveQuadraticEq function (likely checks for valid quadratic roots) at ammAssetIn",
+      "issue_pattern": "Missing empty string validation for solveQuadraticEq arguments",
+      "why_false_positive": "solveQuadraticEq function (likely checks for valid quadratic roots) validates solveQuadraticEq arguments for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "isFeatureEnabled(fixAMMv1_3)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "feature flag check at all functions",
+      "issue_pattern": "Missing empty string validation for isFeatureEnabled(fixAMMv1_3)",
+      "why_false_positive": "feature flag check validates isFeatureEnabled(fixAMMv1_3) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/AMMHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "asset1",
+        "asset2",
+        "lptIssue"
+      ],
+      "lineno": 7,
+      "name": "ammLPTokens"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "asset1Deposit",
+        "lptAMMBalance",
+        "tfee"
+      ],
+      "lineno": 22,
+      "name": "lpTokensOut"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee"
+      ],
+      "lineno": 54,
+      "name": "ammAssetIn"
+    },
+    {
+      "args": [
+        "asset1Balance",
+        "asset1Withdraw",
+        "lptAMMBalance",
+        "tfee"
+      ],
+      "lineno": 97,
+      "name": "lpTokensIn"
+    },
+    {
+      "args": [
+        "assetBalance",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee"
+      ],
+      "lineno": 134,
+      "name": "ammAssetOut"
+    },
+    {
+      "args": [
+        "n"
+      ],
+      "lineno": 170,
+      "name": "square"
+    },
+    {
+      "args": [
+        "lptAMMBalance",
+        "lpTokens",
+        "isDeposit"
+      ],
+      "lineno": 175,
+      "name": "adjustLPTokens"
+    },
+    {
+      "args": [
+        "amountBalance",
+        "amount",
+        "amount2",
+        "lptAMMBalance",
+        "lpTokens",
+        "tfee",
+        "isDeposit"
+      ],
+      "lineno": 186,
+      "name": "adjustAmountsByLPTokens"
+    },
+    {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lineno": 246,
+      "name": "solveQuadraticEq"
+    },
+    {
+      "args": [
+        "a",
+        "b",
+        "c"
+      ],
+      "lineno": 252,
+      "name": "solveQuadraticEqSmallest"
+    },
+    {
+      "args": [
+        "amount",
+        "frac",
+        "rm"
+      ],
+      "lineno": 265,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "rules",
+        "noRoundCb",
+        "balance",
+        "productCb",
+        "isDeposit"
+      ],
+      "lineno": 271,
+      "name": "getRoundedAsset"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "frac",
+        "isDeposit"
+      ],
+      "lineno": 284,
+      "name": "getRoundedLPTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "noRoundCb",
+        "lptAMMBalance",
+        "productCb",
+        "isDeposit"
+      ],
+      "lineno": 293,
+      "name": "getRoundedLPTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "amount",
+        "lptAMMBalance",
+        "tokens",
+        "tfee"
+      ],
+      "lineno": 312,
+      "name": "adjustAssetInByTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "balance",
+        "amount",
+        "lptAMMBalance",
+        "tokens",
+        "tfee"
+      ],
+      "lineno": 332,
+      "name": "adjustAssetOutByTokens"
+    },
+    {
+      "args": [
+        "rules",
+        "lptAMMBalance",
+        "tokens",
+        "frac"
+      ],
+      "lineno": 352,
+      "name": "adjustFracByTokens"
+    },
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "asset1",
+        "asset2",
+        "freezeHandling",
+        "authHandling",
+        "j"
+      ],
+      "lineno": 360,
+      "name": "ammPoolHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "optAsset1",
+        "optAsset2",
+        "freezeHandling",
+        "authHandling",
+        "j"
+      ],
+      "lineno": 371,
+      "name": "ammHolds"
+    },
+    {
+      "args": [
+        "view",
+        "asset1",
+        "asset2",
+        "ammAccount",
+        "lpAccount",
+        "j"
+      ],
+      "lineno": 414,
+      "name": "ammLPHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "lpAccount",
+        "j"
+      ],
+      "lineno": 445,
+      "name": "ammLPHolds"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "account"
+      ],
+      "lineno": 450,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [
+        "view",
+        "ammAccountID",
+        "asset"
+      ],
+      "lineno": 474,
+      "name": "ammAccountHolds"
+    },
+    {
+      "args": [
+        "sb",
+        "ammAccountID",
+        "maxTrustlinesToDelete",
+        "j"
+      ],
+      "lineno": 495,
+      "name": "deleteAMMTrustLines"
+    },
+    {
+      "args": [
+        "sb",
+        "ammAccountID",
+        "j"
+      ],
+      "lineno": 523,
+      "name": "deleteAMMMPTokens"
+    },
+    {
+      "args": [
+        "sb",
+        "asset",
+        "asset2",
+        "j"
+      ],
+      "lineno": 555,
+      "name": "deleteAMMAccount"
+    },
+    {
+      "args": [
+        "view",
+        "ammSle",
+        "account",
+        "lptAsset",
+        "tfee"
+      ],
+      "lineno": 594,
+      "name": "initializeFeeAuctionVote"
+    },
+    {
+      "args": [
+        "view",
+        "ammIssue",
+        "lpAccount"
+      ],
+      "lineno": 629,
+      "name": "isOnlyLiquidityProvider"
+    },
+    {
+      "args": [
+        "sb",
+        "lpTokens",
+        "ammSle",
+        "account"
+      ],
+      "lineno": 701,
+      "name": "verifyAndAdjustLPTokenBalance"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by integration and unit tests in the rippled codebase, especially in files such as 'test/AMM_test.cpp', 'test/AMMDepositWithdraw_test.cpp', or similar. These tests would cover normal and edge cases for AMM operations (deposits, withdrawals, LP token minting/burning). However, explicit validation of division-by-zero and type errors may not be directly tested unless negative/edge cases are included. There may be gaps in testing for runtime errors (e.g., division by zero) and for feature flag branches (e.g., fixAMMv1_3 enabled/disabled).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "STAmount (type, arithmetic validity)",
+      "Asset (type)",
+      "std::uint16_t (type)",
+      "root2 argument (likely non-negative)",
+      "division denominators (likely non-zero)"
+    ],
+    "framework": "None explicit; relies on C++ type system, runtime assertions, and business logic checks in math helpers",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "compile-time type error if wrong type",
+      "field": "asset1, asset2",
+      "location": "ammLPTokens",
+      "validated_by": "implicit type checking (STAmount)",
+      "validates": [
+        "asset1 and asset2 must be STAmount"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "compile-time type error if wrong type",
+      "field": "lptIssue",
+      "location": "ammLPTokens",
+      "validated_by": "implicit type checking (Asset)",
+      "validates": [
+        "lptIssue must be Asset"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "compile-time type error if wrong type",
+      "field": "asset1Balance, asset1Deposit, lptAMMBalance",
+      "location": "lpTokensOut",
+      "validated_by": "implicit type checking (STAmount)",
+      "validates": [
+        "all must be STAmount"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "compile-time type error if wrong type",
+      "field": "tfee",
+      "location": "lpTokensOut, ammAssetIn, lpTokensIn",
+      "validated_by": "implicit type checking (std::uint16_t)",
+      "validates": [
+        "tfee must be uint16_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "runtime exception (divide by zero or assertion in STAmount/Number)",
+      "field": "asset1Deposit / asset1Balance, lpTokens / lptAMMBalance, asset1Withdraw / asset1Balance",
+      "location": "lpTokensOut, ammAssetIn, lpTokensIn",
+      "validated_by": "division operator (runtime)",
+      "validates": [
+        "denominator must not be zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "runtime exception/assertion if negative",
+      "field": "root2 argument",
+      "location": "ammLPTokens, lpTokensOut, lpTokensIn",
+      "validated_by": "root2 function (likely asserts non-negative input)",
+      "validates": [
+        "argument to root2 must be non-negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "runtime exception/assertion if no real solution",
+      "field": "solveQuadraticEq arguments",
+      "location": "ammAssetIn",
+      "validated_by": "solveQuadraticEq function (likely checks for valid quadratic roots)",
+      "validates": [
+        "discriminant must be non-negative"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (alters logic path)",
+      "field": "isFeatureEnabled(fixAMMv1_3)",
+      "location": "all functions",
+      "validated_by": "feature flag check",
+      "validates": [
+        "feature flag must be set for new logic"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

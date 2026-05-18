@@ -1,0 +1,136 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "SharedWeakCachePointer()",
+        "SharedWeakCachePointer(SharedWeakCachePointer const& rhs)",
+        "SharedWeakCachePointer(std::shared_ptr<TT> const& rhs)",
+        "SharedWeakCachePointer(SharedWeakCachePointer&& rhs)",
+        "SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)"
+      ],
+      "lineno": 14,
+      "name": "SharedWeakCachePointer"
+    }
+  ],
+  "description": "Defines the SharedWeakCachePointer template class, a wrapper around std::variant<std::shared_ptr, std::weak_ptr> for efficient storage and management of intrusive pointers in caches.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/SharedWeakCachePointer.h",
+  "functions": [
+    {
+      "args": [
+        "SharedWeakCachePointer const& rhs"
+      ],
+      "lineno": 18,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT> const& rhs"
+      ],
+      "lineno": 22,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "SharedWeakCachePointer&& rhs"
+      ],
+      "lineno": 25,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT>&& rhs"
+      ],
+      "lineno": 28,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "SharedWeakCachePointer const& rhs"
+      ],
+      "lineno": 31,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT> const& rhs"
+      ],
+      "lineno": 35,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT>&& rhs"
+      ],
+      "lineno": 39,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "~SharedWeakCachePointer"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getStrong"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "operator bool"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "reset"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "use_count"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "expired"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "lock"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "isStrong"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "isWeak"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "convertToStrong"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "convertToWeak"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

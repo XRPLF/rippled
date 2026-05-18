@@ -1,0 +1,297 @@
+{
+  "args": [
+    {
+      "lineno": 5,
+      "name": "key"
+    },
+    {
+      "lineno": 25,
+      "name": "peer"
+    },
+    {
+      "lineno": 38,
+      "name": "flags"
+    },
+    {
+      "lineno": 46,
+      "name": "tx_interval"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "addSuppression",
+        "emplace"
+      ],
+      "entry_point": "addSuppression",
+      "purpose": "Adds a suppression entry for a given key, ensuring it exists in the suppression map.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "addSuppressionPeer",
+        "addSuppressionPeerWithStatus",
+        "emplace"
+      ],
+      "entry_point": "addSuppressionPeer",
+      "purpose": "Adds a peer to the suppression entry for a key, creating the entry if needed.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "addSuppressionPeer",
+        "emplace"
+      ],
+      "entry_point": "addSuppressionPeer (with flags)",
+      "purpose": "Adds a peer and retrieves flags for the suppression entry.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "shouldProcess",
+        "emplace"
+      ],
+      "entry_point": "shouldProcess",
+      "purpose": "Determines if a transaction should be processed, updating peer and flags.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "getFlags",
+        "emplace"
+      ],
+      "entry_point": "getFlags",
+      "purpose": "Retrieves flags for a suppression entry.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "setFlags",
+        "emplace"
+      ],
+      "entry_point": "setFlags",
+      "purpose": "Sets flags for a suppression entry, with validation.",
+      "validation_points": [
+        "XRPL_ASSERT(static_cast<bool>(flags), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "shouldRelay",
+        "emplace"
+      ],
+      "entry_point": "shouldRelay",
+      "purpose": "Determines if a message should be relayed and returns the peer set if so.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "key (uint256)",
+      "flow": [
+        "function argument",
+        "emplace",
+        "suppressionMap_"
+      ],
+      "origin": "Function argument (all entry points)",
+      "transformations": [
+        "Used as map key; may trigger expire() if not present"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "peer (PeerShortID)",
+      "flow": [
+        "function argument",
+        "emplace",
+        "Entry.addPeer(peer)"
+      ],
+      "origin": "Function argument (addSuppressionPeer*, shouldProcess)",
+      "transformations": [
+        "Added to Entry's peer set"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "flags (HashRouterFlags)",
+      "flow": [
+        "function argument (setFlags) or Entry.getFlags() (others)",
+        "setFlags: XRPL_ASSERT validation",
+        "setFlags: Entry.setFlags(flags)",
+        "addSuppressionPeer/shouldProcess/getFlags: Entry.getFlags()"
+      ],
+      "origin": "Function argument (setFlags), or output (addSuppressionPeer, shouldProcess, getFlags)",
+      "transformations": [
+        "setFlags: validated for non-zero, then set in Entry",
+        "others: retrieved from Entry"
+      ],
+      "validated_at": "setFlags (XRPL_ASSERT)"
+    },
+    {
+      "field": "suppressionMap_",
+      "flow": [
+        "used in emplace (find, insert, touch, expire)",
+        "Entry objects stored/updated here"
+      ],
+      "origin": "HashRouter member variable",
+      "transformations": [
+        "expire() may remove old entries",
+        "touch() updates LRU"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements methods for the xrpl::HashRouter class, which manages suppression and relay of hashed items (such as transactions) across peers, handling peer tracking, suppression timing, and relay logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "flags (HashRouterFlags)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at setFlags",
+      "issue_pattern": "Missing empty string validation for flags (HashRouterFlags)",
+      "why_false_positive": "XRPL_ASSERT validates flags (HashRouterFlags) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/core/HashRouter.cpp",
+  "functions": [
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 5,
+      "name": "emplace"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 19,
+      "name": "addSuppression"
+    },
+    {
+      "args": [
+        "key",
+        "peer"
+      ],
+      "lineno": 25,
+      "name": "addSuppressionPeer"
+    },
+    {
+      "args": [
+        "key",
+        "peer"
+      ],
+      "lineno": 29,
+      "name": "addSuppressionPeerWithStatus"
+    },
+    {
+      "args": [
+        "key",
+        "peer",
+        "flags"
+      ],
+      "lineno": 38,
+      "name": "addSuppressionPeer"
+    },
+    {
+      "args": [
+        "key",
+        "peer",
+        "flags",
+        "tx_interval"
+      ],
+      "lineno": 46,
+      "name": "shouldProcess"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 57,
+      "name": "getFlags"
+    },
+    {
+      "args": [
+        "key",
+        "flags"
+      ],
+      "lineno": 63,
+      "name": "setFlags"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 76,
+      "name": "shouldRelay"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is core infrastructure for transaction/message suppression and relay logic. Typical test coverage would be in unit tests for HashRouter, likely in files such as HashRouter_test.cpp or similar. The only explicit validation is the XRPL_ASSERT in setFlags, which checks that flags is non-zero before setting. There is no explicit validation for key or peer inputs. Test coverage should ensure: (1) setFlags rejects zero/invalid flags, (2) suppression and relay logic works as expected, (3) peer addition and flag propagation is correct. Gaps: No validation for key/peer, so malformed or default values may not be caught. If XRPL_ASSERT is compiled out, setFlags may not validate at runtime.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "notes": "No template, constructor, or framework-level input validation is present in this file. All other parameters (key, peer, flags) are assumed to be valid by type and are not explicitly validated for format, range, or type beyond C++ type system. Only business logic validation is performed via XRPL_ASSERT in setFlags.",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws in debug)",
+      "field": "flags (HashRouterFlags)",
+      "location": "setFlags",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "flags is not zero (truthy)",
+        "flags is a valid input for setting"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

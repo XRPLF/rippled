@@ -1,0 +1,142 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "host"
+    },
+    {
+      "lineno": 44,
+      "name": "path"
+    },
+    {
+      "lineno": 44,
+      "name": "port"
+    },
+    {
+      "lineno": 44,
+      "name": "ios"
+    },
+    {
+      "lineno": 44,
+      "name": "lastEndpoint"
+    },
+    {
+      "lineno": 44,
+      "name": "lastStatus"
+    },
+    {
+      "lineno": 44,
+      "name": "cb"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& host",
+        "std::string const& path",
+        "std::string const& port",
+        "boost::asio::io_context& ios",
+        "endpoint_type const& lastEndpoint",
+        "bool lastStatus",
+        "callback_type cb"
+      ],
+      "lineno": 18,
+      "name": "WorkBase"
+    }
+  ],
+  "description": "Defines a generic asynchronous HTTP work base class template (WorkBase) for performing HTTP GET requests using Boost.Asio and Boost.Beast, providing a framework for derived classes to implement specific HTTP work logic in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/WorkBase.h",
+  "functions": [
+    {
+      "args": [
+        "std::string const& host",
+        "std::string const& path",
+        "std::string const& port",
+        "boost::asio::io_context& ios",
+        "endpoint_type const& lastEndpoint",
+        "bool lastStatus",
+        "callback_type cb"
+      ],
+      "lineno": 44,
+      "name": "WorkBase"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "~WorkBase"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "impl"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "cancel"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 67,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "error_code const& ec",
+        "results_type results"
+      ],
+      "lineno": 69,
+      "name": "onResolve"
+    },
+    {
+      "args": [
+        "error_code const& ec",
+        "endpoint_type const& endpoint"
+      ],
+      "lineno": 71,
+      "name": "onConnect"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "onStart"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 75,
+      "name": "onRequest"
+    },
+    {
+      "args": [
+        "error_code const& ec"
+      ],
+      "lineno": 77,
+      "name": "onResponse"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "close"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "detail"
+    }
+  ]
+}

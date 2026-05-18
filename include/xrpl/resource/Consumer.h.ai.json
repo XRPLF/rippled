@@ -1,0 +1,133 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "logic"
+    },
+    {
+      "lineno": 14,
+      "name": "entry"
+    },
+    {
+      "lineno": 18,
+      "name": "other"
+    },
+    {
+      "lineno": 29,
+      "name": "name"
+    },
+    {
+      "lineno": 41,
+      "name": "fee"
+    },
+    {
+      "lineno": 41,
+      "name": "context"
+    },
+    {
+      "lineno": 51,
+      "name": "j"
+    },
+    {
+      "lineno": 62,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 67,
+      "name": "os"
+    },
+    {
+      "lineno": 67,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Consumer"
+    }
+  ],
+  "description": "Defines the Consumer class, representing an endpoint that consumes resources in the XRPL system, with methods for privilege management, charging, and status checking.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Consumer.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "to_string"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "isUnlimited"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 29,
+      "name": "elevate"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "disposition"
+    },
+    {
+      "args": [
+        "fee",
+        "context"
+      ],
+      "lineno": 41,
+      "name": "charge"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "warn"
+    },
+    {
+      "args": [
+        "j"
+      ],
+      "lineno": 51,
+      "name": "disconnect"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "balance"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "entry"
+    },
+    {
+      "args": [
+        "publicKey"
+      ],
+      "lineno": 62,
+      "name": "setPublicKey"
+    },
+    {
+      "args": [
+        "os",
+        "v"
+      ],
+      "lineno": 67,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "Resource"
+    }
+  ]
+}

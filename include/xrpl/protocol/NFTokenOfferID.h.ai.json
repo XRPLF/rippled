@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides helper functions to add an 'offer_id' field to the 'meta' output parameter for successful NFTokenCreateOffer transactions in XRPL, and to extract or insert the offer ID in transaction metadata or JSON responses.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/NFTokenOfferID.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> const& serializedTx",
+        "TxMeta const& transactionMeta"
+      ],
+      "lineno": 14,
+      "name": "canHaveNFTokenOfferID"
+    },
+    {
+      "args": [
+        "TxMeta const& transactionMeta"
+      ],
+      "lineno": 18,
+      "name": "getOfferIDFromCreatedOffer"
+    },
+    {
+      "args": [
+        "Json::Value& response",
+        "std::shared_ptr<STTx const> const& transaction",
+        "TxMeta const& transactionMeta"
+      ],
+      "lineno": 21,
+      "name": "insertNFTokenOfferID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

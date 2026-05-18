@@ -1,0 +1,648 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "app"
+    },
+    {
+      "lineno": 45,
+      "name": "hash"
+    },
+    {
+      "lineno": 46,
+      "name": "seq"
+    },
+    {
+      "lineno": 47,
+      "name": "reason"
+    },
+    {
+      "lineno": 48,
+      "name": "clock"
+    },
+    {
+      "lineno": 49,
+      "name": "peerSet"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "hash",
+        "seq",
+        "reason",
+        "clock",
+        "peerSet"
+      ],
+      "lineno": 44,
+      "name": "InboundLedger"
+    },
+    {
+      "args": [],
+      "lineno": 771,
+      "name": "PeerDataCounts"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InboundLedger::init",
+        "tryDB",
+        "addPeers / queueJob / done",
+        "XRPL_ASSERT (validation)"
+      ],
+      "entry_point": "InboundLedger::init",
+      "purpose": "Initializes the InboundLedger, attempts to find the ledger in the local DB, and if found, validates its header and fees.",
+      "validation_points": [
+        "XRPL_ASSERT in InboundLedger::init (validates mLedger->header().seq and mLedger->read(keylet::fees()))"
+      ]
+    },
+    {
+      "call_chain": [
+        "InboundLedger::checkLocal",
+        "tryDB",
+        "done"
+      ],
+      "entry_point": "InboundLedger::checkLocal",
+      "purpose": "Checks if the ledger is already present locally and marks as done if found.",
+      "validation_points": [
+        "Indirect: If ledger is found, InboundLedger::init's validation applies"
+      ]
+    },
+    {
+      "call_chain": [
+        "InboundLedger::InboundLedger",
+        "touch"
+      ],
+      "entry_point": "InboundLedger (constructor)",
+      "purpose": "Constructs the InboundLedger object and sets up initial state.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mLedger",
+      "flow": [
+        "tryDB (sets mLedger if found)",
+        "InboundLedger::init (uses mLedger)",
+        "XRPL_ASSERT (validates mLedger->header().seq and mLedger->read(keylet::fees()))",
+        "mLedger->setImmutable()",
+        "app_.getLedgerMaster().storeLedger(mLedger)"
+      ],
+      "origin": "Set in tryDB if ledger is found in DB, or later via network fetch",
+      "transformations": [
+        "Loaded from DB or network",
+        "Validated for header.seq and fees",
+        "Set to immutable",
+        "Stored in LedgerMaster"
+      ],
+      "validated_at": "InboundLedger::init (XRPL_ASSERT)"
+    },
+    {
+      "field": "mSeq",
+      "flow": [
+        "InboundLedger::InboundLedger (sets mSeq)",
+        "InboundLedger::update (may update mSeq if previously 0)",
+        "Used in validation: mLedger->header().seq"
+      ],
+      "origin": "Constructor argument or updated in update()",
+      "transformations": [
+        "Set from constructor or update()",
+        "Compared in XRPL_ASSERT"
+      ],
+      "validated_at": "InboundLedger::init (XRPL_ASSERT)"
+    },
+    {
+      "field": "fees (from mLedger->read(keylet::fees()))",
+      "flow": [
+        "tryDB (loads ledger)",
+        "InboundLedger::init (reads fees from mLedger)",
+        "XRPL_ASSERT (validates fees presence)"
+      ],
+      "origin": "Ledger DB or network fetch",
+      "transformations": [
+        "Read from ledger state",
+        "Checked for existence"
+      ],
+      "validated_at": "InboundLedger::init (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Implements the InboundLedger class, which manages the acquisition and synchronization of ledgers from peers in the XRPL network, handling requests, responses, timeouts, and local storage checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mLedger (type safety via smart pointers)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mLedger (type safety via smart pointers) validated by XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet)",
+      "issue_pattern": "Missing validation for mLedger (type safety via smart pointers)",
+      "why_false_positive": "XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet) validates mLedger (type safety via smart pointers) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "hash_ (uint256 type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field hash_ (uint256 type) validated by XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet)",
+      "issue_pattern": "Missing validation for hash_ (uint256 type)",
+      "why_false_positive": "XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet) validates hash_ (uint256 type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mSeq (std::uint32_t type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mSeq (std::uint32_t type) validated by XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet)",
+      "issue_pattern": "Missing validation for mSeq (std::uint32_t type)",
+      "why_false_positive": "XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet) validates mSeq (std::uint32_t type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mReason (enum Reason type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field mReason (enum Reason type) validated by XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet)",
+      "issue_pattern": "Missing validation for mReason (enum Reason type)",
+      "why_false_positive": "XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet) validates mReason (enum Reason type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mLedger->header().seq and mLedger->read(keylet::fees())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at InboundLedger::init",
+      "issue_pattern": "Missing empty string validation for mLedger->header().seq and mLedger->read(keylet::fees())",
+      "why_false_positive": "XRPL_ASSERT macro validates mLedger->header().seq and mLedger->read(keylet::fees()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/InboundLedger.cpp",
+  "functions": [
+    {
+      "args": [
+        "root",
+        "map",
+        "max",
+        "filter"
+      ],
+      "lineno": 97,
+      "name": "neededHashes"
+    },
+    {
+      "args": [
+        "max",
+        "filter"
+      ],
+      "lineno": 116,
+      "name": "InboundLedger::neededTxHashes"
+    },
+    {
+      "args": [
+        "max",
+        "filter"
+      ],
+      "lineno": 121,
+      "name": "InboundLedger::neededStateHashes"
+    },
+    {
+      "args": [
+        "srcDB"
+      ],
+      "lineno": 128,
+      "name": "InboundLedger::tryDB"
+    },
+    {
+      "args": [
+        "wasProgress",
+        "collectionLock"
+      ],
+      "lineno": 217,
+      "name": "InboundLedger::onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 259,
+      "name": "InboundLedger::addPeers"
+    },
+    {
+      "args": [],
+      "lineno": 267,
+      "name": "InboundLedger::pmDowncast"
+    },
+    {
+      "args": [],
+      "lineno": 271,
+      "name": "InboundLedger::done"
+    },
+    {
+      "args": [
+        "peer",
+        "reason"
+      ],
+      "lineno": 304,
+      "name": "InboundLedger::trigger"
+    },
+    {
+      "args": [
+        "nodes",
+        "reason"
+      ],
+      "lineno": 464,
+      "name": "InboundLedger::filterNodes"
+    },
+    {
+      "args": [
+        "data"
+      ],
+      "lineno": 500,
+      "name": "InboundLedger::takeHeader"
+    },
+    {
+      "args": [
+        "packet",
+        "san"
+      ],
+      "lineno": 527,
+      "name": "InboundLedger::receiveNode"
+    },
+    {
+      "args": [
+        "data",
+        "san"
+      ],
+      "lineno": 589,
+      "name": "InboundLedger::takeAsRootNode"
+    },
+    {
+      "args": [
+        "data",
+        "san"
+      ],
+      "lineno": 610,
+      "name": "InboundLedger::takeTxRootNode"
+    },
+    {
+      "args": [],
+      "lineno": 631,
+      "name": "InboundLedger::getNeededHashes"
+    },
+    {
+      "args": [
+        "peer",
+        "data"
+      ],
+      "lineno": 655,
+      "name": "InboundLedger::gotData"
+    },
+    {
+      "args": [
+        "peer",
+        "packet"
+      ],
+      "lineno": 678,
+      "name": "InboundLedger::processData"
+    },
+    {
+      "args": [],
+      "lineno": 803,
+      "name": "InboundLedger::runData"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 846,
+      "name": "InboundLedger::getJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 769,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "Testing for InboundLedger is likely found in unit/integration tests for ledger acquisition and validation, such as 'test_inbound_ledger.cpp', 'test_ledger_acquisition.cpp', or similar files in the test/ or src/test/ledger/ directories. The XRPL_ASSERT macro is typically tested via scenarios where ledgers are missing fees or have invalid headers. However, edge cases such as malformed ledgers, missing fees, or sequence mismatches may not be fully covered unless explicitly tested. There may be gaps in testing error handling paths (e.g., exceptions in tryDB, incomplete ledgers, or aggressive timeouts).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "mLedger (type safety via smart pointers)",
+      "hash_ (uint256 type)",
+      "mSeq (std::uint32_t type)",
+      "mReason (enum Reason type)"
+    ],
+    "framework": "XRPL_ASSERT macro, C++ type system, possible jss:: for JSON validation (not shown in this snippet)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort)",
+      "field": "mLedger->header().seq and mLedger->read(keylet::fees())",
+      "location": "InboundLedger::init",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "If ledger sequence is before XRP_LEDGER_EARLIEST_FEES, skip fee check",
+        "If ledger sequence is after, ensure fees entry exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

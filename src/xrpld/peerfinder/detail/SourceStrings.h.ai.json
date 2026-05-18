@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "name"
+    },
+    {
+      "lineno": 16,
+      "name": "strings"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "SourceStrings"
+    }
+  ],
+  "description": "Defines the SourceStrings class, which provides peer addresses from a static set of strings for the PeerFinder subsystem.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/SourceStrings.h",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "strings"
+      ],
+      "lineno": 16,
+      "name": "New"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "PeerFinder"
+    }
+  ]
+}

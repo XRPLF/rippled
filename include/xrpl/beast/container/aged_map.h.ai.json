@@ -1,0 +1,35 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "Key"
+    },
+    {
+      "lineno": 11,
+      "name": "T"
+    },
+    {
+      "lineno": 12,
+      "name": "Clock"
+    },
+    {
+      "lineno": 13,
+      "name": "Compare"
+    },
+    {
+      "lineno": 14,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines a type alias 'aged_map' for an ordered associative container that tracks the age of its elements, using a specified clock and allocator, within the 'beast' namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_map.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

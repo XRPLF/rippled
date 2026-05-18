@@ -1,0 +1,435 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "sle"
+    },
+    {
+      "lineno": 262,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 262,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 262,
+      "name": "sequence"
+    },
+    {
+      "lineno": 262,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 262,
+      "name": "vaultNode"
+    },
+    {
+      "lineno": 262,
+      "name": "vaultID"
+    },
+    {
+      "lineno": 262,
+      "name": "account"
+    },
+    {
+      "lineno": 262,
+      "name": "owner"
+    },
+    {
+      "lineno": 262,
+      "name": "loanSequence"
+    },
+    {
+      "lineno": 277,
+      "name": "sle"
+    },
+    {
+      "lineno": 287,
+      "name": "value"
+    },
+    {
+      "lineno": 295,
+      "name": "value"
+    },
+    {
+      "lineno": 303,
+      "name": "value"
+    },
+    {
+      "lineno": 311,
+      "name": "value"
+    },
+    {
+      "lineno": 319,
+      "name": "value"
+    },
+    {
+      "lineno": 327,
+      "name": "value"
+    },
+    {
+      "lineno": 335,
+      "name": "value"
+    },
+    {
+      "lineno": 343,
+      "name": "value"
+    },
+    {
+      "lineno": 351,
+      "name": "value"
+    },
+    {
+      "lineno": 359,
+      "name": "value"
+    },
+    {
+      "lineno": 367,
+      "name": "value"
+    },
+    {
+      "lineno": 375,
+      "name": "value"
+    },
+    {
+      "lineno": 383,
+      "name": "value"
+    },
+    {
+      "lineno": 391,
+      "name": "value"
+    },
+    {
+      "lineno": 399,
+      "name": "value"
+    },
+    {
+      "lineno": 407,
+      "name": "value"
+    },
+    {
+      "lineno": 415,
+      "name": "value"
+    },
+    {
+      "lineno": 423,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 22,
+      "name": "LoanBroker"
+    },
+    {
+      "args": [
+        "previousTxnID",
+        "previousTxnLgrSeq",
+        "sequence",
+        "ownerNode",
+        "vaultNode",
+        "vaultID",
+        "account",
+        "owner",
+        "loanSequence"
+      ],
+      "lineno": 256,
+      "name": "LoanBrokerBuilder"
+    }
+  ],
+  "description": "Defines the LoanBroker ledger entry and its builder for the XRPL protocol, providing type-safe accessors and a fluent builder interface for constructing and manipulating LoanBroker ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/LoanBroker.h",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 27,
+      "name": "LoanBroker"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getVaultNode"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "getOwner"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "getLoanSequence"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "getData"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "hasData"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "getManagementFeeRate"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "hasManagementFeeRate"
+    },
+    {
+      "args": [],
+      "lineno": 147,
+      "name": "getOwnerCount"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "hasOwnerCount"
+    },
+    {
+      "args": [],
+      "lineno": 165,
+      "name": "getDebtTotal"
+    },
+    {
+      "args": [],
+      "lineno": 174,
+      "name": "hasDebtTotal"
+    },
+    {
+      "args": [],
+      "lineno": 183,
+      "name": "getDebtMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 192,
+      "name": "hasDebtMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 201,
+      "name": "getCoverAvailable"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "hasCoverAvailable"
+    },
+    {
+      "args": [],
+      "lineno": 219,
+      "name": "getCoverRateMinimum"
+    },
+    {
+      "args": [],
+      "lineno": 228,
+      "name": "hasCoverRateMinimum"
+    },
+    {
+      "args": [],
+      "lineno": 237,
+      "name": "getCoverRateLiquidation"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "hasCoverRateLiquidation"
+    },
+    {
+      "args": [
+        "previousTxnID",
+        "previousTxnLgrSeq",
+        "sequence",
+        "ownerNode",
+        "vaultNode",
+        "vaultID",
+        "account",
+        "owner",
+        "loanSequence"
+      ],
+      "lineno": 262,
+      "name": "LoanBrokerBuilder"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 277,
+      "name": "LoanBrokerBuilder"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 287,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 295,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 303,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 311,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 319,
+      "name": "setVaultNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 327,
+      "name": "setVaultID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 335,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 343,
+      "name": "setOwner"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 351,
+      "name": "setLoanSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 359,
+      "name": "setData"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 367,
+      "name": "setManagementFeeRate"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 375,
+      "name": "setOwnerCount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 383,
+      "name": "setDebtTotal"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 391,
+      "name": "setDebtMaximum"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 399,
+      "name": "setCoverAvailable"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 407,
+      "name": "setCoverRateMinimum"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 415,
+      "name": "setCoverRateLiquidation"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 423,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "AgedContainer& c"
+    },
+    {
+      "lineno": 11,
+      "name": "std::chrono::duration<Rep, Period> const& age"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a function to expire items from an aged container that are older than a specified duration.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_container_utility.h",
+  "functions": [
+    {
+      "args": [
+        "AgedContainer& c",
+        "std::chrono::duration<Rep, Period> const& age"
+      ],
+      "lineno": 10,
+      "name": "expire"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    }
+  ]
+}

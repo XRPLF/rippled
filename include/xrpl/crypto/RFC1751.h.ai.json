@@ -1,0 +1,181 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "strKey"
+    },
+    {
+      "lineno": 9,
+      "name": "strHuman"
+    },
+    {
+      "lineno": 12,
+      "name": "strHuman"
+    },
+    {
+      "lineno": 12,
+      "name": "strKey"
+    },
+    {
+      "lineno": 21,
+      "name": "blob"
+    },
+    {
+      "lineno": 21,
+      "name": "bytes"
+    },
+    {
+      "lineno": 28,
+      "name": "s"
+    },
+    {
+      "lineno": 28,
+      "name": "start"
+    },
+    {
+      "lineno": 28,
+      "name": "length"
+    },
+    {
+      "lineno": 30,
+      "name": "strHuman"
+    },
+    {
+      "lineno": 30,
+      "name": "strData"
+    },
+    {
+      "lineno": 32,
+      "name": "s"
+    },
+    {
+      "lineno": 32,
+      "name": "x"
+    },
+    {
+      "lineno": 32,
+      "name": "start"
+    },
+    {
+      "lineno": 32,
+      "name": "length"
+    },
+    {
+      "lineno": 34,
+      "name": "strWord"
+    },
+    {
+      "lineno": 36,
+      "name": "strWord"
+    },
+    {
+      "lineno": 36,
+      "name": "iMin"
+    },
+    {
+      "lineno": 36,
+      "name": "iMax"
+    },
+    {
+      "lineno": 38,
+      "name": "strData"
+    },
+    {
+      "lineno": 38,
+      "name": "vsHuman"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 6,
+      "name": "RFC1751"
+    }
+  ],
+  "description": "Header file defining the RFC1751 class in the xrpl namespace, providing methods for converting between English words and cryptographic keys, as well as utility functions for word selection and manipulation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/crypto/RFC1751.h",
+  "functions": [
+    {
+      "args": [
+        "strKey",
+        "strHuman"
+      ],
+      "lineno": 9,
+      "name": "getKeyFromEnglish"
+    },
+    {
+      "args": [
+        "strHuman",
+        "strKey"
+      ],
+      "lineno": 12,
+      "name": "getEnglishFromKey"
+    },
+    {
+      "args": [
+        "blob",
+        "bytes"
+      ],
+      "lineno": 21,
+      "name": "getWordFromBlob"
+    },
+    {
+      "args": [
+        "s",
+        "start",
+        "length"
+      ],
+      "lineno": 28,
+      "name": "extract"
+    },
+    {
+      "args": [
+        "strHuman",
+        "strData"
+      ],
+      "lineno": 30,
+      "name": "btoe"
+    },
+    {
+      "args": [
+        "s",
+        "x",
+        "start",
+        "length"
+      ],
+      "lineno": 32,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "strWord"
+      ],
+      "lineno": 34,
+      "name": "standard"
+    },
+    {
+      "args": [
+        "strWord",
+        "iMin",
+        "iMax"
+      ],
+      "lineno": 36,
+      "name": "wsrch"
+    },
+    {
+      "args": [
+        "strData",
+        "vsHuman"
+      ],
+      "lineno": 38,
+      "name": "etob"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

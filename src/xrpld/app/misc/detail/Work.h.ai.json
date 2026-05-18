@@ -1,0 +1,35 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "Work"
+    }
+  ],
+  "description": "Defines an abstract base class 'Work' for asynchronous tasks with run and cancel methods, and sets up a response type alias for HTTP responses using Boost.Beast, within the xrpl::detail namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/Work.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "cancel"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "detail"
+    }
+  ]
+}

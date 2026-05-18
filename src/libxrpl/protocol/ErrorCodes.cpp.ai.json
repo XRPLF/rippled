@@ -1,0 +1,281 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "make_error",
+        "get_error_info",
+        "sortErrorInfos"
+      ],
+      "entry_point": "make_error",
+      "purpose": "Creates a JSON error object for RPC responses, validating error codes and mapping them to error info.",
+      "validation_points": [
+        "get_error_info: Validates that the error code exists in the sorted ErrorInfo array. Throws if not found."
+      ]
+    },
+    {
+      "call_chain": [
+        "inject_error",
+        "get_error_info",
+        "sortErrorInfos"
+      ],
+      "entry_point": "inject_error",
+      "purpose": "Injects error information into an existing JSON object, validating error codes.",
+      "validation_points": [
+        "get_error_info: Validates error code existence."
+      ]
+    },
+    {
+      "call_chain": [
+        "contains_error",
+        "get_error_info",
+        "sortErrorInfos"
+      ],
+      "entry_point": "contains_error",
+      "purpose": "Checks if a given error code is recognized/valid.",
+      "validation_points": [
+        "get_error_info: Validates error code existence."
+      ]
+    },
+    {
+      "call_chain": [
+        "error_code_http_status",
+        "get_error_info",
+        "sortErrorInfos"
+      ],
+      "entry_point": "error_code_http_status",
+      "purpose": "Maps an error code to its HTTP status, validating code.",
+      "validation_points": [
+        "get_error_info: Validates error code existence."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "error_code",
+      "flow": [
+        "User input or internal error triggers function call",
+        "Passed to get_error_info",
+        "get_error_info uses sortErrorInfos to find ErrorInfo",
+        "ErrorInfo used to populate JSON or return status"
+      ],
+      "origin": "Passed as argument to make_error, inject_error, contains_error, error_code_http_status",
+      "transformations": [
+        "Mapped from integer code to ErrorInfo struct",
+        "ErrorInfo fields (token, message, http_status) extracted"
+      ],
+      "validated_at": "get_error_info (throws if code not found)"
+    },
+    {
+      "field": "ErrorInfo",
+      "flow": [
+        "unorderedErrorInfos",
+        "sortErrorInfos (sorts and caches array)",
+        "get_error_info (binary search for code)",
+        "Used in make_error/inject_error to populate JSON"
+      ],
+      "origin": "Static unorderedErrorInfos array",
+      "transformations": [
+        "Sorted by code for efficient lookup",
+        "Extracted fields for JSON output"
+      ],
+      "validated_at": "get_error_info (ensures code exists)"
+    },
+    {
+      "field": "JSON error object",
+      "flow": [
+        "make_error/inject_error",
+        "Populated with ErrorInfo fields",
+        "Returned to RPC client"
+      ],
+      "origin": "Constructed in make_error/inject_error",
+      "transformations": [
+        "Fields set: error, error_code, error_message, etc."
+      ],
+      "validated_at": "Only valid ErrorInfo used (via get_error_info)"
+    }
+  ],
+  "description": "Defines and manages RPC error codes, their metadata, and utilities for injecting and handling errors in JSON responses for the XRPL protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/ErrorCodes.cpp",
+  "functions": [
+    {
+      "args": [
+        "unordered"
+      ],
+      "lineno": 81,
+      "name": "sortErrorInfos"
+    },
+    {
+      "args": [
+        "code",
+        "json"
+      ],
+      "lineno": 134,
+      "name": "inject_error"
+    },
+    {
+      "args": [
+        "code",
+        "message",
+        "json"
+      ],
+      "lineno": 140,
+      "name": "inject_error"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 146,
+      "name": "get_error_info"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 153,
+      "name": "make_error"
+    },
+    {
+      "args": [
+        "code",
+        "message"
+      ],
+      "lineno": 159,
+      "name": "make_error"
+    },
+    {
+      "args": [
+        "json"
+      ],
+      "lineno": 165,
+      "name": "contains_error"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 170,
+      "name": "error_code_http_status"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 175,
+      "name": "rpcErrorString"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "RPC"
+    },
+    {
+      "lineno": 9,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "Testing for this code is typically found in unit tests for the RPC error handling layer, e.g., tests that call RPC endpoints with invalid parameters and check for correct error codes/messages. Likely test files: 'test/rpc/ErrorCodes_test.cpp', 'test/rpc/Handler_test.cpp', or integration tests for RPC endpoints. Gaps: Direct unit tests for get_error_info edge cases (e.g., unknown error codes) may be missing; error code/HTTP status mapping may not be exhaustively tested for all codes. Template-based validation is not directly tested here, but via higher-level RPC tests.",
+  "validation_architecture": {},
+  "validations": []
+}

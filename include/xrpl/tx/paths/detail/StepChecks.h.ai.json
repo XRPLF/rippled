@@ -1,0 +1,37 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides inline utility functions for checking freeze and noRipple constraints on trust lines and accounts in the XRPL ledger, used during payment pathfinding and transaction processing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/StepChecks.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "src",
+        "dst",
+        "currency"
+      ],
+      "lineno": 10,
+      "name": "checkFreeze"
+    },
+    {
+      "args": [
+        "view",
+        "prev",
+        "cur",
+        "next",
+        "currency",
+        "j"
+      ],
+      "lineno": 49,
+      "name": "checkNoRipple"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

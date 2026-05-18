@@ -1,0 +1,430 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InvariantChecker::visitEntry (framework)",
+        "ValidLoan::visitEntry"
+      ],
+      "entry_point": "ValidLoan::visitEntry",
+      "purpose": "Collects before/after SLEs for Loan objects during a transaction application.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "InvariantChecker::finalize (framework)",
+        "ValidLoan::finalize"
+      ],
+      "entry_point": "ValidLoan::finalize",
+      "purpose": "Performs all loan invariants/validations after transaction application, before commit.",
+      "validation_points": [
+        "ValidLoan::finalize (all validation logic is here)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Loan.PaymentRemaining",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry (collected)",
+        "ValidLoan::finalize (used in validation if/else)"
+      ],
+      "origin": "after->at(sfPaymentRemaining) (from SLE after state)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "Loan.TotalValueOutstanding",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize"
+      ],
+      "origin": "after->at(sfTotalValueOutstanding)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "Loan.PrincipalOutstanding",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize"
+      ],
+      "origin": "after->at(sfPrincipalOutstanding)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "Loan.ManagementFeeOutstanding",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize"
+      ],
+      "origin": "after->at(sfManagementFeeOutstanding)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "LoanOverpayment flag",
+      "flow": [
+        "Ledger SLE (before/after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize"
+      ],
+      "origin": "before->isFlag(lsfLoanOverpayment), after->isFlag(lsfLoanOverpayment)",
+      "transformations": [
+        "Boolean comparison"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize (for loop over fields)"
+      ],
+      "origin": "after->at(field)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0 (must not be negative)"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    },
+    {
+      "field": "PeriodicPayment",
+      "flow": [
+        "Ledger SLE (after)",
+        "ValidLoan::visitEntry",
+        "ValidLoan::finalize (for loop)"
+      ],
+      "origin": "after->at(sfPeriodicPayment)",
+      "transformations": [
+        "Read as integer",
+        "Compared to 0 (must be positive)"
+      ],
+      "validated_at": "ValidLoan::finalize"
+    }
+  ],
+  "description": "Implements the ValidLoan invariant check for XRPL loans, ensuring loan ledger entries remain consistent and valid according to protocol rules.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (if/else) at ValidLoan::finalize",
+      "issue_pattern": "Missing empty string validation for Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+      "why_false_positive": "manual logic (if/else) validates Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (if/else) at ValidLoan::finalize",
+      "issue_pattern": "Missing empty string validation for Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+      "why_false_positive": "manual logic (if/else) validates Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "LoanOverpayment flag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (if/else) at ValidLoan::finalize",
+      "issue_pattern": "Missing empty string validation for LoanOverpayment flag",
+      "why_false_positive": "manual logic (if/else) validates LoanOverpayment flag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (for loop + if) at ValidLoan::finalize",
+      "issue_pattern": "Missing empty string validation for LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+      "why_false_positive": "manual logic (for loop + if) validates LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual logic (for loop + if) at ValidLoan::finalize",
+      "issue_pattern": "Missing range validation for LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+      "why_false_positive": "manual logic (for loop + if) validates LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "PeriodicPayment",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (for loop + if) at ValidLoan::finalize",
+      "issue_pattern": "Missing empty string validation for PeriodicPayment",
+      "why_false_positive": "manual logic (for loop + if) validates PeriodicPayment for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "PeriodicPayment",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual logic (for loop + if) at ValidLoan::finalize",
+      "issue_pattern": "Missing range validation for PeriodicPayment",
+      "why_false_positive": "manual logic (for loop + if) validates PeriodicPayment range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Loan SLE type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "type check (after->getType() == ltLOAN) at ValidLoan::visitEntry",
+      "issue_pattern": "Missing empty string validation for Loan SLE type",
+      "why_false_positive": "type check (after->getType() == ltLOAN) validates Loan SLE type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Loan SLE type",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "type check (after->getType() == ltLOAN) at ValidLoan::visitEntry",
+      "issue_pattern": "Missing type validation for Loan SLE type",
+      "why_false_positive": "type check (after->getType() == ltLOAN) validates Loan SLE type type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/LoanInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 8,
+      "name": "ValidLoan::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "TER",
+        "XRPAmount",
+        "view",
+        "j"
+      ],
+      "lineno": 17,
+      "name": "ValidLoan::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Loan invariants are typically tested in integration or unit tests for the Lending Protocol amendment. Look for test files in the codebase such as 'test/tx/Loan_test.cpp', 'test/invariants/LoanInvariant_test.cpp', or similar. Tests should cover: (1) loans with zero PaymentRemaining but nonzero outstanding values, (2) loans with nonzero PaymentRemaining but zero outstanding values, (3) changes to LoanOverpayment flag, (4) negative values for any of the fee/outstanding fields, (5) zero or negative PeriodicPayment. Gaps may exist if there are no explicit tests for each invariant failure, or if edge cases (e.g., missing fields, type errors) are not covered. If the Lending Protocol is new, test coverage may be incomplete or only present in feature branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation (no external validation framework)",
+    "validation_layer": "business_logic (invariant enforcement after transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+      "location": "ValidLoan::finalize",
+      "validated_by": "manual logic (if/else)",
+      "validates": [
+        "If PaymentRemaining == 0, then all outstanding values must be zero (fully paid off)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "Loan.PaymentRemaining, Loan.TotalValueOutstanding, Loan.PrincipalOutstanding, Loan.ManagementFeeOutstanding",
+      "location": "ValidLoan::finalize",
+      "validated_by": "manual logic (if/else)",
+      "validates": [
+        "If PaymentRemaining != 0, then none of the outstanding values can be zero (not fully paid off)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "LoanOverpayment flag",
+      "location": "ValidLoan::finalize",
+      "validated_by": "manual logic (if/else)",
+      "validates": [
+        "LoanOverpayment flag must not change between before and after"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "LoanServiceFee, LatePaymentFee, ClosePaymentFee, PrincipalOutstanding, TotalValueOutstanding, ManagementFeeOutstanding",
+      "location": "ValidLoan::finalize",
+      "validated_by": "manual logic (for loop + if)",
+      "validates": [
+        "Each field must not be negative"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "PeriodicPayment",
+      "location": "ValidLoan::finalize",
+      "validated_by": "manual logic (for loop + if)",
+      "validates": [
+        "PeriodicPayment must be positive (greater than zero)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (only processes if type matches)",
+      "field": "Loan SLE type",
+      "location": "ValidLoan::visitEntry",
+      "validated_by": "type check (after->getType() == ltLOAN)",
+      "validates": [
+        "Only processes entries of type ltLOAN"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

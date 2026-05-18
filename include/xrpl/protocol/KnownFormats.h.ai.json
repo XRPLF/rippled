@@ -1,0 +1,104 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "name"
+    },
+    {
+      "lineno": 42,
+      "name": "type"
+    },
+    {
+      "lineno": 19,
+      "name": "uniqueFields"
+    },
+    {
+      "lineno": 19,
+      "name": "commonFields"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "KnownFormats"
+    },
+    {
+      "args": [
+        "name",
+        "type",
+        "uniqueFields",
+        "commonFields"
+      ],
+      "lineno": 19,
+      "name": "Item"
+    }
+  ],
+  "description": "Defines a generic template class KnownFormats for managing a list of known formats, each identified by a key type and associated with a name and SOTemplate. Provides methods for adding, finding, and iterating over formats.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/KnownFormats.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getSOTemplate"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 69,
+      "name": "findTypeByName"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 81,
+      "name": "findByType"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "end"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 102,
+      "name": "findByName"
+    },
+    {
+      "args": [
+        "name",
+        "type",
+        "uniqueFields",
+        "commonFields"
+      ],
+      "lineno": 111,
+      "name": "add"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

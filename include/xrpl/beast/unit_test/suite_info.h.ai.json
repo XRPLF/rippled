@@ -1,0 +1,68 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "name"
+    },
+    {
+      "lineno": 19,
+      "name": "module"
+    },
+    {
+      "lineno": 20,
+      "name": "library"
+    },
+    {
+      "lineno": 21,
+      "name": "manual"
+    },
+    {
+      "lineno": 22,
+      "name": "priority"
+    },
+    {
+      "lineno": 23,
+      "name": "run"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "module",
+        "library",
+        "manual",
+        "priority",
+        "run"
+      ],
+      "lineno": 13,
+      "name": "suite_info"
+    }
+  ],
+  "description": "Defines the suite_info class, which associates unit test types with metadata and provides utilities for managing and running test suites in the Beast unit test framework.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/suite_info.h",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "module",
+        "library",
+        "manual",
+        "priority"
+      ],
+      "lineno": 66,
+      "name": "make_suite_info"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    },
+    {
+      "lineno": 9,
+      "name": "unit_test"
+    }
+  ]
+}

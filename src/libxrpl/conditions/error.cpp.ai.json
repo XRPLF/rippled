@@ -1,0 +1,232 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "ev"
+    },
+    {
+      "lineno": 52,
+      "name": "ev"
+    },
+    {
+      "lineno": 57,
+      "name": "ev"
+    },
+    {
+      "lineno": 57,
+      "name": "condition"
+    },
+    {
+      "lineno": 62,
+      "name": "error"
+    },
+    {
+      "lineno": 62,
+      "name": "ev"
+    },
+    {
+      "lineno": 74,
+      "name": "ev"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "cryptoconditions_error_category"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "cryptoconditions_error_category::message",
+        "safe_cast<error>(ev)"
+      ],
+      "entry_point": "cryptoconditions_error_category::message",
+      "purpose": "Converts an integer error code to a human-readable error message, validating the integer as a valid error enum.",
+      "validation_points": [
+        "safe_cast<error>(ev) (validates that ev is a valid error enum value)"
+      ]
+    },
+    {
+      "call_chain": [
+        "make_error_code",
+        "safe_cast<std::underlying_type<error>::type>(ev)",
+        "get_cryptoconditions_error_category"
+      ],
+      "entry_point": "make_error_code",
+      "purpose": "Creates a std::error_code from an error enum, ensuring the enum is safely cast to its underlying integer type.",
+      "validation_points": [
+        "safe_cast<std::underlying_type<error>::type>(ev) (validates that ev is a valid error enum value)"
+      ]
+    },
+    {
+      "call_chain": [
+        "std::error_code",
+        "cryptoconditions_error_category::message / equivalent / default_error_condition"
+      ],
+      "entry_point": "std::error_code / std::error_condition usage",
+      "purpose": "Standard error handling using the custom error category, which may trigger validation when converting error codes to messages or comparing errors.",
+      "validation_points": [
+        "safe_cast<error>(ev) in message"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ev (error code integer)",
+      "flow": [
+        "external code (e.g., std::error_code machinery or direct call)",
+        "cryptoconditions_error_category::message(int ev)",
+        "safe_cast<error>(ev)",
+        "switch on error enum",
+        "return error message string"
+      ],
+      "origin": "Passed as argument to cryptoconditions_error_category::message, default_error_condition, equivalent",
+      "transformations": [
+        "safe_cast<error>(ev): Converts and validates integer to error enum"
+      ],
+      "validated_at": "safe_cast<error>(ev) inside message"
+    },
+    {
+      "field": "ev (error enum)",
+      "flow": [
+        "external code (calls make_error_code)",
+        "make_error_code(error ev)",
+        "safe_cast<std::underlying_type<error>::type>(ev)",
+        "construct std::error_code"
+      ],
+      "origin": "Passed as argument to make_error_code(error ev)",
+      "transformations": [
+        "safe_cast: Converts error enum to underlying integer type, validates enum"
+      ],
+      "validated_at": "safe_cast<std::underlying_type<error>::type>(ev) inside make_error_code"
+    }
+  ],
+  "description": "Defines the error category and error code handling for the xrpl cryptoconditions library, providing error messages and integration with std::error_code.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ev (error code integer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_cast<error> at cryptoconditions_error_category::message",
+      "issue_pattern": "Missing empty string validation for ev (error code integer)",
+      "why_false_positive": "safe_cast<error> validates ev (error code integer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ev (error code integer)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_cast<error> at cryptoconditions_error_category::message",
+      "issue_pattern": "Missing type validation for ev (error code integer)",
+      "why_false_positive": "safe_cast<error> validates ev (error code integer) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/conditions/error.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "cryptoconditions_error_category::name"
+    },
+    {
+      "args": [
+        "ev"
+      ],
+      "lineno": 16,
+      "name": "cryptoconditions_error_category::message"
+    },
+    {
+      "args": [
+        "ev"
+      ],
+      "lineno": 52,
+      "name": "cryptoconditions_error_category::default_error_condition"
+    },
+    {
+      "args": [
+        "ev",
+        "condition"
+      ],
+      "lineno": 57,
+      "name": "cryptoconditions_error_category::equivalent"
+    },
+    {
+      "args": [
+        "error",
+        "ev"
+      ],
+      "lineno": 62,
+      "name": "cryptoconditions_error_category::equivalent"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "get_cryptoconditions_error_category"
+    },
+    {
+      "args": [
+        "ev"
+      ],
+      "lineno": 74,
+      "name": "make_error_code"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "cryptoconditions"
+    },
+    {
+      "lineno": 7,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file is a low-level error category implementation. Direct tests for this file are unlikely; instead, tests would exist for higher-level code that triggers error conditions (e.g., cryptographic condition parsing, encoding/decoding, or buffer handling). Look for tests in files like 'test/conditions/*', 'test/crypto/*', or integration tests that exercise error handling paths. Gaps: No direct unit tests for error category or message mapping; safe_cast validation is only as strong as its implementation and usage. Edge cases (invalid enum values, unknown error codes) may not be explicitly tested unless fuzz or negative tests exist.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation via safe_cast)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "undefined_behavior or exception if safe_cast fails (implementation dependent)",
+      "field": "ev (error code integer)",
+      "location": "cryptoconditions_error_category::message",
+      "validated_by": "safe_cast<error>",
+      "validates": [
+        "Ensures that the integer error code can be safely cast to the error enum type"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

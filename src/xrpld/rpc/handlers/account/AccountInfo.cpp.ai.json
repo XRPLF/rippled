@@ -1,0 +1,257 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountInfo",
+        "RPC::lookupLedger",
+        "parseBase58<AccountID>",
+        "injectSLE"
+      ],
+      "entry_point": "doAccountInfo",
+      "purpose": "Handles the 'account_info' RPC request: validates input, looks up ledger, parses account, injects ledger entry info into JSON.",
+      "validation_points": [
+        "doAccountInfo: params.isMember(jss::account) + isString",
+        "doAccountInfo: params.isMember(jss::ident) + isString",
+        "doAccountInfo: parseBase58<AccountID>(strIdent) (validates account format)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "account",
+      "flow": [
+        "context.params",
+        "doAccountInfo: params.isMember(jss::account)",
+        "doAccountInfo: strIdent = params[jss::account].asString()",
+        "parseBase58<AccountID>(strIdent)",
+        "accountID",
+        "ledger->read(keylet::account(accountID))",
+        "injectSLE"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for type (isString)",
+        "Converted to string (asString)",
+        "Parsed to AccountID (parseBase58)",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "doAccountInfo: isMember + isString + parseBase58"
+    },
+    {
+      "field": "ident",
+      "flow": [
+        "context.params",
+        "doAccountInfo: params.isMember(jss::ident)",
+        "doAccountInfo: strIdent = params[jss::ident].asString()",
+        "parseBase58<AccountID>(strIdent)",
+        "accountID",
+        "ledger->read(keylet::account(accountID))",
+        "injectSLE"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for type (isString)",
+        "Converted to string (asString)",
+        "Parsed to AccountID (parseBase58)",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "doAccountInfo: isMember + isString + parseBase58"
+    }
+  ],
+  "description": "Implements the account_info RPC handler for the XRPL, providing detailed information about an account, including account data, flags, pseudo account fields, signer lists, and queued transactions if requested.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isMember + isString + invalid_field_error/missing_field_error at doAccountInfo",
+      "issue_pattern": "Missing empty string validation for account",
+      "why_false_positive": "isMember + isString + invalid_field_error/missing_field_error validates account for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ident",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isMember + isString + invalid_field_error at doAccountInfo",
+      "issue_pattern": "Missing empty string validation for ident",
+      "why_false_positive": "isMember + isString + invalid_field_error validates ident for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "jv",
+        "sle"
+      ],
+      "lineno": 18,
+      "name": "injectSLE"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 49,
+      "name": "doAccountInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic for 'account' and 'ident' fields (presence, type, and format) is straightforward and likely covered by RPC-level tests. Look for tests in files like 'account_info_test.cpp', 'AccountInfo_test.cpp', or generic RPC handler tests. Gaps may exist for edge cases: missing fields, wrong types, malformed account strings, or both 'account' and 'ident' missing. There is no evidence in this file of unit tests for injectSLE, so coverage for Gravatar URL logic or non-account-root handling may be limited unless tested elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::error helpers)",
+    "validation_layer": "entry_point (handler function doAccountInfo)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error or RPC::missing_field_error",
+      "field": "account",
+      "location": "doAccountInfo",
+      "validated_by": "isMember + isString + invalid_field_error/missing_field_error",
+      "validates": [
+        "Checks if 'account' field is present in params",
+        "Checks if 'account' field is a string"
+      ],
+      "validation_type": "type|presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::invalid_field_error",
+      "field": "ident",
+      "location": "doAccountInfo",
+      "validated_by": "isMember + isString + invalid_field_error",
+      "validates": [
+        "Checks if 'ident' field is present in params (if 'account' is not present)",
+        "Checks if 'ident' field is a string"
+      ],
+      "validation_type": "type|presence"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "tx"
+    },
+    {
+      "lineno": 75,
+      "name": "account"
+    },
+    {
+      "lineno": 76,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 77,
+      "name": "signatureReward"
+    },
+    {
+      "lineno": 78,
+      "name": "otherChainSource"
+    },
+    {
+      "lineno": 79,
+      "name": "sequence"
+    },
+    {
+      "lineno": 80,
+      "name": "fee"
+    },
+    {
+      "lineno": 118,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 118,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 91,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "XChainCreateClaimID"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward, std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 67,
+      "name": "XChainCreateClaimIDBuilder"
+    }
+  ],
+  "description": "Defines the XChainCreateClaimID transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/XChainCreateClaimID.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "getSignatureReward"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getOtherChainSource"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 89,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 98,
+      "name": "setSignatureReward"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 107,
+      "name": "setOtherChainSource"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 116,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "PrivateAccess"
+      ],
+      "lineno": 29,
+      "name": "NodeObject"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "PrivateAccess"
+    }
+  ],
+  "description": "Defines the NodeObject class and NodeObjectType enum used for storing ledger entries in XRPL, including type, hash, and data blob.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/NodeObject.h",
+  "functions": [
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "PrivateAccess"
+      ],
+      "lineno": 38,
+      "name": "NodeObject"
+    },
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash"
+      ],
+      "lineno": 47,
+      "name": "createObject"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "getHash"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getData"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

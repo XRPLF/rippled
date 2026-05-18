@@ -1,0 +1,43 @@
+{
+  "args": [
+    {
+      "lineno": 62,
+      "name": "app"
+    },
+    {
+      "lineno": 63,
+      "name": "clock"
+    },
+    {
+      "lineno": 64,
+      "name": "collector"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "InboundLedgers"
+    }
+  ],
+  "description": "Defines the InboundLedgers interface for managing the lifetime and acquisition of inbound ledgers in the XRPL system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/InboundLedgers.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "clock",
+        "collector"
+      ],
+      "lineno": 61,
+      "name": "make_InboundLedgers"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

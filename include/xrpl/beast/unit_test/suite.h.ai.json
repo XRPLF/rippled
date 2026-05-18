@@ -1,0 +1,311 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "reason"
+    },
+    {
+      "lineno": 19,
+      "name": "file"
+    },
+    {
+      "lineno": 19,
+      "name": "line"
+    },
+    {
+      "lineno": 53,
+      "name": "self"
+    },
+    {
+      "lineno": 69,
+      "name": "self"
+    },
+    {
+      "lineno": 76,
+      "name": "self"
+    },
+    {
+      "lineno": 233,
+      "name": "name"
+    },
+    {
+      "lineno": 233,
+      "name": "abort"
+    },
+    {
+      "lineno": 245,
+      "name": "t"
+    },
+    {
+      "lineno": 255,
+      "name": "ss"
+    },
+    {
+      "lineno": 259,
+      "name": "t"
+    },
+    {
+      "lineno": 279,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "suite"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "suite::abort_exception"
+    },
+    {
+      "args": [
+        "self"
+      ],
+      "lineno": 51,
+      "name": "suite::log_buf"
+    },
+    {
+      "args": [
+        "self"
+      ],
+      "lineno": 67,
+      "name": "suite::log_os"
+    },
+    {
+      "args": [
+        "self"
+      ],
+      "lineno": 74,
+      "name": "suite::testcase_t"
+    },
+    {
+      "args": [
+        "self",
+        "ss"
+      ],
+      "lineno": 253,
+      "name": "suite::scoped_testcase"
+    }
+  ],
+  "description": "Defines the core unit test suite class and related macros/utilities for the Beast unit test framework, including test case management, logging, and test result reporting.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/suite.h",
+  "functions": [
+    {
+      "args": [
+        "reason",
+        "file",
+        "line"
+      ],
+      "lineno": 18,
+      "name": "make_reason"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "this_suite"
+    },
+    {
+      "args": [
+        "r"
+      ],
+      "lineno": 93,
+      "name": "operator()"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "pass"
+    },
+    {
+      "args": [
+        "reason",
+        "file",
+        "line"
+      ],
+      "lineno": 108,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "reason"
+      ],
+      "lineno": 113,
+      "name": "fail"
+    },
+    {
+      "args": [
+        "shouldBeTrue"
+      ],
+      "lineno": 120,
+      "name": "expect"
+    },
+    {
+      "args": [
+        "shouldBeTrue",
+        "reason"
+      ],
+      "lineno": 126,
+      "name": "expect"
+    },
+    {
+      "args": [
+        "shouldBeTrue",
+        "file",
+        "line"
+      ],
+      "lineno": 132,
+      "name": "expect"
+    },
+    {
+      "args": [
+        "shouldBeTrue",
+        "reason",
+        "file",
+        "line"
+      ],
+      "lineno": 137,
+      "name": "expect"
+    },
+    {
+      "args": [
+        "f",
+        "reason"
+      ],
+      "lineno": 146,
+      "name": "except"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 150,
+      "name": "except"
+    },
+    {
+      "args": [
+        "f",
+        "reason"
+      ],
+      "lineno": 154,
+      "name": "except"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 158,
+      "name": "except"
+    },
+    {
+      "args": [
+        "f",
+        "reason"
+      ],
+      "lineno": 162,
+      "name": "unexcept"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 166,
+      "name": "unexcept"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "arg"
+    },
+    {
+      "args": [
+        "shouldBeFalse",
+        "reason"
+      ],
+      "lineno": 177,
+      "name": "unexpected"
+    },
+    {
+      "args": [
+        "shouldBeFalse"
+      ],
+      "lineno": 182,
+      "name": "unexpected"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "p_this_suite"
+    },
+    {
+      "args": [],
+      "lineno": 196,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 199,
+      "name": "propagate_abort"
+    },
+    {
+      "args": [
+        "r"
+      ],
+      "lineno": 202,
+      "name": "run"
+    },
+    {
+      "args": [
+        "name",
+        "abort"
+      ],
+      "lineno": 232,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "abort"
+      ],
+      "lineno": 238,
+      "name": "operator()"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 244,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "scoped_testcase"
+      ],
+      "lineno": 262,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 277,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "beast"
+    },
+    {
+      "lineno": 14,
+      "name": "unit_test"
+    },
+    {
+      "lineno": 16,
+      "name": "detail"
+    }
+  ]
+}

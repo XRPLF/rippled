@@ -1,0 +1,85 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 9,
+      "name": "mptIssuanceID"
+    },
+    {
+      "lineno": 10,
+      "name": "account"
+    },
+    {
+      "lineno": 11,
+      "name": "flags"
+    },
+    {
+      "lineno": 12,
+      "name": "holderID"
+    },
+    {
+      "lineno": 17,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "XRPAmount const& priorBalance",
+        "MPTID const& mptIssuanceID",
+        "AccountID const& account",
+        "std::uint32_t flags",
+        "std::optional<AccountID> holderID"
+      ],
+      "lineno": 6,
+      "name": "MPTAuthorizeArgs"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 15,
+      "name": "MPTokenAuthorize"
+    }
+  ],
+  "description": "Defines the MPTokenAuthorize transactor and its supporting argument struct for authorizing multiparty tokens in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/token/MPTokenAuthorize.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 25,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 28,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

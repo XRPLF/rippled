@@ -1,0 +1,414 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "parent"
+    },
+    {
+      "lineno": 18,
+      "name": "closeTime"
+    },
+    {
+      "lineno": 19,
+      "name": "closeTimeCorrect"
+    },
+    {
+      "lineno": 20,
+      "name": "closeResolution"
+    },
+    {
+      "lineno": 21,
+      "name": "app"
+    },
+    {
+      "lineno": 22,
+      "name": "j"
+    },
+    {
+      "lineno": 23,
+      "name": "applyTxs"
+    },
+    {
+      "lineno": 62,
+      "name": "built"
+    },
+    {
+      "lineno": 63,
+      "name": "txns"
+    },
+    {
+      "lineno": 64,
+      "name": "failed"
+    },
+    {
+      "lineno": 65,
+      "name": "view"
+    },
+    {
+      "lineno": 127,
+      "name": "failedTxns"
+    },
+    {
+      "lineno": 148,
+      "name": "replayData"
+    },
+    {
+      "lineno": 149,
+      "name": "applyFlags"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "buildLedgerImpl",
+        "OpenView accum(&*built)",
+        "XRPL_ASSERT(!accum.open(), ...)",
+        "applyTxs(accum, built)",
+        "accum.apply(*built)",
+        "built->updateSkipList()",
+        "built->stateMap().flushDirty()",
+        "built->txMap().flushDirty()",
+        "built->unshare()",
+        "XRPL_ASSERT(built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()), ...)",
+        "built->setAccepted()"
+      ],
+      "entry_point": "buildLedgerImpl",
+      "purpose": "Builds a new ledger from a parent, applies transactions, validates ledger state and fees, and finalizes the ledger.",
+      "validation_points": [
+        "XRPL_ASSERT(!accum.open(), ...)",
+        "XRPL_ASSERT(built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()), ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "applyTransactions",
+        "for each tx in txns",
+        "applyTransaction(app, view, *it->second, ...)",
+        "switch (ApplyTransactionResult)",
+        "txns.erase(it) or failed.insert(txid)"
+      ],
+      "entry_point": "applyTransactions",
+      "purpose": "Applies a set of transactions to a ledger view, handling success, failure, and retry cases.",
+      "validation_points": [
+        "applyTransaction (not shown in this file, but likely contains transaction-level validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "accum.open()",
+      "flow": [
+        "OpenView accum(&*built)",
+        "XRPL_ASSERT(!accum.open(), ...)",
+        "applyTxs(accum, built)",
+        "accum.apply(*built)"
+      ],
+      "origin": "OpenView accum(&*built)",
+      "transformations": [
+        "accum is constructed from built ledger",
+        "checked for open state (should be closed)",
+        "transactions applied to accum",
+        "accum state applied back to built ledger"
+      ],
+      "validated_at": "XRPL_ASSERT(!accum.open(), ...)"
+    },
+    {
+      "field": "built->header().seq and built->read(keylet::fees())",
+      "flow": [
+        "built->header().seq",
+        "built->read(keylet::fees())",
+        "XRPL_ASSERT(built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()), ...)",
+        "built->setAccepted()"
+      ],
+      "origin": "built ledger (std::make_shared<Ledger>(*parent, closeTime))",
+      "transformations": [
+        "header().seq is checked for ledger sequence number",
+        "read(keylet::fees()) checks for presence of fees entry",
+        "assertion ensures fees are present for ledgers after a certain sequence"
+      ],
+      "validated_at": "XRPL_ASSERT(built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()), ...)"
+    },
+    {
+      "field": "transactions (txns)",
+      "flow": [
+        "applyTransactions receives txns",
+        "for each tx in txns",
+        "applyTransaction(app, view, *it->second, ...)",
+        "switch (ApplyTransactionResult)",
+        "txns.erase(it) or failed.insert(txid)"
+      ],
+      "origin": "CanonicalTXSet& txns (input to applyTransactions)",
+      "transformations": [
+        "transactions are iterated and applied",
+        "on success/failure/retry, txns is mutated",
+        "failed transactions are collected"
+      ],
+      "validated_at": "applyTransaction (not shown here, but likely validates each transaction)"
+    }
+  ],
+  "description": "Implements functions to build and apply transactions to XRPL ledgers, supporting both consensus and replayed ledgers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "OpenView state (open/closed)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field OpenView state (open/closed) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for OpenView state (open/closed)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates OpenView state (open/closed) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Ledger fee structure presence (fees object existence for new ledgers)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Ledger fee structure presence (fees object existence for new ledgers) validated by XRPL_ASSERT (custom assertion macro), C++ type system",
+      "issue_pattern": "Missing validation for Ledger fee structure presence (fees object existence for new ledgers)",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro), C++ type system validates Ledger fee structure presence (fees object existence for new ledgers) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "accum.open()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at buildLedgerImpl",
+      "issue_pattern": "Missing empty string validation for accum.open()",
+      "why_false_positive": "XRPL_ASSERT validates accum.open() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at buildLedgerImpl",
+      "issue_pattern": "Missing empty string validation for built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees())",
+      "why_false_positive": "XRPL_ASSERT validates built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/BuildLedger.cpp",
+  "functions": [
+    {
+      "args": [
+        "parent",
+        "closeTime",
+        "closeTimeCorrect",
+        "closeResolution",
+        "app",
+        "j",
+        "applyTxs"
+      ],
+      "lineno": 16,
+      "name": "buildLedgerImpl"
+    },
+    {
+      "args": [
+        "app",
+        "built",
+        "txns",
+        "failed",
+        "view",
+        "j"
+      ],
+      "lineno": 61,
+      "name": "applyTransactions"
+    },
+    {
+      "args": [
+        "parent",
+        "closeTime",
+        "closeTimeCorrect",
+        "closeResolution",
+        "app",
+        "txns",
+        "failedTxns",
+        "j"
+      ],
+      "lineno": 120,
+      "name": "buildLedger"
+    },
+    {
+      "args": [
+        "replayData",
+        "applyFlags",
+        "app",
+        "j"
+      ],
+      "lineno": 147,
+      "name": "buildLedger"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic (XRPL_ASSERTs) is in buildLedgerImpl. These are likely tested indirectly via higher-level ledger-building and consensus tests, such as those in test/ledger/BuildLedger_test.cpp, test/app/ledger/Ledger_test.cpp, or integration tests that exercise ledger creation and transaction application. Direct unit tests for assertion failures or edge cases (e.g., missing fees entry, accum.open() true) may be limited or absent. Transaction-level validation is likely covered in transaction application tests, but the specific assertion paths here may not be directly tested for negative cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "OpenView state (open/closed)",
+      "Ledger fee structure presence (fees object existence for new ledgers)"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "accum.open()",
+      "location": "buildLedgerImpl",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the OpenView 'accum' is not open before applying transactions",
+        "Checks ledger state is valid for building"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "built->header().seq < XRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees())",
+      "location": "buildLedgerImpl",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "If ledger sequence is after XRP_LEDGER_EARLIEST_FEES, ensures the fees object exists in the ledger",
+        "Prevents accepting a ledger without required fee structure"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

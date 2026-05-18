@@ -1,0 +1,53 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "Handler"
+    },
+    {
+      "lineno": 24,
+      "name": "Body"
+    },
+    {
+      "lineno": 24,
+      "name": "Headers"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "endpoint_type remote_address",
+        "boost::beast::http::request<Body, Headers>&& request",
+        "socket_type&& socket",
+        "beast::Journal journal"
+      ],
+      "lineno": 9,
+      "name": "PlainWSPeer"
+    }
+  ],
+  "description": "Defines the PlainWSPeer class template, which implements a plain (non-SSL) WebSocket peer for the XRPL server, inheriting from BaseWSPeer and managing WebSocket connections over TCP.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/PlainWSPeer.h",
+  "functions": [
+    {
+      "args": [
+        "Port const& port",
+        "Handler& handler",
+        "endpoint_type remote_address",
+        "boost::beast::http::request<Body, Headers>&& request",
+        "socket_type&& socket",
+        "beast::Journal journal"
+      ],
+      "lineno": 25,
+      "name": "PlainWSPeer"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

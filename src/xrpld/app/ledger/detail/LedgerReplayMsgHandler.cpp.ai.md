@@ -1,0 +1,31 @@
+# LedgerReplayMsgHandler.cpp
+
+## Role in the System
+
+`LedgerReplayMsgHandler` is the network protocol boundary for the ledger replay subsystem. It translates raw Protobuf messages into verified, deserialized data structures before any replay logic runs. The class operates in two symmetric roles simultaneously: as a **server** responding to peers requesting data from this node, and as a **client** consuming responses that arrive from peers this node queried. Its central responsibility is ensuring that nothing untrusted crosses into `LedgerReplayer` — all cryptographic verification happens here.
+
+Ledger replay is how a node catches up to the network without downloading full ledger state: it acquires a ledger's header and its transaction set (the "delta"), then re-applies the transactions locally to reconstruct the ledger from a known ancestor. To know *which* ledgers to acquire, a node first fetches the skip list — a special ledger entry that records the hashes of older ledgers at exponentially spaced intervals. Both data types have dedicated P2P messages with corresponding request/response pairs.
+
+## Request Handlers: Serving Peers
+
+`processProofPathRequest()` answers `TMProofPathRequest` messages from peers that want a cryptographic proof that a particular key exists in a ledger's `stateMap` or `txMap`. The handler validates all required fields up front — presence, byte length (both `key` and `ledgerhash` must be exactly `uint256::size()` = 32 bytes), and enum validity of the `type` field — returning a `reBAD_REQUEST` error response immediately if anything is wrong. It then looks up the ledger locally; if absent, the response carries `reNO_LEDGER`. On success, it calls `getProofPath(key)` on the appropriate SHAMap, serializes the ledger header with `addRaw()`, and packs each proof node as a repeated field in the response. If the key isn't in the map, `reNO_NODE` is returned.
+
+`processReplayDeltaRequest()` answers `TMReplayDeltaRequest` by packaging a ledger's full transaction set. The key correctness guard here is `ledger->isImmutable()` — the handler refuses to serve a ledger that isn't fully finalized. All leaf nodes of the ledger's `txMap` are visited via `visitLeaves()` and appended verbatim as repeated `transaction` fields alongside the serialized header.
+
+Both request handlers return the response object by value; the caller is responsible for transmitting it to the requesting peer. Error conditions are encoded inside the returned message rather than thrown, which keeps the caller's dispatch loop simple.
+
+## Response Handlers: Consuming Peer Data
+
+`processProofPathResponse()` handles incoming `TMProofPathResponse` messages. Structural checks come first: required fields must be present, the path must be non-empty, and currently only `lmACCOUNT_STATE` responses are accepted (transaction-map proofs are served but not yet consumed on the receiving side). The handler then deserializes the embedded ledger header and recomputes the ledger hash using `calculateLedgerHash(info)`, comparing it against the `ledgerhash` field in the message — a critical defence against a peer serving a tampered header. The proof path is then passed to `SHAMap::verifyProofPath()` which validates the Merkle inclusion proof against `info.accountHash`. Only if this cryptographic check passes does the code proceed to deserialize the leaf node. An additional content check enforces that only the skip list key (`keylet::skip().key`) is accepted, reflecting the current scoped implementation. The verified `SHAMapItem` is then handed to `replayer_.gotSkipList()`.
+
+`processReplayDeltaResponse()` is the most complex handler. After header deserialization and hash verification, it reconstructs the transaction set from the serialized blobs. Each blob encodes a `TxShaMapItem` — a VL-prefixed pair of the raw transaction followed by its metadata. The handler reads both parts via `SerialIter` and `getVLDataLength()`, deserializes an `STTx` and an `STObject` with `sfMetadata`, and orders the transactions by their `sfTransactionIndex` metadata field into a `std::map<uint32_t, shared_ptr<STTx const>>`. Simultaneously, it re-adds each item to a fresh local `SHAMap` to reconstruct the transaction map. The final verification compares `txMap.getHash().as_uint256()` against `info.txHash` from the validated header. The entire deserialization is wrapped in a `try/catch` for `std::exception` since `STTx` and `STObject` constructors throw on malformed input. Only after the hash check passes does `replayer_.gotReplayDelta()` receive the data.
+
+## Design Decisions
+
+The asymmetry between request and response return types is intentional. Request handlers return a response message (value type) because the call site sends it directly back over the wire. Response handlers return `bool` because data delivery goes via `LedgerReplayer` — the caller only needs to know whether the message was valid enough to process.
+
+The decision to verify everything before calling into `LedgerReplayer` establishes a clean trust boundary. `gotSkipList()` and `gotReplayDelta()` can be documented as accepting only pre-verified data, simplifying the replayer's logic considerably. This mirrors the pattern used elsewhere in XRPL's inbound acquisition subsystems, where the P2P layer is responsible for proof verification and the acquisition layer only handles state machine transitions.
+
+The current partial implementation — proof paths can be served for both state and transaction maps, but only state-map (skip list) responses are consumed — is acknowledged explicitly in a log message ("we only support the state ShaMap for now"). This is a safe asymmetry: unimplemented paths fall through to `false` returns rather than silently dropping data or asserting.
+
+The `processReplayDeltaResponse` avoids any trust in the ordering of transactions as sent by the peer. By using `sfTransactionIndex` from the transaction metadata, it enforces canonical execution order regardless of the peer's wire order. Rebuilding the full `SHAMap` locally and comparing its root hash to the header's `txHash` ensures neither a reordering attack nor a transaction substitution can succeed.

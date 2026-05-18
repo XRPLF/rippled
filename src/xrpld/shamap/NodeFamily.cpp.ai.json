@@ -1,0 +1,239 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "app"
+    },
+    {
+      "lineno": 8,
+      "name": "cm"
+    },
+    {
+      "lineno": 45,
+      "name": "seq"
+    },
+    {
+      "lineno": 45,
+      "name": "nodeHash"
+    },
+    {
+      "lineno": 69,
+      "name": "hash"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "CollectorManager& cm"
+      ],
+      "lineno": 8,
+      "name": "NodeFamily"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NodeFamily::missingNodeAcquireBySeq",
+        "NodeFamily::acquire",
+        "app_.getInboundLedgers().acquire"
+      ],
+      "entry_point": "NodeFamily::missingNodeAcquireBySeq",
+      "purpose": "Handles the case when a node is missing from a ledger by attempting to acquire the missing ledger/node from the network.",
+      "validation_points": [
+        "NodeFamily::acquire: hash.isNonZero()"
+      ]
+    },
+    {
+      "call_chain": [
+        "NodeFamily::acquire",
+        "app_.getInboundLedgers().acquire"
+      ],
+      "entry_point": "NodeFamily::acquire",
+      "purpose": "Attempts to acquire a ledger from the network if the hash is valid (non-zero).",
+      "validation_points": [
+        "NodeFamily::acquire: hash.isNonZero()"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "hash (uint256 const&)",
+      "flow": [
+        "app_.getLedgerMaster().getHashBySeq(seq)",
+        "NodeFamily::acquire(hash, seq)",
+        "if (hash.isNonZero())",
+        "app_.getInboundLedgers().acquire(hash, seq, ...)"
+      ],
+      "origin": "app_.getLedgerMaster().getHashBySeq(seq) in missingNodeAcquireBySeq",
+      "transformations": [
+        "hash is fetched from LedgerMaster by sequence number",
+        "hash is checked for non-zero value (validation)",
+        "if valid, passed to InboundLedgers for acquisition"
+      ],
+      "validated_at": "NodeFamily::acquire: if (hash.isNonZero())"
+    },
+    {
+      "field": "seq (std::uint32_t)",
+      "flow": [
+        "missingNodeAcquireBySeq(seq, nodeHash)",
+        "possibly updates maxSeq_",
+        "used to fetch hash from LedgerMaster",
+        "passed to acquire"
+      ],
+      "origin": "Parameter to missingNodeAcquireBySeq",
+      "transformations": [
+        "may update maxSeq_ if seq is newer",
+        "used as argument for hash lookup and acquisition"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "nodeHash (uint256 const&)",
+      "flow": [
+        "missingNodeAcquireBySeq(seq, nodeHash)"
+      ],
+      "origin": "Parameter to missingNodeAcquireBySeq",
+      "transformations": [
+        "Only used for logging in missingNodeAcquireBySeq"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "Implements the NodeFamily class for managing node caches and handling missing nodes in the XRPL ledger, including cache sweeping, resetting, and missing node acquisition logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "hash (uint256 const& hash)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hash.isNonZero() at NodeFamily::acquire",
+      "issue_pattern": "Missing empty string validation for hash (uint256 const& hash)",
+      "why_false_positive": "hash.isNonZero() validates hash (uint256 const& hash) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/shamap/NodeFamily.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "CollectorManager& cm"
+      ],
+      "lineno": 8,
+      "name": "NodeFamily"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "reset"
+    },
+    {
+      "args": [
+        "std::uint32_t seq",
+        "uint256 const& nodeHash"
+      ],
+      "lineno": 45,
+      "name": "missingNodeAcquireBySeq"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq"
+      ],
+      "lineno": 69,
+      "name": "acquire"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is likely tested indirectly via integration and ledger synchronization tests, especially those that simulate missing nodes or ledgers. Look for tests in files such as 'Ledger_test.cpp', 'SHAMap_test.cpp', or 'NodeFamily_test.cpp' (if it exists). Direct unit tests for NodeFamily::acquire and missingNodeAcquireBySeq may be limited, and edge cases (e.g., zero hash, concurrent missing nodes) may not be fully covered. There is no evidence in this file of explicit test hooks or test-only code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, no explicit validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (conditional branch, logs error if invalid)",
+      "field": "hash (uint256 const& hash)",
+      "location": "NodeFamily::acquire",
+      "validated_by": "hash.isNonZero()",
+      "validates": [
+        "Checks that the hash is not zero before proceeding to acquire the ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

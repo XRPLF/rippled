@@ -1,0 +1,606 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "hasExpired"
+      ],
+      "entry_point": "hasExpired",
+      "purpose": "Checks if an optional expiration time has passed relative to the ledger's parent close time.",
+      "validation_points": [
+        "hasExpired (validates 'exp' against view.parentCloseTime())"
+      ]
+    },
+    {
+      "call_chain": [
+        "isVaultPseudoAccountFrozen",
+        "view.rules().enabled(featureSingleAssetVault)",
+        "view.read(keylet::mptIssuance)",
+        "mptIssuance->getAccountID(sfIssuer)",
+        "view.read(keylet::account)",
+        "mptIssuer->isFieldPresent(sfVaultID)",
+        "view.read(keylet::vault)",
+        "isAnyFrozen"
+      ],
+      "entry_point": "isVaultPseudoAccountFrozen",
+      "purpose": "Determines if a vault pseudo-account is frozen, traversing related ledger objects and checking feature flags and recursion depth.",
+      "validation_points": [
+        "view.rules().enabled(featureSingleAssetVault) (feature flag validation)",
+        "depth >= maxAssetCheckDepth (recursion depth validation)",
+        "view.read(keylet::mptIssuance) (existence validation)",
+        "view.read(keylet::account) (existence validation)",
+        "mptIssuer->isFieldPresent(sfVaultID) (vault pseudo-account check)",
+        "view.read(keylet::vault) (existence validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isLPTokenFrozen",
+        "isFrozen (asset1)",
+        "isFrozen (asset2)"
+      ],
+      "entry_point": "isLPTokenFrozen",
+      "purpose": "Checks if either of two assets is frozen for a given account.",
+      "validation_points": [
+        "isFrozen (validates asset freeze status)"
+      ]
+    },
+    {
+      "call_chain": [
+        "areCompatible",
+        "hashOfSeq"
+      ],
+      "entry_point": "areCompatible",
+      "purpose": "Checks if two ledgers are compatible by comparing their hashes at specific sequence numbers.",
+      "validation_points": [
+        "hashOfSeq (validates hash consistency)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "exp (expiration time)",
+      "flow": [
+        "exp passed to hasExpired",
+        "converted to NetClock::time_point",
+        "compared to view.parentCloseTime()"
+      ],
+      "origin": "Function argument to hasExpired (std::optional<uint32_t>)",
+      "transformations": [
+        "exp is dereferenced and cast to NetClock::duration/time_point"
+      ],
+      "validated_at": "hasExpired"
+    },
+    {
+      "field": "featureSingleAssetVault (feature flag)",
+      "flow": [
+        "isVaultPseudoAccountFrozen",
+        "view.rules().enabled(featureSingleAssetVault)"
+      ],
+      "origin": "Protocol feature flag, checked via view.rules().enabled",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "isVaultPseudoAccountFrozen"
+    },
+    {
+      "field": "depth (recursion depth)",
+      "flow": [
+        "isVaultPseudoAccountFrozen",
+        "depth >= maxAssetCheckDepth"
+      ],
+      "origin": "Function argument to isVaultPseudoAccountFrozen",
+      "transformations": [
+        "Integer comparison"
+      ],
+      "validated_at": "isVaultPseudoAccountFrozen"
+    },
+    {
+      "field": "mptIssuance (ledger object existence)",
+      "flow": [
+        "isVaultPseudoAccountFrozen",
+        "view.read(keylet::mptIssuance)",
+        "nullptr check"
+      ],
+      "origin": "view.read(keylet::mptIssuance(mptShare.getMptID()))",
+      "transformations": [
+        "Pointer dereference"
+      ],
+      "validated_at": "isVaultPseudoAccountFrozen"
+    },
+    {
+      "field": "mptIssuer (ledger object existence)",
+      "flow": [
+        "isVaultPseudoAccountFrozen",
+        "view.read(keylet::account(issuer))",
+        "nullptr check"
+      ],
+      "origin": "mptIssuance->getAccountID(sfIssuer)",
+      "transformations": [
+        "Pointer dereference"
+      ],
+      "validated_at": "isVaultPseudoAccountFrozen"
+    }
+  ],
+  "description": "This file provides utility functions and logic for interacting with and modifying the XRPL ledger, including checks for account and asset states, ledger compatibility, amendment management, withdrawal permissions, and account cleanup operations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "exp (expiration time)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hasExpired (manual check) at hasExpired",
+      "issue_pattern": "Missing empty string validation for exp (expiration time)",
+      "why_false_positive": "hasExpired (manual check) validates exp (expiration time) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureSingleAssetVault (feature flag)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.rules().enabled at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for featureSingleAssetVault (feature flag)",
+      "why_false_positive": "view.rules().enabled validates featureSingleAssetVault (feature flag) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth (recursion depth)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for depth (recursion depth)",
+      "why_false_positive": "manual check validates depth (recursion depth) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "depth (recursion depth)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing range validation for depth (recursion depth)",
+      "why_false_positive": "manual check validates depth (recursion depth) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptIssuance (ledger object existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::mptIssuance) at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for mptIssuance (ledger object existence)",
+      "why_false_positive": "view.read(keylet::mptIssuance) validates mptIssuance (ledger object existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mptIssuer (ledger object existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::account) at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for mptIssuer (ledger object existence)",
+      "why_false_positive": "view.read(keylet::account) validates mptIssuer (ledger object existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID (field presence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "mptIssuer->isFieldPresent at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for sfVaultID (field presence)",
+      "why_false_positive": "mptIssuer->isFieldPresent validates sfVaultID (field presence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfVaultID (field presence)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "mptIssuer->isFieldPresent at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing format validation for sfVaultID (field presence)",
+      "why_false_positive": "mptIssuer->isFieldPresent validates sfVaultID (field presence) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vault (ledger object existence)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::vault) at isVaultPseudoAccountFrozen",
+      "issue_pattern": "Missing empty string validation for vault (ledger object existence)",
+      "why_false_positive": "view.read(keylet::vault) validates vault (ledger object existence) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account, asset, asset2 (frozen status)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFrozen at isLPTokenFrozen",
+      "issue_pattern": "Missing empty string validation for account, asset, asset2 (frozen status)",
+      "why_false_positive": "isFrozen validates account, asset, asset2 (frozen status) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/View.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "exp"
+      ],
+      "lineno": 17,
+      "name": "hasExpired"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptShare",
+        "depth"
+      ],
+      "lineno": 23,
+      "name": "isVaultPseudoAccountFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset",
+        "asset2"
+      ],
+      "lineno": 49,
+      "name": "isLPTokenFrozen"
+    },
+    {
+      "args": [
+        "validLedger",
+        "testLedger",
+        "s",
+        "reason"
+      ],
+      "lineno": 54,
+      "name": "areCompatible"
+    },
+    {
+      "args": [
+        "validHash",
+        "validIndex",
+        "testLedger",
+        "s",
+        "reason"
+      ],
+      "lineno": 91,
+      "name": "areCompatible"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 124,
+      "name": "getEnabledAmendments"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 137,
+      "name": "getMajorityAmendments"
+    },
+    {
+      "args": [
+        "ledger",
+        "seq",
+        "journal"
+      ],
+      "lineno": 157,
+      "name": "hashOfSeq"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "object",
+        "node"
+      ],
+      "lineno": 202,
+      "name": "dirLink"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "amount"
+      ],
+      "lineno": 221,
+      "name": "withdrawToDestExceedsLimit"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "toSle",
+        "amount",
+        "hasDestinationTag"
+      ],
+      "lineno": 247,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "amount",
+        "hasDestinationTag"
+      ],
+      "lineno": 263,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 271,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "tx",
+        "senderAcct",
+        "dstAcct",
+        "sourceAcct",
+        "priorBalance",
+        "amount",
+        "j"
+      ],
+      "lineno": 278,
+      "name": "doWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "ownerDirKeylet",
+        "deleter",
+        "j",
+        "maxNodesToDelete"
+      ],
+      "lineno": 312,
+      "name": "cleanupOnAccountDelete"
+    },
+    {
+      "args": [
+        "now",
+        "mark"
+      ],
+      "lineno": 374,
+      "name": "after"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The functions in View.cpp are typically tested indirectly via higher-level transaction and ledger tests. Direct unit tests for these validation paths may exist in test files such as 'test/ledger/View_test.cpp', 'test/ledger/ReadView_test.cpp', or integration tests involving vaults, assets, and feature flags. However, some error branches (e.g., UNREACHABLE code, LCOV_EXCL_START/STOP) are explicitly marked as not covered by tests. Edge cases like null pointers for mptIssuance, mptIssuer, or vault are likely not tested. Feature flag and expiration logic are likely covered by protocol/feature and transaction tests, but recursion depth and multi-level vault freezing may lack exhaustive coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Manual validation, some use of UNREACHABLE for critical errors",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "exp (expiration time)",
+      "location": "hasExpired",
+      "validated_by": "hasExpired (manual check)",
+      "validates": [
+        "Checks if exp is set (std::optional)",
+        "Compares parentCloseTime() >= exp"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "featureSingleAssetVault (feature flag)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "view.rules().enabled",
+      "validates": [
+        "Checks if featureSingleAssetVault is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns true)",
+      "field": "depth (recursion depth)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "manual check",
+      "validates": [
+        "Checks if depth >= maxAssetCheckDepth"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "mptIssuance (ledger object existence)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "view.read(keylet::mptIssuance)",
+      "validates": [
+        "Checks if mptIssuance exists (not nullptr)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE (assertion/logging, not exception)",
+      "field": "mptIssuer (ledger object existence)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "view.read(keylet::account)",
+      "validates": [
+        "Checks if mptIssuer exists (not nullptr)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "sfVaultID (field presence)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "mptIssuer->isFieldPresent",
+      "validates": [
+        "Checks if sfVaultID field is present in mptIssuer"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE (assertion/logging, not exception)",
+      "field": "vault (ledger object existence)",
+      "location": "isVaultPseudoAccountFrozen",
+      "validated_by": "view.read(keylet::vault)",
+      "validates": [
+        "Checks if vault exists (not nullptr)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "account, asset, asset2 (frozen status)",
+      "location": "isLPTokenFrozen",
+      "validated_by": "isFrozen",
+      "validates": [
+        "Checks if either asset is frozen for the account"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

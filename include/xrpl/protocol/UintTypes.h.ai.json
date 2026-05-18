@@ -1,0 +1,120 @@
+{
+  "args": [
+    {
+      "lineno": 59,
+      "name": "c"
+    },
+    {
+      "lineno": 64,
+      "name": "c"
+    },
+    {
+      "lineno": 69,
+      "name": "Currency&"
+    },
+    {
+      "lineno": 69,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 78,
+      "name": "std::string const&"
+    },
+    {
+      "lineno": 83,
+      "name": "os"
+    },
+    {
+      "lineno": 83,
+      "name": "x"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "CurrencyTag"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "DirectoryTag"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "NodeIDTag"
+    }
+  ],
+  "description": "Defines strong typedefs for protocol-specific identifiers (Currency, Directory, NodeID, MPTID, Domain) and related utility functions for the XRPL protocol, including currency conversion and hashing support.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/UintTypes.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "xrpCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "noCurrency"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "badCurrency"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 58,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 63,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Currency&",
+        "std::string const&"
+      ],
+      "lineno": 68,
+      "name": "to_currency"
+    },
+    {
+      "args": [
+        "std::string const&"
+      ],
+      "lineno": 77,
+      "name": "to_currency"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 82,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "detail"
+    },
+    {
+      "lineno": 92,
+      "name": "std"
+    }
+  ]
+}

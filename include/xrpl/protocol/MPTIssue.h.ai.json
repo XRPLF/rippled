@@ -1,0 +1,177 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "issuanceID"
+    },
+    {
+      "lineno": 19,
+      "name": "sequence"
+    },
+    {
+      "lineno": 19,
+      "name": "account"
+    },
+    {
+      "lineno": 38,
+      "name": "jv"
+    },
+    {
+      "lineno": 49,
+      "name": "lhs"
+    },
+    {
+      "lineno": 49,
+      "name": "rhs"
+    },
+    {
+      "lineno": 63,
+      "name": "mptid"
+    },
+    {
+      "lineno": 89,
+      "name": "h"
+    },
+    {
+      "lineno": 89,
+      "name": "r"
+    },
+    {
+      "lineno": 95,
+      "name": "mptIssue"
+    },
+    {
+      "lineno": 97,
+      "name": "mptIssue"
+    },
+    {
+      "lineno": 99,
+      "name": "jv"
+    },
+    {
+      "lineno": 101,
+      "name": "os"
+    },
+    {
+      "lineno": 101,
+      "name": "x"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "MPTID const&",
+        "std::uint32_t",
+        "AccountID const&"
+      ],
+      "lineno": 10,
+      "name": "MPTIssue"
+    }
+  ],
+  "description": "Defines the MPTIssue class, which adapts MPTID to provide an interface similar to Issue for use in static polymorphism. Includes utility functions for working with MPTID and MPTIssue, such as conversion, comparison, and JSON serialization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/MPTIssue.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 49,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 54,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "MPTID const&"
+      ],
+      "lineno": 59,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "MPTID const&"
+      ],
+      "lineno": 63,
+      "name": "getMPTIssuer"
+    },
+    {
+      "args": [
+        "MPTID const&&"
+      ],
+      "lineno": 74,
+      "name": "getMPTIssuer"
+    },
+    {
+      "args": [
+        "MPTID&&"
+      ],
+      "lineno": 75,
+      "name": "getMPTIssuer"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "noMPT"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "badMPT"
+    },
+    {
+      "args": [
+        "Hasher&",
+        "MPTIssue const&"
+      ],
+      "lineno": 89,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "MPTIssue const&"
+      ],
+      "lineno": 95,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "MPTIssue const&"
+      ],
+      "lineno": 97,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Json::Value const&"
+      ],
+      "lineno": 99,
+      "name": "mptIssueFromJson"
+    },
+    {
+      "args": [
+        "std::ostream&",
+        "MPTIssue const&"
+      ],
+      "lineno": 101,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 104,
+      "name": "std"
+    }
+  ]
+}

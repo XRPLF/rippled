@@ -1,0 +1,349 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "host"
+    },
+    {
+      "lineno": 7,
+      "name": "path"
+    },
+    {
+      "lineno": 8,
+      "name": "port"
+    },
+    {
+      "lineno": 9,
+      "name": "ios"
+    },
+    {
+      "lineno": 10,
+      "name": "j"
+    },
+    {
+      "lineno": 11,
+      "name": "config"
+    },
+    {
+      "lineno": 12,
+      "name": "lastEndpoint"
+    },
+    {
+      "lineno": 13,
+      "name": "lastStatus"
+    },
+    {
+      "lineno": 14,
+      "name": "cb"
+    },
+    {
+      "lineno": 24,
+      "name": "ec"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "WorkSSL::WorkSSL",
+        "context_.preConnectVerify(stream_, host_)"
+      ],
+      "entry_point": "WorkSSL::WorkSSL",
+      "purpose": "Constructor initializes SSL context and validates SSL parameters and host before connection.",
+      "validation_points": [
+        "context_.preConnectVerify(stream_, host_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "WorkSSL::onConnect",
+        "context_.postConnectVerify(stream_, host_)",
+        "stream_.async_handshake(...)"
+      ],
+      "entry_point": "WorkSSL::onConnect",
+      "purpose": "Handles post-connect SSL validation and initiates SSL handshake if validation passes.",
+      "validation_points": [
+        "context_.postConnectVerify(stream_, host_)",
+        "if (err) { fail(err); return; }"
+      ]
+    },
+    {
+      "call_chain": [
+        "WorkSSL::onHandshake",
+        "if (ec) { fail(ec); return; }",
+        "onStart()"
+      ],
+      "entry_point": "WorkSSL::onHandshake",
+      "purpose": "Handles result of SSL handshake, fails on error, otherwise proceeds to start work.",
+      "validation_points": [
+        "if (ec) { fail(ec); return; }"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "host_",
+      "flow": [
+        "WorkSSL::WorkSSL(host, ...)",
+        "host_ (member variable)",
+        "context_.preConnectVerify(stream_, host_)",
+        "context_.postConnectVerify(stream_, host_)"
+      ],
+      "origin": "Passed as 'host' parameter to WorkSSL::WorkSSL",
+      "transformations": [
+        "Stored as member variable",
+        "Passed to SSL context validation functions"
+      ],
+      "validated_at": "context_.preConnectVerify and context_.postConnectVerify"
+    },
+    {
+      "field": "stream_",
+      "flow": [
+        "WorkSSL::WorkSSL",
+        "stream_ (member variable)",
+        "context_.preConnectVerify(stream_, host_)",
+        "context_.postConnectVerify(stream_, host_)",
+        "stream_.async_handshake(...)"
+      ],
+      "origin": "Constructed in WorkSSL::WorkSSL from socket_ and context_.context()",
+      "transformations": [
+        "Used for SSL operations and validation"
+      ],
+      "validated_at": "context_.preConnectVerify and context_.postConnectVerify"
+    },
+    {
+      "field": "error_code (ec)",
+      "flow": [
+        "onConnect(ec)",
+        "if (ec) ... else context_.postConnectVerify",
+        "onHandshake(ec)",
+        "if (ec) ... else onStart()"
+      ],
+      "origin": "Passed to onConnect/onHandshake from async operations",
+      "transformations": [
+        "Checked for error, triggers fail() on error"
+      ],
+      "validated_at": "if (ec) checks in onConnect and onHandshake"
+    }
+  ],
+  "description": "Implements the WorkSSL class, which handles asynchronous SSL/TLS connections and handshakes for network operations in the XRPL application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SSL context parameters (directory, file, verify mode)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SSL context parameters (directory, file, verify mode) validated by Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code",
+      "issue_pattern": "Missing validation for SSL context parameters (directory, file, verify mode)",
+      "why_false_positive": "Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code validates SSL context parameters (directory, file, verify mode) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "host_ (for SSL verification)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field host_ (for SSL verification) validated by Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code",
+      "issue_pattern": "Missing validation for host_ (for SSL verification)",
+      "why_false_positive": "Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code validates host_ (for SSL verification) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "error_code from Boost.Asio operations",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field error_code from Boost.Asio operations validated by Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code",
+      "issue_pattern": "Missing validation for error_code from Boost.Asio operations",
+      "why_false_positive": "Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code validates error_code from Boost.Asio operations automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SSL context and host (SSL parameters, host_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context_.preConnectVerify(stream_, host_) at WorkSSL constructor",
+      "issue_pattern": "Missing empty string validation for SSL context and host (SSL parameters, host_)",
+      "why_false_positive": "context_.preConnectVerify(stream_, host_) validates SSL context and host (SSL parameters, host_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SSL context and host (SSL parameters, host_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context_.postConnectVerify(stream_, host_) at WorkSSL::onConnect",
+      "issue_pattern": "Missing empty string validation for SSL context and host (SSL parameters, host_)",
+      "why_false_positive": "context_.postConnectVerify(stream_, host_) validates SSL context and host (SSL parameters, host_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error_code from async operations",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (ec) ... fail(ec) at WorkSSL::onConnect, WorkSSL::onHandshake",
+      "issue_pattern": "Missing empty string validation for error_code from async operations",
+      "why_false_positive": "if (ec) ... fail(ec) validates error_code from async operations for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "error_code from async operations",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (ec) ... fail(ec) at WorkSSL::onConnect, WorkSSL::onHandshake",
+      "issue_pattern": "Missing type validation for error_code from async operations",
+      "why_false_positive": "if (ec) ... fail(ec) validates error_code from async operations type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/WorkSSL.cpp",
+  "functions": [
+    {
+      "args": [
+        "host",
+        "path",
+        "port",
+        "ios",
+        "j",
+        "config",
+        "lastEndpoint",
+        "lastStatus",
+        "cb"
+      ],
+      "lineno": 5,
+      "name": "WorkSSL::WorkSSL"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 23,
+      "name": "WorkSSL::onConnect"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 39,
+      "name": "WorkSSL::onHandshake"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 1,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 2,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This code is likely tested indirectly via integration or functional tests that exercise SSL connections (e.g., network fetches, peer connections). Direct unit tests for WorkSSL may not exist unless there are specific test files for SSL work in the test/ or unittest/ directories (e.g., test_work_ssl.cpp, WorkSSL_test.cpp). Validation logic in context_.preConnectVerify and postConnectVerify may be tested separately in SSL context tests. Gaps: No evidence of direct unit tests for error handling paths (failures in preConnectVerify, postConnectVerify, or handshake errors). Exception throwing in constructor may be hard to test unless explicitly covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "SSL context parameters (directory, file, verify mode)",
+      "host_ (for SSL verification)",
+      "error_code from Boost.Asio operations"
+    ],
+    "framework": "Custom SSL context validation (context_.preConnectVerify, context_.postConnectVerify), Boost.Asio error_code",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "std::runtime_error (via Throw<T>)",
+      "field": "SSL context and host (SSL parameters, host_)",
+      "location": "WorkSSL constructor",
+      "validated_by": "context_.preConnectVerify(stream_, host_)",
+      "validates": [
+        "SSL context is valid and properly configured",
+        "Host name is valid for SSL verification",
+        "SSL certificates and trust chain are valid (pre-connect)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "fail(err) (likely throws or signals error via callback)",
+      "field": "SSL context and host (SSL parameters, host_)",
+      "location": "WorkSSL::onConnect",
+      "validated_by": "context_.postConnectVerify(stream_, host_)",
+      "validates": [
+        "SSL context and host are valid after connection",
+        "SSL certificates and trust chain are valid (post-connect)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "fail(ec) (likely throws or signals error via callback)",
+      "field": "error_code from async operations",
+      "location": "WorkSSL::onConnect, WorkSSL::onHandshake",
+      "validated_by": "if (ec) ... fail(ec)",
+      "validates": [
+        "Checks if error_code is set (non-zero)",
+        "Ensures no error occurred in async connect/handshake"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

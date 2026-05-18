@@ -1,0 +1,35 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "ConsensusTimer"
+    }
+  ],
+  "description": "Defines types, enums, and utility classes/structs for representing and managing consensus participation, phases, timing, close times, and results in the XRPL consensus process.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/ConsensusTypes.h",
+  "functions": [
+    {
+      "args": [
+        "ConsensusMode m"
+      ],
+      "lineno": 49,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "ConsensusPhase p"
+      ],
+      "lineno": 97,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

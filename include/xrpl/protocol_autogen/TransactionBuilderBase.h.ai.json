@@ -1,0 +1,216 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "transactionType"
+    },
+    {
+      "lineno": 23,
+      "name": "account"
+    },
+    {
+      "lineno": 24,
+      "name": "sequence"
+    },
+    {
+      "lineno": 25,
+      "name": "fee"
+    },
+    {
+      "lineno": 45,
+      "name": "value"
+    },
+    {
+      "lineno": 55,
+      "name": "value"
+    },
+    {
+      "lineno": 65,
+      "name": "value"
+    },
+    {
+      "lineno": 75,
+      "name": "value"
+    },
+    {
+      "lineno": 86,
+      "name": "value"
+    },
+    {
+      "lineno": 96,
+      "name": "value"
+    },
+    {
+      "lineno": 106,
+      "name": "value"
+    },
+    {
+      "lineno": 116,
+      "name": "value"
+    },
+    {
+      "lineno": 126,
+      "name": "value"
+    },
+    {
+      "lineno": 136,
+      "name": "value"
+    },
+    {
+      "lineno": 146,
+      "name": "value"
+    },
+    {
+      "lineno": 156,
+      "name": "value"
+    },
+    {
+      "lineno": 166,
+      "name": "value"
+    },
+    {
+      "lineno": 176,
+      "name": "value"
+    },
+    {
+      "lineno": 197,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 197,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "TransactionBuilderBase()",
+        "TransactionBuilderBase(SF_UINT16::type::value_type transactionType, SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence, std::optional<SF_AMOUNT::type::value_type> fee)"
+      ],
+      "lineno": 18,
+      "name": "TransactionBuilderBase"
+    }
+  ],
+  "description": "Defines a base template class for building XRPL transactions, providing common field setters and signing functionality for all transaction types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/TransactionBuilderBase.h",
+  "functions": [
+    {
+      "args": [
+        "AccountID const& value"
+      ],
+      "lineno": 44,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "STAmount const& value"
+      ],
+      "lineno": 54,
+      "name": "setFee"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 64,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 74,
+      "name": "setTicketSequence"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 85,
+      "name": "setFlags"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 95,
+      "name": "setSourceTag"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 105,
+      "name": "setLastLedgerSequence"
+    },
+    {
+      "args": [
+        "uint256 const& value"
+      ],
+      "lineno": 115,
+      "name": "setAccountTxnID"
+    },
+    {
+      "args": [
+        "uint256 const& value"
+      ],
+      "lineno": 125,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 135,
+      "name": "setOperationLimit"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 145,
+      "name": "setMemos"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 155,
+      "name": "setSigners"
+    },
+    {
+      "args": [
+        "std::uint32_t const& value"
+      ],
+      "lineno": 165,
+      "name": "setNetworkID"
+    },
+    {
+      "args": [
+        "AccountID const& value"
+      ],
+      "lineno": 175,
+      "name": "setDelegate"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "getSTObject"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 195,
+      "name": "sign"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

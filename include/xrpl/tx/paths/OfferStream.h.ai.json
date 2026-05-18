@@ -1,0 +1,97 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyView& view",
+        "ApplyView& cancelView",
+        "Book const& book",
+        "NetClock::time_point when",
+        "StepCounter& counter",
+        "beast::Journal journal"
+      ],
+      "lineno": 11,
+      "name": "TOfferStreamBase"
+    },
+    {
+      "args": [
+        "std::uint32_t limit",
+        "beast::Journal j"
+      ],
+      "lineno": 13,
+      "name": "StepCounter"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "FlowOfferStream"
+    }
+  ],
+  "description": "Defines templated classes for iterating, presenting, and consuming offers in an XRPL order book, including logic for removing invalid or unfunded offers and tracking offers to be permanently removed.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/OfferStream.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "step"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "count"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 56,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "offerIndex"
+      ],
+      "lineno": 59,
+      "name": "permRmOffer"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "shouldRmSmallIncreasedQOffer"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "tip"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "step"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "ownerFunds"
+    },
+    {
+      "args": [
+        "offerIndex"
+      ],
+      "lineno": 116,
+      "name": "permRmOffer"
+    },
+    {
+      "args": [],
+      "lineno": 119,
+      "name": "permToRemove"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

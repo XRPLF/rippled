@@ -1,0 +1,73 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "identity"
+    },
+    {
+      "lineno": 14,
+      "name": "name"
+    },
+    {
+      "lineno": 15,
+      "name": "fee"
+    },
+    {
+      "lineno": 16,
+      "name": "rtime"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "identity",
+        "name",
+        "fee",
+        "rtime"
+      ],
+      "lineno": 8,
+      "name": "ClusterNode"
+    }
+  ],
+  "description": "Defines the ClusterNode class, representing a node in a cluster with identity, name, load fee, and report time.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/ClusterNode.h",
+  "functions": [
+    {
+      "args": [
+        "identity",
+        "name",
+        "fee",
+        "rtime"
+      ],
+      "lineno": 12,
+      "name": "ClusterNode"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "name"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "getLoadFee"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "getReportTime"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "identity"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

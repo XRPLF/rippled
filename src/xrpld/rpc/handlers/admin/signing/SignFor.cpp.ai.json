@@ -1,0 +1,329 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doSignFor",
+        "RPC::transactionSignFor"
+      ],
+      "entry_point": "doSignFor",
+      "purpose": "Handles the 'sign_for' RPC command, performing validation and then signing a transaction on behalf of another account.",
+      "validation_points": [
+        "doSignFor: Validates role and server signing capability (if (context.role != Role::ADMIN && !context.app.config().canSign()))",
+        "RPC::transactionSignFor: Validates tx_json, account, secret, and other transaction parameters"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.role",
+      "flow": [
+        "context.role",
+        "doSignFor: checked in if statement",
+        "used to determine if signing is allowed"
+      ],
+      "origin": "RPC::JsonContext (injected by RPC framework)",
+      "transformations": [
+        "Compared against Role::ADMIN"
+      ],
+      "validated_at": "doSignFor"
+    },
+    {
+      "field": "context.app.config().canSign()",
+      "flow": [
+        "context.app.config().canSign()",
+        "doSignFor: checked in if statement",
+        "used to determine if signing is allowed"
+      ],
+      "origin": "Application config (server settings)",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "doSignFor"
+    },
+    {
+      "field": "context.params[jss::fail_hard]",
+      "flow": [
+        "context.params[jss::fail_hard]",
+        "doSignFor: asBool() conversion",
+        "assigned to failHard",
+        "converted to failType via NetworkOPs::doFailHard",
+        "passed to RPC::transactionSignFor"
+      ],
+      "origin": "RPC request JSON parameters",
+      "transformations": [
+        "JSON boolean extraction",
+        "converted to internal failType"
+      ],
+      "validated_at": "Implicitly validated by asBool() and downstream in transactionSignFor"
+    },
+    {
+      "field": "context.params (tx_json, account, secret, etc.)",
+      "flow": [
+        "context.params",
+        "passed directly to RPC::transactionSignFor"
+      ],
+      "origin": "RPC request JSON parameters",
+      "transformations": [
+        "No transformation in doSignFor; validation and transformation occur in transactionSignFor"
+      ],
+      "validated_at": "RPC::transactionSignFor"
+    }
+  ],
+  "description": "Implements the doSignFor RPC handler, which signs a transaction on behalf of a specified account using provided credentials. This command is deprecated.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx_json",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx_json validated by jss:: (JSON field tags), RPC::transactionSignFor (template-based validation)",
+      "issue_pattern": "Missing validation for tx_json",
+      "why_false_positive": "jss:: (JSON field tags), RPC::transactionSignFor (template-based validation) validates tx_json automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account validated by jss:: (JSON field tags), RPC::transactionSignFor (template-based validation)",
+      "issue_pattern": "Missing validation for account",
+      "why_false_positive": "jss:: (JSON field tags), RPC::transactionSignFor (template-based validation) validates account automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "secret",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field secret validated by jss:: (JSON field tags), RPC::transactionSignFor (template-based validation)",
+      "issue_pattern": "Missing validation for secret",
+      "why_false_positive": "jss:: (JSON field tags), RPC::transactionSignFor (template-based validation) validates secret automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fail_hard",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fail_hard validated by jss:: (JSON field tags), RPC::transactionSignFor (template-based validation)",
+      "issue_pattern": "Missing validation for fail_hard",
+      "why_false_positive": "jss:: (JSON field tags), RPC::transactionSignFor (template-based validation) validates fail_hard automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role / canSign()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (context.role != Role::ADMIN && !context.app.config().canSign()) at doSignFor",
+      "issue_pattern": "Missing empty string validation for role / canSign()",
+      "why_false_positive": "if (context.role != Role::ADMIN && !context.app.config().canSign()) validates role / canSign() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "fail_hard",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params[jss::fail_hard].asBool() at doSignFor",
+      "issue_pattern": "Missing empty string validation for fail_hard",
+      "why_false_positive": "context.params[jss::fail_hard].asBool() validates fail_hard for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fail_hard",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "context.params[jss::fail_hard].asBool() at doSignFor",
+      "issue_pattern": "Missing type validation for fail_hard",
+      "why_false_positive": "context.params[jss::fail_hard].asBool() validates fail_hard type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "params (tx_json, account, secret, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::transactionSignFor at doSignFor (delegated to transactionSignFor)",
+      "issue_pattern": "Missing empty string validation for params (tx_json, account, secret, etc.)",
+      "why_false_positive": "RPC::transactionSignFor validates params (tx_json, account, secret, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/signing/SignFor.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 11,
+      "name": "doSignFor"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doSignFor handler is typically tested via RPC integration tests that exercise the 'sign_for' endpoint. Likely test files include 'sign_for_test.cpp', 'transaction_signing_test.cpp', or generic RPC handler tests. These tests should cover: (1) role-based access (admin vs. non-admin), (2) server signing enablement, (3) fail_hard parameter handling, (4) parameter validation (tx_json, account, secret). Gaps may exist in edge cases for malformed input, config permutations, or deprecated warning coverage. Template-based validation in transactionSignFor may be tested indirectly, but explicit unit tests for validation logic may be lacking.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "tx_json",
+      "account",
+      "secret",
+      "fail_hard"
+    ],
+    "framework": "jss:: (JSON field tags), RPC::transactionSignFor (template-based validation)",
+    "validation_layer": "entry_point (doSignFor), business_logic (transactionSignFor)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcNOT_SUPPORTED, ...)",
+      "field": "role / canSign()",
+      "location": "doSignFor",
+      "validated_by": "if (context.role != Role::ADMIN && !context.app.config().canSign())",
+      "validates": [
+        "Checks if the user is ADMIN or if server is configured to allow signing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Implicit (if not bool, may throw or default)",
+      "field": "fail_hard",
+      "location": "doSignFor",
+      "validated_by": "context.params[jss::fail_hard].asBool()",
+      "validates": [
+        "Checks that fail_hard is a boolean"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "Depends on transactionSignFor (likely RPC error codes)",
+      "field": "params (tx_json, account, secret, etc.)",
+      "location": "doSignFor (delegated to transactionSignFor)",
+      "validated_by": "RPC::transactionSignFor",
+      "validates": [
+        "tx_json: object type",
+        "account: presence and format",
+        "secret: presence and format",
+        "other transaction fields: type, format, business rules"
+      ],
+      "validation_type": "format|type|business_logic"
+    }
+  ]
+}

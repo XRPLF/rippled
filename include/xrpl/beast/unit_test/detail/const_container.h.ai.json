@@ -1,0 +1,76 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "Container"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Container"
+      ],
+      "lineno": 11,
+      "name": "const_container"
+    }
+  ],
+  "description": "Defines a template adapter class 'const_container' that provides a constrained, read-only interface to a container, intended for use in unit testing within the beast::unit_test::detail namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/detail/const_container.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "cont"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "cont"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "cend"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "unit_test"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ]
+}

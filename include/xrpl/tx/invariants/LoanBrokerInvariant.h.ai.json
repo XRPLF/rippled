@@ -1,0 +1,55 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "ValidLoanBroker"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "BrokerInfo"
+    }
+  ],
+  "description": "Defines the ValidLoanBroker invariant check class for ensuring internal consistency of LoanBroker objects in the XRPL ledger, particularly regarding directory nodes and associated objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/LoanBrokerInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "dir",
+        "j"
+      ],
+      "lineno": 32,
+      "name": "goodZeroDirectory"
+    },
+    {
+      "args": [
+        "",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 38,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 41,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

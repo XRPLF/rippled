@@ -1,0 +1,392 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TicketCreate::preflight",
+        "TicketCreate::preclaim",
+        "TicketCreate::doApply"
+      ],
+      "entry_point": "TicketCreate::operator() (via Transactor::operator())",
+      "purpose": "Processes a TicketCreate transaction, validating and applying it to the ledger.",
+      "validation_points": [
+        "TicketCreate::preflight (sfTicketCount range check)",
+        "TicketCreate::preclaim (sfAccount existence, ticket count business logic)",
+        "TicketCreate::doApply (sfAccount existence, reserve calculation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfTicketCount",
+      "flow": [
+        "Transaction JSON input",
+        "ctx.tx[sfTicketCount] in preflight",
+        "ctx.tx[sfTicketCount] in preclaim",
+        "ctx_.tx[sfTicketCount] in doApply"
+      ],
+      "origin": "ctx.tx[sfTicketCount] (transaction input)",
+      "transformations": [
+        "Range checked in preflight",
+        "Used in business logic check in preclaim (addedTickets)",
+        "Used in reserve calculation in doApply",
+        "Used to determine number of tickets created"
+      ],
+      "validated_at": "preflight (range), preclaim (business logic), doApply (reserve)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction JSON input",
+        "ctx.tx[sfAccount] in preclaim",
+        "keylet::account(id) in preclaim",
+        "view().peek(keylet::account(account_)) in doApply"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for existence in preclaim",
+        "Used to fetch account root SLE",
+        "Used as owner of created tickets"
+      ],
+      "validated_at": "preclaim (existence), doApply (existence)"
+    },
+    {
+      "field": "sfOwnerCount",
+      "flow": [
+        "sleAccountRoot->getFieldU32(sfOwnerCount) in doApply",
+        "Used in reserve calculation"
+      ],
+      "origin": "AccountRoot SLE",
+      "transformations": [
+        "Added to ticketCount to compute new reserve requirement"
+      ],
+      "validated_at": "doApply (reserve calculation)"
+    },
+    {
+      "field": "preFeeBalance_",
+      "flow": [
+        "preFeeBalance_ in doApply",
+        "Compared to required reserve"
+      ],
+      "origin": "Context (pre-transaction account balance)",
+      "transformations": [
+        "Compared against computed reserve to validate sufficient funds"
+      ],
+      "validated_at": "doApply (reserve calculation)"
+    },
+    {
+      "field": "sfSequence",
+      "flow": [
+        "Used in doApply to sanity check sequence increment",
+        "Used to determine firstTicketSeq"
+      ],
+      "origin": "ctx_.tx[sfSequence] (transaction input), sleAccountRoot[sfSequence]",
+      "transformations": [
+        "Checked for correct increment (txSeq == firstTicketSeq - 1)"
+      ],
+      "validated_at": "doApply (sanity check)"
+    }
+  ],
+  "description": "Implements the TicketCreate transaction logic for the XRPL, including preflight checks, preclaim validation, and application of the transaction to the ledger, handling ticket creation and reserve requirements.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTicketCount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTicketCount validated by Custom validation in transaction processing (xrpl core logic)",
+      "issue_pattern": "Missing validation for sfTicketCount",
+      "why_false_positive": "Custom validation in transaction processing (xrpl core logic) validates sfTicketCount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by Custom validation in transaction processing (xrpl core logic)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "Custom validation in transaction processing (xrpl core logic) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSequence validated by Custom validation in transaction processing (xrpl core logic)",
+      "issue_pattern": "Missing validation for sfSequence",
+      "why_false_positive": "Custom validation in transaction processing (xrpl core logic) validates sfSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfOwnerCount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfOwnerCount validated by Custom validation in transaction processing (xrpl core logic)",
+      "issue_pattern": "Missing validation for sfOwnerCount",
+      "why_false_positive": "Custom validation in transaction processing (xrpl core logic) validates sfOwnerCount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTicketCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit range check at preflight",
+      "issue_pattern": "Missing empty string validation for sfTicketCount",
+      "why_false_positive": "explicit range check validates sfTicketCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTicketCount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit range check at preflight",
+      "issue_pattern": "Missing range validation for sfTicketCount",
+      "why_false_positive": "explicit range check validates sfTicketCount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account existence check at preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "account existence check validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTicketCount, sfTicketCount (current), consumedTickets",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "business logic check at preclaim",
+      "issue_pattern": "Missing empty string validation for sfTicketCount, sfTicketCount (current), consumedTickets",
+      "why_false_positive": "business logic check validates sfTicketCount, sfTicketCount (current), consumedTickets for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account existence check at doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "account existence check validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTicketCount, sfOwnerCount, preFeeBalance_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "reserve calculation at doApply",
+      "issue_pattern": "Missing empty string validation for sfTicketCount, sfOwnerCount, preFeeBalance_",
+      "why_false_positive": "reserve calculation validates sfTicketCount, sfOwnerCount, preFeeBalance_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "sfSequence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sanity check at doApply",
+      "issue_pattern": "Missing empty string validation for sfSequence",
+      "why_false_positive": "sanity check validates sfSequence for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/system/TicketCreate.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "TicketCreate::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 14,
+      "name": "TicketCreate::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 22,
+      "name": "TicketCreate::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "TicketCreate::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "TicketCreate is typically tested in unit/integration tests under the transaction processing suite, e.g., 'Ticket_test.cpp', 'Transactor_test.cpp', or 'TicketCreate_test.cpp' (if present). These tests cover valid/invalid ticket counts, account existence, reserve checks, and directory full conditions. However, some internal error paths (e.g., tefINTERNAL, LCOV_EXCL_LINE) may not be directly tested. Edge cases like unsigned underflow are commented as impossible, so may not be covered. Test coverage is generally good for business logic and validation, but some rare internal errors may lack explicit tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfTicketCount",
+      "sfAccount",
+      "sfSequence",
+      "sfOwnerCount"
+    ],
+    "framework": "Custom validation in transaction processing (xrpl core logic)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_COUNT",
+      "field": "sfTicketCount",
+      "location": "preflight",
+      "validated_by": "explicit range check",
+      "validates": [
+        "Ensures sfTicketCount is >= minValidCount and <= maxValidCount"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "preclaim",
+      "validated_by": "account existence check",
+      "validates": [
+        "Ensures the account referenced by sfAccount exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecDIR_FULL",
+      "field": "sfTicketCount, sfTicketCount (current), consumedTickets",
+      "location": "preclaim",
+      "validated_by": "business logic check",
+      "validates": [
+        "Ensures the account does not exceed maxTicketThreshold after ticket creation"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfAccount",
+      "location": "doApply",
+      "validated_by": "account existence check",
+      "validates": [
+        "Ensures the account exists before applying the transaction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "sfTicketCount, sfOwnerCount, preFeeBalance_",
+      "location": "doApply",
+      "validated_by": "reserve calculation",
+      "validates": [
+        "Ensures the account has enough XRP to cover the reserve for the new tickets"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "not shown (incomplete code, but would return error)",
+      "field": "sfSequence",
+      "location": "doApply",
+      "validated_by": "sanity check",
+      "validates": [
+        "Ensures the transaction sequence matches the expected account sequence"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 12,
+      "name": "TransactionMaster"
+    }
+  ],
+  "description": "Defines the TransactionMaster class, which tracks all transactions in memory, providing methods to fetch, cache, and manage transactions for the XRPL application.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/TransactionMaster.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 15,
+      "name": "TransactionMaster"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 20,
+      "name": "fetch_from_cache"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "error_code_i& ec"
+      ],
+      "lineno": 22,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "ClosedInterval<uint32_t> const& range",
+        "error_code_i& ec"
+      ],
+      "lineno": 32,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem> const& item",
+        "SHAMapNodeType type",
+        "std::uint32_t uCommitLedger"
+      ],
+      "lineno": 39,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledger",
+        "std::optional<uint32_t> tseq",
+        "std::optional<uint32_t> netID"
+      ],
+      "lineno": 44,
+      "name": "inLedger"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction>* pTransaction"
+      ],
+      "lineno": 51,
+      "name": "canonicalize"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getCache"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

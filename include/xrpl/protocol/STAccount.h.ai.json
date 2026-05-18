@@ -1,0 +1,180 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "STAccount"
+    }
+  ],
+  "description": "Defines the STAccount class, a serialized type representing an XRPL AccountID, with serialization, comparison, and assignment operations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STAccount.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n"
+      ],
+      "lineno": 21,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "Buffer const& v"
+      ],
+      "lineno": 22,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 23,
+      "name": "STAccount"
+    },
+    {
+      "args": [
+        "SField const& n",
+        "AccountID const& v"
+      ],
+      "lineno": 24,
+      "name": "STAccount"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 32,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 35,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "AccountID const& value"
+      ],
+      "lineno": 41,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "value"
+    },
+    {
+      "args": [
+        "AccountID const& v"
+      ],
+      "lineno": 47,
+      "name": "setValue"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 51,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 53,
+      "name": "move"
+    },
+    {
+      "args": [
+        "AccountID const& value"
+      ],
+      "lineno": 57,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "value"
+    },
+    {
+      "args": [
+        "AccountID const& v"
+      ],
+      "lineno": 66,
+      "name": "setValue"
+    },
+    {
+      "args": [
+        "STAccount const& lhs",
+        "STAccount const& rhs"
+      ],
+      "lineno": 71,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STAccount const& lhs",
+        "STAccount const& rhs"
+      ],
+      "lineno": 76,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "STAccount const& lhs",
+        "AccountID const& rhs"
+      ],
+      "lineno": 81,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STAccount const& lhs",
+        "AccountID const& rhs"
+      ],
+      "lineno": 85,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "AccountID const& lhs",
+        "STAccount const& rhs"
+      ],
+      "lineno": 89,
+      "name": "operator<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

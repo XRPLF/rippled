@@ -1,0 +1,231 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "sle"
+    },
+    {
+      "lineno": 137,
+      "name": "account"
+    },
+    {
+      "lineno": 137,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 137,
+      "name": "xChainClaimID"
+    },
+    {
+      "lineno": 137,
+      "name": "otherChainSource"
+    },
+    {
+      "lineno": 137,
+      "name": "xChainClaimAttestations"
+    },
+    {
+      "lineno": 137,
+      "name": "signatureReward"
+    },
+    {
+      "lineno": 137,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 137,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 137,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 147,
+      "name": "sle"
+    },
+    {
+      "lineno": 156,
+      "name": "value"
+    },
+    {
+      "lineno": 166,
+      "name": "value"
+    },
+    {
+      "lineno": 176,
+      "name": "value"
+    },
+    {
+      "lineno": 186,
+      "name": "value"
+    },
+    {
+      "lineno": 196,
+      "name": "value"
+    },
+    {
+      "lineno": 206,
+      "name": "value"
+    },
+    {
+      "lineno": 216,
+      "name": "value"
+    },
+    {
+      "lineno": 226,
+      "name": "value"
+    },
+    {
+      "lineno": 236,
+      "name": "value"
+    },
+    {
+      "lineno": 246,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 30,
+      "name": "XChainOwnedClaimID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID, std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource, STArray const& xChainClaimAttestations, std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward, std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode, std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID, std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq",
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 134,
+      "name": "XChainOwnedClaimIDBuilder"
+    }
+  ],
+  "description": "Defines the XChainOwnedClaimID ledger entry wrapper and builder for XRPL, providing type-safe field access and a fluent builder interface for constructing and manipulating XChainOwnedClaimID ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/XChainOwnedClaimID.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getXChainClaimID"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getOtherChainSource"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "getXChainClaimAttestations"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "getSignatureReward"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 154,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 164,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 174,
+      "name": "setXChainClaimID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 184,
+      "name": "setOtherChainSource"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 194,
+      "name": "setXChainClaimAttestations"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 204,
+      "name": "setSignatureReward"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 214,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 224,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 234,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 244,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

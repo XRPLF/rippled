@@ -1,0 +1,232 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "pass_"
+    },
+    {
+      "lineno": 22,
+      "name": "pass_"
+    },
+    {
+      "lineno": 22,
+      "name": "reason_"
+    },
+    {
+      "lineno": 58,
+      "name": "reason"
+    },
+    {
+      "lineno": 70,
+      "name": "s"
+    },
+    {
+      "lineno": 77,
+      "name": "name"
+    },
+    {
+      "lineno": 98,
+      "name": "name"
+    },
+    {
+      "lineno": 118,
+      "name": "r"
+    },
+    {
+      "lineno": 123,
+      "name": "r"
+    },
+    {
+      "lineno": 159,
+      "name": "r"
+    },
+    {
+      "lineno": 165,
+      "name": "r"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 13,
+      "name": "case_results"
+    },
+    {
+      "args": [
+        "bool pass_"
+      ],
+      "lineno": 17,
+      "name": "case_results::test"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "case_results::tests_t"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "case_results::log_t"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 94,
+      "name": "suite_results"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "results"
+    }
+  ],
+  "description": "Defines classes to hold and manage the results of unit test cases, test suites, and overall test runs, including tracking passed/failed conditions and logging messages.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/results.h",
+  "functions": [
+    {
+      "args": [
+        "bool pass_"
+      ],
+      "lineno": 20,
+      "name": "case_results::test::test"
+    },
+    {
+      "args": [
+        "bool pass_",
+        "std::string const& reason_"
+      ],
+      "lineno": 24,
+      "name": "case_results::test::test"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "case_results::tests_t::tests_t"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "case_results::tests_t::total"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "case_results::tests_t::failed"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "case_results::tests_t::pass"
+    },
+    {
+      "args": [
+        "std::string const& reason"
+      ],
+      "lineno": 58,
+      "name": "case_results::tests_t::fail"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 70,
+      "name": "case_results::log_t::insert"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 77,
+      "name": "case_results::case_results"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "case_results::name"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 98,
+      "name": "suite_results::suite_results"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "suite_results::name"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "suite_results::total"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "suite_results::failed"
+    },
+    {
+      "args": [
+        "case_results&& r"
+      ],
+      "lineno": 118,
+      "name": "suite_results::insert"
+    },
+    {
+      "args": [
+        "case_results const& r"
+      ],
+      "lineno": 123,
+      "name": "suite_results::insert"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "results::results"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "results::cases"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "results::total"
+    },
+    {
+      "args": [],
+      "lineno": 154,
+      "name": "results::failed"
+    },
+    {
+      "args": [
+        "suite_results&& r"
+      ],
+      "lineno": 159,
+      "name": "results::insert"
+    },
+    {
+      "args": [
+        "suite_results const& r"
+      ],
+      "lineno": 165,
+      "name": "results::insert"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "beast"
+    },
+    {
+      "lineno": 10,
+      "name": "unit_test"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "vault"
+    },
+    {
+      "lineno": 20,
+      "name": "issuance"
+    },
+    {
+      "lineno": 21,
+      "name": "assets"
+    },
+    {
+      "lineno": 35,
+      "name": "vault"
+    },
+    {
+      "lineno": 36,
+      "name": "issuance"
+    },
+    {
+      "lineno": 37,
+      "name": "shares"
+    },
+    {
+      "lineno": 52,
+      "name": "vault"
+    },
+    {
+      "lineno": 53,
+      "name": "issuance"
+    },
+    {
+      "lineno": 54,
+      "name": "assets"
+    },
+    {
+      "lineno": 55,
+      "name": "truncate"
+    },
+    {
+      "lineno": 70,
+      "name": "vault"
+    },
+    {
+      "lineno": 71,
+      "name": "issuance"
+    },
+    {
+      "lineno": 72,
+      "name": "shares"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "TruncateShares"
+    }
+  ],
+  "description": "This file provides helper functions for converting between assets and shares in the context of a vault, including deposit and withdrawal scenarios, with support for rounding or truncation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/VaultHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "assets"
+      ],
+      "lineno": 16,
+      "name": "assetsToSharesDeposit"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "shares"
+      ],
+      "lineno": 32,
+      "name": "sharesToAssetsDeposit"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "assets",
+        "truncate"
+      ],
+      "lineno": 49,
+      "name": "assetsToSharesWithdraw"
+    },
+    {
+      "args": [
+        "vault",
+        "issuance",
+        "shares"
+      ],
+      "lineno": 67,
+      "name": "sharesToAssetsWithdraw"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

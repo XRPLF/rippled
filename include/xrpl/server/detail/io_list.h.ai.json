@@ -1,0 +1,111 @@
+{
+  "args": [
+    {
+      "lineno": 0,
+      "name": "nStatus"
+    },
+    {
+      "lineno": 0,
+      "name": "strMsg"
+    },
+    {
+      "lineno": 0,
+      "name": "Output"
+    },
+    {
+      "lineno": 0,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "io_list"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "io_list::work"
+    }
+  ],
+  "description": "Manages a set of objects performing asynchronous I/O, allowing for safe creation, destruction, and closure of work objects in a thread-safe manner.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/io_list.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "io_list::work::destroy"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "io_list::destroy"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "io_list::closed"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 97,
+      "name": "io_list::emplace"
+    },
+    {
+      "args": [
+        "Finisher&& f"
+      ],
+      "lineno": 117,
+      "name": "io_list::close"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "io_list::close"
+    },
+    {
+      "args": [],
+      "lineno": 139,
+      "name": "io_list::join"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "io_list::work::destroy"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "io_list::destroy"
+    },
+    {
+      "args": [
+        "Args&&... args"
+      ],
+      "lineno": 172,
+      "name": "io_list::emplace"
+    },
+    {
+      "args": [
+        "Finisher&& f"
+      ],
+      "lineno": 191,
+      "name": "io_list::close"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "io_list::join"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

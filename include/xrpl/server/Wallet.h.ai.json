@@ -1,0 +1,125 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides functions for managing the wallet database, manifests, node identities, peer reservations, and feature votes in the XRPL server.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/Wallet.h",
+  "functions": [
+    {
+      "args": [
+        "setup",
+        "j"
+      ],
+      "lineno": 12,
+      "name": "makeWalletDB"
+    },
+    {
+      "args": [
+        "setup",
+        "dbname",
+        "j"
+      ],
+      "lineno": 22,
+      "name": "makeTestWalletDB"
+    },
+    {
+      "args": [
+        "session",
+        "dbTable",
+        "mCache",
+        "j"
+      ],
+      "lineno": 34,
+      "name": "getManifests"
+    },
+    {
+      "args": [
+        "session",
+        "dbTable",
+        "isTrusted",
+        "map",
+        "j"
+      ],
+      "lineno": 48,
+      "name": "saveManifests"
+    },
+    {
+      "args": [
+        "session",
+        "serialized"
+      ],
+      "lineno": 62,
+      "name": "addValidatorManifest"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 66,
+      "name": "clearNodeIdentity"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 74,
+      "name": "getNodeIdentity"
+    },
+    {
+      "args": [
+        "session",
+        "j"
+      ],
+      "lineno": 87,
+      "name": "getPeerReservationTable"
+    },
+    {
+      "args": [
+        "session",
+        "nodeId",
+        "description"
+      ],
+      "lineno": 97,
+      "name": "insertPeerReservation"
+    },
+    {
+      "args": [
+        "session",
+        "nodeId"
+      ],
+      "lineno": 106,
+      "name": "deletePeerReservation"
+    },
+    {
+      "args": [
+        "session"
+      ],
+      "lineno": 114,
+      "name": "createFeatureVotes"
+    },
+    {
+      "args": [
+        "session",
+        "callback"
+      ],
+      "lineno": 124,
+      "name": "readAmendments"
+    },
+    {
+      "args": [
+        "session",
+        "amendment",
+        "name",
+        "vote"
+      ],
+      "lineno": 139,
+      "name": "voteAmendment"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

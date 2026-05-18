@@ -1,0 +1,326 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doFeature"
+      ],
+      "entry_point": "doFeature",
+      "purpose": "Handles the 'feature' RPC command, validating and processing feature and vetoed parameters, and returning feature amendment info.",
+      "validation_points": [
+        "context.params[jss::feature].isString() - Validates 'feature' is a string if present",
+        "table.find(...) and feature.parseHex(...) - Validates 'feature' is a known name or valid hex",
+        "context.role == Role::ADMIN - Validates admin role for 'vetoed' param",
+        "context.params[jss::vetoed].asBool() - Validates 'vetoed' is a boolean",
+        "table.getJson(feature, isAdmin) - Validates feature exists and is accessible"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "feature",
+      "flow": [
+        "context.params[jss::feature]",
+        "isString() check",
+        "table.find(...)",
+        "feature.parseHex(...) if not found by name",
+        "table.getJson(feature, isAdmin)",
+        "jvReply"
+      ],
+      "origin": "context.params[jss::feature] (JSON RPC input)",
+      "transformations": [
+        "Checked for string type",
+        "Looked up by name in AmendmentTable",
+        "Parsed as hex if not found by name",
+        "Used to fetch feature info as JSON"
+      ],
+      "validated_at": "isString() check, table.find/parseHex, table.getJson"
+    },
+    {
+      "field": "vetoed",
+      "flow": [
+        "context.params[jss::vetoed]",
+        "isAdmin check (context.role)",
+        "asBool() check",
+        "table.veto(feature) or table.unVeto(feature)"
+      ],
+      "origin": "context.params[jss::vetoed] (JSON RPC input)",
+      "transformations": [
+        "Checked for admin role",
+        "Converted to boolean",
+        "Triggers veto/unveto action on AmendmentTable"
+      ],
+      "validated_at": "isAdmin check, asBool()"
+    },
+    {
+      "field": "features",
+      "flow": [
+        "table.getJson(isAdmin)",
+        "features[to_string(h)][jss::majority] = ... (majority amendments added)",
+        "jvReply[jss::features] = features"
+      ],
+      "origin": "table.getJson(isAdmin)",
+      "transformations": [
+        "Fetched as JSON object",
+        "Augmented with majority info"
+      ],
+      "validated_at": "N/A (output construction)"
+    }
+  ],
+  "description": "Implements the doFeature RPC handler for querying and modifying amendment (feature) status in the XRPL ledger, including vetoing/unvetoing features and reporting majority status.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isString() method (Json::Value API) at doFeature (lines 13-18)",
+      "issue_pattern": "Missing empty string validation for feature",
+      "why_false_positive": "isString() method (Json::Value API) validates feature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "feature",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "isString() method (Json::Value API) at doFeature (lines 13-18)",
+      "issue_pattern": "Missing type validation for feature",
+      "why_false_positive": "isString() method (Json::Value API) validates feature type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "AmendmentTable::find and parseHex at doFeature (lines 41-46)",
+      "issue_pattern": "Missing empty string validation for feature",
+      "why_false_positive": "AmendmentTable::find and parseHex validates feature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vetoed",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isAdmin check (role check) at doFeature (lines 48-52)",
+      "issue_pattern": "Missing empty string validation for vetoed",
+      "why_false_positive": "isAdmin check (role check) validates vetoed for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "vetoed",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "asBool() method (Json::Value API) at doFeature (lines 53-59)",
+      "issue_pattern": "Missing empty string validation for vetoed",
+      "why_false_positive": "asBool() method (Json::Value API) validates vetoed for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "vetoed",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "asBool() method (Json::Value API) at doFeature (lines 53-59)",
+      "issue_pattern": "Missing type validation for vetoed",
+      "why_false_positive": "asBool() method (Json::Value API) validates vetoed type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "feature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "table.getJson(feature, isAdmin) return value at doFeature (lines 61-63)",
+      "issue_pattern": "Missing empty string validation for feature",
+      "why_false_positive": "table.getJson(feature, isAdmin) return value validates feature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/server_info/Feature.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 13,
+      "name": "doFeature"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in RPC integration and unit tests, e.g., 'server_info', 'feature', or 'amendment' RPC test files. Tests should cover: (1) valid/invalid 'feature' param (string, missing, bad hex), (2) admin/non-admin 'vetoed' param, (3) correct error codes for bad input, (4) correct output for valid requests. Gaps may exist if tests do not cover all error branches (e.g., non-string 'feature', invalid hex, non-admin vetoed, missing feature in getJson). Look for test files like 'rpc_feature_test.cpp', 'server_info_test.cpp', or similar in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Json::Value (jsoncpp), jss:: (field name constants), AmendmentTable",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "feature",
+      "location": "doFeature (lines 13-18)",
+      "validated_by": "isString() method (Json::Value API)",
+      "validates": [
+        "Ensures 'feature' parameter is a string if present"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcBAD_FEATURE)",
+      "field": "feature",
+      "location": "doFeature (lines 41-46)",
+      "validated_by": "AmendmentTable::find and parseHex",
+      "validates": [
+        "Checks if 'feature' matches a known feature name",
+        "If not, attempts to parse as hex feature ID",
+        "If both fail, returns error"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcNO_PERMISSION)",
+      "field": "vetoed",
+      "location": "doFeature (lines 48-52)",
+      "validated_by": "isAdmin check (role check)",
+      "validates": [
+        "Ensures only admin users can set 'vetoed' field"
+      ],
+      "validation_type": "business_logic|authorization"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (implicit, asBool() coerces)",
+      "field": "vetoed",
+      "location": "doFeature (lines 53-59)",
+      "validated_by": "asBool() method (Json::Value API)",
+      "validates": [
+        "Coerces 'vetoed' to boolean (no explicit error, but type is enforced by usage)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcBAD_FEATURE)",
+      "field": "feature",
+      "location": "doFeature (lines 61-63)",
+      "validated_by": "table.getJson(feature, isAdmin) return value",
+      "validates": [
+        "Checks that the feature exists in the amendment table"
+      ],
+      "validation_type": "business_logic|existence"
+    }
+  ]
+}

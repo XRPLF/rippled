@@ -1,0 +1,68 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "jobQueue"
+    },
+    {
+      "lineno": 15,
+      "name": "task"
+    },
+    {
+      "lineno": 18,
+      "name": "report"
+    },
+    {
+      "lineno": 20,
+      "name": "report"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JobQueue& jobQueue"
+      ],
+      "lineno": 11,
+      "name": "NodeStoreScheduler"
+    }
+  ],
+  "description": "Defines the NodeStoreScheduler class, which implements a NodeStore::Scheduler using a JobQueue to schedule and manage node store tasks.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/NodeStoreScheduler.h",
+  "functions": [
+    {
+      "args": [
+        "JobQueue& jobQueue"
+      ],
+      "lineno": 13,
+      "name": "NodeStoreScheduler"
+    },
+    {
+      "args": [
+        "NodeStore::Task& task"
+      ],
+      "lineno": 15,
+      "name": "scheduleTask"
+    },
+    {
+      "args": [
+        "NodeStore::FetchReport const& report"
+      ],
+      "lineno": 18,
+      "name": "onFetch"
+    },
+    {
+      "args": [
+        "NodeStore::BatchWriteReport const& report"
+      ],
+      "lineno": 20,
+      "name": "onBatchWrite"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

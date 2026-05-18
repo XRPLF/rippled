@@ -1,0 +1,113 @@
+{
+  "args": [
+    {
+      "lineno": 59,
+      "name": "type"
+    },
+    {
+      "lineno": 59,
+      "name": "index"
+    },
+    {
+      "lineno": 62,
+      "name": "name"
+    },
+    {
+      "lineno": 62,
+      "name": "lm"
+    },
+    {
+      "lineno": 62,
+      "name": "job"
+    },
+    {
+      "lineno": 79,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "Job"
+    }
+  ],
+  "description": "Defines the JobType enum and Job class for managing and prioritizing CPU-bound jobs (primarily signature checking) in the XRPL system, including job metadata and execution logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/Job.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Job"
+    },
+    {
+      "args": [
+        "JobType type",
+        "std::uint64_t index"
+      ],
+      "lineno": 59,
+      "name": "Job"
+    },
+    {
+      "args": [
+        "JobType type",
+        "std::string const& name",
+        "std::uint64_t index",
+        "LoadMonitor& lm",
+        "std::function<void()> const& job"
+      ],
+      "lineno": 62,
+      "name": "Job"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "getType"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "queue_time"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "doJob"
+    },
+    {
+      "args": [
+        "Job const& j"
+      ],
+      "lineno": 79,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "Job const& j"
+      ],
+      "lineno": 81,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "Job const& j"
+      ],
+      "lineno": 83,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "Job const& j"
+      ],
+      "lineno": 85,
+      "name": "operator>="
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

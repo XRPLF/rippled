@@ -1,0 +1,29 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Declares deprecated RPC error handling functions for the XRPL protocol, including checking for and generating RPC errors.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/RPCErr.h",
+  "functions": [
+    {
+      "args": [
+        "jvResult"
+      ],
+      "lineno": 8,
+      "name": "isRpcError"
+    },
+    {
+      "args": [
+        "iError"
+      ],
+      "lineno": 10,
+      "name": "rpcError"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

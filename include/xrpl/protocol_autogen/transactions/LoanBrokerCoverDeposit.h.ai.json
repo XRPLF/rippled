@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 67,
+      "name": "account"
+    },
+    {
+      "lineno": 68,
+      "name": "loanBrokerID"
+    },
+    {
+      "lineno": 68,
+      "name": "amount"
+    },
+    {
+      "lineno": 69,
+      "name": "sequence"
+    },
+    {
+      "lineno": 70,
+      "name": "fee"
+    },
+    {
+      "lineno": 102,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 102,
+      "name": "secretKey"
+    },
+    {
+      "lineno": 82,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "LoanBrokerCoverDeposit"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 61,
+      "name": "LoanBrokerCoverDepositBuilder"
+    }
+  ],
+  "description": "Defines the LoanBrokerCoverDeposit transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LoanBrokerCoverDeposit.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 81,
+      "name": "setLoanBrokerID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 91,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 101,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

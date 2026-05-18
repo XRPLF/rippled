@@ -1,0 +1,409 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "other"
+    },
+    {
+      "lineno": 25,
+      "name": "other"
+    },
+    {
+      "lineno": 35,
+      "name": "rhs"
+    },
+    {
+      "lineno": 49,
+      "name": "rhs"
+    },
+    {
+      "lineno": 63,
+      "name": "name"
+    },
+    {
+      "lineno": 66,
+      "name": "name"
+    },
+    {
+      "lineno": 69,
+      "name": "sit"
+    },
+    {
+      "lineno": 69,
+      "name": "name"
+    },
+    {
+      "lineno": 69,
+      "name": "depth"
+    },
+    {
+      "lineno": 76,
+      "name": "id"
+    },
+    {
+      "lineno": 76,
+      "name": "name"
+    },
+    {
+      "lineno": 92,
+      "name": "id"
+    },
+    {
+      "lineno": 92,
+      "name": "depth"
+    },
+    {
+      "lineno": 92,
+      "name": "args"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STVar::STVar(SerialIter&, SField const&, int)",
+        "if (depth > 10) Throw<std::runtime_error>",
+        "constructST(name.fieldType, depth, sit, name)"
+      ],
+      "entry_point": "STVar::STVar(SerialIter& sit, SField const& name, int depth)",
+      "purpose": "Constructs an STVar from serialized data, validating nesting depth.",
+      "validation_points": [
+        "depth > 10 check (throws runtime_error)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STVar::STVar(SerializedTypeID, SField const&)",
+        "XRPL_ASSERT((id == STI_NOTPRESENT) || (id == name.fieldType))",
+        "constructST(id, 0, name)"
+      ],
+      "entry_point": "STVar::STVar(SerializedTypeID id, SField const& name)",
+      "purpose": "Constructs an STVar from a type ID and SField, validating type consistency.",
+      "validation_points": [
+        "XRPL_ASSERT macro (id vs name.fieldType)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STVar::STVar(defaultObject_t, SField const&)",
+        "STVar::STVar(name.fieldType, name)",
+        "XRPL_ASSERT((id == STI_NOTPRESENT) || (id == name.fieldType))"
+      ],
+      "entry_point": "STVar::STVar(defaultObject_t, SField const& name)",
+      "purpose": "Constructs a default STVar object, type-checked.",
+      "validation_points": [
+        "XRPL_ASSERT macro (id vs name.fieldType)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STVar::STVar(nonPresentObject_t, SField const&)",
+        "STVar::STVar(STI_NOTPRESENT, name)",
+        "XRPL_ASSERT((id == STI_NOTPRESENT) || (id == name.fieldType))"
+      ],
+      "entry_point": "STVar::STVar(nonPresentObject_t, SField const& name)",
+      "purpose": "Constructs a non-present STVar object, type-checked.",
+      "validation_points": [
+        "XRPL_ASSERT macro (id vs name.fieldType)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "depth",
+      "flow": [
+        "constructor parameter",
+        "depth > 10 check",
+        "passed to constructST(name.fieldType, depth, sit, name)",
+        "used in constructST to construct appropriate ST* type"
+      ],
+      "origin": "STVar::STVar(SerialIter& sit, SField const& name, int depth) parameter",
+      "transformations": [
+        "Checked for maximum allowed value (10)",
+        "Passed through to constructST and possibly to ST* constructors"
+      ],
+      "validated_at": "Immediately in STVar::STVar(SerialIter&, SField const&, int)"
+    },
+    {
+      "field": "id (SerializedTypeID)",
+      "flow": [
+        "constructor parameter",
+        "XRPL_ASSERT((id == STI_NOTPRESENT) || (id == name.fieldType))",
+        "passed to constructST(id, 0, name)",
+        "used in switch to select ST* type"
+      ],
+      "origin": "STVar::STVar(SerializedTypeID id, SField const& name) parameter",
+      "transformations": [
+        "Type-checked against name.fieldType",
+        "Used to select which ST* type to construct"
+      ],
+      "validated_at": "Immediately in STVar::STVar(SerializedTypeID, SField const&)"
+    },
+    {
+      "field": "name.fieldType",
+      "flow": [
+        "constructor parameter",
+        "used in XRPL_ASSERT (id == name.fieldType)",
+        "passed to constructST",
+        "used in switch to select ST* type"
+      ],
+      "origin": "SField const& name parameter",
+      "transformations": [
+        "Compared to id for type consistency"
+      ],
+      "validated_at": "In XRPL_ASSERT in STVar::STVar(SerializedTypeID, SField const&)"
+    },
+    {
+      "field": "sit (SerialIter)",
+      "flow": [
+        "constructor parameter",
+        "passed to constructST(name.fieldType, depth, sit, name)",
+        "used in construction of ST* type"
+      ],
+      "origin": "STVar::STVar(SerialIter& sit, SField const& name, int depth) parameter",
+      "transformations": [
+        "Used to deserialize data into ST* type"
+      ],
+      "validated_at": "Indirectly, as part of constructST and ST* constructors"
+    }
+  ],
+  "description": "Implements the STVar class and related logic for constructing, copying, moving, and destroying various XRPL serialized types using type-erased storage and runtime type dispatch.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "depth",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field depth validated by Custom (Throw<T>, XRPL_ASSERT)",
+      "issue_pattern": "Missing validation for depth",
+      "why_false_positive": "Custom (Throw<T>, XRPL_ASSERT) validates depth automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SerializedTypeID vs SField::fieldType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SerializedTypeID vs SField::fieldType validated by Custom (Throw<T>, XRPL_ASSERT)",
+      "issue_pattern": "Missing validation for SerializedTypeID vs SField::fieldType",
+      "why_false_positive": "Custom (Throw<T>, XRPL_ASSERT) validates SerializedTypeID vs SField::fieldType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "depth",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check at STVar::STVar(SerialIter& sit, SField const& name, int depth)",
+      "issue_pattern": "Missing empty string validation for depth",
+      "why_false_positive": "explicit check validates depth for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "depth",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check at STVar::STVar(SerialIter& sit, SField const& name, int depth)",
+      "issue_pattern": "Missing range validation for depth",
+      "why_false_positive": "explicit check validates depth range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id (SerializedTypeID) vs name.fieldType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVar::STVar(SerializedTypeID id, SField const& name)",
+      "issue_pattern": "Missing empty string validation for id (SerializedTypeID) vs name.fieldType",
+      "why_false_positive": "XRPL_ASSERT macro validates id (SerializedTypeID) vs name.fieldType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "id (SerializedTypeID) vs name.fieldType",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at STVar::STVar(SerializedTypeID id, SField const& name)",
+      "issue_pattern": "Missing type validation for id (SerializedTypeID) vs name.fieldType",
+      "why_false_positive": "XRPL_ASSERT macro validates id (SerializedTypeID) vs name.fieldType type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STVar.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "STVar::~STVar"
+    },
+    {
+      "args": [
+        "STVar const& other"
+      ],
+      "lineno": 19,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [
+        "STVar&& other"
+      ],
+      "lineno": 24,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [
+        "STVar const& rhs"
+      ],
+      "lineno": 34,
+      "name": "STVar::operator="
+    },
+    {
+      "args": [
+        "STVar&& rhs"
+      ],
+      "lineno": 48,
+      "name": "STVar::operator="
+    },
+    {
+      "args": [
+        "defaultObject_t",
+        "SField const& name"
+      ],
+      "lineno": 62,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [
+        "nonPresentObject_t",
+        "SField const& name"
+      ],
+      "lineno": 65,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name",
+        "int depth"
+      ],
+      "lineno": 68,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [
+        "SerializedTypeID id",
+        "SField const& name"
+      ],
+      "lineno": 75,
+      "name": "STVar::STVar"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "STVar::destroy"
+    },
+    {
+      "args": [
+        "SerializedTypeID id",
+        "int depth",
+        "Args&&... args"
+      ],
+      "lineno": 91,
+      "name": "STVar::constructST"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 14,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The validation logic (depth check, XRPL_ASSERT) is critical for preventing malformed or malicious data from causing issues. Typical test coverage would be in protocol serialization/deserialization tests, such as those in 'test/protocol/STObject_test.cpp', 'test/protocol/STVar_test.cpp', or similar. However, if these tests do not explicitly test for depth overflow or mismatched type IDs, those paths may not be fully covered. There is a risk that edge cases (e.g., depth == 11, id != name.fieldType) are not directly tested unless negative/exceptional cases are included in the test suite. Review of test files is needed to confirm coverage of these validation paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "depth",
+      "SerializedTypeID vs SField::fieldType"
+    ],
+    "framework": "Custom (Throw<T>, XRPL_ASSERT)",
+    "validation_layer": "constructor (entry_point for STVar)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<T>)",
+      "field": "depth",
+      "location": "STVar::STVar(SerialIter& sit, SField const& name, int depth)",
+      "validated_by": "explicit check",
+      "validates": [
+        "depth must not exceed 10"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely std::logic_error or abort)",
+      "field": "id (SerializedTypeID) vs name.fieldType",
+      "location": "STVar::STVar(SerializedTypeID id, SField const& name)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "id must be STI_NOTPRESENT or match name.fieldType"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,451 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BookDirs::BookDirs",
+        "cdirFirst (if key_ != beast::zero)"
+      ],
+      "entry_point": "BookDirs::BookDirs",
+      "purpose": "Constructs a BookDirs object, initializes directory traversal state.",
+      "validation_points": [
+        "XRPL_ASSERT(root_ != beast::zero)",
+        "if (!cdirFirst(...)) { UNREACHABLE(...) }"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookDirs::begin",
+        "BookDirs::const_iterator constructor"
+      ],
+      "entry_point": "BookDirs::begin",
+      "purpose": "Returns an iterator to the beginning of the book directory.",
+      "validation_points": [
+        "BookDirs::const_iterator constructor (no explicit validation, but fields are set from validated BookDirs)"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookDirs::const_iterator::operator*",
+        "view_->read(keylet::offer(index_))"
+      ],
+      "entry_point": "BookDirs::const_iterator::operator*",
+      "purpose": "Dereferences the iterator to access the current offer.",
+      "validation_points": [
+        "XRPL_ASSERT(index_ != beast::zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookDirs::const_iterator::operator++",
+        "cdirNext",
+        "if (!cdirNext) { ... cdirFirst ... }"
+      ],
+      "entry_point": "BookDirs::const_iterator::operator++",
+      "purpose": "Advances the iterator to the next offer in the directory.",
+      "validation_points": [
+        "XRPL_ASSERT(index_ != beast::zero)",
+        "if (!cdirFirst(...)) { UNREACHABLE(...) }"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookDirs::const_iterator::operator=="
+      ],
+      "entry_point": "BookDirs::const_iterator::operator==",
+      "purpose": "Compares two iterators for equality.",
+      "validation_points": [
+        "if (view_ == nullptr || other.view_ == nullptr)",
+        "XRPL_ASSERT(view_ == other.view_ && root_ == other.root_)"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookDirs::const_iterator::operator++(int)",
+        "operator++"
+      ],
+      "entry_point": "BookDirs::const_iterator::operator++(int)",
+      "purpose": "Post-increment: advances iterator and returns previous value.",
+      "validation_points": [
+        "XRPL_ASSERT(index_ != beast::zero)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "root_",
+      "flow": [
+        "BookDirs::BookDirs",
+        "BookDirs::const_iterator (via begin/end)",
+        "Used in iterator operations"
+      ],
+      "origin": "keylet::page(getBookBase(book)).key in BookDirs::BookDirs",
+      "transformations": [
+        "Set from book parameter",
+        "Passed to iterator"
+      ],
+      "validated_at": "XRPL_ASSERT(root_ != beast::zero) in BookDirs::BookDirs"
+    },
+    {
+      "field": "key_",
+      "flow": [
+        "BookDirs::BookDirs",
+        "BookDirs::const_iterator (via begin/end)",
+        "Used as cur_key_ in iterator"
+      ],
+      "origin": "view_->succ(root_, next_quality_).value_or(beast::zero) in BookDirs::BookDirs",
+      "transformations": [
+        "Set from ledger view",
+        "Passed to iterator"
+      ],
+      "validated_at": "if (key_ != beast::zero) { if (!cdirFirst(...)) { UNREACHABLE } }"
+    },
+    {
+      "field": "view_",
+      "flow": [
+        "BookDirs::BookDirs",
+        "BookDirs::const_iterator (via begin/end)",
+        "Used in all iterator operations"
+      ],
+      "origin": "Constructor parameter (BookDirs::BookDirs)",
+      "transformations": [
+        "Pointer assignment",
+        "Passed to iterator"
+      ],
+      "validated_at": "if (view_ == nullptr || other.view_ == nullptr) in operator=="
+    },
+    {
+      "field": "index_",
+      "flow": [
+        "BookDirs::BookDirs",
+        "BookDirs::const_iterator (via begin)",
+        "Used in operator*, operator++, operator++(int)"
+      ],
+      "origin": "Set by cdirFirst/cdirNext in BookDirs::BookDirs and iterator",
+      "transformations": [
+        "Set by directory traversal helpers"
+      ],
+      "validated_at": [
+        "XRPL_ASSERT(index_ != beast::zero) in operator*",
+        "XRPL_ASSERT(index_ != beast::zero) in operator++",
+        "XRPL_ASSERT(index_ != beast::zero) in operator++(int)"
+      ]
+    },
+    {
+      "field": "sle_, entry_",
+      "flow": [
+        "BookDirs::BookDirs",
+        "BookDirs::const_iterator (via begin)",
+        "Used in iterator traversal"
+      ],
+      "origin": "Set by cdirFirst/cdirNext",
+      "transformations": [
+        "Set by directory traversal helpers"
+      ],
+      "validated_at": "Indirectly validated by cdirFirst/cdirNext return value"
+    }
+  ],
+  "description": "Implements the BookDirs class for iterating over order book directories in the XRPL ledger, providing iterator functionality to traverse offers in a given book.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at BookDirs::BookDirs (constructor)",
+      "issue_pattern": "Missing empty string validation for root_",
+      "why_false_positive": "XRPL_ASSERT validates root_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "directory existence for key_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "cdirFirst + UNREACHABLE at BookDirs::BookDirs (constructor)",
+      "issue_pattern": "Missing empty string validation for directory existence for key_",
+      "why_false_positive": "cdirFirst + UNREACHABLE validates directory existence for key_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "view_ and other.view_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pointer null check at BookDirs::const_iterator::operator==",
+      "issue_pattern": "Missing empty string validation for view_ and other.view_",
+      "why_false_positive": "pointer null check validates view_ and other.view_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "view_ and other.view_",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "pointer null check at BookDirs::const_iterator::operator==",
+      "issue_pattern": "Missing type validation for view_ and other.view_",
+      "why_false_positive": "pointer null check validates view_ and other.view_ type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "view_ and root_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at BookDirs::const_iterator::operator==",
+      "issue_pattern": "Missing empty string validation for view_ and root_",
+      "why_false_positive": "XRPL_ASSERT validates view_ and root_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "index_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at BookDirs::const_iterator::operator*",
+      "issue_pattern": "Missing empty string validation for index_",
+      "why_false_positive": "XRPL_ASSERT validates index_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "index_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at BookDirs::const_iterator::operator++",
+      "issue_pattern": "Missing empty string validation for index_",
+      "why_false_positive": "XRPL_ASSERT validates index_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "directory existence for cur_key_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "cdirFirst + UNREACHABLE at BookDirs::const_iterator::operator++",
+      "issue_pattern": "Missing empty string validation for directory existence for cur_key_",
+      "why_false_positive": "cdirFirst + UNREACHABLE validates directory existence for cur_key_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "index_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at BookDirs::const_iterator::operator++(int)",
+      "issue_pattern": "Missing empty string validation for index_",
+      "why_false_positive": "XRPL_ASSERT validates index_ for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/BookDirs.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "Book const& book"
+      ],
+      "lineno": 7,
+      "name": "BookDirs::BookDirs"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "BookDirs::begin"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "BookDirs::end"
+    },
+    {
+      "args": [
+        "BookDirs::const_iterator const& other"
+      ],
+      "lineno": 42,
+      "name": "BookDirs::const_iterator::operator=="
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "BookDirs::const_iterator::operator*"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "BookDirs::const_iterator::operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 87,
+      "name": "BookDirs::const_iterator::operator++"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code contains UNREACHABLE and XRPL_ASSERT checks, which are typically only triggered in error or edge cases. The LCOV_EXCL_START/STOP comments indicate that these branches are excluded from coverage, suggesting that normal tests do not cover these error paths. Likely, unit/integration tests exist for BookDirs and iterators in test files such as BookDirs_test.cpp, BookDirs_test.py, or ledger traversal tests, but the unreachable/failed validation paths are not directly tested. Null pointer and zero-value assertions are defensive and may not be exercised in standard test suites.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT, UNREACHABLE (custom assertion macros), cdirFirst/cdirNext (directory helpers)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "root_",
+      "location": "BookDirs::BookDirs (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "root_ must not be beast::zero (nonzero root)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE (logic error/exception)",
+      "field": "directory existence for key_",
+      "location": "BookDirs::BookDirs (constructor)",
+      "validated_by": "cdirFirst + UNREACHABLE",
+      "validates": [
+        "If key_ is not beast::zero, directory must not be empty (cdirFirst must succeed)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "view_ and other.view_",
+      "location": "BookDirs::const_iterator::operator==",
+      "validated_by": "pointer null check",
+      "validates": [
+        "view_ and other.view_ must not be nullptr"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "view_ and root_",
+      "location": "BookDirs::const_iterator::operator==",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "view_ and other.view_ must be equal; root_ and other.root_ must be equal"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "index_",
+      "location": "BookDirs::const_iterator::operator*",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "index_ must not be beast::zero (nonzero index)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "index_",
+      "location": "BookDirs::const_iterator::operator++",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "index_ must not be beast::zero (nonzero index)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE (logic error/exception)",
+      "field": "directory existence for cur_key_",
+      "location": "BookDirs::const_iterator::operator++",
+      "validated_by": "cdirFirst + UNREACHABLE",
+      "validates": [
+        "If cdirFirst fails for cur_key_, directory must not be empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (XRPL_ASSERT)",
+      "field": "index_",
+      "location": "BookDirs::const_iterator::operator++(int)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "index_ must not be beast::zero (nonzero index)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

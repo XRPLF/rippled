@@ -1,0 +1,51 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "LocalTxs"
+    }
+  ],
+  "description": "Defines the LocalTxs class for tracking and managing local transactions to ensure they are applied to open ledgers and held until seen in a fully-validated ledger.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LocalTxs.h",
+  "functions": [
+    {
+      "args": [
+        "LedgerIndex index",
+        "std::shared_ptr<STTx const> const& txn"
+      ],
+      "lineno": 22,
+      "name": "push_back"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "getTxSet"
+    },
+    {
+      "args": [
+        "ReadView const& view"
+      ],
+      "lineno": 30,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "make_LocalTxs"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

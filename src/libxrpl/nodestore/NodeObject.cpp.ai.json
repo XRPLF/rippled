@@ -1,0 +1,172 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NodeObject::createObject",
+        "NodeObject::NodeObject (constructor)"
+      ],
+      "entry_point": "NodeObject::createObject",
+      "purpose": "Creates a new NodeObject instance with specified type, data, and hash.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NodeObject::getType / getHash / getData"
+      ],
+      "entry_point": "NodeObject::getType / getHash / getData",
+      "purpose": "Accessors for NodeObject fields.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mType",
+      "flow": [
+        "NodeObject::createObject (type param)",
+        "NodeObject::NodeObject (type param)",
+        "NodeObject::mType (member variable)",
+        "NodeObject::getType (returns mType)"
+      ],
+      "origin": "NodeObject::createObject (parameter: type)",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "mHash",
+      "flow": [
+        "NodeObject::createObject (hash param)",
+        "NodeObject::NodeObject (hash param)",
+        "NodeObject::mHash (member variable)",
+        "NodeObject::getHash (returns mHash)"
+      ],
+      "origin": "NodeObject::createObject (parameter: hash)",
+      "transformations": [],
+      "validated_at": null
+    },
+    {
+      "field": "mData",
+      "flow": [
+        "NodeObject::createObject (data param)",
+        "NodeObject::NodeObject (data param, moved)",
+        "NodeObject::mData (member variable)",
+        "NodeObject::getData (returns mData)"
+      ],
+      "origin": "NodeObject::createObject (parameter: data)",
+      "transformations": [
+        "std::move on Blob data in constructor"
+      ],
+      "validated_at": null
+    }
+  ],
+  "description": "Defines the NodeObject class for XRPL node storage, including its constructor, factory method, and accessors for type, hash, and data.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/NodeObject.cpp",
+  "functions": [
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "PrivateAccess"
+      ],
+      "lineno": 8,
+      "name": "NodeObject::NodeObject"
+    },
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash"
+      ],
+      "lineno": 13,
+      "name": "NodeObject::createObject"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "NodeObject::getType"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "NodeObject::getHash"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "NodeObject::getData"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no validation logic in this code: no input checking, type validation, or data integrity checks. The code assumes all inputs are valid and simply stores and returns them. Test coverage would likely be in files testing NodeStore or NodeObject creation and accessors, such as 'nodestore/NodeObject_test.cpp' or similar, but these would only test construction and access, not validation. There are no validation code paths to test. Gaps: No tests or code for invalid input, malformed data, or type enforcement.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none",
+    "notes": "No explicit or implicit input validation is performed in this file. All fields are assigned directly without checks. No framework or type/format/range/business logic validation is present.",
+    "validation_layer": "none"
+  },
+  "validations": []
+}

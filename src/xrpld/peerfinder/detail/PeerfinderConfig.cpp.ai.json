@@ -1,0 +1,346 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "lhs"
+    },
+    {
+      "lineno": 11,
+      "name": "rhs"
+    },
+    {
+      "lineno": 41,
+      "name": "map"
+    },
+    {
+      "lineno": 49,
+      "name": "cfg"
+    },
+    {
+      "lineno": 49,
+      "name": "port"
+    },
+    {
+      "lineno": 49,
+      "name": "validationPublicKey"
+    },
+    {
+      "lineno": 49,
+      "name": "ipLimit"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Config::makeConfig",
+        "Config::calcOutPeers",
+        "Config::applyTuning"
+      ],
+      "entry_point": "Config::makeConfig",
+      "purpose": "Creates and validates a PeerFinder::Config object from external configuration and runtime parameters.",
+      "validation_points": [
+        "Config::calcOutPeers (validates outPeers)",
+        "Config::applyTuning (validates ipLimit)",
+        "Config::makeConfig (validates maxPeers, inPeers, wantIncoming)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Config::applyTuning"
+      ],
+      "entry_point": "Config::applyTuning",
+      "purpose": "Applies business rules and clamps ipLimit based on inPeers and other constraints.",
+      "validation_points": [
+        "Config::applyTuning (validates ipLimit)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Config::calcOutPeers"
+      ],
+      "entry_point": "Config::calcOutPeers",
+      "purpose": "Calculates outPeers based on maxPeers and tuning constants.",
+      "validation_points": [
+        "Config::calcOutPeers (validates outPeers)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "outPeers",
+      "flow": [
+        "Config::makeConfig",
+        "Config::calcOutPeers (if PEERS_OUT_MAX == 0)",
+        "Config::applyTuning (no further change)",
+        "Config object returned"
+      ],
+      "origin": "Config::calcOutPeers (default constructor) or cfg.PEERS_OUT_MAX (makeConfig)",
+      "transformations": [
+        "Calculated as max((maxPeers * Tuning::outPercent + 50) / 100, Tuning::minOutCount)",
+        "Set directly from cfg.PEERS_OUT_MAX if provided"
+      ],
+      "validated_at": "Config::calcOutPeers"
+    },
+    {
+      "field": "ipLimit",
+      "flow": [
+        "Config::makeConfig (set from param)",
+        "Config::applyTuning (may be modified based on inPeers and business rules)",
+        "Config object returned"
+      ],
+      "origin": "Parameter to Config::makeConfig or default (0)",
+      "transformations": [
+        "If 0, set to 2, then possibly increased if inPeers > Tuning::defaultMaxPeers",
+        "Clamped to [1, inPeers/2]"
+      ],
+      "validated_at": "Config::applyTuning"
+    },
+    {
+      "field": "maxPeers",
+      "flow": [
+        "Config::makeConfig (set from cfg.PEERS_MAX or 0)",
+        "Config::calcOutPeers (used in calculation)",
+        "Config object returned"
+      ],
+      "origin": "cfg.PEERS_MAX or 0",
+      "transformations": [
+        "Set to at least Tuning::minOutCount if PEERS_OUT_MAX/IN_MAX are zero"
+      ],
+      "validated_at": "Config::makeConfig"
+    },
+    {
+      "field": "inPeers",
+      "flow": [
+        "Config::makeConfig (set from cfg.PEERS_IN_MAX or calculated)",
+        "Config::applyTuning (used to clamp ipLimit)",
+        "Config object returned"
+      ],
+      "origin": "cfg.PEERS_IN_MAX or calculated from maxPeers - outPeers",
+      "transformations": [
+        "Set to maxPeers - outPeers if PEERS_IN_MAX is zero",
+        "Otherwise set directly from cfg.PEERS_IN_MAX"
+      ],
+      "validated_at": "Config::makeConfig"
+    },
+    {
+      "field": "wantIncoming",
+      "flow": [
+        "Config::makeConfig (set based on peerPrivate and port)",
+        "Config object returned"
+      ],
+      "origin": "(!peerPrivate) && (port != 0)",
+      "transformations": [
+        "Set to false if peerPrivate is true or port is 0"
+      ],
+      "validated_at": "Config::makeConfig"
+    }
+  ],
+  "description": "Implements the PeerFinder::Config class and related functions for configuring peer connection parameters in the XRPL peer finder subsystem.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "outPeers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::calcOutPeers at Config::calcOutPeers",
+      "issue_pattern": "Missing empty string validation for outPeers",
+      "why_false_positive": "Config::calcOutPeers validates outPeers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ipLimit",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::applyTuning at Config::applyTuning",
+      "issue_pattern": "Missing empty string validation for ipLimit",
+      "why_false_positive": "Config::applyTuning validates ipLimit for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "maxPeers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::makeConfig at Config::makeConfig",
+      "issue_pattern": "Missing empty string validation for maxPeers",
+      "why_false_positive": "Config::makeConfig validates maxPeers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "inPeers",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::makeConfig at Config::makeConfig",
+      "issue_pattern": "Missing empty string validation for inPeers",
+      "why_false_positive": "Config::makeConfig validates inPeers for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "wantIncoming",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::makeConfig at Config::makeConfig",
+      "issue_pattern": "Missing empty string validation for wantIncoming",
+      "why_false_positive": "Config::makeConfig validates wantIncoming for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/PeerfinderConfig.cpp",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 11,
+      "name": "operator=="
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "Config::calcOutPeers"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "Config::applyTuning"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 41,
+      "name": "Config::onWrite"
+    },
+    {
+      "args": [
+        "cfg",
+        "port",
+        "validationPublicKey",
+        "ipLimit"
+      ],
+      "lineno": 49,
+      "name": "Config::makeConfig"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "The code is primarily validated via construction and transformation in makeConfig, calcOutPeers, and applyTuning. Typical test coverage would be in unit tests for PeerFinder::Config, likely in files such as test/peerfinder/PeerFinder_test.cpp or similar. Tests should cover edge cases for PEERS_MAX, PEERS_OUT_MAX, PEERS_IN_MAX, ipLimit, and peer privacy settings. Gaps may exist if there are no tests for: (1) ipLimit clamping logic, (2) interaction between peerPrivate and wantIncoming, (3) min/max boundary conditions for outPeers and inPeers, (4) standalone mode. If these tests do not exist, validation logic could be insufficiently covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation in business logic)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (value is clamped)",
+      "field": "outPeers",
+      "location": "Config::calcOutPeers",
+      "validated_by": "Config::calcOutPeers",
+      "validates": [
+        "Ensures outPeers is at least Tuning::minOutCount",
+        "Calculates outPeers as a percentage of maxPeers"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (value is clamped)",
+      "field": "ipLimit",
+      "location": "Config::applyTuning",
+      "validated_by": "Config::applyTuning",
+      "validates": [
+        "If ipLimit is 0, sets a default value (2)",
+        "Increases ipLimit if inPeers > Tuning::defaultMaxPeers",
+        "Clamps ipLimit between 1 and inPeers/2"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (value is clamped)",
+      "field": "maxPeers",
+      "location": "Config::makeConfig",
+      "validated_by": "Config::makeConfig",
+      "validates": [
+        "If cfg.PEERS_MAX != 0, assigns to config.maxPeers",
+        "Ensures config.maxPeers is at least Tuning::minOutCount"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (value is set to 0 if negative)",
+      "field": "inPeers",
+      "location": "Config::makeConfig",
+      "validated_by": "Config::makeConfig",
+      "validates": [
+        "If config.maxPeers >= config.outPeers, sets inPeers to the difference",
+        "Otherwise, sets inPeers to 0"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "wantIncoming",
+      "location": "Config::makeConfig",
+      "validated_by": "Config::makeConfig",
+      "validates": [
+        "Sets wantIncoming to false if peerPrivate is true or port is 0"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

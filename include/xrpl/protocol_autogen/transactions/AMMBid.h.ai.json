@@ -1,0 +1,196 @@
+{
+  "args": [
+    {
+      "lineno": 34,
+      "name": "tx"
+    },
+    {
+      "lineno": 139,
+      "name": "account"
+    },
+    {
+      "lineno": 139,
+      "name": "asset"
+    },
+    {
+      "lineno": 139,
+      "name": "asset2"
+    },
+    {
+      "lineno": 139,
+      "name": "sequence"
+    },
+    {
+      "lineno": 139,
+      "name": "fee"
+    },
+    {
+      "lineno": 150,
+      "name": "tx"
+    },
+    {
+      "lineno": 162,
+      "name": "value"
+    },
+    {
+      "lineno": 172,
+      "name": "value"
+    },
+    {
+      "lineno": 182,
+      "name": "value"
+    },
+    {
+      "lineno": 192,
+      "name": "value"
+    },
+    {
+      "lineno": 202,
+      "name": "value"
+    },
+    {
+      "lineno": 212,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 212,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "AMMBid"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::decay_t<typename SF_ISSUE::type::value_type> const& asset2, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 134,
+      "name": "AMMBidBuilder"
+    }
+  ],
+  "description": "Defines the AMMBid transaction type and its builder for the XRPL protocol, providing type-safe field access and a fluent interface for constructing AMMBid transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/AMMBid.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 34,
+      "name": "AMMBid"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "getBidMin"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "hasBidMin"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "getBidMax"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "hasBidMax"
+    },
+    {
+      "args": [],
+      "lineno": 113,
+      "name": "getAuthAccounts"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "hasAuthAccounts"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset",
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& asset2",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 139,
+      "name": "AMMBidBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 150,
+      "name": "AMMBidBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 162,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ISSUE::type::value_type> const& value"
+      ],
+      "lineno": 172,
+      "name": "setAsset2"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 182,
+      "name": "setBidMin"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 192,
+      "name": "setBidMax"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 202,
+      "name": "setAuthAccounts"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 212,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

@@ -1,0 +1,418 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "isDelete"
+    },
+    {
+      "lineno": 14,
+      "name": "before"
+    },
+    {
+      "lineno": 15,
+      "name": "after"
+    },
+    {
+      "lineno": 39,
+      "name": "tx"
+    },
+    {
+      "lineno": 40,
+      "name": "ter"
+    },
+    {
+      "lineno": 41,
+      "name": "fee"
+    },
+    {
+      "lineno": 42,
+      "name": "view"
+    },
+    {
+      "lineno": 43,
+      "name": "j"
+    },
+    {
+      "lineno": 158,
+      "name": "issuerID"
+    },
+    {
+      "lineno": 166,
+      "name": "changes"
+    },
+    {
+      "lineno": 169,
+      "name": "enforce"
+    },
+    {
+      "lineno": 166,
+      "name": "issuer"
+    },
+    {
+      "lineno": 195,
+      "name": "change"
+    },
+    {
+      "lineno": 196,
+      "name": "high"
+    },
+    {
+      "lineno": 199,
+      "name": "globalFreeze"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TransfersNotFrozen::visitEntry",
+        "TransfersNotFrozen::isValidEntry",
+        "TransfersNotFrozen::calculateBalanceChange",
+        "TransfersNotFrozen::recordBalanceChanges"
+      ],
+      "entry_point": "TransfersNotFrozen::visitEntry",
+      "purpose": "Processes each ledger entry change (before/after) during a transaction, validates if the entry is relevant, computes balance changes, and records them for later invariant checking.",
+      "validation_points": [
+        "TransfersNotFrozen::isValidEntry (validates entry types and presence)",
+        "balanceChange.signum() == 0 (validates if there is a non-zero balance change)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransfersNotFrozen::finalize",
+        "TransfersNotFrozen::findIssuer",
+        "TransfersNotFrozen::validateIssuerChanges"
+      ],
+      "entry_point": "TransfersNotFrozen::finalize",
+      "purpose": "After all entries are visited, this function validates that no frozen assets were transferred by checking all recorded balance changes against issuer freeze state.",
+      "validation_points": [
+        "TransfersNotFrozen::findIssuer (validates issuer existence)",
+        "TransfersNotFrozen::validateIssuerChanges (validates that issuer changes are allowed given freeze state)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "before/after SLE entries",
+      "flow": [
+        "visitEntry (input)",
+        "isValidEntry (type and presence validation)",
+        "calculateBalanceChange (computes delta)",
+        "recordBalanceChanges (stores for finalize)"
+      ],
+      "origin": "Ledger entry snapshots before and after transaction, passed to visitEntry",
+      "transformations": [
+        "Type checked (isValidEntry)",
+        "Delta computed (calculateBalanceChange)"
+      ],
+      "validated_at": "isValidEntry"
+    },
+    {
+      "field": "balanceChange",
+      "flow": [
+        "calculateBalanceChange",
+        "visitEntry (checks signum)",
+        "recordBalanceChanges (stores if non-zero)"
+      ],
+      "origin": "Result of calculateBalanceChange(before, after, isDelete)",
+      "transformations": [
+        "Computed as difference between before and after balances"
+      ],
+      "validated_at": "visitEntry (balanceChange.signum() == 0)"
+    },
+    {
+      "field": "issuerSle",
+      "flow": [
+        "finalize (for each balance change)",
+        "findIssuer (looks up issuer SLE in ledger view)",
+        "validateIssuerChanges (uses issuerSle for freeze checks)"
+      ],
+      "origin": "findIssuer(issue.account, view) in finalize",
+      "transformations": [
+        "Looked up from ledger by account"
+      ],
+      "validated_at": "finalize (if (!issuerSle) ...)"
+    },
+    {
+      "field": "issuer changes",
+      "flow": [
+        "finalize (iterates over balanceChanges_)",
+        "validateIssuerChanges (checks if changes are allowed given freeze state)"
+      ],
+      "origin": "balanceChanges_ collected during visitEntry",
+      "transformations": [
+        "Aggregated per issuer/issue"
+      ],
+      "validated_at": "validateIssuerChanges"
+    }
+  ],
+  "description": "Implements the TransfersNotFrozen invariant for the XRPL ledger, ensuring that asset transfers do not violate freeze restrictions on trust lines, including logic for tracking, validating, and enforcing freeze states during ledger modifications.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "before/after SLE entries",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isValidEntry(before, after) at TransfersNotFrozen::visitEntry",
+      "issue_pattern": "Missing empty string validation for before/after SLE entries",
+      "why_false_positive": "isValidEntry(before, after) validates before/after SLE entries for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "balanceChange",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balanceChange.signum() == 0 at TransfersNotFrozen::visitEntry",
+      "issue_pattern": "Missing empty string validation for balanceChange",
+      "why_false_positive": "balanceChange.signum() == 0 validates balanceChange for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issuerSle existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "findIssuer(issue.account, view) at TransfersNotFrozen::finalize",
+      "issue_pattern": "Missing empty string validation for issuerSle existence",
+      "why_false_positive": "findIssuer(issue.account, view) validates issuerSle existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.95,
+      "detection_keywords": [
+        "issuer changes",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validateIssuerChanges(issuerSle, changes, tx, j, enforce) at TransfersNotFrozen::finalize",
+      "issue_pattern": "Missing empty string validation for issuer changes",
+      "why_false_positive": "validateIssuerChanges(issuerSle, changes, tx, j, enforce) validates issuer changes for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/FreezeInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "isDelete",
+        "before",
+        "after"
+      ],
+      "lineno": 12,
+      "name": "TransfersNotFrozen::visitEntry"
+    },
+    {
+      "args": [
+        "tx",
+        "ter",
+        "fee",
+        "view",
+        "j"
+      ],
+      "lineno": 38,
+      "name": "TransfersNotFrozen::finalize"
+    },
+    {
+      "args": [
+        "before",
+        "after"
+      ],
+      "lineno": 87,
+      "name": "TransfersNotFrozen::isValidEntry"
+    },
+    {
+      "args": [
+        "before",
+        "after",
+        "isDelete"
+      ],
+      "lineno": 104,
+      "name": "TransfersNotFrozen::calculateBalanceChange"
+    },
+    {
+      "args": [
+        "issue",
+        "change"
+      ],
+      "lineno": 132,
+      "name": "TransfersNotFrozen::recordBalance"
+    },
+    {
+      "args": [
+        "after",
+        "balanceChange"
+      ],
+      "lineno": 146,
+      "name": "TransfersNotFrozen::recordBalanceChanges"
+    },
+    {
+      "args": [
+        "issuerID",
+        "view"
+      ],
+      "lineno": 157,
+      "name": "TransfersNotFrozen::findIssuer"
+    },
+    {
+      "args": [
+        "issuer",
+        "changes",
+        "tx",
+        "j",
+        "enforce"
+      ],
+      "lineno": 165,
+      "name": "TransfersNotFrozen::validateIssuerChanges"
+    },
+    {
+      "args": [
+        "change",
+        "high",
+        "tx",
+        "j",
+        "enforce",
+        "globalFreeze"
+      ],
+      "lineno": 194,
+      "name": "TransfersNotFrozen::validateFrozenState"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "FreezeInvariant is typically tested via integration and invariant test suites, e.g., in rippled/test/invariant_check_test.cpp, rippled/test/Freeze_test.cpp, and possibly in broader transaction or trustline tests. These tests cover scenarios like trustline freeze, global freeze, and attempts to transfer frozen assets. Gaps may exist in edge cases: e.g., missing issuer SLE, complex multi-hop paths, or deep freeze amendment toggling. Direct unit tests for isValidEntry, calculateBalanceChange, and validateIssuerChanges may be limited; most coverage is likely via higher-level transaction tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (early return)",
+      "field": "before/after SLE entries",
+      "location": "TransfersNotFrozen::visitEntry",
+      "validated_by": "isValidEntry(before, after)",
+      "validates": [
+        "Checks if the ledger entry pair (before, after) is valid for processing",
+        "Likely checks type, existence, and/or relevant fields"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (early return)",
+      "field": "balanceChange",
+      "location": "TransfersNotFrozen::visitEntry",
+      "validated_by": "balanceChange.signum() == 0",
+      "validates": [
+        "Checks if the balance change is non-zero before recording"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (assertion failure if enforce is true), otherwise continue",
+      "field": "issuerSle existence",
+      "location": "TransfersNotFrozen::finalize",
+      "validated_by": "findIssuer(issue.account, view)",
+      "validates": [
+        "Checks that the issuer's ledger entry exists in the current view"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.95,
+      "error_thrown": "returns false (invariant violation)",
+      "field": "issuer changes",
+      "location": "TransfersNotFrozen::finalize",
+      "validated_by": "validateIssuerChanges(issuerSle, changes, tx, j, enforce)",
+      "validates": [
+        "Checks that the issuer's freeze state and the changes are valid according to business rules",
+        "Likely checks for illegal asset movement when frozen"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

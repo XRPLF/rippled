@@ -1,0 +1,1199 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "keylet"
+    },
+    {
+      "lineno": 19,
+      "name": "params"
+    },
+    {
+      "lineno": 19,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 19,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 27,
+      "name": "params"
+    },
+    {
+      "lineno": 27,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 27,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 38,
+      "name": "params"
+    },
+    {
+      "lineno": 38,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 38,
+      "name": "expectedType"
+    },
+    {
+      "lineno": 48,
+      "name": "params"
+    },
+    {
+      "lineno": 48,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 48,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 67,
+      "name": "params"
+    },
+    {
+      "lineno": 67,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 67,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 80,
+      "name": "params"
+    },
+    {
+      "lineno": 80,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 80,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 102,
+      "name": "params"
+    },
+    {
+      "lineno": 102,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 102,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 130,
+      "name": "params"
+    },
+    {
+      "lineno": 130,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 130,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 136,
+      "name": "cred"
+    },
+    {
+      "lineno": 136,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 136,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 154,
+      "name": "params"
+    },
+    {
+      "lineno": 154,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 154,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 172,
+      "name": "jv"
+    },
+    {
+      "lineno": 210,
+      "name": "dp"
+    },
+    {
+      "lineno": 210,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 210,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 246,
+      "name": "params"
+    },
+    {
+      "lineno": 246,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 246,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 259,
+      "name": "params"
+    },
+    {
+      "lineno": 259,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 259,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 292,
+      "name": "params"
+    },
+    {
+      "lineno": 292,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 292,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 308,
+      "name": "keylet"
+    },
+    {
+      "lineno": 308,
+      "name": "params"
+    },
+    {
+      "lineno": 308,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 308,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 319,
+      "name": "params"
+    },
+    {
+      "lineno": 319,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 319,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 332,
+      "name": "params"
+    },
+    {
+      "lineno": 332,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 332,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 347,
+      "name": "params"
+    },
+    {
+      "lineno": 347,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 347,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 362,
+      "name": "params"
+    },
+    {
+      "lineno": 362,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 362,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 378,
+      "name": "params"
+    },
+    {
+      "lineno": 378,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 378,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 389,
+      "name": "params"
+    },
+    {
+      "lineno": 389,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 389,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 395,
+      "name": "params"
+    },
+    {
+      "lineno": 395,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 395,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 401,
+      "name": "params"
+    },
+    {
+      "lineno": 401,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 401,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 417,
+      "name": "params"
+    },
+    {
+      "lineno": 417,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 417,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 431,
+      "name": "params"
+    },
+    {
+      "lineno": 431,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 431,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 437,
+      "name": "pd"
+    },
+    {
+      "lineno": 437,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 437,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 454,
+      "name": "jvRippleState"
+    },
+    {
+      "lineno": 454,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 454,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 484,
+      "name": "params"
+    },
+    {
+      "lineno": 484,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 484,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 490,
+      "name": "params"
+    },
+    {
+      "lineno": 490,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 490,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 504,
+      "name": "params"
+    },
+    {
+      "lineno": 504,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 504,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 518,
+      "name": "claim_id"
+    },
+    {
+      "lineno": 518,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 518,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 540,
+      "name": "claim_id"
+    },
+    {
+      "lineno": 540,
+      "name": "fieldName"
+    },
+    {
+      "lineno": 540,
+      "name": "apiVersion"
+    },
+    {
+      "lineno": 563,
+      "name": "context"
+    },
+    {
+      "lineno": 646,
+      "name": "context"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 558,
+      "name": "LedgerEntry"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "parseIndex",
+        "parseObjectID",
+        "LedgerEntryHelpers::parse<uint256>"
+      ],
+      "entry_point": "parseIndex",
+      "purpose": "Parses a ledger entry index from params, handling both string and object forms, and dispatches to fixed keylets or hex parsing.",
+      "validation_points": [
+        "params.isString() in parseIndex",
+        "index == jss::amendments.c_str(), etc. in parseIndex",
+        "LedgerEntryHelpers::parse<uint256> in parseObjectID"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseAccountRoot",
+        "LedgerEntryHelpers::parse<AccountID>"
+      ],
+      "entry_point": "parseAccountRoot",
+      "purpose": "Parses an AccountRoot ledger entry, validating the AccountID.",
+      "validation_points": [
+        "LedgerEntryHelpers::parse<AccountID> in parseAccountRoot"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseAMM",
+        "LedgerEntryHelpers::hasRequired",
+        "LedgerEntryHelpers::requiredAsset (twice)"
+      ],
+      "entry_point": "parseAMM",
+      "purpose": "Parses an AMM ledger entry, validating required asset fields.",
+      "validation_points": [
+        "params.isObject() in parseAMM",
+        "LedgerEntryHelpers::hasRequired in parseAMM",
+        "LedgerEntryHelpers::requiredAsset in parseAMM"
+      ]
+    },
+    {
+      "call_chain": [
+        "fixed",
+        "parseFixed"
+      ],
+      "entry_point": "fixed",
+      "purpose": "Handles fixed-location ledger entries (e.g., amendments, fees) with no parameterization.",
+      "validation_points": [
+        "parseFixed (validates params as needed)"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseObjectID",
+        "LedgerEntryHelpers::parse<uint256>"
+      ],
+      "entry_point": "parseObjectID",
+      "purpose": "Parses a generic object ID from params, expects a hex string or object.",
+      "validation_points": [
+        "LedgerEntryHelpers::parse<uint256> in parseObjectID"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "params",
+      "flow": [
+        "RPC request",
+        "parseIndex/parseAccountRoot/parseAMM/etc.",
+        "LedgerEntryHelpers::parse<T> or other helpers",
+        "keylet::* or error"
+      ],
+      "origin": "RPC request JSON",
+      "transformations": [
+        "Type checks (isString, isObject)",
+        "Field extraction (asString, asObject)",
+        "Parsing (hex decode, AccountID parse, Asset parse)"
+      ],
+      "validated_at": "First step in each parse* function (e.g., params.isString(), LedgerEntryHelpers::parse<T>)"
+    },
+    {
+      "field": "index",
+      "flow": [
+        "params.asString()",
+        "compared to jss::amendments, jss::fee, etc.",
+        "if not matched, passed to parseObjectID"
+      ],
+      "origin": "params.asString() in parseIndex",
+      "transformations": [
+        "String comparison",
+        "Dispatch to fixed keylet or hex parsing"
+      ],
+      "validated_at": "parseIndex (string comparison and fallback to parseObjectID)"
+    },
+    {
+      "field": "AccountID",
+      "flow": [
+        "params",
+        "LedgerEntryHelpers::parse<AccountID>",
+        "keylet::account(*account).key"
+      ],
+      "origin": "params (could be string or object)",
+      "transformations": [
+        "AccountID parsing (base58 decode, validation)"
+      ],
+      "validated_at": "LedgerEntryHelpers::parse<AccountID> in parseAccountRoot"
+    },
+    {
+      "field": "asset, asset2",
+      "flow": [
+        "params",
+        "LedgerEntryHelpers::hasRequired (checks presence)",
+        "LedgerEntryHelpers::requiredAsset (parses and validates)",
+        "keylet::amm(*asset, *asset2).key"
+      ],
+      "origin": "params[\"asset\"], params[\"asset2\"] in parseAMM",
+      "transformations": [
+        "Presence check",
+        "Asset parsing and validation"
+      ],
+      "validated_at": "LedgerEntryHelpers::hasRequired and LedgerEntryHelpers::requiredAsset in parseAMM"
+    }
+  ],
+  "description": "This file implements the logic for parsing and handling various types of ledger entries in the XRPL (XRP Ledger) for the ledger_entry RPC command, including parsing input parameters, computing ledger entry indices, and returning ledger entry data in JSON or binary format. It also provides a gRPC handler for ledger entry retrieval.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "params (type and format via LedgerEntryHelpers::parse<T>)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field params (type and format via LedgerEntryHelpers::parse<T>) validated by LedgerEntryHelpers, jss:: (JSON field names), Keylet, template-based parsing",
+      "issue_pattern": "Missing validation for params (type and format via LedgerEntryHelpers::parse<T>)",
+      "why_false_positive": "LedgerEntryHelpers, jss:: (JSON field names), Keylet, template-based parsing validates params (type and format via LedgerEntryHelpers::parse<T>) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "special string fields (amendments, fee, nunl, hashes via jss:: constants)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field special string fields (amendments, fee, nunl, hashes via jss:: constants) validated by LedgerEntryHelpers, jss:: (JSON field names), Keylet, template-based parsing",
+      "issue_pattern": "Missing validation for special string fields (amendments, fee, nunl, hashes via jss:: constants)",
+      "why_false_positive": "LedgerEntryHelpers, jss:: (JSON field names), Keylet, template-based parsing validates special string fields (amendments, fee, nunl, hashes via jss:: constants) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LedgerEntryHelpers::parse<uint256> at parseObjectID",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "LedgerEntryHelpers::parse<uint256> validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LedgerEntryHelpers::parse<AccountID> at parseAccountRoot",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "LedgerEntryHelpers::parse<AccountID> validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isString() at parseIndex",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "params.isString() validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "params",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params.isString() at parseIndex",
+      "issue_pattern": "Missing type validation for params",
+      "why_false_positive": "params.isString() validates params type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "index == jss::amendments.c_str(), index == jss::fee.c_str(), etc. at parseIndex",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "index == jss::amendments.c_str(), index == jss::fee.c_str(), etc. validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "params",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseFixed at fixed (lambda), parseFixed",
+      "issue_pattern": "Missing empty string validation for params",
+      "why_false_positive": "parseFixed validates params for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerEntry.cpp",
+  "functions": [
+    {
+      "args": [
+        "Keylet const& keylet",
+        "Json::Value const& params",
+        "Json::StaticString const& fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 19,
+      "name": "parseFixed"
+    },
+    {
+      "args": [
+        "Keylet const& keylet"
+      ],
+      "lineno": 27,
+      "name": "fixed"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "std::string const& expectedType"
+      ],
+      "lineno": 38,
+      "name": "parseObjectID"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 48,
+      "name": "parseIndex"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 67,
+      "name": "parseAccountRoot"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 80,
+      "name": "parseAMM"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 102,
+      "name": "parseBridge"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 130,
+      "name": "parseCheck"
+    },
+    {
+      "args": [
+        "Json::Value const& cred",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 136,
+      "name": "parseCredential"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 154,
+      "name": "parseDelegate"
+    },
+    {
+      "args": [
+        "Json::Value const& jv"
+      ],
+      "lineno": 172,
+      "name": "parseAuthorizeCredentials"
+    },
+    {
+      "args": [
+        "Json::Value const& dp",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 210,
+      "name": "parseDepositPreauth"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 246,
+      "name": "parseDID"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 259,
+      "name": "parseDirectoryNode"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 292,
+      "name": "parseEscrow"
+    },
+    {
+      "args": [
+        "Keylet const& keylet",
+        "Json::Value const& params",
+        "Json::StaticString const& fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 308,
+      "name": "parseFixed"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 319,
+      "name": "parseLedgerHashes"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 332,
+      "name": "parseLoanBroker"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 347,
+      "name": "parseLoan"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 362,
+      "name": "parseMPToken"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 378,
+      "name": "parseMPTokenIssuance"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 389,
+      "name": "parseNFTokenOffer"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 395,
+      "name": "parseNFTokenPage"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 401,
+      "name": "parseOffer"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 417,
+      "name": "parseOracle"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 431,
+      "name": "parsePayChannel"
+    },
+    {
+      "args": [
+        "Json::Value const& pd",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 437,
+      "name": "parsePermissionedDomain"
+    },
+    {
+      "args": [
+        "Json::Value const& jvRippleState",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 454,
+      "name": "parseRippleState"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 484,
+      "name": "parseSignerList"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 490,
+      "name": "parseTicket"
+    },
+    {
+      "args": [
+        "Json::Value const& params",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 504,
+      "name": "parseVault"
+    },
+    {
+      "args": [
+        "Json::Value const& claim_id",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 518,
+      "name": "parseXChainOwnedClaimID"
+    },
+    {
+      "args": [
+        "Json::Value const& claim_id",
+        "Json::StaticString const fieldName",
+        "unsigned const apiVersion"
+      ],
+      "lineno": 540,
+      "name": "parseXChainOwnedCreateAccountClaimID"
+    },
+    {
+      "args": [
+        "RPC::JsonContext& context"
+      ],
+      "lineno": 563,
+      "name": "doLedgerEntry"
+    },
+    {
+      "args": [
+        "RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context"
+      ],
+      "lineno": 646,
+      "name": "doLedgerEntryGrpc"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit tests for the LedgerEntry RPC handler, especially for valid/invalid params, malformed AccountID, missing fields, and fixed keylet lookups. Tests should exist in files like 'ledger_entry_test.cpp', 'rpc_ledger_entry_test.cpp', or similar. However, edge cases such as malformed nested objects, unexpected types, or rare keylet types may not be fully covered. Template-based validation and error reporting via exceptions may be harder to test for all error paths. There may be gaps in coverage for API version-specific logic (e.g., apiVersion > 2u in parseIndex) and for all possible permutations of malformed input.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "params (type and format via LedgerEntryHelpers::parse<T>)",
+      "special string fields (amendments, fee, nunl, hashes via jss:: constants)"
+    ],
+    "framework": "LedgerEntryHelpers, jss:: (JSON field names), Keylet, template-based parsing",
+    "validation_layer": "business_logic (handler-level, not entry-point)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "LedgerEntryHelpers::invalidFieldError (returns Json::Value error)",
+      "field": "params",
+      "location": "parseObjectID",
+      "validated_by": "LedgerEntryHelpers::parse<uint256>",
+      "validates": [
+        "Checks if params can be parsed as a uint256 (hex string or object)",
+        "Ensures correct type/format for ledger object ID"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "LedgerEntryHelpers::invalidFieldError (returns Json::Value error)",
+      "field": "params",
+      "location": "parseAccountRoot",
+      "validated_by": "LedgerEntryHelpers::parse<AccountID>",
+      "validates": [
+        "Checks if params can be parsed as an AccountID (address format validation)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branches to parseObjectID if not string)",
+      "field": "params",
+      "location": "parseIndex",
+      "validated_by": "params.isString()",
+      "validates": [
+        "Checks if params is a string (for special index keywords)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns fixed keylet if matches, else falls through)",
+      "field": "params",
+      "location": "parseIndex",
+      "validated_by": "index == jss::amendments.c_str(), index == jss::fee.c_str(), etc.",
+      "validates": [
+        "Checks if string matches special ledger entry keywords (amendments, fee, nunl, hashes)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "LedgerEntryHelpers::invalidFieldError (returns Json::Value error)",
+      "field": "params",
+      "location": "fixed (lambda), parseFixed",
+      "validated_by": "parseFixed",
+      "validates": [
+        "Checks if fixed-keylet objects are correctly referenced (no extra parameters needed)"
+      ],
+      "validation_type": "business_logic|type"
+    }
+  ]
+}

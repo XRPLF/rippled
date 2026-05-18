@@ -1,0 +1,161 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "handler"
+    },
+    {
+      "lineno": 41,
+      "name": "handler"
+    },
+    {
+      "lineno": 48,
+      "name": "name"
+    },
+    {
+      "lineno": 51,
+      "name": "prefix"
+    },
+    {
+      "lineno": 51,
+      "name": "name"
+    },
+    {
+      "lineno": 61,
+      "name": "name"
+    },
+    {
+      "lineno": 64,
+      "name": "prefix"
+    },
+    {
+      "lineno": 64,
+      "name": "name"
+    },
+    {
+      "lineno": 74,
+      "name": "name"
+    },
+    {
+      "lineno": 77,
+      "name": "prefix"
+    },
+    {
+      "lineno": 77,
+      "name": "name"
+    },
+    {
+      "lineno": 87,
+      "name": "name"
+    },
+    {
+      "lineno": 90,
+      "name": "prefix"
+    },
+    {
+      "lineno": 90,
+      "name": "name"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "Collector"
+    }
+  ],
+  "description": "Defines the Collector interface for collecting various types of metrics (counters, events, gauges, meters, hooks) in the beast::insight namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Collector.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "~Collector"
+    },
+    {
+      "args": [
+        "handler"
+      ],
+      "lineno": 36,
+      "name": "make_hook"
+    },
+    {
+      "args": [
+        "handler"
+      ],
+      "lineno": 41,
+      "name": "make_hook"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 48,
+      "name": "make_counter"
+    },
+    {
+      "args": [
+        "prefix",
+        "name"
+      ],
+      "lineno": 51,
+      "name": "make_counter"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 61,
+      "name": "make_event"
+    },
+    {
+      "args": [
+        "prefix",
+        "name"
+      ],
+      "lineno": 64,
+      "name": "make_event"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 74,
+      "name": "make_gauge"
+    },
+    {
+      "args": [
+        "prefix",
+        "name"
+      ],
+      "lineno": 77,
+      "name": "make_gauge"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 87,
+      "name": "make_meter"
+    },
+    {
+      "args": [
+        "prefix",
+        "name"
+      ],
+      "lineno": 90,
+      "name": "make_meter"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "beast"
+    },
+    {
+      "lineno": 12,
+      "name": "insight"
+    }
+  ]
+}

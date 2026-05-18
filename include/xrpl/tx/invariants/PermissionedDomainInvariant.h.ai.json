@@ -1,0 +1,46 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "ValidPermissionedDomain"
+    },
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "SleStatus"
+    }
+  ],
+  "description": "Defines the ValidPermissionedDomain invariant check for permissioned domains, ensuring that AcceptedCredentials have a length between 1 and 10, are sorted, unique, and not empty.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/PermissionedDomainInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 29,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 32,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

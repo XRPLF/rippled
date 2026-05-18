@@ -1,0 +1,181 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 19,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 20,
+      "name": "backend"
+    },
+    {
+      "lineno": 21,
+      "name": "config"
+    },
+    {
+      "lineno": 22,
+      "name": "j"
+    },
+    {
+      "lineno": 44,
+      "name": "source"
+    },
+    {
+      "lineno": 49,
+      "name": "type"
+    },
+    {
+      "lineno": 49,
+      "name": "data"
+    },
+    {
+      "lineno": 49,
+      "name": "hash"
+    },
+    {
+      "lineno": 66,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 67,
+      "name": "callback"
+    },
+    {
+      "lineno": 73,
+      "name": "fetchReport"
+    },
+    {
+      "lineno": 73,
+      "name": "duplicate"
+    },
+    {
+      "lineno": 76,
+      "name": "f"
+    },
+    {
+      "lineno": 62,
+      "name": "hashes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "std::shared_ptr<Backend> backend",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 10,
+      "name": "DatabaseNodeImp"
+    }
+  ],
+  "description": "Implements the DatabaseNodeImp class, a concrete implementation of the NodeStore::Database interface for XRPL, managing persistent key/value storage using a backend and providing methods for storing, fetching, and synchronizing node objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/DatabaseNodeImp.h",
+  "functions": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "std::shared_ptr<Backend> backend",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 17,
+      "name": "DatabaseNodeImp"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "~DatabaseNodeImp"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [
+        "Database& source"
+      ],
+      "lineno": 43,
+      "name": "importDatabase"
+    },
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "std::uint32_t"
+      ],
+      "lineno": 49,
+      "name": "store"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "std::uint32_t"
+      ],
+      "lineno": 51,
+      "name": "isSameDB"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& hashes"
+      ],
+      "lineno": 62,
+      "name": "fetchBatch"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledgerSeq",
+        "std::function<void(std::shared_ptr<NodeObject> const&)>&& callback"
+      ],
+      "lineno": 65,
+      "name": "asyncFetch"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t",
+        "FetchReport& fetchReport",
+        "bool duplicate"
+      ],
+      "lineno": 73,
+      "name": "fetchNodeObject"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 76,
+      "name": "for_each"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ]
+}

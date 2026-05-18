@@ -1,0 +1,68 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "versionStr"
+    },
+    {
+      "lineno": 59,
+      "name": "version"
+    },
+    {
+      "lineno": 69,
+      "name": "version"
+    }
+  ],
+  "classes": [],
+  "description": "Provides versioning information and utilities for the XRPL server build, including version string retrieval, encoding/decoding of version numbers, and version comparison.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/BuildInfo.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "getVersionString"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "getFullVersionString"
+    },
+    {
+      "args": [
+        "versionStr"
+      ],
+      "lineno": 36,
+      "name": "encodeSoftwareVersion"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getEncodedVersion"
+    },
+    {
+      "args": [
+        "version"
+      ],
+      "lineno": 59,
+      "name": "isXrpldVersion"
+    },
+    {
+      "args": [
+        "version"
+      ],
+      "lineno": 69,
+      "name": "isNewerVersion"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "BuildInfo"
+    }
+  ]
+}

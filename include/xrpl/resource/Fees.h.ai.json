@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Declares external Charge constants representing various fees for different types of resource consumption and server load scenarios in the XRPL server.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Fees.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "Resource"
+    }
+  ]
+}

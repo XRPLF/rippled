@@ -1,0 +1,291 @@
+{
+  "args": [
+    {
+      "lineno": 282,
+      "name": "argc"
+    },
+    {
+      "lineno": 282,
+      "name": "argv"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& patterns = \"\""
+      ],
+      "lineno": 120,
+      "name": "multi_selector"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "main",
+        "run",
+        "adjustDescriptorLimit"
+      ],
+      "entry_point": "main",
+      "purpose": "Starts the application, parses arguments, validates environment (including file descriptor limits), and launches the main app logic.",
+      "validation_points": [
+        "main: Platform validation via preprocessor macros (#if/#error)",
+        "run: Calls adjustDescriptorLimit to validate file descriptor limits"
+      ]
+    },
+    {
+      "call_chain": [
+        "main",
+        "runUnitTests"
+      ],
+      "entry_point": "main",
+      "purpose": "Runs unit tests if the application is started in test mode (ENABLE_TESTS).",
+      "validation_points": [
+        "main: Platform validation via preprocessor macros (#if/#error)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "platform (OS)",
+      "flow": [
+        "Compile-time macros",
+        "Preprocessor checks in Main.cpp",
+        "Compilation allowed or fails"
+      ],
+      "origin": "Compile-time environment (BOOST_OS_* macros)",
+      "transformations": [
+        "None (direct check)"
+      ],
+      "validated_at": "Preprocessor (#if/#error) at top of Main.cpp"
+    },
+    {
+      "field": "needed (number of file descriptors)",
+      "flow": [
+        "run() determines needed",
+        "run() calls adjustDescriptorLimit(needed, j)",
+        "adjustDescriptorLimit checks system limits",
+        "Returns true/false to run()"
+      ],
+      "origin": "run() function (likely determined by config or application requirements)",
+      "transformations": [
+        "Compared to current system limit (getrlimit)",
+        "May attempt to raise limit (setrlimit)",
+        "Logs and returns false if insufficient"
+      ],
+      "validated_at": "adjustDescriptorLimit"
+    }
+  ],
+  "description": "Main entry point and command-line interface for the xrpld server application. Handles command-line parsing, configuration, server startup, and test execution.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "platform (OS)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "preprocessor macros (#if/#error) at global scope (top of file)",
+      "issue_pattern": "Missing empty string validation for platform (OS)",
+      "why_false_positive": "preprocessor macros (#if/#error) validates platform (OS) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "needed (number of file descriptors)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "adjustDescriptorLimit function at adjustDescriptorLimit",
+      "issue_pattern": "Missing empty string validation for needed (number of file descriptors)",
+      "why_false_positive": "adjustDescriptorLimit function validates needed (number of file descriptors) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "needed (number of file descriptors)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "adjustDescriptorLimit function at adjustDescriptorLimit",
+      "issue_pattern": "Missing range validation for needed (number of file descriptors)",
+      "why_false_positive": "adjustDescriptorLimit function validates needed (number of file descriptors) range"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/Main.cpp",
+  "functions": [
+    {
+      "args": [
+        "int needed",
+        "beast::Journal j"
+      ],
+      "lineno": 32,
+      "name": "adjustDescriptorLimit"
+    },
+    {
+      "args": [
+        "po::options_description const& desc"
+      ],
+      "lineno": 70,
+      "name": "printHelp"
+    },
+    {
+      "args": [
+        "Runner& runner",
+        "multi_selector const& pred"
+      ],
+      "lineno": 168,
+      "name": "anyMissing"
+    },
+    {
+      "args": [
+        "std::string const& pattern",
+        "std::string const& argument",
+        "bool quiet",
+        "bool log",
+        "bool child",
+        "bool ipv6",
+        "std::size_t num_jobs",
+        "int argc",
+        "char** argv"
+      ],
+      "lineno": 185,
+      "name": "runUnitTests"
+    },
+    {
+      "args": [
+        "int argc",
+        "char** argv"
+      ],
+      "lineno": 282,
+      "name": "run"
+    },
+    {
+      "args": [
+        "int argc",
+        "char** argv"
+      ],
+      "lineno": 670,
+      "name": "main"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 29,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 157,
+      "name": "test"
+    }
+  ],
+  "test_coverage_notes": "Unit test support is present (runUnitTests, ENABLE_TESTS, test/unit_test/multi_runner.h), but the platform validation (preprocessor macros) is not testable at runtime and is only enforced at compile time. adjustDescriptorLimit could be tested via unit tests that mock or manipulate RLIMIT_NOFILE, but no explicit test files are referenced in this file. The main validation logic (platform and file descriptor limits) is not directly covered by runtime tests in this file; coverage would depend on external test harnesses or integration tests that exercise startup conditions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "C++ standard, Boost, preprocessor macros",
+    "validation_layer": "entry_point (main.cpp, system setup)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time error (#error)",
+      "field": "platform (OS)",
+      "location": "global scope (top of file)",
+      "validated_by": "preprocessor macros (#if/#error)",
+      "validates": [
+        "Checks that the code is being compiled on a supported platform (Linux, Windows, MacOS)",
+        "Ensures that only one platform is detected at compile time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (caller may throw or exit); logs fatal error",
+      "field": "needed (number of file descriptors)",
+      "location": "adjustDescriptorLimit",
+      "validated_by": "adjustDescriptorLimit function",
+      "validates": [
+        "Checks if the system has at least 'needed' file descriptors available",
+        "Attempts to raise the limit if insufficient",
+        "Logs and returns false if not enough descriptors are available"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

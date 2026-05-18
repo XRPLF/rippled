@@ -1,0 +1,404 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "forEachItem"
+      ],
+      "entry_point": "forEachItem",
+      "purpose": "Iterates over all items in a directory node, applying a function to each child SLE.",
+      "validation_points": [
+        "XRPL_ASSERT(root.type == ltDIR_NODE, ...)",
+        "if (root.type != ltDIR_NODE) return;"
+      ]
+    },
+    {
+      "call_chain": [
+        "forEachItemAfter"
+      ],
+      "entry_point": "forEachItemAfter",
+      "purpose": "Iterates over directory items after a given key, with optional hint and limit, applying a function to each.",
+      "validation_points": [
+        "XRPL_ASSERT(root.type == ltDIR_NODE, ...)",
+        "if (root.type != ltDIR_NODE) return false;",
+        "if (after.isNonZero()) { ... }"
+      ]
+    },
+    {
+      "call_chain": [
+        "dirFirst",
+        "detail::internalDirFirst"
+      ],
+      "entry_point": "dirFirst",
+      "purpose": "Finds the first entry in a directory node.",
+      "validation_points": [
+        "Validation likely in internalDirFirst (not shown here)"
+      ]
+    },
+    {
+      "call_chain": [
+        "dirNext",
+        "detail::internalDirNext"
+      ],
+      "entry_point": "dirNext",
+      "purpose": "Finds the next entry in a directory node.",
+      "validation_points": [
+        "Validation likely in internalDirNext (not shown here)"
+      ]
+    },
+    {
+      "call_chain": [
+        "cdirFirst",
+        "detail::internalDirFirst"
+      ],
+      "entry_point": "cdirFirst",
+      "purpose": "Const version of dirFirst for read-only views.",
+      "validation_points": [
+        "Validation likely in internalDirFirst (not shown here)"
+      ]
+    },
+    {
+      "call_chain": [
+        "cdirNext",
+        "detail::internalDirNext"
+      ],
+      "entry_point": "cdirNext",
+      "purpose": "Const version of dirNext for read-only views.",
+      "validation_points": [
+        "Validation likely in internalDirNext (not shown here)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "root.type",
+      "flow": [
+        "Keylet root",
+        "XRPL_ASSERT",
+        "if-check",
+        "used for keylet::page and keylet::child"
+      ],
+      "origin": "Keylet root parameter (forEachItem, forEachItemAfter)",
+      "transformations": [
+        "Checked for equality with ltDIR_NODE"
+      ],
+      "validated_at": "Start of forEachItem and forEachItemAfter"
+    },
+    {
+      "field": "sle (shared_ptr<SLE>), ownerDir, hintDir",
+      "flow": [
+        "view.read",
+        "if (!sle) return",
+        "used for getFieldV256(sfIndexes)"
+      ],
+      "origin": "Result of view.read(pos) or view.read(keylet::page(...))",
+      "transformations": [
+        "Null pointer check before dereference"
+      ],
+      "validated_at": "Immediately after view.read in forEachItem, forEachItemAfter"
+    },
+    {
+      "field": "after (uint256)",
+      "flow": [
+        "Parameter",
+        "after.isNonZero()",
+        "if (after.isNonZero()) { ... }"
+      ],
+      "origin": "Parameter to forEachItemAfter",
+      "transformations": [
+        "Checked for non-zero to determine paging logic"
+      ],
+      "validated_at": "Start of forEachItemAfter"
+    },
+    {
+      "field": "sfIndexes",
+      "flow": [
+        "sle->getFieldV256(sfIndexes)",
+        "for (auto const& key : ...)",
+        "view.read(keylet::child(key))"
+      ],
+      "origin": "Field in SLE read from ledger",
+      "transformations": [
+        "Iterated over, each key used to read child SLE"
+      ],
+      "validated_at": "Indirectly validated by sle non-null check"
+    },
+    {
+      "field": "sfIndexNext",
+      "flow": [
+        "sle->getFieldU64(sfIndexNext)",
+        "if (next == 0u) return",
+        "keylet::page(root, next)"
+      ],
+      "origin": "Field in SLE read from ledger",
+      "transformations": [
+        "Used to determine next page in directory"
+      ],
+      "validated_at": "Indirectly validated by sle non-null check"
+    }
+  ],
+  "description": "This file provides helper functions for iterating over and interacting with directory nodes in the XRPL ledger, including functions to traverse, check, and describe directory entries.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root.type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro and explicit if-check at forEachItem",
+      "issue_pattern": "Missing empty string validation for root.type",
+      "why_false_positive": "XRPL_ASSERT macro and explicit if-check validates root.type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "root.type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro and explicit if-check at forEachItemAfter",
+      "issue_pattern": "Missing empty string validation for root.type",
+      "why_false_positive": "XRPL_ASSERT macro and explicit if-check validates root.type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (shared_ptr<SLE>), ownerDir (shared_ptr<SLE const>), hintDir (shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit null pointer check (!sle, !ownerDir, !hintDir) at forEachItem, forEachItemAfter",
+      "issue_pattern": "Missing empty string validation for sle (shared_ptr<SLE>), ownerDir (shared_ptr<SLE const>), hintDir (shared_ptr<SLE const>)",
+      "why_false_positive": "explicit null pointer check (!sle, !ownerDir, !hintDir) validates sle (shared_ptr<SLE>), ownerDir (shared_ptr<SLE const>), hintDir (shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "after (uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isNonZero() method at forEachItemAfter",
+      "issue_pattern": "Missing empty string validation for after (uint256)",
+      "why_false_positive": "isNonZero() method validates after (uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/DirectoryHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 7,
+      "name": "dirFirst"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 17,
+      "name": "dirNext"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 27,
+      "name": "cdirFirst"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "page",
+        "index",
+        "entry"
+      ],
+      "lineno": 37,
+      "name": "cdirNext"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "f"
+      ],
+      "lineno": 47,
+      "name": "forEachItem"
+    },
+    {
+      "args": [
+        "view",
+        "root",
+        "after",
+        "hint",
+        "limit",
+        "f"
+      ],
+      "lineno": 71,
+      "name": "forEachItemAfter"
+    },
+    {
+      "args": [
+        "view",
+        "k"
+      ],
+      "lineno": 130,
+      "name": "dirIsEmpty"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 142,
+      "name": "describeOwnerDir"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These helpers are core to directory traversal in the ledger. They are likely tested indirectly via higher-level ledger and transaction tests, especially those involving trust lines, offers, or owner directories. Direct unit tests for DirectoryHelpers.cpp may exist in files like Directory_test.cpp, Ledger_test.cpp, or integration tests for ledger traversal. However, explicit tests for validation failures (e.g., wrong root.type, null SLEs, after == 0) may be sparse unless negative tests are written. The code relies on XRPL_ASSERT, which may be a no-op in release builds, so some validation paths may not be covered in production. Gaps may exist in testing edge cases for invalid input parameters and error handling.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion), explicit C++ checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs error), otherwise function returns early",
+      "field": "root.type",
+      "location": "forEachItem",
+      "validated_by": "XRPL_ASSERT macro and explicit if-check",
+      "validates": [
+        "Checks that root.type equals ltDIR_NODE before proceeding"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs error), otherwise function returns false",
+      "field": "root.type",
+      "location": "forEachItemAfter",
+      "validated_by": "XRPL_ASSERT macro and explicit if-check",
+      "validates": [
+        "Checks that root.type equals ltDIR_NODE before proceeding"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "function returns early (void or false), no exception thrown",
+      "field": "sle (shared_ptr<SLE>), ownerDir (shared_ptr<SLE const>), hintDir (shared_ptr<SLE const>)",
+      "location": "forEachItem, forEachItemAfter",
+      "validated_by": "explicit null pointer check (!sle, !ownerDir, !hintDir)",
+      "validates": [
+        "Ensures that the ledger entry exists before dereferencing"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "none (conditional logic only)",
+      "field": "after (uint256)",
+      "location": "forEachItemAfter",
+      "validated_by": "isNonZero() method",
+      "validates": [
+        "Checks if 'after' is a non-zero uint256 before using as a search key"
+      ],
+      "validation_type": "format|business_logic"
+    }
+  ]
+}

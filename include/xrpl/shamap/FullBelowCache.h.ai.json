@@ -1,0 +1,109 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "name"
+    },
+    {
+      "lineno": 23,
+      "name": "clock"
+    },
+    {
+      "lineno": 24,
+      "name": "j"
+    },
+    {
+      "lineno": 25,
+      "name": "collector"
+    },
+    {
+      "lineno": 26,
+      "name": "target_size"
+    },
+    {
+      "lineno": 27,
+      "name": "expiration"
+    },
+    {
+      "lineno": 55,
+      "name": "key"
+    },
+    {
+      "lineno": 67,
+      "name": "key"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "clock",
+        "j",
+        "collector",
+        "target_size",
+        "expiration"
+      ],
+      "lineno": 13,
+      "name": "BasicFullBelowCache"
+    }
+  ],
+  "description": "Defines a cache class (BasicFullBelowCache) for tracking which tree keys have all descendants resident, optimizing the process of acquiring a complete tree in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/FullBelowCache.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "clock"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "sweep"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 54,
+      "name": "touch_if_exists"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 66,
+      "name": "insert"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "getGeneration"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "clear"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "reset"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "detail"
+    }
+  ]
+}

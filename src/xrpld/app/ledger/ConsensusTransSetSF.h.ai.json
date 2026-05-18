@@ -1,0 +1,50 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "NodeCache& nodeCache"
+      ],
+      "lineno": 13,
+      "name": "ConsensusTransSetSF"
+    }
+  ],
+  "description": "Defines the ConsensusTransSetSF class, a sync filter for transaction sets used during consensus building in XRPL, allowing SHAMapSync code to interact with higher-level structures such as caches and transaction stores.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/ConsensusTransSetSF.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "NodeCache& nodeCache"
+      ],
+      "lineno": 17,
+      "name": "ConsensusTransSetSF"
+    },
+    {
+      "args": [
+        "bool fromFilter",
+        "SHAMapHash const& nodeHash",
+        "std::uint32_t ledgerSeq",
+        "Blob&& nodeData",
+        "SHAMapNodeType type"
+      ],
+      "lineno": 21,
+      "name": "gotNode"
+    },
+    {
+      "args": [
+        "SHAMapHash const& nodeHash"
+      ],
+      "lineno": 28,
+      "name": "getNode"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

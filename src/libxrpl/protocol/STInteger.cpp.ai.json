@@ -1,0 +1,400 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STUInt8::getText or getJson",
+        "transResultInfo(TER::fromInt(value_), ...)"
+      ],
+      "entry_point": "STUInt8::getText / STUInt8::getJson",
+      "purpose": "Converts an 8-bit integer field (sfTransactionResult) to a human-readable string or JSON token, validating that the value is a known transaction result code.",
+      "validation_points": [
+        "transResultInfo(TER::fromInt(value_), ...): Validates value_ as a known TER code"
+      ]
+    },
+    {
+      "call_chain": [
+        "STUInt16::getText or getJson",
+        "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_))",
+        "TxFormats::getInstance().findByType(safe_cast<TxType>(value_))"
+      ],
+      "entry_point": "STUInt16::getText / STUInt16::getJson",
+      "purpose": "Converts a 16-bit integer field (sfLedgerEntryType or sfTransactionType) to a human-readable string or JSON token, validating that the value is a known ledger entry or transaction type.",
+      "validation_points": [
+        "LedgerFormats::getInstance().findByType(...): Validates value_ as a known LedgerEntryType",
+        "TxFormats::getInstance().findByType(...): Validates value_ as a known TxType"
+      ]
+    },
+    {
+      "call_chain": [
+        "STUInt32::getText or getJson",
+        "Permission::getInstance().getPermissionName(value_)"
+      ],
+      "entry_point": "STUInt32::getText / STUInt32::getJson",
+      "purpose": "Converts a 32-bit integer field (sfPermissionValue) to a human-readable permission name if possible.",
+      "validation_points": [
+        "Permission::getInstance().getPermissionName(value_): Checks if value_ is a known permission"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_ (for sfTransactionResult)",
+      "flow": [
+        "SerialIter.get8()",
+        "STInteger<unsigned char>::STInteger",
+        "STUInt8::getText / getJson",
+        "transResultInfo(TER::fromInt(value_), ...)"
+      ],
+      "origin": "Deserialized from SerialIter via STInteger<unsigned char>::STInteger",
+      "transformations": [
+        "Raw byte read from serialized data",
+        "Wrapped in STInteger",
+        "Converted to TER via TER::fromInt",
+        "Validated and mapped to string/token"
+      ],
+      "validated_at": "transResultInfo(TER::fromInt(value_), ...)"
+    },
+    {
+      "field": "value_ (for sfLedgerEntryType)",
+      "flow": [
+        "SerialIter.get16()",
+        "STInteger<std::uint16_t>::STInteger",
+        "STUInt16::getText / getJson",
+        "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_))"
+      ],
+      "origin": "Deserialized from SerialIter via STInteger<std::uint16_t>::STInteger",
+      "transformations": [
+        "16-bit value read from serialized data",
+        "Wrapped in STInteger",
+        "Safe cast to LedgerEntryType",
+        "Validated and mapped to string"
+      ],
+      "validated_at": "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_))"
+    },
+    {
+      "field": "value_ (for sfTransactionType)",
+      "flow": [
+        "SerialIter.get16()",
+        "STInteger<std::uint16_t>::STInteger",
+        "STUInt16::getText / getJson",
+        "TxFormats::getInstance().findByType(safe_cast<TxType>(value_))"
+      ],
+      "origin": "Deserialized from SerialIter via STInteger<std::uint16_t>::STInteger",
+      "transformations": [
+        "16-bit value read from serialized data",
+        "Wrapped in STInteger",
+        "Safe cast to TxType",
+        "Validated and mapped to string"
+      ],
+      "validated_at": "TxFormats::getInstance().findByType(safe_cast<TxType>(value_))"
+    }
+  ],
+  "description": "Implements template specializations for serialization and JSON/text conversion of various integer types (STUInt8, STUInt16, STUInt32, STUInt64, STInt32) used in the XRPL protocol, including logic for interpreting field values as human-readable strings or tokens based on field type.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionResult",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionResult validated by Custom logic (LedgerFormats, TxFormats, transResultInfo)",
+      "issue_pattern": "Missing validation for sfTransactionResult",
+      "why_false_positive": "Custom logic (LedgerFormats, TxFormats, transResultInfo) validates sfTransactionResult automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerEntryType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerEntryType validated by Custom logic (LedgerFormats, TxFormats, transResultInfo)",
+      "issue_pattern": "Missing validation for sfLedgerEntryType",
+      "why_false_positive": "Custom logic (LedgerFormats, TxFormats, transResultInfo) validates sfLedgerEntryType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTransactionType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTransactionType validated by Custom logic (LedgerFormats, TxFormats, transResultInfo)",
+      "issue_pattern": "Missing validation for sfTransactionType",
+      "why_false_positive": "Custom logic (LedgerFormats, TxFormats, transResultInfo) validates sfTransactionType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "value_ (for sfTransactionResult)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "transResultInfo(TER::fromInt(value_), ...) at STUInt8::getText and STUInt8::getJson",
+      "issue_pattern": "Missing empty string validation for value_ (for sfTransactionResult)",
+      "why_false_positive": "transResultInfo(TER::fromInt(value_), ...) validates value_ (for sfTransactionResult) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "value_ (for sfLedgerEntryType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_)) at STUInt16::getText and STUInt16::getJson",
+      "issue_pattern": "Missing empty string validation for value_ (for sfLedgerEntryType)",
+      "why_false_positive": "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_)) validates value_ (for sfLedgerEntryType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "value_ (for sfTransactionType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TxFormats::getInstance().findByType(safe_cast<TxType>(value_)) at STUInt16::getText and STUInt16::getJson",
+      "issue_pattern": "Missing empty string validation for value_ (for sfTransactionType)",
+      "why_false_positive": "TxFormats::getInstance().findByType(safe_cast<TxType>(value_)) validates value_ (for sfTransactionType) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STInteger.cpp",
+  "functions": [
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 13,
+      "name": "STInteger<unsigned char>::STInteger"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 18,
+      "name": "STUInt8::getSType"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 23,
+      "name": "STUInt8::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 41,
+      "name": "STUInt8::getJson"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 61,
+      "name": "STInteger<std::uint16_t>::STInteger"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 66,
+      "name": "STUInt16::getSType"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 71,
+      "name": "STUInt16::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 87,
+      "name": "STUInt16::getJson"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 107,
+      "name": "STInteger<std::uint32_t>::STInteger"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 112,
+      "name": "STUInt32::getSType"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 117,
+      "name": "STUInt32::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 127,
+      "name": "STUInt32::getJson"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 142,
+      "name": "STInteger<std::uint64_t>::STInteger"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 147,
+      "name": "STUInt64::getSType"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 152,
+      "name": "STUInt64::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 157,
+      "name": "STUInt64::getJson"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 181,
+      "name": "STInteger<std::int32_t>::STInteger"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 186,
+      "name": "STInt32::getSType"
+    },
+    {
+      "args": [
+        "const"
+      ],
+      "lineno": 191,
+      "name": "STInt32::getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 196,
+      "name": "STInt32::getJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation code paths are typically exercised by higher-level transaction, ledger, and serialization/deserialization tests. Likely test files include: 'test/protocol/STInteger_test.cpp', 'test/protocol/TER_test.cpp', 'test/protocol/LedgerFormats_test.cpp', and 'test/protocol/TxFormats_test.cpp'. However, the error logging branches (e.g., unknown result code, unknown ledger/tx type) are marked with LCOV_EXCL_START/STOP, indicating they are not covered by tests. Thus, negative/invalid value paths are not tested. Most tests focus on valid, known values.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfTransactionResult",
+      "sfLedgerEntryType",
+      "sfTransactionType"
+    ],
+    "framework": "Custom logic (LedgerFormats, TxFormats, transResultInfo)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "Logs error via JLOG, no exception thrown",
+      "field": "value_ (for sfTransactionResult)",
+      "location": "STUInt8::getText and STUInt8::getJson",
+      "validated_by": "transResultInfo(TER::fromInt(value_), ...)",
+      "validates": [
+        "Checks if value_ is a known transaction result code"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "No exception, returns value_ as string if not found",
+      "field": "value_ (for sfLedgerEntryType)",
+      "location": "STUInt16::getText and STUInt16::getJson",
+      "validated_by": "LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_))",
+      "validates": [
+        "Checks if value_ is a known LedgerEntryType"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "No exception, returns value_ as string if not found",
+      "field": "value_ (for sfTransactionType)",
+      "location": "STUInt16::getText and STUInt16::getJson",
+      "validated_by": "TxFormats::getInstance().findByType(safe_cast<TxType>(value_))",
+      "validates": [
+        "Checks if value_ is a known TxType"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

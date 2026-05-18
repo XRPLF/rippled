@@ -1,0 +1,93 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "::google::protobuf::Message const& message",
+        "protocol::MessageType type",
+        "std::optional<PublicKey> const& validator = {}"
+      ],
+      "lineno": 22,
+      "name": "Message"
+    }
+  ],
+  "description": "This file defines the xrpl::Message class, which handles the packaging, serialization, and optional compression of protocol buffer messages for network transmission in the XRPL overlay. It provides methods for buffer management, compression, header manipulation, and metadata access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/Message.h",
+  "functions": [
+    {
+      "args": [
+        "::google::protobuf::Message const& message",
+        "protocol::MessageType type",
+        "std::optional<PublicKey> const& validator = {}"
+      ],
+      "lineno": 27,
+      "name": "Message"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "getBufferSize"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message"
+      ],
+      "lineno": 38,
+      "name": "messageSize"
+    },
+    {
+      "args": [
+        "::google::protobuf::Message const& message"
+      ],
+      "lineno": 41,
+      "name": "totalSize"
+    },
+    {
+      "args": [
+        "Compressed tryCompressed"
+      ],
+      "lineno": 48,
+      "name": "getBuffer"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getCategory"
+    },
+    {
+      "args": [],
+      "lineno": 60,
+      "name": "getValidatorKey"
+    },
+    {
+      "args": [
+        "std::uint8_t* in",
+        "std::uint32_t payloadBytes",
+        "int type",
+        "Algorithm compression",
+        "std::uint32_t uncompressedBytes"
+      ],
+      "lineno": 71,
+      "name": "setHeader"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "compress"
+    },
+    {
+      "args": [
+        "std::uint8_t const* in"
+      ],
+      "lineno": 88,
+      "name": "getType"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

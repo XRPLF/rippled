@@ -1,0 +1,30 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "Task"
+    }
+  ],
+  "description": "Defines the Task struct, an interface for scheduled tasks in the NodeStore module of the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Task.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "performScheduledTask"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "NodeStore"
+    }
+  ]
+}

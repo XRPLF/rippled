@@ -1,0 +1,744 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "deserializeManifest",
+        "STObject::applyTemplate(manifestFormat)",
+        "publicKeyType(makeSlice(pk))",
+        "isProperlyFormedTomlDomain(domain)",
+        "Manifest::revoked(seq)",
+        "Manifest constructor"
+      ],
+      "entry_point": "deserializeManifest",
+      "purpose": "Deserializes and validates a manifest from a binary slice, enforcing field presence, types, and business rules.",
+      "validation_points": [
+        "s.empty() check at start of deserializeManifest",
+        "STObject::applyTemplate(manifestFormat) for field presence/type",
+        "st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0 for version validation",
+        "publicKeyType(makeSlice(pk)) for master public key type",
+        "isProperlyFormedTomlDomain(domain) for domain format",
+        "publicKeyType(makeSlice(spk)) for signing key type",
+        "signingKey != masterKey for key uniqueness",
+        "Revocation logic for ephemeral key/sig presence"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_string",
+        "Manifest::revoked",
+        "toBase58"
+      ],
+      "entry_point": "to_string",
+      "purpose": "Formats a Manifest as a string, checks for revoked status and presence of signing key.",
+      "validation_points": [
+        "Manifest::revoked (checks sequence number)",
+        "Throw if signingKey is missing"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "s (Slice input)",
+      "flow": [
+        "deserializeManifest argument",
+        "SerialIter sit{s}",
+        "STObject st{sit, sfGeneric}",
+        "st.applyTemplate(manifestFormat)",
+        "Field extraction from st"
+      ],
+      "origin": "deserializeManifest argument",
+      "transformations": [
+        "Checked for empty",
+        "Parsed into STObject",
+        "Validated against manifestFormat template"
+      ],
+      "validated_at": "s.empty() at start, st.applyTemplate(manifestFormat)"
+    },
+    {
+      "field": "sfPublicKey",
+      "flow": [
+        "st.getFieldVL(sfPublicKey)",
+        "makeSlice(pk)",
+        "publicKeyType(makeSlice(pk))",
+        "PublicKey(makeSlice(pk))",
+        "Manifest(masterKey=PublicKey)"
+      ],
+      "origin": "Extracted from STObject st",
+      "transformations": [
+        "Checked for presence/type by template",
+        "Type validated by publicKeyType",
+        "Converted to PublicKey"
+      ],
+      "validated_at": "st.applyTemplate(manifestFormat), publicKeyType(makeSlice(pk))"
+    },
+    {
+      "field": "sfVersion",
+      "flow": [
+        "st.isFieldPresent(sfVersion)",
+        "st.getFieldU16(sfVersion)",
+        "if (value != 0) return std::nullopt"
+      ],
+      "origin": "Optional field in manifest",
+      "transformations": [
+        "Checked for presence",
+        "Value checked for being 0"
+      ],
+      "validated_at": "if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)"
+    },
+    {
+      "field": "sfDomain",
+      "flow": [
+        "st.isFieldPresent(sfDomain)",
+        "st.getFieldVL(sfDomain)",
+        "reinterpret_cast to string",
+        "isProperlyFormedTomlDomain(domain)"
+      ],
+      "origin": "Optional field in manifest",
+      "transformations": [
+        "Checked for presence",
+        "Converted to string",
+        "Format validated"
+      ],
+      "validated_at": "isProperlyFormedTomlDomain(domain)"
+    },
+    {
+      "field": "sfSigningPubKey",
+      "flow": [
+        "st.isFieldPresent(sfSigningPubKey)",
+        "st.getFieldVL(sfSigningPubKey)",
+        "makeSlice(spk)",
+        "publicKeyType(makeSlice(spk))",
+        "signingKey.emplace(makeSlice(spk))"
+      ],
+      "origin": "Optional field in manifest",
+      "transformations": [
+        "Checked for presence",
+        "Type validated",
+        "Converted to PublicKey"
+      ],
+      "validated_at": "publicKeyType(makeSlice(spk))"
+    },
+    {
+      "field": "sfSignature",
+      "flow": [
+        "st.isFieldPresent(sfSignature)",
+        "Used for presence check (not further processed here)"
+      ],
+      "origin": "Optional field in manifest",
+      "transformations": [
+        "Checked for presence"
+      ],
+      "validated_at": "Presence checked in logic for revoked/non-revoked manifests"
+    },
+    {
+      "field": "sequence (sfSequence)",
+      "flow": [
+        "st.getFieldU32(sfSequence)",
+        "Manifest::revoked(seq)",
+        "Manifest(sequence=seq)"
+      ],
+      "origin": "Required field in manifest",
+      "transformations": [
+        "Checked for presence/type by template",
+        "Used to determine revoked status"
+      ],
+      "validated_at": "st.applyTemplate(manifestFormat)"
+    }
+  ],
+  "description": "Implements logic for handling, verifying, serializing, deserializing, and caching XRPL validator manifests, including revocation and key management.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfPublicKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfPublicKey validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfPublicKey",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfPublicKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfMasterSignature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfMasterSignature validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfMasterSignature",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfMasterSignature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSequence validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfSequence",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfVersion",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfVersion validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfVersion",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfVersion automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfDomain",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfDomain validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfDomain",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfDomain automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigningPubKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSigningPubKey validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfSigningPubKey",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfSigningPubKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSignature validated by SOTemplate/STObject (XRPL serialization/validation framework)",
+      "issue_pattern": "Missing validation for sfSignature",
+      "why_false_positive": "SOTemplate/STObject (XRPL serialization/validation framework) validates sfSignature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "s (input Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "s.empty() check at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for s (input Slice)",
+      "why_false_positive": "s.empty() check validates s (input Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "manifest fields (sfPublicKey, sfMasterSignature, sfSequence, sfVersion, sfDomain, sfSigningPubKey, sfSignature)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate manifestFormat + st.applyTemplate(manifestFormat) at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for manifest fields (sfPublicKey, sfMasterSignature, sfSequence, sfVersion, sfDomain, sfSigningPubKey, sfSignature)",
+      "why_false_positive": "SOTemplate manifestFormat + st.applyTemplate(manifestFormat) validates manifest fields (sfPublicKey, sfMasterSignature, sfSequence, sfVersion, sfDomain, sfSigningPubKey, sfSignature) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0 at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for sfVersion",
+      "why_false_positive": "st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0 validates sfVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPublicKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "publicKeyType(makeSlice(pk)) at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for sfPublicKey",
+      "why_false_positive": "publicKeyType(makeSlice(pk)) validates sfPublicKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomain",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isProperlyFormedTomlDomain(domain) at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for sfDomain",
+      "why_false_positive": "isProperlyFormedTomlDomain(domain) validates sfDomain for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfDomain",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "isProperlyFormedTomlDomain(domain) at deserializeManifest",
+      "issue_pattern": "Missing format validation for sfDomain",
+      "why_false_positive": "isProperlyFormedTomlDomain(domain) validates sfDomain format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "revocation manifest logic (sfSequence, sfSigningPubKey, sfSignature)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Manifest::revoked(seq) + if (hasEphemeralKey) / if (hasEphemeralSig) at deserializeManifest",
+      "issue_pattern": "Missing empty string validation for revocation manifest logic (sfSequence, sfSigningPubKey, sfSignature)",
+      "why_false_positive": "Manifest::revoked(seq) + if (hasEphemeralKey) / if (hasEphemeralSig) validates revocation manifest logic (sfSequence, sfSigningPubKey, sfSignature) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m.signingKey",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!m.signingKey) Throw<std::runtime_error> at to_string",
+      "issue_pattern": "Missing empty string validation for m.signingKey",
+      "why_false_positive": "if (!m.signingKey) Throw<std::runtime_error> validates m.signingKey for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/server/Manifest.cpp",
+  "functions": [
+    {
+      "args": [
+        "Manifest const& m"
+      ],
+      "lineno": 11,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Slice s",
+        "beast::Journal journal"
+      ],
+      "lineno": 20,
+      "name": "deserializeManifest"
+    },
+    {
+      "args": [
+        "Stream& s",
+        "std::string const& action",
+        "PublicKey const& pk",
+        "std::uint32_t seq"
+      ],
+      "lineno": 87,
+      "name": "logMftAct"
+    },
+    {
+      "args": [
+        "Stream& s",
+        "std::string const& action",
+        "PublicKey const& pk",
+        "std::uint32_t seq",
+        "std::uint32_t oldSeq"
+      ],
+      "lineno": 95,
+      "name": "logMftAct"
+    },
+    {
+      "args": [
+        "this"
+      ],
+      "lineno": 103,
+      "name": "Manifest::verify"
+    },
+    {
+      "args": [
+        "this"
+      ],
+      "lineno": 116,
+      "name": "Manifest::hash"
+    },
+    {
+      "args": [
+        "this"
+      ],
+      "lineno": 126,
+      "name": "Manifest::revoked"
+    },
+    {
+      "args": [
+        "std::uint32_t sequence"
+      ],
+      "lineno": 133,
+      "name": "Manifest::revoked"
+    },
+    {
+      "args": [
+        "this"
+      ],
+      "lineno": 140,
+      "name": "Manifest::getSignature"
+    },
+    {
+      "args": [
+        "this"
+      ],
+      "lineno": 150,
+      "name": "Manifest::getMasterSignature"
+    },
+    {
+      "args": [
+        "std::vector<std::string> const& blob",
+        "beast::Journal journal"
+      ],
+      "lineno": 157,
+      "name": "loadValidatorToken"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 191,
+      "name": "ManifestCache::getSigningKey"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 202,
+      "name": "ManifestCache::getMasterKey"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 211,
+      "name": "ManifestCache::getSequence"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 220,
+      "name": "ManifestCache::getDomain"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 229,
+      "name": "ManifestCache::getManifest"
+    },
+    {
+      "args": [
+        "PublicKey const& pk"
+      ],
+      "lineno": 238,
+      "name": "ManifestCache::revoked"
+    },
+    {
+      "args": [
+        "Manifest m"
+      ],
+      "lineno": 247,
+      "name": "ManifestCache::applyManifest"
+    },
+    {
+      "args": [
+        "DatabaseCon& dbCon",
+        "std::string const& dbTable"
+      ],
+      "lineno": 370,
+      "name": "ManifestCache::load"
+    },
+    {
+      "args": [
+        "DatabaseCon& dbCon",
+        "std::string const& dbTable",
+        "std::string const& configManifest",
+        "std::vector<std::string> const& configRevocation"
+      ],
+      "lineno": 376,
+      "name": "ManifestCache::load"
+    },
+    {
+      "args": [
+        "DatabaseCon& dbCon",
+        "std::string const& dbTable",
+        "std::function<bool(PublicKey const&)> const& isTrusted"
+      ],
+      "lineno": 414,
+      "name": "ManifestCache::save"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in deserializeManifest. Typical test coverage would be in files like Manifest_test.cpp or Server_test.cpp, testing valid/invalid manifests, revoked manifests, missing/invalid fields, and domain validation. Gaps may exist if edge cases (e.g., malformed domains, invalid public key types, version != 0, revoked manifests with extra fields) are not explicitly tested. Exception handling paths (e.g., malformed input causing exceptions) should also be tested. If tests do not cover all combinations of optional/required fields and error cases, those are coverage gaps.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfPublicKey",
+      "sfMasterSignature",
+      "sfSequence",
+      "sfVersion",
+      "sfDomain",
+      "sfSigningPubKey",
+      "sfSignature"
+    ],
+    "framework": "SOTemplate/STObject (XRPL serialization/validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "s (input Slice)",
+      "location": "deserializeManifest",
+      "validated_by": "s.empty() check",
+      "validates": [
+        "input is not empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "throws if required fields missing or types wrong (via STObject)",
+      "field": "manifest fields (sfPublicKey, sfMasterSignature, sfSequence, sfVersion, sfDomain, sfSigningPubKey, sfSignature)",
+      "location": "deserializeManifest",
+      "validated_by": "SOTemplate manifestFormat + st.applyTemplate(manifestFormat)",
+      "validates": [
+        "sfPublicKey is present",
+        "sfMasterSignature is present",
+        "sfSequence is present",
+        "sfVersion defaults to 0 if not present",
+        "sfDomain, sfSigningPubKey, sfSignature are optional"
+      ],
+      "validation_type": "template/structural"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "sfVersion",
+      "location": "deserializeManifest",
+      "validated_by": "st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0",
+      "validates": [
+        "version must be 0 if present"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "sfPublicKey",
+      "location": "deserializeManifest",
+      "validated_by": "publicKeyType(makeSlice(pk))",
+      "validates": [
+        "public key is a recognized type"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "sfDomain",
+      "location": "deserializeManifest",
+      "validated_by": "isProperlyFormedTomlDomain(domain)",
+      "validates": [
+        "domain is a properly formed TOML domain"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt",
+      "field": "revocation manifest logic (sfSequence, sfSigningPubKey, sfSignature)",
+      "location": "deserializeManifest",
+      "validated_by": "Manifest::revoked(seq) + if (hasEphemeralKey) / if (hasEphemeralSig)",
+      "validates": [
+        "revocation manifests must not specify a new signing key",
+        "revocation manifests must not specify a signing key signature"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "m.signingKey",
+      "location": "to_string",
+      "validated_by": "if (!m.signingKey) Throw<std::runtime_error>",
+      "validates": [
+        "signingKey must be present for non-revoked manifests"
+      ],
+      "validation_type": "business_logic|presence"
+    }
+  ]
+}

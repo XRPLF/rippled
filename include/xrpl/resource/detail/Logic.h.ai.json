@@ -1,0 +1,261 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "collector"
+    },
+    {
+      "lineno": 38,
+      "name": "clock"
+    },
+    {
+      "lineno": 38,
+      "name": "journal"
+    },
+    {
+      "lineno": 53,
+      "name": "address"
+    },
+    {
+      "lineno": 75,
+      "name": "address"
+    },
+    {
+      "lineno": 99,
+      "name": "address"
+    },
+    {
+      "lineno": 128,
+      "name": "threshold"
+    },
+    {
+      "lineno": 179,
+      "name": "origin"
+    },
+    {
+      "lineno": 179,
+      "name": "gossip"
+    },
+    {
+      "lineno": 259,
+      "name": "balance"
+    },
+    {
+      "lineno": 270,
+      "name": "iter"
+    },
+    {
+      "lineno": 277,
+      "name": "entry"
+    },
+    {
+      "lineno": 282,
+      "name": "entry"
+    },
+    {
+      "lineno": 308,
+      "name": "entry"
+    },
+    {
+      "lineno": 308,
+      "name": "fee"
+    },
+    {
+      "lineno": 308,
+      "name": "context"
+    },
+    {
+      "lineno": 340,
+      "name": "entry"
+    },
+    {
+      "lineno": 359,
+      "name": "entry"
+    },
+    {
+      "lineno": 382,
+      "name": "entry"
+    },
+    {
+      "lineno": 393,
+      "name": "now"
+    },
+    {
+      "lineno": 393,
+      "name": "items"
+    },
+    {
+      "lineno": 393,
+      "name": "list"
+    },
+    {
+      "lineno": 404,
+      "name": "map"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "collector",
+        "clock",
+        "journal"
+      ],
+      "lineno": 17,
+      "name": "Logic"
+    }
+  ],
+  "description": "Implements the core logic for resource management in the XRPL server, handling consumer entries, resource charging, endpoint creation, gossip import/export, and periodic cleanup.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/detail/Logic.h",
+  "functions": [
+    {
+      "args": [
+        "collector",
+        "clock",
+        "journal"
+      ],
+      "lineno": 38,
+      "name": "Logic"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "~Logic"
+    },
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 53,
+      "name": "newInboundEndpoint"
+    },
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 75,
+      "name": "newOutboundEndpoint"
+    },
+    {
+      "args": [
+        "address"
+      ],
+      "lineno": 99,
+      "name": "newUnlimitedEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 123,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "threshold"
+      ],
+      "lineno": 128,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "exportConsumers"
+    },
+    {
+      "args": [
+        "origin",
+        "gossip"
+      ],
+      "lineno": 179,
+      "name": "importConsumers"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "periodicActivity"
+    },
+    {
+      "args": [
+        "balance"
+      ],
+      "lineno": 259,
+      "name": "disposition"
+    },
+    {
+      "args": [
+        "iter"
+      ],
+      "lineno": 270,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 277,
+      "name": "acquire"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 282,
+      "name": "release"
+    },
+    {
+      "args": [
+        "entry",
+        "fee",
+        "context"
+      ],
+      "lineno": 308,
+      "name": "charge"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 340,
+      "name": "warn"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 359,
+      "name": "disconnect"
+    },
+    {
+      "args": [
+        "entry"
+      ],
+      "lineno": 382,
+      "name": "balance"
+    },
+    {
+      "args": [
+        "now",
+        "items",
+        "list"
+      ],
+      "lineno": 393,
+      "name": "writeList"
+    },
+    {
+      "args": [
+        "map"
+      ],
+      "lineno": 404,
+      "name": "onWrite"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "Resource"
+    }
+  ]
+}

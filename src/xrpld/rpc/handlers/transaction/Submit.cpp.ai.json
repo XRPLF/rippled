@@ -1,0 +1,558 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    },
+    {
+      "lineno": 19,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doSubmit",
+        "strUnHex",
+        "STTx constructor",
+        "checkValidity",
+        "Transaction constructor",
+        "getStatus",
+        "processTransaction"
+      ],
+      "entry_point": "doSubmit",
+      "purpose": "Handles submission of a transaction via RPC, validates and processes the transaction blob or JSON.",
+      "validation_points": [
+        "context.params.isMember(jss::tx_blob) // checks presence of tx_blob",
+        "strUnHex // validates hex encoding of tx_blob",
+        "STTx constructor // validates transaction structure",
+        "checkValidity // validates transaction signature and local rules",
+        "Transaction constructor and getStatus // validates transaction status"
+      ]
+    },
+    {
+      "call_chain": [
+        "doSubmit",
+        "RPC::transactionSubmit"
+      ],
+      "entry_point": "doSubmit (tx_json path)",
+      "purpose": "Handles submission of a transaction via tx_json (deprecated path), delegates to transactionSubmit for signing and validation.",
+      "validation_points": [
+        "RPC::transactionSubmit // performs its own validation (not shown in this file)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "tx_blob",
+      "flow": [
+        "context.params[jss::tx_blob]",
+        "strUnHex",
+        "SerialIter sitTrans(makeSlice(*ret))",
+        "STTx constructor",
+        "std::make_shared<Transaction>(stTx, ...)",
+        "processTransaction"
+      ],
+      "origin": "context.params[jss::tx_blob] (JSON RPC input)",
+      "transformations": [
+        "Hex string decoded to binary (strUnHex)",
+        "Binary parsed into transaction object (STTx)",
+        "Transaction object wrapped for processing (Transaction)"
+      ],
+      "validated_at": "strUnHex, STTx constructor, checkValidity, Transaction constructor"
+    },
+    {
+      "field": "tx_json",
+      "flow": [
+        "context.params['tx_json']",
+        "RPC::transactionSubmit"
+      ],
+      "origin": "context.params['tx_json'] (JSON RPC input)",
+      "transformations": [
+        "Parsed and signed (if needed) in transactionSubmit"
+      ],
+      "validated_at": "RPC::transactionSubmit (not shown in this file)"
+    },
+    {
+      "field": "transaction signature",
+      "flow": [
+        "STTx constructor",
+        "checkValidity"
+      ],
+      "origin": "Inside tx_blob or tx_json",
+      "transformations": [
+        "Signature extracted and checked"
+      ],
+      "validated_at": "checkValidity"
+    },
+    {
+      "field": "transaction status",
+      "flow": [
+        "Transaction constructor",
+        "getStatus"
+      ],
+      "origin": "Transaction object (constructed from STTx)",
+      "transformations": [
+        "Status determined based on local checks"
+      ],
+      "validated_at": "Transaction constructor, getStatus"
+    }
+  ],
+  "description": "Implements the 'submit' RPC handler for submitting transactions to the XRPL network, handling both signed transaction blobs and JSON transactions, performing validation, and returning detailed results.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx_blob (presence, format)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx_blob (presence, format) validated by jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+      "issue_pattern": "Missing validation for tx_blob (presence, format)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation) validates tx_blob (presence, format) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "tx_json (structure, via transactionSubmit)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field tx_json (structure, via transactionSubmit) validated by jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+      "issue_pattern": "Missing validation for tx_json (structure, via transactionSubmit)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation) validates tx_json (structure, via transactionSubmit) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fail_hard (type, presence)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fail_hard (type, presence) validated by jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+      "issue_pattern": "Missing validation for fail_hard (type, presence)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation) validates fail_hard (type, presence) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction signature (via checkValidity)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transaction signature (via checkValidity) validated by jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+      "issue_pattern": "Missing validation for transaction signature (via checkValidity)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation) validates transaction signature (via checkValidity) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction status (via Transaction)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transaction status (via Transaction) validated by jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+      "issue_pattern": "Missing validation for transaction status (via Transaction)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation) validates transaction status (via Transaction) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_blob",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::tx_blob) at doSubmit",
+      "issue_pattern": "Missing empty string validation for tx_blob",
+      "why_false_positive": "context.params.isMember(jss::tx_blob) validates tx_blob for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_blob",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "strUnHex at doSubmit",
+      "issue_pattern": "Missing empty string validation for tx_blob",
+      "why_false_positive": "strUnHex validates tx_blob for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "tx_blob",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "strUnHex at doSubmit",
+      "issue_pattern": "Missing format validation for tx_blob",
+      "why_false_positive": "strUnHex validates tx_blob format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tx_blob",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "STTx constructor (std::make_shared<STTx const>(std::ref(sitTrans))) at doSubmit",
+      "issue_pattern": "Missing empty string validation for tx_blob",
+      "why_false_positive": "STTx constructor (std::make_shared<STTx const>(std::ref(sitTrans))) validates tx_blob for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction signature",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkValidity at doSubmit",
+      "issue_pattern": "Missing empty string validation for transaction signature",
+      "why_false_positive": "checkValidity validates transaction signature for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction status",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Transaction constructor and getStatus() at doSubmit",
+      "issue_pattern": "Missing empty string validation for transaction status",
+      "why_false_positive": "Transaction constructor and getStatus() validates transaction status for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "tx_json",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::transactionSubmit at doSubmit (else branch if tx_blob not present)",
+      "issue_pattern": "Missing empty string validation for tx_json",
+      "why_false_positive": "RPC::transactionSubmit validates tx_json for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "fail_hard",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(\"fail_hard\") && context.params[\"fail_hard\"].asBool() at getFailHard",
+      "issue_pattern": "Missing empty string validation for fail_hard",
+      "why_false_positive": "context.params.isMember(\"fail_hard\") && context.params[\"fail_hard\"].asBool() validates fail_hard for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "fail_hard",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "context.params.isMember(\"fail_hard\") && context.params[\"fail_hard\"].asBool() at getFailHard",
+      "issue_pattern": "Missing type validation for fail_hard",
+      "why_false_positive": "context.params.isMember(\"fail_hard\") && context.params[\"fail_hard\"].asBool() validates fail_hard type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/transaction/Submit.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 9,
+      "name": "getFailHard"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 19,
+      "name": "doSubmit"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation paths (tx_blob decoding, STTx construction, checkValidity, Transaction status) are likely covered by integration and unit tests for the submit RPC handler. Typical test files would be in the 'test' or 'unittest' directories, such as 'test/rpc/Submit_test.cpp', 'test/rpc/Transaction_test.cpp', or similar. However, coverage gaps may exist for edge cases: malformed hex in tx_blob, rare signature failures, or deprecated tx_json path. The code relies on exceptions for error handling, so tests should also verify error responses for invalid input. The template-based validation framework is not directly visible here, so its coverage depends on upstream tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "tx_blob (presence, format)",
+      "tx_json (structure, via transactionSubmit)",
+      "fail_hard (type, presence)",
+      "transaction signature (via checkValidity)",
+      "transaction status (via Transaction)"
+    ],
+    "framework": "jss:: (JSON field tags), RPC:: (error handling), STTx (transaction validation), Transaction (status validation)",
+    "validation_layer": "entry_point (doSubmit), business_logic (STTx, checkValidity, Transaction)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcNOT_SUPPORTED, ...)",
+      "field": "tx_blob",
+      "location": "doSubmit",
+      "validated_by": "context.params.isMember(jss::tx_blob)",
+      "validates": [
+        "Checks if tx_blob is present in input params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "tx_blob",
+      "location": "doSubmit",
+      "validated_by": "strUnHex",
+      "validates": [
+        "Checks if tx_blob is a valid hex string and not empty"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::exception (caught, returns error JSON)",
+      "field": "tx_blob",
+      "location": "doSubmit",
+      "validated_by": "STTx constructor (std::make_shared<STTx const>(std::ref(sitTrans)))",
+      "validates": [
+        "Checks if tx_blob decodes to a valid transaction object"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error JSON",
+      "field": "transaction signature",
+      "location": "doSubmit",
+      "validated_by": "checkValidity",
+      "validates": [
+        "Checks transaction signature validity",
+        "Checks transaction conforms to local rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error JSON",
+      "field": "transaction status",
+      "location": "doSubmit",
+      "validated_by": "Transaction constructor and getStatus()",
+      "validates": [
+        "Checks if transaction status is NEW (not duplicate, not invalid, etc.)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "returns error JSON (via RPC::transactionSubmit)",
+      "field": "tx_json",
+      "location": "doSubmit (else branch if tx_blob not present)",
+      "validated_by": "RPC::transactionSubmit",
+      "validates": [
+        "Checks tx_json object structure and fields",
+        "Checks signing parameters (secret, etc.)"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (used as bool, no error thrown)",
+      "field": "fail_hard",
+      "location": "getFailHard",
+      "validated_by": "context.params.isMember(\"fail_hard\") && context.params[\"fail_hard\"].asBool()",
+      "validates": [
+        "Checks if fail_hard is present and is a boolean"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

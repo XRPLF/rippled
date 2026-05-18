@@ -1,0 +1,396 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "key"
+    },
+    {
+      "lineno": 8,
+      "name": "value"
+    },
+    {
+      "lineno": 8,
+      "name": "valueBytes"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "void const* key",
+        "void const* value",
+        "int valueBytes"
+      ],
+      "lineno": 7,
+      "name": "DecodedBlob"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DecodedBlob::DecodedBlob"
+      ],
+      "entry_point": "DecodedBlob::DecodedBlob",
+      "purpose": "Constructs a DecodedBlob from raw key/value data, validates and parses the object type and data pointer.",
+      "validation_points": [
+        "if (valueBytes > 8) { ... safe_cast<NodeObjectType>(byte[8]); }",
+        "if (valueBytes > 9) { ... switch (m_objectType) { ... m_success = true; } }"
+      ]
+    },
+    {
+      "call_chain": [
+        "DecodedBlob::createObject",
+        "NodeObject::createObject"
+      ],
+      "entry_point": "DecodedBlob::createObject",
+      "purpose": "Creates a NodeObject from the decoded blob, only if validation (m_success) passed.",
+      "validation_points": [
+        "XRPL_ASSERT(m_success, ...)",
+        "if (m_success) { ... }"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "valueBytes",
+      "flow": [
+        "DecodedBlob::DecodedBlob(valueBytes)",
+        "used in if (valueBytes > 8) and if (valueBytes > 9)",
+        "used to compute m_dataBytes = max(0, valueBytes - 9)"
+      ],
+      "origin": "DecodedBlob constructor argument",
+      "transformations": [
+        "Checked for >8 and >9 to validate presence of type and data",
+        "Used to calculate m_dataBytes"
+      ],
+      "validated_at": "if (valueBytes > 8), if (valueBytes > 9)"
+    },
+    {
+      "field": "m_objectType",
+      "flow": [
+        "byte[8] from value",
+        "safe_cast<NodeObjectType>(byte[8])",
+        "assigned to m_objectType",
+        "used in switch (m_objectType) to set m_success"
+      ],
+      "origin": "byte[8] of value (after safe_cast)",
+      "transformations": [
+        "Casted from raw byte to enum NodeObjectType"
+      ],
+      "validated_at": "safe_cast<NodeObjectType>(byte[8]), switch (m_objectType)"
+    },
+    {
+      "field": "m_success",
+      "flow": [
+        "set to false at start",
+        "set to true in switch (m_objectType) for valid types",
+        "checked in createObject (XRPL_ASSERT and if (m_success))"
+      ],
+      "origin": "false (default in constructor)",
+      "transformations": [
+        "Set to true only for known/allowed object types"
+      ],
+      "validated_at": "switch (m_objectType), XRPL_ASSERT(m_success)"
+    },
+    {
+      "field": "m_objectData",
+      "flow": [
+        "set to value + 9 if (valueBytes > 9)",
+        "used to construct Blob in createObject"
+      ],
+      "origin": "pointer arithmetic on value",
+      "transformations": [
+        "Pointer offset by 9 bytes"
+      ],
+      "validated_at": "if (valueBytes > 9)"
+    },
+    {
+      "field": "m_dataBytes",
+      "flow": [
+        "calculated in constructor",
+        "used as length for Blob in createObject"
+      ],
+      "origin": "max(0, valueBytes - 9)",
+      "transformations": [
+        "Ensures non-negative data length"
+      ],
+      "validated_at": "implicit via valueBytes validation"
+    }
+  ],
+  "description": "Implements the DecodedBlob class for decoding and constructing NodeObject instances from raw database blobs in the XRPL NodeStore.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "valueBytes",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if statement) at DecodedBlob constructor",
+      "issue_pattern": "Missing empty string validation for valueBytes",
+      "why_false_positive": "manual check (if statement) validates valueBytes for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "valueBytes",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check (if statement) at DecodedBlob constructor",
+      "issue_pattern": "Missing range validation for valueBytes",
+      "why_false_positive": "manual check (if statement) validates valueBytes range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "valueBytes",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (if statement) at DecodedBlob constructor",
+      "issue_pattern": "Missing empty string validation for valueBytes",
+      "why_false_positive": "manual check (if statement) validates valueBytes for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "valueBytes",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check (if statement) at DecodedBlob constructor",
+      "issue_pattern": "Missing range validation for valueBytes",
+      "why_false_positive": "manual check (if statement) validates valueBytes range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "m_objectType (byte[8])",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_cast<NodeObjectType> at DecodedBlob constructor",
+      "issue_pattern": "Missing empty string validation for m_objectType (byte[8])",
+      "why_false_positive": "safe_cast<NodeObjectType> validates m_objectType (byte[8]) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "m_objectType (byte[8])",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_cast<NodeObjectType> at DecodedBlob constructor",
+      "issue_pattern": "Missing type validation for m_objectType (byte[8])",
+      "why_false_positive": "safe_cast<NodeObjectType> validates m_objectType (byte[8]) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_objectType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "switch statement at DecodedBlob constructor",
+      "issue_pattern": "Missing empty string validation for m_objectType",
+      "why_false_positive": "switch statement validates m_objectType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_success",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at DecodedBlob::createObject",
+      "issue_pattern": "Missing empty string validation for m_success",
+      "why_false_positive": "XRPL_ASSERT macro validates m_success for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/DecodedBlob.cpp",
+  "functions": [
+    {
+      "args": [
+        "void const* key",
+        "void const* value",
+        "int valueBytes"
+      ],
+      "lineno": 8,
+      "name": "DecodedBlob::DecodedBlob"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "DecodedBlob::createObject"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "This code is typically tested via higher-level NodeStore or backend tests that exercise object storage and retrieval. Likely test files: src/test/nodestore/*, src/test/rpc/NodeStore_test.cpp, or integration tests that check ledger/transaction/account node persistence. Direct unit tests for DecodedBlob are unlikely unless specifically written; edge cases (e.g., valueBytes <= 8/9, invalid object types) may not be fully covered unless negative tests exist. Gaps: No explicit test coverage for malformed input, unknown object types, or boundary conditions unless covered in broader NodeStore tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual validation, XRPL_ASSERT macro, safe_cast utility",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logic branch only)",
+      "field": "valueBytes",
+      "location": "DecodedBlob constructor",
+      "validated_by": "manual check (if statement)",
+      "validates": [
+        "Checks if valueBytes > 8 before reading byte[8] for object type",
+        "Prevents out-of-bounds access"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logic branch only)",
+      "field": "valueBytes",
+      "location": "DecodedBlob constructor",
+      "validated_by": "manual check (if statement)",
+      "validates": [
+        "Checks if valueBytes > 9 before accessing object data at offset 9"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "implementation-defined (safe_cast may assert or throw if invalid)",
+      "field": "m_objectType (byte[8])",
+      "location": "DecodedBlob constructor",
+      "validated_by": "safe_cast<NodeObjectType>",
+      "validates": [
+        "Casts byte[8] to NodeObjectType safely"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (m_success remains false if not valid type)",
+      "field": "m_objectType",
+      "location": "DecodedBlob constructor",
+      "validated_by": "switch statement",
+      "validates": [
+        "Only allows specific NodeObjectType values (hotUNKNOWN, hotLEDGER, hotACCOUNT_NODE, hotTRANSACTION_NODE) to set m_success = true"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "m_success",
+      "location": "DecodedBlob::createObject",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures createObject is only called if DecodedBlob is valid (m_success == true)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

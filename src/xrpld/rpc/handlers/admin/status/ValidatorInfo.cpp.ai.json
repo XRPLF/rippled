@@ -1,0 +1,229 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doValidatorInfo",
+        "context.app.getValidationPublicKey",
+        "context.app.getValidatorManifests().getMasterKey",
+        "context.app.getValidatorManifests().getManifest",
+        "context.app.getValidatorManifests().getSequence",
+        "context.app.getValidatorManifests().getDomain"
+      ],
+      "entry_point": "doValidatorInfo",
+      "purpose": "Returns information about the validator's keys and manifest, if configured as a validator.",
+      "validation_points": [
+        "context.app.getValidationPublicKey() // Checks if node is configured as validator",
+        "context.app.getValidatorManifests().getMasterKey(*validationPK) // Validates and resolves master key"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "validationPK",
+      "flow": [
+        "context.app.getValidationPublicKey()",
+        "if (!validationPK) return error",
+        "used as input to getMasterKey(*validationPK)",
+        "used as comparison to mk",
+        "used as value for ephemeral_key"
+      ],
+      "origin": "context.app.getValidationPublicKey()",
+      "transformations": [
+        "Checked for presence (validation)",
+        "Dereferenced for use as key",
+        "Compared to mk to determine if ephemeral"
+      ],
+      "validated_at": "Immediately after retrieval (if (!validationPK))"
+    },
+    {
+      "field": "mk (master key)",
+      "flow": [
+        "getMasterKey(*validationPK)",
+        "toBase58(TokenType::NodePublic, mk)",
+        "compared to validationPK",
+        "used as key for getManifest, getSequence, getDomain"
+      ],
+      "origin": "context.app.getValidatorManifests().getMasterKey(*validationPK)",
+      "transformations": [
+        "Base58 encoding for output",
+        "Used as lookup key for manifest/sequence/domain"
+      ],
+      "validated_at": "Implicitly validated by getMasterKey (returns valid master key or fallback)"
+    },
+    {
+      "field": "manifest",
+      "flow": [
+        "getManifest(mk)",
+        "if present, base64_encode(*manifest)",
+        "added to ret[jss::manifest]"
+      ],
+      "origin": "context.app.getValidatorManifests().getManifest(mk)",
+      "transformations": [
+        "Base64 encoding"
+      ],
+      "validated_at": "Presence checked (if (manifest))"
+    },
+    {
+      "field": "seq",
+      "flow": [
+        "getSequence(mk)",
+        "if present, added to ret[jss::seq]"
+      ],
+      "origin": "context.app.getValidatorManifests().getSequence(mk)",
+      "transformations": [],
+      "validated_at": "Presence checked (if (seq))"
+    },
+    {
+      "field": "domain",
+      "flow": [
+        "getDomain(mk)",
+        "if present, added to ret[jss::domain]"
+      ],
+      "origin": "context.app.getValidatorManifests().getDomain(mk)",
+      "transformations": [],
+      "validated_at": "Presence checked (if (domain))"
+    }
+  ],
+  "description": "Implements the doValidatorInfo RPC handler, which returns information about the validator's keys, manifest, sequence, and domain if the server is configured as a validator.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validationPK (Validation Public Key)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.getValidationPublicKey() at doValidatorInfo",
+      "issue_pattern": "Missing empty string validation for validationPK (Validation Public Key)",
+      "why_false_positive": "context.app.getValidationPublicKey() validates validationPK (Validation Public Key) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "mk (Master Key)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.getValidatorManifests().getMasterKey(*validationPK) at doValidatorInfo",
+      "issue_pattern": "Missing empty string validation for mk (Master Key)",
+      "why_false_positive": "context.app.getValidatorManifests().getMasterKey(*validationPK) validates mk (Master Key) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/ValidatorInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 10,
+      "name": "doValidatorInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is likely tested via RPC integration tests, e.g., in test suites for validator admin endpoints. Unit tests may exist for getValidationPublicKey and ValidatorManifests, but direct unit tests for doValidatorInfo may be limited. Edge cases such as missing validationPK, mk == validationPK (no manifest), and presence/absence of manifest/sequence/domain should be tested. Gaps may exist in testing error handling (not_validator_error), and in scenarios with malformed or missing manifest data.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc (jss:: for JSON field names, but not for validation itself)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::not_validator_error()",
+      "field": "validationPK (Validation Public Key)",
+      "location": "doValidatorInfo",
+      "validated_by": "context.app.getValidationPublicKey()",
+      "validates": [
+        "Checks if the server is configured as a validator by verifying the presence of a validation public key"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (returns early if mk == validationPK)",
+      "field": "mk (Master Key)",
+      "location": "doValidatorInfo",
+      "validated_by": "context.app.getValidatorManifests().getMasterKey(*validationPK)",
+      "validates": [
+        "Checks if the master key is the same as the validation public key, implying no ephemeral key or manifest"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ServerHandlerCreator const&",
+        "Application& app",
+        "boost::asio::io_context& io_context",
+        "JobQueue& jobQueue",
+        "NetworkOPs& networkOPs",
+        "Resource::Manager& resourceManager",
+        "CollectorManager& cm"
+      ],
+      "lineno": 21,
+      "name": "ServerHandler"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "Setup"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "client_t"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "ServerHandlerCreator"
+    }
+  ],
+  "description": "Defines the ServerHandler class responsible for managing server setup, session handling, and request processing in the XRPL server application. Includes configuration structures, handler methods, and factory functions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/ServerHandler.h",
+  "functions": [
+    {
+      "args": [
+        "Port const& lhs",
+        "Port const& rhs"
+      ],
+      "lineno": 18,
+      "name": "operator<"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "makeContexts"
+    },
+    {
+      "args": [
+        "Setup const& setup",
+        "beast::Journal journal"
+      ],
+      "lineno": 109,
+      "name": "setup"
+    },
+    {
+      "args": [],
+      "lineno": 112,
+      "name": "setup"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "endpoints"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "stop"
+    },
+    {
+      "args": [
+        "Session& session",
+        "boost::asio::ip::tcp::endpoint endpoint"
+      ],
+      "lineno": 127,
+      "name": "onAccept"
+    },
+    {
+      "args": [
+        "Session& session",
+        "std::unique_ptr<stream_type>&& bundle",
+        "http_request_type&& request",
+        "boost::asio::ip::tcp::endpoint const& remote_address"
+      ],
+      "lineno": 130,
+      "name": "onHandoff"
+    },
+    {
+      "args": [
+        "Session& session",
+        "http_request_type&& request",
+        "boost::asio::ip::tcp::endpoint const& remote_address"
+      ],
+      "lineno": 137,
+      "name": "onHandoff"
+    },
+    {
+      "args": [
+        "Session& session"
+      ],
+      "lineno": 143,
+      "name": "onRequest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<WSSession> session",
+        "std::vector<boost::asio::const_buffer> const& buffers"
+      ],
+      "lineno": 146,
+      "name": "onWSMessage"
+    },
+    {
+      "args": [
+        "Session& session",
+        "boost::system::error_code const&"
+      ],
+      "lineno": 150,
+      "name": "onClose"
+    },
+    {
+      "args": [
+        "Server&"
+      ],
+      "lineno": 153,
+      "name": "onStopped"
+    },
+    {
+      "args": [
+        "std::shared_ptr<WSSession> const& session",
+        "std::shared_ptr<JobQueue::Coro> const& coro",
+        "Json::Value const& jv"
+      ],
+      "lineno": 157,
+      "name": "processSession"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Session> const&",
+        "std::shared_ptr<JobQueue::Coro> coro"
+      ],
+      "lineno": 162,
+      "name": "processSession"
+    },
+    {
+      "args": [
+        "Port const& port",
+        "std::string const& request",
+        "beast::IP::Endpoint const& remoteIPAddress",
+        "Output const&",
+        "std::shared_ptr<JobQueue::Coro> coro",
+        "std::string_view forwardedFor",
+        "std::string_view user"
+      ],
+      "lineno": 165,
+      "name": "processRequest"
+    },
+    {
+      "args": [
+        "http_request_type const& request"
+      ],
+      "lineno": 173,
+      "name": "statusResponse"
+    },
+    {
+      "args": [
+        "Config const& c",
+        "std::ostream& log"
+      ],
+      "lineno": 177,
+      "name": "setup_ServerHandler"
+    },
+    {
+      "args": [
+        "Application& app",
+        "boost::asio::io_context&",
+        "JobQueue&",
+        "NetworkOPs&",
+        "Resource::Manager&",
+        "CollectorManager& cm"
+      ],
+      "lineno": 180,
+      "name": "make_ServerHandler"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ]
+}

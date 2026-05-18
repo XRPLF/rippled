@@ -1,0 +1,115 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "TransfersNotFrozen"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "BalanceChange"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "IssuerChanges"
+    }
+  ],
+  "description": "Defines the TransfersNotFrozen invariant, which ensures that frozen trust line balances cannot be changed during a transaction. It tracks balance changes for affected trust lines and validates that no unauthorized changes occur if the trust line is frozen.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/FreezeInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 36,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 39,
+      "name": "finalize"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 44,
+      "name": "isValidEntry"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&",
+        "bool"
+      ],
+      "lineno": 47,
+      "name": "calculateBalanceChange"
+    },
+    {
+      "args": [
+        "Issue const&",
+        "BalanceChange"
+      ],
+      "lineno": 53,
+      "name": "recordBalance"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const&",
+        "STAmount const&"
+      ],
+      "lineno": 56,
+      "name": "recordBalanceChanges"
+    },
+    {
+      "args": [
+        "AccountID const&",
+        "ReadView const&"
+      ],
+      "lineno": 59,
+      "name": "findIssuer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> const&",
+        "IssuerChanges const&",
+        "STTx const&",
+        "beast::Journal const&",
+        "bool"
+      ],
+      "lineno": 62,
+      "name": "validateIssuerChanges"
+    },
+    {
+      "args": [
+        "BalanceChange const&",
+        "bool",
+        "STTx const&",
+        "beast::Journal const&",
+        "bool",
+        "bool"
+      ],
+      "lineno": 69,
+      "name": "validateFrozenState"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

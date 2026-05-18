@@ -1,0 +1,179 @@
+{
+  "args": [
+    {
+      "lineno": 41,
+      "name": "app"
+    },
+    {
+      "lineno": 42,
+      "name": "inboundLedgers"
+    },
+    {
+      "lineno": 43,
+      "name": "ledgerHash"
+    },
+    {
+      "lineno": 44,
+      "name": "peerSet"
+    },
+    {
+      "lineno": 47,
+      "name": "numPeers"
+    },
+    {
+      "lineno": 54,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 54,
+      "name": "item"
+    },
+    {
+      "lineno": 62,
+      "name": "cb"
+    },
+    {
+      "lineno": 72,
+      "name": "progress"
+    },
+    {
+      "lineno": 72,
+      "name": "peerSetLock"
+    },
+    {
+      "lineno": 82,
+      "name": "limit"
+    },
+    {
+      "lineno": 82,
+      "name": "sl"
+    },
+    {
+      "lineno": 89,
+      "name": "ledger"
+    },
+    {
+      "lineno": 89,
+      "name": "sl"
+    },
+    {
+      "lineno": 96,
+      "name": "skipList"
+    },
+    {
+      "lineno": 96,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 96,
+      "name": "sl"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "inboundLedgers",
+        "ledgerHash",
+        "peerSet"
+      ],
+      "lineno": 19,
+      "name": "SkipListAcquire"
+    },
+    {
+      "args": [
+        "ledgerSeq",
+        "skipList"
+      ],
+      "lineno": 32,
+      "name": "SkipListData"
+    }
+  ],
+  "description": "Defines the SkipListAcquire class, which manages the retrieval of a skip list from a ledger over the network, including callback handling, peer management, and data processing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/SkipListAcquire.h",
+  "functions": [
+    {
+      "args": [
+        "numPeers"
+      ],
+      "lineno": 46,
+      "name": "init"
+    },
+    {
+      "args": [
+        "ledgerSeq",
+        "item"
+      ],
+      "lineno": 53,
+      "name": "processData"
+    },
+    {
+      "args": [
+        "cb"
+      ],
+      "lineno": 61,
+      "name": "addDataCallback"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "getData"
+    },
+    {
+      "args": [
+        "progress",
+        "peerSetLock"
+      ],
+      "lineno": 71,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "pmDowncast"
+    },
+    {
+      "args": [
+        "limit",
+        "sl"
+      ],
+      "lineno": 81,
+      "name": "trigger"
+    },
+    {
+      "args": [
+        "ledger",
+        "sl"
+      ],
+      "lineno": 88,
+      "name": "retrieveSkipList"
+    },
+    {
+      "args": [
+        "skipList",
+        "ledgerSeq",
+        "sl"
+      ],
+      "lineno": 95,
+      "name": "onSkipListAcquired"
+    },
+    {
+      "args": [
+        "sl"
+      ],
+      "lineno": 103,
+      "name": "notify"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "test"
+    }
+  ]
+}

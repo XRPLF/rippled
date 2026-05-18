@@ -1,0 +1,303 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "config"
+    },
+    {
+      "lineno": 9,
+      "name": "j"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Config const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 8,
+      "name": "ValidatorKeys"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ValidatorKeys::ValidatorKeys",
+        "Config::exists",
+        "Config::section",
+        "loadValidatorToken",
+        "base64_decode",
+        "deserializeManifest",
+        "derivePublicKey",
+        "parseBase58",
+        "generateSecretKey"
+      ],
+      "entry_point": "ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)",
+      "purpose": "Constructs ValidatorKeys object, validates config for validator token or seed, loads and validates keys and manifests.",
+      "validation_points": [
+        "Config::exists (checks for presence of config sections)",
+        "loadValidatorToken (validates token format and content)",
+        "deserializeManifest (validates manifest structure and content)",
+        "pk != m->signingKey (validates signing key matches manifest)",
+        "parseBase58 (validates seed format)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "validator_token",
+      "flow": [
+        "Config file",
+        "Config::section(SECTION_VALIDATOR_TOKEN).lines()",
+        "loadValidatorToken",
+        "token->manifest (base64_decode)",
+        "deserializeManifest",
+        "m->signingKey"
+      ],
+      "origin": "Config file, [validator_token] section",
+      "transformations": [
+        "Read as lines from config",
+        "Parsed into ValidatorToken struct",
+        "Manifest base64-decoded",
+        "Manifest deserialized"
+      ],
+      "validated_at": "loadValidatorToken, deserializeManifest, pk != m->signingKey"
+    },
+    {
+      "field": "validation_seed",
+      "flow": [
+        "Config file",
+        "Config::section(SECTION_VALIDATION_SEED).lines().front()",
+        "parseBase58<Seed>",
+        "generateSecretKey",
+        "derivePublicKey"
+      ],
+      "origin": "Config file, [validation_seed] section",
+      "transformations": [
+        "Read as line from config",
+        "Parsed from base58 to Seed",
+        "Seed used to generate SecretKey",
+        "SecretKey used to derive PublicKey"
+      ],
+      "validated_at": "parseBase58<Seed>"
+    },
+    {
+      "field": "configInvalid_",
+      "flow": [
+        "Set to false by default",
+        "Set to true if both sections exist or validation fails"
+      ],
+      "origin": "ValidatorKeys::ValidatorKeys",
+      "transformations": [
+        "Set to true on any validation failure"
+      ],
+      "validated_at": "At each validation failure point"
+    },
+    {
+      "field": "keys",
+      "flow": [
+        "Emplaced with (m->masterKey, pk, token->validationSecret) if token path",
+        "Emplaced with (pk, pk, sk) if seed path"
+      ],
+      "origin": "Constructed in ValidatorKeys::ValidatorKeys",
+      "transformations": [
+        "Populated only after successful validation"
+      ],
+      "validated_at": "After all validation checks pass"
+    },
+    {
+      "field": "manifest",
+      "flow": [
+        "Loaded from token",
+        "base64_decoded",
+        "deserialized",
+        "m->signingKey checked",
+        "manifest moved to ValidatorKeys::manifest"
+      ],
+      "origin": "token->manifest",
+      "transformations": [
+        "base64 decode",
+        "deserialize"
+      ],
+      "validated_at": "deserializeManifest, pk != m->signingKey"
+    }
+  ],
+  "description": "Implements the ValidatorKeys class constructor, which loads and validates validator keys from configuration, supporting both validator tokens and validation seeds, and sets up related key and manifest data.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "[validator_token] and [validation_seed] config sections",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Config::exists at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing empty string validation for [validator_token] and [validation_seed] config sections",
+      "why_false_positive": "Config::exists validates [validator_token] and [validation_seed] config sections for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validator token (config.section(SECTION_VALIDATOR_TOKEN))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "loadValidatorToken at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing empty string validation for validator token (config.section(SECTION_VALIDATOR_TOKEN))",
+      "why_false_positive": "loadValidatorToken validates validator token (config.section(SECTION_VALIDATOR_TOKEN)) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validator token manifest (token->manifest)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "deserializeManifest(base64_decode(token->manifest)) at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing empty string validation for validator token manifest (token->manifest)",
+      "why_false_positive": "deserializeManifest(base64_decode(token->manifest)) validates validator token manifest (token->manifest) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "validator token manifest (token->manifest)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "deserializeManifest(base64_decode(token->manifest)) at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing format validation for validator token manifest (token->manifest)",
+      "why_false_positive": "deserializeManifest(base64_decode(token->manifest)) validates validator token manifest (token->manifest) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validator token signing key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "pk != m->signingKey at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing empty string validation for validator token signing key",
+      "why_false_positive": "pk != m->signingKey validates validator token signing key for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "validation seed (config.section(SECTION_VALIDATION_SEED))",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<Seed> at ValidatorKeys::ValidatorKeys (constructor)",
+      "issue_pattern": "Missing empty string validation for validation seed (config.section(SECTION_VALIDATION_SEED))",
+      "why_false_positive": "parseBase58<Seed> validates validation seed (config.section(SECTION_VALIDATION_SEED)) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/detail/ValidatorKeys.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "ValidatorKeys is a core class for validator identity. Typical test coverage would be in unit tests for validator key management, config parsing, and manifest validation. Look for test files like ValidatorKeys_test.cpp, Manifest_test.cpp, or Config_test.cpp. Gaps may exist in negative test cases (invalid tokens, mismatched keys, malformed manifests, both sections present). Integration tests may cover config loading but may not exhaustively test all validation branches.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation using Config, loadValidatorToken, parseBase58, and manifest deserialization",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Sets configInvalid_ = true, logs fatal error (no exception thrown)",
+      "field": "[validator_token] and [validation_seed] config sections",
+      "location": "ValidatorKeys::ValidatorKeys (constructor)",
+      "validated_by": "Config::exists",
+      "validates": [
+        "Ensures both SECTION_VALIDATOR_TOKEN and SECTION_VALIDATION_SEED are not specified at the same time"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Sets configInvalid_ = true, logs fatal error (no exception thrown)",
+      "field": "validator token (config.section(SECTION_VALIDATOR_TOKEN))",
+      "location": "ValidatorKeys::ValidatorKeys (constructor)",
+      "validated_by": "loadValidatorToken",
+      "validates": [
+        "Checks if the validator token can be loaded and parsed"
+      ],
+      "validation_type": "format|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Sets configInvalid_ = true, logs fatal error (no exception thrown)",
+      "field": "validator token manifest (token->manifest)",
+      "location": "ValidatorKeys::ValidatorKeys (constructor)",
+      "validated_by": "deserializeManifest(base64_decode(token->manifest))",
+      "validates": [
+        "Checks if the manifest can be base64-decoded and deserialized"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Sets configInvalid_ = true, logs fatal error (no exception thrown)",
+      "field": "validator token signing key",
+      "location": "ValidatorKeys::ValidatorKeys (constructor)",
+      "validated_by": "pk != m->signingKey",
+      "validates": [
+        "Ensures the derived public key matches the signing key in the manifest"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Sets configInvalid_ = true, logs fatal error (no exception thrown)",
+      "field": "validation seed (config.section(SECTION_VALIDATION_SEED))",
+      "location": "ValidatorKeys::ValidatorKeys (constructor)",
+      "validated_by": "parseBase58<Seed>",
+      "validates": [
+        "Checks if the seed can be parsed from base58 encoding"
+      ],
+      "validation_type": "format|type"
+    }
+  ]
+}

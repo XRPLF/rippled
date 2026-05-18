@@ -1,0 +1,232 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doLedgerRequest",
+        "RPC::getOrAcquireLedger"
+      ],
+      "entry_point": "doLedgerRequest",
+      "purpose": "Handles an RPC request for ledger data, validates input, fetches the ledger, and serializes it to JSON.",
+      "validation_points": [
+        "RPC::getOrAcquireLedger (validates ledger_hash and ledger_index)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger_hash",
+      "flow": [
+        "context.params[\"ledger_hash\"]",
+        "RPC::getOrAcquireLedger(context)",
+        "ledger->header().seq (if found)",
+        "addJson (serialization)",
+        "jvResult (output JSON)"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Parsed from JSON input",
+        "Validated for format and existence in getOrAcquireLedger",
+        "Used to fetch ledger object"
+      ],
+      "validated_at": "RPC::getOrAcquireLedger"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "context.params[\"ledger_index\"]",
+        "RPC::getOrAcquireLedger(context)",
+        "ledger->header().seq (if found)",
+        "addJson (serialization)",
+        "jvResult (output JSON)"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Parsed from JSON input",
+        "Validated for type/range/existence in getOrAcquireLedger",
+        "Used to fetch ledger object"
+      ],
+      "validated_at": "RPC::getOrAcquireLedger"
+    }
+  ],
+  "description": "Implements the doLedgerRequest RPC handler, which retrieves a specified ledger (by hash or index) and returns its details in JSON format.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by xrpld RPC framework (jss::, RPC::, ErrorCodes)",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, ErrorCodes) validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by xrpld RPC framework (jss::, RPC::, ErrorCodes)",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "xrpld RPC framework (jss::, RPC::, ErrorCodes) validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::getOrAcquireLedger at doLedgerRequest",
+      "issue_pattern": "Missing empty string validation for ledger_hash",
+      "why_false_positive": "RPC::getOrAcquireLedger validates ledger_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::getOrAcquireLedger at doLedgerRequest",
+      "issue_pattern": "Missing empty string validation for ledger_index",
+      "why_false_positive": "RPC::getOrAcquireLedger validates ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/data/LedgerRequest.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 13,
+      "name": "doLedgerRequest"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doLedgerRequest function is typically tested via RPC integration tests that exercise ledger request endpoints, such as 'ledger_request' or similar. These tests are likely found in files like 'rpc/ledger_request_test.cpp', 'rpc/LedgerHandler_test.cpp', or broader RPC test suites. Validation of ledger_hash and ledger_index is covered if tests provide valid and invalid values for these fields. Gaps may exist if edge cases (e.g., malformed hashes, out-of-range indices, missing fields) are not explicitly tested. There is no evidence of direct unit tests for doLedgerRequest in this file; coverage relies on higher-level RPC tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger_hash",
+      "ledger_index"
+    ],
+    "framework": "xrpld RPC framework (jss::, RPC::, ErrorCodes)",
+    "validation_layer": "business_logic (in RPC::getOrAcquireLedger, called from handler entry point)"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "res.error() (returns error JSON, likely with error code from xrpl/protocol/ErrorCodes.h)",
+      "field": "ledger_hash",
+      "location": "doLedgerRequest",
+      "validated_by": "RPC::getOrAcquireLedger",
+      "validates": [
+        "Checks if ledger_hash is present if provided",
+        "Checks if ledger_hash is a valid hash format",
+        "Checks if ledger_hash refers to an existing ledger"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "res.error() (returns error JSON, likely with error code from xrpl/protocol/ErrorCodes.h)",
+      "field": "ledger_index",
+      "location": "doLedgerRequest",
+      "validated_by": "RPC::getOrAcquireLedger",
+      "validates": [
+        "Checks if ledger_index is present if provided",
+        "Checks if ledger_index is a valid integer or string representing a ledger index",
+        "Checks if ledger_index refers to an existing ledger"
+      ],
+      "validation_type": "type|range|business_logic"
+    }
+  ]
+}

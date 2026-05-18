@@ -1,0 +1,58 @@
+{
+  "args": [
+    {
+      "lineno": 98,
+      "name": "p"
+    },
+    {
+      "lineno": 99,
+      "name": "currentState"
+    },
+    {
+      "lineno": 100,
+      "name": "percentTime"
+    },
+    {
+      "lineno": 101,
+      "name": "currentRounds"
+    },
+    {
+      "lineno": 102,
+      "name": "minimumRounds"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "ConsensusParms"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "AvalancheCutoff"
+    }
+  ],
+  "description": "Defines the ConsensusParms struct containing parameters and tuning constants for the XRPL consensus algorithm, including timing, thresholds, and avalanche state logic. Also provides a helper function to determine consensus weight requirements based on state and timing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/consensus/ConsensusParms.h",
+  "functions": [
+    {
+      "args": [
+        "p",
+        "currentState",
+        "percentTime",
+        "currentRounds",
+        "minimumRounds"
+      ],
+      "lineno": 97,
+      "name": "getNeededWeight"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

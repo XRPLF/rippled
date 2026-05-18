@@ -1,0 +1,420 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Transactor::invokePreflight<Change>",
+        "preflight0",
+        "ctx.tx.getAccountID(sfAccount)",
+        "ctx.tx.getFieldAmount(sfFee)",
+        "ctx.tx.getSigningPubKey() / getSignature() / isFieldPresent(sfSigners)",
+        "ctx.tx.getFieldU32(sfSequence) / isFieldPresent(sfPreviousTxnID)"
+      ],
+      "entry_point": "Transactor::invokePreflight<Change>",
+      "purpose": "Performs preflight validation for Change transactions, ensuring all required fields are present and valid before further processing.",
+      "validation_points": [
+        "preflight0 (flags validation)",
+        "ctx.tx.getAccountID(sfAccount) (account validation)",
+        "ctx.tx.getFieldAmount(sfFee) (fee validation)",
+        "ctx.tx.getSigningPubKey(), getSignature(), isFieldPresent(sfSigners) (signature validation)",
+        "ctx.tx.getFieldU32(sfSequence), isFieldPresent(sfPreviousTxnID) (sequence validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Change::preclaim",
+        "ctx.view.open()",
+        "ctx.tx.getTxnType()",
+        "ctx.tx.isFieldPresent(sfBaseFeeDrops / sfReserveBaseDrops / sfReserveIncrementDrops)",
+        "ctx.tx.isFieldPresent(sfBaseFee / sfReferenceFeeUnits / sfReserveBase / sfReserveIncrement)"
+      ],
+      "entry_point": "Change::preclaim",
+      "purpose": "Performs further validation after preflight, specifically for ttFEE transactions, checking field presence and feature flags.",
+      "validation_points": [
+        "ctx.view.open() (ledger state validation)",
+        "ctx.tx.isFieldPresent(...) (field presence validation based on feature flags)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "flags",
+      "flow": [
+        "ctx.tx (input)",
+        "preflight0 (validation)",
+        "Transactor::invokePreflight<Change> (returns error if invalid)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked against tfEnableAmendmentMask if featureLendingProtocol enabled"
+      ],
+      "validated_at": "preflight0"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.getAccountID(sfAccount) (retrieval and validation)",
+        "Transactor::invokePreflight<Change> (returns error if not zero)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Compared to beast::zero"
+      ],
+      "validated_at": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "field": "sfFee",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.getFieldAmount(sfFee) (retrieval and validation)",
+        "Transactor::invokePreflight<Change> (returns error if not native or not zero)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for native() and == beast::zero"
+      ],
+      "validated_at": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "field": "sfSigningPubKey / sfSignature / sfSigners",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.getSigningPubKey(), getSignature(), isFieldPresent(sfSigners) (retrieval and validation)",
+        "Transactor::invokePreflight<Change> (returns error if any present)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for presence (should be empty/not present)"
+      ],
+      "validated_at": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "field": "sfSequence / sfPreviousTxnID",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.getFieldU32(sfSequence), isFieldPresent(sfPreviousTxnID) (retrieval and validation)",
+        "Transactor::invokePreflight<Change> (returns error if sequence != 0 or previous txn present)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Checked for value == 0 and absence"
+      ],
+      "validated_at": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "field": "sfBaseFeeDrops / sfReserveBaseDrops / sfReserveIncrementDrops",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.isFieldPresent(...) (checked in Change::preclaim)",
+        "Change::preclaim (returns error if missing or forbidden depending on featureXRPFees)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence required or forbidden depending on feature flag"
+      ],
+      "validated_at": "Change::preclaim"
+    },
+    {
+      "field": "sfBaseFee / sfReferenceFeeUnits / sfReserveBase / sfReserveIncrement",
+      "flow": [
+        "ctx.tx (input)",
+        "ctx.tx.isFieldPresent(...) (checked in Change::preclaim)",
+        "Change::preclaim (returns error if missing or forbidden depending on featureXRPFees)"
+      ],
+      "origin": "Transaction input (ctx.tx)",
+      "transformations": [
+        "Presence required or forbidden depending on feature flag"
+      ],
+      "validated_at": "Change::preclaim"
+    }
+  ],
+  "description": "Implements the Change transactor for the XRPL system, handling special system transactions such as amendments, fee changes, and UNL modifications. Contains logic for preflight, preclaim, and application of these system-level transactions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "preflight0 at Transactor::invokePreflight<Change>",
+      "issue_pattern": "Missing empty string validation for flags",
+      "why_false_positive": "preflight0 validates flags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getAccountID(sfAccount) at Transactor::invokePreflight<Change>",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "ctx.tx.getAccountID(sfAccount) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getFieldAmount(sfFee) at Transactor::invokePreflight<Change>",
+      "issue_pattern": "Missing empty string validation for sfFee",
+      "why_false_positive": "ctx.tx.getFieldAmount(sfFee) validates sfFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSigningPubKey, sfSignature, sfSigners",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getSigningPubKey(), ctx.tx.getSignature(), ctx.tx.isFieldPresent(sfSigners) at Transactor::invokePreflight<Change>",
+      "issue_pattern": "Missing empty string validation for sfSigningPubKey, sfSignature, sfSigners",
+      "why_false_positive": "ctx.tx.getSigningPubKey(), ctx.tx.getSignature(), ctx.tx.isFieldPresent(sfSigners) validates sfSigningPubKey, sfSignature, sfSigners for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSequence, sfPreviousTxnID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getFieldU32(sfSequence), ctx.tx.isFieldPresent(sfPreviousTxnID) at Transactor::invokePreflight<Change>",
+      "issue_pattern": "Missing empty string validation for sfSequence, sfPreviousTxnID",
+      "why_false_positive": "ctx.tx.getFieldU32(sfSequence), ctx.tx.isFieldPresent(sfPreviousTxnID) validates sfSequence, sfPreviousTxnID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger state (open/closed)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.open() at Change::preclaim",
+      "issue_pattern": "Missing empty string validation for ledger state (open/closed)",
+      "why_false_positive": "ctx.view.open() validates ledger state (open/closed) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.isFieldPresent at Change::preclaim (ttFEE case, featureXRPFees enabled)",
+      "issue_pattern": "Missing empty string validation for sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops",
+      "why_false_positive": "ctx.tx.isFieldPresent validates sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.isFieldPresent at Change::preclaim (ttFEE case, featureXRPFees enabled)",
+      "issue_pattern": "Missing empty string validation for sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement",
+      "why_false_positive": "ctx.tx.isFieldPresent validates sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/system/Change.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "Transactor::invokePreflight<Change>"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 41,
+      "name": "Change::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "Change::doApply"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "Change::preCompute"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "Change::applyAmendment"
+    },
+    {
+      "args": [],
+      "lineno": 186,
+      "name": "Change::applyFee"
+    },
+    {
+      "args": [],
+      "lineno": 221,
+      "name": "Change::applyUNLModify"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Validation logic for Change transactions is typically covered in unit/integration tests for system transactions in the rippled codebase. Look for test files such as 'Change_test.cpp', 'Transactor_test.cpp', or 'SystemTransactions_test.cpp' in the 'src/test' or 'src/test/tx' directories. These should cover valid/invalid Change transactions, field presence/absence, and feature flag toggling. However, coverage gaps may exist for edge cases involving feature flag transitions (e.g., enabling/disabling featureXRPFees or featureLendingProtocol), malformed field values, or rare combinations of forbidden/required fields. Manual review of test assertions is recommended to ensure all validation branches are exercised.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl transaction processing (custom, not external framework)",
+    "validation_layer": "business_logic (preflight and preclaim transaction validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "return value from preflight0 (NotTEC error code)",
+      "field": "flags",
+      "location": "Transactor::invokePreflight<Change>",
+      "validated_by": "preflight0",
+      "validates": [
+        "Checks if transaction flags are allowed (0 means allow any flags, otherwise tfEnableAmendmentMask if featureLendingProtocol is enabled)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SRC_ACCOUNT",
+      "field": "sfAccount",
+      "location": "Transactor::invokePreflight<Change>",
+      "validated_by": "ctx.tx.getAccountID(sfAccount)",
+      "validates": [
+        "Checks that the source account is zero (must be a system transaction)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_FEE",
+      "field": "sfFee",
+      "location": "Transactor::invokePreflight<Change>",
+      "validated_by": "ctx.tx.getFieldAmount(sfFee)",
+      "validates": [
+        "Checks that the fee is native (XRP)",
+        "Checks that the fee is exactly zero"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SIGNATURE",
+      "field": "sfSigningPubKey, sfSignature, sfSigners",
+      "location": "Transactor::invokePreflight<Change>",
+      "validated_by": "ctx.tx.getSigningPubKey(), ctx.tx.getSignature(), ctx.tx.isFieldPresent(sfSigners)",
+      "validates": [
+        "Checks that no signing public key is present",
+        "Checks that no signature is present",
+        "Checks that no signers field is present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SEQUENCE",
+      "field": "sfSequence, sfPreviousTxnID",
+      "location": "Transactor::invokePreflight<Change>",
+      "validated_by": "ctx.tx.getFieldU32(sfSequence), ctx.tx.isFieldPresent(sfPreviousTxnID)",
+      "validates": [
+        "Checks that sequence is zero",
+        "Checks that previous transaction ID is not present"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "ledger state (open/closed)",
+      "location": "Change::preclaim",
+      "validated_by": "ctx.view.open()",
+      "validates": [
+        "Checks that the transaction is not applied to an open ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops",
+      "location": "Change::preclaim (ttFEE case, featureXRPFees enabled)",
+      "validated_by": "ctx.tx.isFieldPresent",
+      "validates": [
+        "Checks that these fields are present when featureXRPFees is enabled"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement",
+      "location": "Change::preclaim (ttFEE case, featureXRPFees enabled)",
+      "validated_by": "ctx.tx.isFieldPresent",
+      "validates": [
+        "Checks that these fields are NOT present when featureXRPFees is enabled"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

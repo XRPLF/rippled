@@ -1,0 +1,91 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "s"
+    },
+    {
+      "lineno": 7,
+      "name": "iter"
+    },
+    {
+      "lineno": 7,
+      "name": "end"
+    },
+    {
+      "lineno": 7,
+      "name": "delimiter"
+    },
+    {
+      "lineno": 23,
+      "name": "c"
+    },
+    {
+      "lineno": 23,
+      "name": "delim"
+    },
+    {
+      "lineno": 43,
+      "name": "c"
+    },
+    {
+      "lineno": 43,
+      "name": "delim"
+    },
+    {
+      "lineno": 62,
+      "name": "c"
+    },
+    {
+      "lineno": 62,
+      "name": "delim"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "c",
+        "delim"
+      ],
+      "lineno": 18,
+      "name": "CollectionAndDelimiter"
+    },
+    {
+      "args": [
+        "c",
+        "delim"
+      ],
+      "lineno": 38,
+      "name": "CollectionAndDelimiter<Collection[N]>"
+    },
+    {
+      "args": [
+        "c",
+        "delim"
+      ],
+      "lineno": 57,
+      "name": "CollectionAndDelimiter<char[N]>"
+    }
+  ],
+  "description": "Provides utilities for joining collections into a stream with a delimiter, including template classes for handling various collection types and specializations for arrays and C-strings.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/join.h",
+  "functions": [
+    {
+      "args": [
+        "s",
+        "iter",
+        "end",
+        "delimiter"
+      ],
+      "lineno": 7,
+      "name": "join"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

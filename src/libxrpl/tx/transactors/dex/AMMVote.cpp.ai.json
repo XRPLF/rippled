@@ -1,0 +1,509 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMVote::doApply",
+        "AMMVote::preflight",
+        "AMMVote::preclaim",
+        "applyVote"
+      ],
+      "entry_point": "AMMVote::doApply",
+      "purpose": "Processes an AMM vote transaction, validating input and applying the vote if valid.",
+      "validation_points": [
+        "AMMVote::preflight",
+        "AMMVote::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMVote::preflight"
+      ],
+      "entry_point": "AMMVote::preflight",
+      "purpose": "Performs stateless validation of the transaction fields before execution.",
+      "validation_points": [
+        "AMMVote::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMVote::preclaim"
+      ],
+      "entry_point": "AMMVote::preclaim",
+      "purpose": "Performs contextual validation using ledger state before transaction execution.",
+      "validation_points": [
+        "AMMVote::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMVote::checkExtraFeatures"
+      ],
+      "entry_point": "AMMVote::checkExtraFeatures",
+      "purpose": "Checks feature flags and asset types for AMM voting eligibility.",
+      "validation_points": [
+        "AMMVote::checkExtraFeatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAsset",
+      "flow": [
+        "ctx.tx[sfAsset]",
+        "invalidAMMAssetPair",
+        "keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+        "ctx.view.read(...)"
+      ],
+      "origin": "ctx.tx[sfAsset] (transaction input)",
+      "transformations": [
+        "Checked for validity as an asset pair",
+        "Used to locate AMM ledger entry"
+      ],
+      "validated_at": "AMMVote::preflight (invalidAMMAssetPair), AMMVote::preclaim (ledger lookup)"
+    },
+    {
+      "field": "sfAsset2",
+      "flow": [
+        "ctx.tx[sfAsset2]",
+        "invalidAMMAssetPair",
+        "keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+        "ctx.view.read(...)"
+      ],
+      "origin": "ctx.tx[sfAsset2] (transaction input)",
+      "transformations": [
+        "Checked for validity as an asset pair",
+        "Used to locate AMM ledger entry"
+      ],
+      "validated_at": "AMMVote::preflight (invalidAMMAssetPair), AMMVote::preclaim (ledger lookup)"
+    },
+    {
+      "field": "sfTradingFee",
+      "flow": [
+        "ctx.tx[sfTradingFee]",
+        "AMMVote::preflight (comparison to TRADING_FEE_THRESHOLD)",
+        "applyVote (used as feeNew)"
+      ],
+      "origin": "ctx.tx[sfTradingFee] (transaction input)",
+      "transformations": [
+        "Compared to TRADING_FEE_THRESHOLD for validity",
+        "Used to update vote entry if valid"
+      ],
+      "validated_at": "AMMVote::preflight"
+    },
+    {
+      "field": "sfLPTokenBalance",
+      "flow": [
+        "ammSle->getFieldAmount(sfLPTokenBalance)",
+        "AMMVote::preclaim (compared to beast::zero)"
+      ],
+      "origin": "ammSle->getFieldAmount(sfLPTokenBalance) (ledger state)",
+      "transformations": [
+        "Checked for zero balance to ensure AMM is not empty"
+      ],
+      "validated_at": "AMMVote::preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j)",
+        "applyVote (used as account_)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for LP token holdings",
+        "Used to update or create vote entry"
+      ],
+      "validated_at": "AMMVote::preclaim (ammLPHolds)"
+    }
+  ],
+  "description": "Implements the AMMVote transaction logic for voting on trading fees in an Automated Market Maker (AMM) on the XRPL, including preflight, preclaim, and application of votes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset validated by Custom validation via business logic and protocol helpers (no external validation framework)",
+      "issue_pattern": "Missing validation for sfAsset",
+      "why_false_positive": "Custom validation via business logic and protocol helpers (no external validation framework) validates sfAsset automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAsset2",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAsset2 validated by Custom validation via business logic and protocol helpers (no external validation framework)",
+      "issue_pattern": "Missing validation for sfAsset2",
+      "why_false_positive": "Custom validation via business logic and protocol helpers (no external validation framework) validates sfAsset2 automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfTradingFee",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfTradingFee validated by Custom validation via business logic and protocol helpers (no external validation framework)",
+      "issue_pattern": "Missing validation for sfTradingFee",
+      "why_false_positive": "Custom validation via business logic and protocol helpers (no external validation framework) validates sfTradingFee automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAccount",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAccount validated by Custom validation via business logic and protocol helpers (no external validation framework)",
+      "issue_pattern": "Missing validation for sfAccount",
+      "why_false_positive": "Custom validation via business logic and protocol helpers (no external validation framework) validates sfAccount automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLPTokenBalance",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLPTokenBalance validated by Custom validation via business logic and protocol helpers (no external validation framework)",
+      "issue_pattern": "Missing validation for sfLPTokenBalance",
+      "why_false_positive": "Custom validation via business logic and protocol helpers (no external validation framework) validates sfLPTokenBalance automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfAsset",
+          "sfAsset2"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "invalidAMMAssetPair at AMMVote::preflight",
+      "issue_pattern": "Missing empty string validation for ['sfAsset', 'sfAsset2']",
+      "why_false_positive": "invalidAMMAssetPair validates ['sfAsset', 'sfAsset2'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfTradingFee",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD) at AMMVote::preflight",
+      "issue_pattern": "Missing empty string validation for sfTradingFee",
+      "why_false_positive": "comparison (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD) validates sfTradingFee for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfTradingFee",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "comparison (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD) at AMMVote::preflight",
+      "issue_pattern": "Missing range validation for sfTradingFee",
+      "why_false_positive": "comparison (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD) validates sfTradingFee range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfAsset",
+          "sfAsset2"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::amm(...)) at AMMVote::preclaim",
+      "issue_pattern": "Missing empty string validation for ['sfAsset', 'sfAsset2']",
+      "why_false_positive": "ctx.view.read(keylet::amm(...)) validates ['sfAsset', 'sfAsset2'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLPTokenBalance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero at AMMVote::preclaim",
+      "issue_pattern": "Missing empty string validation for sfLPTokenBalance",
+      "why_false_positive": "ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero validates sfLPTokenBalance for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfAccount",
+          "sfAsset",
+          "sfAsset2"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j) at AMMVote::preclaim",
+      "issue_pattern": "Missing empty string validation for ['sfAccount', 'sfAsset', 'sfAsset2']",
+      "why_false_positive": "ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j) validates ['sfAccount', 'sfAsset', 'sfAsset2'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfAsset",
+          "sfAsset2"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMVote::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for ['sfAsset', 'sfAsset2']",
+      "why_false_positive": "ammEnabled(ctx.rules) validates ['sfAsset', 'sfAsset2'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "sfAsset",
+          "sfAsset2"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>()) at AMMVote::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for ['sfAsset', 'sfAsset2']",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>()) validates ['sfAsset', 'sfAsset2'] for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMVote.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 9,
+      "name": "AMMVote::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "AMMVote::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "AMMVote::preclaim"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx_",
+        "Sandbox& sb",
+        "AccountID const& account_",
+        "beast::Journal j_"
+      ],
+      "lineno": 48,
+      "name": "applyVote"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "AMMVote::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMVote logic is typically tested in integration/functional tests for AMM voting transactions. Look for test files such as 'AMMVote_test.cpp', 'AMM_test.cpp', or broader transaction/AMM suites in the rippled codebase. Tests should cover: invalid asset pairs, trading fee limits, empty AMM pools, non-LP accounts, and successful voting. Gaps may exist in edge cases (e.g., feature flag combinations, rare asset types, or malformed vote arrays). Direct unit tests for 'applyVote' may be limited, as it is often exercised via higher-level transaction tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfAsset",
+      "sfAsset2",
+      "sfTradingFee",
+      "sfAccount",
+      "sfLPTokenBalance"
+    ],
+    "framework": "Custom validation via business logic and protocol helpers (no external validation framework)",
+    "validation_layer": "business_logic (preflight/preclaim methods before transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "NotTEC (custom error code)",
+      "field": [
+        "sfAsset",
+        "sfAsset2"
+      ],
+      "location": "AMMVote::preflight",
+      "validated_by": "invalidAMMAssetPair",
+      "validates": [
+        "Checks if the asset pair is valid for AMM operations"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_FEE",
+      "field": "sfTradingFee",
+      "location": "AMMVote::preflight",
+      "validated_by": "comparison (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)",
+      "validates": [
+        "Trading fee must not exceed TRADING_FEE_THRESHOLD"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_AMM",
+      "field": [
+        "sfAsset",
+        "sfAsset2"
+      ],
+      "location": "AMMVote::preclaim",
+      "validated_by": "ctx.view.read(keylet::amm(...))",
+      "validates": [
+        "Checks if the AMM exists for the given asset pair"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecAMM_EMPTY",
+      "field": "sfLPTokenBalance",
+      "location": "AMMVote::preclaim",
+      "validated_by": "ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero",
+      "validates": [
+        "Checks if the AMM pool is empty (no LP tokens)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecAMM_INVALID_TOKENS",
+      "field": [
+        "sfAccount",
+        "sfAsset",
+        "sfAsset2"
+      ],
+      "location": "AMMVote::preclaim",
+      "validated_by": "ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j)",
+      "validates": [
+        "Checks if the account holds any LP tokens for the AMM"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": [
+        "sfAsset",
+        "sfAsset2"
+      ],
+      "location": "AMMVote::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "Checks if AMM feature is enabled in the current ruleset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": [
+        "sfAsset",
+        "sfAsset2"
+      ],
+      "location": "AMMVote::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>())",
+      "validates": [
+        "If featureMPTokensV2 is not enabled, ensures neither asset is an MPTIssue"
+      ],
+      "validation_type": "business_logic|type"
+    }
+  ]
+}

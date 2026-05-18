@@ -1,0 +1,419 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "collector"
+    },
+    {
+      "lineno": 22,
+      "name": "journal"
+    },
+    {
+      "lineno": 39,
+      "name": "address"
+    },
+    {
+      "lineno": 44,
+      "name": "address"
+    },
+    {
+      "lineno": 44,
+      "name": "proxy"
+    },
+    {
+      "lineno": 44,
+      "name": "forwardedFor"
+    },
+    {
+      "lineno": 61,
+      "name": "address"
+    },
+    {
+      "lineno": 66,
+      "name": "address"
+    },
+    {
+      "lineno": 76,
+      "name": "origin"
+    },
+    {
+      "lineno": 76,
+      "name": "gossip"
+    },
+    {
+      "lineno": 89,
+      "name": "threshold"
+    },
+    {
+      "lineno": 96,
+      "name": "map"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::insight::Collector::ptr const& collector",
+        "beast::Journal journal"
+      ],
+      "lineno": 14,
+      "name": "ManagerImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "ManagerImp::newInboundEndpoint(address, proxy, forwardedFor)",
+        "boost::asio::ip::make_address(forwardedFor, ec)",
+        "ManagerImp::newInboundEndpoint(address) OR ManagerImp::newInboundEndpoint(beast::IPAddressConversion::from_asio(proxiedIp))",
+        "logic_.newInboundEndpoint(address)"
+      ],
+      "entry_point": "ManagerImp::newInboundEndpoint(beast::IP::Endpoint const&, bool const, std::string_view)",
+      "purpose": "Handles creation of a new inbound resource Consumer, optionally using a proxied IP address (from X-Forwarded-For header).",
+      "validation_points": [
+        "boost::asio::ip::make_address(forwardedFor, ec) // Validates forwardedFor as a valid IP address"
+      ]
+    },
+    {
+      "call_chain": [
+        "ManagerImp::newInboundEndpoint(address)",
+        "logic_.newInboundEndpoint(address)"
+      ],
+      "entry_point": "ManagerImp::newInboundEndpoint(beast::IP::Endpoint const&)",
+      "purpose": "Creates a new inbound Consumer for a direct (non-proxied) endpoint.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "ManagerImp::newOutboundEndpoint(address)",
+        "logic_.newOutboundEndpoint(address)"
+      ],
+      "entry_point": "ManagerImp::newOutboundEndpoint(beast::IP::Endpoint const&)",
+      "purpose": "Creates a new outbound Consumer.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "ManagerImp::newUnlimitedEndpoint(address)",
+        "logic_.newUnlimitedEndpoint(address)"
+      ],
+      "entry_point": "ManagerImp::newUnlimitedEndpoint(beast::IP::Endpoint const&)",
+      "purpose": "Creates a new unlimited Consumer.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "forwardedFor",
+      "flow": [
+        "forwardedFor (input)",
+        "boost::asio::ip::make_address(forwardedFor, ec)",
+        "if valid: beast::IPAddressConversion::from_asio(proxiedIp)",
+        "ManagerImp::newInboundEndpoint(beast::IP::Endpoint)",
+        "logic_.newInboundEndpoint(address)"
+      ],
+      "origin": "Input parameter to ManagerImp::newInboundEndpoint (likely from HTTP X-Forwarded-For header)",
+      "transformations": [
+        "String (forwardedFor) parsed to boost::asio::ip::address (proxiedIp)",
+        "Converted to beast::IP::Endpoint"
+      ],
+      "validated_at": "boost::asio::ip::make_address(forwardedFor, ec)"
+    },
+    {
+      "field": "address",
+      "flow": [
+        "address (input)",
+        "logic_.newInboundEndpoint/address",
+        "Consumer object"
+      ],
+      "origin": "Input parameter to ManagerImp::newInboundEndpoint, newOutboundEndpoint, newUnlimitedEndpoint",
+      "transformations": [
+        "May be replaced by proxied IP if proxy=true and forwardedFor is valid"
+      ],
+      "validated_at": "If proxy=true, validated via forwardedFor; otherwise, no explicit validation here"
+    }
+  ],
+  "description": "Implements the Resource::Manager interface for managing resource consumption, including tracking consumers, handling inbound/outbound endpoints, exporting/importing gossip, and periodic resource logic in a background thread.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "forwardedFor",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field forwardedFor validated by boost::asio::ip::make_address",
+      "issue_pattern": "Missing validation for forwardedFor",
+      "why_false_positive": "boost::asio::ip::make_address validates forwardedFor automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "forwardedFor",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "boost::asio::ip::make_address at ManagerImp::newInboundEndpoint(beast::IP::Endpoint const&, bool const, std::string_view)",
+      "issue_pattern": "Missing empty string validation for forwardedFor",
+      "why_false_positive": "boost::asio::ip::make_address validates forwardedFor for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "forwardedFor",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "boost::asio::ip::make_address at ManagerImp::newInboundEndpoint(beast::IP::Endpoint const&, bool const, std::string_view)",
+      "issue_pattern": "Missing format validation for forwardedFor",
+      "why_false_positive": "boost::asio::ip::make_address validates forwardedFor format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/resource/ResourceManager.cpp",
+  "functions": [
+    {
+      "args": [
+        "beast::insight::Collector::ptr const& collector",
+        "beast::Journal journal"
+      ],
+      "lineno": 22,
+      "name": "ManagerImp"
+    },
+    {
+      "args": [],
+      "lineno": 32,
+      "name": "~ManagerImp"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& address"
+      ],
+      "lineno": 39,
+      "name": "newInboundEndpoint"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& address",
+        "bool const proxy",
+        "std::string_view forwardedFor"
+      ],
+      "lineno": 44,
+      "name": "newInboundEndpoint"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& address"
+      ],
+      "lineno": 61,
+      "name": "newOutboundEndpoint"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& address"
+      ],
+      "lineno": 66,
+      "name": "newUnlimitedEndpoint"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "exportConsumers"
+    },
+    {
+      "args": [
+        "std::string const& origin",
+        "Gossip const& gossip"
+      ],
+      "lineno": 76,
+      "name": "importConsumers"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "int threshold"
+      ],
+      "lineno": 89,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& map"
+      ],
+      "lineno": 96,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "Manager"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "~Manager"
+    },
+    {
+      "args": [
+        "beast::insight::Collector::ptr const& collector",
+        "beast::Journal journal"
+      ],
+      "lineno": 125,
+      "name": "make_Manager"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "Resource"
+    }
+  ],
+  "test_coverage_notes": "The validation of 'forwardedFor' via boost::asio::ip::make_address is a critical path. Typical test coverage would be in unit tests for ResourceManager or integration tests for HTTP request handling (where X-Forwarded-For is set). Look for test files like ResourceManager_test.cpp, Logic_test.cpp, or HTTPServerHandler_test.cpp. Gaps: If tests do not cover malformed or malicious 'forwardedFor' values, or do not check logging of warnings on invalid input, this path may be under-tested. There is no explicit test code in this file; coverage depends on higher-level tests invoking these entry points with various inputs.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "forwardedFor"
+    ],
+    "framework": "boost::asio::ip::make_address",
+    "validation_layer": "entry_point"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (error_code set on failure)",
+      "field": "forwardedFor",
+      "location": "ManagerImp::newInboundEndpoint(beast::IP::Endpoint const&, bool const, std::string_view)",
+      "validated_by": "boost::asio::ip::make_address",
+      "validates": [
+        "Checks if forwardedFor string is a valid IP address"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

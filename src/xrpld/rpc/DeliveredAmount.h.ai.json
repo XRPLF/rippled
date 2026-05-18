@@ -1,0 +1,63 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides functions to insert and retrieve the delivered amount for payment and check cash transactions in XRPL, adding a 'delivered_amount' field to transaction metadata if applicable.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/DeliveredAmount.h",
+  "functions": [
+    {
+      "args": [
+        "meta",
+        "ReadView const&",
+        "std::shared_ptr<STTx const> const&",
+        "TxMeta const&"
+      ],
+      "lineno": 23,
+      "name": "insertDeliveredAmount"
+    },
+    {
+      "args": [
+        "meta",
+        "RPC::JsonContext const&",
+        "std::shared_ptr<Transaction> const&",
+        "TxMeta const&"
+      ],
+      "lineno": 29,
+      "name": "insertDeliveredAmount"
+    },
+    {
+      "args": [
+        "meta",
+        "RPC::JsonContext const&",
+        "std::shared_ptr<STTx const> const&",
+        "TxMeta const&"
+      ],
+      "lineno": 33,
+      "name": "insertDeliveredAmount"
+    },
+    {
+      "args": [
+        "RPC::Context const& context",
+        "std::shared_ptr<STTx const> const& serializedTx",
+        "TxMeta const& transactionMeta",
+        "LedgerIndex const& ledgerIndex"
+      ],
+      "lineno": 37,
+      "name": "getDeliveredAmount"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "Json"
+    },
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 19,
+      "name": "RPC"
+    }
+  ]
+}

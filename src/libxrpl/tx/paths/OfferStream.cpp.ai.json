@@ -1,0 +1,427 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "view"
+    },
+    {
+      "lineno": 10,
+      "name": "book"
+    },
+    {
+      "lineno": 12,
+      "name": "asset"
+    },
+    {
+      "lineno": 12,
+      "name": "view"
+    },
+    {
+      "lineno": 22,
+      "name": "view"
+    },
+    {
+      "lineno": 22,
+      "name": "cancelView"
+    },
+    {
+      "lineno": 22,
+      "name": "book"
+    },
+    {
+      "lineno": 22,
+      "name": "when"
+    },
+    {
+      "lineno": 22,
+      "name": "counter"
+    },
+    {
+      "lineno": 22,
+      "name": "journal"
+    },
+    {
+      "lineno": 39,
+      "name": "view"
+    },
+    {
+      "lineno": 65,
+      "name": "view"
+    },
+    {
+      "lineno": 65,
+      "name": "id"
+    },
+    {
+      "lineno": 65,
+      "name": "amtDefault"
+    },
+    {
+      "lineno": 65,
+      "name": "asset"
+    },
+    {
+      "lineno": 65,
+      "name": "freezeHandling"
+    },
+    {
+      "lineno": 65,
+      "name": "authHandling"
+    },
+    {
+      "lineno": 65,
+      "name": "j"
+    },
+    {
+      "lineno": 232,
+      "name": "offerIndex"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TOfferStreamBase::TOfferStreamBase",
+        "checkIssuers",
+        "issuerExists"
+      ],
+      "entry_point": "TOfferStreamBase::TOfferStreamBase",
+      "purpose": "Constructor for offer stream, validates that both book.in and book.out issuers exist before proceeding.",
+      "validation_points": [
+        "checkIssuers: Validates book.in.getIssuer() and book.out.getIssuer() via issuerExists"
+      ]
+    },
+    {
+      "call_chain": [
+        "TOfferStreamBase::erase",
+        "view.peek(keylet::page(tip_.dir()))",
+        "std::find(v.begin(), v.end(), tip_.index())"
+      ],
+      "entry_point": "TOfferStreamBase::erase",
+      "purpose": "Removes an offer from a directory if the offer is missing its ledger entry, cleaning up dangling references.",
+      "validation_points": [
+        "Checks directory existence: view.peek(keylet::page(tip_.dir()))",
+        "Checks offer existence in directory: std::find(v.begin(), v.end(), tip_.index())"
+      ]
+    },
+    {
+      "call_chain": [
+        "accountFundsHelper",
+        "id == asset.getIssuer()",
+        "issuerFundsToSelfIssue (if MPTAmount)",
+        "accountHolds"
+      ],
+      "entry_point": "accountFundsHelper",
+      "purpose": "Determines the available funds for an account for a given asset, with special handling if the account is the issuer.",
+      "validation_points": [
+        "Checks if account is issuer: if (id == asset.getIssuer())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "book.in.getIssuer() / book.out.getIssuer()",
+      "flow": [
+        "Book (constructor argument)",
+        "checkIssuers (constructor)",
+        "issuerExists (lambda in checkIssuers)",
+        "view.exists(keylet::account(issuer))"
+      ],
+      "origin": "Book object passed to TOfferStreamBase constructor",
+      "transformations": [
+        "Checked if issuer is XRP (isXRP)",
+        "Checked if issuer account exists in ledger"
+      ],
+      "validated_at": "checkIssuers"
+    },
+    {
+      "field": "tip_.dir()",
+      "flow": [
+        "tip_ (TOfferStreamBase member)",
+        "tip_.dir()",
+        "view.peek(keylet::page(tip_.dir()))"
+      ],
+      "origin": "tip_ member (initialized in TOfferStreamBase constructor)",
+      "transformations": [
+        "Used to look up directory page in ledger"
+      ],
+      "validated_at": "TOfferStreamBase::erase"
+    },
+    {
+      "field": "tip_.index()",
+      "flow": [
+        "tip_ (TOfferStreamBase member)",
+        "tip_.index()",
+        "std::find(v.begin(), v.end(), tip_.index())"
+      ],
+      "origin": "tip_ member (initialized in TOfferStreamBase constructor)",
+      "transformations": [
+        "Used to check if offer index is present in directory"
+      ],
+      "validated_at": "TOfferStreamBase::erase"
+    },
+    {
+      "field": "id == asset.getIssuer()",
+      "flow": [
+        "accountFundsHelper (function parameter)",
+        "if (id == asset.getIssuer())",
+        "return amtDefault or issuerFundsToSelfIssue",
+        "else accountHolds"
+      ],
+      "origin": "accountFundsHelper parameters",
+      "transformations": [
+        "Short-circuits to default/issuer funds if account is issuer"
+      ],
+      "validated_at": "accountFundsHelper"
+    }
+  ],
+  "description": "Implements the core logic for streaming and processing offers in the XRPL decentralized exchange order book, including offer validation, removal, and fund checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "book.in.getIssuer() and book.out.getIssuer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkIssuers (local function) at TOfferStreamBase<TIn, TOut>::TOfferStreamBase (constructor)",
+      "issue_pattern": "Missing empty string validation for book.in.getIssuer() and book.out.getIssuer()",
+      "why_false_positive": "checkIssuers (local function) validates book.in.getIssuer() and book.out.getIssuer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "directory existence (tip_.dir())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.peek(keylet::page(tip_.dir())) at TOfferStreamBase<TIn, TOut>::erase",
+      "issue_pattern": "Missing empty string validation for directory existence (tip_.dir())",
+      "why_false_positive": "view.peek(keylet::page(tip_.dir())) validates directory existence (tip_.dir()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "offer existence in directory (tip_.index())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::find(v.begin(), v.end(), tip_.index()) at TOfferStreamBase<TIn, TOut>::erase",
+      "issue_pattern": "Missing empty string validation for offer existence in directory (tip_.index())",
+      "why_false_positive": "std::find(v.begin(), v.end(), tip_.index()) validates offer existence in directory (tip_.index()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account is issuer (id == asset.getIssuer())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (id == asset.getIssuer()) at accountFundsHelper (template function)",
+      "issue_pattern": "Missing empty string validation for account is issuer (id == asset.getIssuer())",
+      "why_false_positive": "if (id == asset.getIssuer()) validates account is issuer (id == asset.getIssuer()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/OfferStream.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "Book const& book"
+      ],
+      "lineno": 10,
+      "name": "checkIssuers"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset"
+      ],
+      "lineno": 12,
+      "name": "issuerExists"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "ApplyView& cancelView",
+        "Book const& book",
+        "NetClock::time_point when",
+        "StepCounter& counter",
+        "beast::Journal journal"
+      ],
+      "lineno": 22,
+      "name": "TOfferStreamBase"
+    },
+    {
+      "args": [
+        "ApplyView& view"
+      ],
+      "lineno": 39,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& id",
+        "T const& amtDefault",
+        "Asset const& asset",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "beast::Journal j"
+      ],
+      "lineno": 65,
+      "name": "accountFundsHelper"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "shouldRmSmallIncreasedQOffer"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "step"
+    },
+    {
+      "args": [
+        "uint256 const& offerIndex"
+      ],
+      "lineno": 232,
+      "name": "permRmOffer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is core to offer streaming and order book traversal in XRPL. Typical test coverage would be in integration and unit tests for order book crossing, offer creation, and offer removal. Likely test files: OfferStream_test.cpp, BookStep_test.cpp, Path_test.cpp, and integration tests for DEX/offer crossing. Gaps: Direct validation of missing directory/offer cleanup (erase) may not be explicitly tested; edge cases for issuer existence (e.g., deleted issuer accounts) may be under-tested. Tests for accountFundsHelper's issuer short-circuit logic may be present in IOU/issuer-related tests but should be verified.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (assertion failure, likely aborts)",
+      "field": "book.in.getIssuer() and book.out.getIssuer()",
+      "location": "TOfferStreamBase<TIn, TOut>::TOfferStreamBase (constructor)",
+      "validated_by": "checkIssuers (local function)",
+      "validates": [
+        "Checks that the issuer for both the input and output asset of the Book exists in the ledger (or is XRP, which is always valid).",
+        "Uses view.exists(keylet::account(issuer)) to check existence."
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Logs error via JLOG, returns early (no exception thrown)",
+      "field": "directory existence (tip_.dir())",
+      "location": "TOfferStreamBase<TIn, TOut>::erase",
+      "validated_by": "view.peek(keylet::page(tip_.dir()))",
+      "validates": [
+        "Checks that the directory page for the offer exists before attempting to erase an offer from it."
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Logs error via JLOG, returns early (no exception thrown)",
+      "field": "offer existence in directory (tip_.index())",
+      "location": "TOfferStreamBase<TIn, TOut>::erase",
+      "validated_by": "std::find(v.begin(), v.end(), tip_.index())",
+      "validates": [
+        "Checks that the offer index exists in the directory's sfIndexes field before attempting to erase it."
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (returns amtDefault or result of issuerFundsToSelfIssue)",
+      "field": "account is issuer (id == asset.getIssuer())",
+      "location": "accountFundsHelper (template function)",
+      "validated_by": "if (id == asset.getIssuer())",
+      "validates": [
+        "Checks if the account is the issuer of the asset, which affects how funds are calculated."
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

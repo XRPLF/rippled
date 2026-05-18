@@ -1,0 +1,96 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "InvariantChecker_PROTOTYPE"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "TransactionFeeCheck"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "XRPNotCreated"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "AccountRootsNotDeleted"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "AccountRootsDeletedClean"
+    },
+    {
+      "args": [],
+      "lineno": 202,
+      "name": "XRPBalanceChecks"
+    },
+    {
+      "args": [],
+      "lineno": 224,
+      "name": "LedgerEntryTypesMatch"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "NoXRPTrustLines"
+    },
+    {
+      "args": [],
+      "lineno": 268,
+      "name": "NoDeepFreezeTrustLinesWithoutFreeze"
+    },
+    {
+      "args": [],
+      "lineno": 290,
+      "name": "NoBadOffers"
+    },
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "NoZeroEscrow"
+    },
+    {
+      "args": [],
+      "lineno": 334,
+      "name": "ValidNewAccountRoot"
+    },
+    {
+      "args": [],
+      "lineno": 362,
+      "name": "ValidClawback"
+    },
+    {
+      "args": [],
+      "lineno": 386,
+      "name": "ValidPseudoAccounts"
+    },
+    {
+      "args": [],
+      "lineno": 408,
+      "name": "NoModifiedUnmodifiableFields"
+    }
+  ],
+  "description": "Defines a set of invariant checker classes for the XRPL transaction processing system, each enforcing a specific rule to ensure ledger integrity after transactions. Provides a tuple of all invariant checks and a prototype interface for documentation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/InvariantCheck.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 312,
+      "name": "getInvariantChecks"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ]
+}

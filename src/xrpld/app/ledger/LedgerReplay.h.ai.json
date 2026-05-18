@@ -1,0 +1,39 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay",
+        "std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns"
+      ],
+      "lineno": 9,
+      "name": "LedgerReplay"
+    }
+  ],
+  "description": "Defines the LedgerReplay class, which encapsulates the logic for replaying a ledger by storing references to a parent ledger, a replay ledger, and an ordered set of transactions to be replayed.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerReplay.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "parent"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "replay"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "orderedTxns"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

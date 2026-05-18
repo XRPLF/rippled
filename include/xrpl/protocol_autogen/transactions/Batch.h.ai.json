@@ -1,0 +1,109 @@
+{
+  "args": [
+    {
+      "lineno": 34,
+      "name": "tx"
+    },
+    {
+      "lineno": 89,
+      "name": "account"
+    },
+    {
+      "lineno": 89,
+      "name": "rawTransactions"
+    },
+    {
+      "lineno": 89,
+      "name": "sequence"
+    },
+    {
+      "lineno": 89,
+      "name": "fee"
+    },
+    {
+      "lineno": 98,
+      "name": "tx"
+    },
+    {
+      "lineno": 102,
+      "name": "value"
+    },
+    {
+      "lineno": 111,
+      "name": "value"
+    },
+    {
+      "lineno": 121,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 121,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "Batch"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, STArray const& rawTransactions, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 80,
+      "name": "BatchBuilder"
+    }
+  ],
+  "description": "Defines the Batch transaction type for XRPL, including a type-safe wrapper (Batch) and a builder (BatchBuilder) for constructing and signing Batch transactions with required and optional fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/Batch.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "Batch::getRawTransactions"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "Batch::getBatchSigners"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "Batch::hasBatchSigners"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 101,
+      "name": "BatchBuilder::setRawTransactions"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 110,
+      "name": "BatchBuilder::setBatchSigners"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 119,
+      "name": "BatchBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

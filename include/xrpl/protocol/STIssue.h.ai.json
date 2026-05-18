@@ -1,0 +1,177 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "STIssue"
+    }
+  ],
+  "description": "Defines the STIssue class, a serialized type wrapper for Asset (representing an issued currency or XRP) in the XRPL protocol, with serialization, comparison, and type-safe access methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STIssue.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "STIssue const& rhs"
+      ],
+      "lineno": 14,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 16,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "A const& issue"
+      ],
+      "lineno": 18,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 20,
+      "name": "STIssue"
+    },
+    {
+      "args": [
+        "STIssue const& rhs"
+      ],
+      "lineno": 22,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "holds"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "value"
+    },
+    {
+      "args": [
+        "Asset const& issue"
+      ],
+      "lineno": 36,
+      "name": "setIssue"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "getSType"
+    },
+    {
+      "args": [],
+      "lineno": 42,
+      "name": "getText"
+    },
+    {
+      "args": [
+        "JsonOptions"
+      ],
+      "lineno": 44,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 46,
+      "name": "add"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 48,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "STIssue const& lhs",
+        "STIssue const& rhs"
+      ],
+      "lineno": 53,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STIssue const& lhs",
+        "STIssue const& rhs"
+      ],
+      "lineno": 56,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "STIssue const& lhs",
+        "Asset const& rhs"
+      ],
+      "lineno": 59,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "STIssue const& lhs",
+        "Asset const& rhs"
+      ],
+      "lineno": 62,
+      "name": "operator<=>"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 66,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 67,
+      "name": "move"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 74,
+      "name": "issueFromJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "r"
+    },
+    {
+      "lineno": 37,
+      "name": "finishLedgerHash"
+    },
+    {
+      "lineno": 38,
+      "name": "totalNumLedgers"
+    },
+    {
+      "lineno": 46,
+      "name": "hash"
+    },
+    {
+      "lineno": 46,
+      "name": "seq"
+    },
+    {
+      "lineno": 46,
+      "name": "sList"
+    },
+    {
+      "lineno": 55,
+      "name": "existingTask"
+    },
+    {
+      "lineno": 65,
+      "name": "app"
+    },
+    {
+      "lineno": 66,
+      "name": "inboundLedgers"
+    },
+    {
+      "lineno": 67,
+      "name": "replayer"
+    },
+    {
+      "lineno": 68,
+      "name": "skipListAcquirer"
+    },
+    {
+      "lineno": 69,
+      "name": "parameter"
+    },
+    {
+      "lineno": 79,
+      "name": "delta"
+    },
+    {
+      "lineno": 93,
+      "name": "progress"
+    },
+    {
+      "lineno": 93,
+      "name": "sl"
+    },
+    {
+      "lineno": 109,
+      "name": "deltaHash"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "LedgerReplayer& replayer",
+        "std::shared_ptr<SkipListAcquire>& skipListAcquirer",
+        "TaskParameter const& parameter"
+      ],
+      "lineno": 18,
+      "name": "LedgerReplayTask"
+    },
+    {
+      "args": [
+        "InboundLedger::Reason r",
+        "uint256 const& finishLedgerHash",
+        "std::uint32_t totalNumLedgers"
+      ],
+      "lineno": 20,
+      "name": "LedgerReplayTask::TaskParameter"
+    }
+  ],
+  "description": "Defines the LedgerReplayTask class, which manages the replay of a range of ledgers by coordinating subtasks for acquiring ledger deltas and skip lists, used in the XRPL ledger synchronization process.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerReplayTask.h",
+  "functions": [
+    {
+      "args": [
+        "InboundLedger::Reason r",
+        "uint256 const& finishLedgerHash",
+        "std::uint32_t totalNumLedgers"
+      ],
+      "lineno": 32,
+      "name": "TaskParameter::TaskParameter"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq",
+        "std::vector<uint256> const& sList"
+      ],
+      "lineno": 44,
+      "name": "TaskParameter::update"
+    },
+    {
+      "args": [
+        "TaskParameter const& existingTask"
+      ],
+      "lineno": 54,
+      "name": "TaskParameter::canMergeInto"
+    },
+    {
+      "args": [
+        "Application& app",
+        "InboundLedgers& inboundLedgers",
+        "LedgerReplayer& replayer",
+        "std::shared_ptr<SkipListAcquire>& skipListAcquirer",
+        "TaskParameter const& parameter"
+      ],
+      "lineno": 63,
+      "name": "LedgerReplayTask::LedgerReplayTask"
+    },
+    {
+      "args": [],
+      "lineno": 70,
+      "name": "LedgerReplayTask::~LedgerReplayTask"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "LedgerReplayTask::init"
+    },
+    {
+      "args": [
+        "std::shared_ptr<LedgerDeltaAcquire> const& delta"
+      ],
+      "lineno": 78,
+      "name": "LedgerReplayTask::addDelta"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "LedgerReplayTask::getTaskParameter"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "LedgerReplayTask::finished"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& sl"
+      ],
+      "lineno": 92,
+      "name": "LedgerReplayTask::onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "LedgerReplayTask::pmDowncast"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t seq",
+        "std::vector<uint256> const& sList"
+      ],
+      "lineno": 101,
+      "name": "LedgerReplayTask::updateSkipList"
+    },
+    {
+      "args": [
+        "uint256 const& deltaHash"
+      ],
+      "lineno": 108,
+      "name": "LedgerReplayTask::deltaReady"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 114,
+      "name": "LedgerReplayTask::trigger"
+    },
+    {
+      "args": [
+        "ScopedLockType& sl"
+      ],
+      "lineno": 120,
+      "name": "LedgerReplayTask::tryAdvance"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "xrpl::test"
+    }
+  ]
+}

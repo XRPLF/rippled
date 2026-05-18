@@ -1,0 +1,512 @@
+{
+  "args": [
+    {
+      "lineno": 62,
+      "name": "strInput"
+    },
+    {
+      "lineno": 62,
+      "name": "bTrim"
+    },
+    {
+      "lineno": 101,
+      "name": "secSource"
+    },
+    {
+      "lineno": 101,
+      "name": "strSection"
+    },
+    {
+      "lineno": 110,
+      "name": "secSource"
+    },
+    {
+      "lineno": 110,
+      "name": "strSection"
+    },
+    {
+      "lineno": 110,
+      "name": "strValue"
+    },
+    {
+      "lineno": 110,
+      "name": "j"
+    },
+    {
+      "lineno": 134,
+      "name": "name"
+    },
+    {
+      "lineno": 145,
+      "name": "bQuiet"
+    },
+    {
+      "lineno": 145,
+      "name": "bSilent"
+    },
+    {
+      "lineno": 145,
+      "name": "bStandalone"
+    },
+    {
+      "lineno": 167,
+      "name": "strConf"
+    },
+    {
+      "lineno": 167,
+      "name": "bQuiet"
+    },
+    {
+      "lineno": 167,
+      "name": "bSilent"
+    },
+    {
+      "lineno": 167,
+      "name": "bStandalone"
+    },
+    {
+      "lineno": 246,
+      "name": "config"
+    },
+    {
+      "lineno": 285,
+      "name": "fileContents"
+    },
+    {
+      "lineno": 648,
+      "name": "item"
+    },
+    {
+      "lineno": 648,
+      "name": "node"
+    },
+    {
+      "lineno": 658,
+      "name": "section"
+    },
+    {
+      "lineno": 677,
+      "name": "c"
+    },
+    {
+      "lineno": 677,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "xrpl::Config::Config (constructor)",
+        "xrpl::Config::setup",
+        "xrpl::detail::getMemorySize"
+      ],
+      "entry_point": "xrpl::detail::getMemorySize",
+      "purpose": "Determines the total physical memory available on the system to size internal caches and parameters.",
+      "validation_points": [
+        "Windows: GlobalMemoryStatusEx(&msx) return value",
+        "Linux: sysinfo(&si) == 0",
+        "MacOS: sysctl(mib, 2, &ram, &size, NULL, 0) == 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "xrpl::Config::Config (constructor)",
+        "xrpl::Config::setup",
+        "xrpl::parseIniFile"
+      ],
+      "entry_point": "parseIniFile",
+      "purpose": "Parses the configuration file into sections for further processing.",
+      "validation_points": [
+        "Input string is parsed and validated for INI format correctness (details not shown in provided code)."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "msx.ullTotalPhys (Windows)",
+      "flow": [
+        "GlobalMemoryStatusEx(&msx)",
+        "msx.ullTotalPhys",
+        "return value of getMemorySize",
+        "used in Config setup for sizing"
+      ],
+      "origin": "OS API call GlobalMemoryStatusEx fills MEMORYSTATUSEX struct",
+      "transformations": [
+        "Casted to std::uint64_t"
+      ],
+      "validated_at": "GlobalMemoryStatusEx(&msx) return value checked for success"
+    },
+    {
+      "field": "si.totalram and si.mem_unit (Linux)",
+      "flow": [
+        "sysinfo(&si)",
+        "si.totalram * si.mem_unit",
+        "return value of getMemorySize",
+        "used in Config setup for sizing"
+      ],
+      "origin": "OS API call sysinfo fills sysinfo struct",
+      "transformations": [
+        "Multiplied to get total bytes",
+        "Casted to std::uint64_t"
+      ],
+      "validated_at": "sysinfo(&si) == 0 checked for success"
+    },
+    {
+      "field": "ram (MacOS)",
+      "flow": [
+        "sysctl(mib, 2, &ram, &size, NULL, 0)",
+        "ram",
+        "return value of getMemorySize",
+        "used in Config setup for sizing"
+      ],
+      "origin": "OS API call sysctl fills ram variable",
+      "transformations": [
+        "Casted to std::uint64_t"
+      ],
+      "validated_at": "sysctl(...) == 0 checked for success"
+    },
+    {
+      "field": "Config file contents",
+      "flow": [
+        "File read",
+        "parseIniFile",
+        "IniFileSections",
+        "Config setup"
+      ],
+      "origin": "Read from disk (not shown in snippet)",
+      "transformations": [
+        "Parsed into sections and key-value pairs"
+      ],
+      "validated_at": "parseIniFile (input string validated for INI format)"
+    }
+  ],
+  "description": "This file implements configuration parsing, loading, and management for the XRPL node software (xrpld). It handles reading configuration files, setting up node parameters based on system resources, and provides utility functions for accessing and validating configuration values.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "MEMORYSTATUSEX struct (Windows) / sysinfo struct (Linux) / sysctl (MacOS)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "OS API call return value at getMemorySize()",
+      "issue_pattern": "Missing empty string validation for MEMORYSTATUSEX struct (Windows) / sysinfo struct (Linux) / sysctl (MacOS)",
+      "why_false_positive": "OS API call return value validates MEMORYSTATUSEX struct (Windows) / sysinfo struct (Linux) / sysctl (MacOS) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "msx.ullTotalPhys (Windows)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "GlobalMemoryStatusEx(&msx) return value at getMemorySize() (Windows)",
+      "issue_pattern": "Missing empty string validation for msx.ullTotalPhys (Windows)",
+      "why_false_positive": "GlobalMemoryStatusEx(&msx) return value validates msx.ullTotalPhys (Windows) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "si.totalram and si.mem_unit (Linux)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sysinfo(&si) == 0 at getMemorySize() (Linux)",
+      "issue_pattern": "Missing empty string validation for si.totalram and si.mem_unit (Linux)",
+      "why_false_positive": "sysinfo(&si) == 0 validates si.totalram and si.mem_unit (Linux) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "ram (MacOS)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sysctl(mib, 2, &ram, &size, NULL, 0) == 0 at getMemorySize() (MacOS)",
+      "issue_pattern": "Missing empty string validation for ram (MacOS)",
+      "why_false_positive": "sysctl(mib, 2, &ram, &size, NULL, 0) == 0 validates ram (MacOS) for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/detail/Config.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "getMemorySize"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "getMemorySize"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "getMemorySize"
+    },
+    {
+      "args": [
+        "strInput",
+        "bTrim"
+      ],
+      "lineno": 62,
+      "name": "parseIniFile"
+    },
+    {
+      "args": [
+        "secSource",
+        "strSection"
+      ],
+      "lineno": 101,
+      "name": "getIniFileSection"
+    },
+    {
+      "args": [
+        "secSource",
+        "strSection",
+        "strValue",
+        "j"
+      ],
+      "lineno": 110,
+      "name": "getSingleSection"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 134,
+      "name": "getEnvVar"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "Config"
+    },
+    {
+      "args": [
+        "bQuiet",
+        "bSilent",
+        "bStandalone"
+      ],
+      "lineno": 145,
+      "name": "setupControl"
+    },
+    {
+      "args": [
+        "strConf",
+        "bQuiet",
+        "bSilent",
+        "bStandalone"
+      ],
+      "lineno": 167,
+      "name": "setup"
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 246,
+      "name": "checkZeroPorts"
+    },
+    {
+      "args": [],
+      "lineno": 267,
+      "name": "load"
+    },
+    {
+      "args": [
+        "fileContents"
+      ],
+      "lineno": 285,
+      "name": "loadFromString"
+    },
+    {
+      "args": [],
+      "lineno": 627,
+      "name": "getDebugLogFile"
+    },
+    {
+      "args": [
+        "item",
+        "node"
+      ],
+      "lineno": 648,
+      "name": "getValueFor"
+    },
+    {
+      "args": [
+        "section"
+      ],
+      "lineno": 658,
+      "name": "setup_FeeVote"
+    },
+    {
+      "args": [
+        "c",
+        "j"
+      ],
+      "lineno": 677,
+      "name": "setup_DatabaseCon"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "detail"
+    },
+    {
+      "lineno": 27,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 28,
+      "name": "detail"
+    },
+    {
+      "lineno": 44,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 45,
+      "name": "detail"
+    },
+    {
+      "lineno": 61,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The provided code is low-level and platform-specific. Direct unit tests for getMemorySize are unlikely due to OS dependencies, but higher-level Config tests may indirectly cover these paths. Tests likely exist in files such as Config_test.cpp or similar, focusing on configuration parsing and setup. However, platform-specific memory detection error paths (e.g., OS API failures) are probably not directly tested, and mocking would be required for full coverage. Validation of config file parsing is likely tested, but edge cases (malformed INI, permission errors) may not be fully covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "OS API return value checking",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (returns 0 on failure)",
+      "field": "MEMORYSTATUSEX struct (Windows) / sysinfo struct (Linux) / sysctl (MacOS)",
+      "location": "getMemorySize()",
+      "validated_by": "OS API call return value",
+      "validates": [
+        "Checks if OS API call to get memory size succeeds before using value"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (returns 0 on failure)",
+      "field": "msx.ullTotalPhys (Windows)",
+      "location": "getMemorySize() (Windows)",
+      "validated_by": "GlobalMemoryStatusEx(&msx) return value",
+      "validates": [
+        "Ensures memory size is only read if API call succeeds"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (returns 0 on failure)",
+      "field": "si.totalram and si.mem_unit (Linux)",
+      "location": "getMemorySize() (Linux)",
+      "validated_by": "sysinfo(&si) == 0",
+      "validates": [
+        "Ensures memory size is only read if API call succeeds"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (returns 0 on failure)",
+      "field": "ram (MacOS)",
+      "location": "getMemorySize() (MacOS)",
+      "validated_by": "sysctl(mib, 2, &ram, &size, NULL, 0) == 0",
+      "validates": [
+        "Ensures memory size is only read if API call succeeds"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "impl"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "()",
+        "(std::shared_ptr<HookImpl> const& impl)"
+      ],
+      "lineno": 11,
+      "name": "Hook"
+    }
+  ],
+  "description": "Defines the Hook class, which acts as a reference to a handler for performing polled metric collection in the beast::insight namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Hook.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "Hook"
+    },
+    {
+      "args": [
+        "std::shared_ptr<HookImpl> const& impl"
+      ],
+      "lineno": 20,
+      "name": "Hook"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "impl"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "insight"
+    }
+  ]
+}

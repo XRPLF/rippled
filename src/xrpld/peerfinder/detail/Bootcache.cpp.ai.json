@@ -1,0 +1,399 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "store"
+    },
+    {
+      "lineno": 9,
+      "name": "clock"
+    },
+    {
+      "lineno": 9,
+      "name": "journal"
+    },
+    {
+      "lineno": 72,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 83,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 97,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 116,
+      "name": "endpoint"
+    },
+    {
+      "lineno": 142,
+      "name": "map"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Store& store",
+        "clock_type& clock",
+        "beast::Journal journal"
+      ],
+      "lineno": 9,
+      "name": "Bootcache"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Bootcache::load",
+        "m_store.load (callback)",
+        "m_map.insert(value_type(endpoint, valence))"
+      ],
+      "entry_point": "Bootcache::load",
+      "purpose": "Loads endpoints and their valence from persistent storage into the bootcache map.",
+      "validation_points": [
+        "m_map.insert(value_type(endpoint, valence))"
+      ]
+    },
+    {
+      "call_chain": [
+        "Bootcache::insert",
+        "m_map.insert(value_type(endpoint, 0))"
+      ],
+      "entry_point": "Bootcache::insert",
+      "purpose": "Attempts to insert a new endpoint with initial valence 0 into the bootcache.",
+      "validation_points": [
+        "m_map.insert(value_type(endpoint, 0))"
+      ]
+    },
+    {
+      "call_chain": [
+        "Bootcache::insertStatic",
+        "m_map.insert(value_type(endpoint, staticValence))",
+        "if !result.second && valence < staticValence: m_map.erase, m_map.insert(value_type(endpoint, staticValence))"
+      ],
+      "entry_point": "Bootcache::insertStatic",
+      "purpose": "Inserts a static endpoint with a high valence, or upgrades an existing endpoint's valence if too low.",
+      "validation_points": [
+        "m_map.insert(value_type(endpoint, staticValence))",
+        "valence comparison and possible replacement"
+      ]
+    },
+    {
+      "call_chain": [
+        "Bootcache::on_success",
+        "m_map.insert(value_type(endpoint, 1))",
+        "if !result.second: update valence, m_map.erase, m_map.insert(value_type(endpoint, entry))"
+      ],
+      "entry_point": "Bootcache::on_success",
+      "purpose": "Records a successful connection to an endpoint, incrementing its valence.",
+      "validation_points": [
+        "m_map.insert(value_type(endpoint, 1))",
+        "valence update and re-insert"
+      ]
+    },
+    {
+      "call_chain": [
+        "Bootcache::on_failure",
+        "m_map.insert(value_type(endpoint, -1))",
+        "if !result.second: update valence, m_map.erase, m_map.insert(value_type(endpoint, entry))"
+      ],
+      "entry_point": "Bootcache::on_failure",
+      "purpose": "Records a failed connection to an endpoint, decrementing its valence.",
+      "validation_points": [
+        "m_map.insert(value_type(endpoint, -1))",
+        "valence update and re-insert"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "endpoint (beast::IP::Endpoint)",
+      "flow": [
+        "Input parameter",
+        "m_map.insert(value_type(endpoint, valence))",
+        "m_map (internal storage)"
+      ],
+      "origin": "Input to Bootcache methods (load, insert, insertStatic, on_success, on_failure)",
+      "transformations": [
+        "Assigned initial valence (from storage, 0, 1, -1, or staticValence)",
+        "May be replaced if valence is updated (insertStatic, on_success, on_failure)"
+      ],
+      "validated_at": "m_map.insert (checks for uniqueness, may reject duplicates)"
+    },
+    {
+      "field": "valence (int)",
+      "flow": [
+        "Loaded from store or set in function",
+        "Paired with endpoint in value_type",
+        "Stored in m_map",
+        "May be updated and re-inserted"
+      ],
+      "origin": "From persistent store (load), or set by insert/insertStatic/on_success/on_failure",
+      "transformations": [
+        "Incremented on success",
+        "Decremented on failure",
+        "Set to staticValence in insertStatic"
+      ],
+      "validated_at": "Compared and possibly replaced in insertStatic, on_success, on_failure"
+    }
+  ],
+  "description": "Implements the Bootcache class for managing a cache of peer endpoints with valence scores in the XRPL PeerFinder subsystem, including insertion, pruning, updating, and serialization logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "endpoint (beast::IP::Endpoint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_map.insert(value_type(endpoint, valence)) at Bootcache::load",
+      "issue_pattern": "Missing empty string validation for endpoint (beast::IP::Endpoint)",
+      "why_false_positive": "m_map.insert(value_type(endpoint, valence)) validates endpoint (beast::IP::Endpoint) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "endpoint (beast::IP::Endpoint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_map.insert(value_type(endpoint, 0)) at Bootcache::insert",
+      "issue_pattern": "Missing empty string validation for endpoint (beast::IP::Endpoint)",
+      "why_false_positive": "m_map.insert(value_type(endpoint, 0)) validates endpoint (beast::IP::Endpoint) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "endpoint (beast::IP::Endpoint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_map.insert(value_type(endpoint, staticValence)) and valence comparison at Bootcache::insertStatic",
+      "issue_pattern": "Missing empty string validation for endpoint (beast::IP::Endpoint)",
+      "why_false_positive": "m_map.insert(value_type(endpoint, staticValence)) and valence comparison validates endpoint (beast::IP::Endpoint) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "endpoint (beast::IP::Endpoint)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "m_map.insert(value_type(endpoint, 1)) and valence update at Bootcache::on_success",
+      "issue_pattern": "Missing empty string validation for endpoint (beast::IP::Endpoint)",
+      "why_false_positive": "m_map.insert(value_type(endpoint, 1)) and valence update validates endpoint (beast::IP::Endpoint) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Bootcache.cpp",
+  "functions": [
+    {
+      "args": [
+        "Store& store",
+        "clock_type& clock",
+        "beast::Journal journal"
+      ],
+      "lineno": 9,
+      "name": "Bootcache"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "~Bootcache"
+    },
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "empty"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "cend"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "clear"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "load"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 72,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 83,
+      "name": "insertStatic"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 97,
+      "name": "on_success"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& endpoint"
+      ],
+      "lineno": 116,
+      "name": "on_failure"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "periodicActivity"
+    },
+    {
+      "args": [
+        "beast::PropertyStream::Map& map"
+      ],
+      "lineno": 142,
+      "name": "onWrite"
+    },
+    {
+      "args": [],
+      "lineno": 153,
+      "name": "prune"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "update"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "checkUpdate"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "flagForUpdate"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "The code is likely tested by PeerFinder and Bootcache unit/integration tests, typically found in files like test/peerfinder/Bootcache_test.cpp or test/peerfinder/PeerFinder_test.cpp. These would test insertion, loading, success/failure handling, and static insertion. However, edge cases such as duplicate endpoint insertion, valence boundary conditions, and concurrent modifications may not be fully covered unless explicitly tested. There is no evidence in this file of direct test hooks or assertions beyond XRPL_ASSERT, so test coverage depends on external test files.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.9,
+      "error_thrown": "None (logs error via JLOG if duplicate)",
+      "field": "endpoint (beast::IP::Endpoint)",
+      "location": "Bootcache::load",
+      "validated_by": "m_map.insert(value_type(endpoint, valence))",
+      "validates": [
+        "Ensures endpoint is not already present in m_map before insertion"
+      ],
+      "validation_type": "business_logic (duplicate check)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None",
+      "field": "endpoint (beast::IP::Endpoint)",
+      "location": "Bootcache::insert",
+      "validated_by": "m_map.insert(value_type(endpoint, 0))",
+      "validates": [
+        "Ensures endpoint is not already present in m_map before insertion"
+      ],
+      "validation_type": "business_logic (duplicate check)"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "None",
+      "field": "endpoint (beast::IP::Endpoint)",
+      "location": "Bootcache::insertStatic",
+      "validated_by": "m_map.insert(value_type(endpoint, staticValence)) and valence comparison",
+      "validates": [
+        "Ensures endpoint is not already present in m_map before insertion",
+        "If present, ensures valence is at least staticValence, otherwise replaces"
+      ],
+      "validation_type": "business_logic (duplicate check and valence threshold)"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None",
+      "field": "endpoint (beast::IP::Endpoint)",
+      "location": "Bootcache::on_success",
+      "validated_by": "m_map.insert(value_type(endpoint, 1)) and valence update",
+      "validates": [
+        "Ensures endpoint is not already present in m_map before insertion",
+        "If present, updates valence to be at least 0, then increments"
+      ],
+      "validation_type": "business_logic (duplicate check and valence update)"
+    }
+  ]
+}

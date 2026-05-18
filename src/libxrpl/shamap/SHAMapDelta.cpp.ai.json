@@ -1,0 +1,434 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMap::compare",
+        "SHAMap::walkBranch"
+      ],
+      "entry_point": "SHAMap::compare",
+      "purpose": "Compares two SHAMap trees, collecting differences up to a limit.",
+      "validation_points": [
+        "SHAMap::compare: XRPL_ASSERT(isValid() && otherMap.isValid())",
+        "SHAMap::walkBranch: safe_downcast<SHAMapInnerNode*>",
+        "SHAMap::walkBranch: safe_downcast<SHAMapLeafNode*>",
+        "SHAMap::walkBranch: --maxCount <= 0",
+        "SHAMap::walkBranch: !otherMapItem"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMap::walkBranch"
+      ],
+      "entry_point": "SHAMap::walkBranch",
+      "purpose": "Walks a branch of the SHAMap, comparing nodes/items to another map's item.",
+      "validation_points": [
+        "safe_downcast<SHAMapInnerNode*>",
+        "safe_downcast<SHAMapLeafNode*>",
+        "--maxCount <= 0",
+        "!otherMapItem"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "node (SHAMapTreeNode*)",
+      "flow": [
+        "function argument",
+        "pushed to nodeStack",
+        "popped and type-checked (isInner/isLeaf)",
+        "downcast via safe_downcast",
+        "used for traversal or item extraction"
+      ],
+      "origin": "Passed as argument to SHAMap::walkBranch",
+      "transformations": [
+        "Type-checked (isInner/isLeaf)",
+        "Downcast to SHAMapInnerNode* or SHAMapLeafNode*"
+      ],
+      "validated_at": "safe_downcast<SHAMapInnerNode*> or safe_downcast<SHAMapLeafNode*>"
+    },
+    {
+      "field": "otherMapItem (boost::intrusive_ptr<SHAMapItem const>)",
+      "flow": [
+        "function argument",
+        "checked for null (!otherMapItem)",
+        "compared to item->key() and item->slice()"
+      ],
+      "origin": "Passed as argument to SHAMap::walkBranch",
+      "transformations": [
+        "Null-checked",
+        "Compared for key and slice equality"
+      ],
+      "validated_at": "!otherMapItem"
+    },
+    {
+      "field": "maxCount (int&)",
+      "flow": [
+        "function argument",
+        "decremented (--maxCount) on each difference found",
+        "checked (--maxCount <= 0) to abort early"
+      ],
+      "origin": "Passed as argument to SHAMap::walkBranch (from SHAMap::compare)",
+      "transformations": [
+        "Decremented on each difference",
+        "Used as early exit condition"
+      ],
+      "validated_at": "--maxCount <= 0"
+    },
+    {
+      "field": "item (SHAMapItem::Ptr)",
+      "flow": [
+        "peekItem() from SHAMapLeafNode",
+        "compared to otherMapItem (key and slice)",
+        "inserted into differences map as needed"
+      ],
+      "origin": "Extracted from SHAMapLeafNode via peekItem()",
+      "transformations": [
+        "Compared for key and slice",
+        "Wrapped in DeltaRef for differences"
+      ],
+      "validated_at": "Indirectly via safe_downcast<SHAMapLeafNode*>"
+    }
+  ],
+  "description": "Implements functions for comparing, traversing, and finding differences or missing nodes in SHAMap (a specialized Merkle tree used in XRPL). Includes both sequential and parallel traversal for missing node detection.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "node (via safe_downcast)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field node (via safe_downcast) validated by C++ type system, safe_downcast, contract.h",
+      "issue_pattern": "Missing validation for node (via safe_downcast)",
+      "why_false_positive": "C++ type system, safe_downcast, contract.h validates node (via safe_downcast) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "maxCount (manual range check)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field maxCount (manual range check) validated by C++ type system, safe_downcast, contract.h",
+      "issue_pattern": "Missing validation for maxCount (manual range check)",
+      "why_false_positive": "C++ type system, safe_downcast, contract.h validates maxCount (manual range check) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "otherMapItem (null check)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field otherMapItem (null check) validated by C++ type system, safe_downcast, contract.h",
+      "issue_pattern": "Missing validation for otherMapItem (null check)",
+      "why_false_positive": "C++ type system, safe_downcast, contract.h validates otherMapItem (null check) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_downcast<SHAMapInnerNode*> at SHAMap::walkBranch",
+      "issue_pattern": "Missing empty string validation for node",
+      "why_false_positive": "safe_downcast<SHAMapInnerNode*> validates node for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "node",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_downcast<SHAMapInnerNode*> at SHAMap::walkBranch",
+      "issue_pattern": "Missing type validation for node",
+      "why_false_positive": "safe_downcast<SHAMapInnerNode*> validates node type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "node",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_downcast<SHAMapLeafNode*> at SHAMap::walkBranch",
+      "issue_pattern": "Missing empty string validation for node",
+      "why_false_positive": "safe_downcast<SHAMapLeafNode*> validates node for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "node",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_downcast<SHAMapLeafNode*> at SHAMap::walkBranch",
+      "issue_pattern": "Missing type validation for node",
+      "why_false_positive": "safe_downcast<SHAMapLeafNode*> validates node type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "maxCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual check (--maxCount <= 0) at SHAMap::walkBranch",
+      "issue_pattern": "Missing empty string validation for maxCount",
+      "why_false_positive": "manual check (--maxCount <= 0) validates maxCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "maxCount",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual check (--maxCount <= 0) at SHAMap::walkBranch",
+      "issue_pattern": "Missing range validation for maxCount",
+      "why_false_positive": "manual check (--maxCount <= 0) validates maxCount range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "otherMapItem",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "null check (!otherMapItem) at SHAMap::walkBranch",
+      "issue_pattern": "Missing empty string validation for otherMapItem",
+      "why_false_positive": "null check (!otherMapItem) validates otherMapItem for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapDelta.cpp",
+  "functions": [
+    {
+      "args": [
+        "node",
+        "otherMapItem",
+        "isFirstMap",
+        "differences",
+        "maxCount"
+      ],
+      "lineno": 15,
+      "name": "SHAMap::walkBranch"
+    },
+    {
+      "args": [
+        "otherMap",
+        "differences",
+        "maxCount"
+      ],
+      "lineno": 74,
+      "name": "SHAMap::compare"
+    },
+    {
+      "args": [
+        "missingNodes",
+        "maxMissing"
+      ],
+      "lineno": 168,
+      "name": "SHAMap::walkMap"
+    },
+    {
+      "args": [
+        "missingNodes",
+        "maxMissing"
+      ],
+      "lineno": 202,
+      "name": "SHAMap::walkMapParallel"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The core logic is likely tested in SHAMap unit tests, typically found in files like SHAMap_test.cpp or SHAMapDelta_test.cpp. These tests should cover tree comparison, difference detection, and edge cases (e.g., maxCount limits, empty branches, mismatched keys/slices). However, specific validation failures (e.g., invalid downcasts, corrupt trees, or missing nodes) may not be exhaustively tested, especially error paths involving exceptions or assertion failures. Tests for malformed input or intentional corruption may be limited or absent.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "node (via safe_downcast)",
+      "maxCount (manual range check)",
+      "otherMapItem (null check)"
+    ],
+    "framework": "C++ type system, safe_downcast, contract.h",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::bad_cast (via contract.h or safe_downcast)",
+      "field": "node",
+      "location": "SHAMap::walkBranch",
+      "validated_by": "safe_downcast<SHAMapInnerNode*>",
+      "validates": [
+        "Ensures node is SHAMapInnerNode* before treating as inner node"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::bad_cast (via contract.h or safe_downcast)",
+      "field": "node",
+      "location": "SHAMap::walkBranch",
+      "validated_by": "safe_downcast<SHAMapLeafNode*>",
+      "validates": [
+        "Ensures node is SHAMapLeafNode* before treating as leaf node"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "function returns false (not exception)",
+      "field": "maxCount",
+      "location": "SHAMap::walkBranch",
+      "validated_by": "manual check (--maxCount <= 0)",
+      "validates": [
+        "Ensures maxCount does not go below zero, aborts early if limit reached"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (handled as empty branch)",
+      "field": "otherMapItem",
+      "location": "SHAMap::walkBranch",
+      "validated_by": "null check (!otherMapItem)",
+      "validates": [
+        "Checks if otherMapItem is null to determine empty branch"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

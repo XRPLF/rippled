@@ -1,0 +1,685 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "checkFrozen(view, account, asset)",
+        "std::visit([&](auto const& issue) { return checkFrozen(view, account, issue); }, asset.value())",
+        "checkFrozen(view, account, Issue/MPTIssue)",
+        "isFrozen(view, account, Issue/MPTIssue)"
+      ],
+      "entry_point": "checkFrozen(ReadView const&, AccountID const&, Asset const&)",
+      "purpose": "Validates if an asset (of type Issue or MPTIssue) is frozen for a given account, returning a TER code.",
+      "validation_points": [
+        "isFrozen(view, account, Issue/MPTIssue) (core validation)",
+        "checkFrozen(view, account, Issue/MPTIssue) (returns error code if frozen)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isFrozen(view, account, asset, depth)",
+        "std::visit([&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value())",
+        "isFrozen(view, account, Issue/MPTIssue, depth)"
+      ],
+      "entry_point": "isFrozen(ReadView const&, AccountID const&, Asset const&, int)",
+      "purpose": "Checks if an asset is frozen for an account, possibly with recursion (depth).",
+      "validation_points": [
+        "isFrozen(view, account, Issue/MPTIssue, depth)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isAnyFrozen(view, accounts, asset, depth)",
+        "asset.visit([&](Issue const& issue) { ... }, [&](MPTIssue const& issue) { ... })",
+        "isAnyFrozen(view, accounts, Issue/MPTIssue, depth)",
+        "isFrozen(view, account, issue, depth) (inside loop)"
+      ],
+      "entry_point": "isAnyFrozen(ReadView const&, std::initializer_list<AccountID> const&, Asset const&, int)",
+      "purpose": "Checks if any account in a list has the asset frozen.",
+      "validation_points": [
+        "isFrozen(view, account, issue, depth)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isGlobalFrozen(view, asset)",
+        "asset.visit([&](Issue const& issue) { ... }, [&](MPTIssue const& issue) { ... })",
+        "isGlobalFrozen(view, issue.getIssuer()) / isGlobalFrozen(view, issue)"
+      ],
+      "entry_point": "isGlobalFrozen(ReadView const&, Asset const&)",
+      "purpose": "Checks if an asset is globally frozen (issuer-level or MPT-level).",
+      "validation_points": [
+        "isGlobalFrozen(view, issue.getIssuer())",
+        "isGlobalFrozen(view, issue)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isIndividualFrozen(view, account, asset)",
+        "std::visit([&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value())"
+      ],
+      "entry_point": "isIndividualFrozen(ReadView const&, AccountID const&, Asset const&)",
+      "purpose": "Checks if an asset is individually frozen for a specific account.",
+      "validation_points": [
+        "isIndividualFrozen(view, account, issue)"
+      ]
+    },
+    {
+      "call_chain": [
+        "isDeepFrozen(view, account, asset, depth)",
+        "std::visit([&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); }, asset.value())",
+        "isDeepFrozen(view, account, MPTIssue, depth) (for MPTIssue: just calls isFrozen)"
+      ],
+      "entry_point": "isDeepFrozen(ReadView const&, AccountID const&, Asset const&, int)",
+      "purpose": "Checks if an asset is 'deep frozen' (for MPTs, same as frozen).",
+      "validation_points": [
+        "isDeepFrozen(view, account, issue, depth)",
+        "isFrozen(view, account, mptIssue, depth)"
+      ]
+    },
+    {
+      "call_chain": [
+        "checkDeepFrozen(view, account, asset)",
+        "std::visit([&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value())",
+        "checkDeepFrozen(view, account, MPTIssue)",
+        "isDeepFrozen(view, account, mptIssue)"
+      ],
+      "entry_point": "checkDeepFrozen(ReadView const&, AccountID const&, Asset const&)",
+      "purpose": "Validates if an asset is deep frozen for an account, returning a TER code.",
+      "validation_points": [
+        "isDeepFrozen(view, account, mptIssue)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "Asset",
+      "flow": [
+        "Input to checkFrozen/isFrozen/isAnyFrozen/etc.",
+        "std::visit or .visit to extract Issue or MPTIssue",
+        "Passed to lower-level validation (isFrozen, isGlobalFrozen, etc.)"
+      ],
+      "origin": "Passed as function argument (from transaction context or ledger operation)",
+      "transformations": [
+        "Variant visitation to extract underlying Issue or MPTIssue"
+      ],
+      "validated_at": "isFrozen, isGlobalFrozen, isIndividualFrozen, isAnyFrozen, isDeepFrozen"
+    },
+    {
+      "field": "Issue",
+      "flow": [
+        "Input to isFrozen/isGlobalFrozen/isIndividualFrozen",
+        "Used to look up issuer/account in ledger via ReadView"
+      ],
+      "origin": "Extracted from Asset or passed directly",
+      "transformations": [
+        "May be constructed from Asset",
+        "Used to access issuer/account fields"
+      ],
+      "validated_at": "isFrozen, isGlobalFrozen, isIndividualFrozen"
+    },
+    {
+      "field": "MPTIssue",
+      "flow": [
+        "Input to isFrozen/isGlobalFrozen/isIndividualFrozen",
+        "Used to look up MPT issuer/account in ledger via ReadView"
+      ],
+      "origin": "Extracted from Asset or passed directly",
+      "transformations": [
+        "May be constructed from Asset",
+        "Used to access issuer/account fields"
+      ],
+      "validated_at": "isFrozen, isGlobalFrozen, isIndividualFrozen"
+    },
+    {
+      "field": "AccountID",
+      "flow": [
+        "Input to all validation functions",
+        "Used to check freeze status for specific account"
+      ],
+      "origin": "Passed as function argument (from transaction context or ledger operation)",
+      "transformations": [],
+      "validated_at": "isFrozen, isIndividualFrozen, isAnyFrozen, isDeepFrozen"
+    },
+    {
+      "field": "ReadView",
+      "flow": [
+        "Input to all validation functions",
+        "Used to look up account/asset state in ledger"
+      ],
+      "origin": "Passed as function argument (ledger state at a point in time)",
+      "transformations": [],
+      "validated_at": "Throughout all validation functions"
+    },
+    {
+      "field": "TER",
+      "flow": [
+        "Result of validation (tesSUCCESS, tecFROZEN, tecLOCKED)",
+        "Used by transaction engine to determine transaction result"
+      ],
+      "origin": "Returned from checkFrozen/checkDeepFrozen",
+      "transformations": [
+        "Set based on result of isFrozen/isDeepFrozen"
+      ],
+      "validated_at": "checkFrozen, checkDeepFrozen"
+    }
+  ],
+  "description": "Implements helper functions for token operations in the XRPL ledger, including freeze checks, account balance queries, trust line management, authorization, and money transfer logic for both IOUs and Multi-Party Tokens (MPTs).",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "asset (Asset), issue (Issue), mptIssue (MPTIssue)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isGlobalFrozen, isIndividualFrozen, isFrozen, checkFrozen, isAnyFrozen, isDeepFrozen at isGlobalFrozen, isIndividualFrozen, isFrozen, checkFrozen, isAnyFrozen, isDeepFrozen",
+      "issue_pattern": "Missing empty string validation for asset (Asset), issue (Issue), mptIssue (MPTIssue)",
+      "why_false_positive": "isGlobalFrozen, isIndividualFrozen, isFrozen, checkFrozen, isAnyFrozen, isDeepFrozen validates asset (Asset), issue (Issue), mptIssue (MPTIssue) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/TokenHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset",
+        "Asset const& asset2"
+      ],
+      "lineno": 13,
+      "name": "isLPTokenFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset"
+      ],
+      "lineno": 22,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset"
+      ],
+      "lineno": 28,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset",
+        "int depth"
+      ],
+      "lineno": 34,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Issue const& issue"
+      ],
+      "lineno": 40,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 46,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset"
+      ],
+      "lineno": 52,
+      "name": "checkFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "std::initializer_list<AccountID> const& accounts",
+        "Issue const& issue"
+      ],
+      "lineno": 58,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "std::initializer_list<AccountID> const& accounts",
+        "Asset const& asset",
+        "int depth"
+      ],
+      "lineno": 68,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue",
+        "int depth"
+      ],
+      "lineno": 75,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset",
+        "int depth"
+      ],
+      "lineno": 82,
+      "name": "isDeepFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue"
+      ],
+      "lineno": 89,
+      "name": "checkDeepFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset"
+      ],
+      "lineno": 95,
+      "name": "checkDeepFrozen"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Currency const& currency",
+        "AccountID const& issuer",
+        "FreezeHandling zeroIfFrozen",
+        "beast::Journal j"
+      ],
+      "lineno": 109,
+      "name": "getLineIfUsable"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "SLE::const_ref sle",
+        "AccountID const& account",
+        "Currency const& currency",
+        "AccountID const& issuer",
+        "bool includeOppositeLimit",
+        "beast::Journal j"
+      ],
+      "lineno": 143,
+      "name": "getTrustLineBalance"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Currency const& currency",
+        "AccountID const& issuer",
+        "FreezeHandling zeroIfFrozen",
+        "beast::Journal j",
+        "SpendableHandling includeFullBalance"
+      ],
+      "lineno": 170,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Issue const& issue",
+        "FreezeHandling zeroIfFrozen",
+        "beast::Journal j",
+        "SpendableHandling includeFullBalance"
+      ],
+      "lineno": 191,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "MPTIssue const& mptIssue",
+        "FreezeHandling zeroIfFrozen",
+        "AuthHandling zeroIfUnauthorized",
+        "beast::Journal j",
+        "SpendableHandling includeFullBalance"
+      ],
+      "lineno": 197,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& account",
+        "Asset const& asset",
+        "FreezeHandling zeroIfFrozen",
+        "AuthHandling zeroIfUnauthorized",
+        "beast::Journal j",
+        "SpendableHandling includeFullBalance"
+      ],
+      "lineno": 241,
+      "name": "accountHolds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& id",
+        "STAmount const& saDefault",
+        "FreezeHandling freezeHandling",
+        "beast::Journal j"
+      ],
+      "lineno": 255,
+      "name": "accountFunds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& id",
+        "STAmount const& saDefault",
+        "FreezeHandling freezeHandling",
+        "AuthHandling authHandling",
+        "beast::Journal j"
+      ],
+      "lineno": 267,
+      "name": "accountFunds"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STAmount const& amount"
+      ],
+      "lineno": 277,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Issue const& issue"
+      ],
+      "lineno": 285,
+      "name": "canAddHolding"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset"
+      ],
+      "lineno": 299,
+      "name": "canAddHolding"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& accountID",
+        "XRPAmount priorBalance",
+        "Asset const& asset",
+        "beast::Journal journal"
+      ],
+      "lineno": 307,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& accountID",
+        "Asset const& asset",
+        "beast::Journal journal"
+      ],
+      "lineno": 317,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset",
+        "AccountID const& account",
+        "AuthType authType"
+      ],
+      "lineno": 327,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "Asset const& asset",
+        "AccountID const& from",
+        "AccountID const& to"
+      ],
+      "lineno": 335,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "bool bCheckIssuer",
+        "beast::Journal j"
+      ],
+      "lineno": 347,
+      "name": "directSendNoFeeIOU"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "STAmount& saActual",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 426,
+      "name": "directSendNoLimitIOU"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& senderID",
+        "Issue const& issue",
+        "MultiplePaymentDestinations const& receivers",
+        "STAmount& actual",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 464,
+      "name": "directSendNoLimitMultiIOU"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 517,
+      "name": "accountSendIOU"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& senderID",
+        "Issue const& issue",
+        "MultiplePaymentDestinations const& receivers",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 577,
+      "name": "accountSendMultiIOU"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "beast::Journal j"
+      ],
+      "lineno": 634,
+      "name": "directSendNoFeeMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "STAmount& saActual",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee",
+        "AllowMPTOverflow allowOverflow"
+      ],
+      "lineno": 682,
+      "name": "directSendNoLimitMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& senderID",
+        "MPTIssue const& mptIssue",
+        "MultiplePaymentDestinations const& receivers",
+        "STAmount& actual",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 728,
+      "name": "directSendNoLimitMultiMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee",
+        "AllowMPTOverflow allowOverflow"
+      ],
+      "lineno": 803,
+      "name": "accountSendMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& senderID",
+        "MPTIssue const& mptIssue",
+        "MultiplePaymentDestinations const& receivers",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 818,
+      "name": "accountSendMultiMPT"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "bool bCheckIssuer",
+        "beast::Journal j"
+      ],
+      "lineno": 828,
+      "name": "directSendNoFee"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& uSenderID",
+        "AccountID const& uReceiverID",
+        "STAmount const& saAmount",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee",
+        "AllowMPTOverflow allowOverflow"
+      ],
+      "lineno": 838,
+      "name": "accountSend"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& senderID",
+        "Asset const& asset",
+        "MultiplePaymentDestinations const& receivers",
+        "beast::Journal j",
+        "WaiveTransferFee waiveFee"
+      ],
+      "lineno": 849,
+      "name": "accountSendMulti"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& from",
+        "AccountID const& to",
+        "STAmount const& amount",
+        "beast::Journal j"
+      ],
+      "lineno": 862,
+      "name": "transferXRP"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is primarily helper logic for freeze/lock validation. Test coverage is likely in integration/functional tests for asset freezing, such as in 'rippled' test suites: 'test/ledger/FrozenAssets_test.cpp', 'test/app/tx/Offer_test.cpp', 'test/app/tx/Payment_test.cpp', and possibly 'test/app/ledger/Token_test.cpp'. Direct unit tests for TokenHelpers.cpp may be limited; most coverage is indirect via transaction tests that exercise freezing/locking logic. Gaps may exist for edge cases (e.g., deep freeze, MPTIssue-specific logic, recursion via depth parameter).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "TER (tecFROZEN, tecLOCKED, tesSUCCESS)",
+      "field": "asset (Asset), issue (Issue), mptIssue (MPTIssue)",
+      "location": "isGlobalFrozen, isIndividualFrozen, isFrozen, checkFrozen, isAnyFrozen, isDeepFrozen",
+      "validated_by": "isGlobalFrozen, isIndividualFrozen, isFrozen, checkFrozen, isAnyFrozen, isDeepFrozen",
+      "validates": [
+        "Checks if an asset or issue is globally frozen",
+        "Checks if an asset or issue is individually frozen for an account",
+        "Checks if an asset or issue is frozen for an account (possibly recursively, via depth)",
+        "Checks if any account in a list is frozen for a given issue/asset",
+        "Returns error codes if frozen/locked"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

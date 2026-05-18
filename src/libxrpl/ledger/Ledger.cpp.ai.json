@@ -1,0 +1,803 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "create_genesis_t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SHAMap::const_iterator"
+      ],
+      "lineno": 13,
+      "name": "Ledger::sles_iter_impl"
+    },
+    {
+      "args": [
+        "bool",
+        "SHAMap::const_iterator"
+      ],
+      "lineno": 41,
+      "name": "Ledger::txs_iter_impl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Ledger::sles_iter_impl::equal",
+        "dynamic_cast<sles_iter_impl const*>(&impl)",
+        "operator== on SHAMap::const_iterator"
+      ],
+      "entry_point": "Ledger::sles_iter_impl::equal",
+      "purpose": "Checks if two sles_iter_impl iterators are equal (used for iteration/validation in SHAMap traversal)",
+      "validation_points": [
+        "dynamic_cast ensures impl is of correct type before comparing iterators"
+      ]
+    },
+    {
+      "call_chain": [
+        "Ledger::txs_iter_impl::equal",
+        "dynamic_cast<txs_iter_impl const*>(&impl)",
+        "operator== on SHAMap::const_iterator"
+      ],
+      "entry_point": "Ledger::txs_iter_impl::equal",
+      "purpose": "Checks if two txs_iter_impl iterators are equal (used for iteration/validation in SHAMap traversal)",
+      "validation_points": [
+        "dynamic_cast ensures impl is of correct type before comparing iterators"
+      ]
+    },
+    {
+      "call_chain": [
+        "Ledger::sles_iter_impl::dereference",
+        "SerialIter sit(iter_->slice())",
+        "std::make_shared<SLE const>(sit, iter_->key())"
+      ],
+      "entry_point": "Ledger::sles_iter_impl::dereference",
+      "purpose": "Dereferences the iterator to produce an SLE object from the SHAMap node",
+      "validation_points": [
+        "Implicit validation: SerialIter construction will throw if data is malformed"
+      ]
+    },
+    {
+      "call_chain": [
+        "Ledger::txs_iter_impl::dereference",
+        "if (metadata_) Ledger::deserializeTxPlusMeta(item) else Ledger::deserializeTx(item)"
+      ],
+      "entry_point": "Ledger::txs_iter_impl::dereference",
+      "purpose": "Dereferences the iterator to produce a transaction (and optionally metadata) from the SHAMap node",
+      "validation_points": [
+        "metadata_ is validated by constructor type system (bool)",
+        "SHAMap::const_iterator dereference is implicitly validated"
+      ]
+    },
+    {
+      "call_chain": [
+        "Ledger::Ledger",
+        "SHAMapType::TRANSACTION, SHAMapType::STATE (enum validation)",
+        "rawInsert(sle)"
+      ],
+      "entry_point": "Ledger::Ledger (constructor)",
+      "purpose": "Constructs a new Ledger, initializing SHAMaps and inserting genesis SLEs",
+      "validation_points": [
+        "SHAMapType is validated by enum type system",
+        "SLE construction validates field types"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "SHAMap::const_iterator iter_",
+      "flow": [
+        "SHAMap::const_iterator created by SHAMap traversal",
+        "Passed to sles_iter_impl/txs_iter_impl",
+        "Used in dereference() and equal()"
+      ],
+      "origin": "Passed into sles_iter_impl/txs_iter_impl constructors",
+      "transformations": [
+        "None (iterator is copied and incremented)"
+      ],
+      "validated_at": "dynamic_cast in equal(), dereference via SerialIter construction"
+    },
+    {
+      "field": "metadata_ (bool)",
+      "flow": [
+        "txs_iter_impl(bool metadata, SHAMap::const_iterator iter)",
+        "Stored as member",
+        "Used in dereference() to select deserialization path"
+      ],
+      "origin": "Passed to txs_iter_impl constructor",
+      "transformations": [
+        "None (bool flag)"
+      ],
+      "validated_at": "Constructor type system (bool)"
+    },
+    {
+      "field": "SHAMapType (enum)",
+      "flow": [
+        "Ledger::Ledger",
+        "SHAMapType::TRANSACTION, SHAMapType::STATE passed to SHAMap constructors",
+        "Used to distinguish between transaction and state maps"
+      ],
+      "origin": "Ledger constructor",
+      "transformations": [
+        "None (enum value)"
+      ],
+      "validated_at": "Enum type system"
+    },
+    {
+      "field": "SLE (Serialized Ledger Entry)",
+      "flow": [
+        "SerialIter constructed from SHAMap node slice",
+        "SLE constructed from SerialIter and key",
+        "Returned to caller"
+      ],
+      "origin": "Created in sles_iter_impl::dereference and Ledger::Ledger",
+      "transformations": [
+        "Deserialization from binary to SLE object"
+      ],
+      "validated_at": "SerialIter and SLE constructors (will throw on malformed data)"
+    }
+  ],
+  "description": "Implements the Ledger class for the XRPL, handling ledger state, transactions, fees, amendments, negative UNL, and related operations.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "metadata_ (bool)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field metadata_ (bool) validated by C++ type system, dynamic_cast, exception handling (RAII)",
+      "issue_pattern": "Missing validation for metadata_ (bool)",
+      "why_false_positive": "C++ type system, dynamic_cast, exception handling (RAII) validates metadata_ (bool) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SHAMapType (enum)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SHAMapType (enum) validated by C++ type system, dynamic_cast, exception handling (RAII)",
+      "issue_pattern": "Missing validation for SHAMapType (enum)",
+      "why_false_positive": "C++ type system, dynamic_cast, exception handling (RAII) validates SHAMapType (enum) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "SHAMap::const_iterator (type, but not range/validity)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field SHAMap::const_iterator (type, but not range/validity) validated by C++ type system, dynamic_cast, exception handling (RAII)",
+      "issue_pattern": "Missing validation for SHAMap::const_iterator (type, but not range/validity)",
+      "why_false_positive": "C++ type system, dynamic_cast, exception handling (RAII) validates SHAMap::const_iterator (type, but not range/validity) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dynamic_cast in equal() at sles_iter_impl::equal, txs_iter_impl::equal",
+      "issue_pattern": "Missing empty string validation for SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl)",
+      "why_false_positive": "dynamic_cast in equal() validates SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "dynamic_cast in equal() at sles_iter_impl::equal, txs_iter_impl::equal",
+      "issue_pattern": "Missing type validation for SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl)",
+      "why_false_positive": "dynamic_cast in equal() validates SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "SHAMap::const_iterator iter (for dereference)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit via dereference and SerialIter construction at sles_iter_impl::dereference, txs_iter_impl::dereference",
+      "issue_pattern": "Missing empty string validation for SHAMap::const_iterator iter (for dereference)",
+      "why_false_positive": "implicit via dereference and SerialIter construction validates SHAMap::const_iterator iter (for dereference) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "metadata_ (bool)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "constructor type system at txs_iter_impl::txs_iter_impl",
+      "issue_pattern": "Missing empty string validation for metadata_ (bool)",
+      "why_false_positive": "constructor type system validates metadata_ (bool) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "metadata_ (bool)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "constructor type system at txs_iter_impl::txs_iter_impl",
+      "issue_pattern": "Missing type validation for metadata_ (bool)",
+      "why_false_positive": "constructor type system validates metadata_ (bool) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SHAMapType enum (TRANSACTION, STATE)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "enum type system at Ledger::Ledger (constructor)",
+      "issue_pattern": "Missing empty string validation for SHAMapType enum (TRANSACTION, STATE)",
+      "why_false_positive": "enum type system validates SHAMapType enum (TRANSACTION, STATE) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SHAMapType enum (TRANSACTION, STATE)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "enum type system at Ledger::Ledger (constructor)",
+      "issue_pattern": "Missing type validation for SHAMapType enum (TRANSACTION, STATE)",
+      "why_false_positive": "enum type system validates SHAMapType enum (TRANSACTION, STATE) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/Ledger.cpp",
+  "functions": [
+    {
+      "args": [
+        "create_genesis_t",
+        "Rules const&",
+        "Fees const&",
+        "std::vector<uint256> const&",
+        "Family&"
+      ],
+      "lineno": 54,
+      "name": "Ledger::Ledger"
+    },
+    {
+      "args": [
+        "LedgerHeader const&",
+        "bool&",
+        "bool",
+        "Rules const&",
+        "Fees const&",
+        "Family&",
+        "beast::Journal"
+      ],
+      "lineno": 99,
+      "name": "Ledger::Ledger"
+    },
+    {
+      "args": [
+        "Ledger const&",
+        "NetClock::time_point"
+      ],
+      "lineno": 134,
+      "name": "Ledger::Ledger"
+    },
+    {
+      "args": [
+        "LedgerHeader const&",
+        "Rules const&",
+        "Family&"
+      ],
+      "lineno": 163,
+      "name": "Ledger::Ledger"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "NetClock::time_point",
+        "Rules const&",
+        "Fees const&",
+        "Family&"
+      ],
+      "lineno": 172,
+      "name": "Ledger::Ledger"
+    },
+    {
+      "args": [
+        "bool"
+      ],
+      "lineno": 184,
+      "name": "Ledger::setImmutable"
+    },
+    {
+      "args": [
+        "NetClock::time_point",
+        "NetClock::duration",
+        "bool"
+      ],
+      "lineno": 200,
+      "name": "Ledger::setAccepted"
+    },
+    {
+      "args": [
+        "SLE const&"
+      ],
+      "lineno": 210,
+      "name": "Ledger::addSLE"
+    },
+    {
+      "args": [
+        "SHAMapItem const&"
+      ],
+      "lineno": 217,
+      "name": "Ledger::deserializeTx"
+    },
+    {
+      "args": [
+        "SHAMapItem const&"
+      ],
+      "lineno": 222,
+      "name": "Ledger::deserializeTxPlusMeta"
+    },
+    {
+      "args": [
+        "Keylet const&"
+      ],
+      "lineno": 237,
+      "name": "Ledger::exists"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 243,
+      "name": "Ledger::exists"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::optional<uint256> const&"
+      ],
+      "lineno": 247,
+      "name": "Ledger::succ"
+    },
+    {
+      "args": [
+        "Keylet const&"
+      ],
+      "lineno": 255,
+      "name": "Ledger::read"
+    },
+    {
+      "args": [],
+      "lineno": 267,
+      "name": "Ledger::slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 272,
+      "name": "Ledger::slesEnd"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 277,
+      "name": "Ledger::slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 282,
+      "name": "Ledger::txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 287,
+      "name": "Ledger::txsEnd"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 292,
+      "name": "Ledger::txExists"
+    },
+    {
+      "args": [
+        "key_type const&"
+      ],
+      "lineno": 296,
+      "name": "Ledger::txRead"
+    },
+    {
+      "args": [
+        "key_type const&"
+      ],
+      "lineno": 308,
+      "name": "Ledger::digest"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const&"
+      ],
+      "lineno": 318,
+      "name": "Ledger::rawErase"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 323,
+      "name": "Ledger::rawErase"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const&"
+      ],
+      "lineno": 328,
+      "name": "Ledger::rawInsert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE> const&"
+      ],
+      "lineno": 335,
+      "name": "Ledger::rawReplace"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::shared_ptr<Serializer const> const&",
+        "std::shared_ptr<Serializer const> const&"
+      ],
+      "lineno": 342,
+      "name": "Ledger::rawTxInsert"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "std::shared_ptr<Serializer const> const&",
+        "std::shared_ptr<Serializer const> const&"
+      ],
+      "lineno": 353,
+      "name": "Ledger::rawTxInsertWithHash"
+    },
+    {
+      "args": [],
+      "lineno": 368,
+      "name": "Ledger::setup"
+    },
+    {
+      "args": [
+        "Keylet const&"
+      ],
+      "lineno": 426,
+      "name": "Ledger::peek"
+    },
+    {
+      "args": [],
+      "lineno": 434,
+      "name": "Ledger::negativeUNL"
+    },
+    {
+      "args": [],
+      "lineno": 453,
+      "name": "Ledger::validatorToDisable"
+    },
+    {
+      "args": [],
+      "lineno": 463,
+      "name": "Ledger::validatorToReEnable"
+    },
+    {
+      "args": [],
+      "lineno": 473,
+      "name": "Ledger::updateNegativeUNL"
+    },
+    {
+      "args": [
+        "beast::Journal",
+        "bool"
+      ],
+      "lineno": 504,
+      "name": "Ledger::walkLedger"
+    },
+    {
+      "args": [],
+      "lineno": 541,
+      "name": "Ledger::isSensible"
+    },
+    {
+      "args": [],
+      "lineno": 553,
+      "name": "Ledger::updateSkipList"
+    },
+    {
+      "args": [],
+      "lineno": 599,
+      "name": "Ledger::isFlagLedger"
+    },
+    {
+      "args": [],
+      "lineno": 602,
+      "name": "Ledger::isVotingLedger"
+    },
+    {
+      "args": [],
+      "lineno": 606,
+      "name": "Ledger::unshare"
+    },
+    {
+      "args": [],
+      "lineno": 611,
+      "name": "Ledger::invariants"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Ledger iteration and SHAMap traversal are typically tested in unit tests under 'src/test/ledger/' and 'src/test/shamap/'. Tests like Ledger_test.cpp, SHAMap_test.cpp, and Transaction_test.cpp cover iterator correctness, dereferencing, and error handling. However, dynamic_cast validation in equal() is rarely directly tested; most tests focus on iterator behavior and correctness, not explicit type safety. There may be limited or no tests that intentionally pass the wrong iterator type to equal() to test the dynamic_cast failure path. Also, implicit validation via SerialIter construction is only tested indirectly via deserialization tests; malformed data edge cases may not be exhaustively covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "metadata_ (bool)",
+      "SHAMapType (enum)",
+      "SHAMap::const_iterator (type, but not range/validity)"
+    ],
+    "framework": "C++ type system, dynamic_cast, exception handling (RAII)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if type mismatch)",
+      "field": "SHAMap::const_iterator iter (for sles_iter_impl and txs_iter_impl)",
+      "location": "sles_iter_impl::equal, txs_iter_impl::equal",
+      "validated_by": "dynamic_cast in equal()",
+      "validates": [
+        "Checks that the base_type reference is actually of the expected derived type before comparing iterators"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "likely std::exception or custom exception if iter_ is invalid or points to corrupt data",
+      "field": "SHAMap::const_iterator iter (for dereference)",
+      "location": "sles_iter_impl::dereference, txs_iter_impl::dereference",
+      "validated_by": "implicit via dereference and SerialIter construction",
+      "validates": [
+        "Assumes iter_ points to a valid SHAMap item",
+        "SerialIter expects valid serialized data",
+        "If not, construction of SLE or deserialization will throw"
+      ],
+      "validation_type": "type/format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time type error if not bool",
+      "field": "metadata_ (bool)",
+      "location": "txs_iter_impl::txs_iter_impl",
+      "validated_by": "constructor type system",
+      "validates": [
+        "metadata_ must be a boolean, enforced by constructor signature"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "compile-time type error if not valid enum",
+      "field": "SHAMapType enum (TRANSACTION, STATE)",
+      "location": "Ledger::Ledger (constructor)",
+      "validated_by": "enum type system",
+      "validates": [
+        "txMap_ and stateMap_ must be constructed with valid SHAMapType enum values"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

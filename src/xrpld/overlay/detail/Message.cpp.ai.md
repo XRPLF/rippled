@@ -1,0 +1,29 @@
+# `xrpld/overlay/detail/Message.cpp`
+
+## Role and Context
+
+`Message.cpp` implements the `Message` class — the fundamental unit of wire-format data exchanged between XRPL nodes in the peer-to-peer overlay network. Every protocol buffer message that travels over a peer connection passes through this class: it is constructed from a raw protobuf object, serialized into a length-typed byte buffer with a structured binary header, and optionally LZ4-compressed before transmission. Because a single `Message` may be broadcast to dozens of peers simultaneously, the class is designed for construction-once, read-many usage and handles concurrent access safely.
+
+## Buffer Layout and Header Format
+
+The wire format exists in two variants whose sizes differ by exactly 4 bytes. The uncompressed header is 6 bytes: 4 bytes encode the payload length (with the top nibble zeroed, leaving 28 effective bits, enough for the 64 MB maximum enforced by `maximumMessageSize`), followed by 2 bytes for the message type. The compressed header is 10 bytes: the same 4-byte length word but with the high bit set and bits 2–4 encoding the compression algorithm, 2 bytes for the message type, and a final 4 bytes carrying the original uncompressed size (needed by the receiver to pre-allocate a decompression buffer).
+
+`setHeader()` encodes this with a `pack` lambda that writes a 32-bit value in big-endian order, masking the top byte with `0x0F` to preserve the compression flag bits. After writing the size, the algorithm byte (e.g. `Algorithm::LZ4 = 0x90`, whose high bit and upper nibble encode the compression presence and algorithm ID) is OR'd into the first byte of the buffer via the saved pointer `h`. This two-pass approach — write size, then patch flags — keeps the logic clean while encoding both fields into the same 32-bit word.
+
+## Construction and Eager Serialization
+
+The constructor immediately serializes the protobuf message into `buffer_` at construction time. The layout is `[header | serialized payload]`, sized to exactly `headerBytes + messageBytes`. Two `XRPL_ASSERT` calls bracket the serialization: the first validates that `messageBytes` is nonzero (an empty protobuf message would be a protocol bug), and the second verifies that `buffer_.size()` equals `totalSize(message)` — confirming that buffer allocation and serialization agreed on the payload length. The `messageSize()` static helper abstracts the protobuf version difference between `ByteSize()` (returns `int`, risk of signed overflow on large payloads) and `ByteSizeLong()` (returns `size_t`, available from protobuf 3.11.0 onwards), guarded by a compile-time version check.
+
+The traffic category and optional validator public key are also captured at construction. `TrafficCount::categorize()` inspects the protobuf message content to classify it into one of many fine-grained categories (transaction, validation, proposal, ledger data, etc.). Storing the result in `category_` avoids re-inspection on every send; it is read freely by the peer layer via `getCategory()` to drive traffic accounting. The `validatorKey_` field stores the originating validator's public key for Validation and Proposal messages, enabling the squelch subsystem to suppress redundant rebroadcast to specific peers.
+
+## Lazy, Once-Only Compression
+
+Compression is deliberately deferred. `getBuffer(Compressed::On)` calls `std::call_once(once_flag_, &Message::compress, this)`, meaning the first peer connection to request a compressed form triggers compression, and all subsequent callers — potentially on different threads — receive the already-computed result. This is the central concurrency design: a single `Message` object is shared across all peers in a broadcast, and compression work is done once rather than once-per-peer.
+
+The `compress()` method applies a two-level eligibility filter. First, messages ≤70 bytes are unconditionally skipped — at that size, LZ4 overhead (the larger compressed header alone costs 4 extra bytes) cannot be recovered. Second, only a specific subset of message types are eligible: bulk data messages like `mtLEDGER_DATA`, `mtTRANSACTION`, `mtVALIDATOR_LIST`, `mtGET_LEDGER`, `mtREPLAY_DELTA_RESPONSE`, and `mtTRANSACTIONS`. Latency-sensitive control messages — `mtPING`, `mtPROPOSE_LEDGER`, `mtVALIDATION`, `mtSTATUS_CHANGE`, `mtHAVE_SET` — are excluded entirely. These tend to be small and time-critical; paying compression latency for them would be counterproductive.
+
+If the message type is eligible, `xrpl::compression::compress()` is called with a lambda buffer factory that pre-allocates `bufferCompressed_` including space for the `headerBytesCompressed` header. After compression, the actual gain is checked: if `compressedSize < (messageBytes - (headerBytesCompressed - headerBytes))` — that is, the compressed payload is smaller than the uncompressed payload minus the 4-byte header overhead — then `bufferCompressed_` is trimmed to the true size and a compressed header is written into it. Otherwise, `bufferCompressed_` is reset to zero length, and `getBuffer()` falls back to returning the uncompressed `buffer_`. This ensures callers always get the smaller of the two representations.
+
+## Relationship to the Overlay Send Path
+
+When a peer connection sends a message, it calls `getBuffer(Compressed::On)` or `getBuffer(Compressed::Off)` depending on whether compression was negotiated with that peer during handshake. The shared `Message` object thus amortizes both serialization and (if applicable) compression across an entire broadcast fan-out. The `getType()` static helper, which reads the message type from bytes 4–5 of a raw header pointer, is used internally during `compress()` to re-extract the type from the already-serialized `buffer_` rather than carrying the type as a separate field.

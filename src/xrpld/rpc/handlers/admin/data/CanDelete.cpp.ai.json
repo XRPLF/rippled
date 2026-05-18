@@ -1,0 +1,523 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doCanDelete"
+      ],
+      "entry_point": "doCanDelete",
+      "purpose": "Handles the 'can_delete' RPC command, validates and processes the can_delete parameter, and sets or gets the can_delete value in SHAMapStore.",
+      "validation_points": [
+        "if (!context.app.getSHAMapStore().advisoryDelete())",
+        "if (context.params.isMember(jss::can_delete))",
+        "if (canDelete.isUInt())",
+        "else { ... boost::to_lower ... canDeleteStr.find_first_not_of(\"0123456789\") ... }",
+        "else if (canDeleteStr == \"never\" / \"always\" / \"now\")",
+        "else if (uint256 lh; lh.parseHex(canDeleteStr))",
+        "else { return RPC::make_error(rpcINVALID_PARAMS); }"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "can_delete (RPC param)",
+      "flow": [
+        "context.params",
+        "context.params.get(jss::can_delete, 0)",
+        "canDelete (Json::Value)",
+        "if canDelete.isUInt() \u2192 canDelete.asUInt()",
+        "else \u2192 canDelete.asString() \u2192 boost::to_lower",
+        "if numeric string \u2192 beast::lexicalCast<uint32_t>",
+        "if 'never'/'always'/'now' \u2192 mapped to uint32_t",
+        "if hex \u2192 parseHex \u2192 getLedgerByHash \u2192 ledger->header().seq",
+        "context.app.getSHAMapStore().setCanDelete(canDeleteSeq)"
+      ],
+      "origin": "context.params (JSON input from RPC request)",
+      "transformations": [
+        "Type check (isUInt)",
+        "String conversion (asString, boost::to_lower)",
+        "Numeric check (find_first_not_of)",
+        "String to uint32_t (lexicalCast)",
+        "Special string mapping ('never', 'always', 'now')",
+        "Hex parsing (parseHex)",
+        "Ledger lookup (getLedgerByHash)",
+        "Ledger sequence extraction (ledger->header().seq)"
+      ],
+      "validated_at": [
+        "isMember(jss::can_delete)",
+        "isUInt()",
+        "find_first_not_of(\"0123456789\")",
+        "parseHex",
+        "ledger existence check",
+        "else { return RPC::make_error(rpcINVALID_PARAMS); }"
+      ]
+    },
+    {
+      "field": "canDeleteSeq",
+      "flow": [
+        "canDelete (Json::Value)",
+        "canDeleteSeq (uint32_t, via various transformations)",
+        "context.app.getSHAMapStore().setCanDelete(canDeleteSeq)",
+        "ret[jss::can_delete] = ... (output JSON)"
+      ],
+      "origin": "Derived from canDelete param (see above)",
+      "transformations": [
+        "Direct assignment (asUInt)",
+        "String to uint32_t (lexicalCast)",
+        "Special string mapping",
+        "Ledger sequence extraction"
+      ],
+      "validated_at": [
+        "All validation on canDelete param applies here"
+      ]
+    }
+  ],
+  "description": "Implements the doCanDelete RPC handler for the XRPL server, allowing querying or setting the can_delete ledger sequence for SHAMapStore ledger deletion advisory.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.app.getSHAMapStore().advisoryDelete() at doCanDelete (first line)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "context.app.getSHAMapStore().advisoryDelete() validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.params.isMember(jss::can_delete) at doCanDelete (if statement)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "context.params.isMember(jss::can_delete) validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDelete.isUInt() at doCanDelete (if branch)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDelete.isUInt() validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "can_delete",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "canDelete.isUInt() at doCanDelete (if branch)",
+      "issue_pattern": "Missing type validation for can_delete",
+      "why_false_positive": "canDelete.isUInt() validates can_delete type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDelete.asString() + boost::to_lower at doCanDelete (else branch)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDelete.asString() + boost::to_lower validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "can_delete",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "canDelete.asString() + boost::to_lower at doCanDelete (else branch)",
+      "issue_pattern": "Missing format validation for can_delete",
+      "why_false_positive": "canDelete.asString() + boost::to_lower validates can_delete format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDeleteStr.find_first_not_of(\"0123456789\") == std::string::npos at doCanDelete (string digit check)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDeleteStr.find_first_not_of(\"0123456789\") == std::string::npos validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "can_delete",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "canDeleteStr.find_first_not_of(\"0123456789\") == std::string::npos at doCanDelete (string digit check)",
+      "issue_pattern": "Missing format validation for can_delete",
+      "why_false_positive": "canDeleteStr.find_first_not_of(\"0123456789\") == std::string::npos validates can_delete format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::lexicalCast<std::uint32_t>(canDeleteStr) at doCanDelete (digit string branch)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "beast::lexicalCast<std::uint32_t>(canDeleteStr) validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDeleteStr == \"never\" at doCanDelete (string match)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDeleteStr == \"never\" validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDeleteStr == \"always\" at doCanDelete (string match)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDeleteStr == \"always\" validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "canDeleteStr == \"now\" at doCanDelete (string match)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "canDeleteStr == \"now\" validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uint256 lh; lh.parseHex(canDeleteStr) at doCanDelete (hex parse branch)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "uint256 lh; lh.parseHex(canDeleteStr) validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "can_delete",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "uint256 lh; lh.parseHex(canDeleteStr) at doCanDelete (hex parse branch)",
+      "issue_pattern": "Missing format validation for can_delete",
+      "why_false_positive": "uint256 lh; lh.parseHex(canDeleteStr) validates can_delete format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "can_delete",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "else (final else branch) at doCanDelete (final else)",
+      "issue_pattern": "Missing empty string validation for can_delete",
+      "why_false_positive": "else (final else branch) validates can_delete for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/data/CanDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 12,
+      "name": "doCanDelete"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The function is likely tested by RPC-level integration tests, especially those covering the 'can_delete' admin command. Tests should cover: missing param, numeric, string ('never', 'always', 'now'), invalid string, hex ledger hash (valid/invalid), and SHAMapStore advisoryDelete enabled/disabled. Gaps may exist if there are no tests for edge cases (e.g., very large numbers, malformed hex, non-existent ledgers, or SHAMapStore not ready). Test files may include: rpc-admin.test.cpp, SHAMapStore_test.cpp, or integration tests for ledger deletion. No explicit unit tests for this function are shown in the provided context.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC + jss:: (JSON field tags) + beast::lexicalCast",
+    "validation_layer": "business_logic (inside handler function, not at entry/middleware)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcNOT_ENABLED (via RPC::make_error)",
+      "field": "can_delete",
+      "location": "doCanDelete (first line)",
+      "validated_by": "context.app.getSHAMapStore().advisoryDelete()",
+      "validates": [
+        "advisory delete feature is enabled in SHAMapStore"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (optional field, no error)",
+      "field": "can_delete",
+      "location": "doCanDelete (if statement)",
+      "validated_by": "context.params.isMember(jss::can_delete)",
+      "validates": [
+        "checks if can_delete parameter is present"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (handled by else branch)",
+      "field": "can_delete",
+      "location": "doCanDelete (if branch)",
+      "validated_by": "canDelete.isUInt()",
+      "validates": [
+        "checks if can_delete is an unsigned integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (handled by further checks)",
+      "field": "can_delete",
+      "location": "doCanDelete (else branch)",
+      "validated_by": "canDelete.asString() + boost::to_lower",
+      "validates": [
+        "converts can_delete to lowercase string for further validation"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (handled by further checks)",
+      "field": "can_delete",
+      "location": "doCanDelete (string digit check)",
+      "validated_by": "canDeleteStr.find_first_not_of(\"0123456789\") == std::string::npos",
+      "validates": [
+        "checks if can_delete string contains only digits"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "exception if cast fails (not explicitly caught here)",
+      "field": "can_delete",
+      "location": "doCanDelete (digit string branch)",
+      "validated_by": "beast::lexicalCast<std::uint32_t>(canDeleteStr)",
+      "validates": [
+        "converts digit string to uint32_t"
+      ],
+      "validation_type": "type/format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "can_delete",
+      "location": "doCanDelete (string match)",
+      "validated_by": "canDeleteStr == \"never\"",
+      "validates": [
+        "checks if can_delete string is 'never'"
+      ],
+      "validation_type": "format/value"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "can_delete",
+      "location": "doCanDelete (string match)",
+      "validated_by": "canDeleteStr == \"always\"",
+      "validates": [
+        "checks if can_delete string is 'always'"
+      ],
+      "validation_type": "format/value"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcNOT_READY (via RPC::make_error) if getLastRotated() == 0u",
+      "field": "can_delete",
+      "location": "doCanDelete (string match)",
+      "validated_by": "canDeleteStr == \"now\"",
+      "validates": [
+        "checks if can_delete string is 'now' and if last rotated ledger is available"
+      ],
+      "validation_type": "format/value"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcLGR_NOT_FOUND (via RPC::make_error) if ledger not found",
+      "field": "can_delete",
+      "location": "doCanDelete (hex parse branch)",
+      "validated_by": "uint256 lh; lh.parseHex(canDeleteStr)",
+      "validates": [
+        "checks if can_delete string is a valid hex and matches a ledger hash"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcINVALID_PARAMS (via RPC::make_error)",
+      "field": "can_delete",
+      "location": "doCanDelete (final else)",
+      "validated_by": "else (final else branch)",
+      "validates": [
+        "catches all invalid can_delete values not matching any accepted format"
+      ],
+      "validation_type": "format/value"
+    }
+  ]
+}

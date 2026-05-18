@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "data"
+    },
+    {
+      "lineno": 27,
+      "name": "size"
+    },
+    {
+      "lineno": 44,
+      "name": "data"
+    },
+    {
+      "lineno": 44,
+      "name": "size"
+    },
+    {
+      "lineno": 61,
+      "name": "data"
+    },
+    {
+      "lineno": 61,
+      "name": "size"
+    },
+    {
+      "lineno": 89,
+      "name": "data"
+    },
+    {
+      "lineno": 89,
+      "name": "size"
+    },
+    {
+      "lineno": 120,
+      "name": "data"
+    },
+    {
+      "lineno": 120,
+      "name": "size"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "openssl_ripemd160_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "openssl_sha512_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "openssl_sha256_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "ripesha_hasher"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "basic_sha512_half_hasher"
+    }
+  ],
+  "description": "This file defines various cryptographic hashers and digest functions (RIPEMD-160, SHA-256, SHA-512, SHA512-Half, and combinations) used throughout the XRPL codebase, including secure and non-secure variants, and provides utility functions for hashing sequences of objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/digest.h",
+  "functions": [
+    {
+      "args": [
+        "args"
+      ],
+      "lineno": 143,
+      "name": "sha512Half"
+    },
+    {
+      "args": [
+        "args"
+      ],
+      "lineno": 157,
+      "name": "sha512Half_s"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 102,
+      "name": "detail"
+    }
+  ]
+}

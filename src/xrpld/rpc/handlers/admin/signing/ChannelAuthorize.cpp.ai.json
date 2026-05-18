@@ -1,0 +1,403 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doChannelAuthorize",
+        "RPC::keypairForSignature",
+        "sign"
+      ],
+      "entry_point": "doChannelAuthorize",
+      "purpose": "Handles the channel authorization signing request, validates input, derives keypair, signs message.",
+      "validation_points": [
+        "doChannelAuthorize: context.role and context.app.config().canSign() (server signing support)",
+        "doChannelAuthorize: params.isMember(jss::channel_id) (channel_id presence)",
+        "doChannelAuthorize: params.isMember(jss::amount) (amount presence)",
+        "doChannelAuthorize: params.isMember(jss::key_type) and params.isMember(jss::secret) (key/secret presence)",
+        "RPC::keypairForSignature: keypair/secret/key_type validation",
+        "doChannelAuthorize: channelId.parseHex (channel_id format)",
+        "doChannelAuthorize: to_uint64(params[jss::amount].asString()) (amount format)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "channel_id",
+      "flow": [
+        "context.params[jss::channel_id]",
+        "doChannelAuthorize: params.isMember(jss::channel_id) (presence check)",
+        "doChannelAuthorize: channelId.parseHex(params[jss::channel_id].asString()) (format check)",
+        "serializePayChanAuthorization(msg, channelId, ...)"
+      ],
+      "origin": "context.params[jss::channel_id] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence",
+        "Parsed from hex string to uint256"
+      ],
+      "validated_at": "doChannelAuthorize (presence and format)"
+    },
+    {
+      "field": "amount",
+      "flow": [
+        "context.params[jss::amount]",
+        "doChannelAuthorize: params.isMember(jss::amount) (presence check)",
+        "doChannelAuthorize: to_uint64(params[jss::amount].asString()) (format check)",
+        "serializePayChanAuthorization(msg, ..., XRPAmount(drops))"
+      ],
+      "origin": "context.params[jss::amount] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence",
+        "Parsed from string to uint64_t"
+      ],
+      "validated_at": "doChannelAuthorize (presence and format)"
+    },
+    {
+      "field": "secret / key_type",
+      "flow": [
+        "context.params[jss::secret], context.params[jss::key_type]",
+        "doChannelAuthorize: params.isMember(jss::key_type) and params.isMember(jss::secret) (presence check)",
+        "RPC::keypairForSignature(params, result, context.apiVersion) (validation and keypair derivation)"
+      ],
+      "origin": "context.params[jss::secret], context.params[jss::key_type] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence",
+        "Validated and used to derive keypair"
+      ],
+      "validated_at": "doChannelAuthorize (presence), RPC::keypairForSignature (validation)"
+    },
+    {
+      "field": "keypair (PublicKey, SecretKey)",
+      "flow": [
+        "RPC::keypairForSignature(params, result, context.apiVersion)",
+        "doChannelAuthorize: keyPair assignment",
+        "sign(pk, sk, msg.slice())"
+      ],
+      "origin": "Derived from secret/key_type via RPC::keypairForSignature",
+      "transformations": [
+        "Derived from input",
+        "Used for signing"
+      ],
+      "validated_at": "RPC::keypairForSignature"
+    },
+    {
+      "field": "signature",
+      "flow": [
+        "sign(pk, sk, msg.slice())",
+        "result[jss::signature] = strHex(buf)",
+        "Returned in JSON result"
+      ],
+      "origin": "Result of sign(pk, sk, msg.slice())",
+      "transformations": [
+        "Binary signature encoded as hex string"
+      ],
+      "validated_at": "N/A (output only)"
+    }
+  ],
+  "description": "Implements the doChannelAuthorize RPC handler for authorizing XRP payment channels by signing a claim with a provided secret key.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "role / server signing support",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "context.role and context.app.config().canSign() at doChannelAuthorize (first if statement)",
+      "issue_pattern": "Missing empty string validation for role / server signing support",
+      "why_false_positive": "context.role and context.app.config().canSign() validates role / server signing support for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "channel_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::channel_id) at doChannelAuthorize (for loop over required fields)",
+      "issue_pattern": "Missing empty string validation for channel_id",
+      "why_false_positive": "params.isMember(jss::channel_id) validates channel_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params.isMember(jss::amount) at doChannelAuthorize (for loop over required fields)",
+      "issue_pattern": "Missing empty string validation for amount",
+      "why_false_positive": "params.isMember(jss::amount) validates amount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "secret / key_type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!params.isMember(jss::key_type) && !params.isMember(jss::secret) at doChannelAuthorize (after required fields check)",
+      "issue_pattern": "Missing empty string validation for secret / key_type",
+      "why_false_positive": "!params.isMember(jss::key_type) && !params.isMember(jss::secret) validates secret / key_type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "keypair (secret, key_type, etc.)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::keypairForSignature at doChannelAuthorize (keypairForSignature call)",
+      "issue_pattern": "Missing empty string validation for keypair (secret, key_type, etc.)",
+      "why_false_positive": "RPC::keypairForSignature validates keypair (secret, key_type, etc.) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "channel_id (format)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "channelId.parseHex(params[jss::channel_id].asString()) at doChannelAuthorize (after keypair validation)",
+      "issue_pattern": "Missing empty string validation for channel_id (format)",
+      "why_false_positive": "channelId.parseHex(params[jss::channel_id].asString()) validates channel_id (format) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "channel_id (format)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "channelId.parseHex(params[jss::channel_id].asString()) at doChannelAuthorize (after keypair validation)",
+      "issue_pattern": "Missing format validation for channel_id (format)",
+      "why_false_positive": "channelId.parseHex(params[jss::channel_id].asString()) validates channel_id (format) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "amount (drops)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt at doChannelAuthorize (optDrops assignment)",
+      "issue_pattern": "Missing empty string validation for amount (drops)",
+      "why_false_positive": "params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt validates amount (drops) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/signing/ChannelAuthorize.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 17,
+      "name": "doChannelAuthorize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in the RPC integration or unit test suites, e.g., 'test/rpc/ChannelAuthorize_test.cpp', 'test/rpc/Sign_test.cpp', or similar. Tests should cover: missing/invalid channel_id, missing/invalid amount, missing/invalid secret/key_type, invalid keypair, malformed channel_id/amount, and successful signing. Gaps may exist if edge cases (e.g., malformed but present fields, unsupported key types, or exception handling in sign()) are not explicitly tested. No test files are referenced in this code, so coverage must be verified in the test suite.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss::, RPC::, etc.)",
+    "validation_layer": "business_logic (handler entry point)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::make_error(rpcNOT_SUPPORTED, ...)",
+      "field": "role / server signing support",
+      "location": "doChannelAuthorize (first if statement)",
+      "validated_by": "context.role and context.app.config().canSign()",
+      "validates": [
+        "Checks if user is ADMIN or server allows signing"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::channel_id)",
+      "field": "channel_id",
+      "location": "doChannelAuthorize (for loop over required fields)",
+      "validated_by": "params.isMember(jss::channel_id)",
+      "validates": [
+        "Checks if channel_id is present in params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::amount)",
+      "field": "amount",
+      "location": "doChannelAuthorize (for loop over required fields)",
+      "validated_by": "params.isMember(jss::amount)",
+      "validates": [
+        "Checks if amount is present in params"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::missing_field_error(jss::secret)",
+      "field": "secret / key_type",
+      "location": "doChannelAuthorize (after required fields check)",
+      "validated_by": "!params.isMember(jss::key_type) && !params.isMember(jss::secret)",
+      "validates": [
+        "Checks if secret is present if key_type is not specified"
+      ],
+      "validation_type": "presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Error returned in result (RPC::contains_error(result))",
+      "field": "keypair (secret, key_type, etc.)",
+      "location": "doChannelAuthorize (keypairForSignature call)",
+      "validated_by": "RPC::keypairForSignature",
+      "validates": [
+        "Validates secret/key_type format and compatibility",
+        "Checks key validity and type",
+        "Returns error if invalid"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcCHANNEL_MALFORMED)",
+      "field": "channel_id (format)",
+      "location": "doChannelAuthorize (after keypair validation)",
+      "validated_by": "channelId.parseHex(params[jss::channel_id].asString())",
+      "validates": [
+        "Checks if channel_id is valid 256-bit hex"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcCHANNEL_AMT_MALFORMED)",
+      "field": "amount (drops)",
+      "location": "doChannelAuthorize (optDrops assignment)",
+      "validated_by": "params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt",
+      "validates": [
+        "Checks if amount is a string",
+        "Checks if string can be parsed as uint64"
+      ],
+      "validation_type": "type|format"
+    }
+  ]
+}

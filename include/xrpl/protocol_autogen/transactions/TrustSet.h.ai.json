@@ -1,0 +1,154 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 116,
+      "name": "account"
+    },
+    {
+      "lineno": 117,
+      "name": "sequence"
+    },
+    {
+      "lineno": 118,
+      "name": "fee"
+    },
+    {
+      "lineno": 124,
+      "name": "tx"
+    },
+    {
+      "lineno": 137,
+      "name": "value"
+    },
+    {
+      "lineno": 146,
+      "name": "value"
+    },
+    {
+      "lineno": 155,
+      "name": "value"
+    },
+    {
+      "lineno": 164,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 164,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "TrustSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 111,
+      "name": "TrustSetBuilder"
+    }
+  ],
+  "description": "Provides an immutable wrapper and builder for the TrustSet transaction in the XRPL protocol, enabling type-safe field access and fluent transaction construction.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/TrustSet.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "TrustSet"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getLimitAmount"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "hasLimitAmount"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "getQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 76,
+      "name": "hasQualityIn"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "getQualityOut"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "hasQualityOut"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 116,
+      "name": "TrustSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 124,
+      "name": "TrustSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 136,
+      "name": "setLimitAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 145,
+      "name": "setQualityIn"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 154,
+      "name": "setQualityOut"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 163,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

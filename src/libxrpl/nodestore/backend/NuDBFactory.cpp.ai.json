@@ -1,0 +1,529 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "keyBytes"
+    },
+    {
+      "lineno": 27,
+      "name": "keyValues"
+    },
+    {
+      "lineno": 27,
+      "name": "burstSize"
+    },
+    {
+      "lineno": 27,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 27,
+      "name": "journal"
+    },
+    {
+      "lineno": 39,
+      "name": "context"
+    },
+    {
+      "lineno": 72,
+      "name": "createIfMissing"
+    },
+    {
+      "lineno": 72,
+      "name": "appType"
+    },
+    {
+      "lineno": 72,
+      "name": "uid"
+    },
+    {
+      "lineno": 72,
+      "name": "salt"
+    },
+    {
+      "lineno": 134,
+      "name": "hash"
+    },
+    {
+      "lineno": 134,
+      "name": "pno"
+    },
+    {
+      "lineno": 154,
+      "name": "hashes"
+    },
+    {
+      "lineno": 171,
+      "name": "no"
+    },
+    {
+      "lineno": 189,
+      "name": "batch"
+    },
+    {
+      "lineno": 202,
+      "name": "f"
+    },
+    {
+      "lineno": 257,
+      "name": "name"
+    },
+    {
+      "lineno": 292,
+      "name": "manager"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 18,
+      "name": "NuDBBackend"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 289,
+      "name": "NuDBFactory"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NuDBBackend::NuDBBackend",
+        "get(keyValues, \"path\")",
+        "parseBlockSize(name_, keyValues, journal)"
+      ],
+      "entry_point": "NuDBBackend::NuDBBackend",
+      "purpose": "Constructs a NuDBBackend instance, extracting configuration from keyValues and validating required fields.",
+      "validation_points": [
+        "Checks if name_ (path) is empty and throws if so.",
+        "parseBlockSize likely validates block size."
+      ]
+    },
+    {
+      "call_chain": [
+        "NuDBBackend::open",
+        "boost::filesystem::create_directories",
+        "nudb::create<nudb::xxhasher>",
+        "db_.open"
+      ],
+      "entry_point": "NuDBBackend::open",
+      "purpose": "Opens (and possibly creates) the NuDB database, validating file existence and database header.",
+      "validation_points": [
+        "Throws if database is already open.",
+        "Checks and throws on nudb::create error.",
+        "Checks and throws on db_.open error.",
+        "Checks db_.appnum() against expected appnum."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "name_",
+      "flow": [
+        "keyValues (input Section)",
+        "get(keyValues, \"path\")",
+        "name_ (member variable)",
+        "used in open() as folder path"
+      ],
+      "origin": "get(keyValues, \"path\")",
+      "transformations": [
+        "Direct assignment from config",
+        "Checked for emptiness in constructor"
+      ],
+      "validated_at": "NuDBBackend constructor (throws if empty)"
+    },
+    {
+      "field": "blockSize_",
+      "flow": [
+        "keyValues (input Section)",
+        "parseBlockSize",
+        "blockSize_ (member variable)",
+        "used in nudb::create"
+      ],
+      "origin": "parseBlockSize(name_, keyValues, journal)",
+      "transformations": [
+        "Parsed and possibly validated in parseBlockSize"
+      ],
+      "validated_at": "parseBlockSize (details not shown, but likely validates block size)"
+    },
+    {
+      "field": "db_",
+      "flow": [
+        "db_ (member variable)",
+        "db_.open in open()",
+        "db_.appnum() checked after open"
+      ],
+      "origin": "nudb::store db_",
+      "transformations": [
+        "Initialized in constructor",
+        "Opened in open()"
+      ],
+      "validated_at": "open() (checks is_open, error codes, appnum)"
+    }
+  ],
+  "description": "This file implements a NuDB backend for the XRPL NodeStore, providing persistent key-value storage using the NuDB database. It defines the NuDBBackend class for database operations and a NuDBFactory for backend instantiation and registration.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/backend/NuDBFactory.cpp",
+  "functions": [
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 27,
+      "name": "NuDBBackend"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "nudb::context& context",
+        "beast::Journal journal"
+      ],
+      "lineno": 39,
+      "name": "NuDBBackend"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "~NuDBBackend"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "getBlockSize"
+    },
+    {
+      "args": [
+        "bool createIfMissing",
+        "uint64_t appType",
+        "uint64_t uid",
+        "uint64_t salt"
+      ],
+      "lineno": 72,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "isOpen"
+    },
+    {
+      "args": [
+        "bool createIfMissing"
+      ],
+      "lineno": 113,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "close"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::shared_ptr<NodeObject>* pno"
+      ],
+      "lineno": 134,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& hashes"
+      ],
+      "lineno": 154,
+      "name": "fetchBatch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& no"
+      ],
+      "lineno": 171,
+      "name": "do_insert"
+    },
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& no"
+      ],
+      "lineno": 179,
+      "name": "store"
+    },
+    {
+      "args": [
+        "Batch const& batch"
+      ],
+      "lineno": 189,
+      "name": "storeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 199,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 202,
+      "name": "for_each"
+    },
+    {
+      "args": [],
+      "lineno": 227,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 232,
+      "name": "setDeletePath"
+    },
+    {
+      "args": [],
+      "lineno": 236,
+      "name": "verify"
+    },
+    {
+      "args": [],
+      "lineno": 252,
+      "name": "fdRequired"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "Section const& keyValues",
+        "beast::Journal journal"
+      ],
+      "lineno": 257,
+      "name": "parseBlockSize"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 292,
+      "name": "NuDBFactory"
+    },
+    {
+      "args": [],
+      "lineno": 296,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 300,
+      "name": "createInstance"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "nudb::context& context",
+        "beast::Journal journal"
+      ],
+      "lineno": 307,
+      "name": "createInstance"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 314,
+      "name": "registerNuDBFactory"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 15,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 16,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "NuDBBackend is a backend implementation for the NodeStore. Typical test coverage would be in integration tests for the NodeStore, possibly in files like 'NuDBBackend_test.cpp', 'NodeStore_test.cpp', or higher-level database/shard tests. The constructor's path validation and open()'s error handling are likely covered by tests that attempt to open with missing/invalid paths or corrupt files. However, edge cases such as file permission errors, partial file corruption, or concurrent open attempts may not be fully covered. LCOV_EXCL_START/STOP comments suggest some error paths are not covered by tests.",
+  "validation_architecture": {},
+  "validations": []
+}

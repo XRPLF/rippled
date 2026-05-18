@@ -1,0 +1,66 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "ValidMPTIssuance"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "ValidMPTPayment"
+    }
+  ],
+  "description": "Defines invariant check classes for MPT (Multi-Party Token) issuance and payment in the XRPL, ensuring internal consistency and validity of MPT-related ledger changes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/invariants/MPTInvariant.h",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 15,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 18,
+      "name": "finalize"
+    },
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const&",
+        "std::shared_ptr<SLE const> const&"
+      ],
+      "lineno": 41,
+      "name": "visitEntry"
+    },
+    {
+      "args": [
+        "STTx const&",
+        "TER const",
+        "XRPAmount const",
+        "ReadView const&",
+        "beast::Journal const&"
+      ],
+      "lineno": 44,
+      "name": "finalize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

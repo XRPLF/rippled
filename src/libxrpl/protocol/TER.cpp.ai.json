@@ -1,0 +1,153 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "transResults"
+      ],
+      "entry_point": "transResults",
+      "purpose": "Provides a mapping from TER (Transaction Engine Result) codes to their string tokens and human-readable descriptions. Used for interpreting transaction results.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "transResultInfo",
+        "transResults"
+      ],
+      "entry_point": "transResultInfo",
+      "purpose": "Given a TER code, retrieves the associated string token and description. Used to validate and interpret transaction result codes.",
+      "validation_points": [
+        "transResultInfo (checks if TER code exists in map)"
+      ]
+    },
+    {
+      "call_chain": [
+        "transToken",
+        "transResultInfo",
+        "transResults"
+      ],
+      "entry_point": "transToken",
+      "purpose": "Given a TER code, returns the string token (e.g., 'tecNO_DST'). Used for logging, error reporting, and validation feedback.",
+      "validation_points": [
+        "transResultInfo (validates TER code)"
+      ]
+    },
+    {
+      "call_chain": [
+        "transHuman",
+        "transResultInfo",
+        "transResults"
+      ],
+      "entry_point": "transHuman",
+      "purpose": "Given a TER code, returns the human-readable description. Used for user-facing error messages and validation feedback.",
+      "validation_points": [
+        "transResultInfo (validates TER code)"
+      ]
+    },
+    {
+      "call_chain": [
+        "transCode",
+        "transResults"
+      ],
+      "entry_point": "transCode",
+      "purpose": "Given a string token, returns the corresponding TER code. Used to validate string tokens and map them to internal codes.",
+      "validation_points": [
+        "transCode (validates string token exists in map)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "TER code (TERUnderlyingType)",
+      "flow": [
+        "Transaction processing",
+        "TER code produced",
+        "Passed to transResultInfo/transToken/transHuman",
+        "Mapped to string token and description"
+      ],
+      "origin": "Produced by transaction processing logic elsewhere in the codebase (e.g., after transaction execution)",
+      "transformations": [
+        "Looked up in transResults map",
+        "Converted to string token and description"
+      ],
+      "validated_at": "transResultInfo (checks if code exists in map)"
+    },
+    {
+      "field": "String token (e.g., 'tecNO_DST')",
+      "flow": [
+        "Input string token",
+        "Passed to transCode",
+        "Iterates transResults map to find matching token",
+        "Returns corresponding TER code"
+      ],
+      "origin": "Input to transCode (from user input, config, or test)",
+      "transformations": [
+        "String comparison",
+        "Mapping to TERUnderlyingType"
+      ],
+      "validated_at": "transCode (checks if token exists in map)"
+    }
+  ],
+  "description": "Provides mappings and utility functions for transaction engine result codes (TER) in the XRPL protocol, including human-readable descriptions and token lookups.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/TER.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "transResults"
+    },
+    {
+      "args": [
+        "code",
+        "token",
+        "text"
+      ],
+      "lineno": 143,
+      "name": "transResultInfo"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 157,
+      "name": "transToken"
+    },
+    {
+      "args": [
+        "code"
+      ],
+      "lineno": 166,
+      "name": "transHuman"
+    },
+    {
+      "args": [
+        "token"
+      ],
+      "lineno": 175,
+      "name": "transCode"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This file is a mapping utility and does not itself perform transaction validation, but is critical for interpreting validation results. Direct unit tests may exist in files like 'TER_test.cpp', 'protocol/TER_test.cpp', or higher-level transaction engine tests (e.g., 'TransactionEngine_test.cpp', 'Transactor_test.cpp'). Gaps may exist if: (1) not all TER codes are tested for mapping correctness, (2) string tokens/descriptions are not checked for accuracy, (3) invalid/unknown codes or tokens are not tested for error handling. Validation of actual transaction logic (producing TER codes) is outside this file and must be tested elsewhere.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

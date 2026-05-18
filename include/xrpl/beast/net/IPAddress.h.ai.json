@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "addr"
+    },
+    {
+      "lineno": 24,
+      "name": "addr"
+    },
+    {
+      "lineno": 30,
+      "name": "addr"
+    },
+    {
+      "lineno": 36,
+      "name": "addr"
+    },
+    {
+      "lineno": 42,
+      "name": "addr"
+    },
+    {
+      "lineno": 48,
+      "name": "addr"
+    },
+    {
+      "lineno": 56,
+      "name": "h"
+    },
+    {
+      "lineno": 56,
+      "name": "addr"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "hash"
+    }
+  ],
+  "description": "Provides utility functions and hashing support for IP addresses using Boost.Asio, including string conversion, address type checks, and hash integration.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/net/IPAddress.h",
+  "functions": [
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 18,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 24,
+      "name": "is_loopback"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 30,
+      "name": "is_unspecified"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 36,
+      "name": "is_multicast"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 42,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "addr"
+      ],
+      "lineno": 48,
+      "name": "is_public"
+    },
+    {
+      "args": [
+        "h",
+        "addr"
+      ],
+      "lineno": 56,
+      "name": "hash_append"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "IP"
+    },
+    {
+      "lineno": 69,
+      "name": "boost"
+    }
+  ]
+}

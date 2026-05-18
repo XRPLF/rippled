@@ -1,0 +1,36 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SHAMapType t, SHAMapHash const& hash",
+        "SHAMapType t, uint256 const& id"
+      ],
+      "lineno": 32,
+      "name": "SHAMapMissingNode"
+    }
+  ],
+  "description": "Defines SHAMapType enum for different SHAMap tree types, provides a utility to convert SHAMapType to string, and defines an exception class for missing SHAMap nodes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapMissingNode.h",
+  "functions": [
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 15,
+      "name": "to_string"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

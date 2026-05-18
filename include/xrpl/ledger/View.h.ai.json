@@ -1,0 +1,397 @@
+{
+  "args": [
+    {
+      "lineno": 33,
+      "name": "view"
+    },
+    {
+      "lineno": 33,
+      "name": "exp"
+    },
+    {
+      "lineno": 45,
+      "name": "view"
+    },
+    {
+      "lineno": 45,
+      "name": "account"
+    },
+    {
+      "lineno": 45,
+      "name": "mptShare"
+    },
+    {
+      "lineno": 45,
+      "name": "depth"
+    },
+    {
+      "lineno": 51,
+      "name": "view"
+    },
+    {
+      "lineno": 51,
+      "name": "account"
+    },
+    {
+      "lineno": 51,
+      "name": "asset"
+    },
+    {
+      "lineno": 51,
+      "name": "asset2"
+    },
+    {
+      "lineno": 54,
+      "name": "view"
+    },
+    {
+      "lineno": 59,
+      "name": "view"
+    },
+    {
+      "lineno": 73,
+      "name": "ledger"
+    },
+    {
+      "lineno": 73,
+      "name": "seq"
+    },
+    {
+      "lineno": 73,
+      "name": "journal"
+    },
+    {
+      "lineno": 92,
+      "name": "requested"
+    },
+    {
+      "lineno": 109,
+      "name": "validLedger"
+    },
+    {
+      "lineno": 109,
+      "name": "testLedger"
+    },
+    {
+      "lineno": 109,
+      "name": "s"
+    },
+    {
+      "lineno": 109,
+      "name": "reason"
+    },
+    {
+      "lineno": 116,
+      "name": "validHash"
+    },
+    {
+      "lineno": 116,
+      "name": "validIndex"
+    },
+    {
+      "lineno": 116,
+      "name": "testLedger"
+    },
+    {
+      "lineno": 116,
+      "name": "s"
+    },
+    {
+      "lineno": 116,
+      "name": "reason"
+    },
+    {
+      "lineno": 128,
+      "name": "view"
+    },
+    {
+      "lineno": 128,
+      "name": "owner"
+    },
+    {
+      "lineno": 128,
+      "name": "object"
+    },
+    {
+      "lineno": 128,
+      "name": "node"
+    },
+    {
+      "lineno": 140,
+      "name": "view"
+    },
+    {
+      "lineno": 140,
+      "name": "from"
+    },
+    {
+      "lineno": 140,
+      "name": "to"
+    },
+    {
+      "lineno": 140,
+      "name": "toSle"
+    },
+    {
+      "lineno": 140,
+      "name": "amount"
+    },
+    {
+      "lineno": 140,
+      "name": "hasDestinationTag"
+    },
+    {
+      "lineno": 155,
+      "name": "view"
+    },
+    {
+      "lineno": 155,
+      "name": "from"
+    },
+    {
+      "lineno": 155,
+      "name": "to"
+    },
+    {
+      "lineno": 155,
+      "name": "amount"
+    },
+    {
+      "lineno": 155,
+      "name": "hasDestinationTag"
+    },
+    {
+      "lineno": 170,
+      "name": "view"
+    },
+    {
+      "lineno": 170,
+      "name": "tx"
+    },
+    {
+      "lineno": 173,
+      "name": "view"
+    },
+    {
+      "lineno": 173,
+      "name": "tx"
+    },
+    {
+      "lineno": 173,
+      "name": "senderAcct"
+    },
+    {
+      "lineno": 173,
+      "name": "dstAcct"
+    },
+    {
+      "lineno": 173,
+      "name": "sourceAcct"
+    },
+    {
+      "lineno": 173,
+      "name": "priorBalance"
+    },
+    {
+      "lineno": 173,
+      "name": "amount"
+    },
+    {
+      "lineno": 173,
+      "name": "j"
+    },
+    {
+      "lineno": 192,
+      "name": "view"
+    },
+    {
+      "lineno": 192,
+      "name": "ownerDirKeylet"
+    },
+    {
+      "lineno": 192,
+      "name": "deleter"
+    },
+    {
+      "lineno": 192,
+      "name": "j"
+    },
+    {
+      "lineno": 192,
+      "name": "maxNodesToDelete"
+    },
+    {
+      "lineno": 207,
+      "name": "now"
+    },
+    {
+      "lineno": 207,
+      "name": "mark"
+    }
+  ],
+  "classes": [],
+  "description": "This file provides utility functions and types for working with the XRP Ledger, including expiration checks, amendment queries, ledger compatibility, withdrawal checks, and account deletion cleanup.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/View.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "exp"
+      ],
+      "lineno": 32,
+      "name": "hasExpired"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptShare",
+        "depth"
+      ],
+      "lineno": 44,
+      "name": "isVaultPseudoAccountFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "asset",
+        "asset2"
+      ],
+      "lineno": 50,
+      "name": "isLPTokenFrozen"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 53,
+      "name": "getEnabledAmendments"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 58,
+      "name": "getMajorityAmendments"
+    },
+    {
+      "args": [
+        "ledger",
+        "seq",
+        "journal"
+      ],
+      "lineno": 72,
+      "name": "hashOfSeq"
+    },
+    {
+      "args": [
+        "requested"
+      ],
+      "lineno": 91,
+      "name": "getCandidateLedger"
+    },
+    {
+      "args": [
+        "validLedger",
+        "testLedger",
+        "s",
+        "reason"
+      ],
+      "lineno": 108,
+      "name": "areCompatible"
+    },
+    {
+      "args": [
+        "validHash",
+        "validIndex",
+        "testLedger",
+        "s",
+        "reason"
+      ],
+      "lineno": 115,
+      "name": "areCompatible"
+    },
+    {
+      "args": [
+        "view",
+        "owner",
+        "object",
+        "node"
+      ],
+      "lineno": 127,
+      "name": "dirLink"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "toSle",
+        "amount",
+        "hasDestinationTag"
+      ],
+      "lineno": 139,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "from",
+        "to",
+        "amount",
+        "hasDestinationTag"
+      ],
+      "lineno": 154,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 169,
+      "name": "canWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "tx",
+        "senderAcct",
+        "dstAcct",
+        "sourceAcct",
+        "priorBalance",
+        "amount",
+        "j"
+      ],
+      "lineno": 172,
+      "name": "doWithdraw"
+    },
+    {
+      "args": [
+        "view",
+        "ownerDirKeylet",
+        "deleter",
+        "j",
+        "maxNodesToDelete"
+      ],
+      "lineno": 191,
+      "name": "cleanupOnAccountDelete"
+    },
+    {
+      "args": [
+        "now",
+        "mark"
+      ],
+      "lineno": 206,
+      "name": "after"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 19,
+      "name": "xrpl"
+    }
+  ]
+}

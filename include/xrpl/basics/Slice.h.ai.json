@@ -1,0 +1,86 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "void",
+        "Slice const&",
+        "void const*, std::size_t"
+      ],
+      "lineno": 16,
+      "name": "Slice"
+    }
+  ],
+  "description": "Defines the xrpl::Slice class, an immutable, non-owning, lightweight view over a linear range of bytes, along with related utility functions and operators for handling byte slices.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Slice.h",
+  "functions": [
+    {
+      "args": [
+        "Hasher& h",
+        "Slice const& v"
+      ],
+      "lineno": 98,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Slice const& lhs",
+        "Slice const& rhs"
+      ],
+      "lineno": 104,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "Slice const& lhs",
+        "Slice const& rhs"
+      ],
+      "lineno": 112,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "Slice const& lhs",
+        "Slice const& rhs"
+      ],
+      "lineno": 117,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "Stream& s",
+        "Slice const& v"
+      ],
+      "lineno": 124,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "std::array<T, N> const& a"
+      ],
+      "lineno": 131,
+      "name": "makeSlice"
+    },
+    {
+      "args": [
+        "std::vector<T, Alloc> const& v"
+      ],
+      "lineno": 137,
+      "name": "makeSlice"
+    },
+    {
+      "args": [
+        "std::basic_string<char, Traits, Alloc> const& s"
+      ],
+      "lineno": 143,
+      "name": "makeSlice"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ]
+}

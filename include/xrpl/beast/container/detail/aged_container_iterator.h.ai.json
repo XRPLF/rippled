@@ -1,0 +1,138 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "is_const"
+    },
+    {
+      "lineno": 13,
+      "name": "Iterator"
+    },
+    {
+      "lineno": 32,
+      "name": "other_is_const"
+    },
+    {
+      "lineno": 32,
+      "name": "OtherIterator"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "aged_ordered_container"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "aged_container_iterator"
+    }
+  ],
+  "description": "This file defines the aged_container_iterator template class, which provides an iterator for aged containers in the Beast library, supporting both const and non-const access and tracking the time point associated with each element. It is used internally by aged_ordered_container and potentially aged_unordered_container.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/detail/aged_container_iterator.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "aged_container_iterator"
+    },
+    {
+      "args": [
+        "aged_container_iterator<other_is_const, OtherIterator> const& other"
+      ],
+      "lineno": 32,
+      "name": "aged_container_iterator"
+    },
+    {
+      "args": [
+        "aged_container_iterator<other_is_const, Iterator> const& other"
+      ],
+      "lineno": 41,
+      "name": "aged_container_iterator"
+    },
+    {
+      "args": [
+        "aged_container_iterator<other_is_const, OtherIterator> const& other"
+      ],
+      "lineno": 49,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "aged_container_iterator<other_is_const, OtherIterator> const& other"
+      ],
+      "lineno": 57,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "aged_container_iterator<other_is_const, OtherIterator> const& other"
+      ],
+      "lineno": 63,
+      "name": "operator!="
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "operator++"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 75,
+      "name": "operator++"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "operator--"
+    },
+    {
+      "args": [
+        "int"
+      ],
+      "lineno": 88,
+      "name": "operator--"
+    },
+    {
+      "args": [],
+      "lineno": 95,
+      "name": "operator*"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "operator->"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "when"
+    },
+    {
+      "args": [
+        "OtherIterator const& iter"
+      ],
+      "lineno": 120,
+      "name": "aged_container_iterator"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "iterator"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "beast"
+    },
+    {
+      "lineno": 10,
+      "name": "detail"
+    }
+  ]
+}

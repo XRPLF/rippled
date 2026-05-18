@@ -1,0 +1,37 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "value"
+    },
+    {
+      "lineno": 17,
+      "name": "mul"
+    },
+    {
+      "lineno": 17,
+      "name": "div"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to perform multiplication and division in a single step with overflow checking, returning an optional result.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/mulDiv.h",
+  "functions": [
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 17,
+      "name": "mulDiv"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

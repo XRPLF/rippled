@@ -1,0 +1,25 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "T"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to obtain the demangled type name of a C++ type, including qualifiers and reference types, primarily for debugging or introspection purposes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/type_name.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "type_name"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    }
+  ]
+}

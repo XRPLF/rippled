@@ -1,0 +1,568 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "manager"
+    },
+    {
+      "lineno": 50,
+      "name": "path"
+    },
+    {
+      "lineno": 66,
+      "name": "manager"
+    },
+    {
+      "lineno": 77,
+      "name": "keyBytes"
+    },
+    {
+      "lineno": 77,
+      "name": "keyValues"
+    },
+    {
+      "lineno": 77,
+      "name": "journal"
+    },
+    {
+      "lineno": 109,
+      "name": "hash"
+    },
+    {
+      "lineno": 109,
+      "name": "pObject"
+    },
+    {
+      "lineno": 120,
+      "name": "hashes"
+    },
+    {
+      "lineno": 139,
+      "name": "object"
+    },
+    {
+      "lineno": 144,
+      "name": "batch"
+    },
+    {
+      "lineno": 152,
+      "name": "f"
+    },
+    {
+      "lineno": 172,
+      "name": "manager"
+    },
+    {
+      "lineno": 180,
+      "name": "keyBytes"
+    },
+    {
+      "lineno": 180,
+      "name": "keyValues"
+    },
+    {
+      "lineno": 180,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 180,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "MemoryDB"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 25,
+      "name": "MemoryFactory"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "beast::Journal journal"
+      ],
+      "lineno": 73,
+      "name": "MemoryBackend"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "MemoryFactory::createInstance",
+        "MemoryBackend::MemoryBackend",
+        "MemoryBackend::open"
+      ],
+      "entry_point": "MemoryFactory::createInstance",
+      "purpose": "Creates a new MemoryBackend instance, validates configuration, and opens the in-memory database.",
+      "validation_points": [
+        "MemoryBackend::MemoryBackend (validates 'path' from keyValues)",
+        "MemoryFactory::open (validates db_.open flag, throws if already open)",
+        "MemoryBackend::open (assigns db_ pointer, which is later validated by XRPL_ASSERT in fetch/store)"
+      ]
+    },
+    {
+      "call_chain": [
+        "MemoryBackend::fetch|store|fetchBatch|storeBatch",
+        "XRPL_ASSERT(db_, ...)"
+      ],
+      "entry_point": "MemoryBackend::fetch / store / fetchBatch / storeBatch",
+      "purpose": "Performs operations on the in-memory database, ensuring db_ is valid before access.",
+      "validation_points": [
+        "XRPL_ASSERT(db_, ...) in each method"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "name_ (MemoryBackend)",
+      "flow": [
+        "keyValues Section (input to createInstance)",
+        "get(keyValues, \"path\")",
+        "name_ field in MemoryBackend",
+        "used as argument to MemoryFactory::open in MemoryBackend::open"
+      ],
+      "origin": "get(keyValues, \"path\") in MemoryBackend::MemoryBackend",
+      "transformations": [
+        "Extracted from Section",
+        "Assigned to name_",
+        "Validated for non-empty"
+      ],
+      "validated_at": "MemoryBackend::MemoryBackend (throws if empty)"
+    },
+    {
+      "field": "db_ (MemoryBackend)",
+      "flow": [
+        "MemoryBackend::open",
+        "db_ assigned to MemoryDB*",
+        "Used in fetch/store/etc"
+      ],
+      "origin": "Assigned in MemoryBackend::open via memoryFactory->open(name_)",
+      "transformations": [
+        "Pointer assignment",
+        "Checked for null via XRPL_ASSERT before use"
+      ],
+      "validated_at": "XRPL_ASSERT in fetch/store/fetchBatch/storeBatch"
+    },
+    {
+      "field": "MemoryDB::open (bool)",
+      "flow": [
+        "MemoryFactory::open",
+        "Checks db.open before returning MemoryDB&"
+      ],
+      "origin": "MemoryDB instance in MemoryFactory::map_",
+      "transformations": [
+        "Checked for true (already open), throws if so"
+      ],
+      "validated_at": "MemoryFactory::open"
+    }
+  ],
+  "description": "This file implements an in-memory backend for the XRPL NodeStore, providing a MemoryBackend and MemoryFactory for storing and retrieving NodeObjects in memory, primarily for testing or ephemeral storage.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "path (from keyValues Section, used as name_)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in MemoryBackend constructor at MemoryBackend::MemoryBackend (constructor)",
+      "issue_pattern": "Missing empty string validation for path (from keyValues Section, used as name_)",
+      "why_false_positive": "explicit check in MemoryBackend constructor validates path (from keyValues Section, used as name_) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "db_.open (MemoryDB::open flag)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in MemoryFactory::open at MemoryFactory::open",
+      "issue_pattern": "Missing empty string validation for db_.open (MemoryDB::open flag)",
+      "why_false_positive": "explicit check in MemoryFactory::open validates db_.open (MemoryDB::open flag) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "db_ pointer (MemoryBackend internal pointer to MemoryDB)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at MemoryBackend::fetch",
+      "issue_pattern": "Missing empty string validation for db_ pointer (MemoryBackend internal pointer to MemoryDB)",
+      "why_false_positive": "XRPL_ASSERT macro validates db_ pointer (MemoryBackend internal pointer to MemoryDB) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "db_ pointer (MemoryBackend internal pointer to MemoryDB)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "XRPL_ASSERT macro at MemoryBackend::fetch",
+      "issue_pattern": "Missing type validation for db_ pointer (MemoryBackend internal pointer to MemoryDB)",
+      "why_false_positive": "XRPL_ASSERT macro validates db_ pointer (MemoryBackend internal pointer to MemoryDB) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/nodestore/backend/MemoryFactory.cpp",
+  "functions": [
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 38,
+      "name": "MemoryFactory"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t burstSize",
+        "Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 44,
+      "name": "createInstance"
+    },
+    {
+      "args": [
+        "std::string const& path"
+      ],
+      "lineno": 50,
+      "name": "open"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 66,
+      "name": "registerMemoryFactory"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "beast::Journal journal"
+      ],
+      "lineno": 77,
+      "name": "MemoryBackend"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "~MemoryBackend"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "bool"
+      ],
+      "lineno": 91,
+      "name": "open"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "isOpen"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "close"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::shared_ptr<NodeObject>* pObject"
+      ],
+      "lineno": 109,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "std::vector<uint256> const& hashes"
+      ],
+      "lineno": 120,
+      "name": "fetchBatch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<NodeObject> const& object"
+      ],
+      "lineno": 139,
+      "name": "store"
+    },
+    {
+      "args": [
+        "Batch const& batch"
+      ],
+      "lineno": 144,
+      "name": "storeBatch"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 152,
+      "name": "for_each"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [],
+      "lineno": 162,
+      "name": "setDeletePath"
+    },
+    {
+      "args": [],
+      "lineno": 166,
+      "name": "fdRequired"
+    },
+    {
+      "args": [
+        "Manager& manager"
+      ],
+      "lineno": 172,
+      "name": "MemoryFactory"
+    },
+    {
+      "args": [],
+      "lineno": 176,
+      "name": "getName"
+    },
+    {
+      "args": [
+        "size_t keyBytes",
+        "Section const& keyValues",
+        "std::size_t",
+        "Scheduler& scheduler",
+        "beast::Journal journal"
+      ],
+      "lineno": 180,
+      "name": "createInstance"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "NodeStore"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, tests for this code would be found in the XRPLF/rippled repository under test/nodestore/ or similar directories, possibly named MemoryBackend_test.cpp or Factory_test.cpp. The critical validation paths (missing path, already open, null db_) would need explicit tests. Gaps may exist if tests do not cover: (1) missing or empty 'path' in keyValues, (2) attempting to open the same path twice, (3) using fetch/store before open, (4) concurrent access to MemoryFactory or MemoryBackend. Review of the test suite is needed to confirm coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (explicit checks, XRPL_ASSERT macro, Throw<T> utility)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"Missing path in Memory backend\")",
+      "field": "path (from keyValues Section, used as name_)",
+      "location": "MemoryBackend::MemoryBackend (constructor)",
+      "validated_by": "explicit check in MemoryBackend constructor",
+      "validates": [
+        "Checks that the 'path' field (used as the backend name) is not empty"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (\"already open\")",
+      "field": "db_.open (MemoryDB::open flag)",
+      "location": "MemoryFactory::open",
+      "validated_by": "explicit check in MemoryFactory::open",
+      "validates": [
+        "Checks that the MemoryDB for a given path is not already open before opening"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws, depending on XRPL_ASSERT config)",
+      "field": "db_ pointer (MemoryBackend internal pointer to MemoryDB)",
+      "location": "MemoryBackend::fetch",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Checks that db_ is not null before accessing the database"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "ledger"
+    },
+    {
+      "lineno": 23,
+      "name": "ledgerHash"
+    },
+    {
+      "lineno": 23,
+      "name": "context"
+    },
+    {
+      "lineno": 41,
+      "name": "ledgerIndex"
+    },
+    {
+      "lineno": 59,
+      "name": "shortcut"
+    },
+    {
+      "lineno": 93,
+      "name": "result"
+    },
+    {
+      "lineno": 129,
+      "name": "specifier"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "ReadView"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "Transaction"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "JsonContext"
+    }
+  ],
+  "description": "This header file provides utility functions for retrieving and looking up ledgers in the XRPL (XRP Ledger) system, supporting both JSON and gRPC RPC contexts. It includes templated and non-templated functions for fetching ledgers by hash, index, shortcut, or specifier, and for returning ledger data or errors in various formats.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCLedgerHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "ledgerHash",
+        "context"
+      ],
+      "lineno": 23,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "ledgerIndex",
+        "context"
+      ],
+      "lineno": 41,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "shortcut",
+        "context"
+      ],
+      "lineno": 59,
+      "name": "getLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "context"
+      ],
+      "lineno": 77,
+      "name": "lookupLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "context",
+        "result"
+      ],
+      "lineno": 93,
+      "name": "lookupLedger"
+    },
+    {
+      "args": [
+        "ledger",
+        "context"
+      ],
+      "lineno": 111,
+      "name": "ledgerFromRequest"
+    },
+    {
+      "args": [
+        "ledger",
+        "specifier",
+        "context"
+      ],
+      "lineno": 129,
+      "name": "ledgerFromSpecifier"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 148,
+      "name": "getOrAcquireLedger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 14,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 19,
+      "name": "RPC"
+    }
+  ]
+}

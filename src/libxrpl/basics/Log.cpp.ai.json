@@ -1,0 +1,598 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::string const& partition",
+        "beast::severities::Severity thresh",
+        "Logs& logs"
+      ],
+      "lineno": 13,
+      "name": "Logs::Sink"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "Logs::File"
+    },
+    {
+      "args": [
+        "beast::severities::Severity thresh"
+      ],
+      "lineno": 77,
+      "name": "Logs"
+    },
+    {
+      "args": [],
+      "lineno": 263,
+      "name": "DebugSink"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "Logs::Sink::write",
+        "Logs::Sink::threshold()",
+        "Logs::Logs::write"
+      ],
+      "entry_point": "Logs::Sink::write",
+      "purpose": "Handles a log message for a given severity and partition; only writes if severity passes threshold.",
+      "validation_points": [
+        "Logs::Sink::write: level < threshold()"
+      ]
+    },
+    {
+      "call_chain": [
+        "Logs::File::open",
+        "std::ofstream::good"
+      ],
+      "entry_point": "Logs::File::open",
+      "purpose": "Opens a log file for writing; validates stream is good before using.",
+      "validation_points": [
+        "Logs::File::open: stream->good()"
+      ]
+    },
+    {
+      "call_chain": [
+        "Logs::File::write",
+        "m_stream != nullptr"
+      ],
+      "entry_point": "Logs::File::write",
+      "purpose": "Writes text to the log file if the file stream is valid.",
+      "validation_points": [
+        "Logs::File::write: m_stream != nullptr"
+      ]
+    },
+    {
+      "call_chain": [
+        "Logs::File::writeln",
+        "m_stream != nullptr"
+      ],
+      "entry_point": "Logs::File::writeln",
+      "purpose": "Writes a line to the log file if the file stream is valid.",
+      "validation_points": [
+        "Logs::File::writeln: m_stream != nullptr"
+      ]
+    },
+    {
+      "call_chain": [
+        "Logs::write",
+        "Logs::File::writeln"
+      ],
+      "entry_point": "Logs::write",
+      "purpose": "Formats and writes a log message to the file and possibly to stderr.",
+      "validation_points": [
+        "Logs::File::writeln: m_stream != nullptr"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "level (log severity)",
+      "flow": [
+        "Logs::Sink::write(level, text)",
+        "if (level < threshold()) return",
+        "logs_.write(level, partition_, text, console())"
+      ],
+      "origin": "Passed as argument to Logs::Sink::write",
+      "transformations": [
+        "Compared to threshold() to determine if message should be logged"
+      ],
+      "validated_at": "Logs::Sink::write"
+    },
+    {
+      "field": "m_stream (file stream pointer)",
+      "flow": [
+        "Logs::File::open: creates std::ofstream",
+        "if stream->good(), m_stream = stream",
+        "Logs::File::write/writeln: if (m_stream != nullptr) use m_stream"
+      ],
+      "origin": "Set in Logs::File::open if stream->good()",
+      "transformations": [
+        "Set to nullptr on close; set to valid stream on open"
+      ],
+      "validated_at": "Logs::File::write, Logs::File::writeln"
+    },
+    {
+      "field": "stream (std::unique_ptr<std::ofstream>)",
+      "flow": [
+        "Logs::File::open: new std::ofstream(path, app)",
+        "if stream->good(), m_stream = stream"
+      ],
+      "origin": "Created in Logs::File::open",
+      "transformations": [
+        "Checked for good() before assignment"
+      ],
+      "validated_at": "Logs::File::open"
+    },
+    {
+      "field": "partition (log partition name)",
+      "flow": [
+        "Logs::Sink::write: partition_ member",
+        "Logs::Logs::write: used in format()"
+      ],
+      "origin": "Passed to Logs::Sink::Sink and Logs::Sink::write",
+      "transformations": [
+        "Used as a label in log formatting"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "text (log message)",
+      "flow": [
+        "Logs::Sink::write: text",
+        "Logs::Logs::write: text",
+        "Logs::Logs::format: s, text, level, partition",
+        "Logs::File::writeln: s"
+      ],
+      "origin": "Passed to Logs::Sink::write",
+      "transformations": [
+        "Formatted with severity and partition"
+      ],
+      "validated_at": "No explicit validation"
+    }
+  ],
+  "description": "This file implements logging functionality for the XRPL project, including log sinks, file logging, log severity management, log formatting, and debug log handling. It provides mechanisms to write logs to files and the console, manage log severity thresholds, redact sensitive information from logs, and handle debug log sinks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "level (log severity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "comparison with threshold() at Logs::Sink::write",
+      "issue_pattern": "Missing empty string validation for level (log severity)",
+      "why_false_positive": "comparison with threshold() validates level (log severity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_stream (file stream pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "nullptr check at Logs::File::write, Logs::File::writeln, Logs::File::isOpen",
+      "issue_pattern": "Missing empty string validation for m_stream (file stream pointer)",
+      "why_false_positive": "nullptr check validates m_stream (file stream pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "stream (ofstream pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "stream->good() at Logs::File::open",
+      "issue_pattern": "Missing empty string validation for stream (ofstream pointer)",
+      "why_false_positive": "stream->good() validates stream (ofstream pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "file handle",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::ofstream",
+      "issue_pattern": "Missing file handle cleanup",
+      "why_false_positive": "std::ofstream provides automatic file handle cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/Log.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::string const& partition",
+        "beast::severities::Severity thresh",
+        "Logs& logs"
+      ],
+      "lineno": 15,
+      "name": "Logs::Sink::Sink"
+    },
+    {
+      "args": [
+        "beast::severities::Severity level",
+        "std::string const& text"
+      ],
+      "lineno": 21,
+      "name": "Logs::Sink::write"
+    },
+    {
+      "args": [
+        "beast::severities::Severity level",
+        "std::string const& text"
+      ],
+      "lineno": 28,
+      "name": "Logs::Sink::writeAlways"
+    },
+    {
+      "args": [],
+      "lineno": 35,
+      "name": "Logs::File::File"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "Logs::File::isOpen"
+    },
+    {
+      "args": [
+        "boost::filesystem::path const& path"
+      ],
+      "lineno": 43,
+      "name": "Logs::File::open"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "Logs::File::closeAndReopen"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "Logs::File::close"
+    },
+    {
+      "args": [
+        "char const* text"
+      ],
+      "lineno": 65,
+      "name": "Logs::File::write"
+    },
+    {
+      "args": [
+        "char const* text"
+      ],
+      "lineno": 70,
+      "name": "Logs::File::writeln"
+    },
+    {
+      "args": [
+        "beast::severities::Severity thresh"
+      ],
+      "lineno": 78,
+      "name": "Logs::Logs"
+    },
+    {
+      "args": [
+        "boost::filesystem::path const& pathToLogFile"
+      ],
+      "lineno": 81,
+      "name": "Logs::open"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 85,
+      "name": "Logs::get"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 91,
+      "name": "Logs::operator[]"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 95,
+      "name": "Logs::journal"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "Logs::threshold"
+    },
+    {
+      "args": [
+        "beast::severities::Severity thresh"
+      ],
+      "lineno": 103,
+      "name": "Logs::threshold"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "Logs::partition_severities"
+    },
+    {
+      "args": [
+        "beast::severities::Severity level",
+        "std::string const& partition",
+        "std::string const& text",
+        "bool console"
+      ],
+      "lineno": 120,
+      "name": "Logs::write"
+    },
+    {
+      "args": [],
+      "lineno": 132,
+      "name": "Logs::rotate"
+    },
+    {
+      "args": [
+        "std::string const& name",
+        "beast::severities::Severity threshold"
+      ],
+      "lineno": 139,
+      "name": "Logs::makeSink"
+    },
+    {
+      "args": [
+        "beast::severities::Severity level"
+      ],
+      "lineno": 143,
+      "name": "Logs::fromSeverity"
+    },
+    {
+      "args": [
+        "LogSeverity level"
+      ],
+      "lineno": 163,
+      "name": "Logs::toSeverity"
+    },
+    {
+      "args": [
+        "LogSeverity s"
+      ],
+      "lineno": 183,
+      "name": "Logs::toString"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 202,
+      "name": "Logs::fromString"
+    },
+    {
+      "args": [
+        "std::string& output",
+        "std::string const& message",
+        "beast::severities::Severity severity",
+        "std::string const& partition"
+      ],
+      "lineno": 218,
+      "name": "Logs::format"
+    },
+    {
+      "args": [],
+      "lineno": 265,
+      "name": "DebugSink::DebugSink"
+    },
+    {
+      "args": [
+        "DebugSink const&"
+      ],
+      "lineno": 270,
+      "name": "DebugSink::DebugSink"
+    },
+    {
+      "args": [
+        "DebugSink const&"
+      ],
+      "lineno": 271,
+      "name": "DebugSink::operator="
+    },
+    {
+      "args": [
+        "DebugSink&&"
+      ],
+      "lineno": 273,
+      "name": "DebugSink::DebugSink"
+    },
+    {
+      "args": [
+        "DebugSink&&"
+      ],
+      "lineno": 274,
+      "name": "DebugSink::operator="
+    },
+    {
+      "args": [
+        "std::unique_ptr<beast::Journal::Sink> sink"
+      ],
+      "lineno": 276,
+      "name": "DebugSink::set"
+    },
+    {
+      "args": [],
+      "lineno": 289,
+      "name": "DebugSink::get"
+    },
+    {
+      "args": [],
+      "lineno": 296,
+      "name": "debugSink"
+    },
+    {
+      "args": [
+        "std::unique_ptr<beast::Journal::Sink> sink"
+      ],
+      "lineno": 302,
+      "name": "setDebugLogSink"
+    },
+    {
+      "args": [],
+      "lineno": 307,
+      "name": "debugLog"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic file handle cleanup",
+        "false_positive_risk": "Missing file handle cleanup",
+        "resource": "file handle",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::ofstream"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, logging code is tested via integration or system tests, not unit tests, due to side effects (file I/O, console output). Possible test files: test/log_test.cpp, test/logs_test.cpp, or integration tests that check log file creation and contents. Gaps: No explicit tests for validation logic (e.g., threshold filtering, file stream validity). Edge cases like file open failures, null streams, or invalid severity levels may not be directly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual validation, standard library checks)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return)",
+      "field": "level (log severity)",
+      "location": "Logs::Sink::write",
+      "validated_by": "comparison with threshold()",
+      "validates": [
+        "level is at least threshold severity"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (early return or boolean result)",
+      "field": "m_stream (file stream pointer)",
+      "location": "Logs::File::write, Logs::File::writeln, Logs::File::isOpen",
+      "validated_by": "nullptr check",
+      "validates": [
+        "file stream is open before writing"
+      ],
+      "validation_type": "type/presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if not good)",
+      "field": "stream (ofstream pointer)",
+      "location": "Logs::File::open",
+      "validated_by": "stream->good()",
+      "validates": [
+        "file stream is valid after opening"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

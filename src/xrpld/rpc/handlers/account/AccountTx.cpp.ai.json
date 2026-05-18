@@ -1,0 +1,490 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "context"
+    },
+    {
+      "lineno": 19,
+      "name": "params"
+    },
+    {
+      "lineno": 74,
+      "name": "ledgerSpecifier"
+    },
+    {
+      "lineno": 130,
+      "name": "args"
+    },
+    {
+      "lineno": 186,
+      "name": "res"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doAccountTx",
+        "parseLedgerArgs",
+        "getLedgerRange",
+        "populateJsonResponse"
+      ],
+      "entry_point": "doAccountTx",
+      "purpose": "Handles the account_tx RPC command, parses and validates ledger arguments, fetches transactions, and formats the response.",
+      "validation_points": [
+        "parseLedgerArgs (validates ledger_index_min, ledger_index_max, ledger_hash, ledger_index)"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseLedgerArgs"
+      ],
+      "entry_point": "parseLedgerArgs",
+      "purpose": "Parses and validates ledger-related arguments from the RPC request parameters.",
+      "validation_points": [
+        "Explicit if statements for mutual exclusion and type/range checks on ledger_index_min, ledger_index_max, ledger_hash, ledger_index"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger_index_min",
+      "flow": [
+        "params[jss::ledger_index_min]",
+        "parseLedgerArgs",
+        "min (local variable)",
+        "LedgerRange{min, max}",
+        "LedgerSpecifier"
+      ],
+      "origin": "params[jss::ledger_index_min] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for non-negative (asInt() >= 0)",
+        "Converted to unsigned (asUInt())"
+      ],
+      "validated_at": "parseLedgerArgs"
+    },
+    {
+      "field": "ledger_index_max",
+      "flow": [
+        "params[jss::ledger_index_max]",
+        "parseLedgerArgs",
+        "max (local variable)",
+        "LedgerRange{min, max}",
+        "LedgerSpecifier"
+      ],
+      "origin": "params[jss::ledger_index_max] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for non-negative (asInt() >= 0)",
+        "Converted to unsigned (asUInt())"
+      ],
+      "validated_at": "parseLedgerArgs"
+    },
+    {
+      "field": "ledger_hash",
+      "flow": [
+        "params[jss::ledger_hash]",
+        "parseLedgerArgs",
+        "hashValue (local variable)",
+        "LedgerHash hash",
+        "hash.parseHex(hashValue.asString())",
+        "LedgerSpecifier"
+      ],
+      "origin": "params[jss::ledger_hash] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "Checked for string type (isString())",
+        "Parsed as hex (parseHex())"
+      ],
+      "validated_at": "parseLedgerArgs"
+    },
+    {
+      "field": "ledger_index",
+      "flow": [
+        "params[jss::ledger_index]",
+        "parseLedgerArgs",
+        "ledger (local variable)",
+        "LedgerSpecifier"
+      ],
+      "origin": "params[jss::ledger_index] (JSON RPC input)",
+      "transformations": [
+        "Checked for presence (isMember)",
+        "If numeric: asUInt()",
+        "If string: compared to known values ('current', 'closed', 'validated')"
+      ],
+      "validated_at": "parseLedgerArgs"
+    }
+  ],
+  "description": "Implements the account_tx RPC handler for querying transactions related to a specific account, including ledger range parsing, result formatting, and pagination support.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        [
+          "ledger_index_min",
+          "ledger_index_max",
+          "ledger_hash",
+          "ledger_index"
+        ],
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit logic (if statements) at parseLedgerArgs",
+      "issue_pattern": "Missing empty string validation for ['ledger_index_min', 'ledger_index_max', 'ledger_hash', 'ledger_index']",
+      "why_false_positive": "explicit logic (if statements) validates ['ledger_index_min', 'ledger_index_max', 'ledger_hash', 'ledger_index'] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_index_min",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::ledger_index_min].asInt() >= 0 at parseLedgerArgs",
+      "issue_pattern": "Missing empty string validation for ledger_index_min",
+      "why_false_positive": "params[jss::ledger_index_min].asInt() >= 0 validates ledger_index_min for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger_index_min",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "params[jss::ledger_index_min].asInt() >= 0 at parseLedgerArgs",
+      "issue_pattern": "Missing range validation for ledger_index_min",
+      "why_false_positive": "params[jss::ledger_index_min].asInt() >= 0 validates ledger_index_min range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_index_max",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::ledger_index_max].asInt() >= 0 at parseLedgerArgs",
+      "issue_pattern": "Missing empty string validation for ledger_index_max",
+      "why_false_positive": "params[jss::ledger_index_max].asInt() >= 0 validates ledger_index_max for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger_index_max",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "params[jss::ledger_index_max].asInt() >= 0 at parseLedgerArgs",
+      "issue_pattern": "Missing range validation for ledger_index_max",
+      "why_false_positive": "params[jss::ledger_index_max].asInt() >= 0 validates ledger_index_max range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hashValue.isString() at parseLedgerArgs",
+      "issue_pattern": "Missing empty string validation for ledger_hash",
+      "why_false_positive": "hashValue.isString() validates ledger_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger_hash",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "hashValue.isString() at parseLedgerArgs",
+      "issue_pattern": "Missing type validation for ledger_hash",
+      "why_false_positive": "hashValue.isString() validates ledger_hash type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger_hash",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "hash.parseHex(hashValue.asString()) at parseLedgerArgs",
+      "issue_pattern": "Missing empty string validation for ledger_hash",
+      "why_false_positive": "hash.parseHex(hashValue.asString()) validates ledger_hash for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger_hash",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "hash.parseHex(hashValue.asString()) at parseLedgerArgs",
+      "issue_pattern": "Missing format validation for ledger_hash",
+      "why_false_positive": "hash.parseHex(hashValue.asString()) validates ledger_hash format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/account/AccountTx.cpp",
+  "functions": [
+    {
+      "args": [
+        "context",
+        "params"
+      ],
+      "lineno": 19,
+      "name": "parseLedgerArgs"
+    },
+    {
+      "args": [
+        "context",
+        "ledgerSpecifier"
+      ],
+      "lineno": 74,
+      "name": "getLedgerRange"
+    },
+    {
+      "args": [
+        "context",
+        "args"
+      ],
+      "lineno": 130,
+      "name": "doAccountTxHelp"
+    },
+    {
+      "args": [
+        "res",
+        "args",
+        "context"
+      ],
+      "lineno": 186,
+      "name": "populateJsonResponse"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 282,
+      "name": "doAccountTx"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in the RPC handler test suites, such as 'account_tx' tests in files like 'account_tx_test.cpp', 'AccountTx_test.cpp', or generic RPC/ledger handler tests. These should cover valid and invalid combinations of ledger_index_min, ledger_index_max, ledger_hash, and ledger_index, including type errors, range errors, and mutual exclusion logic. Gaps may exist if tests do not cover all mutual exclusion cases (e.g., specifying both ledger_index_min and ledger_hash), or malformed types (e.g., non-string ledger_hash, negative indices). Tests should also cover edge cases like empty strings, boundary values (0, UINT32_MAX), and malformed hex strings for ledger_hash.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for JSON field names, RPC::Status for error reporting)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::Status{rpcINVALID_PARAMS, \"invalidParams\"}",
+      "field": [
+        "ledger_index_min",
+        "ledger_index_max",
+        "ledger_hash",
+        "ledger_index"
+      ],
+      "location": "parseLedgerArgs",
+      "validated_by": "explicit logic (if statements)",
+      "validates": [
+        "If ledger_index_min or ledger_index_max is specified, ledger_hash or ledger_index must NOT be specified (mutual exclusivity)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (defaults to 0 if invalid)",
+      "field": "ledger_index_min",
+      "location": "parseLedgerArgs",
+      "validated_by": "params[jss::ledger_index_min].asInt() >= 0",
+      "validates": [
+        "ledger_index_min must be >= 0; otherwise, defaults to 0"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (defaults to UINT32_MAX if invalid)",
+      "field": "ledger_index_max",
+      "location": "parseLedgerArgs",
+      "validated_by": "params[jss::ledger_index_max].asInt() >= 0",
+      "validates": [
+        "ledger_index_max must be >= 0; otherwise, defaults to UINT32_MAX"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::Status{rpcINVALID_PARAMS, \"ledgerHashNotString\"}",
+      "field": "ledger_hash",
+      "location": "parseLedgerArgs",
+      "validated_by": "hashValue.isString()",
+      "validates": [
+        "ledger_hash must be a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::Status{rpcINVALID_PARAMS, \"ledgerHashMalformed\"}",
+      "field": "ledger_hash",
+      "location": "parseLedgerArgs",
+      "validated_by": "hash.parseHex(hashValue.asString())",
+      "validates": [
+        "ledger_hash must be a valid hex string"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Declares functions for executing RPC commands and determining required roles in the XRPL RPC subsystem.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/RPCHandler.h",
+  "functions": [
+    {
+      "args": [
+        "RPC::JsonContext&",
+        "Json::Value&"
+      ],
+      "lineno": 11,
+      "name": "doCommand"
+    },
+    {
+      "args": [
+        "unsigned int version",
+        "bool betaEnabled",
+        "std::string const& method"
+      ],
+      "lineno": 13,
+      "name": "roleRequired"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "RPC"
+    }
+  ]
+}

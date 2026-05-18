@@ -1,0 +1,78 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "ctx"
+    },
+    {
+      "lineno": 20,
+      "name": "ctx"
+    },
+    {
+      "lineno": 23,
+      "name": "view"
+    },
+    {
+      "lineno": 23,
+      "name": "tx"
+    },
+    {
+      "lineno": 26,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "LedgerStateFix"
+    }
+  ],
+  "description": "Defines the LedgerStateFix transactor class for applying specific ledger state fixes in the XRPL system, including fee calculation, preflight, and preclaim checks.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/system/LedgerStateFix.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 15,
+      "name": "LedgerStateFix"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 20,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 23,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 26,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

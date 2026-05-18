@@ -1,0 +1,100 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "k"
+    },
+    {
+      "lineno": 24,
+      "name": "k"
+    },
+    {
+      "lineno": 24,
+      "name": "et"
+    },
+    {
+      "lineno": 29,
+      "name": "v"
+    },
+    {
+      "lineno": 29,
+      "name": "field"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "k"
+      ],
+      "lineno": 11,
+      "name": "JsonMissingKeyError"
+    },
+    {
+      "args": [
+        "k",
+        "et"
+      ],
+      "lineno": 22,
+      "name": "JsonTypeMismatchError"
+    }
+  ],
+  "description": "Provides utility functions and error classes for extracting and validating typed values from JSON objects, throwing exceptions on missing keys or type mismatches.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/json_get_or_throw.h",
+  "functions": [
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 29,
+      "name": "getOrThrow"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 35,
+      "name": "getOrThrow<std::string>"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 48,
+      "name": "getOrThrow<bool>"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 62,
+      "name": "getOrThrow<std::uint64_t>"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 89,
+      "name": "getOrThrow<xrpl::Buffer>"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 101,
+      "name": "getOptional"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "Json"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "args": [
+    {
+      "lineno": 30,
+      "name": "name"
+    },
+    {
+      "lineno": 31,
+      "name": "module"
+    },
+    {
+      "lineno": 32,
+      "name": "library"
+    },
+    {
+      "lineno": 33,
+      "name": "manual"
+    },
+    {
+      "lineno": 34,
+      "name": "priority"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "suite_list"
+    }
+  ],
+  "description": "Defines the suite_list class, a container for managing and inserting unit test suites, with debug checks for duplicate names and types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/suite_list.h",
+  "functions": [
+    {
+      "args": [
+        "name",
+        "module",
+        "library",
+        "manual",
+        "priority"
+      ],
+      "lineno": 29,
+      "name": "suite_list::insert"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "beast"
+    },
+    {
+      "lineno": 12,
+      "name": "unit_test"
+    }
+  ]
+}

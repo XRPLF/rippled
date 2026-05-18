@@ -1,0 +1,325 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoadManager::start",
+        "XRPL_ASSERT",
+        "std::thread constructor (LoadManager::run)"
+      ],
+      "entry_point": "LoadManager::start",
+      "purpose": "Starts the LoadManager background thread, ensuring only one thread is running.",
+      "validation_points": [
+        "XRPL_ASSERT(!thread_.joinable(), ...): Validates that no thread is already running before starting a new one."
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadManager::stop",
+        "cv_.notify_all",
+        "thread_.join"
+      ],
+      "entry_point": "LoadManager::stop",
+      "purpose": "Stops the LoadManager thread safely.",
+      "validation_points": [
+        "thread_.joinable() check: Ensures thread is joinable before joining."
+      ]
+    },
+    {
+      "call_chain": [
+        "LoadManager::activateStallDetector"
+      ],
+      "entry_point": "LoadManager::activateStallDetector",
+      "purpose": "Arms the stall detector and sets the last heartbeat time.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "LoadManager::heartbeat"
+      ],
+      "entry_point": "LoadManager::heartbeat",
+      "purpose": "Updates the last heartbeat time to now.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "LoadManager::run",
+        "cv_.wait_until",
+        "Check armed_ and timeSpentStalled",
+        "JLOG (logging)",
+        "app_.getJobQueue().isOverloaded()",
+        "app_.getJobQueue().getJson(0)"
+      ],
+      "entry_point": "LoadManager::run",
+      "purpose": "Main loop for stall detection and reporting.",
+      "validation_points": [
+        "Checks armed_ and timeSpentStalled to determine if a stall is occurring."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "thread_",
+      "flow": [
+        "constructor",
+        "start() (assigned new std::thread)",
+        "stop() (joined and cleaned up)"
+      ],
+      "origin": "LoadManager constructor (default-initialized)",
+      "transformations": [
+        "Assigned a new std::thread in start()",
+        "Joined and destroyed in stop()"
+      ],
+      "validated_at": "XRPL_ASSERT(!thread_.joinable()) in start()"
+    },
+    {
+      "field": "armed_",
+      "flow": [
+        "constructor",
+        "activateStallDetector() (set to true)",
+        "run() (read for stall detection logic)"
+      ],
+      "origin": "LoadManager constructor (default false)",
+      "transformations": [
+        "Set to true in activateStallDetector()"
+      ],
+      "validated_at": "Checked in run() before stall logic"
+    },
+    {
+      "field": "lastHeartbeat_",
+      "flow": [
+        "constructor",
+        "activateStallDetector() (set to now)",
+        "heartbeat() (set to now)",
+        "run() (read to compute timeSpentStalled)"
+      ],
+      "origin": "LoadManager constructor (default-initialized)",
+      "transformations": [
+        "Set to current time in activateStallDetector() and heartbeat()"
+      ],
+      "validated_at": "Used in run() to compute timeSpentStalled"
+    },
+    {
+      "field": "stop_",
+      "flow": [
+        "constructor",
+        "stop() (set to true)",
+        "run() (checked in wait_until predicate)"
+      ],
+      "origin": "LoadManager constructor (default false)",
+      "transformations": [
+        "Set to true in stop()"
+      ],
+      "validated_at": "Checked in run() loop to break and exit thread"
+    }
+  ],
+  "description": "Implements the LoadManager class for monitoring and managing server load and detecting stalls in the XRPL server application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "thread_ (std::thread member)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at LoadManager::start",
+      "issue_pattern": "Missing empty string validation for thread_ (std::thread member)",
+      "why_false_positive": "XRPL_ASSERT macro validates thread_ (std::thread member) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/LoadManager.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal journal"
+      ],
+      "lineno": 12,
+      "name": "LoadManager::LoadManager"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "LoadManager::~LoadManager"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "LoadManager::activateStallDetector"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "LoadManager::heartbeat"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "LoadManager::start"
+    },
+    {
+      "args": [],
+      "lineno": 55,
+      "name": "LoadManager::stop"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "LoadManager::run"
+    },
+    {
+      "args": [
+        "Application& app",
+        "beast::Journal journal"
+      ],
+      "lineno": 120,
+      "name": "make_LoadManager"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage (no test code or test macros). Likely, tests for LoadManager would exist in the unit test suite for the application, possibly in files like 'LoadManager_test.cpp' or integration tests for server startup/shutdown and stall detection. The XRPL_ASSERT validation in start() is critical but may not be directly tested unless there are tests that attempt to start LoadManager twice. The stall detection logic (armed_, lastHeartbeat_) would require timing-based or mock-based tests, which are often tricky and may not be fully covered. Exception handling in the destructor is also hard to test. Overall, validation of thread_ via XRPL_ASSERT is the main explicit validation, and coverage for this is likely partial unless specifically tested for double-start scenarios.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT macro (custom assertion, not a framework)",
+    "notes": "No explicit input/field validation framework is used. Validation is performed via assertions and C++ type system. No template, JSON, or external input validation is present in this code.",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "AssertionError (via XRPL_ASSERT)",
+      "field": "thread_ (std::thread member)",
+      "location": "LoadManager::start",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "Ensures thread_ is not already joinable before starting a new thread",
+        "Prevents starting the LoadManager multiple times"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

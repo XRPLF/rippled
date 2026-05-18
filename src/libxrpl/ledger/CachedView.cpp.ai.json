@@ -1,0 +1,330 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "k"
+    },
+    {
+      "lineno": 12,
+      "name": "k"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "exists",
+        "read"
+      ],
+      "entry_point": "exists",
+      "purpose": "Checks if a ledger entry exists for a given Keylet by attempting to read it.",
+      "validation_points": [
+        "read: digest validation (if (!digest))",
+        "read: sle validation (if (!sle))",
+        "read: XRPL_ASSERT(sle || baseRead, ...)",
+        "read: k.check(*sle)"
+      ]
+    },
+    {
+      "call_chain": [
+        "read"
+      ],
+      "entry_point": "read",
+      "purpose": "Fetches a ledger entry for a given Keylet, using cache and base view, with multiple validation steps.",
+      "validation_points": [
+        "digest validation (if (!digest))",
+        "sle validation (if (!sle))",
+        "XRPL_ASSERT(sle || baseRead, ...)",
+        "k.check(*sle)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "k (Keylet)",
+      "flow": [
+        "Parameter to exists/read",
+        "Used to look up digest in map_",
+        "Used to call base_.digest(k.key) if not found",
+        "Used to call base_.read(k)",
+        "Used in k.check(*sle)"
+      ],
+      "origin": "Parameter to exists/read",
+      "transformations": [
+        "Passed as const reference",
+        "Used to extract k.key",
+        "Used to validate SLE with k.check"
+      ],
+      "validated_at": "k.check(*sle) at end of read"
+    },
+    {
+      "field": "digest (std::optional<uint256>)",
+      "flow": [
+        "Looked up in map_ or computed",
+        "If not present, read returns nullptr",
+        "If present, used to fetch SLE from cache_"
+      ],
+      "origin": "Looked up in map_ or computed via base_.digest(k.key)",
+      "transformations": [
+        "Optional: may be empty if not found",
+        "Dereferenced if present"
+      ],
+      "validated_at": "if (!digest) return nullptr;"
+    },
+    {
+      "field": "sle (std::shared_ptr<SLE const>)",
+      "flow": [
+        "Fetched from cache_ or base_.read(k)",
+        "If null, XRPL_ASSERT(sle || baseRead, ...)",
+        "If null, read returns nullptr",
+        "If present, validated by k.check(*sle)"
+      ],
+      "origin": "Fetched from cache_ or base_.read(k)",
+      "transformations": [
+        "May be null if not found",
+        "Checked for validity"
+      ],
+      "validated_at": "if (!sle) return nullptr; and XRPL_ASSERT(sle || baseRead, ...)"
+    },
+    {
+      "field": "baseRead (bool)",
+      "flow": [
+        "Initialized false",
+        "Set true if cache miss and base_.read(k) is called",
+        "Used in XRPL_ASSERT(sle || baseRead, ...)"
+      ],
+      "origin": "Set to true if base_.read(k) is called",
+      "transformations": [
+        "Boolean flag"
+      ],
+      "validated_at": "XRPL_ASSERT(sle || baseRead, ...)"
+    }
+  ],
+  "description": "Implements the CachedViewImpl class for XRPL, providing a cached view over ledger state with methods to check existence and read ledger entries, utilizing a cache and base view for efficient access.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "k (Keylet)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "k.check(*sle) at CachedViewImpl::read",
+      "issue_pattern": "Missing empty string validation for k (Keylet)",
+      "why_false_positive": "k.check(*sle) validates k (Keylet) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "digest (std::optional<uint256>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!digest) at CachedViewImpl::read",
+      "issue_pattern": "Missing empty string validation for digest (std::optional<uint256>)",
+      "why_false_positive": "if (!digest) validates digest (std::optional<uint256>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (std::shared_ptr<SLE const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!sle) at CachedViewImpl::read",
+      "issue_pattern": "Missing empty string validation for sle (std::shared_ptr<SLE const>)",
+      "why_false_positive": "if (!sle) validates sle (std::shared_ptr<SLE const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "baseRead (bool)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT(sle || baseRead, ...) at CachedViewImpl::read",
+      "issue_pattern": "Missing empty string validation for baseRead (bool)",
+      "why_false_positive": "XRPL_ASSERT(sle || baseRead, ...) validates baseRead (bool) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/CachedView.cpp",
+  "functions": [
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 7,
+      "name": "exists"
+    },
+    {
+      "args": [
+        "Keylet const& k"
+      ],
+      "lineno": 12,
+      "name": "read"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 4,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by unit/integration tests for ledger views and caching in the XRPLF/rippled codebase. Tests would be found in files like 'test/ledger/CachedView_test.cpp', 'test/ledger/View_test.cpp', or similar. These would test cache hits/misses, correct validation of Keylet and SLE, and correct handling of missing entries. However, edge cases such as concurrent access, assertion failures (XRPL_ASSERT), and invalid SLEs may not be fully covered unless explicitly tested. There may be gaps in testing for race conditions or rare assertion failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns nullptr (no exception)",
+      "field": "k (Keylet)",
+      "location": "CachedViewImpl::read",
+      "validated_by": "k.check(*sle)",
+      "validates": [
+        "Ensures the SLE (ledger entry) matches the Keylet's expected type/format",
+        "Prevents returning an SLE that does not correspond to the requested Keylet"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns nullptr (no exception)",
+      "field": "digest (std::optional<uint256>)",
+      "location": "CachedViewImpl::read",
+      "validated_by": "if (!digest)",
+      "validates": [
+        "Ensures a digest was found for the key",
+        "Prevents further processing if digest is missing"
+      ],
+      "validation_type": "type/presence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns nullptr (no exception)",
+      "field": "sle (std::shared_ptr<SLE const>)",
+      "location": "CachedViewImpl::read",
+      "validated_by": "if (!sle)",
+      "validates": [
+        "Ensures the ledger entry was found and is not null"
+      ],
+      "validation_type": "type/presence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "XRPL_ASSERT (likely aborts or logs error, depending on build)",
+      "field": "baseRead (bool)",
+      "location": "CachedViewImpl::read",
+      "validated_by": "XRPL_ASSERT(sle || baseRead, ...)",
+      "validates": [
+        "Ensures that if sle is null, baseRead must be true (i.e., a base read was attempted and failed)",
+        "Invariant check to catch unexpected null SLEs"
+      ],
+      "validation_type": "business_logic/invariant"
+    }
+  ]
+}

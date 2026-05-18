@@ -1,0 +1,327 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "private_access_tag_t pat"
+    },
+    {
+      "lineno": 22,
+      "name": "Args&&... args"
+    },
+    {
+      "lineno": 67,
+      "name": "private_access_tag_t"
+    },
+    {
+      "lineno": 67,
+      "name": "SerializedTypeID tid"
+    },
+    {
+      "lineno": 67,
+      "name": "int fv"
+    },
+    {
+      "lineno": 67,
+      "name": "char const* fn"
+    },
+    {
+      "lineno": 67,
+      "name": "int meta"
+    },
+    {
+      "lineno": 67,
+      "name": "IsSigning signing"
+    },
+    {
+      "lineno": 87,
+      "name": "private_access_tag_t"
+    },
+    {
+      "lineno": 87,
+      "name": "int fc"
+    },
+    {
+      "lineno": 87,
+      "name": "char const* fn"
+    },
+    {
+      "lineno": 106,
+      "name": "int code"
+    },
+    {
+      "lineno": 117,
+      "name": "SField const& f1"
+    },
+    {
+      "lineno": 117,
+      "name": "SField const& f2"
+    },
+    {
+      "lineno": 132,
+      "name": "std::string const& fieldName"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "SField::private_access_tag_t"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SField::SField",
+        "XRPL_ASSERT (fieldCode uniqueness)",
+        "XRPL_ASSERT (fieldName uniqueness)",
+        "knownCodeToField[fieldCode] = this",
+        "knownNameToField[fieldName] = this"
+      ],
+      "entry_point": "SField::SField (constructor)",
+      "purpose": "Constructs an SField, validates uniqueness of fieldCode and fieldName, and registers the field in global maps.",
+      "validation_points": [
+        "XRPL_ASSERT(!knownCodeToField.contains(fieldCode))",
+        "XRPL_ASSERT(!knownNameToField.contains(fieldName))"
+      ]
+    },
+    {
+      "call_chain": [
+        "TypedField<T>::TypedField",
+        "SField::SField"
+      ],
+      "entry_point": "TypedField<T>::TypedField",
+      "purpose": "Constructs a typed SField, forwarding to SField constructor, thus triggering the same validation.",
+      "validation_points": [
+        "XRPL_ASSERT(!knownCodeToField.contains(fieldCode))",
+        "XRPL_ASSERT(!knownNameToField.contains(fieldName))"
+      ]
+    },
+    {
+      "call_chain": [
+        "SField::getField",
+        "knownCodeToField.find(code)",
+        "return *(it->second) or sfInvalid"
+      ],
+      "entry_point": "SField::getField(int code)",
+      "purpose": "Retrieves an SField by code, returning sfInvalid if not found. No validation, but relies on prior registration/validation.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "fieldCode",
+      "flow": [
+        "SField::SField",
+        "XRPL_ASSERT(!knownCodeToField.contains(fieldCode))",
+        "knownCodeToField[fieldCode] = this",
+        "SField::getField(int code) lookup"
+      ],
+      "origin": "SField::SField constructor (computed via field_code(tid, fv) or passed directly)",
+      "transformations": [
+        "Computed from SerializedTypeID and fieldValue (or passed directly)",
+        "Checked for uniqueness",
+        "Registered in global map"
+      ],
+      "validated_at": "SField::SField (XRPL_ASSERT)"
+    },
+    {
+      "field": "fieldName",
+      "flow": [
+        "SField::SField",
+        "XRPL_ASSERT(!knownNameToField.contains(fieldName))",
+        "knownNameToField[fieldName] = this"
+      ],
+      "origin": "SField::SField constructor (passed as fn)",
+      "transformations": [
+        "Passed as string",
+        "Checked for uniqueness",
+        "Registered in global map"
+      ],
+      "validated_at": "SField::SField (XRPL_ASSERT)"
+    },
+    {
+      "field": "SField instance",
+      "flow": [
+        "SField::SField",
+        "Registered in knownCodeToField and knownNameToField",
+        "Accessible via SField::getField"
+      ],
+      "origin": "Constructed via SField::SField or TypedField<T>::TypedField",
+      "transformations": [
+        "Constructed with validated fields",
+        "Stored in global maps"
+      ],
+      "validated_at": "SField::SField (XRPL_ASSERT)"
+    }
+  ],
+  "description": "Defines and manages SField objects, which represent fields in the XRPL protocol, including registration, lookup, and construction logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fieldCode",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fieldCode validated by XRPL_ASSERT (custom assertion macro)",
+      "issue_pattern": "Missing validation for fieldCode",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro) validates fieldCode automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "fieldName",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field fieldName validated by XRPL_ASSERT (custom assertion macro)",
+      "issue_pattern": "Missing validation for fieldName",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro) validates fieldName automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fieldCode",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SField::SField (constructor)",
+      "issue_pattern": "Missing empty string validation for fieldCode",
+      "why_false_positive": "XRPL_ASSERT validates fieldCode for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "fieldName",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SField::SField (constructor)",
+      "issue_pattern": "Missing empty string validation for fieldName",
+      "why_false_positive": "XRPL_ASSERT validates fieldName for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/SField.cpp",
+  "functions": [
+    {
+      "args": [
+        "private_access_tag_t pat",
+        "Args&&... args"
+      ],
+      "lineno": 22,
+      "name": "TypedField<T>::TypedField"
+    },
+    {
+      "args": [
+        "private_access_tag_t",
+        "SerializedTypeID tid",
+        "int fv",
+        "char const* fn",
+        "int meta",
+        "IsSigning signing"
+      ],
+      "lineno": 67,
+      "name": "SField::SField"
+    },
+    {
+      "args": [
+        "private_access_tag_t",
+        "int fc",
+        "char const* fn"
+      ],
+      "lineno": 87,
+      "name": "SField::SField"
+    },
+    {
+      "args": [
+        "int code"
+      ],
+      "lineno": 106,
+      "name": "SField::getField"
+    },
+    {
+      "args": [
+        "SField const& f1",
+        "SField const& f2"
+      ],
+      "lineno": 117,
+      "name": "SField::compare"
+    },
+    {
+      "args": [
+        "std::string const& fieldName"
+      ],
+      "lineno": 132,
+      "name": "SField::getField"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The validation logic (uniqueness of fieldCode and fieldName) is enforced at construction time via XRPL_ASSERT. Typical test coverage would be in protocol or SField-specific unit tests, likely in files such as 'test/protocol/SField_test.cpp' or similar. However, the code comments note that some SFields are constructed for historical/test reasons, implying that test coverage exists for edge cases. Gaps: There is no runtime validation for dynamic field registration (all fields are registered at static initialization), and no explicit tests for duplicate fieldCode/fieldName at runtime (since XRPL_ASSERT may abort or throw). If XRPL_ASSERT is compiled out, uniqueness is not enforced. There is also no test coverage for malformed or intentionally conflicting SField construction at runtime.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "fieldCode",
+      "fieldName"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "fieldCode",
+      "location": "SField::SField (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the fieldCode is unique among all SFields",
+        "Checks that knownCodeToField does not already contain this fieldCode"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or throws)",
+      "field": "fieldName",
+      "location": "SField::SField (constructor)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the fieldName is unique among all SFields",
+        "Checks that knownNameToField does not already contain this fieldName"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,621 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 199,
+      "name": "Transactor"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "applyTransaction",
+        "Transactor::preflight",
+        "preflight0",
+        "preflight1",
+        "preflight2"
+      ],
+      "entry_point": "applyTransaction (external, not shown here)",
+      "purpose": "Performs layered transaction validation before execution.",
+      "validation_points": [
+        "preflight0: tfInnerBatchTxn flag, sfNetworkID, Transaction ID, Transaction Flags",
+        "preflight1: sfSigningPubKey (via preflightCheckSigningKey)",
+        "preflight2: further semantic checks (not shown in this snippet)"
+      ]
+    },
+    {
+      "call_chain": [
+        "Transactor::preflight",
+        "preflight0",
+        "detail::preflightCheckSigningKey",
+        "detail::preflightCheckSimulateKeys"
+      ],
+      "entry_point": "Transactor::preflight",
+      "purpose": "Runs all preflight checks for a transaction.",
+      "validation_points": [
+        "preflight0: flag and field checks",
+        "preflightCheckSigningKey: validates signing public key",
+        "preflightCheckSimulateKeys: checks simulation signatures"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "tfInnerBatchTxn (flag)",
+      "flow": [
+        "ctx.tx",
+        "preflight0: ctx.tx.isFlag(tfInnerBatchTxn)",
+        "validation result"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Checked for presence on pseudo transactions"
+      ],
+      "validated_at": "preflight0"
+    },
+    {
+      "field": "sfNetworkID",
+      "flow": [
+        "ctx.tx",
+        "preflight0: ctx.tx[~sfNetworkID]",
+        "compared to nodeNID"
+      ],
+      "origin": "ctx.tx (transaction input)",
+      "transformations": [
+        "Optional extraction, compared to node's network ID"
+      ],
+      "validated_at": "preflight0"
+    },
+    {
+      "field": "Transaction ID",
+      "flow": [
+        "ctx.tx",
+        "preflight0: ctx.tx.getTransactionID()",
+        "checked for zero"
+      ],
+      "origin": "ctx.tx.getTransactionID()",
+      "transformations": [
+        "Direct extraction, checked for non-zero"
+      ],
+      "validated_at": "preflight0"
+    },
+    {
+      "field": "Transaction Flags",
+      "flow": [
+        "ctx.tx",
+        "preflight0: ctx.tx.getFlags() & flagMask",
+        "checked for invalid bits"
+      ],
+      "origin": "ctx.tx.getFlags()",
+      "transformations": [
+        "Bitmask AND with allowed flags"
+      ],
+      "validated_at": "preflight0"
+    },
+    {
+      "field": "sfSigningPubKey",
+      "flow": [
+        "sigObject",
+        "preflightCheckSigningKey: sigObject.getFieldVL(sfSigningPubKey)",
+        "publicKeyType(makeSlice(spk))"
+      ],
+      "origin": "sigObject (usually ctx.tx)",
+      "transformations": [
+        "Extracted as variable length, checked for valid key type"
+      ],
+      "validated_at": "preflightCheckSigningKey"
+    }
+  ],
+  "description": "Implements the core logic for transaction preflight checks, signature validation, fee calculation, sequence/ticket handling, and application of transactions in the XRPL ledger. Contains the Transactor class and related helper functions for transaction processing.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tfInnerBatchTxn flag (on pseudo transactions)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight0",
+      "issue_pattern": "Missing empty string validation for tfInnerBatchTxn flag (on pseudo transactions)",
+      "why_false_positive": "explicit check in code validates tfInnerBatchTxn flag (on pseudo transactions) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfNetworkID (NetworkID field)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight0",
+      "issue_pattern": "Missing empty string validation for sfNetworkID (NetworkID field)",
+      "why_false_positive": "explicit check in code validates sfNetworkID (NetworkID field) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Transaction ID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight0",
+      "issue_pattern": "Missing empty string validation for Transaction ID",
+      "why_false_positive": "explicit check in code validates Transaction ID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Transaction ID",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "explicit check in code at preflight0",
+      "issue_pattern": "Missing format validation for Transaction ID",
+      "why_false_positive": "explicit check in code validates Transaction ID format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Transaction Flags",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in code at preflight0",
+      "issue_pattern": "Missing empty string validation for Transaction Flags",
+      "why_false_positive": "explicit check in code validates Transaction Flags for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfSigningPubKey (Signing Public Key)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "preflightCheckSigningKey at preflightCheckSigningKey",
+      "issue_pattern": "Missing empty string validation for sfSigningPubKey (Signing Public Key)",
+      "why_false_positive": "preflightCheckSigningKey validates sfSigningPubKey (Signing Public Key) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/Transactor.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx",
+        "std::uint32_t flagMask"
+      ],
+      "lineno": 18,
+      "name": "preflight0"
+    },
+    {
+      "args": [
+        "STObject const& sigObject",
+        "beast::Journal j"
+      ],
+      "lineno": 61,
+      "name": "preflightCheckSigningKey"
+    },
+    {
+      "args": [
+        "ApplyFlags flags",
+        "STObject const& sigObject",
+        "beast::Journal j"
+      ],
+      "lineno": 72,
+      "name": "preflightCheckSimulateKeys"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx",
+        "std::uint32_t flagMask"
+      ],
+      "lineno": 110,
+      "name": "preflight1"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 168,
+      "name": "preflight2"
+    },
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 200,
+      "name": "Transactor"
+    },
+    {
+      "args": [
+        "std::optional<Slice> const& slice",
+        "std::size_t maxLength"
+      ],
+      "lineno": 207,
+      "name": "validDataLength"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 213,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 217,
+      "name": "preflightSigValidated"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 221,
+      "name": "checkPermission"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 233,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 247,
+      "name": "calculateOwnerReserveFee"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "XRPAmount baseFee",
+        "Fees const& fees",
+        "ApplyFlags flags"
+      ],
+      "lineno": 266,
+      "name": "minimumFee"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx",
+        "XRPAmount baseFee"
+      ],
+      "lineno": 271,
+      "name": "checkFee"
+    },
+    {
+      "args": [],
+      "lineno": 308,
+      "name": "payFee"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx",
+        "beast::Journal j"
+      ],
+      "lineno": 326,
+      "name": "checkSeqProxy"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 370,
+      "name": "checkPriorTxAndLastLedger"
+    },
+    {
+      "args": [
+        "SLE::pointer const& sleAccount"
+      ],
+      "lineno": 397,
+      "name": "consumeSeqProxy"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& account",
+        "uint256 const& ticketIndex",
+        "beast::Journal j"
+      ],
+      "lineno": 409,
+      "name": "ticketDelete"
+    },
+    {
+      "args": [],
+      "lineno": 448,
+      "name": "preCompute"
+    },
+    {
+      "args": [],
+      "lineno": 453,
+      "name": "apply"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "ApplyFlags flags",
+        "std::optional<uint256 const> const& parentBatchId",
+        "AccountID const& idAccount",
+        "STObject const& sigObject",
+        "beast::Journal const j"
+      ],
+      "lineno": 478,
+      "name": "checkSign"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 522,
+      "name": "checkSign"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 528,
+      "name": "checkBatchSign"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& idSigner",
+        "AccountID const& idAccount",
+        "std::shared_ptr<SLE const> sleAccount",
+        "beast::Journal const j"
+      ],
+      "lineno": 557,
+      "name": "checkSingleSign"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "ApplyFlags flags",
+        "AccountID const& id",
+        "STObject const& sigObject",
+        "beast::Journal const j"
+      ],
+      "lineno": 570,
+      "name": "checkMultiSign"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::vector<uint256> const& offers",
+        "beast::Journal viewJ"
+      ],
+      "lineno": 670,
+      "name": "removeUnfundedOffers"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::vector<uint256> const& offers",
+        "beast::Journal viewJ"
+      ],
+      "lineno": 683,
+      "name": "removeExpiredNFTokenOffers"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::vector<uint256> const& creds",
+        "beast::Journal viewJ"
+      ],
+      "lineno": 697,
+      "name": "removeExpiredCredentials"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::vector<uint256> const& trustLines",
+        "beast::Journal viewJ"
+      ],
+      "lineno": 705,
+      "name": "removeDeletedTrustLines"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::vector<uint256> const& mpts",
+        "beast::Journal viewJ"
+      ],
+      "lineno": 722,
+      "name": "removeDeletedMPTs"
+    },
+    {
+      "args": [
+        "XRPAmount fee"
+      ],
+      "lineno": 738,
+      "name": "reset"
+    },
+    {
+      "args": [
+        "uint256 txHash"
+      ],
+      "lineno": 771,
+      "name": "trapTransaction"
+    },
+    {
+      "args": [],
+      "lineno": 777,
+      "name": "operator()"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::logic_error for error reporting",
+        "exception_type": "std::logic_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 59,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The validation logic in preflight0 and preflightCheckSigningKey is critical and likely covered by unit and integration tests in the rippled codebase. Typical test files would be in 'src/test/app/tx/' or 'src/test/tx/' (e.g., Transactor_test.cpp, Preflight_test.cpp, or Transaction_test.cpp). However, some error branches (e.g., simulation signature checks marked as 'should never be hit') may not be covered, as indicated by LCOV_EXCL_LINE comments. There may be limited or no coverage for legacy network ID edge cases or malformed pseudo transaction flags. Test coverage for explicit flag and field validation is likely strong, but coverage for all possible malformed or edge-case transactions may be incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in C++ (no external validation framework)",
+    "validation_layer": "business_logic (preflight checks before transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "tfInnerBatchTxn flag (on pseudo transactions)",
+      "location": "preflight0",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Pseudo transactions cannot contain the tfInnerBatchTxn flag"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "telNETWORK_ID_MAKES_TX_NON_CANONICAL, telREQUIRES_NETWORK_ID, telWRONG_NETWORK",
+      "field": "sfNetworkID (NetworkID field)",
+      "location": "preflight0",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Legacy networks (id <= 1024) cannot specify NetworkID in txn",
+        "New networks (id > 1024) require NetworkID field to be present",
+        "NetworkID in txn must match node's NetworkID"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "Transaction ID",
+      "location": "preflight0",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Transaction ID may not be zero"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID_FLAG",
+      "field": "Transaction Flags",
+      "location": "preflight0",
+      "validated_by": "explicit check in code",
+      "validates": [
+        "Transaction flags must not have any bits set in flagMask"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_SIGNATURE",
+      "field": "sfSigningPubKey (Signing Public Key)",
+      "location": "preflightCheckSigningKey",
+      "validated_by": "preflightCheckSigningKey",
+      "validates": [
+        "If signing public key is present and not empty, it must be a valid public key type"
+      ],
+      "validation_type": "format|type"
+    }
+  ]
+}

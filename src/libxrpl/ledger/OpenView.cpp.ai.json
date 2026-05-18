@@ -1,0 +1,517 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "metadata"
+    },
+    {
+      "lineno": 8,
+      "name": "iter"
+    },
+    {
+      "lineno": 44,
+      "name": "rhs"
+    },
+    {
+      "lineno": 51,
+      "name": "base"
+    },
+    {
+      "lineno": 52,
+      "name": "rules"
+    },
+    {
+      "lineno": 53,
+      "name": "hold"
+    },
+    {
+      "lineno": 155,
+      "name": "fee"
+    },
+    {
+      "lineno": 143,
+      "name": "sle"
+    },
+    {
+      "lineno": 65,
+      "name": "to"
+    },
+    {
+      "lineno": 85,
+      "name": "k"
+    },
+    {
+      "lineno": 89,
+      "name": "key"
+    },
+    {
+      "lineno": 89,
+      "name": "last"
+    },
+    {
+      "lineno": 164,
+      "name": "txn"
+    },
+    {
+      "lineno": 164,
+      "name": "metaData"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "bool metadata",
+        "txs_map::const_iterator iter"
+      ],
+      "lineno": 5,
+      "name": "OpenView::txs_iter_impl"
+    },
+    {
+      "args": [
+        "OpenView const& rhs",
+        "open_ledger_t, ReadView const* base, Rules const& rules, std::shared_ptr<void const> hold",
+        "ReadView const* base, std::shared_ptr<void const> hold"
+      ],
+      "lineno": 44,
+      "name": "OpenView"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OpenView::OpenView",
+        "base->header()",
+        "base->rules()",
+        "base->open()"
+      ],
+      "entry_point": "OpenView::OpenView (constructor)",
+      "purpose": "Constructs an OpenView, initializing from a base ReadView and copying/deriving ledger state.",
+      "validation_points": [
+        "base->header()",
+        "base->rules()",
+        "base->open()"
+      ]
+    },
+    {
+      "call_chain": [
+        "OpenView::txsBegin",
+        "txs_iter_impl constructor"
+      ],
+      "entry_point": "OpenView::txsBegin",
+      "purpose": "Begins iteration over transactions in the OpenView.",
+      "validation_points": [
+        "txs_iter_impl::equal (uses dynamic_cast for type validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OpenView::apply",
+        "items_.apply(to)",
+        "to.rawTxInsert"
+      ],
+      "entry_point": "OpenView::apply",
+      "purpose": "Applies all pending changes and transactions in the OpenView to another TxsRawView.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "OpenView::exists",
+        "items_.exists(*base_, k)"
+      ],
+      "entry_point": "OpenView::exists",
+      "purpose": "Checks if a ledger entry exists in the OpenView.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "OpenView::read",
+        "items_.read(*base_, k)"
+      ],
+      "entry_point": "OpenView::read",
+      "purpose": "Reads a ledger entry from the OpenView.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "base_ (ReadView const*)",
+      "flow": [
+        "Constructor argument",
+        "Assigned to base_",
+        "Used in header_ initialization (base_->header())",
+        "Used in rules_ initialization (base_->rules())",
+        "Used in open_ initialization (base_->open())",
+        "Used in items_.* calls"
+      ],
+      "origin": "Constructor argument to OpenView",
+      "transformations": [
+        "header_ fields may be modified (validated/accepted/seq/parentCloseTime/parentHash)"
+      ],
+      "validated_at": "base_->header(), base_->rules(), base_->open() (assume these validate base_)"
+    },
+    {
+      "field": "impl (txs_iter_impl)",
+      "flow": [
+        "Created in txsBegin()",
+        "Used in iteration",
+        "Compared in txs_iter_impl::equal via dynamic_cast"
+      ],
+      "origin": "txs_iter_impl instance in txs_type::iter_base",
+      "transformations": [
+        "dynamic_cast<txs_iter_impl const*>(&impl) checks type"
+      ],
+      "validated_at": "txs_iter_impl::equal"
+    },
+    {
+      "field": "header_ (LedgerHeader)",
+      "flow": [
+        "Copied from base_->header() in constructor",
+        "Possibly modified (validated/accepted/seq/parentCloseTime/parentHash)",
+        "Returned by OpenView::header()"
+      ],
+      "origin": "base_->header()",
+      "transformations": [
+        "Fields set to false or incremented in open_ledger_t constructor"
+      ],
+      "validated_at": "base_->header()"
+    },
+    {
+      "field": "rules_ (Rules)",
+      "flow": [
+        "Copied from base_->rules() or passed in",
+        "Returned by OpenView::rules()"
+      ],
+      "origin": "base_->rules() or constructor argument",
+      "transformations": [],
+      "validated_at": "base_->rules()"
+    },
+    {
+      "field": "txs_ (transaction map)",
+      "flow": [
+        "Populated by OpenView methods (not shown in this file)",
+        "Iterated in txsBegin()/txsEnd()",
+        "Applied in OpenView::apply"
+      ],
+      "origin": "Constructed empty or copied from rhs.txs_",
+      "transformations": [],
+      "validated_at": "No explicit validation in this file"
+    }
+  ],
+  "description": "Implements the OpenView class for managing an open ledger view in the XRPL, including transaction iteration, insertion, and ledger state manipulation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "impl (dynamic type of iterator implementation)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "dynamic_cast<txs_iter_impl const*>(&impl) at txs_iter_impl::equal",
+      "issue_pattern": "Missing empty string validation for impl (dynamic type of iterator implementation)",
+      "why_false_positive": "dynamic_cast<txs_iter_impl const*>(&impl) validates impl (dynamic type of iterator implementation) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "impl (dynamic type of iterator implementation)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "dynamic_cast<txs_iter_impl const*>(&impl) at txs_iter_impl::equal",
+      "issue_pattern": "Missing type validation for impl (dynamic type of iterator implementation)",
+      "why_false_positive": "dynamic_cast<txs_iter_impl const*>(&impl) validates impl (dynamic type of iterator implementation) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "base (pointer to ReadView)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "base->header(), base->rules(), base->open() at OpenView constructors",
+      "issue_pattern": "Missing empty string validation for base (pointer to ReadView)",
+      "why_false_positive": "base->header(), base->rules(), base->open() validates base (pointer to ReadView) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/OpenView.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "OpenView::txCount"
+    },
+    {
+      "args": [
+        "to"
+      ],
+      "lineno": 65,
+      "name": "OpenView::apply"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "OpenView::header"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "OpenView::fees"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "OpenView::rules"
+    },
+    {
+      "args": [
+        "k"
+      ],
+      "lineno": 85,
+      "name": "OpenView::exists"
+    },
+    {
+      "args": [
+        "key",
+        "last"
+      ],
+      "lineno": 89,
+      "name": "OpenView::succ"
+    },
+    {
+      "args": [
+        "k"
+      ],
+      "lineno": 95,
+      "name": "OpenView::read"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "OpenView::slesBegin"
+    },
+    {
+      "args": [],
+      "lineno": 103,
+      "name": "OpenView::slesEnd"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 107,
+      "name": "OpenView::slesUpperBound"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "OpenView::txsBegin"
+    },
+    {
+      "args": [],
+      "lineno": 115,
+      "name": "OpenView::txsEnd"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 119,
+      "name": "OpenView::txExists"
+    },
+    {
+      "args": [
+        "key"
+      ],
+      "lineno": 123,
+      "name": "OpenView::txRead"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 143,
+      "name": "OpenView::rawErase"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 147,
+      "name": "OpenView::rawInsert"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 151,
+      "name": "OpenView::rawReplace"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 155,
+      "name": "OpenView::rawDestroyXRP"
+    },
+    {
+      "args": [
+        "key",
+        "txn",
+        "metaData"
+      ],
+      "lineno": 164,
+      "name": "OpenView::rawTxInsert"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is core ledger infrastructure, so it is likely tested indirectly via higher-level ledger and transaction tests (e.g., in unit tests for ledger views, transaction application, and ledger state transitions). Direct tests for OpenView's validation logic (dynamic_cast in txs_iter_impl::equal, base_ pointer validity) are unlikely to exist unless there are explicit iterator or view tests. Gaps: No explicit tests for dynamic_cast failure in txs_iter_impl::equal, or for invalid base_ pointers. Most validation is defensive (type checks, pointer dereference), not business logic validation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none (manual C++ type checks, dynamic_cast, pointer dereference)",
+    "validation_layer": "business_logic (within class methods and constructors)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false if type mismatch)",
+      "field": "impl (dynamic type of iterator implementation)",
+      "location": "txs_iter_impl::equal",
+      "validated_by": "dynamic_cast<txs_iter_impl const*>(&impl)",
+      "validates": [
+        "Checks that the base_type reference is actually a txs_iter_impl before comparing iterators"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "undefined behavior if null (no explicit check)",
+      "field": "base (pointer to ReadView)",
+      "location": "OpenView constructors",
+      "validated_by": "base->header(), base->rules(), base->open()",
+      "validates": [
+        "Assumes base is a valid, non-null pointer before dereferencing for header, rules, open"
+      ],
+      "validation_type": "type (pointer dereference, assumes non-null)"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "Handler"
+    },
+    {
+      "lineno": 33,
+      "name": "ConstBufferSequence"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "ioc",
+        "journal",
+        "remote_address",
+        "buffers",
+        "stream"
+      ],
+      "lineno": 15,
+      "name": "SSLHTTPPeer"
+    }
+  ],
+  "description": "Defines the SSLHTTPPeer class template, which handles HTTP connections over SSL/TLS for the XRPL server, including handshake, request processing, and WebSocket upgrade.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/server/detail/SSLHTTPPeer.h",
+  "functions": [
+    {
+      "args": [
+        "port",
+        "handler",
+        "ioc",
+        "journal",
+        "remote_address",
+        "buffers",
+        "stream"
+      ],
+      "lineno": 34,
+      "name": "SSLHTTPPeer"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "run"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "websocketUpgrade"
+    },
+    {
+      "args": [
+        "do_yield"
+      ],
+      "lineno": 63,
+      "name": "do_handshake"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "do_request"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "do_close"
+    },
+    {
+      "args": [
+        "ec"
+      ],
+      "lineno": 98,
+      "name": "on_shutdown"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

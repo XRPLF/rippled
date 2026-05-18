@@ -1,0 +1,465 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 11,
+      "name": "TransactionMaster"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "TransactionMaster::fetch",
+        "TransactionMaster::fetch_from_cache",
+        "Transaction::isValidated",
+        "Transaction::load"
+      ],
+      "entry_point": "TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)",
+      "purpose": "Fetches a transaction by ID, first from cache, then from persistent storage if not validated.",
+      "validation_points": [
+        "txn->isValidated() (checks if cached transaction is validated)",
+        "Transaction::load (validates txnID and loads transaction from storage)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionMaster::fetch",
+        "TransactionMaster::fetch_from_cache",
+        "Transaction::isValidated",
+        "Transaction::load"
+      ],
+      "entry_point": "TransactionMaster::fetch(uint256 const& txnID, ClosedInterval<uint32_t> const& range, error_code_i& ec)",
+      "purpose": "Fetches a transaction by ID within a ledger range, with similar validation as above.",
+      "validation_points": [
+        "txn->isValidated()",
+        "Transaction::load (with range)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionMaster::fetch",
+        "TransactionMaster::fetch_from_cache",
+        "if (!iTx) { ... }",
+        "SerialIter, getVL, STTx constructor"
+      ],
+      "entry_point": "TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const& item, SHAMapNodeType type, std::uint32_t uCommitLedger)",
+      "purpose": "Fetches a transaction from a SHAMapItem, validates type and parses transaction data.",
+      "validation_points": [
+        "type == SHAMapNodeType::tnTRANSACTION_NM / tnTRANSACTION_MD (validates type)",
+        "SerialIter, getVL, STTx constructor (validates item->slice() data)"
+      ]
+    },
+    {
+      "call_chain": [
+        "TransactionMaster::inLedger",
+        "TransactionMaster::fetch_from_cache",
+        "txn->setStatus"
+      ],
+      "entry_point": "TransactionMaster::inLedger(uint256 const& hash, std::uint32_t ledger, std::optional<uint32_t> tseq, std::optional<uint32_t> netID)",
+      "purpose": "Checks if a transaction is in a specific ledger and updates its status.",
+      "validation_points": [
+        "txn != nullptr (existence check, not deep validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "txnID (transaction hash)",
+      "flow": [
+        "Input parameter",
+        "fetch_from_cache (cache lookup)",
+        "If not found or not validated, Transaction::load (persistent storage)",
+        "If loaded, canonicalize_replace_client (cache update)"
+      ],
+      "origin": "Input parameter to fetch/inLedger functions",
+      "transformations": [
+        "Used as cache key",
+        "Passed to Transaction::load for DB lookup",
+        "Canonicalized in cache"
+      ],
+      "validated_at": "Transaction::load (validates existence and correctness of txnID)"
+    },
+    {
+      "field": "txn (Transaction object)",
+      "flow": [
+        "fetch_from_cache",
+        "If found, txn->isValidated()",
+        "If not validated, returned as-is",
+        "If loaded, canonicalize_replace_client"
+      ],
+      "origin": "Fetched from cache or loaded from storage",
+      "transformations": [
+        "Status may be updated (setStatus)",
+        "Canonicalized in cache"
+      ],
+      "validated_at": "txn->isValidated()"
+    },
+    {
+      "field": "item->slice() (SHAMapItem data)",
+      "flow": [
+        "item->slice()",
+        "SerialIter constructed from slice",
+        "If type == tnTRANSACTION_NM: STTx constructed from SerialIter",
+        "If type == tnTRANSACTION_MD: getVL() extracts blob, new SerialIter, STTx constructed"
+      ],
+      "origin": "SHAMapItem passed to fetch",
+      "transformations": [
+        "Parsed by SerialIter",
+        "Possibly getVL() extracts variable-length data",
+        "Constructed into STTx"
+      ],
+      "validated_at": "SerialIter, getVL, STTx constructor (parsing and validation of binary data)"
+    },
+    {
+      "field": "type (SHAMapNodeType)",
+      "flow": [
+        "Input parameter",
+        "if/else if (type == ...)",
+        "Determines parsing logic for item->slice()"
+      ],
+      "origin": "Input parameter to fetch(SHAMapItem, type, ...)",
+      "transformations": [
+        "Controls code path for parsing"
+      ],
+      "validated_at": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD)"
+    }
+  ],
+  "description": "Implements the TransactionMaster class, which manages transaction caching, retrieval, and canonicalization for the XRPL application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txnID (type: uint256)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txnID (type: uint256) validated by Custom (no external validation framework detected)",
+      "issue_pattern": "Missing validation for txnID (type: uint256)",
+      "why_false_positive": "Custom (no external validation framework detected) validates txnID (type: uint256) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "type (SHAMapNodeType enum)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field type (SHAMapNodeType enum) validated by Custom (no external validation framework detected)",
+      "issue_pattern": "Missing validation for type (SHAMapNodeType enum)",
+      "why_false_positive": "Custom (no external validation framework detected) validates type (SHAMapNodeType enum) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "item->slice() (binary format for STTx)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field item->slice() (binary format for STTx) validated by Custom (no external validation framework detected)",
+      "issue_pattern": "Missing validation for item->slice() (binary format for STTx)",
+      "why_false_positive": "Custom (no external validation framework detected) validates item->slice() (binary format for STTx) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "txn (Transaction object from cache)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "txn->isValidated() at TransactionMaster::fetch (both overloads)",
+      "issue_pattern": "Missing empty string validation for txn (Transaction object from cache)",
+      "why_false_positive": "txn->isValidated() validates txn (Transaction object from cache) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "txnID (transaction hash)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Transaction::load at TransactionMaster::fetch (both overloads)",
+      "issue_pattern": "Missing empty string validation for txnID (transaction hash)",
+      "why_false_positive": "Transaction::load validates txnID (transaction hash) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "type (SHAMapNodeType)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD) at TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "issue_pattern": "Missing empty string validation for type (SHAMapNodeType)",
+      "why_false_positive": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD) validates type (SHAMapNodeType) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "type (SHAMapNodeType)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD) at TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "issue_pattern": "Missing type validation for type (SHAMapNodeType)",
+      "why_false_positive": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD) validates type (SHAMapNodeType) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "item->slice() (SHAMapItem data)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SerialIter, getVL, STTx constructor at TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "issue_pattern": "Missing empty string validation for item->slice() (SHAMapItem data)",
+      "why_false_positive": "SerialIter, getVL, STTx constructor validates item->slice() (SHAMapItem data) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "item->slice() (SHAMapItem data)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "SerialIter, getVL, STTx constructor at TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "issue_pattern": "Missing format validation for item->slice() (SHAMapItem data)",
+      "why_false_positive": "SerialIter, getVL, STTx constructor validates item->slice() (SHAMapItem data) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/TransactionMaster.cpp",
+  "functions": [
+    {
+      "args": [
+        "Application& app"
+      ],
+      "lineno": 8,
+      "name": "TransactionMaster"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t ledger",
+        "std::optional<uint32_t> tseq",
+        "std::optional<uint32_t> netID"
+      ],
+      "lineno": 16,
+      "name": "inLedger"
+    },
+    {
+      "args": [
+        "uint256 const& txnID"
+      ],
+      "lineno": 27,
+      "name": "fetch_from_cache"
+    },
+    {
+      "args": [
+        "uint256 const& txnID",
+        "error_code_i& ec"
+      ],
+      "lineno": 32,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "uint256 const& txnID",
+        "ClosedInterval<uint32_t> const& range",
+        "error_code_i& ec"
+      ],
+      "lineno": 48,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem> const& item",
+        "SHAMapNodeType type",
+        "std::uint32_t uCommitLedger"
+      ],
+      "lineno": 64,
+      "name": "fetch"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Transaction>* pTransaction"
+      ],
+      "lineno": 89,
+      "name": "canonicalize"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "getCache"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The TransactionMaster class is a core ledger component and is likely tested indirectly via integration and ledger tests. Direct unit tests for TransactionMaster may exist in files like Transaction_test.cpp, TransactionMaster_test.cpp, or Ledger_test.cpp. However, the specific validation paths (e.g., isValidated, SHAMapNodeType parsing, SerialIter/STTx construction) may not be exhaustively unit tested for all edge cases (e.g., malformed SHAMapItem data, rare SHAMapNodeType values). There may be gaps in negative testing for corrupted or unexpected input data, especially for the binary parsing logic. Fuzzing or property-based tests would be beneficial for the item->slice() parsing paths.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "txnID (type: uint256)",
+      "type (SHAMapNodeType enum)",
+      "item->slice() (binary format for STTx)"
+    ],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns early with partial result)",
+      "field": "txn (Transaction object from cache)",
+      "location": "TransactionMaster::fetch (both overloads)",
+      "validated_by": "txn->isValidated()",
+      "validates": [
+        "Checks if cached transaction is validated before returning meta"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "error_code_i (set via reference), or returns TxSearched variant",
+      "field": "txnID (transaction hash)",
+      "location": "TransactionMaster::fetch (both overloads)",
+      "validated_by": "Transaction::load",
+      "validates": [
+        "Checks if transaction exists in database/storage",
+        "Checks if transaction is within specified ledger range (in overload with range param)"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (branches on type)",
+      "field": "type (SHAMapNodeType)",
+      "location": "TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "validated_by": "if (type == SHAMapNodeType::tnTRANSACTION_NM) / else if (type == SHAMapNodeType::tnTRANSACTION_MD)",
+      "validates": [
+        "Ensures correct deserialization method for SHAMapItem based on node type"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "Potential exception from STTx constructor or SerialIter if data is malformed",
+      "field": "item->slice() (SHAMapItem data)",
+      "location": "TransactionMaster::fetch(boost::intrusive_ptr<SHAMapItem> const&, SHAMapNodeType, std::uint32_t)",
+      "validated_by": "SerialIter, getVL, STTx constructor",
+      "validates": [
+        "Checks that SHAMapItem data can be parsed as a valid transaction"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

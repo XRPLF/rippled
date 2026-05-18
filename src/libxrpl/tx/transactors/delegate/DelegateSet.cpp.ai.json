@@ -1,0 +1,562 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    },
+    {
+      "lineno": 32,
+      "name": "ctx"
+    },
+    {
+      "lineno": 91,
+      "name": "view"
+    },
+    {
+      "lineno": 91,
+      "name": "sle"
+    },
+    {
+      "lineno": 91,
+      "name": "account"
+    },
+    {
+      "lineno": 91,
+      "name": "j"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DelegateSet::preflight"
+      ],
+      "entry_point": "DelegateSet::preflight",
+      "purpose": "Performs stateless validation of the DelegateSet transaction before it is accepted for further processing.",
+      "validation_points": [
+        "permissions.size() > permissionMaxSize",
+        "ctx.tx[sfAccount] == ctx.tx[sfAuthorize]",
+        "!permissionSet.insert(permission[sfPermissionValue]).second",
+        "!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules)"
+      ]
+    },
+    {
+      "call_chain": [
+        "DelegateSet::preclaim"
+      ],
+      "entry_point": "DelegateSet::preclaim",
+      "purpose": "Performs stateful validation, checking ledger state for existence of accounts and delegate objects.",
+      "validation_points": [
+        "!ctx.view.exists(keylet::account(ctx.tx[sfAccount]))",
+        "!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize]))",
+        "ctx.tx.getFieldArray(sfPermissions).empty() && !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize]))"
+      ]
+    },
+    {
+      "call_chain": [
+        "DelegateSet::doApply",
+        "DelegateSet::deleteDelegate (conditionally called)"
+      ],
+      "entry_point": "DelegateSet::doApply",
+      "purpose": "Applies the transaction to the ledger, creating, updating, or deleting delegate objects as appropriate.",
+      "validation_points": [
+        "!sleOwner",
+        "permissions.empty() (triggers deleteDelegate)",
+        "preFeeBalance_ < reserve",
+        "!page"
+      ]
+    },
+    {
+      "call_chain": [
+        "DelegateSet::deleteDelegate"
+      ],
+      "entry_point": "DelegateSet::deleteDelegate",
+      "purpose": "Removes a delegate object from the ledger and updates owner count.",
+      "validation_points": [
+        "!sle",
+        "!view.dirRemove(...)",
+        "!sleOwner"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfPermissions",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for size, uniqueness, delegability",
+        "preclaim: checked for emptiness (delete intent)",
+        "doApply: used to update or create delegate SLE"
+      ],
+      "origin": "ctx.tx.getFieldArray(sfPermissions) (transaction input)",
+      "transformations": [
+        "Checked for array size limit",
+        "Checked for duplicate permission values",
+        "Checked for delegability of each permission",
+        "Written to ledger SLE if valid"
+      ],
+      "validated_at": "preflight (size, uniqueness, delegability), preclaim (emptiness for delete)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for self-authorization",
+        "preclaim: checked for existence in ledger",
+        "doApply: used to look up and update account SLE"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Compared to sfAuthorize for self-authorization check",
+        "Used to generate keylets for account and delegate objects"
+      ],
+      "validated_at": "preflight (self-authorization), preclaim (account existence)"
+    },
+    {
+      "field": "sfAuthorize",
+      "flow": [
+        "Transaction input",
+        "preflight: checked for self-authorization",
+        "preclaim: checked for existence in ledger",
+        "doApply: used to look up delegate SLE"
+      ],
+      "origin": "ctx.tx[sfAuthorize] (transaction input)",
+      "transformations": [
+        "Compared to sfAccount for self-authorization check",
+        "Used to generate keylets for delegate objects"
+      ],
+      "validated_at": "preflight (self-authorization), preclaim (account existence)"
+    },
+    {
+      "field": "sfPermissionValue",
+      "flow": [
+        "Transaction input (array element)",
+        "preflight: checked for uniqueness and delegability",
+        "doApply: written to ledger SLE if valid"
+      ],
+      "origin": "permission[sfPermissionValue] (from each element of sfPermissions array)",
+      "transformations": [
+        "Inserted into permissionSet for uniqueness check",
+        "Checked via Permission::getInstance().isDelegable"
+      ],
+      "validated_at": "preflight (uniqueness, delegability)"
+    }
+  ],
+  "description": "Implements the DelegateSet transaction logic for the XRPL, including preflight, preclaim, apply, and deletion of delegate objects with permission checks and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPermissions (array)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "permissions.size() > permissionMaxSize at DelegateSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfPermissions (array)",
+      "why_false_positive": "permissions.size() > permissionMaxSize validates sfPermissions (array) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfPermissions (array)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "permissions.size() > permissionMaxSize at DelegateSet::preflight",
+      "issue_pattern": "Missing range validation for sfPermissions (array)",
+      "why_false_positive": "permissions.size() > permissionMaxSize validates sfPermissions (array) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount and sfAuthorize",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx[sfAccount] == ctx.tx[sfAuthorize] at DelegateSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfAccount and sfAuthorize",
+      "why_false_positive": "ctx.tx[sfAccount] == ctx.tx[sfAuthorize] validates sfAccount and sfAuthorize for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPermissionValue (within sfPermissions array)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!permissionSet.insert(permission[sfPermissionValue]).second at DelegateSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfPermissionValue (within sfPermissions array)",
+      "why_false_positive": "!permissionSet.insert(permission[sfPermissionValue]).second validates sfPermissionValue (within sfPermissions array) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPermissionValue (within sfPermissions array)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules) at DelegateSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfPermissionValue (within sfPermissions array)",
+      "why_false_positive": "!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules) validates sfPermissionValue (within sfPermissions array) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!ctx.view.exists(keylet::account(ctx.tx[sfAccount])) at DelegateSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "!ctx.view.exists(keylet::account(ctx.tx[sfAccount])) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAuthorize",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])) at DelegateSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAuthorize",
+      "why_false_positive": "!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])) validates sfAuthorize for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPermissions (array) and delegate object existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.tx.getFieldArray(sfPermissions).empty() && !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])) at DelegateSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfPermissions (array) and delegate object existence",
+      "why_false_positive": "ctx.tx.getFieldArray(sfPermissions).empty() && !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])) validates sfPermissions (array) and delegate object existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (owner account)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!sleOwner at DelegateSet::doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount (owner account)",
+      "why_false_positive": "!sleOwner validates sfAccount (owner account) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfPermissions (array)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "permissions.empty() at DelegateSet::doApply (when creating new delegate object)",
+      "issue_pattern": "Missing empty string validation for sfPermissions (array)",
+      "why_false_positive": "permissions.empty() validates sfPermissions (array) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account reserve (balance check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "preFeeBalance_ < reserve at DelegateSet::doApply",
+      "issue_pattern": "Missing empty string validation for account reserve (balance check)",
+      "why_false_positive": "preFeeBalance_ < reserve validates account reserve (balance check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner directory capacity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!page at DelegateSet::doApply",
+      "issue_pattern": "Missing empty string validation for owner directory capacity",
+      "why_false_positive": "!page validates owner directory capacity for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/delegate/DelegateSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 10,
+      "name": "DelegateSet::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 32,
+      "name": "DelegateSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "DelegateSet::doApply"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& sle",
+        "AccountID const& account",
+        "beast::Journal j"
+      ],
+      "lineno": 91,
+      "name": "DelegateSet::deleteDelegate"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "DelegateSet is a new or advanced feature, so test coverage may be limited to integration and unit tests for transaction processing. Likely test files: 'test/tx/DelegateSet_test.cpp', 'test/tx/Transactor_test.cpp', or similar. Coverage should include: oversized permissions array, self-authorization, duplicate permissions, non-delegable permissions, missing accounts, deleting non-existent delegate, insufficient reserve, and successful create/update/delete flows. Gaps may exist for edge cases (e.g., directory full, internal errors, owner count mismatches). LCOV_EXCL_LINE and LCOV_EXCL_START/STOP indicate some error paths are not covered by tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temARRAY_TOO_LARGE",
+      "field": "sfPermissions (array)",
+      "location": "DelegateSet::preflight",
+      "validated_by": "permissions.size() > permissionMaxSize",
+      "validates": [
+        "Ensures the permissions array does not exceed maximum allowed size"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfAccount and sfAuthorize",
+      "location": "DelegateSet::preflight",
+      "validated_by": "ctx.tx[sfAccount] == ctx.tx[sfAuthorize]",
+      "validates": [
+        "Prevents an account from authorizing itself as a delegate"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfPermissionValue (within sfPermissions array)",
+      "location": "DelegateSet::preflight",
+      "validated_by": "!permissionSet.insert(permission[sfPermissionValue]).second",
+      "validates": [
+        "Ensures no duplicate permission values in the permissions array"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temMALFORMED",
+      "field": "sfPermissionValue (within sfPermissions array)",
+      "location": "DelegateSet::preflight",
+      "validated_by": "!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules)",
+      "validates": [
+        "Checks if each permission value is delegable under current rules"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_ACCOUNT",
+      "field": "sfAccount",
+      "location": "DelegateSet::preclaim",
+      "validated_by": "!ctx.view.exists(keylet::account(ctx.tx[sfAccount]))",
+      "validates": [
+        "Ensures the source account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_TARGET",
+      "field": "sfAuthorize",
+      "location": "DelegateSet::preclaim",
+      "validated_by": "!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize]))",
+      "validates": [
+        "Ensures the target (authorized) account exists in the ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfPermissions (array) and delegate object existence",
+      "location": "DelegateSet::preclaim",
+      "validated_by": "ctx.tx.getFieldArray(sfPermissions).empty() && !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize]))",
+      "validates": [
+        "Prevents deleting a delegate object that does not exist"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfAccount (owner account)",
+      "location": "DelegateSet::doApply",
+      "validated_by": "!sleOwner",
+      "validates": [
+        "Ensures the owner account exists before applying changes"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfPermissions (array)",
+      "location": "DelegateSet::doApply (when creating new delegate object)",
+      "validated_by": "permissions.empty()",
+      "validates": [
+        "Prevents creating a delegate object with empty permissions"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "account reserve (balance check)",
+      "location": "DelegateSet::doApply",
+      "validated_by": "preFeeBalance_ < reserve",
+      "validates": [
+        "Ensures the account has enough reserve to create a new ledger object"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecDIR_FULL",
+      "field": "owner directory capacity",
+      "location": "DelegateSet::doApply",
+      "validated_by": "!page",
+      "validates": [
+        "Ensures the owner's directory is not full before inserting delegate object"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

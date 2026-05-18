@@ -1,0 +1,474 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "response"
+    },
+    {
+      "lineno": 12,
+      "name": "transaction"
+    },
+    {
+      "lineno": 13,
+      "name": "transactionMeta"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "insertNFTSyntheticInJson",
+        "insertNFTokenID",
+        "insertNFTokenOfferID"
+      ],
+      "entry_point": "insertNFTSyntheticInJson",
+      "purpose": "Augments the JSON response with synthetic NFT fields by extracting and validating relevant data from the transaction and transaction meta.",
+      "validation_points": [
+        "insertNFTokenID: Validates and inserts NFTokenID fields",
+        "insertNFTokenOfferID: Validates and inserts NFTokenOfferID fields"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "transaction",
+      "flow": [
+        "insertNFTSyntheticInJson parameter",
+        "passed to insertNFTokenID",
+        "passed to insertNFTokenOfferID"
+      ],
+      "origin": "std::shared_ptr<STTx const> passed to insertNFTSyntheticInJson",
+      "transformations": [
+        "Read for NFT-related fields",
+        "Potential validation of structure/content in downstream functions"
+      ],
+      "validated_at": "insertNFTokenID, insertNFTokenOfferID"
+    },
+    {
+      "field": "transactionMeta",
+      "flow": [
+        "insertNFTSyntheticInJson parameter",
+        "passed to insertNFTokenID",
+        "passed to insertNFTokenOfferID"
+      ],
+      "origin": "TxMeta const& passed to insertNFTSyntheticInJson",
+      "transformations": [
+        "Read for meta fields relevant to NFTs",
+        "Potential validation of meta structure/content"
+      ],
+      "validated_at": "insertNFTokenID, insertNFTokenOfferID"
+    },
+    {
+      "field": "response[jss::meta]",
+      "flow": [
+        "response[jss::meta] in insertNFTSyntheticInJson",
+        "modified by insertNFTokenID",
+        "modified by insertNFTokenOfferID"
+      ],
+      "origin": "Json::Value& response (meta field)",
+      "transformations": [
+        "NFT fields inserted/augmented based on validated transaction/meta"
+      ],
+      "validated_at": "insertNFTokenID, insertNFTokenOfferID"
+    },
+    {
+      "field": "NFTokenID fields",
+      "flow": [
+        "insertNFTokenID",
+        "validated and inserted into response[jss::meta]"
+      ],
+      "origin": "Extracted from transaction and/or transactionMeta",
+      "transformations": [
+        "Validation of field format/content",
+        "Insertion into JSON"
+      ],
+      "validated_at": "insertNFTokenID"
+    },
+    {
+      "field": "NFTokenOfferID fields",
+      "flow": [
+        "insertNFTokenOfferID",
+        "validated and inserted into response[jss::meta]"
+      ],
+      "origin": "Extracted from transaction and/or transactionMeta",
+      "transformations": [
+        "Validation of field format/content",
+        "Insertion into JSON"
+      ],
+      "validated_at": "insertNFTokenOfferID"
+    }
+  ],
+  "description": "Provides a utility function to insert synthetic NFT-related fields into a JSON response based on a transaction and its metadata, within the xrpl::RPC namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction (type-checked by C++ type system)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transaction (type-checked by C++ type system) validated by jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system",
+      "issue_pattern": "Missing validation for transaction (type-checked by C++ type system)",
+      "why_false_positive": "jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system validates transaction (type-checked by C++ type system) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transactionMeta (type-checked by C++ type system)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transactionMeta (type-checked by C++ type system) validated by jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system",
+      "issue_pattern": "Missing validation for transactionMeta (type-checked by C++ type system)",
+      "why_false_positive": "jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system validates transactionMeta (type-checked by C++ type system) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "response[jss::meta] (created/validated by Json::Value and jss:: key)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field response[jss::meta] (created/validated by Json::Value and jss:: key) validated by jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system",
+      "issue_pattern": "Missing validation for response[jss::meta] (created/validated by Json::Value and jss:: key)",
+      "why_false_positive": "jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system validates response[jss::meta] (created/validated by Json::Value and jss:: key) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "transaction",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::shared_ptr<STTx const> at insertNFTSyntheticInJson (parameter type)",
+      "issue_pattern": "Missing empty string validation for transaction",
+      "why_false_positive": "std::shared_ptr<STTx const> validates transaction for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "transaction",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::shared_ptr<STTx const> at insertNFTSyntheticInJson (parameter type)",
+      "issue_pattern": "Missing type validation for transaction",
+      "why_false_positive": "std::shared_ptr<STTx const> validates transaction type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "transactionMeta",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "TxMeta (const reference) at insertNFTSyntheticInJson (parameter type)",
+      "issue_pattern": "Missing empty string validation for transactionMeta",
+      "why_false_positive": "TxMeta (const reference) validates transactionMeta for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "transactionMeta",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "TxMeta (const reference) at insertNFTSyntheticInJson (parameter type)",
+      "issue_pattern": "Missing type validation for transactionMeta",
+      "why_false_positive": "TxMeta (const reference) validates transactionMeta type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.6,
+      "detection_keywords": [
+        "response[jss::meta]",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "Json::Value (via jss::meta key) at insertNFTSyntheticInJson (line: response[jss::meta])",
+      "issue_pattern": "Missing empty string validation for response[jss::meta]",
+      "why_false_positive": "Json::Value (via jss::meta key) validates response[jss::meta] for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "response[jss::meta]",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "Json::Value (via jss::meta key) at insertNFTSyntheticInJson (line: response[jss::meta])",
+      "issue_pattern": "Missing format validation for response[jss::meta]",
+      "why_false_positive": "Json::Value (via jss::meta key) validates response[jss::meta] format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.5,
+      "detection_keywords": [
+        "NFTokenID fields (implied)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "insertNFTokenID (external function) at insertNFTokenID call",
+      "issue_pattern": "Missing empty string validation for NFTokenID fields (implied)",
+      "why_false_positive": "insertNFTokenID (external function) validates NFTokenID fields (implied) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.5,
+      "detection_keywords": [
+        "NFTokenOfferID fields (implied)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "insertNFTokenOfferID (external function) at insertNFTokenOfferID call",
+      "issue_pattern": "Missing empty string validation for NFTokenOfferID fields (implied)",
+      "why_false_positive": "insertNFTokenOfferID (external function) validates NFTokenOfferID fields (implied) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/NFTSyntheticSerializer.cpp",
+  "functions": [
+    {
+      "args": [
+        "response",
+        "transaction",
+        "transactionMeta"
+      ],
+      "lineno": 10,
+      "name": "insertNFTSyntheticInJson"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "Direct unit tests for insertNFTSyntheticInJson are likely in files such as test/unit/protocol/NFTSyntheticSerializer_test.cpp or similar. However, since insertNFTSyntheticInJson is a thin wrapper delegating to insertNFTokenID and insertNFTokenOfferID, most validation logic is tested via those functions' tests. Gaps may exist if there are no integration tests covering the full call chain with real transaction/meta objects, or if edge cases (malformed transactions, missing fields) are not tested. No explicit test references are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "transaction (type-checked by C++ type system)",
+      "transactionMeta (type-checked by C++ type system)",
+      "response[jss::meta] (created/validated by Json::Value and jss:: key)"
+    ],
+    "framework": "jss:: (JSON field keys), Json::Value (jsoncpp), C++ type system",
+    "validation_layer": "business_logic (function is not entry point, but part of business logic serialization)"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::bad_cast or nullptr dereference (if used improperly)",
+      "field": "transaction",
+      "location": "insertNFTSyntheticInJson (parameter type)",
+      "validated_by": "std::shared_ptr<STTx const>",
+      "validates": [
+        "pointer is of correct type",
+        "const-correctness enforced"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "compile-time type error",
+      "field": "transactionMeta",
+      "location": "insertNFTSyntheticInJson (parameter type)",
+      "validated_by": "TxMeta (const reference)",
+      "validates": [
+        "object is of type TxMeta"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.6,
+      "error_thrown": "Json::LogicError (if misused, e.g., invalid key type)",
+      "field": "response[jss::meta]",
+      "location": "insertNFTSyntheticInJson (line: response[jss::meta])",
+      "validated_by": "Json::Value (via jss::meta key)",
+      "validates": [
+        "meta field exists or is created in response",
+        "field is a valid Json::Value"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.5,
+      "error_thrown": "unknown (depends on insertNFTokenID implementation)",
+      "field": "NFTokenID fields (implied)",
+      "location": "insertNFTokenID call",
+      "validated_by": "insertNFTokenID (external function)",
+      "validates": [
+        "NFTokenID is valid and serializable",
+        "fields conform to expected format"
+      ],
+      "validation_type": "format|type|business_logic (assumed from function purpose)"
+    },
+    {
+      "confidence": 0.5,
+      "error_thrown": "unknown (depends on insertNFTokenOfferID implementation)",
+      "field": "NFTokenOfferID fields (implied)",
+      "location": "insertNFTokenOfferID call",
+      "validated_by": "insertNFTokenOfferID (external function)",
+      "validates": [
+        "NFTokenOfferID is valid and serializable",
+        "fields conform to expected format"
+      ],
+      "validation_type": "format|type|business_logic (assumed from function purpose)"
+    }
+  ]
+}

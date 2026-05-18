@@ -1,0 +1,33 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides helper functions for enumerating NFT offers in the XRPL ledger, including JSON serialization of NFT offer objects and paginated directory traversal for RPC handlers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/orderbook/NFTOffersHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "offer",
+        "offers"
+      ],
+      "lineno": 13,
+      "name": "appendNftOfferJson"
+    },
+    {
+      "args": [
+        "context",
+        "nftId",
+        "directory"
+      ],
+      "lineno": 36,
+      "name": "enumerateNFTOffers"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

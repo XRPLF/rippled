@@ -1,0 +1,519 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This header file declares a set of RPC handler functions for the XRPL server, each handling a specific RPC command related to accounts, ledgers, transactions, server state, and other XRPL features.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/Handlers.h",
+  "functions": [
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 6,
+      "name": "doAccountCurrencies"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 8,
+      "name": "doAccountInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 10,
+      "name": "doAccountLines"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 12,
+      "name": "doAccountChannels"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 14,
+      "name": "doAccountNFTs"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 16,
+      "name": "doAccountObjects"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 18,
+      "name": "doAccountOffers"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 20,
+      "name": "doAccountTx"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 22,
+      "name": "doAMMInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 24,
+      "name": "doBookOffers"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 26,
+      "name": "doBookChanges"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 28,
+      "name": "doBlackList"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 30,
+      "name": "doCanDelete"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 32,
+      "name": "doChannelAuthorize"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 34,
+      "name": "doChannelVerify"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 36,
+      "name": "doConnect"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 38,
+      "name": "doConsensusInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 40,
+      "name": "doDepositAuthorized"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 42,
+      "name": "doFeature"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 44,
+      "name": "doFee"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 46,
+      "name": "doFetchInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 48,
+      "name": "doGatewayBalances"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 50,
+      "name": "doGetCounts"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 52,
+      "name": "doGetAggregatePrice"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 54,
+      "name": "doLedgerAccept"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 56,
+      "name": "doLedgerCleaner"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 58,
+      "name": "doLedgerClosed"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 60,
+      "name": "doLedgerCurrent"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 62,
+      "name": "doLedgerData"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 64,
+      "name": "doLedgerEntry"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 66,
+      "name": "doLedgerHeader"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 68,
+      "name": "doLedgerRequest"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 70,
+      "name": "doLogLevel"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 72,
+      "name": "doLogRotate"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 74,
+      "name": "doManifest"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 76,
+      "name": "doNFTBuyOffers"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 78,
+      "name": "doNFTSellOffers"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 80,
+      "name": "doNoRippleCheck"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 82,
+      "name": "doOwnerInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 84,
+      "name": "doPathFind"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 86,
+      "name": "doPause"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 88,
+      "name": "doPeers"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 90,
+      "name": "doPing"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 92,
+      "name": "doPrint"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 94,
+      "name": "doRandom"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 96,
+      "name": "doResume"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 98,
+      "name": "doPeerReservationsAdd"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 100,
+      "name": "doPeerReservationsDel"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 102,
+      "name": "doPeerReservationsList"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 104,
+      "name": "doRipplePathFind"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 106,
+      "name": "doServerDefinitions"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 108,
+      "name": "doServerInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 110,
+      "name": "doServerState"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 112,
+      "name": "doSign"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 114,
+      "name": "doSignFor"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 116,
+      "name": "doSimulate"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 118,
+      "name": "doStop"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 120,
+      "name": "doSubmit"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 122,
+      "name": "doSubmitMultiSigned"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 124,
+      "name": "doSubscribe"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 126,
+      "name": "doTransactionEntry"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 128,
+      "name": "doTxJson"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 130,
+      "name": "doTxHistory"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 132,
+      "name": "doTxReduceRelay"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 134,
+      "name": "doUnlList"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 136,
+      "name": "doUnsubscribe"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 138,
+      "name": "doValidationCreate"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 140,
+      "name": "doWalletPropose"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 142,
+      "name": "doValidators"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 144,
+      "name": "doValidatorListSites"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 146,
+      "name": "doValidatorInfo"
+    },
+    {
+      "args": [
+        "RPC::JsonContext&"
+      ],
+      "lineno": 148,
+      "name": "doVaultInfo"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

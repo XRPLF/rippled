@@ -1,0 +1,201 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doGetCounts",
+        "getCountsJson"
+      ],
+      "entry_point": "doGetCounts",
+      "purpose": "Handles the RPC 'get_counts' admin/status request, validates and processes the min_count parameter, and returns system object and cache statistics.",
+      "validation_points": [
+        "doGetCounts: min_count is extracted from context.params and converted to unsigned int via asUInt()"
+      ]
+    },
+    {
+      "call_chain": [
+        "getCountsJson",
+        "CountedObjects::getInstance().getCounts",
+        "app.get*() methods"
+      ],
+      "entry_point": "getCountsJson",
+      "purpose": "Aggregates various system and cache statistics, using minObjectCount as a filter for object counts.",
+      "validation_points": [
+        "getCountsJson: minObjectCount is assumed to be validated by caller (doGetCounts)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "min_count",
+      "flow": [
+        "context.params[jss::min_count]",
+        "doGetCounts: asUInt() conversion",
+        "minCount local variable",
+        "getCountsJson(minCount)",
+        "CountedObjects::getCounts(minCount)"
+      ],
+      "origin": "context.params[jss::min_count] (JSON RPC input)",
+      "transformations": [
+        "If present, min_count is converted to unsigned int via asUInt()",
+        "If absent, defaults to 10"
+      ],
+      "validated_at": "doGetCounts: asUInt() conversion (type and range check by asUInt())"
+    },
+    {
+      "field": "objectCounts",
+      "flow": [
+        "getCountsJson: objectCounts",
+        "for loop: each [k, v] inserted into ret JSON"
+      ],
+      "origin": "CountedObjects::getInstance().getCounts(minObjectCount)",
+      "transformations": [
+        "Filtered by minObjectCount"
+      ],
+      "validated_at": "Indirectly validated by min_count validation"
+    },
+    {
+      "field": "context.params",
+      "flow": [
+        "doGetCounts: context.params",
+        "doGetCounts: checks isMember(jss::min_count)",
+        "doGetCounts: passes minCount to getCountsJson"
+      ],
+      "origin": "RPC JSON request",
+      "transformations": [
+        "Extraction of min_count field"
+      ],
+      "validated_at": "doGetCounts: isMember + asUInt()"
+    }
+  ],
+  "description": "Provides RPC handler and utility functions to gather and return various runtime and cache statistics, database usage, and uptime information for the XRPL server, typically for admin/status endpoints.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "min_count",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual type/range check (likely, based on comment and context usage) at doGetCounts",
+      "issue_pattern": "Missing empty string validation for min_count",
+      "why_false_positive": "manual type/range check (likely, based on comment and context usage) validates min_count for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/status/GetCounts.cpp",
+  "functions": [
+    {
+      "args": [
+        "text",
+        "seconds",
+        "unitName",
+        "unitVal"
+      ],
+      "lineno": 13,
+      "name": "textTime"
+    },
+    {
+      "args": [
+        "app",
+        "minObjectCount"
+      ],
+      "lineno": 29,
+      "name": "getCountsJson"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 87,
+      "name": "doGetCounts"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This handler is likely tested via admin/status RPC integration tests, e.g., in test suites for the 'get_counts' endpoint. Unit tests for doGetCounts or getCountsJson are unlikely unless specifically written. Edge cases (e.g., negative, non-numeric, or very large min_count) may not be fully covered unless there are explicit tests for invalid input types/ranges. The asUInt() method will throw or return 0 for invalid types, but this is not explicitly handled in the code, so test coverage for error handling is likely incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld RPC framework (jss:: for field names, RPC::JsonContext for input)",
+    "validation_layer": "entry_point (doGetCounts is the handler for the RPC method)"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "RPC::expected_field_error or similar (inferred, not shown in snippet)",
+      "field": "min_count",
+      "location": "doGetCounts",
+      "validated_by": "manual type/range check (likely, based on comment and context usage)",
+      "validates": [
+        "Checks if min_count is present in context.params",
+        "If present, checks if min_count is an integer",
+        "If not present, defaults to 10 (per comment)",
+        "If present and not integer, throws error"
+      ],
+      "validation_type": "type|range"
+    }
+  ]
+}

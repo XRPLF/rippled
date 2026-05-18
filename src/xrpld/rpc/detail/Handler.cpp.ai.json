@@ -1,0 +1,286 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "entries"
+      ],
+      "lineno": 97,
+      "name": "HandlerTable"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "byRef(Function f)",
+        "lambda (JsonContext& context, Json::Value& result)",
+        "f(context)",
+        "result = f(context)",
+        "if (result.type() != Json::objectValue) { ... }"
+      ],
+      "entry_point": "byRef",
+      "purpose": "Wraps a handler function to ensure its result is a JSON object; adapts old-style handlers to new interface.",
+      "validation_points": [
+        "result.type() != Json::objectValue (ensures handler returns JSON object)"
+      ]
+    },
+    {
+      "call_chain": [
+        "handle<JsonContext, Object>(JsonContext& context, Object& object)",
+        "XRPL_ASSERT(context.apiVersion >= HandlerImpl::minApiVer && context.apiVersion <= HandlerImpl::maxApiVer, ...)",
+        "HandlerImpl handler(context)",
+        "handler.check()",
+        "if (status) { status.inject(object); } else { handler.writeResult(object); }"
+      ],
+      "entry_point": "handle",
+      "purpose": "Generic handler invoker that validates API version, checks handler preconditions, and writes result or error.",
+      "validation_points": [
+        "XRPL_ASSERT on context.apiVersion (API version validation)",
+        "handler.check() (handler-specific validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "handlerFrom<HandlerImpl>()",
+        "returns Handler struct with handle<Json::Value, HandlerImpl> as method"
+      ],
+      "entry_point": "handlerFrom",
+      "purpose": "Registers a handler with its metadata and validation logic.",
+      "validation_points": [
+        "Delegates to handle, so inherits its validation"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context.apiVersion",
+      "flow": [
+        "JsonContext (input)",
+        "handle<JsonContext, Object>(...)",
+        "XRPL_ASSERT(context.apiVersion ...)",
+        "HandlerImpl handler(context)"
+      ],
+      "origin": "JsonContext (populated from incoming RPC request)",
+      "transformations": [
+        "Checked for min/max allowed API version"
+      ],
+      "validated_at": "XRPL_ASSERT in handle"
+    },
+    {
+      "field": "result",
+      "flow": [
+        "byRef lambda parameter",
+        "result = f(context)",
+        "if (result.type() != Json::objectValue) { ... }"
+      ],
+      "origin": "Output parameter to handler lambda (byRef)",
+      "transformations": [
+        "Assigned from handler function",
+        "If not object, wrapped via makeObjectValue"
+      ],
+      "validated_at": "byRef: result.type() != Json::objectValue"
+    },
+    {
+      "field": "handler function result",
+      "flow": [
+        "handler function (e.g., doAccountInfo)",
+        "byRef lambda",
+        "result assignment",
+        "possibly wrapped by makeObjectValue"
+      ],
+      "origin": "doAccountInfo, doAccountCurrencies, etc.",
+      "transformations": [
+        "May be wrapped to ensure JSON object"
+      ],
+      "validated_at": "byRef: result.type() != Json::objectValue"
+    }
+  ],
+  "description": "Defines and registers RPC handlers for the XRPL server, mapping handler names to their implementations, roles, and API version constraints. Provides lookup and registration mechanisms for handlers.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "context.apiVersion",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field context.apiVersion validated by XRPL_ASSERT macro, Json::Value type checking",
+      "issue_pattern": "Missing validation for context.apiVersion",
+      "why_false_positive": "XRPL_ASSERT macro, Json::Value type checking validates context.apiVersion automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "handler result type",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field handler result type validated by XRPL_ASSERT macro, Json::Value type checking",
+      "issue_pattern": "Missing validation for handler result type",
+      "why_false_positive": "XRPL_ASSERT macro, Json::Value type checking validates handler result type automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "context.apiVersion",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at handle (template function)",
+      "issue_pattern": "Missing empty string validation for context.apiVersion",
+      "why_false_positive": "XRPL_ASSERT macro validates context.apiVersion for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "context.apiVersion",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT macro at handle (template function)",
+      "issue_pattern": "Missing range validation for context.apiVersion",
+      "why_false_positive": "XRPL_ASSERT macro validates context.apiVersion range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result (from handler function)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "result.type() != Json::objectValue at byRef (template function)",
+      "issue_pattern": "Missing empty string validation for result (from handler function)",
+      "why_false_positive": "result.type() != Json::objectValue validates result (from handler function) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result (from handler function)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "result.type() != Json::objectValue at byRef (template function)",
+      "issue_pattern": "Missing type validation for result (from handler function)",
+      "why_false_positive": "result.type() != Json::objectValue validates result (from handler function) type"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/Handler.cpp",
+  "functions": [
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 13,
+      "name": "byRef"
+    },
+    {
+      "args": [
+        "context",
+        "object"
+      ],
+      "lineno": 27,
+      "name": "handle"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "handlerFrom"
+    },
+    {
+      "args": [
+        "version",
+        "betaEnabled",
+        "name"
+      ],
+      "lineno": 154,
+      "name": "getHandler"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "getHandlerNames"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "Test coverage is likely provided by integration and unit tests for each handler (e.g., doAccountInfo, doAccountCurrencies, etc.), as well as tests for API versioning and error handling. However, the specific validation for result.type() != Json::objectValue is marked LCOV_EXCL_START, indicating it is not covered by tests (since handlers are expected to always return objects). API version validation via XRPL_ASSERT may be tested in API versioning tests, but assertion failures may not be directly tested unless negative tests are written. There may be gaps in testing for unreachable/exceptional paths and for handlers returning non-object JSON.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "context.apiVersion",
+      "handler result type"
+    ],
+    "framework": "XRPL_ASSERT macro, Json::Value type checking",
+    "validation_layer": "middleware (handler dispatch layer)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "context.apiVersion",
+      "location": "handle (template function)",
+      "validated_by": "XRPL_ASSERT macro",
+      "validates": [
+        "context.apiVersion >= HandlerImpl::minApiVer",
+        "context.apiVersion <= HandlerImpl::maxApiVer"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE macro (likely aborts or throws)",
+      "field": "result (from handler function)",
+      "location": "byRef (template function)",
+      "validated_by": "result.type() != Json::objectValue",
+      "validates": [
+        "result is a JSON object"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

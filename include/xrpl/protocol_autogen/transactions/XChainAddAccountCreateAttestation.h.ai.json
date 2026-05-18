@@ -1,0 +1,240 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "tx"
+    },
+    {
+      "lineno": 159,
+      "name": "account"
+    },
+    {
+      "lineno": 160,
+      "name": "xChainBridge"
+    },
+    {
+      "lineno": 161,
+      "name": "attestationSignerAccount"
+    },
+    {
+      "lineno": 162,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 163,
+      "name": "signature"
+    },
+    {
+      "lineno": 164,
+      "name": "otherChainSource"
+    },
+    {
+      "lineno": 165,
+      "name": "amount"
+    },
+    {
+      "lineno": 166,
+      "name": "attestationRewardAccount"
+    },
+    {
+      "lineno": 167,
+      "name": "wasLockingChainSend"
+    },
+    {
+      "lineno": 168,
+      "name": "xChainAccountCreateCount"
+    },
+    {
+      "lineno": 169,
+      "name": "destination"
+    },
+    {
+      "lineno": 170,
+      "name": "signatureReward"
+    },
+    {
+      "lineno": 171,
+      "name": "sequence"
+    },
+    {
+      "lineno": 172,
+      "name": "fee"
+    },
+    {
+      "lineno": 303,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 303,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 29,
+      "name": "XChainAddAccountCreateAttestation"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge, std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationSignerAccount, std::decay_t<typename SF_VL::type::value_type> const& publicKey, std::decay_t<typename SF_VL::type::value_type> const& signature, std::decay_t<typename SF_ACCOUNT::type::value_type> const& otherChainSource, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::decay_t<typename SF_ACCOUNT::type::value_type> const& attestationRewardAccount, std::decay_t<typename SF_UINT8::type::value_type> const& wasLockingChainSend, std::decay_t<typename SF_UINT64::type::value_type> const& xChainAccountCreateCount, std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination, std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 157,
+      "name": "XChainAddAccountCreateAttestationBuilder"
+    }
+  ],
+  "description": "Defines the XChainAddAccountCreateAttestation transaction type for XRPL, including its builder class, field accessors, and construction logic. Provides type-safe access to transaction fields and a fluent builder interface for constructing and signing transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/XChainAddAccountCreateAttestation.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getXChainBridge"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAttestationSignerAccount"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getPublicKey"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "getSignature"
+    },
+    {
+      "args": [],
+      "lineno": 84,
+      "name": "getOtherChainSource"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 104,
+      "name": "getAttestationRewardAccount"
+    },
+    {
+      "args": [],
+      "lineno": 114,
+      "name": "getWasLockingChainSend"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "getXChainAccountCreateCount"
+    },
+    {
+      "args": [],
+      "lineno": 134,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 144,
+      "name": "getSignatureReward"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 191,
+      "name": "setXChainBridge"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 201,
+      "name": "setAttestationSignerAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 211,
+      "name": "setPublicKey"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 221,
+      "name": "setSignature"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 231,
+      "name": "setOtherChainSource"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 241,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 251,
+      "name": "setAttestationRewardAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 261,
+      "name": "setWasLockingChainSend"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 271,
+      "name": "setXChainAccountCreateCount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 281,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 291,
+      "name": "setSignatureReward"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 301,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

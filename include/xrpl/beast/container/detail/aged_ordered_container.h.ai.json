@@ -1,0 +1,117 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "()"
+      ],
+      "lineno": 15,
+      "name": "is_boost_reverse_iterator"
+    },
+    {
+      "args": [
+        "()"
+      ],
+      "lineno": 20,
+      "name": "is_boost_reverse_iterator<boost::intrusive::reverse_iterator<It>>"
+    },
+    {
+      "args": [
+        "clock_type& clock",
+        "clock_type& clock, Compare const& comp",
+        "clock_type& clock, Allocator const& alloc",
+        "clock_type& clock, Compare const& comp, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock",
+        "InputIt first, InputIt last, clock_type& clock, Compare const& comp",
+        "InputIt first, InputIt last, clock_type& clock, Allocator const& alloc",
+        "InputIt first, InputIt last, clock_type& clock, Compare const& comp, Allocator const& alloc",
+        "aged_ordered_container const& other",
+        "aged_ordered_container const& other, Allocator const& alloc",
+        "aged_ordered_container&& other",
+        "aged_ordered_container&& other, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock",
+        "std::initializer_list<value_type> init, clock_type& clock, Compare const& comp",
+        "std::initializer_list<value_type> init, clock_type& clock, Allocator const& alloc",
+        "std::initializer_list<value_type> init, clock_type& clock, Compare const& comp, Allocator const& alloc"
+      ],
+      "lineno": 29,
+      "name": "aged_ordered_container"
+    },
+    {
+      "args": [
+        "time_point const& when_, value_type const& value_",
+        "time_point const& when_, value_type&& value_",
+        "time_point const& when_, Args&&... args"
+      ],
+      "lineno": 61,
+      "name": "element"
+    },
+    {
+      "args": [
+        "()",
+        "(pair_value_compare const& other)",
+        "(Compare const& compare)"
+      ],
+      "lineno": 87,
+      "name": "pair_value_compare"
+    },
+    {
+      "args": [
+        "()",
+        "(Compare const& compare)"
+      ],
+      "lineno": 108,
+      "name": "KeyValueCompare"
+    },
+    {
+      "args": [
+        "(clock_type& clock_)",
+        "(clock_type& clock_, Compare const& comp)",
+        "(clock_type& clock_, Allocator const& alloc_)",
+        "(clock_type& clock_, Compare const& comp, Allocator const& alloc_)",
+        "(config_t const& other)",
+        "(config_t const& other, Allocator const& alloc)",
+        "(config_t&& other)",
+        "(config_t&& other, Allocator const& alloc)"
+      ],
+      "lineno": 154,
+      "name": "config_t"
+    },
+    {
+      "args": [],
+      "lineno": 246,
+      "name": "chronological_t"
+    }
+  ],
+  "description": "This file implements an associative container (ordered set/map and their multi variants) where each element is also indexed by time, allowing for time-based operations such as expiration and chronological traversal. It is designed for use cases like caches with expiring items and provides an interface similar to standard library containers, with additional time-aware features.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/detail/aged_ordered_container.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 1082,
+      "name": "swap"
+    },
+    {
+      "args": [
+        "c",
+        "age"
+      ],
+      "lineno": 1092,
+      "name": "expire"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ]
+}

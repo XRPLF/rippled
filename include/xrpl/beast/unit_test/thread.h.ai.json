@@ -1,0 +1,99 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "thread"
+    }
+  ],
+  "description": "Defines a custom thread class for unit testing that wraps std::thread and handles exceptions, ensuring exceptions in threads are reported as test failures.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/thread.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "thread"
+    },
+    {
+      "args": [
+        "thread const&"
+      ],
+      "lineno": 24,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "thread&& other"
+      ],
+      "lineno": 26,
+      "name": "thread"
+    },
+    {
+      "args": [
+        "thread&& other"
+      ],
+      "lineno": 30,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "suite& s",
+        "F&& f",
+        "Args&&... args"
+      ],
+      "lineno": 37,
+      "name": "thread"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "joinable"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "get_id"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "hardware_concurrency"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "join"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "detach"
+    },
+    {
+      "args": [
+        "thread& other"
+      ],
+      "lineno": 68,
+      "name": "swap"
+    },
+    {
+      "args": [
+        "std::function<void(void)> f"
+      ],
+      "lineno": 74,
+      "name": "run"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    },
+    {
+      "lineno": 9,
+      "name": "unit_test"
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "VaultCreate"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_ISSUE::type::value_type> const& asset, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 181,
+      "name": "VaultCreateBuilder"
+    }
+  ],
+  "description": "Defines the VaultCreate transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing VaultCreate transactions with various fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/VaultCreate.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "VaultCreate::getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "VaultCreate::getAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "VaultCreate::hasAssetsMaximum"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "VaultCreate::getMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "VaultCreate::hasMPTokenMetadata"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "VaultCreate::getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "VaultCreate::hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "VaultCreate::getWithdrawalPolicy"
+    },
+    {
+      "args": [],
+      "lineno": 128,
+      "name": "VaultCreate::hasWithdrawalPolicy"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "VaultCreate::getData"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "VaultCreate::hasData"
+    },
+    {
+      "args": [],
+      "lineno": 159,
+      "name": "VaultCreate::getScale"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "VaultCreate::hasScale"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 200,
+      "name": "VaultCreateBuilder::setAsset"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 210,
+      "name": "VaultCreateBuilder::setAssetsMaximum"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 220,
+      "name": "VaultCreateBuilder::setMPTokenMetadata"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 230,
+      "name": "VaultCreateBuilder::setDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 240,
+      "name": "VaultCreateBuilder::setWithdrawalPolicy"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 250,
+      "name": "VaultCreateBuilder::setData"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 260,
+      "name": "VaultCreateBuilder::setScale"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 270,
+      "name": "VaultCreateBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

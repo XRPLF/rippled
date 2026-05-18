@@ -1,0 +1,169 @@
+{
+  "args": [
+    {
+      "lineno": 24,
+      "name": "nativeIn_"
+    },
+    {
+      "lineno": 24,
+      "name": "nativeOut_"
+    },
+    {
+      "lineno": 61,
+      "name": "nativeIn"
+    },
+    {
+      "lineno": 61,
+      "name": "nativeOut"
+    },
+    {
+      "lineno": 80,
+      "name": "tag"
+    },
+    {
+      "lineno": 92,
+      "name": "tag"
+    },
+    {
+      "lineno": 104,
+      "name": "name"
+    },
+    {
+      "lineno": 104,
+      "name": "pi"
+    },
+    {
+      "lineno": 113,
+      "name": "tag"
+    },
+    {
+      "lineno": 120,
+      "name": "c"
+    },
+    {
+      "lineno": 129,
+      "name": "in"
+    },
+    {
+      "lineno": 129,
+      "name": "out"
+    },
+    {
+      "lineno": 129,
+      "name": "activeStrands"
+    },
+    {
+      "lineno": 134,
+      "name": "in"
+    },
+    {
+      "lineno": 134,
+      "name": "out"
+    },
+    {
+      "lineno": 143,
+      "name": "writePassInfo"
+    },
+    {
+      "lineno": 168,
+      "name": "ostr"
+    },
+    {
+      "lineno": 168,
+      "name": "elem"
+    },
+    {
+      "lineno": 177,
+      "name": "ostr"
+    },
+    {
+      "lineno": 177,
+      "name": "begin"
+    },
+    {
+      "lineno": 177,
+      "name": "end"
+    },
+    {
+      "lineno": 192,
+      "name": "sb"
+    },
+    {
+      "lineno": 192,
+      "name": "rv"
+    },
+    {
+      "lineno": 197,
+      "name": "bd"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "bool nativeIn",
+        "bool nativeOut"
+      ],
+      "lineno": 13,
+      "name": "FlowDebugInfo"
+    },
+    {
+      "args": [
+        "bool nativeIn_",
+        "bool nativeOut_"
+      ],
+      "lineno": 22,
+      "name": "PassInfo"
+    }
+  ],
+  "description": "This file provides debugging and performance tracking utilities for payment flows in the XRPL pathfinding logic, including structures to record timing, pass information, and balance differences during payment processing.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/FlowDebugInfo.h",
+  "functions": [
+    {
+      "args": [
+        "ostr",
+        "elem"
+      ],
+      "lineno": 168,
+      "name": "writeDiffElement"
+    },
+    {
+      "args": [
+        "ostr",
+        "begin",
+        "end"
+      ],
+      "lineno": 177,
+      "name": "writeDiffs"
+    },
+    {
+      "args": [
+        "sb",
+        "rv"
+      ],
+      "lineno": 192,
+      "name": "balanceDiffs"
+    },
+    {
+      "args": [
+        "bd"
+      ],
+      "lineno": 197,
+      "name": "balanceDiffsToString"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "path"
+    },
+    {
+      "lineno": 12,
+      "name": "detail"
+    }
+  ]
+}

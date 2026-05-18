@@ -1,0 +1,41 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides utilities for managing and calculating ledger close time resolutions and effective close times in the XRPL protocol, including dynamic adjustment of time binning for consensus.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/LedgerTiming.h",
+  "functions": [
+    {
+      "args": [
+        "previousResolution",
+        "previousAgree",
+        "ledgerSeq"
+      ],
+      "lineno": 32,
+      "name": "getNextLedgerTimeResolution"
+    },
+    {
+      "args": [
+        "closeTime",
+        "closeResolution"
+      ],
+      "lineno": 81,
+      "name": "roundCloseTime"
+    },
+    {
+      "args": [
+        "closeTime",
+        "resolution",
+        "priorCloseTime"
+      ],
+      "lineno": 102,
+      "name": "effCloseTime"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

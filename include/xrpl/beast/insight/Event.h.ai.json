@@ -1,0 +1,52 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "()",
+        "std::shared_ptr<EventImpl> const& impl"
+      ],
+      "lineno": 18,
+      "name": "Event"
+    }
+  ],
+  "description": "Defines the Event class, a lightweight reference wrapper for reporting event timing metrics in the beast::insight namespace. Supports push-style event notifications with associated timing values.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/Event.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "Event"
+    },
+    {
+      "args": [
+        "std::shared_ptr<EventImpl> const& impl"
+      ],
+      "lineno": 30,
+      "name": "Event"
+    },
+    {
+      "args": [
+        "std::chrono::duration<Rep, Period> const& value"
+      ],
+      "lineno": 39,
+      "name": "notify"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "impl"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "insight"
+    }
+  ]
+}

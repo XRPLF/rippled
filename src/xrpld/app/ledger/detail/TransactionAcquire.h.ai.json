@@ -1,0 +1,91 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "uint256 const& hash",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 10,
+      "name": "TransactionAcquire"
+    }
+  ],
+  "description": "Defines the TransactionAcquire class, which manages the acquisition of a transaction set (SHAMap) from peers in the XRPL network, handling peer coordination, timeouts, and data collection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/TransactionAcquire.h",
+  "functions": [
+    {
+      "args": [
+        "Application& app",
+        "uint256 const& hash",
+        "std::unique_ptr<PeerSet> peerSet"
+      ],
+      "lineno": 13,
+      "name": "TransactionAcquire"
+    },
+    {
+      "args": [],
+      "lineno": 14,
+      "name": "~TransactionAcquire"
+    },
+    {
+      "args": [
+        "std::vector<std::pair<SHAMapNodeID, Slice>> const& data",
+        "std::shared_ptr<Peer> const&"
+      ],
+      "lineno": 16,
+      "name": "takeNodes"
+    },
+    {
+      "args": [
+        "int startPeers"
+      ],
+      "lineno": 21,
+      "name": "init"
+    },
+    {
+      "args": [],
+      "lineno": 24,
+      "name": "stillNeed"
+    },
+    {
+      "args": [
+        "bool progress",
+        "ScopedLockType& peerSetLock"
+      ],
+      "lineno": 31,
+      "name": "onTimer"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "done"
+    },
+    {
+      "args": [
+        "std::size_t limit"
+      ],
+      "lineno": 37,
+      "name": "addPeers"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Peer> const&"
+      ],
+      "lineno": 39,
+      "name": "trigger"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "pmDowncast"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

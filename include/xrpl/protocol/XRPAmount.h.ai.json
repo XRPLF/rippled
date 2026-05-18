@@ -1,0 +1,51 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "XRPAmount const& other",
+        "Number const& x",
+        "beast::Zero",
+        "value_type drops"
+      ],
+      "lineno": 13,
+      "name": "XRPAmount"
+    }
+  ],
+  "description": "Defines the XRPAmount class for representing and manipulating XRP amounts in drops, including arithmetic operations, conversions, and utility functions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/XRPAmount.h",
+  "functions": [
+    {
+      "args": [
+        "os",
+        "q"
+      ],
+      "lineno": 143,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 149,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "amt",
+        "num",
+        "den",
+        "roundUp"
+      ],
+      "lineno": 154,
+      "name": "mulRatio"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

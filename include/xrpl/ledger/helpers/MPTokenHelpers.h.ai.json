@@ -1,0 +1,243 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This file provides helper functions for handling Multi-Party Token (MPT) operations in the XRPL ledger, including freeze checks, transfer rates, authorization, holding management, escrow operations, overflow checks, and DEX-related logic.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/ledger/helpers/MPTokenHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "view",
+        "mptIssue"
+      ],
+      "lineno": 17,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue"
+      ],
+      "lineno": 20,
+      "name": "isIndividualFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "account",
+        "mptIssue",
+        "depth"
+      ],
+      "lineno": 23,
+      "name": "isFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "accounts",
+        "mptIssue",
+        "depth"
+      ],
+      "lineno": 26,
+      "name": "isAnyFrozen"
+    },
+    {
+      "args": [
+        "view",
+        "issuanceID"
+      ],
+      "lineno": 38,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssue"
+      ],
+      "lineno": 46,
+      "name": "canAddHolding"
+    },
+    {
+      "args": [
+        "view",
+        "priorBalance",
+        "mptIssuanceID",
+        "account",
+        "journal",
+        "flags",
+        "holderID"
+      ],
+      "lineno": 51,
+      "name": "authorizeMPToken"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssue",
+        "account",
+        "authType",
+        "depth"
+      ],
+      "lineno": 65,
+      "name": "requireAuth"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssuanceID",
+        "account",
+        "priorBalance",
+        "j"
+      ],
+      "lineno": 77,
+      "name": "enforceMPTokenAuthorization"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssue",
+        "from",
+        "to"
+      ],
+      "lineno": 87,
+      "name": "canTransfer"
+    },
+    {
+      "args": [
+        "view",
+        "asset"
+      ],
+      "lineno": 94,
+      "name": "canTrade"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "priorBalance",
+        "mptIssue",
+        "journal"
+      ],
+      "lineno": 102,
+      "name": "addEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "accountID",
+        "mptIssue",
+        "journal"
+      ],
+      "lineno": 109,
+      "name": "removeEmptyHolding"
+    },
+    {
+      "args": [
+        "view",
+        "uGrantorID",
+        "saAmount",
+        "j"
+      ],
+      "lineno": 117,
+      "name": "lockEscrowMPT"
+    },
+    {
+      "args": [
+        "view",
+        "uGrantorID",
+        "uGranteeID",
+        "netAmount",
+        "grossAmount",
+        "j"
+      ],
+      "lineno": 122,
+      "name": "unlockEscrowMPT"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssuanceID",
+        "account",
+        "flags"
+      ],
+      "lineno": 129,
+      "name": "createMPToken"
+    },
+    {
+      "args": [
+        "view",
+        "mptIssue",
+        "holder",
+        "j"
+      ],
+      "lineno": 134,
+      "name": "checkCreateMPT"
+    },
+    {
+      "args": [
+        "sleIssuance"
+      ],
+      "lineno": 143,
+      "name": "maxMPTAmount"
+    },
+    {
+      "args": [
+        "sleIssuance"
+      ],
+      "lineno": 146,
+      "name": "availableMPTAmount"
+    },
+    {
+      "args": [
+        "view",
+        "mptID"
+      ],
+      "lineno": 149,
+      "name": "availableMPTAmount"
+    },
+    {
+      "args": [
+        "sendAmount",
+        "outstandingAmount",
+        "maximumAmount",
+        "allowOverflow"
+      ],
+      "lineno": 158,
+      "name": "isMPTOverflow"
+    },
+    {
+      "args": [
+        "view",
+        "issue"
+      ],
+      "lineno": 175,
+      "name": "issuerFundsToSelfIssue"
+    },
+    {
+      "args": [
+        "view",
+        "issue",
+        "amount"
+      ],
+      "lineno": 181,
+      "name": "issuerSelfDebitHookMPT"
+    },
+    {
+      "args": [
+        "v",
+        "tx",
+        "asset",
+        "accountID"
+      ],
+      "lineno": 191,
+      "name": "checkMPTTxAllowed"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

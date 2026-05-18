@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "amount"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "MeterImpl"
+    }
+  ],
+  "description": "Defines the MeterImpl abstract class for increment-only metric counters in the beast::insight namespace, providing an interface for incrementing a meter value.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/MeterImpl.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~MeterImpl"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 14,
+      "name": "increment"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 5,
+      "name": "insight"
+    }
+  ]
+}

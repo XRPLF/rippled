@@ -1,0 +1,38 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "params"
+    },
+    {
+      "lineno": 19,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 7,
+      "name": "CollectorManager"
+    }
+  ],
+  "description": "Defines the CollectorManager interface for providing the beast::insight::Collector service, including its API and a factory function.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/CollectorManager.h",
+  "functions": [
+    {
+      "args": [
+        "params",
+        "journal"
+      ],
+      "lineno": 19,
+      "name": "make_CollectorManager"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "HookImpl"
+    }
+  ],
+  "description": "Defines the HookImpl class, an abstract base class for hook implementations in the beast::insight namespace, supporting a handler type for polled collection.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/HookImpl.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 5,
+      "name": "insight"
+    }
+  ]
+}

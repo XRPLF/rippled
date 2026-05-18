@@ -1,0 +1,58 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "ec"
+    },
+    {
+      "lineno": 10,
+      "name": "sourcePath"
+    },
+    {
+      "lineno": 11,
+      "name": "maxSize"
+    },
+    {
+      "lineno": 15,
+      "name": "ec"
+    },
+    {
+      "lineno": 16,
+      "name": "destPath"
+    },
+    {
+      "lineno": 17,
+      "name": "contents"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utility functions for reading from and writing to files using Boost filesystem, with error handling and optional size limit.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/FileUtilities.h",
+  "functions": [
+    {
+      "args": [
+        "ec",
+        "sourcePath",
+        "maxSize"
+      ],
+      "lineno": 8,
+      "name": "getFileContents"
+    },
+    {
+      "args": [
+        "ec",
+        "destPath",
+        "contents"
+      ],
+      "lineno": 14,
+      "name": "writeFileContents"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

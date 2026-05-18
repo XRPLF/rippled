@@ -1,0 +1,155 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "collector"
+    },
+    {
+      "lineno": 13,
+      "name": "app"
+    },
+    {
+      "lineno": 20,
+      "name": "ledger"
+    },
+    {
+      "lineno": 20,
+      "name": "validated"
+    },
+    {
+      "lineno": 32,
+      "name": "ledgerIndex"
+    },
+    {
+      "lineno": 36,
+      "name": "ledgerHash"
+    },
+    {
+      "lineno": 72,
+      "name": "seq"
+    },
+    {
+      "lineno": 78,
+      "name": "built"
+    },
+    {
+      "lineno": 79,
+      "name": "valid"
+    },
+    {
+      "lineno": 80,
+      "name": "builtConsensusHash"
+    },
+    {
+      "lineno": 81,
+      "name": "validatedConsensusHash"
+    },
+    {
+      "lineno": 82,
+      "name": "consensus"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "collector",
+        "app"
+      ],
+      "lineno": 12,
+      "name": "LedgerHistory"
+    }
+  ],
+  "description": "Defines the LedgerHistory class, which retains and manages historical ledgers, providing methods for tracking, retrieving, and maintaining ledger data by hash and sequence number.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerHistory.h",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "validated"
+      ],
+      "lineno": 19,
+      "name": "insert"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "getCacheHitRate"
+    },
+    {
+      "args": [
+        "ledgerIndex"
+      ],
+      "lineno": 31,
+      "name": "getLedgerBySeq"
+    },
+    {
+      "args": [
+        "ledgerHash"
+      ],
+      "lineno": 35,
+      "name": "getLedgerByHash"
+    },
+    {
+      "args": [
+        "ledgerIndex"
+      ],
+      "lineno": 40,
+      "name": "getLedgerHash"
+    },
+    {
+      "args": [],
+      "lineno": 47,
+      "name": "sweep"
+    },
+    {
+      "args": [
+        "",
+        "consensusHash",
+        ""
+      ],
+      "lineno": 54,
+      "name": "builtLedger"
+    },
+    {
+      "args": [
+        "",
+        "consensusHash"
+      ],
+      "lineno": 58,
+      "name": "validatedLedger"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "ledgerHash"
+      ],
+      "lineno": 66,
+      "name": "fixIndex"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 71,
+      "name": "clearLedgerCachePrior"
+    },
+    {
+      "args": [
+        "built",
+        "valid",
+        "builtConsensusHash",
+        "validatedConsensusHash",
+        "consensus"
+      ],
+      "lineno": 77,
+      "name": "handleMismatch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

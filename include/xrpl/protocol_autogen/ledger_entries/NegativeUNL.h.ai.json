@@ -1,0 +1,139 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 24,
+      "name": "NegativeUNL"
+    },
+    {
+      "args": [],
+      "lineno": 143,
+      "name": "NegativeUNLBuilder"
+    }
+  ],
+  "description": "Defines the NegativeUNL ledger entry wrapper and builder for XRPL, providing type-safe accessors and a fluent builder interface for constructing NegativeUNL ledger entries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/NegativeUNL.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 27,
+      "name": "NegativeUNL"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getDisabledValidators"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "hasDisabledValidators"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "getValidatorToDisable"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "hasValidatorToDisable"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "getValidatorToReEnable"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "hasValidatorToReEnable"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "hasPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 146,
+      "name": "NegativeUNLBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 151,
+      "name": "NegativeUNLBuilder"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 163,
+      "name": "setDisabledValidators"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 171,
+      "name": "setValidatorToDisable"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 179,
+      "name": "setValidatorToReEnable"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 187,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 195,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "uint256 const& index"
+      ],
+      "lineno": 203,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

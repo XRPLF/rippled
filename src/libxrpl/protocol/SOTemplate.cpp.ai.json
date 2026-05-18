@@ -1,0 +1,263 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "uniqueFields"
+    },
+    {
+      "lineno": 13,
+      "name": "commonFields"
+    },
+    {
+      "lineno": 18,
+      "name": "uniqueFields"
+    },
+    {
+      "lineno": 18,
+      "name": "commonFields"
+    },
+    {
+      "lineno": 45,
+      "name": "sField"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SOTemplate::SOTemplate(std::initializer_list<SOElement>, std::initializer_list<SOElement>)",
+        "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)"
+      ],
+      "entry_point": "SOTemplate::SOTemplate(std::initializer_list<SOElement>, std::initializer_list<SOElement>)",
+      "purpose": "Constructs a SOTemplate from initializer lists by converting them to vectors and delegating to the main constructor.",
+      "validation_points": [
+        "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)"
+      ],
+      "entry_point": "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "purpose": "Main constructor: merges unique and common fields, validates them, and builds index mapping.",
+      "validation_points": [
+        "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>) (field index range and duplicate check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SOTemplate::getIndex(SField const&)"
+      ],
+      "entry_point": "SOTemplate::getIndex(SField const&)",
+      "purpose": "Returns the index of a field in the template, validating the field index range.",
+      "validation_points": [
+        "SOTemplate::getIndex(SField const&) (field index range check)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "SField.getNum()",
+      "flow": [
+        "SOElement.sField()",
+        "SField.getNum()",
+        "Validation in SOTemplate constructor (range and duplicate check)",
+        "indices_ mapping"
+      ],
+      "origin": "SField instance from SOElement in uniqueFields/commonFields",
+      "transformations": [
+        "Extracted from SOElement",
+        "Checked for valid range (must be >0 and <indices_.size())",
+        "Checked for duplicates via getIndex()",
+        "Mapped to index in indices_"
+      ],
+      "validated_at": "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)"
+    },
+    {
+      "field": "SField.getNum() (in getIndex)",
+      "flow": [
+        "SField.getNum()",
+        "Validation in getIndex() (range check)",
+        "indices_ lookup"
+      ],
+      "origin": "SField instance passed to getIndex()",
+      "transformations": [
+        "Checked for valid range (must be >0 and <indices_.size())",
+        "Used as index into indices_"
+      ],
+      "validated_at": "SOTemplate::getIndex(SField const&)"
+    }
+  ],
+  "description": "Implements the SOTemplate class for managing and validating collections of SOElement fields, including construction, indexing, and duplicate checking, within the xrpl protocol.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SField.getNum()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "issue_pattern": "Missing empty string validation for SField.getNum()",
+      "why_false_positive": "manual if-check validates SField.getNum() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SField.getNum()",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual if-check at SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "issue_pattern": "Missing range validation for SField.getNum()",
+      "why_false_positive": "manual if-check validates SField.getNum() range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SField.getNum() (duplicate check)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check using getIndex() at SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "issue_pattern": "Missing empty string validation for SField.getNum() (duplicate check)",
+      "why_false_positive": "manual if-check using getIndex() validates SField.getNum() (duplicate check) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "SField.getNum()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual if-check at SOTemplate::getIndex(SField const&)",
+      "issue_pattern": "Missing empty string validation for SField.getNum()",
+      "why_false_positive": "manual if-check validates SField.getNum() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "SField.getNum()",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual if-check at SOTemplate::getIndex(SField const&)",
+      "issue_pattern": "Missing range validation for SField.getNum()",
+      "why_false_positive": "manual if-check validates SField.getNum() range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/SOTemplate.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::initializer_list<SOElement> uniqueFields",
+        "std::initializer_list<SOElement> commonFields"
+      ],
+      "lineno": 12,
+      "name": "SOTemplate"
+    },
+    {
+      "args": [
+        "std::vector<SOElement> uniqueFields",
+        "std::vector<SOElement> commonFields"
+      ],
+      "lineno": 17,
+      "name": "SOTemplate"
+    },
+    {
+      "args": [
+        "SField const& sField"
+      ],
+      "lineno": 44,
+      "name": "getIndex"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code relies on runtime exceptions for validation failures (invalid or duplicate field indices). Typical test coverage would be in unit tests for SOTemplate, likely in files such as SOTemplate_test.cpp or protocol/SOTemplate_test.cpp. Tests should cover: (1) construction with valid fields, (2) construction with out-of-range field indices, (3) construction with duplicate fields, (4) getIndex with valid and invalid indices. Gaps may exist if tests do not explicitly check exception throwing for invalid/duplicate fields or do not test edge cases (e.g., boundary values for field indices).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual validation (no external framework)",
+    "validation_layer": "business_logic (constructor and method level)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "SField.getNum()",
+      "location": "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Ensures SField index is > 0",
+        "Ensures SField index is < indices_.size() (i.e., within valid range)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "SField.getNum() (duplicate check)",
+      "location": "SOTemplate::SOTemplate(std::vector<SOElement>, std::vector<SOElement>)",
+      "validated_by": "manual if-check using getIndex()",
+      "validates": [
+        "Ensures no duplicate SField indices in the template"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "SField.getNum()",
+      "location": "SOTemplate::getIndex(SField const&)",
+      "validated_by": "manual if-check",
+      "validates": [
+        "Ensures SField index is > 0",
+        "Ensures SField index is < indices_.size() (i.e., within valid range)"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

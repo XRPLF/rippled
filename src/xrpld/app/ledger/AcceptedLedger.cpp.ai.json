@@ -1,0 +1,149 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "ledger"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<ReadView const> const& ledger"
+      ],
+      "lineno": 5,
+      "name": "AcceptedLedger"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AcceptedLedger::AcceptedLedger",
+        "insertAll (lambda)",
+        "AcceptedLedgerTx::AcceptedLedgerTx"
+      ],
+      "entry_point": "AcceptedLedger::AcceptedLedger",
+      "purpose": "Constructs an AcceptedLedger object from a ReadView ledger, extracting all transactions and wrapping them as AcceptedLedgerTx objects.",
+      "validation_points": [
+        "AcceptedLedgerTx::AcceptedLedgerTx (potential validation of transaction data)",
+        "ReadView::txs (if ReadView validates transaction structure)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger",
+      "flow": [
+        "AcceptedLedger::AcceptedLedger parameter",
+        "insertAll lambda captures ledger",
+        "AcceptedLedgerTx constructed with ledger"
+      ],
+      "origin": "AcceptedLedger constructor parameter (std::shared_ptr<ReadView const> const& ledger)",
+      "transformations": [
+        "Passed as shared_ptr",
+        "Used to access ledger->txs"
+      ],
+      "validated_at": "No explicit validation in this code; possible validation in ReadView or AcceptedLedgerTx"
+    },
+    {
+      "field": "transactions_",
+      "flow": [
+        "Created empty in AcceptedLedger",
+        "Populated by insertAll with AcceptedLedgerTx objects",
+        "Sorted by getTxnSeq"
+      ],
+      "origin": "AcceptedLedger member variable (std::vector<std::unique_ptr<AcceptedLedgerTx>>)",
+      "transformations": [
+        "Reserve space",
+        "Emplace_back AcceptedLedgerTx",
+        "Sort by transaction sequence"
+      ],
+      "validated_at": "No explicit validation in this code; relies on correctness of ledger->txs and AcceptedLedgerTx"
+    },
+    {
+      "field": "ledger->txs",
+      "flow": [
+        "Accessed in insertAll",
+        "Each item passed to AcceptedLedgerTx"
+      ],
+      "origin": "ReadView::txs (assumed to be a map or iterable of transaction data)",
+      "transformations": [
+        "Iterated over",
+        "Each (key, value) pair used to construct AcceptedLedgerTx"
+      ],
+      "validated_at": "No explicit validation in this code; possible validation in ReadView or AcceptedLedgerTx"
+    }
+  ],
+  "description": "Implements the AcceptedLedger class, which constructs a list of AcceptedLedgerTx objects from the transactions in a given ledger and sorts them by transaction sequence.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/AcceptedLedger.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is a constructor and does not contain explicit validation logic. Validation (e.g., of transaction data) likely occurs in AcceptedLedgerTx or ReadView. Test coverage would depend on tests for AcceptedLedger, AcceptedLedgerTx, and ReadView. Typical test files might include 'AcceptedLedger_test.cpp', 'AcceptedLedgerTx_test.cpp', or integration tests for ledger acceptance. Gaps: No direct validation or error handling is present in this code; if ledger->txs contains invalid data, it is not checked here.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

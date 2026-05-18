@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "addr"
+    },
+    {
+      "lineno": 15,
+      "name": "addr"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utility functions to check if an IPv6 address is private or public within the beast::IP namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/net/IPAddressV6.h",
+  "functions": [
+    {
+      "args": [
+        "AddressV6 const& addr"
+      ],
+      "lineno": 11,
+      "name": "is_private"
+    },
+    {
+      "args": [
+        "AddressV6 const& addr"
+      ],
+      "lineno": 15,
+      "name": "is_public"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 7,
+      "name": "IP"
+    }
+  ]
+}

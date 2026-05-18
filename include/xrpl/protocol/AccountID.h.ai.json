@@ -1,0 +1,135 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "v"
+    },
+    {
+      "lineno": 29,
+      "name": "s"
+    },
+    {
+      "lineno": 82,
+      "name": "count"
+    },
+    {
+      "lineno": 70,
+      "name": "os"
+    },
+    {
+      "lineno": 70,
+      "name": "x"
+    },
+    {
+      "lineno": 65,
+      "name": "account"
+    },
+    {
+      "lineno": 59,
+      "name": "c"
+    },
+    {
+      "lineno": 91,
+      "name": "field"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "AccountIDTag"
+    }
+  ],
+  "description": "Defines the AccountID type and related utility functions for handling XRPL account identifiers, including conversion to/from base58, special account constants, and cache initialization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/AccountID.h",
+  "functions": [
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 23,
+      "name": "toBase58"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 29,
+      "name": "parseBase58"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "xrpAccount"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "noAccount"
+    },
+    {
+      "args": [
+        "AccountID&",
+        "std::string const&"
+      ],
+      "lineno": 54,
+      "name": "to_issuer"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 59,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "account"
+      ],
+      "lineno": 65,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 70,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "count"
+      ],
+      "lineno": 82,
+      "name": "initAccountIdCache"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 91,
+      "name": "getOrThrow"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "detail"
+    },
+    {
+      "lineno": 89,
+      "name": "Json"
+    },
+    {
+      "lineno": 106,
+      "name": "std"
+    }
+  ]
+}

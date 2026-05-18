@@ -1,0 +1,86 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 222,
+      "name": "LedgerFormats"
+    }
+  ],
+  "description": "Defines identifiers and flags for on-ledger objects in the XRPL protocol, including enums for ledger entry types and flags, macros for generating flag maps and accessors, and a LedgerFormats class for managing known ledger entry formats.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/LedgerFormats.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "getAccountRootFlags"
+    },
+    {
+      "args": [],
+      "lineno": 135,
+      "name": "getOfferFlags"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "getRippleStateFlags"
+    },
+    {
+      "args": [],
+      "lineno": 155,
+      "name": "getSignerListFlags"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "getDirNodeFlags"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "getNFTokenOfferFlags"
+    },
+    {
+      "args": [],
+      "lineno": 164,
+      "name": "getMPTokenIssuanceFlags"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "getMPTokenIssuanceMutableFlags"
+    },
+    {
+      "args": [],
+      "lineno": 180,
+      "name": "getMPTokenFlags"
+    },
+    {
+      "args": [],
+      "lineno": 185,
+      "name": "getCredentialFlags"
+    },
+    {
+      "args": [],
+      "lineno": 188,
+      "name": "getVaultFlags"
+    },
+    {
+      "args": [],
+      "lineno": 191,
+      "name": "getLoanFlags"
+    },
+    {
+      "args": [],
+      "lineno": 197,
+      "name": "getAllLedgerFlags"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

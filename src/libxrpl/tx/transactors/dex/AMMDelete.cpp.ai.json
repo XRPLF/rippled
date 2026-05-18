@@ -1,0 +1,251 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AMMDelete::preflight"
+      ],
+      "entry_point": "AMMDelete::preflight",
+      "purpose": "Initial transaction preflight checks (syntax, basic feature gating).",
+      "validation_points": [
+        "AMMDelete::checkExtraFeatures (called externally, not from preflight in this code)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMDelete::preclaim"
+      ],
+      "entry_point": "AMMDelete::preclaim",
+      "purpose": "Checks ledger state for AMM existence and LP token balance before transaction is allowed to proceed.",
+      "validation_points": [
+        "AMM ledger entry existence (ctx.view.read(keylet::amm(...)))",
+        "AMM LP Token Balance ((*ammSle)[sfLPTokenBalance] != beast::zero)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMDelete::doApply",
+        "deleteAMMAccount"
+      ],
+      "entry_point": "AMMDelete::doApply",
+      "purpose": "Applies the AMM deletion to the ledger if all validations pass.",
+      "validation_points": [
+        "Assumes preclaim has validated; doApply itself does not re-validate"
+      ]
+    },
+    {
+      "call_chain": [
+        "AMMDelete::checkExtraFeatures"
+      ],
+      "entry_point": "AMMDelete::checkExtraFeatures",
+      "purpose": "Checks if AMM and multi-protocol token features are enabled and if asset fields are valid.",
+      "validation_points": [
+        "AMM feature enabled (ammEnabled(ctx.rules))",
+        "featureMPTokensV2 or MPTIssue in sfAsset/sfAsset2"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ctx.rules",
+      "flow": [
+        "ctx.rules",
+        "ammEnabled(ctx.rules) or ctx.rules.enabled(featureMPTokensV2)"
+      ],
+      "origin": "PreflightContext or PreclaimContext (transaction context)",
+      "transformations": [
+        "Checked for feature enablement"
+      ],
+      "validated_at": "AMMDelete::checkExtraFeatures"
+    },
+    {
+      "field": "ctx.tx[sfAsset], ctx.tx[sfAsset2]",
+      "flow": [
+        "ctx.tx[sfAsset], ctx.tx[sfAsset2]",
+        "keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])",
+        "ctx.view.read(keylet::amm(...))"
+      ],
+      "origin": "Transaction fields (sfAsset, sfAsset2)",
+      "transformations": [
+        "Used to construct AMM ledger key",
+        "Checked for MPTIssue type"
+      ],
+      "validated_at": "AMMDelete::checkExtraFeatures (MPTIssue check), AMMDelete::preclaim (AMM existence)"
+    },
+    {
+      "field": "ammSle[sfLPTokenBalance]",
+      "flow": [
+        "ctx.view.read(keylet::amm(...))",
+        "(*ammSle)[sfLPTokenBalance]"
+      ],
+      "origin": "AMM ledger entry (SLE) read from ledger",
+      "transformations": [
+        "Checked for zero (empty pool)"
+      ],
+      "validated_at": "AMMDelete::preclaim"
+    }
+  ],
+  "description": "Implements the logic for deleting an Automated Market Maker (AMM) instance in the XRPL, including preflight checks, preclaim validation, and application of the deletion to the ledger.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM feature enabled (via rules)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ammEnabled(ctx.rules) at AMMDelete::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for AMM feature enabled (via rules)",
+      "why_false_positive": "ammEnabled(ctx.rules) validates AMM feature enabled (via rules) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "featureMPTokensV2 or MPTIssue in sfAsset/sfAsset2",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>()) at AMMDelete::checkExtraFeatures",
+      "issue_pattern": "Missing empty string validation for featureMPTokensV2 or MPTIssue in sfAsset/sfAsset2",
+      "why_false_positive": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>()) validates featureMPTokensV2 or MPTIssue in sfAsset/sfAsset2 for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM ledger entry existence (asset pair validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])) at AMMDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for AMM ledger entry existence (asset pair validity)",
+      "why_false_positive": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2])) validates AMM ledger entry existence (asset pair validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AMM LP Token Balance",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*ammSle)[sfLPTokenBalance] != beast::zero at AMMDelete::preclaim",
+      "issue_pattern": "Missing empty string validation for AMM LP Token Balance",
+      "why_false_positive": "(*ammSle)[sfLPTokenBalance] != beast::zero validates AMM LP Token Balance for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/dex/AMMDelete.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "AMMDelete::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 16,
+      "name": "AMMDelete::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "AMMDelete::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "AMMDelete::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AMMDelete is likely tested in integration/functional tests for AMM operations, such as 'AMMDelete_test.cpp', 'AMM_test.cpp', or broader DEX/AMM test suites. The specific validation paths (feature enablement, asset type checks, AMM existence, LP token balance) should be covered by tests that attempt to delete AMMs under various conditions (feature disabled, invalid asset types, non-existent AMMs, non-empty pools). Gaps may exist if tests do not explicitly cover all combinations of feature flags and asset types, or if negative cases (e.g., MPTIssue present, AMM not found) are not tested. No unit tests are shown in this file; coverage depends on external test files.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "AMM feature enabled (via rules)",
+      "location": "AMMDelete::checkExtraFeatures",
+      "validated_by": "ammEnabled(ctx.rules)",
+      "validates": [
+        "Checks if AMM feature is enabled in the current ruleset"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (prevents further processing)",
+      "field": "featureMPTokensV2 or MPTIssue in sfAsset/sfAsset2",
+      "location": "AMMDelete::checkExtraFeatures",
+      "validated_by": "ctx.rules.enabled(featureMPTokensV2) || (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>())",
+      "validates": [
+        "If featureMPTokensV2 is not enabled, ensures sfAsset and sfAsset2 do not hold MPTIssue"
+      ],
+      "validation_type": "business_logic|type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "terNO_AMM",
+      "field": "AMM ledger entry existence (asset pair validity)",
+      "location": "AMMDelete::preclaim",
+      "validated_by": "ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]))",
+      "validates": [
+        "Checks that the AMM ledger entry for the asset pair exists"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecAMM_NOT_EMPTY",
+      "field": "AMM LP Token Balance",
+      "location": "AMMDelete::preclaim",
+      "validated_by": "(*ammSle)[sfLPTokenBalance] != beast::zero",
+      "validates": [
+        "Ensures the AMM's LP token balance is zero before allowing deletion"
+      ],
+      "validation_type": "business_logic|range"
+    }
+  ]
+}

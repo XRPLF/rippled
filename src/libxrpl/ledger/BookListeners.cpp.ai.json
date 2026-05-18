@@ -1,0 +1,449 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "BookListeners::addSubscriber"
+      ],
+      "entry_point": "BookListeners::addSubscriber",
+      "purpose": "Adds a new InfoSub subscriber to the mListeners map, keyed by its sequence number.",
+      "validation_points": [
+        "sub validated by C++ type system (must be InfoSub::ref, a smart pointer/reference)",
+        "sub->getSeq() validated by C++ type system (must be valid InfoSub object)"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookListeners::removeSubscriber"
+      ],
+      "entry_point": "BookListeners::removeSubscriber",
+      "purpose": "Removes a subscriber from mListeners by sequence number.",
+      "validation_points": [
+        "seq validated by C++ type system (must be std::uint64_t)"
+      ]
+    },
+    {
+      "call_chain": [
+        "BookListeners::publish",
+        "it->second.lock()",
+        "p->getSeq()",
+        "havePublished.emplace()",
+        "jvObj.visit()",
+        "p->send()"
+      ],
+      "entry_point": "BookListeners::publish",
+      "purpose": "Publishes a JSON object to all active subscribers, ensuring each subscriber receives it only once per publish call.",
+      "validation_points": [
+        "it->second.lock() validated by std::weak_ptr::lock() (returns nullptr if expired)",
+        "p->getSeq() validated by C++ type system (must be valid InfoSub object)",
+        "havePublished.emplace(p->getSeq()) validated by std::unordered_set::emplace (ensures uniqueness)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sub (InfoSub::ref)",
+      "flow": [
+        "addSubscriber parameter",
+        "sub->getSeq() extracts sequence number",
+        "mListeners[sub->getSeq()] = sub stores sub in map"
+      ],
+      "origin": "Parameter to BookListeners::addSubscriber",
+      "transformations": [
+        "sub is stored as a weak_ptr in mListeners"
+      ],
+      "validated_at": "C++ type system (must be InfoSub::ref); sub->getSeq() must be valid"
+    },
+    {
+      "field": "seq (std::uint64_t)",
+      "flow": [
+        "removeSubscriber parameter",
+        "mListeners.erase(seq) removes entry"
+      ],
+      "origin": "Parameter to BookListeners::removeSubscriber",
+      "transformations": [
+        "Used as key for map erase"
+      ],
+      "validated_at": "C++ type system (must be std::uint64_t)"
+    },
+    {
+      "field": "it->second (std::weak_ptr<InfoSub>)",
+      "flow": [
+        "mListeners map",
+        "it->second.lock() attempts to get shared_ptr",
+        "If lock() succeeds, p is used; else, entry is erased"
+      ],
+      "origin": "Value in mListeners map",
+      "transformations": [
+        "weak_ptr upgraded to shared_ptr if not expired"
+      ],
+      "validated_at": "std::weak_ptr::lock() (returns nullptr if expired)"
+    },
+    {
+      "field": "p->getSeq()",
+      "flow": [
+        "p (InfoSub::pointer) from it->second.lock()",
+        "p->getSeq() retrieves sequence number",
+        "havePublished.emplace(p->getSeq()) checks uniqueness"
+      ],
+      "origin": "InfoSub object",
+      "transformations": [
+        "Sequence number used to ensure unique publish"
+      ],
+      "validated_at": "C++ type system (must be valid InfoSub object)"
+    },
+    {
+      "field": "havePublished (hash_set<std::uint64_t>&)",
+      "flow": [
+        "publish parameter",
+        "havePublished.emplace(p->getSeq())",
+        "If emplace returns true, publish proceeds"
+      ],
+      "origin": "Parameter to BookListeners::publish",
+      "transformations": [
+        "Set is updated with new sequence numbers"
+      ],
+      "validated_at": "std::unordered_set::emplace (ensures uniqueness)"
+    },
+    {
+      "field": "jvObj (MultiApiJson const&)",
+      "flow": [
+        "publish parameter",
+        "jvObj.visit(p->getApiVersion(), lambda)",
+        "lambda calls p->send(jv, true)"
+      ],
+      "origin": "Parameter to BookListeners::publish",
+      "transformations": [
+        "jvObj is visited and transformed to JSON for each subscriber"
+      ],
+      "validated_at": "Indirectly validated by type system and lambda signature"
+    }
+  ],
+  "description": "Implements the BookListeners class, which manages subscribers (InfoSub) to book events, allowing adding/removing subscribers and publishing JSON updates to them in a thread-safe manner.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sub (InfoSub::ref)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sub (InfoSub::ref) validated by C++ type system, std::weak_ptr, std::unordered_set",
+      "issue_pattern": "Missing validation for sub (InfoSub::ref)",
+      "why_false_positive": "C++ type system, std::weak_ptr, std::unordered_set validates sub (InfoSub::ref) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "seq (std::uint64_t)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field seq (std::uint64_t) validated by C++ type system, std::weak_ptr, std::unordered_set",
+      "issue_pattern": "Missing validation for seq (std::uint64_t)",
+      "why_false_positive": "C++ type system, std::weak_ptr, std::unordered_set validates seq (std::uint64_t) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "InfoSub pointer lifetime (via weak_ptr)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field InfoSub pointer lifetime (via weak_ptr) validated by C++ type system, std::weak_ptr, std::unordered_set",
+      "issue_pattern": "Missing validation for InfoSub pointer lifetime (via weak_ptr)",
+      "why_false_positive": "C++ type system, std::weak_ptr, std::unordered_set validates InfoSub pointer lifetime (via weak_ptr) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "duplicate publish prevention (via hash_set)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field duplicate publish prevention (via hash_set) validated by C++ type system, std::weak_ptr, std::unordered_set",
+      "issue_pattern": "Missing validation for duplicate publish prevention (via hash_set)",
+      "why_false_positive": "C++ type system, std::weak_ptr, std::unordered_set validates duplicate publish prevention (via hash_set) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "sub (InfoSub::ref)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system (smart pointer/reference semantics) at BookListeners::addSubscriber",
+      "issue_pattern": "Missing empty string validation for sub (InfoSub::ref)",
+      "why_false_positive": "C++ type system (smart pointer/reference semantics) validates sub (InfoSub::ref) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sub (InfoSub::ref)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system (smart pointer/reference semantics) at BookListeners::addSubscriber",
+      "issue_pattern": "Missing type validation for sub (InfoSub::ref)",
+      "why_false_positive": "C++ type system (smart pointer/reference semantics) validates sub (InfoSub::ref) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "sub->getSeq()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system (method call on InfoSub) at BookListeners::addSubscriber",
+      "issue_pattern": "Missing empty string validation for sub->getSeq()",
+      "why_false_positive": "C++ type system (method call on InfoSub) validates sub->getSeq() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sub->getSeq()",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system (method call on InfoSub) at BookListeners::addSubscriber",
+      "issue_pattern": "Missing type validation for sub->getSeq()",
+      "why_false_positive": "C++ type system (method call on InfoSub) validates sub->getSeq() type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seq (std::uint64_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system at BookListeners::removeSubscriber",
+      "issue_pattern": "Missing empty string validation for seq (std::uint64_t)",
+      "why_false_positive": "C++ type system validates seq (std::uint64_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "seq (std::uint64_t)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system at BookListeners::removeSubscriber",
+      "issue_pattern": "Missing type validation for seq (std::uint64_t)",
+      "why_false_positive": "C++ type system validates seq (std::uint64_t) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "it->second.lock() (weak_ptr to InfoSub)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::weak_ptr::lock() at BookListeners::publish",
+      "issue_pattern": "Missing empty string validation for it->second.lock() (weak_ptr to InfoSub)",
+      "why_false_positive": "std::weak_ptr::lock() validates it->second.lock() (weak_ptr to InfoSub) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "havePublished.emplace(p->getSeq())",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::unordered_set::emplace at BookListeners::publish",
+      "issue_pattern": "Missing empty string validation for havePublished.emplace(p->getSeq())",
+      "why_false_positive": "std::unordered_set::emplace validates havePublished.emplace(p->getSeq()) for empty strings"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/BookListeners.cpp",
+  "functions": [
+    {
+      "args": [
+        "InfoSub::ref sub"
+      ],
+      "lineno": 5,
+      "name": "BookListeners::addSubscriber"
+    },
+    {
+      "args": [
+        "std::uint64_t seq"
+      ],
+      "lineno": 11,
+      "name": "BookListeners::removeSubscriber"
+    },
+    {
+      "args": [
+        "MultiApiJson const& jvObj",
+        "hash_set<std::uint64_t>& havePublished"
+      ],
+      "lineno": 17,
+      "name": "BookListeners::publish"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "BookListeners is a core ledger notification mechanism. Typical test coverage would be in integration or unit tests for subscription and notification logic, likely in files such as 'BookListeners_test.cpp', 'InfoSub_test.cpp', or broader ledger/subscribe tests. Validation paths (pointer validity, uniqueness, weak_ptr expiration) are generally covered by C++ type safety and STL containers, but edge cases (expired weak_ptrs, duplicate sequence numbers, concurrent access) may not be exhaustively tested unless explicit tests exist for subscriber lifecycle and publish semantics. Gaps may exist in testing concurrent modifications, weak_ptr expiration, and havePublished set behavior under stress.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sub (InfoSub::ref)",
+      "seq (std::uint64_t)",
+      "InfoSub pointer lifetime (via weak_ptr)",
+      "duplicate publish prevention (via hash_set)"
+    ],
+    "framework": "C++ type system, std::weak_ptr, std::unordered_set",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (undefined behavior if null, but not explicitly checked)",
+      "field": "sub (InfoSub::ref)",
+      "location": "BookListeners::addSubscriber",
+      "validated_by": "C++ type system (smart pointer/reference semantics)",
+      "validates": [
+        "sub is a valid InfoSub::ref (shared_ptr-like)"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "None (would throw if sub is null, but not explicitly checked)",
+      "field": "sub->getSeq()",
+      "location": "BookListeners::addSubscriber",
+      "validated_by": "C++ type system (method call on InfoSub)",
+      "validates": [
+        "getSeq() returns std::uint64_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None",
+      "field": "seq (std::uint64_t)",
+      "location": "BookListeners::removeSubscriber",
+      "validated_by": "C++ type system",
+      "validates": [
+        "seq is a valid uint64_t"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns nullptr if expired)",
+      "field": "it->second.lock() (weak_ptr to InfoSub)",
+      "location": "BookListeners::publish",
+      "validated_by": "std::weak_ptr::lock()",
+      "validates": [
+        "InfoSub still exists (not expired)"
+      ],
+      "validation_type": "lifetime/business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "None (returns pair, only acts if .second is true)",
+      "field": "havePublished.emplace(p->getSeq())",
+      "location": "BookListeners::publish",
+      "validated_by": "std::unordered_set::emplace",
+      "validates": [
+        "Ensures each subscriber only receives one publish per call"
+      ],
+      "validation_type": "business_logic (duplicate prevention)"
+    }
+  ]
+}

@@ -1,0 +1,618 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STValidation::isValid",
+        "publicKeyType(getSignerPublic())",
+        "verifyDigest(getSignerPublic(), getSigningHash(), makeSlice(getFieldVL(sfSignature)), ...)"
+      ],
+      "entry_point": "STValidation::isValid",
+      "purpose": "Checks if the validation object is cryptographically valid: correct key type and signature.",
+      "validation_points": [
+        "publicKeyType(getSignerPublic()) == KeyType::secp256k1",
+        "verifyDigest(...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STValidation::validationFormat",
+        "SOTemplate::SOTemplate"
+      ],
+      "entry_point": "STValidation::validationFormat",
+      "purpose": "Defines and enforces the required/optional fields for a validation object.",
+      "validation_points": [
+        "SOTemplate (field presence/type validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "STValidation::STValidation (or deserialization)",
+        "STObject::STObject",
+        "SOTemplate::validate"
+      ],
+      "entry_point": "STValidation (constructor, deserialization, or add)",
+      "purpose": "When a validation object is constructed or deserialized, its fields are checked against the template.",
+      "validation_points": [
+        "SOTemplate::validate"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfSigningPubKey",
+      "flow": [
+        "Deserialization (STValidation/STObject)",
+        "getSignerPublic()",
+        "publicKeyType(getSignerPublic())",
+        "verifyDigest(getSignerPublic(), ...)"
+      ],
+      "origin": "Input data (serialized validation object)",
+      "transformations": [
+        "Extracted from serialized data",
+        "Checked for type (secp256k1)",
+        "Used to verify signature"
+      ],
+      "validated_at": "STValidation::isValid (publicKeyType check and verifyDigest)"
+    },
+    {
+      "field": "sfSignature",
+      "flow": [
+        "Deserialization (STValidation/STObject)",
+        "getFieldVL(sfSignature)",
+        "makeSlice(getFieldVL(sfSignature))",
+        "verifyDigest(..., makeSlice(getFieldVL(sfSignature)), ...)"
+      ],
+      "origin": "Input data (serialized validation object)",
+      "transformations": [
+        "Extracted from serialized data",
+        "Converted to slice for signature verification"
+      ],
+      "validated_at": "STValidation::isValid (verifyDigest)"
+    },
+    {
+      "field": "sfLedgerHash",
+      "flow": [
+        "Deserialization (STValidation/STObject)",
+        "getFieldH256(sfLedgerHash)",
+        "getLedgerHash()",
+        "Used in consensus/ledger logic"
+      ],
+      "origin": "Input data (serialized validation object)",
+      "transformations": [
+        "Extracted from serialized data"
+      ],
+      "validated_at": "SOTemplate (required field validation)"
+    },
+    {
+      "field": "All fields in SOTemplate",
+      "flow": [
+        "Deserialization (STValidation/STObject)",
+        "SOTemplate::validate"
+      ],
+      "origin": "Input data (serialized validation object)",
+      "transformations": [
+        "Checked for presence, type, and constraints"
+      ],
+      "validated_at": "SOTemplate (via validationFormat)"
+    }
+  ],
+  "description": "Implements methods for the STValidation class in the XRPL protocol, handling validation object serialization, signature verification, and access to validation fields such as hashes, times, and flags.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfFlags",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfFlags validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfFlags",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfFlags automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerHash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerHash validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfLedgerHash",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfLedgerHash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLedgerSequence",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLedgerSequence validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfLedgerSequence",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfLedgerSequence automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigningTime",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSigningTime validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfSigningTime",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfSigningTime automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSigningPubKey",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSigningPubKey validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfSigningPubKey",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfSigningPubKey automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfSignature",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfSignature validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfSignature",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfSignature automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCloseTime",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCloseTime validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfCloseTime",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfCloseTime automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfLoadFee",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfLoadFee validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfLoadFee",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfLoadFee automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfAmendments",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfAmendments validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfAmendments",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfAmendments automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBaseFee",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBaseFee validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfBaseFee",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfBaseFee automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfReserveBase",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfReserveBase validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfReserveBase",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfReserveBase automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfReserveIncrement",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfReserveIncrement validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfReserveIncrement",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfReserveIncrement automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfConsensusHash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfConsensusHash validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfConsensusHash",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfConsensusHash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCookie",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfCookie validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfCookie",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfCookie automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfValidatedHash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfValidatedHash validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfValidatedHash",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfValidatedHash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfServerVersion",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfServerVersion validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfServerVersion",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfServerVersion automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfBaseFeeDrops",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfBaseFeeDrops validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfBaseFeeDrops",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfBaseFeeDrops automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfReserveBaseDrops",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfReserveBaseDrops validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfReserveBaseDrops",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfReserveBaseDrops automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfReserveIncrementDrops",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field sfReserveIncrementDrops validated by SOTemplate (field presence/format), custom cryptographic checks",
+      "issue_pattern": "Missing validation for sfReserveIncrementDrops",
+      "why_false_positive": "SOTemplate (field presence/format), custom cryptographic checks validates sfReserveIncrementDrops automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "STValidation fields (see SOTemplate)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "SOTemplate (validationFormat) at STValidation::validationFormat",
+      "issue_pattern": "Missing empty string validation for STValidation fields (see SOTemplate)",
+      "why_false_positive": "SOTemplate (validationFormat) validates STValidation fields (see SOTemplate) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signer public key type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "publicKeyType(getSignerPublic()) == KeyType::secp256k1 at STValidation::isValid",
+      "issue_pattern": "Missing empty string validation for signer public key type",
+      "why_false_positive": "publicKeyType(getSignerPublic()) == KeyType::secp256k1 validates signer public key type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "signer public key type",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "publicKeyType(getSignerPublic()) == KeyType::secp256k1 at STValidation::isValid",
+      "issue_pattern": "Missing type validation for signer public key type",
+      "why_false_positive": "publicKeyType(getSignerPublic()) == KeyType::secp256k1 validates signer public key type type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "signature validity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "verifyDigest at STValidation::isValid",
+      "issue_pattern": "Missing empty string validation for signature validity",
+      "why_false_positive": "verifyDigest validates signature validity for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STValidation.cpp",
+  "functions": [
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 13,
+      "name": "STValidation::copy"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 18,
+      "name": "STValidation::move"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "STValidation::validationFormat"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "STValidation::getSigningHash"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "STValidation::getLedgerHash"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "STValidation::getConsensusHash"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "STValidation::getSignTime"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "STValidation::getSeenTime"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "STValidation::isValid"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "STValidation::isFull"
+    },
+    {
+      "args": [],
+      "lineno": 94,
+      "name": "STValidation::getSignature"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "STValidation::getSerialized"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "STValidation is a core protocol object, so it is likely tested in unit tests under 'src/test/protocol/Validation_test.cpp', 'src/test/protocol/STValidation_test.cpp', or similar. Tests should cover: (1) field presence/absence (SOTemplate validation), (2) signature verification (isValid), (3) key type enforcement, (4) serialization/deserialization. Gaps may exist in edge cases: malformed signatures, non-secp256k1 keys, or missing optional fields. Integration tests may also exercise validation via consensus or ledger acceptance tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "sfFlags",
+      "sfLedgerHash",
+      "sfLedgerSequence",
+      "sfSigningTime",
+      "sfSigningPubKey",
+      "sfSignature",
+      "sfCloseTime",
+      "sfLoadFee",
+      "sfAmendments",
+      "sfBaseFee",
+      "sfReserveBase",
+      "sfReserveIncrement",
+      "sfConsensusHash",
+      "sfCookie",
+      "sfValidatedHash",
+      "sfServerVersion",
+      "sfBaseFeeDrops",
+      "sfReserveBaseDrops",
+      "sfReserveIncrementDrops"
+    ],
+    "framework": "SOTemplate (field presence/format), custom cryptographic checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Not explicit in this file; likely assertion or error on construction elsewhere",
+      "field": "STValidation fields (see SOTemplate)",
+      "location": "STValidation::validationFormat",
+      "validated_by": "SOTemplate (validationFormat)",
+      "validates": [
+        "Ensures required fields are present (e.g., sfFlags, sfLedgerHash, sfLedgerSequence, sfSigningTime, sfSigningPubKey, sfSignature)",
+        "Optional/default fields are handled accordingly"
+      ],
+      "validation_type": "presence (required/optional/default)"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "XRPL_ASSERT (likely aborts or logs error)",
+      "field": "signer public key type",
+      "location": "STValidation::isValid",
+      "validated_by": "publicKeyType(getSignerPublic()) == KeyType::secp256k1",
+      "validates": [
+        "Checks that the public key used for signing is of type secp256k1"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "No explicit exception; returns false if invalid",
+      "field": "signature validity",
+      "location": "STValidation::isValid",
+      "validated_by": "verifyDigest",
+      "validates": [
+        "Verifies that the signature over the signing hash is valid for the given public key",
+        "Checks for fully canonical signature if vfFullyCanonicalSig flag is set"
+      ],
+      "validation_type": "business_logic (cryptographic signature verification)"
+    }
+  ]
+}

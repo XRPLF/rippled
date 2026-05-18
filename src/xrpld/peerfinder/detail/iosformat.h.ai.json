@@ -1,0 +1,200 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "width_"
+    },
+    {
+      "lineno": 43,
+      "name": "width_"
+    },
+    {
+      "lineno": 43,
+      "name": "fill_"
+    },
+    {
+      "lineno": 56,
+      "name": "width_"
+    },
+    {
+      "lineno": 56,
+      "name": "pad_"
+    },
+    {
+      "lineno": 56,
+      "name": "fill_"
+    },
+    {
+      "lineno": 87,
+      "name": "text_"
+    },
+    {
+      "lineno": 87,
+      "name": "width_"
+    },
+    {
+      "lineno": 87,
+      "name": "pad_"
+    },
+    {
+      "lineno": 87,
+      "name": "right_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "width_"
+      ],
+      "lineno": 11,
+      "name": "leftw"
+    },
+    {
+      "args": [
+        "width_",
+        "fill_"
+      ],
+      "lineno": 41,
+      "name": "divider"
+    },
+    {
+      "args": [
+        "width_",
+        "pad_",
+        "fill_"
+      ],
+      "lineno": 55,
+      "name": "fpad"
+    },
+    {
+      "args": [
+        "text_",
+        "width_",
+        "pad_",
+        "right_"
+      ],
+      "lineno": 84,
+      "name": "field_t"
+    }
+  ],
+  "description": "Provides a collection of stream manipulators and formatting utilities for producing formatted log output, including left justification, section headings, dividers, padded fields, and field justification for streams.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/iosformat.h",
+  "functions": [
+    {
+      "args": [
+        "ios",
+        "p"
+      ],
+      "lineno": 18,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "title",
+        "width",
+        "fill"
+      ],
+      "lineno": 28,
+      "name": "heading"
+    },
+    {
+      "args": [
+        "os",
+        "d"
+      ],
+      "lineno": 48,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "os",
+        "f"
+      ],
+      "lineno": 62,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 75,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "os",
+        "f"
+      ],
+      "lineno": 101,
+      "name": "operator<<"
+    },
+    {
+      "args": [
+        "text",
+        "width",
+        "pad",
+        "right"
+      ],
+      "lineno": 116,
+      "name": "field"
+    },
+    {
+      "args": [
+        "text",
+        "width",
+        "pad",
+        "right"
+      ],
+      "lineno": 124,
+      "name": "field"
+    },
+    {
+      "args": [
+        "t",
+        "width",
+        "pad",
+        "right"
+      ],
+      "lineno": 132,
+      "name": "field"
+    },
+    {
+      "args": [
+        "text",
+        "width",
+        "pad"
+      ],
+      "lineno": 139,
+      "name": "rField"
+    },
+    {
+      "args": [
+        "text",
+        "width",
+        "pad"
+      ],
+      "lineno": 146,
+      "name": "rField"
+    },
+    {
+      "args": [
+        "t",
+        "width",
+        "pad"
+      ],
+      "lineno": 153,
+      "name": "rField"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 72,
+      "name": "detail"
+    }
+  ]
+}

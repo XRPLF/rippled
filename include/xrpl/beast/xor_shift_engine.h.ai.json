@@ -1,0 +1,77 @@
+{
+  "args": [
+    {
+      "lineno": 22,
+      "name": "val"
+    },
+    {
+      "lineno": 25,
+      "name": "seed"
+    },
+    {
+      "lineno": 43,
+      "name": "x"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "xor_shift_engine const&",
+        "result_type val = 1977u"
+      ],
+      "lineno": 13,
+      "name": "xor_shift_engine"
+    }
+  ],
+  "description": "Implements a simple and fast XOR-shift based random number generator (RNG) called xor_shift_engine, which meets the requirements of a UniformRandomNumberGenerator.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/xor_shift_engine.h",
+  "functions": [
+    {
+      "args": [
+        "val"
+      ],
+      "lineno": 22,
+      "name": "xor_shift_engine"
+    },
+    {
+      "args": [
+        "seed"
+      ],
+      "lineno": 25,
+      "name": "seed"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "operator()"
+    },
+    {
+      "args": [],
+      "lineno": 31,
+      "name": "min"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "max"
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "lineno": 43,
+      "name": "murmurhash3"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "beast"
+    },
+    {
+      "lineno": 8,
+      "name": "detail"
+    }
+  ]
+}

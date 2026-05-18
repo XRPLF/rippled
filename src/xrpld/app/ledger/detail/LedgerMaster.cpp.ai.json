@@ -1,0 +1,858 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 755,
+      "name": "valSeq"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerMaster::getValidLedgerIndex"
+      ],
+      "entry_point": "LedgerMaster::getValidLedgerIndex",
+      "purpose": "Returns the sequence number of the last validated ledger.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "LedgerMaster::isCompatible",
+        "LedgerMaster::getValidatedLedger",
+        "areCompatible"
+      ],
+      "entry_point": "LedgerMaster::isCompatible",
+      "purpose": "Checks if a given ledger view is compatible with the last validated ledger.",
+      "validation_points": [
+        "areCompatible (compares hashes and sequences to validate compatibility)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerMaster::setValidLedger",
+        "LedgerMaster::getValidatedLedger",
+        "LedgerMaster::isCompatible"
+      ],
+      "entry_point": "LedgerMaster::setValidLedger",
+      "purpose": "Sets the current valid ledger and checks compatibility.",
+      "validation_points": [
+        "LedgerMaster::isCompatible (calls areCompatible for validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerMaster::setPubLedger",
+        "LedgerMaster::getValidatedLedger",
+        "LedgerMaster::isCompatible"
+      ],
+      "entry_point": "LedgerMaster::setPubLedger",
+      "purpose": "Sets the published ledger and checks compatibility.",
+      "validation_points": [
+        "LedgerMaster::isCompatible (calls areCompatible for validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "shouldAcquire"
+      ],
+      "entry_point": "shouldAcquire",
+      "purpose": "Determines if a candidate ledger should be fetched from the network based on current state and configuration.",
+      "validation_points": [
+        "shouldAcquire (validates candidateLedger against currentLedger, ledgerHistory, minimumOnline)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "mValidLedgerSeq",
+      "flow": [
+        "LedgerMaster::setValidLedger",
+        "LedgerMaster::mValidLedgerSeq",
+        "LedgerMaster::getValidLedgerIndex"
+      ],
+      "origin": "Set internally by LedgerMaster when a ledger is validated",
+      "transformations": [
+        "Set to the sequence number of the validated ledger"
+      ],
+      "validated_at": "LedgerMaster::setValidLedger (calls isCompatible for validation before setting)"
+    },
+    {
+      "field": "validLedger",
+      "flow": [
+        "LedgerMaster::getValidatedLedger",
+        "LedgerMaster::isCompatible",
+        "areCompatible"
+      ],
+      "origin": "LedgerMaster::getValidatedLedger",
+      "transformations": [
+        "Fetched from internal state, passed to areCompatible for validation"
+      ],
+      "validated_at": "areCompatible"
+    },
+    {
+      "field": "candidateLedger",
+      "flow": [
+        "shouldAcquire (input)",
+        "shouldAcquire (logic)",
+        "Return value (bool: should acquire or not)"
+      ],
+      "origin": "Input parameter to shouldAcquire",
+      "transformations": [
+        "Compared against currentLedger, ledgerHistory, minimumOnline"
+      ],
+      "validated_at": "shouldAcquire (internal logic)"
+    },
+    {
+      "field": "view (ReadView const&)",
+      "flow": [
+        "Caller",
+        "LedgerMaster::isCompatible",
+        "areCompatible"
+      ],
+      "origin": "Passed to LedgerMaster::isCompatible by caller (could be OpenLedger, etc.)",
+      "transformations": [
+        "Used for hash and sequence comparison"
+      ],
+      "validated_at": "areCompatible"
+    }
+  ],
+  "description": "Implements the LedgerMaster class and related logic for managing, validating, publishing, and synchronizing ledgers in the XRPL server. Handles ledger history, fetch packs, pathfinding, and validation advancement.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::unique_lock",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::unique_lock provides automatic mutex lock cleanup"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerMaster.cpp",
+  "functions": [
+    {
+      "args": [
+        "currentLedger",
+        "ledgerHistory",
+        "minimumOnline",
+        "candidateLedger",
+        "j"
+      ],
+      "lineno": 27,
+      "name": "shouldAcquire"
+    },
+    {
+      "args": [
+        "app",
+        "stopwatch",
+        "collector",
+        "journal"
+      ],
+      "lineno": 44,
+      "name": "LedgerMaster"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getCurrentLedgerIndex"
+    },
+    {
+      "args": [],
+      "lineno": 66,
+      "name": "getValidLedgerIndex"
+    },
+    {
+      "args": [
+        "view",
+        "s",
+        "reason"
+      ],
+      "lineno": 71,
+      "name": "isCompatible"
+    },
+    {
+      "args": [],
+      "lineno": 90,
+      "name": "getPublishedLedgerAge"
+    },
+    {
+      "args": [],
+      "lineno": 110,
+      "name": "getValidatedLedgerAge"
+    },
+    {
+      "args": [
+        "reason"
+      ],
+      "lineno": 130,
+      "name": "isCaughtUp"
+    },
+    {
+      "args": [
+        "l"
+      ],
+      "lineno": 148,
+      "name": "setValidLedger"
+    },
+    {
+      "args": [
+        "l"
+      ],
+      "lineno": 202,
+      "name": "setPubLedger"
+    },
+    {
+      "args": [
+        "transaction"
+      ],
+      "lineno": 208,
+      "name": "addHeldTransaction"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 217,
+      "name": "canBeCurrent"
+    },
+    {
+      "args": [
+        "lastClosed"
+      ],
+      "lineno": 265,
+      "name": "switchLCL"
+    },
+    {
+      "args": [
+        "ledgerIndex",
+        "ledgerHash"
+      ],
+      "lineno": 285,
+      "name": "fixIndex"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 289,
+      "name": "storeLedger"
+    },
+    {
+      "args": [],
+      "lineno": 297,
+      "name": "applyHeldTransactions"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 312,
+      "name": "popAcctTransaction"
+    },
+    {
+      "args": [
+        "i"
+      ],
+      "lineno": 318,
+      "name": "setBuildingLedger"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 323,
+      "name": "haveLedger"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 328,
+      "name": "clearLedger"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 333,
+      "name": "isValidated"
+    },
+    {
+      "args": [
+        "minVal",
+        "maxVal"
+      ],
+      "lineno": 362,
+      "name": "getFullValidatedRange"
+    },
+    {
+      "args": [
+        "minVal",
+        "maxVal"
+      ],
+      "lineno": 387,
+      "name": "getValidatedRange"
+    },
+    {
+      "args": [],
+      "lineno": 419,
+      "name": "getEarliestFetch"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 432,
+      "name": "tryFill"
+    },
+    {
+      "args": [
+        "missing",
+        "reason"
+      ],
+      "lineno": 474,
+      "name": "getFetchPack"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 511,
+      "name": "fixMismatch"
+    },
+    {
+      "args": [
+        "ledger",
+        "isSynchronous",
+        "isCurrent"
+      ],
+      "lineno": 545,
+      "name": "setFullLedger"
+    },
+    {
+      "args": [
+        "seq",
+        "hash"
+      ],
+      "lineno": 589,
+      "name": "failedSave"
+    },
+    {
+      "args": [
+        "hash",
+        "seq"
+      ],
+      "lineno": 594,
+      "name": "checkAccept"
+    },
+    {
+      "args": [],
+      "lineno": 634,
+      "name": "getNeededValidations"
+    },
+    {
+      "args": [
+        "ledger"
+      ],
+      "lineno": 639,
+      "name": "checkAccept"
+    },
+    {
+      "args": [
+        "ledger",
+        "consensusHash",
+        "consensus"
+      ],
+      "lineno": 726,
+      "name": "consensusBuilt"
+    },
+    {
+      "args": [
+        "index",
+        "reason"
+      ],
+      "lineno": 803,
+      "name": "getLedgerHashForHistory"
+    },
+    {
+      "args": [
+        "sl"
+      ],
+      "lineno": 813,
+      "name": "findNewLedgersToPublish"
+    },
+    {
+      "args": [],
+      "lineno": 900,
+      "name": "tryAdvance"
+    },
+    {
+      "args": [],
+      "lineno": 917,
+      "name": "updatePaths"
+    },
+    {
+      "args": [],
+      "lineno": 1002,
+      "name": "newPathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 1007,
+      "name": "isNewPathRequest"
+    },
+    {
+      "args": [],
+      "lineno": 1015,
+      "name": "newOrderBookDB"
+    },
+    {
+      "args": [
+        "name",
+        "sl"
+      ],
+      "lineno": 1023,
+      "name": "newPFWork"
+    },
+    {
+      "args": [],
+      "lineno": 1034,
+      "name": "peekMutex"
+    },
+    {
+      "args": [],
+      "lineno": 1039,
+      "name": "getCurrentLedger"
+    },
+    {
+      "args": [],
+      "lineno": 1044,
+      "name": "getValidatedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 1049,
+      "name": "getValidatedRules"
+    },
+    {
+      "args": [],
+      "lineno": 1059,
+      "name": "getPublishedLedger"
+    },
+    {
+      "args": [],
+      "lineno": 1064,
+      "name": "getCompleteLedgers"
+    },
+    {
+      "args": [
+        "ledgerIndex"
+      ],
+      "lineno": 1069,
+      "name": "getCloseTimeBySeq"
+    },
+    {
+      "args": [
+        "ledgerHash",
+        "index"
+      ],
+      "lineno": 1075,
+      "name": "getCloseTimeByHash"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 1087,
+      "name": "getHashBySeq"
+    },
+    {
+      "args": [
+        "index",
+        "reason"
+      ],
+      "lineno": 1095,
+      "name": "walkHashBySeq"
+    },
+    {
+      "args": [
+        "index",
+        "referenceLedger",
+        "reason"
+      ],
+      "lineno": 1102,
+      "name": "walkHashBySeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 1127,
+      "name": "getLedgerBySeq"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 1152,
+      "name": "getLedgerByHash"
+    },
+    {
+      "args": [
+        "minV",
+        "maxV"
+      ],
+      "lineno": 1160,
+      "name": "setLedgerRangePresent"
+    },
+    {
+      "args": [],
+      "lineno": 1165,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 1170,
+      "name": "getCacheHitRate"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 1175,
+      "name": "clearPriorLedgers"
+    },
+    {
+      "args": [
+        "seq"
+      ],
+      "lineno": 1181,
+      "name": "clearLedgerCachePrior"
+    },
+    {
+      "args": [
+        "replay"
+      ],
+      "lineno": 1186,
+      "name": "takeReplay"
+    },
+    {
+      "args": [],
+      "lineno": 1191,
+      "name": "releaseReplay"
+    },
+    {
+      "args": [
+        "missing",
+        "progress",
+        "reason",
+        "sl"
+      ],
+      "lineno": 1196,
+      "name": "fetchForHistory"
+    },
+    {
+      "args": [
+        "sl"
+      ],
+      "lineno": 1277,
+      "name": "doAdvance"
+    },
+    {
+      "args": [
+        "hash",
+        "data"
+      ],
+      "lineno": 1357,
+      "name": "addFetchPack"
+    },
+    {
+      "args": [
+        "hash"
+      ],
+      "lineno": 1362,
+      "name": "getFetchPack"
+    },
+    {
+      "args": [
+        "progress",
+        "seq"
+      ],
+      "lineno": 1372,
+      "name": "gotFetchPack"
+    },
+    {
+      "args": [
+        "want",
+        "have",
+        "cnt",
+        "into",
+        "seq",
+        "withLeaves"
+      ],
+      "lineno": 1387,
+      "name": "populateFetchPack"
+    },
+    {
+      "args": [
+        "wPeer",
+        "request",
+        "haveLedgerHash",
+        "uptime"
+      ],
+      "lineno": 1417,
+      "name": "makeFetchPack"
+    },
+    {
+      "args": [],
+      "lineno": 1497,
+      "name": "getFetchPackCacheSize"
+    },
+    {
+      "args": [],
+      "lineno": 1502,
+      "name": "minSqlSeq"
+    },
+    {
+      "args": [
+        "ledgerSeq",
+        "txnIndex"
+      ],
+      "lineno": 1507,
+      "name": "txnIdFromIndex"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::unique_lock"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 24,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The LedgerMaster validation logic is typically tested in integration and unit tests under the 'ledger', 'consensus', and 'app' test suites. Likely test files include LedgerMaster_test.cpp, LedgerHistory_test.cpp, and possibly integration tests in NetworkOPs_test.cpp. However, the specific validation paths (e.g., isCompatible, areCompatible) may not be exhaustively tested for all edge cases, such as rare hash mismatches or sequence number edge conditions. The shouldAcquire logic may be tested in history acquisition tests, but coverage for all branches (especially minimumOnline logic) should be verified. There may be gaps in tests for error handling and for scenarios with unusual ledger gaps or configuration values.",
+  "validation_architecture": {},
+  "validations": []
+}

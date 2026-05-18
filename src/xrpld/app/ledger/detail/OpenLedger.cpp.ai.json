@@ -1,0 +1,872 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& ledger",
+        "CachedSLEs& cache",
+        "beast::Journal journal"
+      ],
+      "lineno": 8,
+      "name": "OpenLedger"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "OpenLedger::accept",
+        "OpenLedger::create",
+        "apply (free function)",
+        "app.getTxQ().apply"
+      ],
+      "entry_point": "OpenLedger::accept",
+      "purpose": "Accepts a new ledger, applies pending and local transactions, relays transactions, and updates the open ledger view.",
+      "validation_points": [
+        "OpenLedger::create (validates ledger rules and pointer)",
+        "apply (validates transactions and ledger state)",
+        "app.getTxQ().apply (validates local transactions)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OpenLedger::modify",
+        "modify_type (lambda or function passed in)",
+        "OpenView copy/assignment"
+      ],
+      "entry_point": "OpenLedger::modify",
+      "purpose": "Allows atomic modification of the open ledger view via a user-supplied function.",
+      "validation_points": [
+        "modify_type (user function is responsible for validation)",
+        "OpenView copy (implicit type and state validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OpenLedger::empty",
+        "current_->txCount()"
+      ],
+      "entry_point": "OpenLedger::empty",
+      "purpose": "Checks if the open ledger has any transactions.",
+      "validation_points": [
+        "current_->txCount() (ensures current_ is valid and counts transactions)"
+      ]
+    },
+    {
+      "call_chain": [
+        "OpenLedger::current"
+      ],
+      "entry_point": "OpenLedger::current",
+      "purpose": "Returns the current open ledger view.",
+      "validation_points": [
+        "std::lock_guard (thread safety, ensures current_ is valid)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger (std::shared_ptr<Ledger const>)",
+      "flow": [
+        "OpenLedger::OpenLedger (constructor)",
+        "OpenLedger::create",
+        "current_ (OpenView)"
+      ],
+      "origin": "Constructor argument to OpenLedger",
+      "transformations": [
+        "Passed as const shared_ptr",
+        "Used to create OpenView via create()"
+      ],
+      "validated_at": "OpenLedger::create (type and constness checked)"
+    },
+    {
+      "field": "cache (CachedSLEs&)",
+      "flow": [
+        "OpenLedger::OpenLedger",
+        "cache_ member"
+      ],
+      "origin": "Constructor argument to OpenLedger",
+      "transformations": [
+        "Stored as reference",
+        "Used in OpenView and transaction application"
+      ],
+      "validated_at": "Constructor (reference, non-null by type)"
+    },
+    {
+      "field": "current_ (OpenView)",
+      "flow": [
+        "OpenLedger::create",
+        "current_ member",
+        "Used in empty(), modify(), accept()"
+      ],
+      "origin": "OpenLedger::create",
+      "transformations": [
+        "Created from ledger rules and ledger",
+        "Copied or replaced in modify/accept"
+      ],
+      "validated_at": "OpenLedger::create (ensures rules and ledger are valid)"
+    },
+    {
+      "field": "current_->txCount()",
+      "flow": [
+        "OpenLedger::empty",
+        "current_->txCount()"
+      ],
+      "origin": "OpenView::txCount()",
+      "transformations": [
+        "Counts transactions in current_"
+      ],
+      "validated_at": "txCount() method (ensures current_ is valid)"
+    },
+    {
+      "field": "locals (OrderedTxs const&)",
+      "flow": [
+        "OpenLedger::accept",
+        "for loop over locals",
+        "app.getTxQ().apply"
+      ],
+      "origin": "accept() argument",
+      "transformations": [
+        "Iterated and each transaction applied to next OpenView"
+      ],
+      "validated_at": "app.getTxQ().apply (validates transaction)"
+    },
+    {
+      "field": "retries (OrderedTxs&)",
+      "flow": [
+        "OpenLedger::accept",
+        "apply (free function)"
+      ],
+      "origin": "accept() argument",
+      "transformations": [
+        "Passed to apply for retry logic"
+      ],
+      "validated_at": "apply (validates retry transactions)"
+    },
+    {
+      "field": "tx (std::shared_ptr<STTx const>)",
+      "flow": [
+        "OpenLedger::accept",
+        "apply",
+        "app.getTxQ().apply",
+        "Relay logic"
+      ],
+      "origin": "current_->txs or locals",
+      "transformations": [
+        "Checked for batch flag",
+        "Relayed if not recently relayed"
+      ],
+      "validated_at": "apply, relay logic (flag and field checks)"
+    }
+  ],
+  "description": "Implements the OpenLedger class, which manages the open ledger state in the XRPL node, including transaction application, modification, and relay logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "shared_ptr types (non-null checked by dereference)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field shared_ptr types (non-null checked by dereference) validated by C++ type system, shared_ptr, business logic in apply/applyTxQ",
+      "issue_pattern": "Missing validation for shared_ptr types (non-null checked by dereference)",
+      "why_false_positive": "C++ type system, shared_ptr, business logic in apply/applyTxQ validates shared_ptr types (non-null checked by dereference) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "reference types (must be valid)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field reference types (must be valid) validated by C++ type system, shared_ptr, business logic in apply/applyTxQ",
+      "issue_pattern": "Missing validation for reference types (must be valid)",
+      "why_false_positive": "C++ type system, shared_ptr, business logic in apply/applyTxQ validates reference types (must be valid) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "callable types (checked by if (f))",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field callable types (checked by if (f)) validated by C++ type system, shared_ptr, business logic in apply/applyTxQ",
+      "issue_pattern": "Missing validation for callable types (checked by if (f))",
+      "why_false_positive": "C++ type system, shared_ptr, business logic in apply/applyTxQ validates callable types (checked by if (f)) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<Ledger const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (shared_ptr, constness) at OpenLedger constructor",
+      "issue_pattern": "Missing empty string validation for ledger (std::shared_ptr<Ledger const>)",
+      "why_false_positive": "implicit type checking (shared_ptr, constness) validates ledger (std::shared_ptr<Ledger const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<Ledger const>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (shared_ptr, constness) at OpenLedger constructor",
+      "issue_pattern": "Missing type validation for ledger (std::shared_ptr<Ledger const>)",
+      "why_false_positive": "implicit type checking (shared_ptr, constness) validates ledger (std::shared_ptr<Ledger const>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "cache (CachedSLEs&)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "implicit type checking (reference, non-null) at OpenLedger constructor",
+      "issue_pattern": "Missing empty string validation for cache (CachedSLEs&)",
+      "why_false_positive": "implicit type checking (reference, non-null) validates cache (CachedSLEs&) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "cache (CachedSLEs&)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "implicit type checking (reference, non-null) at OpenLedger constructor",
+      "issue_pattern": "Missing type validation for cache (CachedSLEs&)",
+      "why_false_positive": "implicit type checking (reference, non-null) validates cache (CachedSLEs&) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "current_ (OpenView)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "create(ledger->rules(), ledger) at OpenLedger constructor",
+      "issue_pattern": "Missing empty string validation for current_ (OpenView)",
+      "why_false_positive": "create(ledger->rules(), ledger) validates current_ (OpenView) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "current_->txCount()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "txCount() method at OpenLedger::empty()",
+      "issue_pattern": "Missing empty string validation for current_->txCount()",
+      "why_false_positive": "txCount() method validates current_->txCount() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "current_ (OpenView)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::lock_guard, shared_ptr at OpenLedger::current()",
+      "issue_pattern": "Missing empty string validation for current_ (OpenView)",
+      "why_false_positive": "std::lock_guard, shared_ptr validates current_ (OpenView) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "current_ (OpenView)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::lock_guard, shared_ptr at OpenLedger::current()",
+      "issue_pattern": "Missing type validation for current_ (OpenView)",
+      "why_false_positive": "std::lock_guard, shared_ptr validates current_ (OpenView) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "f (modify_type const&)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "callable check (if (f)) at OpenLedger::modify, OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for f (modify_type const&)",
+      "why_false_positive": "callable check (if (f)) validates f (modify_type const&) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "f (modify_type const&)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "callable check (if (f)) at OpenLedger::modify, OpenLedger::accept",
+      "issue_pattern": "Missing type validation for f (modify_type const&)",
+      "why_false_positive": "callable check (if (f)) validates f (modify_type const&) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "next (OpenView)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::make_shared<OpenView>(*current_) at OpenLedger::modify",
+      "issue_pattern": "Missing empty string validation for next (OpenView)",
+      "why_false_positive": "std::make_shared<OpenView>(*current_) validates next (OpenView) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "next (OpenView)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "std::make_shared<OpenView>(*current_) at OpenLedger::modify",
+      "issue_pattern": "Missing type validation for next (OpenView)",
+      "why_false_positive": "std::make_shared<OpenView>(*current_) validates next (OpenView) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<Ledger const>)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger->seq() at OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for ledger (std::shared_ptr<Ledger const>)",
+      "why_false_positive": "ledger->seq() validates ledger (std::shared_ptr<Ledger const>) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ledger (std::shared_ptr<Ledger const>)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "ledger->seq() at OpenLedger::accept",
+      "issue_pattern": "Missing type validation for ledger (std::shared_ptr<Ledger const>)",
+      "why_false_positive": "ledger->seq() validates ledger (std::shared_ptr<Ledger const>) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "current_->txs",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "empty() check, iteration at OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for current_->txs",
+      "why_false_positive": "empty() check, iteration validates current_->txs for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "current_->txs",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "empty() check, iteration at OpenLedger::accept",
+      "issue_pattern": "Missing type validation for current_->txs",
+      "why_false_positive": "empty() check, iteration validates current_->txs type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "locals (OrderedTxs const&)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "iteration at OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for locals (OrderedTxs const&)",
+      "why_false_positive": "iteration validates locals (OrderedTxs const&) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "locals (OrderedTxs const&)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "iteration at OpenLedger::accept",
+      "issue_pattern": "Missing type validation for locals (OrderedTxs const&)",
+      "why_false_positive": "iteration validates locals (OrderedTxs const&) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "item.second (from locals)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "app.getTxQ().apply at OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for item.second (from locals)",
+      "why_false_positive": "app.getTxQ().apply validates item.second (from locals) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "txpair.first (from next->txs)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx->getTransactionID() at OpenLedger::accept",
+      "issue_pattern": "Missing empty string validation for txpair.first (from next->txs)",
+      "why_false_positive": "tx->getTransactionID() validates txpair.first (from next->txs) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "txpair.first (from next->txs)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "tx->getTransactionID() at OpenLedger::accept",
+      "issue_pattern": "Missing type validation for txpair.first (from next->txs)",
+      "why_false_positive": "tx->getTransactionID() validates txpair.first (from next->txs) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/OpenLedger.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "OpenLedger::empty"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "OpenLedger::current"
+    },
+    {
+      "args": [
+        "f"
+      ],
+      "lineno": 25,
+      "name": "OpenLedger::modify"
+    },
+    {
+      "args": [
+        "app",
+        "rules",
+        "ledger",
+        "locals",
+        "retriesFirst",
+        "retries",
+        "flags",
+        "suffix",
+        "f"
+      ],
+      "lineno": 37,
+      "name": "OpenLedger::accept"
+    },
+    {
+      "args": [
+        "rules",
+        "ledger"
+      ],
+      "lineno": 91,
+      "name": "OpenLedger::create"
+    },
+    {
+      "args": [
+        "app",
+        "view",
+        "tx",
+        "retry",
+        "flags",
+        "j"
+      ],
+      "lineno": 97,
+      "name": "OpenLedger::apply_one"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 110,
+      "name": "debugTxstr"
+    },
+    {
+      "args": [
+        "set"
+      ],
+      "lineno": 116,
+      "name": "debugTostr"
+    },
+    {
+      "args": [
+        "set"
+      ],
+      "lineno": 123,
+      "name": "debugTostr"
+    },
+    {
+      "args": [
+        "view"
+      ],
+      "lineno": 140,
+      "name": "debugTostr"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Core OpenLedger logic is likely covered by integration and unit tests in files such as 'test/ledger/OpenLedger_test.cpp', 'test/app/ledger/AcceptLedger_test.cpp', and possibly 'test/app/misc/TxQ_test.cpp'. However, some validation paths (e.g., batch transaction relay logic, error handling for invalid pointers, and multi-threaded access) may not be fully covered, especially edge cases involving concurrent modification or rare transaction flags. LCOV_EXCL_START/STOP comments indicate some relay logic is excluded from coverage. There may be gaps in tests for error handling and assertion failures (e.g., XRPL_ASSERT).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "shared_ptr types (non-null checked by dereference)",
+      "reference types (must be valid)",
+      "callable types (checked by if (f))"
+    ],
+    "framework": "C++ type system, shared_ptr, business logic in apply/applyTxQ",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::bad_alloc or undefined behavior if null",
+      "field": "ledger (std::shared_ptr<Ledger const>)",
+      "location": "OpenLedger constructor",
+      "validated_by": "implicit type checking (shared_ptr, constness)",
+      "validates": [
+        "ledger must be a valid shared_ptr to const Ledger"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "undefined behavior if reference is invalid",
+      "field": "cache (CachedSLEs&)",
+      "location": "OpenLedger constructor",
+      "validated_by": "implicit type checking (reference, non-null)",
+      "validates": [
+        "cache must be a valid reference"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "exception if ledger is invalid or create fails",
+      "field": "current_ (OpenView)",
+      "location": "OpenLedger constructor",
+      "validated_by": "create(ledger->rules(), ledger)",
+      "validates": [
+        "ledger must have valid rules",
+        "ledger must be valid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (returns bool)",
+      "field": "current_->txCount()",
+      "location": "OpenLedger::empty()",
+      "validated_by": "txCount() method",
+      "validates": [
+        "current_ must be valid",
+        "txCount() must be callable"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (returns shared_ptr)",
+      "field": "current_ (OpenView)",
+      "location": "OpenLedger::current()",
+      "validated_by": "std::lock_guard, shared_ptr",
+      "validates": [
+        "current_ must be valid shared_ptr"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (skips if not callable)",
+      "field": "f (modify_type const&)",
+      "location": "OpenLedger::modify, OpenLedger::accept",
+      "validated_by": "callable check (if (f))",
+      "validates": [
+        "f must be callable"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "std::bad_alloc if allocation fails",
+      "field": "next (OpenView)",
+      "location": "OpenLedger::modify",
+      "validated_by": "std::make_shared<OpenView>(*current_)",
+      "validates": [
+        "current_ must be valid"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "undefined behavior if ledger is null",
+      "field": "ledger (std::shared_ptr<Ledger const>)",
+      "location": "OpenLedger::accept",
+      "validated_by": "ledger->seq()",
+      "validates": [
+        "ledger must be valid shared_ptr"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (skips if empty)",
+      "field": "current_->txs",
+      "location": "OpenLedger::accept",
+      "validated_by": "empty() check, iteration",
+      "validates": [
+        "current_->txs must be iterable"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "none (skips if empty)",
+      "field": "locals (OrderedTxs const&)",
+      "location": "OpenLedger::accept",
+      "validated_by": "iteration",
+      "validates": [
+        "locals must be iterable"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "exception if apply fails (not shown in this file)",
+      "field": "item.second (from locals)",
+      "location": "OpenLedger::accept",
+      "validated_by": "app.getTxQ().apply",
+      "validates": [
+        "item.second must be valid transaction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "exception if tx is null or invalid",
+      "field": "txpair.first (from next->txs)",
+      "location": "OpenLedger::accept",
+      "validated_by": "tx->getTransactionID()",
+      "validates": [
+        "tx must be valid shared_ptr<STTx const>"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

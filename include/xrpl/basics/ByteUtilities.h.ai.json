@@ -1,0 +1,38 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "value"
+    },
+    {
+      "lineno": 13,
+      "name": "value"
+    }
+  ],
+  "classes": [],
+  "description": "Provides constexpr utility functions to convert values to kilobytes and megabytes within the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/ByteUtilities.h",
+  "functions": [
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 6,
+      "name": "kilobytes"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 13,
+      "name": "megabytes"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "MPTID const& mptID",
+        "MPTID const& mptID, bool zeroBalance, bool maxedOut"
+      ],
+      "lineno": 6,
+      "name": "PathFindMPT"
+    }
+  ],
+  "description": "Defines the PathFindMPT class, which represents a Multi-Party Token (MPT) identifier and associated state for pathfinding in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/MPT.h",
+  "functions": [
+    {
+      "args": [
+        "mptID"
+      ],
+      "lineno": 13,
+      "name": "PathFindMPT"
+    },
+    {
+      "args": [
+        "mptID",
+        "zeroBalance",
+        "maxedOut"
+      ],
+      "lineno": 17,
+      "name": "PathFindMPT"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "operator MPTID const&"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "getMptID"
+    },
+    {
+      "args": [],
+      "lineno": 29,
+      "name": "isZeroBalance"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "isMaxedOut"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

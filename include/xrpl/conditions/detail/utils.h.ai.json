@@ -1,0 +1,154 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "p"
+    },
+    {
+      "lineno": 32,
+      "name": "p"
+    },
+    {
+      "lineno": 37,
+      "name": "p"
+    },
+    {
+      "lineno": 42,
+      "name": "p"
+    },
+    {
+      "lineno": 47,
+      "name": "p"
+    },
+    {
+      "lineno": 52,
+      "name": "p"
+    },
+    {
+      "lineno": 57,
+      "name": "s"
+    },
+    {
+      "lineno": 57,
+      "name": "ec"
+    },
+    {
+      "lineno": 101,
+      "name": "s"
+    },
+    {
+      "lineno": 101,
+      "name": "count"
+    },
+    {
+      "lineno": 101,
+      "name": "ec"
+    },
+    {
+      "lineno": 115,
+      "name": "s"
+    },
+    {
+      "lineno": 115,
+      "name": "count"
+    },
+    {
+      "lineno": 115,
+      "name": "ec"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "Preamble"
+    }
+  ],
+  "description": "This file provides a minimal Distinguished Encoding Rules (DER) decoder for binary blobs, specifically to support PreimageSha256 in the XRPL cryptoconditions module. It includes utilities for parsing DER preambles, octet strings, and integers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/conditions/detail/utils.h",
+  "functions": [
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 27,
+      "name": "isPrimitive"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 32,
+      "name": "isConstructed"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 37,
+      "name": "isUniversal"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 42,
+      "name": "isApplication"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 47,
+      "name": "isContextSpecific"
+    },
+    {
+      "args": [
+        "p"
+      ],
+      "lineno": 52,
+      "name": "isPrivate"
+    },
+    {
+      "args": [
+        "s",
+        "ec"
+      ],
+      "lineno": 57,
+      "name": "parsePreamble"
+    },
+    {
+      "args": [
+        "s",
+        "count",
+        "ec"
+      ],
+      "lineno": 101,
+      "name": "parseOctetString"
+    },
+    {
+      "args": [
+        "s",
+        "count",
+        "ec"
+      ],
+      "lineno": 115,
+      "name": "parseInteger"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "cryptoconditions"
+    },
+    {
+      "lineno": 15,
+      "name": "der"
+    }
+  ]
+}

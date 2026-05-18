@@ -1,0 +1,395 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT> const& rhs)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT> const& rhs)",
+      "purpose": "Constructs a SharedWeakCachePointer from a std::shared_ptr<TT> if TT* is convertible to T*.",
+      "validation_points": [
+        "C++20 concept: requires std::convertible_to<TT*, T*> (compile-time validation of pointer type compatibility)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)",
+      "purpose": "Assigns a std::shared_ptr<TT> to the SharedWeakCachePointer if TT* is convertible to T*.",
+      "validation_points": [
+        "C++20 concept: requires std::convertible_to<TT*, T*> (compile-time validation of pointer type compatibility)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)",
+      "purpose": "Move-constructs a SharedWeakCachePointer from a std::shared_ptr<TT> if TT* is convertible to T*.",
+      "validation_points": [
+        "C++20 concept: requires std::convertible_to<TT*, T*> (compile-time validation of pointer type compatibility)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT>&& rhs)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT>&& rhs)",
+      "purpose": "Move-assigns a std::shared_ptr<TT> to the SharedWeakCachePointer if TT* is convertible to T*.",
+      "validation_points": [
+        "C++20 concept: requires std::convertible_to<TT*, T*> (compile-time validation of pointer type compatibility)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::convertToStrong()",
+        "SharedWeakCachePointer<T>::isStrong()",
+        "std::get_if<std::shared_ptr<T>>(&combo_)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::convertToStrong()",
+      "purpose": "Converts the internal state to a strong pointer if possible.",
+      "validation_points": [
+        "Checks if combo_ holds a std::weak_ptr<T> and if it can be locked to a std::shared_ptr<T>."
+      ]
+    },
+    {
+      "call_chain": [
+        "SharedWeakCachePointer<T>::convertToWeak()",
+        "SharedWeakCachePointer<T>::isWeak()",
+        "SharedWeakCachePointer<T>::isStrong()",
+        "std::get_if<std::shared_ptr<T>>(&combo_)"
+      ],
+      "entry_point": "SharedWeakCachePointer<T>::convertToWeak()",
+      "purpose": "Converts the internal state to a weak pointer if possible.",
+      "validation_points": [
+        "Checks if combo_ holds a std::shared_ptr<T> and converts it to std::weak_ptr<T>."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "combo_",
+      "flow": [
+        "Constructor (combo_ = rhs or combo_ = std::move(rhs))",
+        "Assignment operator (combo_ = rhs or combo_ = std::move(rhs))",
+        "Accessed by getStrong(), lock(), isStrong(), isWeak(), expired(), use_count(), get(), convertToStrong(), convertToWeak(), reset()"
+      ],
+      "origin": "Initialized in constructors (from std::shared_ptr<TT> or std::weak_ptr<T>)",
+      "transformations": [
+        "Set to std::shared_ptr<T> or std::weak_ptr<T> depending on input",
+        "Moved or copied as needed",
+        "Converted between strong/weak via convertToStrong/convertToWeak"
+      ],
+      "validated_at": "At construction/assignment: requires std::convertible_to<TT*, T*> (compile-time); at runtime: type checked via std::get_if"
+    },
+    {
+      "field": "std::shared_ptr<TT> rhs (constructor/assignment input)",
+      "flow": [
+        "Passed to constructor or assignment operator",
+        "combo_ = rhs or combo_ = std::move(rhs)"
+      ],
+      "origin": "User code or upstream function passes in a shared_ptr",
+      "transformations": [
+        "Type-checked at compile time for pointer compatibility",
+        "Stored in combo_ as std::shared_ptr<T>"
+      ],
+      "validated_at": "Compile-time: requires std::convertible_to<TT*, T*>"
+    },
+    {
+      "field": "std::weak_ptr<T> (internal state)",
+      "flow": [
+        "convertToWeak() checks if combo_ holds std::shared_ptr<T>",
+        "If so, combo_ = std::weak_ptr<T>(*p)"
+      ],
+      "origin": "Created in convertToWeak() from std::shared_ptr<T>",
+      "transformations": [
+        "Conversion from strong to weak pointer"
+      ],
+      "validated_at": "Runtime: only if combo_ holds std::shared_ptr<T>"
+    }
+  ],
+  "description": "Implements the methods for the SharedWeakCachePointer template class, which wraps a std::variant of std::shared_ptr and std::weak_ptr to efficiently manage strong and weak references for caching purposes.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "TT* convertible to T* (template parameter type)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field TT* convertible to T* (template parameter type) validated by C++20 concepts (std::convertible_to)",
+      "issue_pattern": "Missing validation for TT* convertible to T* (template parameter type)",
+      "why_false_positive": "C++20 concepts (std::convertible_to) validates TT* convertible to T* (template parameter type) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "TT* convertible to T* (template parameter type)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++20 concepts (std::convertible_to<TT*, T*>) at template constructors and assignment operators (e.g., SharedWeakCachePointer(std::shared_ptr<TT> const& rhs))",
+      "issue_pattern": "Missing empty string validation for TT* convertible to T* (template parameter type)",
+      "why_false_positive": "C++20 concepts (std::convertible_to<TT*, T*>) validates TT* convertible to T* (template parameter type) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "TT* convertible to T* (template parameter type)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++20 concepts (std::convertible_to<TT*, T*>) at template constructors and assignment operators (e.g., SharedWeakCachePointer(std::shared_ptr<TT> const& rhs))",
+      "issue_pattern": "Missing type validation for TT* convertible to T* (template parameter type)",
+      "why_false_positive": "C++20 concepts (std::convertible_to<TT*, T*>) validates TT* convertible to T* (template parameter type) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::weak_ptr"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Missing null check for std::weak_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::weak_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/SharedWeakCachePointer.ipp",
+  "functions": [
+    {
+      "args": [
+        "SharedWeakCachePointer const& rhs"
+      ],
+      "lineno": 5,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT> const& rhs"
+      ],
+      "lineno": 9,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "SharedWeakCachePointer&& rhs"
+      ],
+      "lineno": 14,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT>&& rhs"
+      ],
+      "lineno": 18,
+      "name": "SharedWeakCachePointer"
+    },
+    {
+      "args": [
+        "SharedWeakCachePointer const& rhs"
+      ],
+      "lineno": 24,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT> const& rhs"
+      ],
+      "lineno": 29,
+      "name": "operator="
+    },
+    {
+      "args": [
+        "std::shared_ptr<TT>&& rhs"
+      ],
+      "lineno": 36,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "~SharedWeakCachePointer"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "getStrong"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "operator bool"
+    },
+    {
+      "args": [],
+      "lineno": 63,
+      "name": "reset"
+    },
+    {
+      "args": [],
+      "lineno": 68,
+      "name": "get"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "use_count"
+    },
+    {
+      "args": [],
+      "lineno": 81,
+      "name": "expired"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "lock"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "isStrong"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "isWeak"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "convertToStrong"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "convertToWeak"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::weak_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, tests for SharedWeakCachePointer would be found in files like 'SharedWeakCachePointer_test.cpp' or similar in the test/unit directory. The main validation (std::convertible_to) is a compile-time check and would be tested by attempting to instantiate SharedWeakCachePointer with various pointer types. Runtime behaviors (convertToStrong, convertToWeak, lock, expired, etc.) should be covered by unit tests that check state transitions and pointer validity. Gaps: If tests do not attempt invalid type conversions, the compile-time validation may not be explicitly tested. Also, edge cases (e.g., null pointers, expired weak pointers) should be tested to ensure correct runtime behavior.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "TT* convertible to T* (template parameter type)"
+    ],
+    "framework": "C++20 concepts (std::convertible_to)",
+    "validation_layer": "compile-time (template instantiation/type checking)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Compilation error (static_assertion failure, concept not satisfied)",
+      "field": "TT* convertible to T* (template parameter type)",
+      "location": "template constructors and assignment operators (e.g., SharedWeakCachePointer(std::shared_ptr<TT> const& rhs))",
+      "validated_by": "C++20 concepts (std::convertible_to<TT*, T*>)",
+      "validates": [
+        "Ensures TT* can be converted to T* before allowing construction or assignment"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 25,
+      "name": "buf"
+    },
+    {
+      "lineno": 25,
+      "name": "buflen"
+    },
+    {
+      "lineno": 25,
+      "name": "t"
+    },
+    {
+      "lineno": 54,
+      "name": "v"
+    },
+    {
+      "lineno": 66,
+      "name": "p0"
+    },
+    {
+      "lineno": 82,
+      "name": "is"
+    },
+    {
+      "lineno": 82,
+      "name": "u"
+    },
+    {
+      "lineno": 92,
+      "name": "os"
+    },
+    {
+      "lineno": 92,
+      "name": "t"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "varint"
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "varint_traits"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "varint_traits<T, true>"
+    }
+  ],
+  "description": "Implements base128 varint encoding/decoding utilities for unsigned integers, including reading, writing, and size calculation, for use in XRPL NodeStore serialization.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/varint.h",
+  "functions": [
+    {
+      "args": [
+        "buf",
+        "buflen",
+        "t"
+      ],
+      "lineno": 25,
+      "name": "read_varint"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 54,
+      "name": "size_varint"
+    },
+    {
+      "args": [
+        "p0",
+        "v"
+      ],
+      "lineno": 66,
+      "name": "write_varint"
+    },
+    {
+      "args": [
+        "is",
+        "u"
+      ],
+      "lineno": 82,
+      "name": "read"
+    },
+    {
+      "args": [
+        "os",
+        "t"
+      ],
+      "lineno": 92,
+      "name": "write"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "NodeStore"
+    }
+  ]
+}

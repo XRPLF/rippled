@@ -1,0 +1,42 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "parameters"
+    },
+    {
+      "lineno": 44,
+      "name": "app"
+    },
+    {
+      "lineno": 44,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "LedgerCleaner"
+    }
+  ],
+  "description": "Defines the LedgerCleaner interface for checking and cleaning ledger/transaction database continuity, including an abstract class and a factory function.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerCleaner.h",
+  "functions": [
+    {
+      "args": [
+        "app",
+        "journal"
+      ],
+      "lineno": 44,
+      "name": "make_LedgerCleaner"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

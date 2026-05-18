@@ -1,0 +1,358 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "name_"
+    },
+    {
+      "lineno": 18,
+      "name": "collector"
+    },
+    {
+      "lineno": 30,
+      "name": "name"
+    },
+    {
+      "lineno": 35,
+      "name": "handler"
+    },
+    {
+      "lineno": 40,
+      "name": "name"
+    },
+    {
+      "lineno": 45,
+      "name": "name"
+    },
+    {
+      "lineno": 50,
+      "name": "name"
+    },
+    {
+      "lineno": 55,
+      "name": "name"
+    },
+    {
+      "lineno": 67,
+      "name": "collector"
+    },
+    {
+      "lineno": 73,
+      "name": "name"
+    },
+    {
+      "lineno": 89,
+      "name": "collector"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::string const& name_",
+        "Collector::ptr const& collector"
+      ],
+      "lineno": 13,
+      "name": "GroupImp"
+    },
+    {
+      "args": [
+        "Collector::ptr const& collector"
+      ],
+      "lineno": 61,
+      "name": "GroupsImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "GroupsImp::get",
+        "GroupImp::GroupImp (constructor)",
+        "GroupImp::make_counter / make_event / make_gauge / make_meter / make_hook",
+        "Collector::make_counter / make_event / make_gauge / make_meter / make_hook"
+      ],
+      "entry_point": "GroupsImp::get",
+      "purpose": "Retrieves or creates a Group by name, then allows creation of metrics (counter, event, gauge, meter, hook) within that group.",
+      "validation_points": [
+        "GroupsImp::get: Checks if group exists in m_items (unordered_map); if not, creates new GroupImp.",
+        "GroupImp::make_*: No explicit validation of metric names; simply concatenates group name and metric name.",
+        "Collector::make_*: Any further validation would occur here, but not shown in this file."
+      ]
+    },
+    {
+      "call_chain": [
+        "make_Groups",
+        "GroupsImp::GroupsImp (constructor)"
+      ],
+      "entry_point": "make_Groups",
+      "purpose": "Factory function to create a Groups instance with a given Collector.",
+      "validation_points": [
+        "No explicit validation in this chain."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "name (Group name)",
+      "flow": [
+        "GroupsImp::get (input parameter)",
+        "m_items (unordered_map key)",
+        "GroupImp::GroupImp (constructor parameter)",
+        "GroupImp::m_name (member variable)",
+        "GroupImp::make_name (concatenation with metric name)",
+        "Collector::make_* (final usage)"
+      ],
+      "origin": "Parameter to GroupsImp::get",
+      "transformations": [
+        "Concatenation: Group name + '.' + metric name in make_name"
+      ],
+      "validated_at": "No explicit validation; relies on unordered_map and string concatenation"
+    },
+    {
+      "field": "collector (Collector::ptr)",
+      "flow": [
+        "make_Groups (input parameter)",
+        "GroupsImp::GroupsImp (constructor parameter)",
+        "GroupsImp::m_collector (member variable)",
+        "GroupImp::GroupImp (constructor parameter)",
+        "GroupImp::m_collector (member variable)",
+        "GroupImp::make_* (calls m_collector->make_*)"
+      ],
+      "origin": "Parameter to GroupsImp constructor (from make_Groups)",
+      "transformations": [
+        "Passed through as shared_ptr, no transformation"
+      ],
+      "validated_at": "No explicit validation; assumes valid Collector::ptr"
+    },
+    {
+      "field": "metric name (e.g., for counter/event)",
+      "flow": [
+        "GroupImp::make_counter (input parameter)",
+        "GroupImp::make_name (concatenation with m_name)",
+        "Collector::make_counter (final usage)"
+      ],
+      "origin": "Parameter to GroupImp::make_counter/make_event/etc.",
+      "transformations": [
+        "Concatenation: Group name + '.' + metric name"
+      ],
+      "validated_at": "No explicit validation; assumes valid string"
+    }
+  ],
+  "description": "This file implements the insight metrics grouping system for the Beast library, providing classes and functions to create and manage metric groups (Groups, Group) and their associated metrics (Counter, Event, Gauge, Meter, Hook) using a Collector. It includes concrete implementations for Groups and Group, and a factory function to create Groups instances.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/beast/insight/Groups.cpp",
+  "functions": [
+    {
+      "args": [
+        "std::string const& name_",
+        "Collector::ptr const& collector"
+      ],
+      "lineno": 18,
+      "name": "GroupImp::GroupImp"
+    },
+    {
+      "args": [],
+      "lineno": 23,
+      "name": "GroupImp::~GroupImp"
+    },
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "GroupImp::name"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 30,
+      "name": "GroupImp::make_name"
+    },
+    {
+      "args": [
+        "HookImpl::HandlerType const& handler"
+      ],
+      "lineno": 35,
+      "name": "GroupImp::make_hook"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 40,
+      "name": "GroupImp::make_counter"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 45,
+      "name": "GroupImp::make_event"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 50,
+      "name": "GroupImp::make_gauge"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 55,
+      "name": "GroupImp::make_meter"
+    },
+    {
+      "args": [
+        "Collector::ptr const& collector"
+      ],
+      "lineno": 67,
+      "name": "GroupsImp::GroupsImp"
+    },
+    {
+      "args": [],
+      "lineno": 71,
+      "name": "GroupsImp::~GroupsImp"
+    },
+    {
+      "args": [
+        "std::string const& name"
+      ],
+      "lineno": 73,
+      "name": "GroupsImp::get"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "Groups::~Groups"
+    },
+    {
+      "args": [
+        "Collector::ptr const& collector"
+      ],
+      "lineno": 89,
+      "name": "make_Groups"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "beast"
+    },
+    {
+      "lineno": 12,
+      "name": "insight"
+    },
+    {
+      "lineno": 15,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "This file contains only implementation, not tests. Validation is minimal: there is no explicit checking of group or metric names (e.g., for emptiness, invalid characters, or duplicates beyond unordered_map semantics). Any validation of metric names or collector pointers would need to occur in Collector or higher-level code. Test coverage would likely be in files testing beast::insight::Groups, Group, and Collector, but this file itself does not contain or reference tests. Gaps: No validation of input parameters, no error handling for invalid collector pointers, and no checks for malformed names.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "N/A"
+  },
+  "validations": []
+}

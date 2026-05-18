@@ -1,0 +1,50 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "title"
+    },
+    {
+      "lineno": 58,
+      "name": "how"
+    }
+  ],
+  "classes": [],
+  "description": "Provides programming by contract utilities for exception handling, logging, and invariant checking in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/contract.h",
+  "functions": [
+    {
+      "args": [
+        "title"
+      ],
+      "lineno": 17,
+      "name": "LogThrow"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "Rethrow"
+    },
+    {
+      "args": [
+        "args"
+      ],
+      "lineno": 41,
+      "name": "Throw"
+    },
+    {
+      "args": [
+        "how"
+      ],
+      "lineno": 58,
+      "name": "LogicError"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ]
+}

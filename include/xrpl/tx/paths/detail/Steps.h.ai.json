@@ -1,0 +1,652 @@
+{
+  "args": [
+    {
+      "lineno": 20,
+      "name": "dir"
+    },
+    {
+      "lineno": 25,
+      "name": "dir"
+    },
+    {
+      "lineno": 181,
+      "name": "sb"
+    },
+    {
+      "lineno": 181,
+      "name": "prevStepDir"
+    },
+    {
+      "lineno": 194,
+      "name": "strand"
+    },
+    {
+      "lineno": 205,
+      "name": "lhs"
+    },
+    {
+      "lineno": 205,
+      "name": "rhs"
+    },
+    {
+      "lineno": 217,
+      "name": "src"
+    },
+    {
+      "lineno": 217,
+      "name": "dst"
+    },
+    {
+      "lineno": 217,
+      "name": "deliver"
+    },
+    {
+      "lineno": 217,
+      "name": "sendMaxAsset"
+    },
+    {
+      "lineno": 217,
+      "name": "path"
+    },
+    {
+      "lineno": 238,
+      "name": "sb"
+    },
+    {
+      "lineno": 238,
+      "name": "src"
+    },
+    {
+      "lineno": 238,
+      "name": "dst"
+    },
+    {
+      "lineno": 238,
+      "name": "deliver"
+    },
+    {
+      "lineno": 238,
+      "name": "limitQuality"
+    },
+    {
+      "lineno": 238,
+      "name": "sendMaxAsset"
+    },
+    {
+      "lineno": 238,
+      "name": "path"
+    },
+    {
+      "lineno": 238,
+      "name": "ownerPaysTransferFee"
+    },
+    {
+      "lineno": 238,
+      "name": "offerCrossing"
+    },
+    {
+      "lineno": 238,
+      "name": "ammContext"
+    },
+    {
+      "lineno": 238,
+      "name": "domainID"
+    },
+    {
+      "lineno": 238,
+      "name": "j"
+    },
+    {
+      "lineno": 266,
+      "name": "sb"
+    },
+    {
+      "lineno": 266,
+      "name": "src"
+    },
+    {
+      "lineno": 266,
+      "name": "dst"
+    },
+    {
+      "lineno": 266,
+      "name": "deliver"
+    },
+    {
+      "lineno": 266,
+      "name": "limitQuality"
+    },
+    {
+      "lineno": 266,
+      "name": "sendMax"
+    },
+    {
+      "lineno": 266,
+      "name": "paths"
+    },
+    {
+      "lineno": 266,
+      "name": "addDefaultPath"
+    },
+    {
+      "lineno": 266,
+      "name": "ownerPaysTransferFee"
+    },
+    {
+      "lineno": 266,
+      "name": "offerCrossing"
+    },
+    {
+      "lineno": 266,
+      "name": "ammContext"
+    },
+    {
+      "lineno": 266,
+      "name": "domainID"
+    },
+    {
+      "lineno": 266,
+      "name": "j"
+    },
+    {
+      "lineno": 374,
+      "name": "expected"
+    },
+    {
+      "lineno": 374,
+      "name": "actual"
+    },
+    {
+      "lineno": 377,
+      "name": "expected"
+    },
+    {
+      "lineno": 377,
+      "name": "actual"
+    },
+    {
+      "lineno": 380,
+      "name": "expected"
+    },
+    {
+      "lineno": 380,
+      "name": "actual"
+    },
+    {
+      "lineno": 400,
+      "name": "step"
+    },
+    {
+      "lineno": 400,
+      "name": "src"
+    },
+    {
+      "lineno": 400,
+      "name": "dst"
+    },
+    {
+      "lineno": 400,
+      "name": "currency"
+    },
+    {
+      "lineno": 405,
+      "name": "step"
+    },
+    {
+      "lineno": 405,
+      "name": "src"
+    },
+    {
+      "lineno": 405,
+      "name": "dst"
+    },
+    {
+      "lineno": 405,
+      "name": "mptid"
+    },
+    {
+      "lineno": 410,
+      "name": "step"
+    },
+    {
+      "lineno": 410,
+      "name": "acc"
+    },
+    {
+      "lineno": 412,
+      "name": "step"
+    },
+    {
+      "lineno": 412,
+      "name": "book"
+    },
+    {
+      "lineno": 415,
+      "name": "ctx"
+    },
+    {
+      "lineno": 415,
+      "name": "src"
+    },
+    {
+      "lineno": 415,
+      "name": "dst"
+    },
+    {
+      "lineno": 415,
+      "name": "c"
+    },
+    {
+      "lineno": 420,
+      "name": "ctx"
+    },
+    {
+      "lineno": 420,
+      "name": "src"
+    },
+    {
+      "lineno": 420,
+      "name": "dst"
+    },
+    {
+      "lineno": 420,
+      "name": "a"
+    },
+    {
+      "lineno": 425,
+      "name": "ctx"
+    },
+    {
+      "lineno": 425,
+      "name": "in"
+    },
+    {
+      "lineno": 425,
+      "name": "out"
+    },
+    {
+      "lineno": 430,
+      "name": "ctx"
+    },
+    {
+      "lineno": 430,
+      "name": "in"
+    },
+    {
+      "lineno": 435,
+      "name": "ctx"
+    },
+    {
+      "lineno": 435,
+      "name": "out"
+    },
+    {
+      "lineno": 440,
+      "name": "ctx"
+    },
+    {
+      "lineno": 440,
+      "name": "acc"
+    },
+    {
+      "lineno": 445,
+      "name": "ctx"
+    },
+    {
+      "lineno": 445,
+      "name": "in"
+    },
+    {
+      "lineno": 445,
+      "name": "out"
+    },
+    {
+      "lineno": 450,
+      "name": "ctx"
+    },
+    {
+      "lineno": 450,
+      "name": "in"
+    },
+    {
+      "lineno": 455,
+      "name": "ctx"
+    },
+    {
+      "lineno": 455,
+      "name": "out"
+    },
+    {
+      "lineno": 460,
+      "name": "ctx"
+    },
+    {
+      "lineno": 460,
+      "name": "in"
+    },
+    {
+      "lineno": 460,
+      "name": "out"
+    },
+    {
+      "lineno": 465,
+      "name": "ctx"
+    },
+    {
+      "lineno": 465,
+      "name": "in"
+    },
+    {
+      "lineno": 465,
+      "name": "out"
+    },
+    {
+      "lineno": 468,
+      "name": "strand"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "Step"
+    },
+    {
+      "args": [],
+      "lineno": 353,
+      "name": "StepImp"
+    },
+    {
+      "args": [
+        "TER t, std::string const& msg",
+        "TER t"
+      ],
+      "lineno": 370,
+      "name": "FlowException"
+    },
+    {
+      "args": [
+        "view_",
+        "strand_",
+        "strandSrc_",
+        "strandDst_",
+        "strandDeliver_",
+        "limitQuality_",
+        "isLast_",
+        "ownerPaysTransferFee_",
+        "offerCrossing_",
+        "isDefaultPath_",
+        "seenDirectAssets_",
+        "seenBookOuts_",
+        "ammContext_",
+        "domainID",
+        "j_"
+      ],
+      "lineno": 386,
+      "name": "StrandContext"
+    }
+  ],
+  "description": "Defines the core abstractions and utilities for payment path steps (Step) in the XRPL payment engine, including step types, strand construction, error handling, and related helpers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/paths/detail/Steps.h",
+  "functions": [
+    {
+      "args": [
+        "dir"
+      ],
+      "lineno": 20,
+      "name": "redeems"
+    },
+    {
+      "args": [
+        "dir"
+      ],
+      "lineno": 25,
+      "name": "issues"
+    },
+    {
+      "args": [
+        "v",
+        "prevStepDir"
+      ],
+      "lineno": 181,
+      "name": "Step::getQualityFunc"
+    },
+    {
+      "args": [
+        "strand"
+      ],
+      "lineno": 194,
+      "name": "offersUsed"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 205,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "src",
+        "dst",
+        "deliver",
+        "sendMaxAsset",
+        "path"
+      ],
+      "lineno": 217,
+      "name": "normalizePath"
+    },
+    {
+      "args": [
+        "sb",
+        "src",
+        "dst",
+        "deliver",
+        "limitQuality",
+        "sendMaxAsset",
+        "path",
+        "ownerPaysTransferFee",
+        "offerCrossing",
+        "ammContext",
+        "domainID",
+        "j"
+      ],
+      "lineno": 238,
+      "name": "toStrand"
+    },
+    {
+      "args": [
+        "sb",
+        "src",
+        "dst",
+        "deliver",
+        "limitQuality",
+        "sendMax",
+        "paths",
+        "addDefaultPath",
+        "ownerPaysTransferFee",
+        "offerCrossing",
+        "ammContext",
+        "domainID",
+        "j"
+      ],
+      "lineno": 266,
+      "name": "toStrands"
+    },
+    {
+      "args": [
+        "expected",
+        "actual"
+      ],
+      "lineno": 374,
+      "name": "checkNear"
+    },
+    {
+      "args": [
+        "expected",
+        "actual"
+      ],
+      "lineno": 377,
+      "name": "checkNear"
+    },
+    {
+      "args": [
+        "expected",
+        "actual"
+      ],
+      "lineno": 380,
+      "name": "checkNear"
+    },
+    {
+      "args": [
+        "step",
+        "src",
+        "dst",
+        "currency"
+      ],
+      "lineno": 400,
+      "name": "test::directStepEqual"
+    },
+    {
+      "args": [
+        "step",
+        "src",
+        "dst",
+        "mptid"
+      ],
+      "lineno": 405,
+      "name": "test::mptEndpointStepEqual"
+    },
+    {
+      "args": [
+        "step",
+        "acc"
+      ],
+      "lineno": 410,
+      "name": "test::xrpEndpointStepEqual"
+    },
+    {
+      "args": [
+        "step",
+        "book"
+      ],
+      "lineno": 412,
+      "name": "test::bookStepEqual"
+    },
+    {
+      "args": [
+        "ctx",
+        "src",
+        "dst",
+        "c"
+      ],
+      "lineno": 415,
+      "name": "make_DirectStepI"
+    },
+    {
+      "args": [
+        "ctx",
+        "src",
+        "dst",
+        "a"
+      ],
+      "lineno": 420,
+      "name": "make_MPTEndpointStep"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 425,
+      "name": "make_BookStepII"
+    },
+    {
+      "args": [
+        "ctx",
+        "in"
+      ],
+      "lineno": 430,
+      "name": "make_BookStepIX"
+    },
+    {
+      "args": [
+        "ctx",
+        "out"
+      ],
+      "lineno": 435,
+      "name": "make_BookStepXI"
+    },
+    {
+      "args": [
+        "ctx",
+        "acc"
+      ],
+      "lineno": 440,
+      "name": "make_XRPEndpointStep"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 445,
+      "name": "make_BookStepMM"
+    },
+    {
+      "args": [
+        "ctx",
+        "in"
+      ],
+      "lineno": 450,
+      "name": "make_BookStepMX"
+    },
+    {
+      "args": [
+        "ctx",
+        "out"
+      ],
+      "lineno": 455,
+      "name": "make_BookStepXM"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 460,
+      "name": "make_BookStepMI"
+    },
+    {
+      "args": [
+        "ctx",
+        "in",
+        "out"
+      ],
+      "lineno": 465,
+      "name": "make_BookStepIM"
+    },
+    {
+      "args": [
+        "strand"
+      ],
+      "lineno": 468,
+      "name": "isDirectXrpToXrp"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 398,
+      "name": "test"
+    }
+  ]
+}

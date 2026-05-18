@@ -1,0 +1,118 @@
+{
+  "args": [
+    {
+      "lineno": 272,
+      "name": "v"
+    },
+    {
+      "lineno": 282,
+      "name": "s"
+    },
+    {
+      "lineno": 282,
+      "name": "w"
+    },
+    {
+      "lineno": 299,
+      "name": "o"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "IntrusiveRefCounts"
+    },
+    {
+      "args": [
+        "FieldType v",
+        "CountType s, CountType w"
+      ],
+      "lineno": 101,
+      "name": "IntrusiveRefCounts::RefCountPair"
+    }
+  ],
+  "description": "Implements atomic reference counting for intrusive smart pointers, including strong and weak reference management, partial destruction, and thread-safe operations for use in the XRPL codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/IntrusiveRefCounts.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "IntrusiveRefCounts::addStrongRef"
+    },
+    {
+      "args": [],
+      "lineno": 125,
+      "name": "IntrusiveRefCounts::addWeakRef"
+    },
+    {
+      "args": [],
+      "lineno": 130,
+      "name": "IntrusiveRefCounts::releaseStrongRef"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "IntrusiveRefCounts::addWeakReleaseStrongRef"
+    },
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "IntrusiveRefCounts::releaseWeakRef"
+    },
+    {
+      "args": [],
+      "lineno": 235,
+      "name": "IntrusiveRefCounts::checkoutStrongRefFromWeak"
+    },
+    {
+      "args": [],
+      "lineno": 248,
+      "name": "IntrusiveRefCounts::expired"
+    },
+    {
+      "args": [],
+      "lineno": 253,
+      "name": "IntrusiveRefCounts::use_count"
+    },
+    {
+      "args": [],
+      "lineno": 258,
+      "name": "IntrusiveRefCounts::~IntrusiveRefCounts"
+    },
+    {
+      "args": [
+        "IntrusiveRefCounts::FieldType v"
+      ],
+      "lineno": 271,
+      "name": "IntrusiveRefCounts::RefCountPair::RefCountPair"
+    },
+    {
+      "args": [
+        "IntrusiveRefCounts::CountType s",
+        "IntrusiveRefCounts::CountType w"
+      ],
+      "lineno": 281,
+      "name": "IntrusiveRefCounts::RefCountPair::RefCountPair"
+    },
+    {
+      "args": [],
+      "lineno": 289,
+      "name": "IntrusiveRefCounts::RefCountPair::combinedValue"
+    },
+    {
+      "args": [
+        "T** o"
+      ],
+      "lineno": 299,
+      "name": "partialDestructorFinished"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

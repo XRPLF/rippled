@@ -1,0 +1,284 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "sle"
+    },
+    {
+      "lineno": 210,
+      "name": "account"
+    },
+    {
+      "lineno": 210,
+      "name": "lPTokenBalance"
+    },
+    {
+      "lineno": 210,
+      "name": "asset"
+    },
+    {
+      "lineno": 210,
+      "name": "asset2"
+    },
+    {
+      "lineno": 210,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 221,
+      "name": "sle"
+    },
+    {
+      "lineno": 234,
+      "name": "value"
+    },
+    {
+      "lineno": 244,
+      "name": "value"
+    },
+    {
+      "lineno": 254,
+      "name": "value"
+    },
+    {
+      "lineno": 264,
+      "name": "value"
+    },
+    {
+      "lineno": 274,
+      "name": "value"
+    },
+    {
+      "lineno": 284,
+      "name": "value"
+    },
+    {
+      "lineno": 294,
+      "name": "value"
+    },
+    {
+      "lineno": 304,
+      "name": "value"
+    },
+    {
+      "lineno": 314,
+      "name": "value"
+    },
+    {
+      "lineno": 324,
+      "name": "value"
+    },
+    {
+      "lineno": 334,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 25,
+      "name": "AMM"
+    },
+    {
+      "args": [
+        "account",
+        "lPTokenBalance",
+        "asset",
+        "asset2",
+        "ownerNode"
+      ],
+      "lineno": 200,
+      "name": "AMMBuilder"
+    }
+  ],
+  "description": "Defines the AMM (Automated Market Maker) ledger entry and its builder for XRPL, providing type-safe field access and construction methods.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/AMM.h",
+  "functions": [
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 32,
+      "name": "AMM"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "getTradingFee"
+    },
+    {
+      "args": [],
+      "lineno": 67,
+      "name": "hasTradingFee"
+    },
+    {
+      "args": [],
+      "lineno": 77,
+      "name": "getVoteSlots"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "hasVoteSlots"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "getAuctionSlot"
+    },
+    {
+      "args": [],
+      "lineno": 111,
+      "name": "hasAuctionSlot"
+    },
+    {
+      "args": [],
+      "lineno": 121,
+      "name": "getLPTokenBalance"
+    },
+    {
+      "args": [],
+      "lineno": 131,
+      "name": "getAsset"
+    },
+    {
+      "args": [],
+      "lineno": 141,
+      "name": "getAsset2"
+    },
+    {
+      "args": [],
+      "lineno": 151,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 161,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 172,
+      "name": "hasPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 182,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 193,
+      "name": "hasPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "account",
+        "lPTokenBalance",
+        "asset",
+        "asset2",
+        "ownerNode"
+      ],
+      "lineno": 210,
+      "name": "AMMBuilder"
+    },
+    {
+      "args": [
+        "sle"
+      ],
+      "lineno": 221,
+      "name": "AMMBuilder"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 234,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 244,
+      "name": "setTradingFee"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 254,
+      "name": "setVoteSlots"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 264,
+      "name": "setAuctionSlot"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 274,
+      "name": "setLPTokenBalance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 284,
+      "name": "setAsset"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 294,
+      "name": "setAsset2"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 304,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 314,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 324,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 334,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

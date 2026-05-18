@@ -1,0 +1,136 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "uint256 const& transactionID, std::uint32_t ledger",
+        "uint256 const& txID, std::uint32_t ledger, Blob const&",
+        "uint256 const& txID, std::uint32_t ledger, STObject const&"
+      ],
+      "lineno": 9,
+      "name": "TxMeta"
+    }
+  ],
+  "description": "Defines the TxMeta class, which encapsulates metadata for a transaction in the XRPL ledger, including affected nodes, result codes, delivered amounts, and serialization/deserialization utilities.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/TxMeta.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "getTxID"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "getLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "getResult"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "getResultTER"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "getIndex"
+    },
+    {
+      "args": [
+        "uint256 const&",
+        "SField const&",
+        "std::uint16_t"
+      ],
+      "lineno": 38,
+      "name": "setAffectedNode"
+    },
+    {
+      "args": [
+        "SLE::ref",
+        "SField const&"
+      ],
+      "lineno": 39,
+      "name": "getAffectedNode"
+    },
+    {
+      "args": [
+        "uint256 const&"
+      ],
+      "lineno": 41,
+      "name": "getAffectedNode"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getAffectedAccounts"
+    },
+    {
+      "args": [
+        "JsonOptions p"
+      ],
+      "lineno": 47,
+      "name": "getJson"
+    },
+    {
+      "args": [
+        "Serializer&",
+        "TER",
+        "std::uint32_t"
+      ],
+      "lineno": 51,
+      "name": "addRaw"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getAsObject"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getNodes"
+    },
+    {
+      "args": [],
+      "lineno": 57,
+      "name": "getNodes"
+    },
+    {
+      "args": [
+        "STObject const& obj"
+      ],
+      "lineno": 61,
+      "name": "setAdditionalFields"
+    },
+    {
+      "args": [],
+      "lineno": 69,
+      "name": "getDeliveredAmount"
+    },
+    {
+      "args": [
+        "std::optional<STAmount> const& amount"
+      ],
+      "lineno": 73,
+      "name": "setDeliveredAmount"
+    },
+    {
+      "args": [
+        "std::optional<uint256> const& id"
+      ],
+      "lineno": 77,
+      "name": "setParentBatchID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

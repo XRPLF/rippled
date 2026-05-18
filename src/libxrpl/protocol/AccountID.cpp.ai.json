@@ -1,0 +1,410 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "count"
+    },
+    {
+      "lineno": 29,
+      "name": "id"
+    },
+    {
+      "lineno": 67,
+      "name": "v"
+    },
+    {
+      "lineno": 72,
+      "name": "s"
+    },
+    {
+      "lineno": 97,
+      "name": "pk"
+    },
+    {
+      "lineno": 120,
+      "name": "issuer"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "count"
+      ],
+      "lineno": 13,
+      "name": "AccountIdCache"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "toBase58",
+        "accountIdCache->toBase58 (if cache exists) OR encodeBase58Token"
+      ],
+      "entry_point": "toBase58(AccountID const& v)",
+      "purpose": "Converts an AccountID to its base58 string representation, using a cache if available.",
+      "validation_points": [
+        "XRPL_ASSERT in AccountIdCache::toBase58 (validates encoding result size)"
+      ]
+    },
+    {
+      "call_chain": [
+        "parseBase58",
+        "decodeBase58Token"
+      ],
+      "entry_point": "parseBase58(std::string const& s)",
+      "purpose": "Parses a base58 string into an AccountID, validating the input and returning std::nullopt if invalid.",
+      "validation_points": [
+        "decodeBase58Token (validates base58 string input)",
+        "if (result.size() != AccountID::bytes) (validates decoded size)"
+      ]
+    },
+    {
+      "call_chain": [
+        "initAccountIdCache",
+        "AccountIdCache::AccountIdCache"
+      ],
+      "entry_point": "initAccountIdCache(std::size_t count)",
+      "purpose": "Initializes the AccountIdCache singleton with a specified size, only if not already initialized and count != 0.",
+      "validation_points": [
+        "if (!accountIdCache && count != 0) (validates initialization count)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "AccountID base58 string",
+      "flow": [
+        "parseBase58(std::string const& s)",
+        "decodeBase58Token(s, TokenType::AccountID)",
+        "result (std::vector<uint8_t>)",
+        "if (result.size() != AccountID::bytes)",
+        "AccountID{result} (if valid)"
+      ],
+      "origin": "External input (e.g., user input, API call)",
+      "transformations": [
+        "Base58 string decoded to binary",
+        "Size checked against AccountID::bytes"
+      ],
+      "validated_at": "decodeBase58Token and size check in parseBase58"
+    },
+    {
+      "field": "AccountID",
+      "flow": [
+        "toBase58(AccountID const& v)",
+        "accountIdCache->toBase58 OR encodeBase58Token",
+        "encodeBase58Token(TokenType::AccountID, id.data(), id.size())",
+        "ret (std::string, base58 encoding)"
+      ],
+      "origin": "Internal (e.g., from ledger, constructed from public key, or from parseBase58)",
+      "transformations": [
+        "AccountID binary encoded to base58 string"
+      ],
+      "validated_at": "XRPL_ASSERT(ret.size() <= 38) in AccountIdCache::toBase58"
+    },
+    {
+      "field": "AccountIdCache initialization count",
+      "flow": [
+        "initAccountIdCache(count)",
+        "if (!accountIdCache && count != 0)",
+        "AccountIdCache::AccountIdCache(count)"
+      ],
+      "origin": "External (initAccountIdCache parameter)",
+      "transformations": [
+        "Count checked for nonzero and singleton not already initialized"
+      ],
+      "validated_at": "if (!accountIdCache && count != 0) in initAccountIdCache"
+    }
+  ],
+  "description": "Provides utilities for encoding, decoding, and caching XRPL AccountIDs, including base58 conversion, parsing, and calculation from public keys.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AccountID base58 string input",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "decodeBase58Token at parseBase58<std::string>",
+      "issue_pattern": "Missing empty string validation for AccountID base58 string input",
+      "why_false_positive": "decodeBase58Token validates AccountID base58 string input for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "AccountID base58 string input",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "decodeBase58Token at parseBase58<std::string>",
+      "issue_pattern": "Missing format validation for AccountID base58 string input",
+      "why_false_positive": "decodeBase58Token validates AccountID base58 string input format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "AccountID base58 encoding result size",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at detail::AccountIdCache::toBase58",
+      "issue_pattern": "Missing empty string validation for AccountID base58 encoding result size",
+      "why_false_positive": "XRPL_ASSERT validates AccountID base58 encoding result size for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "AccountID base58 encoding result size",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at detail::AccountIdCache::toBase58",
+      "issue_pattern": "Missing range validation for AccountID base58 encoding result size",
+      "why_false_positive": "XRPL_ASSERT validates AccountID base58 encoding result size range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "AccountIdCache initialization count",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (!accountIdCache && count != 0) at initAccountIdCache",
+      "issue_pattern": "Missing empty string validation for AccountIdCache initialization count",
+      "why_false_positive": "if (!accountIdCache && count != 0) validates AccountIdCache initialization count for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "AccountIdCache initialization count",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "if (!accountIdCache && count != 0) at initAccountIdCache",
+      "issue_pattern": "Missing range validation for AccountIdCache initialization count",
+      "why_false_positive": "if (!accountIdCache && count != 0) validates AccountIdCache initialization count range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/AccountID.cpp",
+  "functions": [
+    {
+      "args": [
+        "count"
+      ],
+      "lineno": 23,
+      "name": "AccountIdCache::AccountIdCache"
+    },
+    {
+      "args": [
+        "id"
+      ],
+      "lineno": 29,
+      "name": "AccountIdCache::toBase58"
+    },
+    {
+      "args": [
+        "count"
+      ],
+      "lineno": 61,
+      "name": "initAccountIdCache"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 67,
+      "name": "toBase58"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 72,
+      "name": "parseBase58"
+    },
+    {
+      "args": [
+        "pk"
+      ],
+      "lineno": 97,
+      "name": "calcAccountID"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "xrpAccount"
+    },
+    {
+      "args": [],
+      "lineno": 114,
+      "name": "noAccount"
+    },
+    {
+      "args": [
+        "issuer",
+        "s"
+      ],
+      "lineno": 120,
+      "name": "to_issuer"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code's validation logic is primarily around base58 encoding/decoding and cache initialization. Typical test coverage would be in protocol-level or utility tests, such as 'AccountID_test.cpp', 'Base58_test.cpp', or 'AccountIdCache_test.cpp'. These would test: (1) valid/invalid base58 strings, (2) correct encoding/decoding roundtrips, (3) cache behavior, and (4) edge cases (e.g., all-zero account, max-length strings). Gaps may exist if there are no tests for: (a) oversized base58 strings (triggering XRPL_ASSERT), (b) cache collision/eviction logic, or (c) initialization with zero or duplicate cache. Fuzzing or property-based tests for decodeBase58Token would further strengthen coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom (no external validation framework detected)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception)",
+      "field": "AccountID base58 string input",
+      "location": "parseBase58<std::string>",
+      "validated_by": "decodeBase58Token",
+      "validates": [
+        "Checks that the decoded result from base58 string is exactly AccountID::bytes (20 bytes)",
+        "Ensures input is a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or logs error)",
+      "field": "AccountID base58 encoding result size",
+      "location": "detail::AccountIdCache::toBase58",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Checks that the encoded base58 string is at most 38 characters"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (cache not created if count is 0)",
+      "field": "AccountIdCache initialization count",
+      "location": "initAccountIdCache",
+      "validated_by": "if (!accountIdCache && count != 0)",
+      "validates": [
+        "Ensures cache is only initialized with non-zero size"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

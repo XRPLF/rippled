@@ -1,0 +1,88 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "networkID"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "networkID"
+      ],
+      "lineno": 5,
+      "name": "NetworkIDServiceImpl"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NetworkIDServiceImpl::NetworkIDServiceImpl"
+      ],
+      "entry_point": "NetworkIDServiceImpl::NetworkIDServiceImpl",
+      "purpose": "Constructs the NetworkIDServiceImpl object with a given networkID.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "NetworkIDServiceImpl::getNetworkID"
+      ],
+      "entry_point": "NetworkIDServiceImpl::getNetworkID",
+      "purpose": "Returns the stored networkID value.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "networkID_",
+      "flow": [
+        "Constructor argument",
+        "Assigned to member variable networkID_",
+        "Returned by getNetworkID()"
+      ],
+      "origin": "Constructor argument (std::uint32_t networkID) to NetworkIDServiceImpl",
+      "transformations": [
+        "Direct assignment; no transformation"
+      ],
+      "validated_at": "No validation occurs in this code"
+    }
+  ],
+  "description": "Implements the NetworkIDServiceImpl class, which provides access to a network ID value for the XRPL system.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/core/detail/NetworkIDServiceImpl.cpp",
+  "functions": [
+    {
+      "args": [
+        "networkID"
+      ],
+      "lineno": 6,
+      "name": "NetworkIDServiceImpl::NetworkIDServiceImpl"
+    },
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "NetworkIDServiceImpl::getNetworkID"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no validation logic in this code (e.g., no range checks or assertions on networkID). The code is a simple data holder. Test coverage would likely be limited to construction and retrieval of the networkID value. Tests would be expected in files like NetworkIDServiceImpl_test.cpp or similar, but unless tests explicitly check for invalid or edge-case networkID values, validation paths are not exercised. There are no validation code paths to test in this implementation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

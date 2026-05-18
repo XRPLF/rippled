@@ -1,0 +1,685 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "makeLedgerDBs",
+        "kilobytes(config.getValueFor(SizedItem::lgrDBCache))",
+        "kilobytes(config.getValueFor(SizedItem::txnDBCache))",
+        "PRAGMA table_info(AccountTransactions)"
+      ],
+      "entry_point": "makeLedgerDBs",
+      "purpose": "Initializes ledger and transaction databases, sets cache sizes, and validates AccountTransactions table schema.",
+      "validation_points": [
+        "kilobytes(config.getValueFor(SizedItem::lgrDBCache))",
+        "kilobytes(config.getValueFor(SizedItem::txnDBCache))",
+        "setup.startUp == StartUpType::Load/LoadFile/Replay",
+        "PRAGMA table_info(AccountTransactions) (checks for primary key)"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_string"
+      ],
+      "entry_point": "to_string",
+      "purpose": "Converts TableType enum to string, validates enum completeness.",
+      "validation_points": [
+        "static_assert(TableTypeCount == 3)",
+        "switch default: UNREACHABLE"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "config.getValueFor(SizedItem::lgrDBCache)",
+      "flow": [
+        "Config::getValueFor",
+        "makeLedgerDBs",
+        "kilobytes()",
+        "PRAGMA cache_size"
+      ],
+      "origin": "Config object (external configuration)",
+      "transformations": [
+        "Value fetched from config",
+        "Converted to kilobytes (type/format check)",
+        "Used in SQL PRAGMA statement"
+      ],
+      "validated_at": "kilobytes()"
+    },
+    {
+      "field": "config.getValueFor(SizedItem::txnDBCache)",
+      "flow": [
+        "Config::getValueFor",
+        "makeLedgerDBs",
+        "kilobytes()",
+        "PRAGMA cache_size"
+      ],
+      "origin": "Config object (external configuration)",
+      "transformations": [
+        "Value fetched from config",
+        "Converted to kilobytes (type/format check)",
+        "Used in SQL PRAGMA statement"
+      ],
+      "validated_at": "kilobytes()"
+    },
+    {
+      "field": "setup.startUp",
+      "flow": [
+        "DatabaseCon::Setup",
+        "makeLedgerDBs",
+        "if (!setup.standAlone || setup.startUp == ...)"
+      ],
+      "origin": "DatabaseCon::Setup struct (likely from config or startup code)",
+      "transformations": [
+        "Enum value checked for specific startup types"
+      ],
+      "validated_at": "Explicit enum comparison in makeLedgerDBs"
+    },
+    {
+      "field": "TableType",
+      "flow": [
+        "to_string(TableType)",
+        "switch(TableType)",
+        "return string"
+      ],
+      "origin": "Function argument (enum)",
+      "transformations": [
+        "Enum checked for completeness (static_assert)",
+        "Switch statement ensures only valid values"
+      ],
+      "validated_at": "static_assert and switch default (UNREACHABLE)"
+    },
+    {
+      "field": "AccountTransactions table primary key",
+      "flow": [
+        "PRAGMA table_info(AccountTransactions)",
+        "soci::statement fetch loop",
+        "if (pk == 1)"
+      ],
+      "origin": "Database schema (SQLite table)",
+      "transformations": [
+        "Schema introspection via PRAGMA",
+        "Checks if any column is primary key"
+      ],
+      "validated_at": "PRAGMA table_info(AccountTransactions) in makeLedgerDBs"
+    }
+  ],
+  "description": "This file provides various utility functions for interacting with and managing the XRPL ledger and transaction relational databases, including SQL query generation, ledger and transaction retrieval, insertion, deletion, and pagination, as well as disk space checks. It is part of the XRPL server backend.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "TableType (enum)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "static_assert and switch default (UNREACHABLE) at to_string(TableType type)",
+      "issue_pattern": "Missing empty string validation for TableType (enum)",
+      "why_false_positive": "static_assert and switch default (UNREACHABLE) validates TableType (enum) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "config.getValueFor(SizedItem::lgrDBCache)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "kilobytes() (likely type/format check) at makeLedgerDBs",
+      "issue_pattern": "Missing empty string validation for config.getValueFor(SizedItem::lgrDBCache)",
+      "why_false_positive": "kilobytes() (likely type/format check) validates config.getValueFor(SizedItem::lgrDBCache) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "config.getValueFor(SizedItem::txnDBCache)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "kilobytes() (likely type/format check) at makeLedgerDBs",
+      "issue_pattern": "Missing empty string validation for config.getValueFor(SizedItem::txnDBCache)",
+      "why_false_positive": "kilobytes() (likely type/format check) validates config.getValueFor(SizedItem::txnDBCache) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "setup.startUp",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit enum comparison at makeLedgerDBs",
+      "issue_pattern": "Missing empty string validation for setup.startUp",
+      "why_false_positive": "explicit enum comparison validates setup.startUp for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountTransactions table primary key",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "PRAGMA table_info(AccountTransactions); at makeLedgerDBs",
+      "issue_pattern": "Missing empty string validation for AccountTransactions table primary key",
+      "why_false_positive": "PRAGMA table_info(AccountTransactions); validates AccountTransactions table primary key for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/rdb/backend/detail/Node.cpp",
+  "functions": [
+    {
+      "args": [
+        "TableType type"
+      ],
+      "lineno": 15,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Config const& config",
+        "DatabaseCon::Setup const& setup",
+        "DatabaseCon::CheckpointerSetup const& checkpointerSetup",
+        "beast::Journal j"
+      ],
+      "lineno": 32,
+      "name": "makeLedgerDBs"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type"
+      ],
+      "lineno": 70,
+      "name": "getMinLedgerSeq"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type"
+      ],
+      "lineno": 80,
+      "name": "getMaxLedgerSeq"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type",
+        "LedgerIndex ledgerSeq"
+      ],
+      "lineno": 90,
+      "name": "deleteByLedgerSeq"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type",
+        "LedgerIndex ledgerSeq"
+      ],
+      "lineno": 95,
+      "name": "deleteBeforeLedgerSeq"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type"
+      ],
+      "lineno": 100,
+      "name": "getRows"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "TableType type"
+      ],
+      "lineno": 109,
+      "name": "getRowsMinMax"
+    },
+    {
+      "args": [
+        "DatabaseCon& ldgDB",
+        "std::unique_ptr<DatabaseCon> const& txnDB",
+        "Application& app",
+        "std::shared_ptr<Ledger const> const& ledger",
+        "bool current"
+      ],
+      "lineno": 120,
+      "name": "saveValidatedLedger"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "std::string const& sqlSuffix",
+        "beast::Journal j"
+      ],
+      "lineno": 232,
+      "name": "getLedgerInfo"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex ledgerSeq",
+        "beast::Journal j"
+      ],
+      "lineno": 273,
+      "name": "getLedgerInfoByIndex"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "beast::Journal j"
+      ],
+      "lineno": 281,
+      "name": "getNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex ledgerFirstIndex",
+        "beast::Journal j"
+      ],
+      "lineno": 289,
+      "name": "getLimitedOldestLedgerInfo"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex ledgerFirstIndex",
+        "beast::Journal j"
+      ],
+      "lineno": 297,
+      "name": "getLimitedNewestLedgerInfo"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "uint256 const& ledgerHash",
+        "beast::Journal j"
+      ],
+      "lineno": 305,
+      "name": "getLedgerInfoByHash"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex ledgerIndex"
+      ],
+      "lineno": 313,
+      "name": "getHashByIndex"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex ledgerIndex",
+        "beast::Journal j"
+      ],
+      "lineno": 334,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "LedgerIndex minSeq",
+        "LedgerIndex maxSeq",
+        "beast::Journal j"
+      ],
+      "lineno": 355,
+      "name": "getHashesByIndex"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "LedgerIndex startIndex",
+        "int quantity"
+      ],
+      "lineno": 386,
+      "name": "getTxHistory"
+    },
+    {
+      "args": [
+        "Application& app",
+        "std::string selection",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "bool descending",
+        "bool binary",
+        "bool count",
+        "beast::Journal j"
+      ],
+      "lineno": 426,
+      "name": "transactionsSQL"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "LedgerMaster& ledgerMaster",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "bool descending",
+        "beast::Journal j"
+      ],
+      "lineno": 474,
+      "name": "getAccountTxs"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "LedgerMaster& ledgerMaster",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "beast::Journal j"
+      ],
+      "lineno": 527,
+      "name": "getOldestAccountTxs"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "LedgerMaster& ledgerMaster",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "beast::Journal j"
+      ],
+      "lineno": 536,
+      "name": "getNewestAccountTxs"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "bool descending",
+        "beast::Journal j"
+      ],
+      "lineno": 545,
+      "name": "getAccountTxsB"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "beast::Journal j"
+      ],
+      "lineno": 591,
+      "name": "getOldestAccountTxsB"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "RelationalDatabase::AccountTxOptions const& options",
+        "beast::Journal j"
+      ],
+      "lineno": 599,
+      "name": "getNewestAccountTxsB"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "std::function<void(std::uint32_t)> const& onUnsavedLedger",
+        "std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction",
+        "RelationalDatabase::AccountTxPageOptions const& options",
+        "std::uint32_t page_length",
+        "bool forward"
+      ],
+      "lineno": 608,
+      "name": "accountTxPage"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "std::function<void(std::uint32_t)> const& onUnsavedLedger",
+        "std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction",
+        "RelationalDatabase::AccountTxPageOptions const& options",
+        "std::uint32_t page_length"
+      ],
+      "lineno": 701,
+      "name": "oldestAccountTxPage"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "std::function<void(std::uint32_t)> const& onUnsavedLedger",
+        "std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction",
+        "RelationalDatabase::AccountTxPageOptions const& options",
+        "std::uint32_t page_length"
+      ],
+      "lineno": 710,
+      "name": "newestAccountTxPage"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Application& app",
+        "uint256 const& id",
+        "std::optional<ClosedInterval<uint32_t>> const& range",
+        "error_code_i& ec"
+      ],
+      "lineno": 719,
+      "name": "getTransaction"
+    },
+    {
+      "args": [
+        "soci::session& session",
+        "Config const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 771,
+      "name": "dbHasSpace"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 13,
+      "name": "detail"
+    }
+  ],
+  "test_coverage_notes": "The code is low-level and likely tested indirectly via integration or system tests that exercise database initialization and configuration. Direct unit tests for validation logic (e.g., invalid TableType, malformed config values, missing primary key in AccountTransactions) are not evident in this file. Test coverage for error paths (e.g., UNREACHABLE, invalid config) may be limited unless explicitly tested in higher-level test suites. Look for tests in files like 'test/rdb/DatabaseCon_test.cpp', 'test/app/ledger/LedgerDB_test.cpp', or integration tests that start up the server with various configs. Schema validation (PRAGMA table_info) is rarely unit tested unless schema migration or corruption is a concern.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom/manual validation, SQLite PRAGMA, static_assert, enum checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "UNREACHABLE macro (likely throws or aborts)",
+      "field": "TableType (enum)",
+      "location": "to_string(TableType type)",
+      "validated_by": "static_assert and switch default (UNREACHABLE)",
+      "validates": [
+        "Ensures TableType enum is within expected range (Ledgers, Transactions, AccountTransactions)",
+        "Compile-time check that TableTypeCount == 3"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "If kilobytes() or config.getValueFor throws on invalid input",
+      "field": "config.getValueFor(SizedItem::lgrDBCache)",
+      "location": "makeLedgerDBs",
+      "validated_by": "kilobytes() (likely type/format check)",
+      "validates": [
+        "Ensures lgrDBCache value is convertible to kilobytes (integer, positive)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "If kilobytes() or config.getValueFor throws on invalid input",
+      "field": "config.getValueFor(SizedItem::txnDBCache)",
+      "location": "makeLedgerDBs",
+      "validated_by": "kilobytes() (likely type/format check)",
+      "validates": [
+        "Ensures txnDBCache value is convertible to kilobytes (integer, positive)"
+      ],
+      "validation_type": "type|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "N/A (controls logic flow, not error)",
+      "field": "setup.startUp",
+      "location": "makeLedgerDBs",
+      "validated_by": "explicit enum comparison",
+      "validates": [
+        "Checks if startUp is one of Load, LoadFile, Replay"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "N/A in shown code (but likely throws or logs error if PK missing in full code)",
+      "field": "AccountTransactions table primary key",
+      "location": "makeLedgerDBs",
+      "validated_by": "PRAGMA table_info(AccountTransactions);",
+      "validates": [
+        "Checks if AccountTransactions table has a primary key"
+      ],
+      "validation_type": "business_logic|schema"
+    }
+  ]
+}

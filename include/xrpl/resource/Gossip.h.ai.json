@@ -1,0 +1,29 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "Gossip"
+    },
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Item"
+    }
+  ],
+  "description": "Defines the Gossip struct for exchanging resource consumption information across peers, including a nested Item struct representing individual consumers.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/resource/Gossip.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "Resource"
+    }
+  ]
+}

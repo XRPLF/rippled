@@ -1,0 +1,59 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "clock"
+    },
+    {
+      "lineno": 22,
+      "name": "now"
+    },
+    {
+      "lineno": 29,
+      "name": "now"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "clock"
+      ],
+      "lineno": 8,
+      "name": "Fixed"
+    }
+  ],
+  "description": "Defines the Fixed class, which manages metadata for a fixed peer slot, including connection attempt timing and backoff logic based on connection failures or successes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/Fixed.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "when"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 21,
+      "name": "failure"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 28,
+      "name": "success"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "PeerFinder"
+    }
+  ]
+}

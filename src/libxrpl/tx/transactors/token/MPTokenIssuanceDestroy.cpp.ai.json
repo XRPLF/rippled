@@ -1,0 +1,320 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "ctx"
+    },
+    {
+      "lineno": 11,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "MPTokenIssuanceDestroy::preflight"
+      ],
+      "entry_point": "MPTokenIssuanceDestroy::preflight",
+      "purpose": "Initial transaction checks (syntax, basic validity). In this implementation, it always returns success.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTokenIssuanceDestroy::preclaim"
+      ],
+      "entry_point": "MPTokenIssuanceDestroy::preclaim",
+      "purpose": "Performs semantic validation: checks that the MPTokenIssuance exists, is owned by the sender, and has no outstanding or locked amounts.",
+      "validation_points": [
+        "sleMPT existence (OBJECT_NOT_FOUND)",
+        "sfIssuer matches sfAccount (NO_PERMISSION)",
+        "sfOutstandingAmount == 0 (HAS_OBLIGATIONS)",
+        "sfLockedAmount == 0 (HAS_OBLIGATIONS)"
+      ]
+    },
+    {
+      "call_chain": [
+        "MPTokenIssuanceDestroy::doApply"
+      ],
+      "entry_point": "MPTokenIssuanceDestroy::doApply",
+      "purpose": "Applies the transaction: removes the MPTokenIssuance ledger entry, updates owner count, and cleans up.",
+      "validation_points": [
+        "account_ matches mpt->getAccountID(sfIssuer) (INTERNAL)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfMPTokenIssuanceID",
+      "flow": [
+        "Transaction input",
+        "Used as key in keylet::mptIssuance",
+        "Used to read/peek ledger entry (sleMPT/mpt)"
+      ],
+      "origin": "ctx.tx[sfMPTokenIssuanceID] (transaction input)",
+      "transformations": [
+        "Used as a key to fetch the MPTokenIssuance ledger object"
+      ],
+      "validated_at": "preclaim (existence check), doApply (used again)"
+    },
+    {
+      "field": "sfIssuer",
+      "flow": [
+        "Read from ledger entry sleMPT",
+        "Compared to ctx.tx[sfAccount] in preclaim",
+        "Compared to account_ in doApply"
+      ],
+      "origin": "(*sleMPT)[sfIssuer] (from ledger entry)",
+      "transformations": [
+        "Direct comparison for equality"
+      ],
+      "validated_at": "preclaim (must match sfAccount), doApply (must match account_)"
+    },
+    {
+      "field": "sfOutstandingAmount",
+      "flow": [
+        "Read from ledger entry sleMPT",
+        "Compared to 0 in preclaim"
+      ],
+      "origin": "(*sleMPT)[sfOutstandingAmount] (from ledger entry)",
+      "transformations": [
+        "Direct comparison for zero"
+      ],
+      "validated_at": "preclaim (must be zero)"
+    },
+    {
+      "field": "sfLockedAmount",
+      "flow": [
+        "Read from ledger entry sleMPT (optional)",
+        "value_or(0) to default to zero if missing",
+        "Compared to 0 in preclaim"
+      ],
+      "origin": "(*sleMPT)[~sfLockedAmount] (from ledger entry, optional field)",
+      "transformations": [
+        "Optional field, defaults to zero if not present"
+      ],
+      "validated_at": "preclaim (must be zero)"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "Compared to (*sleMPT)[sfIssuer] in preclaim"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Direct comparison for equality"
+      ],
+      "validated_at": "preclaim"
+    }
+  ],
+  "description": "Implements the logic for destroying a Multi-Party Token (MPT) issuance on the XRPL, including preflight checks, preclaim validation, and ledger application.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfMPTokenIssuanceID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID])) at preclaim",
+      "issue_pattern": "Missing empty string validation for sfMPTokenIssuanceID",
+      "why_false_positive": "ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID])) validates sfMPTokenIssuanceID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfIssuer",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sleMPT)[sfIssuer] != ctx.tx[sfAccount] at preclaim",
+      "issue_pattern": "Missing empty string validation for sfIssuer",
+      "why_false_positive": "(*sleMPT)[sfIssuer] != ctx.tx[sfAccount] validates sfIssuer for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfOutstandingAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sleMPT)[sfOutstandingAmount] != 0 at preclaim",
+      "issue_pattern": "Missing empty string validation for sfOutstandingAmount",
+      "why_false_positive": "(*sleMPT)[sfOutstandingAmount] != 0 validates sfOutstandingAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLockedAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*sleMPT)[~sfLockedAmount].value_or(0) != 0 at preclaim",
+      "issue_pattern": "Missing empty string validation for sfLockedAmount",
+      "why_false_positive": "(*sleMPT)[~sfLockedAmount].value_or(0) != 0 validates sfLockedAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfIssuer (again, in doApply)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account_ != mpt->getAccountID(sfIssuer) at doApply",
+      "issue_pattern": "Missing empty string validation for sfIssuer (again, in doApply)",
+      "why_false_positive": "account_ != mpt->getAccountID(sfIssuer) validates sfIssuer (again, in doApply) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Owner Directory removal",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "!view().dirRemove(...) at doApply",
+      "issue_pattern": "Missing empty string validation for Owner Directory removal",
+      "why_false_positive": "!view().dirRemove(...) validates Owner Directory removal for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/token/MPTokenIssuanceDestroy.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 7,
+      "name": "MPTokenIssuanceDestroy::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 11,
+      "name": "MPTokenIssuanceDestroy::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 28,
+      "name": "MPTokenIssuanceDestroy::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is structured for unit/integration testing via transaction submission. Typical test files would be in the rippled repo under 'test/tx/MPTokenIssuanceDestroy_test.cpp' or similar. The LCOV_EXCL_LINE comments indicate some error paths (e.g., locked amount nonzero, internal errors) are not covered by tests. The preflight function is trivial and likely not tested directly. The main validation logic (existence, ownership, outstanding/locked amounts) should be covered by positive and negative tests, but error branches in doApply (e.g., dirRemove failure, account_ mismatch) may not be tested. There may be gaps in testing for rare or internal error conditions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic in transaction transactor (xrpl core, no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecOBJECT_NOT_FOUND",
+      "field": "sfMPTokenIssuanceID",
+      "location": "preclaim",
+      "validated_by": "ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]))",
+      "validates": [
+        "Checks that the referenced MPTokenIssuance object exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfIssuer",
+      "location": "preclaim",
+      "validated_by": "(*sleMPT)[sfIssuer] != ctx.tx[sfAccount]",
+      "validates": [
+        "Ensures the transaction submitter is the issuer of the MPTokenIssuance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfOutstandingAmount",
+      "location": "preclaim",
+      "validated_by": "(*sleMPT)[sfOutstandingAmount] != 0",
+      "validates": [
+        "Ensures there are no outstanding balances for the issuance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecHAS_OBLIGATIONS",
+      "field": "sfLockedAmount",
+      "location": "preclaim",
+      "validated_by": "(*sleMPT)[~sfLockedAmount].value_or(0) != 0",
+      "validates": [
+        "Ensures there are no locked amounts for the issuance"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINTERNAL",
+      "field": "sfIssuer (again, in doApply)",
+      "location": "doApply",
+      "validated_by": "account_ != mpt->getAccountID(sfIssuer)",
+      "validates": [
+        "Ensures the account performing the operation matches the issuer in the object"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "tefBAD_LEDGER",
+      "field": "Owner Directory removal",
+      "location": "doApply",
+      "validated_by": "!view().dirRemove(...)",
+      "validates": [
+        "Ensures the owner directory entry can be removed (ledger integrity check)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

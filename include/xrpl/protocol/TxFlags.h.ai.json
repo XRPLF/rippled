@@ -1,0 +1,130 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines transaction flags, masks, and related utilities for the XRPL protocol, including universal and transaction-specific flags, flag masks, and helper functions for flag introspection and mapping. Also defines AccountSet SetFlag/ClearFlag values.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/TxFlags.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 210,
+      "name": "getAccountSetFlags"
+    },
+    {
+      "args": [],
+      "lineno": 215,
+      "name": "getOfferCreateFlags"
+    },
+    {
+      "args": [],
+      "lineno": 220,
+      "name": "getPaymentFlags"
+    },
+    {
+      "args": [],
+      "lineno": 225,
+      "name": "getTrustSetFlags"
+    },
+    {
+      "args": [],
+      "lineno": 230,
+      "name": "getEnableAmendmentFlags"
+    },
+    {
+      "args": [],
+      "lineno": 235,
+      "name": "getPaymentChannelClaimFlags"
+    },
+    {
+      "args": [],
+      "lineno": 240,
+      "name": "getNFTokenMintFlags"
+    },
+    {
+      "args": [],
+      "lineno": 245,
+      "name": "getMPTokenIssuanceCreateFlags"
+    },
+    {
+      "args": [],
+      "lineno": 250,
+      "name": "getMPTokenAuthorizeFlags"
+    },
+    {
+      "args": [],
+      "lineno": 255,
+      "name": "getMPTokenIssuanceSetFlags"
+    },
+    {
+      "args": [],
+      "lineno": 260,
+      "name": "getNFTokenCreateOfferFlags"
+    },
+    {
+      "args": [],
+      "lineno": 265,
+      "name": "getAMMDepositFlags"
+    },
+    {
+      "args": [],
+      "lineno": 270,
+      "name": "getAMMWithdrawFlags"
+    },
+    {
+      "args": [],
+      "lineno": 275,
+      "name": "getAMMClawbackFlags"
+    },
+    {
+      "args": [],
+      "lineno": 280,
+      "name": "getXChainModifyBridgeFlags"
+    },
+    {
+      "args": [],
+      "lineno": 285,
+      "name": "getVaultCreateFlags"
+    },
+    {
+      "args": [],
+      "lineno": 290,
+      "name": "getBatchFlags"
+    },
+    {
+      "args": [],
+      "lineno": 295,
+      "name": "getLoanSetFlags"
+    },
+    {
+      "args": [],
+      "lineno": 300,
+      "name": "getLoanPayFlags"
+    },
+    {
+      "args": [],
+      "lineno": 305,
+      "name": "getLoanManageFlags"
+    },
+    {
+      "args": [],
+      "lineno": 310,
+      "name": "getUniversalFlags"
+    },
+    {
+      "args": [],
+      "lineno": 320,
+      "name": "getAllTxFlags"
+    },
+    {
+      "args": [],
+      "lineno": 410,
+      "name": "getAsfFlagMap"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ]
+}

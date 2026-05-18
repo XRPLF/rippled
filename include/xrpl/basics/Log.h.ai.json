@@ -1,0 +1,62 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "partition"
+    },
+    {
+      "lineno": 36,
+      "name": "thresh"
+    },
+    {
+      "lineno": 36,
+      "name": "logs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "level"
+      ],
+      "lineno": 27,
+      "name": "Logs"
+    },
+    {
+      "args": [
+        "partition",
+        "thresh",
+        "logs"
+      ],
+      "lineno": 33,
+      "name": "Logs::Sink"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "Logs::File"
+    }
+  ],
+  "description": "This file defines logging utilities for the XRPL project, including log severity levels, a Logs manager class for handling log partitions and files, and macros/utilities for debug logging.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/Log.h",
+  "functions": [
+    {
+      "args": [
+        "sink"
+      ],
+      "lineno": 168,
+      "name": "setDebugLogSink"
+    },
+    {
+      "args": [],
+      "lineno": 175,
+      "name": "debugLog"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

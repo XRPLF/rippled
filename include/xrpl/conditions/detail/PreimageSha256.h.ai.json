@@ -1,0 +1,90 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "s"
+    },
+    {
+      "lineno": 29,
+      "name": "ec"
+    },
+    {
+      "lineno": 67,
+      "name": "b"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Buffer&& b",
+        "Slice s"
+      ],
+      "lineno": 13,
+      "name": "PreimageSha256"
+    }
+  ],
+  "description": "Implements the PreimageSha256 fulfillment for cryptographic conditions in the XRPL, including deserialization, fingerprinting, cost calculation, and validation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/conditions/detail/PreimageSha256.h",
+  "functions": [
+    {
+      "args": [
+        "Slice s",
+        "std::error_code& ec"
+      ],
+      "lineno": 27,
+      "name": "deserialize"
+    },
+    {
+      "args": [
+        "Buffer&& b"
+      ],
+      "lineno": 67,
+      "name": "PreimageSha256"
+    },
+    {
+      "args": [
+        "Slice s"
+      ],
+      "lineno": 71,
+      "name": "PreimageSha256"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "type"
+    },
+    {
+      "args": [],
+      "lineno": 80,
+      "name": "fingerprint"
+    },
+    {
+      "args": [],
+      "lineno": 88,
+      "name": "cost"
+    },
+    {
+      "args": [],
+      "lineno": 93,
+      "name": "condition"
+    },
+    {
+      "args": [
+        "Slice"
+      ],
+      "lineno": 98,
+      "name": "validate"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "cryptoconditions"
+    }
+  ]
+}

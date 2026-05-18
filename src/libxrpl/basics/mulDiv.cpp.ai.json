@@ -1,0 +1,181 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "value"
+    },
+    {
+      "lineno": 10,
+      "name": "mul"
+    },
+    {
+      "lineno": 10,
+      "name": "div"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "mulDiv"
+      ],
+      "entry_point": "mulDiv",
+      "purpose": "Performs (value * mul) / div with overflow checking, returning std::nullopt if result exceeds uint64_t max.",
+      "validation_points": [
+        "if (result > xrpl::muldiv_max) return std::nullopt;"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value",
+      "flow": [
+        "mulDiv parameter",
+        "multiply(result, value, mul)",
+        "result /= div",
+        "if (result > xrpl::muldiv_max)",
+        "return static_cast<std::uint64_t>(result) or std::nullopt"
+      ],
+      "origin": "Input parameter to mulDiv",
+      "transformations": [
+        "Multiplied by mul using multiply()",
+        "Divided by div",
+        "Compared to xrpl::muldiv_max for overflow check",
+        "Casted to uint64_t if valid"
+      ],
+      "validated_at": "if (result > xrpl::muldiv_max)"
+    },
+    {
+      "field": "mul",
+      "flow": [
+        "mulDiv parameter",
+        "multiply(result, value, mul)",
+        "result /= div",
+        "if (result > xrpl::muldiv_max)",
+        "return static_cast<std::uint64_t>(result) or std::nullopt"
+      ],
+      "origin": "Input parameter to mulDiv",
+      "transformations": [
+        "Multiplied with value using multiply()",
+        "Result divided by div",
+        "Overflow checked",
+        "Casted to uint64_t if valid"
+      ],
+      "validated_at": "if (result > xrpl::muldiv_max)"
+    },
+    {
+      "field": "div",
+      "flow": [
+        "mulDiv parameter",
+        "result /= div",
+        "if (result > xrpl::muldiv_max)",
+        "return static_cast<std::uint64_t>(result) or std::nullopt"
+      ],
+      "origin": "Input parameter to mulDiv",
+      "transformations": [
+        "Divides the result of value * mul",
+        "Overflow checked",
+        "Casted to uint64_t if valid"
+      ],
+      "validated_at": "if (result > xrpl::muldiv_max)"
+    },
+    {
+      "field": "result",
+      "flow": [
+        "Initialized",
+        "Set by multiply(result, value, mul)",
+        "Divided by div",
+        "Compared to xrpl::muldiv_max",
+        "Returned as uint64_t or std::nullopt"
+      ],
+      "origin": "Local variable in mulDiv (boost::multiprecision::uint128_t)",
+      "transformations": [
+        "Set to value * mul",
+        "Divided by div",
+        "Checked for overflow",
+        "Casted to uint64_t if valid"
+      ],
+      "validated_at": "if (result > xrpl::muldiv_max)"
+    }
+  ],
+  "description": "Provides a function to safely multiply two uint64_t values and divide by a third, returning an optional result if the computation fits in uint64_t.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "result",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit comparison (if statement) at mulDiv",
+      "issue_pattern": "Missing empty string validation for result",
+      "why_false_positive": "explicit comparison (if statement) validates result for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "result",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit comparison (if statement) at mulDiv",
+      "issue_pattern": "Missing range validation for result",
+      "why_false_positive": "explicit comparison (if statement) validates result range"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/basics/mulDiv.cpp",
+  "functions": [
+    {
+      "args": [
+        "value",
+        "mul",
+        "div"
+      ],
+      "lineno": 9,
+      "name": "mulDiv"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "No test files are shown in the provided context. Typical tests would be in files like 'mulDiv_test.cpp' or similar under a 'test' or 'unittest' directory. The critical validation (overflow check) should be tested with values that: (a) do not overflow, (b) exactly hit the limit, (c) overflow. Gaps: No evidence of tests for division by zero, edge cases for all parameters, or negative/invalid input handling (though all inputs are uint64_t, so negatives are not possible).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None (manual validation, no framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns std::nullopt (no exception thrown)",
+      "field": "result",
+      "location": "mulDiv",
+      "validated_by": "explicit comparison (if statement)",
+      "validates": [
+        "Checks if the computed result (after multiplication and division) exceeds xrpl::muldiv_max"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

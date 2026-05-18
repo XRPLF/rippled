@@ -1,0 +1,364 @@
+{
+  "args": [
+    {
+      "lineno": 38,
+      "name": "sle"
+    },
+    {
+      "lineno": 255,
+      "name": "account"
+    },
+    {
+      "lineno": 255,
+      "name": "destination"
+    },
+    {
+      "lineno": 255,
+      "name": "amount"
+    },
+    {
+      "lineno": 255,
+      "name": "balance"
+    },
+    {
+      "lineno": 255,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 255,
+      "name": "settleDelay"
+    },
+    {
+      "lineno": 255,
+      "name": "ownerNode"
+    },
+    {
+      "lineno": 255,
+      "name": "previousTxnID"
+    },
+    {
+      "lineno": 255,
+      "name": "previousTxnLgrSeq"
+    },
+    {
+      "lineno": 266,
+      "name": "sle"
+    },
+    {
+      "lineno": 273,
+      "name": "value"
+    },
+    {
+      "lineno": 283,
+      "name": "value"
+    },
+    {
+      "lineno": 293,
+      "name": "value"
+    },
+    {
+      "lineno": 303,
+      "name": "value"
+    },
+    {
+      "lineno": 313,
+      "name": "value"
+    },
+    {
+      "lineno": 323,
+      "name": "value"
+    },
+    {
+      "lineno": 333,
+      "name": "value"
+    },
+    {
+      "lineno": 343,
+      "name": "value"
+    },
+    {
+      "lineno": 353,
+      "name": "value"
+    },
+    {
+      "lineno": 363,
+      "name": "value"
+    },
+    {
+      "lineno": 373,
+      "name": "value"
+    },
+    {
+      "lineno": 383,
+      "name": "value"
+    },
+    {
+      "lineno": 393,
+      "name": "value"
+    },
+    {
+      "lineno": 403,
+      "name": "value"
+    },
+    {
+      "lineno": 413,
+      "name": "value"
+    },
+    {
+      "lineno": 423,
+      "name": "index"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sle"
+      ],
+      "lineno": 33,
+      "name": "PayChannel"
+    },
+    {
+      "args": [
+        "account",
+        "destination",
+        "amount",
+        "balance",
+        "publicKey",
+        "settleDelay",
+        "ownerNode",
+        "previousTxnID",
+        "previousTxnLgrSeq"
+      ],
+      "lineno": 253,
+      "name": "PayChannelBuilder"
+    }
+  ],
+  "description": "Defines the PayChannel ledger entry wrapper and builder for XRPL, providing type-safe field access and construction for payment channels.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/ledger_entries/PayChannel.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getAccount"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 62,
+      "name": "getSequence"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "hasSequence"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 91,
+      "name": "getBalance"
+    },
+    {
+      "args": [],
+      "lineno": 100,
+      "name": "getPublicKey"
+    },
+    {
+      "args": [],
+      "lineno": 109,
+      "name": "getSettleDelay"
+    },
+    {
+      "args": [],
+      "lineno": 118,
+      "name": "getExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 129,
+      "name": "hasExpiration"
+    },
+    {
+      "args": [],
+      "lineno": 138,
+      "name": "getCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 149,
+      "name": "hasCancelAfter"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "getSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 169,
+      "name": "hasSourceTag"
+    },
+    {
+      "args": [],
+      "lineno": 178,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 189,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 198,
+      "name": "getOwnerNode"
+    },
+    {
+      "args": [],
+      "lineno": 207,
+      "name": "getPreviousTxnID"
+    },
+    {
+      "args": [],
+      "lineno": 216,
+      "name": "getPreviousTxnLgrSeq"
+    },
+    {
+      "args": [],
+      "lineno": 225,
+      "name": "getDestinationNode"
+    },
+    {
+      "args": [],
+      "lineno": 236,
+      "name": "hasDestinationNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 271,
+      "name": "setAccount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 281,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 291,
+      "name": "setSequence"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 301,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 311,
+      "name": "setBalance"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 321,
+      "name": "setPublicKey"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 331,
+      "name": "setSettleDelay"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 341,
+      "name": "setExpiration"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 351,
+      "name": "setCancelAfter"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 361,
+      "name": "setSourceTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 371,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 381,
+      "name": "setOwnerNode"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 391,
+      "name": "setPreviousTxnID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 401,
+      "name": "setPreviousTxnLgrSeq"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 411,
+      "name": "setDestinationNode"
+    },
+    {
+      "args": [
+        "index"
+      ],
+      "lineno": 421,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

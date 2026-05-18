@@ -1,0 +1,72 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 10,
+      "name": "Manager"
+    }
+  ],
+  "description": "Defines the Manager singleton class for managing NodeStore factories and backends in the XRPL NodeStore subsystem.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Manager.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 19,
+      "name": "instance"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 23,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "factory"
+      ],
+      "lineno": 26,
+      "name": "erase"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 31,
+      "name": "find"
+    },
+    {
+      "args": [
+        "parameters",
+        "burstSize",
+        "scheduler",
+        "journal"
+      ],
+      "lineno": 36,
+      "name": "make_Backend"
+    },
+    {
+      "args": [
+        "burstSize",
+        "scheduler",
+        "readThreads",
+        "backendParameters",
+        "journal"
+      ],
+      "lineno": 54,
+      "name": "make_Database"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ]
+}

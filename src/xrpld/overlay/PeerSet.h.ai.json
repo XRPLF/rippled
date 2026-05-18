@@ -1,0 +1,117 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "limit"
+    },
+    {
+      "lineno": 24,
+      "name": "hasItem"
+    },
+    {
+      "lineno": 25,
+      "name": "onPeerAdded"
+    },
+    {
+      "lineno": 33,
+      "name": "message"
+    },
+    {
+      "lineno": 33,
+      "name": "peer"
+    },
+    {
+      "lineno": 39,
+      "name": "message"
+    },
+    {
+      "lineno": 39,
+      "name": "type"
+    },
+    {
+      "lineno": 39,
+      "name": "peer"
+    },
+    {
+      "lineno": 55,
+      "name": "app"
+    },
+    {
+      "lineno": 62,
+      "name": "app"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "PeerSet"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "PeerSetBuilder"
+    }
+  ],
+  "description": "Defines the PeerSet class for managing a set of peers to retrieve data (like ledgers or transaction sets) from the network, as well as related builder and dummy implementations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/PeerSet.h",
+  "functions": [
+    {
+      "args": [
+        "limit",
+        "hasItem",
+        "onPeerAdded"
+      ],
+      "lineno": 22,
+      "name": "addPeers"
+    },
+    {
+      "args": [
+        "message",
+        "peer"
+      ],
+      "lineno": 32,
+      "name": "sendRequest"
+    },
+    {
+      "args": [
+        "message",
+        "type",
+        "peer"
+      ],
+      "lineno": 38,
+      "name": "sendRequest"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getPeerIds"
+    },
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "build"
+    },
+    {
+      "args": [
+        "app"
+      ],
+      "lineno": 55,
+      "name": "make_PeerSetBuilder"
+    },
+    {
+      "args": [
+        "app"
+      ],
+      "lineno": 62,
+      "name": "make_DummyPeerSet"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

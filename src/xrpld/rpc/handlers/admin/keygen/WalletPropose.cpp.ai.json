@@ -1,0 +1,417 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doWalletPropose",
+        "walletPropose"
+      ],
+      "entry_point": "doWalletPropose",
+      "purpose": "Handles the wallet_propose RPC command, generating a wallet from user-supplied or random seed/passphrase/key_type.",
+      "validation_points": [
+        "walletPropose: params[jss::key_type].isString()",
+        "walletPropose: keyTypeFromString(params[jss::key_type].asString())",
+        "walletPropose: RPC::parseXrplLibSeed(params[jss::passphrase])",
+        "walletPropose: RPC::parseXrplLibSeed(params[jss::seed])",
+        "walletPropose: RPC::getSeedFromRPC(params, err)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "key_type",
+      "flow": [
+        "params[jss::key_type]",
+        "walletPropose: checked with isString()",
+        "walletPropose: converted with keyTypeFromString()",
+        "used to select key type for generateKeyPair"
+      ],
+      "origin": "params[jss::key_type] (JSON RPC input)",
+      "transformations": [
+        "Type check (isString)",
+        "String to enum (keyTypeFromString)"
+      ],
+      "validated_at": "walletPropose: isString() and keyTypeFromString()"
+    },
+    {
+      "field": "passphrase",
+      "flow": [
+        "params[jss::passphrase]",
+        "walletPropose: checked for presence",
+        "walletPropose: parsed with RPC::parseXrplLibSeed",
+        "If not libSeed, passed to RPC::getSeedFromRPC if present",
+        "Used to derive seed"
+      ],
+      "origin": "params[jss::passphrase] (JSON RPC input)",
+      "transformations": [
+        "Parsed as possible XrplLib seed",
+        "If not, used as passphrase for seed derivation"
+      ],
+      "validated_at": "walletPropose: RPC::parseXrplLibSeed and RPC::getSeedFromRPC"
+    },
+    {
+      "field": "seed",
+      "flow": [
+        "params[jss::seed]",
+        "walletPropose: checked for presence",
+        "walletPropose: parsed with RPC::parseXrplLibSeed",
+        "If not libSeed, passed to RPC::getSeedFromRPC if present",
+        "Used to derive wallet keys"
+      ],
+      "origin": "params[jss::seed] (JSON RPC input)",
+      "transformations": [
+        "Parsed as possible XrplLib seed",
+        "If not, used as seed for key derivation"
+      ],
+      "validated_at": "walletPropose: RPC::parseXrplLibSeed and RPC::getSeedFromRPC"
+    },
+    {
+      "field": "seed_hex",
+      "flow": [
+        "params[jss::seed_hex]",
+        "walletPropose: checked for presence",
+        "walletPropose: passed to RPC::getSeedFromRPC if present",
+        "Used to derive wallet keys"
+      ],
+      "origin": "params[jss::seed_hex] (JSON RPC input)",
+      "transformations": [
+        "Parsed as hex seed"
+      ],
+      "validated_at": "walletPropose: RPC::getSeedFromRPC"
+    },
+    {
+      "field": "params",
+      "flow": [
+        "doWalletPropose: receives context.params",
+        "walletPropose: receives params",
+        "All field validations and extractions occur here"
+      ],
+      "origin": "RPC::JsonContext.params (JSON RPC input)",
+      "transformations": [
+        "Field extraction",
+        "Validation",
+        "Seed/key derivation"
+      ],
+      "validated_at": "walletPropose: multiple points"
+    }
+  ],
+  "description": "Implements the walletPropose RPC handler for generating XRPL wallet keys, including entropy estimation for passphrases and support for different key types and seed formats.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "key_type (type and value)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field key_type (type and value) validated by jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC",
+      "issue_pattern": "Missing validation for key_type (type and value)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC validates key_type (type and value) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "passphrase (format as seed)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field passphrase (format as seed) validated by jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC",
+      "issue_pattern": "Missing validation for passphrase (format as seed)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC validates passphrase (format as seed) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "seed (format as seed)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field seed (format as seed) validated by jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC",
+      "issue_pattern": "Missing validation for seed (format as seed)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC validates seed (format as seed) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "seed_hex (format as seed)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field seed_hex (format as seed) validated by jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC",
+      "issue_pattern": "Missing validation for seed_hex (format as seed)",
+      "why_false_positive": "jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC validates seed_hex (format as seed) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "key_type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::key_type].isString() at walletPropose",
+      "issue_pattern": "Missing empty string validation for key_type",
+      "why_false_positive": "params[jss::key_type].isString() validates key_type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "key_type",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::key_type].isString() at walletPropose",
+      "issue_pattern": "Missing type validation for key_type",
+      "why_false_positive": "params[jss::key_type].isString() validates key_type type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "key_type",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "keyTypeFromString(params[jss::key_type].asString()) at walletPropose",
+      "issue_pattern": "Missing empty string validation for key_type",
+      "why_false_positive": "keyTypeFromString(params[jss::key_type].asString()) validates key_type for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "passphrase",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::parseXrplLibSeed(params[jss::passphrase]) at walletPropose",
+      "issue_pattern": "Missing empty string validation for passphrase",
+      "why_false_positive": "RPC::parseXrplLibSeed(params[jss::passphrase]) validates passphrase for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seed",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::parseXrplLibSeed(params[jss::seed]) at walletPropose",
+      "issue_pattern": "Missing empty string validation for seed",
+      "why_false_positive": "RPC::parseXrplLibSeed(params[jss::seed]) validates seed for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "passphrase|seed|seed_hex",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::getSeedFromRPC(params, err) at walletPropose",
+      "issue_pattern": "Missing empty string validation for passphrase|seed|seed_hex",
+      "why_false_positive": "RPC::getSeedFromRPC(params, err) validates passphrase|seed|seed_hex for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/admin/keygen/WalletPropose.cpp",
+  "functions": [
+    {
+      "args": [
+        "input"
+      ],
+      "lineno": 10,
+      "name": "estimate_entropy"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 36,
+      "name": "doWalletPropose"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 41,
+      "name": "walletPropose"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in the unit/integration test suites for RPC handlers, e.g., in files like 'test_wallet_propose.cpp', 'rpc_wallet_propose_test.cpp', or similar. Tests should cover: valid/invalid key_type, passphrase, seed, seed_hex; missing/invalid fields; entropy warnings for weak passphrases; XrplLib seed detection. Gaps may exist if tests do not cover all combinations of malformed input (e.g., non-string key_type, invalid seed formats, conflicting fields), or do not check for proper error codes and warnings. No test files are referenced in the provided code, so actual coverage must be verified in the repository.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "key_type (type and value)",
+      "passphrase (format as seed)",
+      "seed (format as seed)",
+      "seed_hex (format as seed)"
+    ],
+    "framework": "jss:: (JSON field tags), RPC:: (helper functions), keyTypeFromString, parseXrplLibSeed, getSeedFromRPC",
+    "validation_layer": "business_logic (walletPropose is the main validation entry point for this handler)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::expected_field_error(jss::key_type, \"string\")",
+      "field": "key_type",
+      "location": "walletPropose",
+      "validated_by": "params[jss::key_type].isString()",
+      "validates": [
+        "Checks that key_type is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcINVALID_PARAMS)",
+      "field": "key_type",
+      "location": "walletPropose",
+      "validated_by": "keyTypeFromString(params[jss::key_type].asString())",
+      "validates": [
+        "Checks that key_type is a valid/recognized key type string"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcBAD_SEED) if keyType is not ed25519",
+      "field": "passphrase",
+      "location": "walletPropose",
+      "validated_by": "RPC::parseXrplLibSeed(params[jss::passphrase])",
+      "validates": [
+        "Checks if passphrase can be parsed as an XRPLLib seed",
+        "If so, ensures keyType is ed25519"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcError(rpcBAD_SEED) if keyType is not ed25519",
+      "field": "seed",
+      "location": "walletPropose",
+      "validated_by": "RPC::parseXrplLibSeed(params[jss::seed])",
+      "validates": [
+        "Checks if seed can be parsed as an XRPLLib seed",
+        "If so, ensures keyType is ed25519"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "err (Json::Value error object)",
+      "field": "passphrase|seed|seed_hex",
+      "location": "walletPropose",
+      "validated_by": "RPC::getSeedFromRPC(params, err)",
+      "validates": [
+        "Checks that at least one of passphrase, seed, or seed_hex is present and valid",
+        "Validates the format and type of the seed input"
+      ],
+      "validation_type": "format|type|business_logic"
+    }
+  ]
+}

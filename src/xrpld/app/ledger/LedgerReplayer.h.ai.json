@@ -1,0 +1,103 @@
+{
+  "args": [
+    {
+      "lineno": 40,
+      "name": "app"
+    },
+    {
+      "lineno": 41,
+      "name": "inboundLedgers"
+    },
+    {
+      "lineno": 42,
+      "name": "peerSetBuilder"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "app",
+        "inboundLedgers",
+        "peerSetBuilder"
+      ],
+      "lineno": 38,
+      "name": "LedgerReplayer"
+    }
+  ],
+  "description": "Manages the lifetime and coordination of ledger replay tasks in the XRPL system, including replaying ranges of ledgers, handling subtasks, and managing related resources and timeouts.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/LedgerReplayer.h",
+  "functions": [
+    {
+      "args": [
+        "r",
+        "finishLedgerHash",
+        "totalNumLedgers"
+      ],
+      "lineno": 49,
+      "name": "replay"
+    },
+    {
+      "args": [
+        "task"
+      ],
+      "lineno": 56,
+      "name": "createDeltas"
+    },
+    {
+      "args": [
+        "info",
+        "data"
+      ],
+      "lineno": 63,
+      "name": "gotSkipList"
+    },
+    {
+      "args": [
+        "info",
+        "txns"
+      ],
+      "lineno": 71,
+      "name": "gotReplayDelta"
+    },
+    {
+      "args": [],
+      "lineno": 79,
+      "name": "sweep"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "tasksSize"
+    },
+    {
+      "args": [],
+      "lineno": 92,
+      "name": "deltasSize"
+    },
+    {
+      "args": [],
+      "lineno": 99,
+      "name": "skipListsSize"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "test"
+    },
+    {
+      "lineno": 15,
+      "name": "LedgerReplayParameters"
+    }
+  ]
+}

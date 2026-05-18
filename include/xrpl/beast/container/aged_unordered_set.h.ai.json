@@ -1,0 +1,35 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "Key"
+    },
+    {
+      "lineno": 11,
+      "name": "Clock"
+    },
+    {
+      "lineno": 12,
+      "name": "Hash"
+    },
+    {
+      "lineno": 13,
+      "name": "KeyEqual"
+    },
+    {
+      "lineno": 14,
+      "name": "Allocator"
+    }
+  ],
+  "classes": [],
+  "description": "Defines a type alias 'aged_unordered_set' in the 'beast' namespace, which is a specialization of a generic aged_unordered_container for storing unique keys with associated age information, using customizable hash, equality, clock, and allocator types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/container/aged_unordered_set.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

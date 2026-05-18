@@ -1,0 +1,606 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LoanBrokerSet::preflight"
+      ],
+      "entry_point": "LoanBrokerSet::preflight",
+      "purpose": "Performs stateless validation of transaction fields before further processing.",
+      "validation_points": [
+        "LoanBrokerSet::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerSet::preclaim"
+      ],
+      "entry_point": "LoanBrokerSet::preclaim",
+      "purpose": "Performs contextual validation (ledger state, permissions, object existence) before transaction application.",
+      "validation_points": [
+        "LoanBrokerSet::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerSet::doApply"
+      ],
+      "entry_point": "LoanBrokerSet::doApply",
+      "purpose": "Applies the transaction after preflight and preclaim have succeeded.",
+      "validation_points": [
+        "LoanBrokerSet::preflight",
+        "LoanBrokerSet::preclaim"
+      ]
+    },
+    {
+      "call_chain": [
+        "LoanBrokerSet::checkExtraFeatures",
+        "checkLendingProtocolDependencies"
+      ],
+      "entry_point": "LoanBrokerSet::checkExtraFeatures",
+      "purpose": "Checks for protocol feature dependencies before transaction processing.",
+      "validation_points": [
+        "checkLendingProtocolDependencies"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfData",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "validDataLength",
+        "Validation result"
+      ],
+      "origin": "ctx.tx[~sfData] (transaction input)",
+      "transformations": [
+        "Checked for presence and non-emptiness",
+        "Validated for maximum allowed length"
+      ],
+      "validated_at": "LoanBrokerSet::preflight"
+    },
+    {
+      "field": "sfManagementFeeRate",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "validNumericRange",
+        "Validation result"
+      ],
+      "origin": "ctx.tx[~sfManagementFeeRate] (transaction input)",
+      "transformations": [
+        "Validated for numeric range (maxManagementFeeRate)"
+      ],
+      "validated_at": "LoanBrokerSet::preflight"
+    },
+    {
+      "field": "sfCoverRateMinimum",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "validNumericRange",
+        "Validation result"
+      ],
+      "origin": "ctx.tx[~sfCoverRateMinimum] (transaction input)",
+      "transformations": [
+        "Validated for numeric range (maxCoverRate)"
+      ],
+      "validated_at": "LoanBrokerSet::preflight"
+    },
+    {
+      "field": "sfCoverRateLiquidation",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "validNumericRange",
+        "Validation result"
+      ],
+      "origin": "ctx.tx[~sfCoverRateLiquidation] (transaction input)",
+      "transformations": [
+        "Validated for numeric range (maxCoverRate)"
+      ],
+      "validated_at": "LoanBrokerSet::preflight"
+    },
+    {
+      "field": "sfDebtMaximum",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "validNumericRange",
+        "LoanBrokerSet::preclaim (if present)",
+        "Compared to current DebtTotal (if updating existing broker)"
+      ],
+      "origin": "ctx.tx[~sfDebtMaximum] (transaction input)",
+      "transformations": [
+        "Validated for numeric range (maxMPTokenAmount, 0)",
+        "Compared to current DebtTotal to prevent lowering below current"
+      ],
+      "validated_at": "LoanBrokerSet::preflight, LoanBrokerSet::preclaim"
+    },
+    {
+      "field": "sfLoanBrokerID",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "Checked for zero value",
+        "LoanBrokerSet::preclaim",
+        "Used to look up existing LoanBroker SLE"
+      ],
+      "origin": "ctx.tx[~sfLoanBrokerID] (transaction input)",
+      "transformations": [
+        "Checked for presence and non-zero value",
+        "Used to fetch and validate existing broker"
+      ],
+      "validated_at": "LoanBrokerSet::preflight, LoanBrokerSet::preclaim"
+    },
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preflight",
+        "Checked for zero value",
+        "LoanBrokerSet::preclaim",
+        "Used to look up Vault SLE"
+      ],
+      "origin": "ctx.tx[~sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for presence and non-zero value",
+        "Used to fetch and validate vault"
+      ],
+      "validated_at": "LoanBrokerSet::preflight, LoanBrokerSet::preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "LoanBrokerSet::preclaim",
+        "Compared to sfOwner of Vault and LoanBroker"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for ownership of Vault and LoanBroker"
+      ],
+      "validated_at": "LoanBrokerSet::preclaim"
+    }
+  ],
+  "description": "Implements the LoanBrokerSet transaction logic for creating or modifying LoanBroker objects in the XRPL lending protocol, including preflight, preclaim, and apply logic.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfData",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validDataLength at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfData",
+      "why_false_positive": "validDataLength validates sfData for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfData",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validDataLength at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing range validation for sfData",
+      "why_false_positive": "validDataLength validates sfData range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfManagementFeeRate",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfManagementFeeRate",
+      "why_false_positive": "validNumericRange validates sfManagementFeeRate for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfManagementFeeRate",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing range validation for sfManagementFeeRate",
+      "why_false_positive": "validNumericRange validates sfManagementFeeRate range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCoverRateMinimum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfCoverRateMinimum",
+      "why_false_positive": "validNumericRange validates sfCoverRateMinimum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfCoverRateMinimum",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing range validation for sfCoverRateMinimum",
+      "why_false_positive": "validNumericRange validates sfCoverRateMinimum range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCoverRateLiquidation",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfCoverRateLiquidation",
+      "why_false_positive": "validNumericRange validates sfCoverRateLiquidation for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfCoverRateLiquidation",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing range validation for sfCoverRateLiquidation",
+      "why_false_positive": "validNumericRange validates sfCoverRateLiquidation range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDebtMaximum",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfDebtMaximum",
+      "why_false_positive": "validNumericRange validates sfDebtMaximum for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "sfDebtMaximum",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "validNumericRange at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing range validation for sfDebtMaximum",
+      "why_false_positive": "validNumericRange validates sfDebtMaximum range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (isFieldPresent, == beast::zero) at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "explicit check (isFieldPresent, == beast::zero) validates sfLoanBrokerID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (== beast::zero) at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "explicit check (== beast::zero) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfCoverRateMinimum & sfCoverRateLiquidation",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check (value_or(0) == 0) at LoanBrokerSet::preflight",
+      "issue_pattern": "Missing empty string validation for sfCoverRateMinimum & sfCoverRateLiquidation",
+      "why_false_positive": "explicit check (value_or(0) == 0) validates sfCoverRateMinimum & sfCoverRateLiquidation for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfVaultID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::vault(vaultID)) at LoanBrokerSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfVaultID",
+      "why_false_positive": "ctx.view.read(keylet::vault(vaultID)) validates sfVaultID for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "account == sleVault->at(sfOwner) at LoanBrokerSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "account == sleVault->at(sfOwner) validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfLoanBrokerID",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx.view.read(keylet::loanbroker(*brokerID)) at LoanBrokerSet::preclaim",
+      "issue_pattern": "Missing empty string validation for sfLoanBrokerID",
+      "why_false_positive": "ctx.view.read(keylet::loanbroker(*brokerID)) validates sfLoanBrokerID for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/lending/LoanBrokerSet.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "LoanBrokerSet::checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "LoanBrokerSet::preflight"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "LoanBrokerSet::getValueFields"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 64,
+      "name": "LoanBrokerSet::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 120,
+      "name": "LoanBrokerSet::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "LoanBrokerSet is a new feature in the lending protocol. Typical test files would be in the unit test suite under 'test/tx/Lending' or similar, e.g., 'test/tx/Lending_test.cpp', 'test/tx/LoanBrokerSet_test.cpp', or integration tests for lending transactions. Tests should cover: field presence/absence, invalid values (out of range, zero where not allowed), permission checks (ownership), object existence (vault, broker), and business logic (debt maximum not below current). Gaps may exist if edge cases (e.g., both cover rates zero/non-zero, data payload length, updating existing brokers) are not explicitly tested. If no dedicated LoanBrokerSet tests exist, coverage is likely incomplete.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation functions (validNumericRange, validDataLength, explicit checks), XRPL transaction framework",
+    "validation_layer": "business_logic (preflight, preclaim)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfData",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "validDataLength",
+      "validates": [
+        "Checks if sfData is present and not empty",
+        "Checks if sfData length is within maxDataPayloadLength"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfManagementFeeRate",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "validNumericRange",
+      "validates": [
+        "Checks if sfManagementFeeRate is within maxManagementFeeRate"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfCoverRateMinimum",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "validNumericRange",
+      "validates": [
+        "Checks if sfCoverRateMinimum is within maxCoverRate"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfCoverRateLiquidation",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "validNumericRange",
+      "validates": [
+        "Checks if sfCoverRateLiquidation is within maxCoverRate"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfDebtMaximum",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "validNumericRange",
+      "validates": [
+        "Checks if sfDebtMaximum is within [0, maxMPTokenAmount]"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfLoanBrokerID",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "explicit check (isFieldPresent, == beast::zero)",
+      "validates": [
+        "If modifying existing LoanBroker, fixed fields (sfManagementFeeRate, sfCoverRateMinimum, sfCoverRateLiquidation) must not be present",
+        "sfLoanBrokerID must not be beast::zero"
+      ],
+      "validation_type": "business_logic|format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfVaultID",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "explicit check (== beast::zero)",
+      "validates": [
+        "sfVaultID must not be beast::zero"
+      ],
+      "validation_type": "format|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temINVALID",
+      "field": "sfCoverRateMinimum & sfCoverRateLiquidation",
+      "location": "LoanBrokerSet::preflight",
+      "validated_by": "explicit check (value_or(0) == 0)",
+      "validates": [
+        "Both sfCoverRateMinimum and sfCoverRateLiquidation must be zero or both non-zero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfVaultID",
+      "location": "LoanBrokerSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::vault(vaultID))",
+      "validates": [
+        "Vault with sfVaultID must exist"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount",
+      "location": "LoanBrokerSet::preclaim",
+      "validated_by": "account == sleVault->at(sfOwner)",
+      "validates": [
+        "sfAccount must be the owner of the Vault"
+      ],
+      "validation_type": "business_logic|ownership"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfLoanBrokerID",
+      "location": "LoanBrokerSet::preclaim",
+      "validated_by": "ctx.view.read(keylet::loanbroker(*brokerID))",
+      "validates": [
+        "LoanBroker with sfLoanBrokerID must exist if updating"
+      ],
+      "validation_type": "business_logic|existence"
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "args": [
+    {
+      "lineno": 6,
+      "name": "params"
+    },
+    {
+      "lineno": 6,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "params",
+        "journal"
+      ],
+      "lineno": 5,
+      "name": "CollectorManagerImp"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "make_CollectorManager",
+        "CollectorManagerImp::CollectorManagerImp"
+      ],
+      "entry_point": "make_CollectorManager",
+      "purpose": "Creates and configures a CollectorManager instance based on configuration parameters.",
+      "validation_points": [
+        "CollectorManagerImp::CollectorManagerImp: server string compared to 'statsd'",
+        "CollectorManagerImp::CollectorManagerImp: address parsed via beast::IP::Endpoint::from_string"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "server",
+      "flow": [
+        "params (input)",
+        "get(params, \"server\")",
+        "server local variable",
+        "if (server == \"statsd\")"
+      ],
+      "origin": "params Section (configuration input)",
+      "transformations": [
+        "Extracted as string from params",
+        "Compared to literal 'statsd'"
+      ],
+      "validated_at": "CollectorManagerImp::CollectorManagerImp (string comparison)"
+    },
+    {
+      "field": "address",
+      "flow": [
+        "params (input)",
+        "get(params, \"address\")",
+        "beast::IP::Endpoint::from_string(get(params, \"address\"))",
+        "address local variable",
+        "used in StatsDCollector::New"
+      ],
+      "origin": "params Section (configuration input)",
+      "transformations": [
+        "Extracted as string from params",
+        "Parsed/validated as IP endpoint"
+      ],
+      "validated_at": "CollectorManagerImp::CollectorManagerImp (beast::IP::Endpoint::from_string)"
+    },
+    {
+      "field": "prefix",
+      "flow": [
+        "params (input)",
+        "get(params, \"prefix\")",
+        "prefix local variable",
+        "used in StatsDCollector::New"
+      ],
+      "origin": "params Section (configuration input)",
+      "transformations": [
+        "Extracted as string from params"
+      ],
+      "validated_at": "Not explicitly validated in this code"
+    }
+  ],
+  "description": "Implements the CollectorManagerImp class, which manages metrics collectors (such as StatsD or NullCollector) and groups for application monitoring in the xrpl namespace.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "server",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "string comparison (== \"statsd\") at CollectorManagerImp constructor",
+      "issue_pattern": "Missing empty string validation for server",
+      "why_false_positive": "string comparison (== \"statsd\") validates server for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "address",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string at CollectorManagerImp constructor",
+      "issue_pattern": "Missing empty string validation for address",
+      "why_false_positive": "beast::IP::Endpoint::from_string validates address for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "address",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "beast::IP::Endpoint::from_string at CollectorManagerImp constructor",
+      "issue_pattern": "Missing format validation for address",
+      "why_false_positive": "beast::IP::Endpoint::from_string validates address format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/main/CollectorManager.cpp",
+  "functions": [
+    {
+      "args": [
+        "params",
+        "journal"
+      ],
+      "lineno": 44,
+      "name": "make_CollectorManager"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence in this file of test coverage. Typical tests would be in files like CollectorManager_test.cpp or integration tests for configuration parsing. The validation of 'server' and 'address' depends on correct configuration input; error handling for invalid addresses is not shown here. There may be gaps in testing invalid or missing 'address' or 'server' values, and no explicit tests for malformed input are visible in this code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "beast::IP::Endpoint (for address parsing), manual string checks",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (defaults to NullCollector if not 'statsd')",
+      "field": "server",
+      "location": "CollectorManagerImp constructor",
+      "validated_by": "string comparison (== \"statsd\")",
+      "validates": [
+        "checks if 'server' field equals 'statsd'"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "throws on invalid address (likely std::exception or custom error from from_string)",
+      "field": "address",
+      "location": "CollectorManagerImp constructor",
+      "validated_by": "beast::IP::Endpoint::from_string",
+      "validates": [
+        "validates that 'address' is a valid IP endpoint string"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

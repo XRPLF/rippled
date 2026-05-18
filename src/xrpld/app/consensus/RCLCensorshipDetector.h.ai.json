@@ -1,0 +1,110 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "TxID"
+    },
+    {
+      "lineno": 8,
+      "name": "Sequence"
+    },
+    {
+      "lineno": 14,
+      "name": "txid_"
+    },
+    {
+      "lineno": 14,
+      "name": "seq_"
+    },
+    {
+      "lineno": 44,
+      "name": "proposed"
+    },
+    {
+      "lineno": 65,
+      "name": "accepted"
+    },
+    {
+      "lineno": 65,
+      "name": "pred"
+    },
+    {
+      "lineno": 19,
+      "name": "lhs"
+    },
+    {
+      "lineno": 19,
+      "name": "rhs"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "RCLCensorshipDetector"
+    },
+    {
+      "args": [
+        "txid_",
+        "seq_"
+      ],
+      "lineno": 11,
+      "name": "TxIDSeq"
+    }
+  ],
+  "description": "Implements a censorship detector for XRPL consensus rounds, tracking proposed transactions and detecting which have not been accepted, with utilities to propose, check, and reset tracked transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/consensus/RCLCensorshipDetector.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 19,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 26,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 31,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "proposed"
+      ],
+      "lineno": 44,
+      "name": "propose"
+    },
+    {
+      "args": [
+        "accepted",
+        "pred"
+      ],
+      "lineno": 65,
+      "name": "check"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "reset"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

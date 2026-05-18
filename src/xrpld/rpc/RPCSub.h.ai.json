@@ -1,0 +1,73 @@
+{
+  "args": [
+    {
+      "lineno": 11,
+      "name": "strUsername"
+    },
+    {
+      "lineno": 13,
+      "name": "strPassword"
+    },
+    {
+      "lineno": 20,
+      "name": "source"
+    },
+    {
+      "lineno": 21,
+      "name": "io_context"
+    },
+    {
+      "lineno": 22,
+      "name": "jobQueue"
+    },
+    {
+      "lineno": 23,
+      "name": "strUrl"
+    },
+    {
+      "lineno": 24,
+      "name": "strUsername"
+    },
+    {
+      "lineno": 25,
+      "name": "strPassword"
+    },
+    {
+      "lineno": 26,
+      "name": "registry"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "InfoSub::Source& source"
+      ],
+      "lineno": 7,
+      "name": "RPCSub"
+    }
+  ],
+  "description": "Defines the RPCSub class for JSON RPC subscriptions and a factory function to create RPCSub instances in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/RPCSub.h",
+  "functions": [
+    {
+      "args": [
+        "source",
+        "io_context",
+        "jobQueue",
+        "strUrl",
+        "strUsername",
+        "strPassword",
+        "registry"
+      ],
+      "lineno": 19,
+      "name": "make_RPCSub"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

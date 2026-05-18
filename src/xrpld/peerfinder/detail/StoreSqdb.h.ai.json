@@ -1,0 +1,77 @@
+{
+  "args": [
+    {
+      "lineno": 17,
+      "name": "journal"
+    },
+    {
+      "lineno": 25,
+      "name": "config"
+    },
+    {
+      "lineno": 33,
+      "name": "cb"
+    },
+    {
+      "lineno": 54,
+      "name": "v"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "journal"
+      ],
+      "lineno": 10,
+      "name": "StoreSqdb"
+    }
+  ],
+  "description": "Provides a database-backed implementation of the PeerFinder::Store interface using SQLite for persistence of peer bootstrap cache data in the XRPL network.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/StoreSqdb.h",
+  "functions": [
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 25,
+      "name": "open"
+    },
+    {
+      "args": [
+        "cb"
+      ],
+      "lineno": 33,
+      "name": "load"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 54,
+      "name": "save"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "update"
+    },
+    {
+      "args": [
+        "config"
+      ],
+      "lineno": 68,
+      "name": "init"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "PeerFinder"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "info"
+    },
+    {
+      "lineno": 39,
+      "name": "name"
+    },
+    {
+      "lineno": 54,
+      "name": "reason"
+    },
+    {
+      "lineno": 58,
+      "name": "s"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "recorder"
+    }
+  ],
+  "description": "Implements a test runner class 'recorder' that stores and reports unit test results, inheriting from 'runner' and overriding event methods to collect suite, case, and test outcomes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/unit_test/recorder.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "recorder"
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "report"
+    },
+    {
+      "args": [
+        "info"
+      ],
+      "lineno": 29,
+      "name": "on_suite_begin"
+    },
+    {
+      "args": [],
+      "lineno": 34,
+      "name": "on_suite_end"
+    },
+    {
+      "args": [
+        "name"
+      ],
+      "lineno": 39,
+      "name": "on_case_begin"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "on_case_end"
+    },
+    {
+      "args": [],
+      "lineno": 50,
+      "name": "on_pass"
+    },
+    {
+      "args": [
+        "reason"
+      ],
+      "lineno": 54,
+      "name": "on_fail"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 58,
+      "name": "on_log"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "beast"
+    },
+    {
+      "lineno": 9,
+      "name": "unit_test"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "args": [
+    {
+      "lineno": 7,
+      "name": "msg"
+    },
+    {
+      "lineno": 7,
+      "name": "flags"
+    },
+    {
+      "lineno": 7,
+      "name": "txids"
+    }
+  ],
+  "classes": [],
+  "description": "Provides a utility function to serialize a batch of transaction IDs with associated flags into a Serializer object, using a specific hash prefix.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Batch.h",
+  "functions": [
+    {
+      "args": [
+        "msg",
+        "flags",
+        "txids"
+      ],
+      "lineno": 6,
+      "name": "serializeBatch"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

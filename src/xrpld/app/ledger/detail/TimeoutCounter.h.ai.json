@@ -1,0 +1,63 @@
+{
+  "args": [
+    {
+      "lineno": 51,
+      "name": "app"
+    },
+    {
+      "lineno": 52,
+      "name": "targetHash"
+    },
+    {
+      "lineno": 53,
+      "name": "timeoutInterval"
+    },
+    {
+      "lineno": 54,
+      "name": "jobParameter"
+    },
+    {
+      "lineno": 55,
+      "name": "journal"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Application& app",
+        "uint256 const& targetHash",
+        "std::chrono::milliseconds timeoutInterval",
+        "QueueJobParameter&& jobParameter",
+        "beast::Journal journal"
+      ],
+      "lineno": 29,
+      "name": "TimeoutCounter"
+    },
+    {
+      "args": [],
+      "lineno": 46,
+      "name": "QueueJobParameter"
+    }
+  ],
+  "description": "Defines the TimeoutCounter class, an active object that manages asynchronous timeout and retry logic for tasks (such as fetching a ledger) using timers and job queues. Subclasses override hook methods to implement specific behavior on timeout.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/TimeoutCounter.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "cancel"
+    },
+    {
+      "args": [],
+      "lineno": 74,
+      "name": "isDone"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    }
+  ]
+}

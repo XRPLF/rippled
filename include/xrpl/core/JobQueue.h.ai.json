@@ -1,0 +1,297 @@
+{
+  "args": [
+    {
+      "lineno": 77,
+      "name": "threadCount"
+    },
+    {
+      "lineno": 78,
+      "name": "collector"
+    },
+    {
+      "lineno": 79,
+      "name": "journal"
+    },
+    {
+      "lineno": 80,
+      "name": "logs"
+    },
+    {
+      "lineno": 81,
+      "name": "perfLog"
+    },
+    {
+      "lineno": 88,
+      "name": "type"
+    },
+    {
+      "lineno": 89,
+      "name": "name"
+    },
+    {
+      "lineno": 90,
+      "name": "jobHandler"
+    },
+    {
+      "lineno": 113,
+      "name": "t"
+    },
+    {
+      "lineno": 113,
+      "name": "name"
+    },
+    {
+      "lineno": 113,
+      "name": "f"
+    },
+    {
+      "lineno": 127,
+      "name": "t"
+    },
+    {
+      "lineno": 132,
+      "name": "t"
+    },
+    {
+      "lineno": 137,
+      "name": "t"
+    },
+    {
+      "lineno": 142,
+      "name": "t"
+    },
+    {
+      "lineno": 142,
+      "name": "name"
+    },
+    {
+      "lineno": 147,
+      "name": "t"
+    },
+    {
+      "lineno": 147,
+      "name": "count"
+    },
+    {
+      "lineno": 147,
+      "name": "elapsed"
+    },
+    {
+      "lineno": 154,
+      "name": "c"
+    },
+    {
+      "lineno": 180,
+      "name": "type"
+    },
+    {
+      "lineno": 188,
+      "name": "type"
+    },
+    {
+      "lineno": 188,
+      "name": "name"
+    },
+    {
+      "lineno": 188,
+      "name": "func"
+    },
+    {
+      "lineno": 203,
+      "name": "job"
+    },
+    {
+      "lineno": 222,
+      "name": "type"
+    },
+    {
+      "lineno": 239,
+      "name": "instance"
+    },
+    {
+      "lineno": 248,
+      "name": "type"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "Coro_create_t"
+    },
+    {
+      "args": [
+        "threadCount",
+        "collector",
+        "journal",
+        "logs",
+        "perfLog"
+      ],
+      "lineno": 22,
+      "name": "JobQueue"
+    },
+    {
+      "args": [
+        "Coro_create_t",
+        "JobQueue&",
+        "JobType",
+        "std::string const&",
+        "F&&"
+      ],
+      "lineno": 29,
+      "name": "Coro"
+    }
+  ],
+  "description": "Defines the JobQueue class for managing a pool of threads and coroutines to execute jobs in the XRPL codebase, including coroutine management, job scheduling, and load monitoring.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/core/JobQueue.h",
+  "functions": [
+    {
+      "args": [
+        "type",
+        "name",
+        "jobHandler"
+      ],
+      "lineno": 87,
+      "name": "addJob"
+    },
+    {
+      "args": [
+        "t",
+        "name",
+        "f"
+      ],
+      "lineno": 112,
+      "name": "postCoro"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 126,
+      "name": "getJobCount"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 131,
+      "name": "getJobCountTotal"
+    },
+    {
+      "args": [
+        "t"
+      ],
+      "lineno": 136,
+      "name": "getJobCountGE"
+    },
+    {
+      "args": [
+        "t",
+        "name"
+      ],
+      "lineno": 141,
+      "name": "makeLoadEvent"
+    },
+    {
+      "args": [
+        "t",
+        "count",
+        "elapsed"
+      ],
+      "lineno": 146,
+      "name": "addLoadEvents"
+    },
+    {
+      "args": [],
+      "lineno": 150,
+      "name": "isOverloaded"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 153,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 156,
+      "name": "rendezvous"
+    },
+    {
+      "args": [],
+      "lineno": 158,
+      "name": "stop"
+    },
+    {
+      "args": [],
+      "lineno": 160,
+      "name": "isStopping"
+    },
+    {
+      "args": [],
+      "lineno": 167,
+      "name": "isStopped"
+    },
+    {
+      "args": [],
+      "lineno": 178,
+      "name": "collect"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 179,
+      "name": "getJobTypeData"
+    },
+    {
+      "args": [
+        "type",
+        "name",
+        "func"
+      ],
+      "lineno": 187,
+      "name": "addRefCountedJob"
+    },
+    {
+      "args": [
+        "job"
+      ],
+      "lineno": 202,
+      "name": "getNextJob"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 221,
+      "name": "finishJob"
+    },
+    {
+      "args": [
+        "instance"
+      ],
+      "lineno": 238,
+      "name": "processTask"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 247,
+      "name": "getJobLimit"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "perf"
+    }
+  ]
+}

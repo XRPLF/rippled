@@ -1,0 +1,580 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "isGlobalFrozen",
+        "isXRP",
+        "view.read(keylet::account(issuer))",
+        "sle->isFlag(lsfGlobalFreeze)"
+      ],
+      "entry_point": "isGlobalFrozen",
+      "purpose": "Checks if an account (issuer) is globally frozen.",
+      "validation_points": [
+        "isXRP(issuer) - validates if issuer is XRP (special case, always not frozen)",
+        "view.read(keylet::account(issuer)) - validates issuer exists in ledger",
+        "sle->isFlag(lsfGlobalFreeze) - validates if global freeze flag is set"
+      ]
+    },
+    {
+      "call_chain": [
+        "confineOwnerCount"
+      ],
+      "entry_point": "confineOwnerCount",
+      "purpose": "Adjusts owner count, clamps to [0, UINT32_MAX], logs on overflow/underflow.",
+      "validation_points": [
+        "if (adjusted < current) - detects overflow",
+        "if (adjusted > current) - detects underflow",
+        "if (id) { JLOG(j.fatal()) ... } - logs error if id is present"
+      ]
+    },
+    {
+      "call_chain": [
+        "xrpLiquid",
+        "view.read(keylet::account(id))",
+        "confineOwnerCount",
+        "isPseudoAccount",
+        "view.fees().accountReserve(ownerCount)",
+        "view.balanceHookIOU"
+      ],
+      "entry_point": "xrpLiquid",
+      "purpose": "Calculates liquid XRP for an account, considering reserve and owner count.",
+      "validation_points": [
+        "view.read(keylet::account(id)) - validates account exists",
+        "confineOwnerCount - validates ownerCount adjustment"
+      ]
+    },
+    {
+      "call_chain": [
+        "adjustOwnerCount",
+        "confineOwnerCount",
+        "view.adjustOwnerCountHook",
+        "sle->at(sfOwnerCount) = adjusted",
+        "view.update(sle)"
+      ],
+      "entry_point": "adjustOwnerCount",
+      "purpose": "Adjusts the owner count for an account and updates the ledger entry.",
+      "validation_points": [
+        "confineOwnerCount - validates adjustment"
+      ]
+    },
+    {
+      "call_chain": [
+        "transferRate",
+        "view.read(keylet::account(issuer))",
+        "sle->isFieldPresent(sfTransferRate)",
+        "sle->getFieldU32(sfTransferRate)"
+      ],
+      "entry_point": "transferRate",
+      "purpose": "Fetches the transfer rate for an issuer account.",
+      "validation_points": [
+        "view.read(keylet::account(issuer)) - validates issuer exists"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "issuer (AccountID)",
+      "flow": [
+        "Function argument",
+        "isXRP(issuer) or view.read(keylet::account(issuer))",
+        "sle->isFlag(lsfGlobalFreeze) or sle->getFieldU32(sfTransferRate)"
+      ],
+      "origin": "Function argument to isGlobalFrozen, transferRate",
+      "transformations": [
+        "Checked if XRP (special case)",
+        "Looked up in ledger",
+        "Flag or field checked"
+      ],
+      "validated_at": "isXRP(issuer), view.read(keylet::account(issuer))"
+    },
+    {
+      "field": "ownerCount (std::uint32_t)",
+      "flow": [
+        "sle->getFieldU32(sfOwnerCount)",
+        "confineOwnerCount(current, adjustment, id, j)",
+        "adjusted value returned",
+        "Used in reserve calculation or written back to ledger"
+      ],
+      "origin": "Ledger entry field sfOwnerCount",
+      "transformations": [
+        "Adjusted by signed int",
+        "Clamped to [0, UINT32_MAX]",
+        "Logged if overflow/underflow"
+      ],
+      "validated_at": "confineOwnerCount"
+    },
+    {
+      "field": "id (AccountID, optional)",
+      "flow": [
+        "Passed to confineOwnerCount",
+        "Used for logging if present"
+      ],
+      "origin": "Optional argument to confineOwnerCount",
+      "transformations": [
+        "Only used for error reporting"
+      ],
+      "validated_at": "if (id) { JLOG(j.fatal()) ... }"
+    },
+    {
+      "field": "lsfGlobalFreeze flag",
+      "flow": [
+        "sle->isFlag(lsfGlobalFreeze)"
+      ],
+      "origin": "Ledger entry flag",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "sle->isFlag(lsfGlobalFreeze)"
+    },
+    {
+      "field": "sfTransferRate",
+      "flow": [
+        "sle->isFieldPresent(sfTransferRate)",
+        "sle->getFieldU32(sfTransferRate)"
+      ],
+      "origin": "Ledger entry field",
+      "transformations": [
+        "Presence check",
+        "Value extraction"
+      ],
+      "validated_at": "sle->isFieldPresent(sfTransferRate)"
+    }
+  ],
+  "description": "This file provides helper functions for working with AccountRoot objects in the XRPL ledger, including owner count adjustments, pseudo-account management, transfer rate retrieval, and destination tag checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issuer (AccountID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP(issuer) at isGlobalFrozen",
+      "issue_pattern": "Missing empty string validation for issuer (AccountID)",
+      "why_false_positive": "isXRP(issuer) validates issuer (AccountID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issuer (AccountID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read(keylet::account(issuer)) at isGlobalFrozen",
+      "issue_pattern": "Missing empty string validation for issuer (AccountID)",
+      "why_false_positive": "view.read(keylet::account(issuer)) validates issuer (AccountID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfGlobalFreeze flag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "sle->isFlag(lsfGlobalFreeze) at isGlobalFrozen",
+      "issue_pattern": "Missing empty string validation for lsfGlobalFreeze flag",
+      "why_false_positive": "sle->isFlag(lsfGlobalFreeze) validates lsfGlobalFreeze flag for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ownerCount (std::uint32_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "confineOwnerCount at confineOwnerCount",
+      "issue_pattern": "Missing empty string validation for ownerCount (std::uint32_t)",
+      "why_false_positive": "confineOwnerCount validates ownerCount (std::uint32_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ownerCount (std::uint32_t)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "confineOwnerCount at confineOwnerCount",
+      "issue_pattern": "Missing range validation for ownerCount (std::uint32_t)",
+      "why_false_positive": "confineOwnerCount validates ownerCount (std::uint32_t) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "id (AccountID, optional)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (id) { JLOG(j.fatal()) ... } at confineOwnerCount",
+      "issue_pattern": "Missing empty string validation for id (AccountID, optional)",
+      "why_false_positive": "if (id) { JLOG(j.fatal()) ... } validates id (AccountID, optional) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sle (SLE pointer)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "if (sle == nullptr) at xrpLiquid",
+      "issue_pattern": "Missing empty string validation for sle (SLE pointer)",
+      "why_false_positive": "if (sle == nullptr) validates sle (SLE pointer) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ownerCount (std::uint32_t)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "confineOwnerCount at xrpLiquid",
+      "issue_pattern": "Missing empty string validation for ownerCount (std::uint32_t)",
+      "why_false_positive": "confineOwnerCount validates ownerCount (std::uint32_t) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ownerCount (std::uint32_t)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "confineOwnerCount at xrpLiquid",
+      "issue_pattern": "Missing range validation for ownerCount (std::uint32_t)",
+      "why_false_positive": "confineOwnerCount validates ownerCount (std::uint32_t) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "reserve (XRPAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isPseudoAccount(sle) at xrpLiquid",
+      "issue_pattern": "Missing empty string validation for reserve (XRPAmount)",
+      "why_false_positive": "isPseudoAccount(sle) validates reserve (XRPAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "balance (STAmount)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balance < reserve ? STAmount{0} : balance - reserve at xrpLiquid",
+      "issue_pattern": "Missing empty string validation for balance (STAmount)",
+      "why_false_positive": "balance < reserve ? STAmount{0} : balance - reserve validates balance (STAmount) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/AccountRootHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& issuer"
+      ],
+      "lineno": 9,
+      "name": "isGlobalFrozen"
+    },
+    {
+      "args": [
+        "std::uint32_t current",
+        "std::int32_t adjustment",
+        "std::optional<AccountID> const& id",
+        "beast::Journal j"
+      ],
+      "lineno": 19,
+      "name": "confineOwnerCount"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& id",
+        "std::int32_t ownerCountAdj",
+        "beast::Journal j"
+      ],
+      "lineno": 54,
+      "name": "xrpLiquid"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& issuer"
+      ],
+      "lineno": 77,
+      "name": "transferRate"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& sle",
+        "std::int32_t amount",
+        "beast::Journal j"
+      ],
+      "lineno": 86,
+      "name": "adjustOwnerCount"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "uint256 const& pseudoOwnerKey"
+      ],
+      "lineno": 99,
+      "name": "pseudoAccountAddress"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "getPseudoAccountFields"
+    },
+    {
+      "args": [
+        "std::shared_ptr<SLE const> sleAcct",
+        "std::set<SField const*> const& pseudoFieldFilter"
+      ],
+      "lineno": 143,
+      "name": "isPseudoAccount"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "uint256 const& pseudoOwnerKey",
+        "SField const& ownerField"
+      ],
+      "lineno": 155,
+      "name": "createPseudoAccount"
+    },
+    {
+      "args": [
+        "SLE::const_ref toSle",
+        "bool hasDestinationTag"
+      ],
+      "lineno": 191,
+      "name": "checkDestinationAndTag"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "These helpers are core to ledger/account logic and are likely tested indirectly via higher-level transaction and ledger tests. Direct unit tests may exist in files like AccountRootHelpers_test.cpp, Ledger_test.cpp, or Account_test.cpp. However, some edge cases (e.g., confineOwnerCount overflow/underflow with/without id, pseudo-account logic) may not be directly tested unless specifically targeted. Logging/error reporting paths (e.g., JLOG(j.fatal())) are often not covered by standard tests. Integration tests that exercise account creation, reserve changes, and freeze logic will cover most validation paths, but explicit negative/overflow/underflow cases should be checked for coverage.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom C++ logic, no external validation framework",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "issuer (AccountID)",
+      "location": "isGlobalFrozen",
+      "validated_by": "isXRP(issuer)",
+      "validates": [
+        "Checks if issuer is XRP, which cannot be frozen"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns false)",
+      "field": "issuer (AccountID)",
+      "location": "isGlobalFrozen",
+      "validated_by": "view.read(keylet::account(issuer))",
+      "validates": [
+        "Checks if issuer account exists in ledger"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns bool)",
+      "field": "lsfGlobalFreeze flag",
+      "location": "isGlobalFrozen",
+      "validated_by": "sle->isFlag(lsfGlobalFreeze)",
+      "validates": [
+        "Checks if the global freeze flag is set on the account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (clamps value, logs fatal)",
+      "field": "ownerCount (std::uint32_t)",
+      "location": "confineOwnerCount",
+      "validated_by": "confineOwnerCount",
+      "validates": [
+        "Prevents ownerCount from going negative (underflow)",
+        "Prevents ownerCount from exceeding uint32_t max (overflow)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (logs fatal)",
+      "field": "id (AccountID, optional)",
+      "location": "confineOwnerCount",
+      "validated_by": "if (id) { JLOG(j.fatal()) ... }",
+      "validates": [
+        "Logs error if ownerCount would underflow or overflow for a specific account"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns beast::zero)",
+      "field": "sle (SLE pointer)",
+      "location": "xrpLiquid",
+      "validated_by": "if (sle == nullptr)",
+      "validates": [
+        "Checks if account exists before proceeding"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (see above)",
+      "field": "ownerCount (std::uint32_t)",
+      "location": "xrpLiquid",
+      "validated_by": "confineOwnerCount",
+      "validates": [
+        "Ensures ownerCount is within valid range before using for reserve calculation"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "reserve (XRPAmount)",
+      "location": "xrpLiquid",
+      "validated_by": "isPseudoAccount(sle)",
+      "validates": [
+        "Pseudo-accounts have no reserve requirement"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none",
+      "field": "balance (STAmount)",
+      "location": "xrpLiquid",
+      "validated_by": "balance < reserve ? STAmount{0} : balance - reserve",
+      "validates": [
+        "Ensures liquid balance cannot be negative (clamps to zero)"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

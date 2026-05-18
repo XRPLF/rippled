@@ -1,0 +1,90 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 6,
+      "name": "LoanManage"
+    }
+  ],
+  "description": "Defines the LoanManage transactor class for managing loan-related operations (default, impair, unimpair) in the XRPL lending protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/lending/LoanManage.h",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "getFlagsMask"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 21,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 24,
+      "name": "preclaim"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref brokerSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 30,
+      "name": "defaultLoan"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 39,
+      "name": "impairLoan"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "SLE::ref loanSle",
+        "SLE::ref vaultSle",
+        "Asset const& vaultAsset",
+        "beast::Journal j"
+      ],
+      "lineno": 47,
+      "name": "unimpairLoan"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

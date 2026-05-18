@@ -1,0 +1,461 @@
+{
+  "args": [
+    {
+      "lineno": 8,
+      "name": "local_endpoint"
+    },
+    {
+      "lineno": 8,
+      "name": "remote_endpoint"
+    },
+    {
+      "lineno": 9,
+      "name": "fixed"
+    },
+    {
+      "lineno": 10,
+      "name": "clock"
+    },
+    {
+      "lineno": 37,
+      "name": "state_"
+    },
+    {
+      "lineno": 63,
+      "name": "now"
+    },
+    {
+      "lineno": 80,
+      "name": "ep"
+    },
+    {
+      "lineno": 80,
+      "name": "hops"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "beast::IP::Endpoint const& local_endpoint",
+        "beast::IP::Endpoint const& remote_endpoint",
+        "bool fixed",
+        "clock_type& clock"
+      ],
+      "lineno": 7,
+      "name": "SlotImp"
+    },
+    {
+      "args": [
+        "clock_type& clock"
+      ],
+      "lineno": 76,
+      "name": "recent_t"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SlotImp::state"
+      ],
+      "entry_point": "SlotImp::state",
+      "purpose": "Transitions the slot to a new state, with multiple validation checks to ensure only legal state transitions.",
+      "validation_points": [
+        "XRPL_ASSERT(state_ != active, ...)",
+        "XRPL_ASSERT(state_ != m_state, ...)",
+        "XRPL_ASSERT(state_ != accept && state_ != connect, ...)",
+        "XRPL_ASSERT(state_ != connected || (!m_inbound && m_state == connect), ...)",
+        "XRPL_ASSERT(state_ != closing || m_state != connect, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SlotImp::activate"
+      ],
+      "entry_point": "SlotImp::activate",
+      "purpose": "Activates a slot, transitioning it to the 'active' state, with validation to ensure only valid prior states.",
+      "validation_points": [
+        "XRPL_ASSERT(m_state == accept || m_state == connected, ...)"
+      ]
+    },
+    {
+      "call_chain": [
+        "SlotImp::recent_t::insert"
+      ],
+      "entry_point": "SlotImp::recent_t::insert",
+      "purpose": "Inserts or updates an endpoint in the recent cache, ensuring hop count is minimized.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "SlotImp::recent_t::filter"
+      ],
+      "entry_point": "SlotImp::recent_t::filter",
+      "purpose": "Checks if an endpoint should be filtered based on recent cache and hop count.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "SlotImp::recent_t::expire"
+      ],
+      "entry_point": "SlotImp::recent_t::expire",
+      "purpose": "Expires old entries from the recent cache.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "m_state",
+      "flow": [
+        "constructor sets m_state",
+        "SlotImp::state validates and sets m_state",
+        "SlotImp::activate validates and sets m_state to 'active'"
+      ],
+      "origin": "SlotImp constructor (initialized to 'accept' or 'connect')",
+      "transformations": [
+        "Set to initial state in constructor",
+        "Validated and possibly changed in state()",
+        "Validated and set to 'active' in activate()"
+      ],
+      "validated_at": "SlotImp::state, SlotImp::activate"
+    },
+    {
+      "field": "state_ (input to SlotImp::state)",
+      "flow": [
+        "Caller provides state_",
+        "SlotImp::state validates state_",
+        "If valid, assigns to m_state"
+      ],
+      "origin": "Caller of SlotImp::state",
+      "transformations": [
+        "Checked for illegal transitions",
+        "Assigned to m_state if valid"
+      ],
+      "validated_at": "SlotImp::state"
+    },
+    {
+      "field": "m_inbound",
+      "flow": [
+        "constructor sets m_inbound",
+        "used in SlotImp::state for validation of connected state transition"
+      ],
+      "origin": "SlotImp constructor (true/false based on which constructor)",
+      "transformations": [
+        "Set at construction",
+        "Read-only in validation"
+      ],
+      "validated_at": "SlotImp::state"
+    },
+    {
+      "field": "recent (SlotImp::recent_t)",
+      "flow": [
+        "constructor initializes recent",
+        "recent_t::insert/expire/filter manipulate recent.cache"
+      ],
+      "origin": "SlotImp constructor (initialized with clock)",
+      "transformations": [
+        "insert: adds/updates endpoint with hop count",
+        "filter: checks endpoint/hop count",
+        "expire: removes old entries"
+      ],
+      "validated_at": "No explicit validation"
+    },
+    {
+      "field": "whenAcceptEndpoints",
+      "flow": [
+        "activate() sets whenAcceptEndpoints = now"
+      ],
+      "origin": "Not set in constructor; set in activate()",
+      "transformations": [
+        "Set to current time when slot becomes active"
+      ],
+      "validated_at": "Indirectly, via activate()'s state validation"
+    }
+  ],
+  "description": "Implements the SlotImp class for managing peer connection slots in the PeerFinder subsystem, including state transitions, activation, and recent endpoint tracking.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (input state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::state",
+      "issue_pattern": "Missing empty string validation for state_ (input state)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (input state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (input state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::state",
+      "issue_pattern": "Missing empty string validation for state_ (input state)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (input state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (input state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::state",
+      "issue_pattern": "Missing empty string validation for state_ (input state)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (input state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (input state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::state",
+      "issue_pattern": "Missing empty string validation for state_ (input state)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (input state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "state_ (input state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::state",
+      "issue_pattern": "Missing empty string validation for state_ (input state)",
+      "why_false_positive": "XRPL_ASSERT validates state_ (input state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "m_state (current state)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at SlotImp::activate",
+      "issue_pattern": "Missing empty string validation for m_state (current state)",
+      "why_false_positive": "XRPL_ASSERT validates m_state (current state) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "hops (input parameter)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual comparison at SlotImp::recent_t::insert",
+      "issue_pattern": "Missing empty string validation for hops (input parameter)",
+      "why_false_positive": "manual comparison validates hops (input parameter) for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/peerfinder/detail/SlotImp.cpp",
+  "functions": [
+    {
+      "args": [
+        "beast::IP::Endpoint const& local_endpoint",
+        "beast::IP::Endpoint const& remote_endpoint",
+        "bool fixed",
+        "clock_type& clock"
+      ],
+      "lineno": 7,
+      "name": "SlotImp"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& remote_endpoint",
+        "bool fixed",
+        "clock_type& clock"
+      ],
+      "lineno": 23,
+      "name": "SlotImp"
+    },
+    {
+      "args": [
+        "State state_"
+      ],
+      "lineno": 36,
+      "name": "state"
+    },
+    {
+      "args": [
+        "clock_type::time_point const& now"
+      ],
+      "lineno": 62,
+      "name": "activate"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "~Slot"
+    },
+    {
+      "args": [
+        "clock_type& clock"
+      ],
+      "lineno": 76,
+      "name": "recent_t"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& ep",
+        "std::uint32_t hops"
+      ],
+      "lineno": 79,
+      "name": "insert"
+    },
+    {
+      "args": [
+        "beast::IP::Endpoint const& ep",
+        "std::uint32_t hops"
+      ],
+      "lineno": 90,
+      "name": "filter"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "expire"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "PeerFinder"
+    }
+  ],
+  "test_coverage_notes": "There is no direct evidence of test files in this code snippet. Typically, validation logic in SlotImp::state and SlotImp::activate would be tested in PeerFinder or Slot-related unit tests, possibly in files like test_peerfinder.cpp or test_Slot.cpp. However, unless these tests explicitly check for illegal state transitions and assertion failures, coverage may be incomplete. The recent_t cache logic (insert/filter/expire) should also be tested for correct endpoint/hop count handling, but again, no direct test references are present. Gaps may exist in testing all assertion branches, especially for negative/invalid transitions.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), manual logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "state_ (input state)",
+      "location": "SlotImp::state",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "state_ is not 'active' (must not set state directly to active)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure",
+      "field": "state_ (input state)",
+      "location": "SlotImp::state",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "state_ is not equal to current m_state (must be a state transition)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure",
+      "field": "state_ (input state)",
+      "location": "SlotImp::state",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "state_ is not an initial state (accept or connect)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure",
+      "field": "state_ (input state)",
+      "location": "SlotImp::state",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "If state_ is 'connected', then m_inbound must be false and m_state must be 'connect' (only outbound connect can become connected)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure",
+      "field": "state_ (input state)",
+      "location": "SlotImp::state",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "If state_ is 'closing', m_state must not be 'connect' (can't gracefully close on outbound connect attempt)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure",
+      "field": "m_state (current state)",
+      "location": "SlotImp::activate",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "m_state must be 'accept' or 'connected' before activating"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "None (logic branch, not an error)",
+      "field": "hops (input parameter)",
+      "location": "SlotImp::recent_t::insert",
+      "validated_by": "manual comparison",
+      "validates": [
+        "If endpoint already exists, only update hops if new hops <= existing hops"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

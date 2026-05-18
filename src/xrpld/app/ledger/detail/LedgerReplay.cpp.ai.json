@@ -1,0 +1,141 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay",
+        "std::shared_ptr<Ledger const> parent, std::shared_ptr<Ledger const> replay, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns"
+      ],
+      "lineno": 6,
+      "name": "LedgerReplay"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerReplay::LedgerReplay",
+        "replay_->txMap()",
+        "replay_->txRead(item.key())"
+      ],
+      "entry_point": "LedgerReplay::LedgerReplay (constructor)",
+      "purpose": "Constructs a LedgerReplay object, extracting and ordering transactions from a replay ledger.",
+      "validation_points": [
+        "No explicit validation in this code; assumes replay_ is a valid Ledger and txRead returns valid data."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "parent_",
+      "flow": [
+        "Constructor argument",
+        "Assigned to member variable parent_"
+      ],
+      "origin": "Constructor argument (std::shared_ptr<Ledger const> parent)",
+      "transformations": [
+        "std::move into member"
+      ],
+      "validated_at": "No explicit validation in this code"
+    },
+    {
+      "field": "replay_",
+      "flow": [
+        "Constructor argument",
+        "Assigned to member variable replay_"
+      ],
+      "origin": "Constructor argument (std::shared_ptr<Ledger const> replay)",
+      "transformations": [
+        "std::move into member"
+      ],
+      "validated_at": "No explicit validation in this code"
+    },
+    {
+      "field": "orderedTxns_",
+      "flow": [
+        "replay_->txMap() provides keys",
+        "For each key, replay_->txRead(key) returns (tx, meta)",
+        "meta[sfTransactionIndex] is used as the map key",
+        "orderedTxns_ is populated with (txIndex, tx)"
+      ],
+      "origin": "Built from replay_->txMap() and replay_->txRead()",
+      "transformations": [
+        "Extraction of transaction index from metadata",
+        "Move of transaction pointer into orderedTxns_"
+      ],
+      "validated_at": "No explicit validation; assumes txRead returns valid (tx, meta) pairs and meta contains sfTransactionIndex"
+    }
+  ],
+  "description": "Implements the LedgerReplay class, which manages replaying transactions from a ledger for the XRPL system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/ledger/detail/LedgerReplay.cpp",
+  "functions": [],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This code is a low-level utility for replaying ledgers and ordering transactions. There is no explicit validation or error handling in this snippet. Test coverage would likely be indirect, via higher-level tests that exercise ledger replay or transaction ordering (e.g., integration tests for ledger replay, transaction application, or consensus replay). Look for tests in files like LedgerReplay_test.cpp, Ledger_test.cpp, or integration tests involving ledger replay. Gaps: No unit tests for invalid or malformed input (e.g., missing sfTransactionIndex, null pointers, or invalid txMap/txRead behavior) are evident from this code.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "None",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

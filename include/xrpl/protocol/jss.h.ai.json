@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a large set of static JSON field names (as StaticString constants) for use throughout the XRPL codebase, especially for RPC, transaction, and ledger entry JSON objects. These are used to optimize property access in Json::Value objects and to standardize field names across the codebase.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/jss.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 5,
+      "name": "jss"
+    }
+  ]
+}

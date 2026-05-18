@@ -1,0 +1,669 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "STXChainBridge"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STXChainBridge(Json::Value const& v)",
+        "STXChainBridge(SField const&, Json::Value const& v)"
+      ],
+      "entry_point": "STXChainBridge(Json::Value const& v)",
+      "purpose": "Constructs an STXChainBridge object from a JSON value, performing validation on the input.",
+      "validation_points": [
+        "v.isObject()",
+        "checkExtra(v) (lambda: checks for extra/unexpected fields)",
+        "lockingChainDoorStr.isString()",
+        "issuingChainDoorStr.isString()",
+        "parseBase58<AccountID>(lockingChainDoorStr.asString())",
+        "parseBase58<AccountID>(issuingChainDoorStr.asString())"
+      ]
+    },
+    {
+      "call_chain": [
+        "STXChainBridge(STObject const& o)"
+      ],
+      "entry_point": "STXChainBridge(STObject const& o)",
+      "purpose": "Constructs an STXChainBridge from an STObject (likely from binary or trusted source).",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STXChainBridge(SerialIter& sit, SField const& name)"
+      ],
+      "entry_point": "STXChainBridge(SerialIter& sit, SField const& name)",
+      "purpose": "Constructs an STXChainBridge from serialized binary data.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "STXChainBridge(AccountID const&, Issue const&, AccountID const&, Issue const&)"
+      ],
+      "entry_point": "STXChainBridge(AccountID const&, Issue const&, AccountID const&, Issue const&)",
+      "purpose": "Constructs an STXChainBridge from explicit field values (likely internal use).",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "lockingChainDoor",
+      "flow": [
+        "JSON input",
+        "lockingChainDoorStr = v[jss::LockingChainDoor]",
+        "parseBase58<AccountID>(lockingChainDoorStr.asString())",
+        "lockingChainDoor_ = STAccount{sfLockingChainDoor, *lockingChainDoor}"
+      ],
+      "origin": "Json::Value v[jss::LockingChainDoor]",
+      "transformations": [
+        "JSON string \u2192 AccountID (via parseBase58)",
+        "AccountID \u2192 STAccount"
+      ],
+      "validated_at": "lockingChainDoorStr.isString(), parseBase58<AccountID>"
+    },
+    {
+      "field": "lockingChainIssue",
+      "flow": [
+        "JSON input",
+        "lockingChainIssue = v[jss::LockingChainIssue]",
+        "issueFromJson(lockingChainIssue)",
+        "lockingChainIssue_ = STIssue{sfLockingChainIssue, ...}"
+      ],
+      "origin": "Json::Value v[jss::LockingChainIssue]",
+      "transformations": [
+        "JSON \u2192 Issue (via issueFromJson)",
+        "Issue \u2192 STIssue"
+      ],
+      "validated_at": "issueFromJson (not shown in this file, assumed to validate)"
+    },
+    {
+      "field": "issuingChainDoor",
+      "flow": [
+        "JSON input",
+        "issuingChainDoorStr = v[jss::IssuingChainDoor]",
+        "parseBase58<AccountID>(issuingChainDoorStr.asString())",
+        "issuingChainDoor_ = STAccount{sfIssuingChainDoor, *issuingChainDoor}"
+      ],
+      "origin": "Json::Value v[jss::IssuingChainDoor]",
+      "transformations": [
+        "JSON string \u2192 AccountID (via parseBase58)",
+        "AccountID \u2192 STAccount"
+      ],
+      "validated_at": "issuingChainDoorStr.isString(), parseBase58<AccountID>"
+    },
+    {
+      "field": "issuingChainIssue",
+      "flow": [
+        "JSON input",
+        "issuingChainIssue = v[jss::IssuingChainIssue]",
+        "issueFromJson(issuingChainIssue)",
+        "issuingChainIssue_ = STIssue{sfIssuingChainIssue, ...}"
+      ],
+      "origin": "Json::Value v[jss::IssuingChainIssue]",
+      "transformations": [
+        "JSON \u2192 Issue (via issueFromJson)",
+        "Issue \u2192 STIssue"
+      ],
+      "validated_at": "issueFromJson (not shown in this file, assumed to validate)"
+    }
+  ],
+  "description": "Implements the STXChainBridge class, which represents a cross-chain bridge structure in the XRPL protocol, providing serialization, deserialization, JSON conversion, and utility methods.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LockingChainDoor",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field LockingChainDoor validated by xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling)",
+      "issue_pattern": "Missing validation for LockingChainDoor",
+      "why_false_positive": "xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling) validates LockingChainDoor automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "IssuingChainDoor",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field IssuingChainDoor validated by xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling)",
+      "issue_pattern": "Missing validation for IssuingChainDoor",
+      "why_false_positive": "xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling) validates IssuingChainDoor automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LockingChainIssue",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field LockingChainIssue validated by xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling)",
+      "issue_pattern": "Missing validation for LockingChainIssue",
+      "why_false_positive": "xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling) validates LockingChainIssue automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "IssuingChainIssue",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field IssuingChainIssue validated by xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling)",
+      "issue_pattern": "Missing validation for IssuingChainIssue",
+      "why_false_positive": "xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling) validates IssuingChainIssue automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Json::Value v (constructor input)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "v.isObject() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for Json::Value v (constructor input)",
+      "why_false_positive": "v.isObject() validates Json::Value v (constructor input) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Json::Value v (constructor input)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "v.isObject() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing type validation for Json::Value v (constructor input)",
+      "why_false_positive": "v.isObject() validates Json::Value v (constructor input) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Json::Value v (constructor input)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkExtra lambda (compares v's keys to bridgeJson template) at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for Json::Value v (constructor input)",
+      "why_false_positive": "checkExtra lambda (compares v's keys to bridgeJson template) validates Json::Value v (constructor input) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "LockingChainDoor",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lockingChainDoorStr.isString() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for LockingChainDoor",
+      "why_false_positive": "lockingChainDoorStr.isString() validates LockingChainDoor for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "LockingChainDoor",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "lockingChainDoorStr.isString() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing type validation for LockingChainDoor",
+      "why_false_positive": "lockingChainDoorStr.isString() validates LockingChainDoor type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "IssuingChainDoor",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "issuingChainDoorStr.isString() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for IssuingChainDoor",
+      "why_false_positive": "issuingChainDoorStr.isString() validates IssuingChainDoor for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "IssuingChainDoor",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "issuingChainDoorStr.isString() at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing type validation for IssuingChainDoor",
+      "why_false_positive": "issuingChainDoorStr.isString() validates IssuingChainDoor type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "LockingChainDoor (string value)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for LockingChainDoor (string value)",
+      "why_false_positive": "parseBase58<AccountID> validates LockingChainDoor (string value) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "LockingChainDoor (string value)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing format validation for LockingChainDoor (string value)",
+      "why_false_positive": "parseBase58<AccountID> validates LockingChainDoor (string value) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "IssuingChainDoor (string value)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing empty string validation for IssuingChainDoor (string value)",
+      "why_false_positive": "parseBase58<AccountID> validates IssuingChainDoor (string value) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "IssuingChainDoor (string value)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at STXChainBridge(SField const& name, Json::Value const& v)",
+      "issue_pattern": "Missing format validation for IssuingChainDoor (string value)",
+      "why_false_positive": "parseBase58<AccountID> validates IssuingChainDoor (string value) format"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STXChainBridge.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SField const& name"
+      ],
+      "lineno": 17,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "AccountID const& srcChainDoor",
+        "Issue const& srcChainIssue",
+        "AccountID const& dstChainDoor",
+        "Issue const& dstChainIssue"
+      ],
+      "lineno": 21,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "STObject const& o"
+      ],
+      "lineno": 30,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "Json::Value const& v"
+      ],
+      "lineno": 38,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SField const& name",
+        "Json::Value const& v"
+      ],
+      "lineno": 41,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 77,
+      "name": "STXChainBridge"
+    },
+    {
+      "args": [
+        "Serializer& s"
+      ],
+      "lineno": 85,
+      "name": "add"
+    },
+    {
+      "args": [
+        "JsonOptions jo"
+      ],
+      "lineno": 92,
+      "name": "getJson"
+    },
+    {
+      "args": [],
+      "lineno": 101,
+      "name": "getText"
+    },
+    {
+      "args": [],
+      "lineno": 108,
+      "name": "toSTObject"
+    },
+    {
+      "args": [],
+      "lineno": 116,
+      "name": "getSType"
+    },
+    {
+      "args": [
+        "STBase const& t"
+      ],
+      "lineno": 120,
+      "name": "isEquivalent"
+    },
+    {
+      "args": [],
+      "lineno": 126,
+      "name": "isDefault"
+    },
+    {
+      "args": [
+        "SerialIter& sit",
+        "SField const& name"
+      ],
+      "lineno": 131,
+      "name": "construct"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 136,
+      "name": "copy"
+    },
+    {
+      "args": [
+        "std::size_t n",
+        "void* buf"
+      ],
+      "lineno": 141,
+      "name": "move"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The main validation logic is in the constructor STXChainBridge(Json::Value const& v), which checks JSON structure, field presence, type, and value validity. Test coverage should exist in unit tests for bridge construction from JSON, including negative tests for invalid types, missing fields, extra fields, and invalid account strings. Look for tests in files like test/protocol/STXChainBridge_test.cpp or similar. Gaps may exist if issueFromJson is not thoroughly tested, or if tests do not cover all invalid input permutations (e.g., extra fields, wrong types, invalid base58). No explicit test references are present in this file.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "LockingChainDoor",
+      "IssuingChainDoor",
+      "LockingChainIssue",
+      "IssuingChainIssue"
+    ],
+    "framework": "xrpl::jss (JSON field names), parseBase58, Throw<> (exception handling)",
+    "validation_layer": "entry_point (constructor input validation)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Json::Value v (constructor input)",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "v.isObject()",
+      "validates": [
+        "Checks that the input JSON value is an object"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Json::Value v (constructor input)",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "checkExtra lambda (compares v's keys to bridgeJson template)",
+      "validates": [
+        "Checks that no extra/unexpected fields are present in the input JSON object"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "LockingChainDoor",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "lockingChainDoorStr.isString()",
+      "validates": [
+        "Checks that LockingChainDoor field in JSON is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "IssuingChainDoor",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "issuingChainDoorStr.isString()",
+      "validates": [
+        "Checks that IssuingChainDoor field in JSON is a string"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "parseBase58 throws on invalid format (likely std::runtime_error or similar)",
+      "field": "LockingChainDoor (string value)",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "Checks that LockingChainDoor string is a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "parseBase58 throws on invalid format (likely std::runtime_error or similar)",
+      "field": "IssuingChainDoor (string value)",
+      "location": "STXChainBridge(SField const& name, Json::Value const& v)",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "Checks that IssuingChainDoor string is a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

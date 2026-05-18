@@ -1,0 +1,9 @@
+# `aged_unordered_multimap.h`
+
+This header is a single-line template alias that exposes `beast::aged_unordered_multimap` as the public face of `detail::aged_unordered_container<true, true, ...>`. The two boolean flags encode the container's behavior: `IsMulti=true` permits duplicate keys (the underlying Boost.Intrusive layer uses `unordered_multiset` rather than `unordered_set`), and `IsMap=true` sets `value_type` to `std::pair<Key const, T>` rather than a bare key.
+
+The full implementation lives in `detail/aged_unordered_container.h`. Each stored element carries an intrusive hook for both hash-bucket membership and a chronological doubly-linked list, giving the container simultaneous O(1) average-case lookup by key and O(1) iteration in insertion/touch order via its `chronological` memberspace. A `touch()` call refreshes an element's timestamp to `clock.now()` and moves it to the back of the chronological list. The `Clock` parameter is abstracted through `abstract_clock<Clock>`, which makes the clock injectable for testing.
+
+Within the family of aged containers in this directory, `aged_unordered_multimap` is the union of both "multi" and "map" axes. Its sibling `aged_unordered_map` differs only in `IsMulti=false`, and `aged_unordered_multiset` uses `IsMap=false` to drop the mapped value. All four unordered variants share the same implementation template, differentiated solely by those two compile-time booleans. A `static_assert` in `aged_associative_container_test.cpp` verifies that the alias resolves to exactly `detail::aged_unordered_container<true, true, Key, T>`.
+
+The canonical use case is a time-aware cache where multiple values may share the same key — the chronological iterator allows a single sweep to evict all entries whose `when` timestamp predates a threshold, without any full-container scan.

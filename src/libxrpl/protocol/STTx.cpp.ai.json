@@ -1,0 +1,802 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STTx::STTx(SerialIter&)",
+        "set(sit)",
+        "getFieldU16(sfTransactionType)",
+        "safe_cast<TxType>",
+        "getTxFormat",
+        "TxFormats::findByType",
+        "applyTemplate"
+      ],
+      "entry_point": "STTx::STTx(SerialIter& sit)",
+      "purpose": "Deserializes a transaction from serialized bytes, validates structure, type, and template.",
+      "validation_points": [
+        "Explicit check: Transaction length (length < txMinSizeBytes || length > txMaxSizeBytes)",
+        "set(sit): Checks for object terminator",
+        "getFieldU16(sfTransactionType) + safe_cast<TxType>: Validates TransactionType field",
+        "getTxFormat: Validates TransactionType against known formats",
+        "applyTemplate: Enforces transaction field template"
+      ]
+    },
+    {
+      "call_chain": [
+        "STTx::STTx(STObject&&)",
+        "getFieldU16(sfTransactionType)",
+        "safe_cast<TxType>",
+        "getTxFormat",
+        "TxFormats::findByType",
+        "applyTemplate"
+      ],
+      "entry_point": "STTx::STTx(STObject&& object)",
+      "purpose": "Constructs a transaction from an existing STObject, validates type and template.",
+      "validation_points": [
+        "getFieldU16(sfTransactionType) + safe_cast<TxType>: Validates TransactionType field",
+        "getTxFormat: Validates TransactionType against known formats",
+        "applyTemplate: Enforces transaction field template"
+      ]
+    },
+    {
+      "call_chain": [
+        "STTx::STTx(TxType, assembler)",
+        "getTxFormat",
+        "TxFormats::findByType",
+        "set(format->getSOTemplate())",
+        "setFieldU16(sfTransactionType, format->getType())",
+        "assembler(*this)",
+        "getFieldU16(sfTransactionType)",
+        "safe_cast<TxType>",
+        "LogicError if type mutated"
+      ],
+      "entry_point": "STTx::STTx(TxType type, std::function<void(STObject&)> assembler)",
+      "purpose": "Constructs a transaction by assembling fields, validates type before and after assembly.",
+      "validation_points": [
+        "getTxFormat: Validates TransactionType against known formats",
+        "set(format->getSOTemplate()): Enforces template",
+        "getFieldU16(sfTransactionType) + safe_cast<TxType>: Validates TransactionType after assembly",
+        "LogicError: Ensures assembler did not mutate type"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfTransactionType",
+      "flow": [
+        "SerialIter or assembler",
+        "getFieldU16(sfTransactionType)",
+        "safe_cast<TxType>",
+        "tx_type_ member",
+        "getTxFormat(tx_type_)"
+      ],
+      "origin": "Deserialized from SerialIter or set by assembler",
+      "transformations": [
+        "Deserialized as uint16",
+        "Casted to TxType enum"
+      ],
+      "validated_at": "getTxFormat (throws if invalid type)"
+    },
+    {
+      "field": "Serialized Transaction Bytes",
+      "flow": [
+        "SerialIter",
+        "sit.getBytesLeft()",
+        "length check",
+        "set(sit)"
+      ],
+      "origin": "SerialIter input",
+      "transformations": [
+        "Checked for min/max length",
+        "Parsed into STObject fields"
+      ],
+      "validated_at": "length check in STTx(SerialIter&)"
+    },
+    {
+      "field": "Transaction Fields (template)",
+      "flow": [
+        "Deserialization or assembler",
+        "applyTemplate(getTxFormat(tx_type_)->getSOTemplate())"
+      ],
+      "origin": "Deserialized or set by assembler",
+      "transformations": [
+        "Checked against SOTemplate for required/optional fields"
+      ],
+      "validated_at": "applyTemplate"
+    },
+    {
+      "field": "Object Terminator",
+      "flow": [
+        "SerialIter",
+        "set(sit)",
+        "return value checked"
+      ],
+      "origin": "SerialIter input",
+      "transformations": [
+        "If set(sit) returns true, indicates object terminator present"
+      ],
+      "validated_at": "Immediately after set(sit)"
+    }
+  ],
+  "description": "Implements the STTx class and related transaction logic for the XRP Ledger, including transaction construction, signing, signature verification, batch transaction handling, and local validation checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "All fields required by the SOTemplate for the transaction type",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field All fields required by the SOTemplate for the transaction type validated by SOTemplate (template-based validation), TxFormats, Throw<> exception handling",
+      "issue_pattern": "Missing validation for All fields required by the SOTemplate for the transaction type",
+      "why_false_positive": "SOTemplate (template-based validation), TxFormats, Throw<> exception handling validates All fields required by the SOTemplate for the transaction type automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "TransactionType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field TransactionType validated by SOTemplate (template-based validation), TxFormats, Throw<> exception handling",
+      "issue_pattern": "Missing validation for TransactionType",
+      "why_false_positive": "SOTemplate (template-based validation), TxFormats, Throw<> exception handling validates TransactionType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Serialized transaction length",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field Serialized transaction length validated by SOTemplate (template-based validation), TxFormats, Throw<> exception handling",
+      "issue_pattern": "Missing validation for Serialized transaction length",
+      "why_false_positive": "SOTemplate (template-based validation), TxFormats, Throw<> exception handling validates Serialized transaction length automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "TransactionType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getTxFormat (TxFormats::findByType) at getTxFormat (used in STTx constructors)",
+      "issue_pattern": "Missing empty string validation for TransactionType",
+      "why_false_positive": "getTxFormat (TxFormats::findByType) validates TransactionType for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Serialized Transaction Length",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "explicit check in STTx(SerialIter&) at STTx(SerialIter& sit) constructor",
+      "issue_pattern": "Missing empty string validation for Serialized Transaction Length",
+      "why_false_positive": "explicit check in STTx(SerialIter&) validates Serialized Transaction Length for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Serialized Transaction Length",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "explicit check in STTx(SerialIter&) at STTx(SerialIter& sit) constructor",
+      "issue_pattern": "Missing range validation for Serialized Transaction Length",
+      "why_false_positive": "explicit check in STTx(SerialIter&) validates Serialized Transaction Length range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "Object Terminator",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "set(sit) return value at STTx(SerialIter& sit) constructor",
+      "issue_pattern": "Missing empty string validation for Object Terminator",
+      "why_false_positive": "set(sit) return value validates Object Terminator for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "Object Terminator",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "set(sit) return value at STTx(SerialIter& sit) constructor",
+      "issue_pattern": "Missing format validation for Object Terminator",
+      "why_false_positive": "set(sit) return value validates Object Terminator format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "Transaction Fields (template enforcement)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "applyTemplate (SOTemplate enforcement) at STTx(STObject&&), STTx(SerialIter&), STTx(TxType, assembler)",
+      "issue_pattern": "Missing empty string validation for Transaction Fields (template enforcement)",
+      "why_false_positive": "applyTemplate (SOTemplate enforcement) validates Transaction Fields (template enforcement) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "TransactionType (again, after assembler)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "safe_cast<TxType>(getFieldU16(sfTransactionType)) at STTx(TxType, assembler)",
+      "issue_pattern": "Missing empty string validation for TransactionType (again, after assembler)",
+      "why_false_positive": "safe_cast<TxType>(getFieldU16(sfTransactionType)) validates TransactionType (again, after assembler) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "TransactionType (again, after assembler)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "safe_cast<TxType>(getFieldU16(sfTransactionType)) at STTx(TxType, assembler)",
+      "issue_pattern": "Missing type validation for TransactionType (again, after assembler)",
+      "why_false_positive": "safe_cast<TxType>(getFieldU16(sfTransactionType)) validates TransactionType (again, after assembler) type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STTx.cpp",
+  "functions": [
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 27,
+      "name": "getTxFormat"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 36,
+      "name": "STTx::STTx"
+    },
+    {
+      "args": [
+        "sit"
+      ],
+      "lineno": 44,
+      "name": "STTx::STTx"
+    },
+    {
+      "args": [
+        "type",
+        "assembler"
+      ],
+      "lineno": 56,
+      "name": "STTx::STTx"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 70,
+      "name": "STTx::copy"
+    },
+    {
+      "args": [
+        "n",
+        "buf"
+      ],
+      "lineno": 76,
+      "name": "STTx::move"
+    },
+    {
+      "args": [],
+      "lineno": 82,
+      "name": "STTx::getSType"
+    },
+    {
+      "args": [],
+      "lineno": 87,
+      "name": "STTx::getFullText"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "STTx::getMentionedAccounts"
+    },
+    {
+      "args": [
+        "that"
+      ],
+      "lineno": 117,
+      "name": "getSigningData"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "STTx::getSigningHash"
+    },
+    {
+      "args": [
+        "sigObject"
+      ],
+      "lineno": 128,
+      "name": "STTx::getSignature"
+    },
+    {
+      "args": [],
+      "lineno": 137,
+      "name": "STTx::getSeqProxy"
+    },
+    {
+      "args": [],
+      "lineno": 153,
+      "name": "STTx::getSeqValue"
+    },
+    {
+      "args": [],
+      "lineno": 157,
+      "name": "STTx::getFeePayer"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey",
+        "signatureTarget"
+      ],
+      "lineno": 168,
+      "name": "STTx::sign"
+    },
+    {
+      "args": [
+        "rules",
+        "sigObject"
+      ],
+      "lineno": 182,
+      "name": "STTx::checkSign"
+    },
+    {
+      "args": [
+        "rules"
+      ],
+      "lineno": 196,
+      "name": "STTx::checkSign"
+    },
+    {
+      "args": [
+        "rules"
+      ],
+      "lineno": 210,
+      "name": "STTx::checkBatchSign"
+    },
+    {
+      "args": [
+        "options"
+      ],
+      "lineno": 234,
+      "name": "STTx::getJson"
+    },
+    {
+      "args": [
+        "options",
+        "binary"
+      ],
+      "lineno": 241,
+      "name": "STTx::getJson"
+    },
+    {
+      "args": [],
+      "lineno": 262,
+      "name": "STTx::getMetaSQLInsertReplaceHeader"
+    },
+    {
+      "args": [
+        "inLedger",
+        "escapedMetaData"
+      ],
+      "lineno": 272,
+      "name": "STTx::getMetaSQL"
+    },
+    {
+      "args": [
+        "rawTxn",
+        "inLedger",
+        "status",
+        "escapedMetaData"
+      ],
+      "lineno": 278,
+      "name": "STTx::getMetaSQL"
+    },
+    {
+      "args": [
+        "sigObject",
+        "data"
+      ],
+      "lineno": 293,
+      "name": "singleSignHelper"
+    },
+    {
+      "args": [
+        "sigObject"
+      ],
+      "lineno": 312,
+      "name": "STTx::checkSingleSign"
+    },
+    {
+      "args": [
+        "batchSigner"
+      ],
+      "lineno": 317,
+      "name": "STTx::checkBatchSingleSign"
+    },
+    {
+      "args": [
+        "sigObject",
+        "txnAccountID",
+        "makeMsg",
+        "rules"
+      ],
+      "lineno": 323,
+      "name": "multiSignHelper"
+    },
+    {
+      "args": [
+        "batchSigner",
+        "rules"
+      ],
+      "lineno": 370,
+      "name": "STTx::checkBatchMultiSign"
+    },
+    {
+      "args": [
+        "rules",
+        "sigObject"
+      ],
+      "lineno": 382,
+      "name": "STTx::checkMultiSign"
+    },
+    {
+      "args": [],
+      "lineno": 401,
+      "name": "STTx::getBatchTransactionIDs"
+    },
+    {
+      "args": [
+        "st",
+        "reason"
+      ],
+      "lineno": 434,
+      "name": "isMemoOkay"
+    },
+    {
+      "args": [
+        "st"
+      ],
+      "lineno": 484,
+      "name": "isAccountFieldOkay"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 494,
+      "name": "invalidMPTAmountInTx"
+    },
+    {
+      "args": [
+        "st",
+        "reason"
+      ],
+      "lineno": 517,
+      "name": "isRawTransactionOkay"
+    },
+    {
+      "args": [
+        "st",
+        "reason"
+      ],
+      "lineno": 547,
+      "name": "passesLocalChecks"
+    },
+    {
+      "args": [
+        "stx"
+      ],
+      "lineno": 567,
+      "name": "sterilize"
+    },
+    {
+      "args": [
+        "tx"
+      ],
+      "lineno": 574,
+      "name": "isPseudoTx"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 25,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Core transaction validation is likely covered by unit tests in files such as 'test/tx/Transaction_test.cpp', 'test/protocol/STTx_test.cpp', and integration tests in 'test/app/tx/'. These tests typically cover valid/invalid transaction types, field templates, and serialization/deserialization. However, edge cases such as mutated transaction types during assembly, explicit object terminator handling, and boundary transaction lengths may not be exhaustively tested. There may be limited coverage for error/exception paths (e.g., LogicError, runtime_error throws).",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "All fields required by the SOTemplate for the transaction type",
+      "TransactionType",
+      "Serialized transaction length"
+    ],
+    "framework": "SOTemplate (template-based validation), TxFormats, Throw<> exception handling",
+    "validation_layer": "entry_point (constructors), business_logic (template enforcement)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "TransactionType",
+      "location": "getTxFormat (used in STTx constructors)",
+      "validated_by": "getTxFormat (TxFormats::findByType)",
+      "validates": [
+        "TransactionType is a known/valid type (exists in TxFormats)"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Serialized Transaction Length",
+      "location": "STTx(SerialIter& sit) constructor",
+      "validated_by": "explicit check in STTx(SerialIter&)",
+      "validates": [
+        "Transaction length >= txMinSizeBytes",
+        "Transaction length <= txMaxSizeBytes"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error (via Throw<>)",
+      "field": "Object Terminator",
+      "location": "STTx(SerialIter& sit) constructor",
+      "validated_by": "set(sit) return value",
+      "validates": [
+        "Transaction does not contain an object terminator"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "various (may throw on missing/invalid fields)",
+      "field": "Transaction Fields (template enforcement)",
+      "location": "STTx(STObject&&), STTx(SerialIter&), STTx(TxType, assembler)",
+      "validated_by": "applyTemplate (SOTemplate enforcement)",
+      "validates": [
+        "Fields required by transaction type are present",
+        "Field types and formats match template"
+      ],
+      "validation_type": "format|type|business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "undefined (safe_cast may assert/throw on invalid cast)",
+      "field": "TransactionType (again, after assembler)",
+      "location": "STTx(TxType, assembler)",
+      "validated_by": "safe_cast<TxType>(getFieldU16(sfTransactionType))",
+      "validates": [
+        "TransactionType field is a valid enum value"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "MPTAmount::operator+="
+      ],
+      "entry_point": "MPTAmount::operator+=",
+      "purpose": "Adds the value of another MPTAmount to this one.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTAmount::operator-="
+      ],
+      "entry_point": "MPTAmount::operator-=",
+      "purpose": "Subtracts the value of another MPTAmount from this one.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTAmount::operator-"
+      ],
+      "entry_point": "MPTAmount::operator-",
+      "purpose": "Returns a new MPTAmount with the negated value.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTAmount::operator=="
+      ],
+      "entry_point": "MPTAmount::operator==",
+      "purpose": "Compares two MPTAmount objects for equality.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTAmount::operator<"
+      ],
+      "entry_point": "MPTAmount::operator<",
+      "purpose": "Compares two MPTAmount objects for ordering.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "MPTAmount::minPositiveAmount"
+      ],
+      "entry_point": "MPTAmount::minPositiveAmount",
+      "purpose": "Returns the minimum positive MPTAmount (value = 1).",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "value_",
+      "flow": [
+        "MPTAmount constructor (e.g., MPTAmount{val})",
+        "Stored in value_",
+        "Accessed via value() or directly in operators",
+        "Used in arithmetic or comparison operators"
+      ],
+      "origin": "Set via MPTAmount constructor or assignment.",
+      "transformations": [
+        "Incremented/decremented in operator+= and operator-=",
+        "Negated in operator-",
+        "Compared in operator== and operator<"
+      ],
+      "validated_at": "No explicit validation in this code"
+    }
+  ],
+  "description": "Implements arithmetic and comparison operators for the xrpl::MPTAmount class, which represents an amount type used in the XRPL protocol.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/MPTAmount.cpp",
+  "functions": [
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 5,
+      "name": "operator+="
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 11,
+      "name": "operator-="
+    },
+    {
+      "args": [],
+      "lineno": 17,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 22,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 27,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "other"
+      ],
+      "lineno": 32,
+      "name": "operator<"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "minPositiveAmount"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 3,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "No validation logic is present in this code; all operators assume valid input. There are no explicit checks for overflow, underflow, or negative values (except for negation). Test coverage would need to exist in unit tests for MPTAmount (likely in test files such as test_MPTAmount.cpp or protocol/MPTAmount_test.cpp), but this file itself does not contain or invoke validation logic. Gaps: No validation of input values, no error handling, and no boundary checks are present in this implementation.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "none",
+    "validation_layer": "none"
+  },
+  "validations": []
+}

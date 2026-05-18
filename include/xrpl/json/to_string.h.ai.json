@@ -1,0 +1,37 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Provides functions for serializing Json::Value objects to strings and streams, including compact and pretty-printed output.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/json/to_string.h",
+  "functions": [
+    {
+      "args": [
+        "Value const&"
+      ],
+      "lineno": 11,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Value const&"
+      ],
+      "lineno": 14,
+      "name": "pretty"
+    },
+    {
+      "args": [
+        "std::ostream&",
+        "Value const& root"
+      ],
+      "lineno": 17,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "Json"
+    }
+  ]
+}

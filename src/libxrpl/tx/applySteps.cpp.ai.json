@@ -1,0 +1,351 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "TxType t"
+      ],
+      "lineno": 15,
+      "name": "UnknownTxnType"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "invoke_preflight",
+        "with_txn_type",
+        "Transactor::invokePreflight<T>",
+        "consequences_helper<T>"
+      ],
+      "entry_point": "invoke_preflight",
+      "purpose": "Performs preflight validation for a transaction, including type-based dispatch and consequence calculation.",
+      "validation_points": [
+        "Transactor::invokePreflight<T> (core validation logic)",
+        "with_txn_type (txnType switch validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "invoke_preclaim",
+        "with_txn_type",
+        "Transactor::invokePreclaim<T>"
+      ],
+      "entry_point": "invoke_preclaim",
+      "purpose": "Performs preclaim validation for a transaction, type-dispatched.",
+      "validation_points": [
+        "Transactor::invokePreclaim<T>",
+        "with_txn_type (txnType switch validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "invoke_calculateBaseFee",
+        "with_txn_type",
+        "Transactor::calculateBaseFee<T>"
+      ],
+      "entry_point": "invoke_calculateBaseFee",
+      "purpose": "Calculates the base fee for a transaction, type-dispatched.",
+      "validation_points": [
+        "with_txn_type (txnType switch validation)"
+      ]
+    },
+    {
+      "call_chain": [
+        "invoke_apply",
+        "with_txn_type",
+        "Transactor::operator()<T>"
+      ],
+      "entry_point": "invoke_apply",
+      "purpose": "Applies a transaction to the ledger, type-dispatched.",
+      "validation_points": [
+        "with_txn_type (txnType switch validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "txnType",
+      "flow": [
+        "ctx.tx.getTxnType()",
+        "with_txn_type (switch statement)",
+        "template dispatch to T",
+        "Transactor::invokePreflight<T> / invokePreclaim<T> / etc."
+      ],
+      "origin": "ctx.tx.getTxnType() (from PreflightContext)",
+      "transformations": [
+        "Used as a switch key to select transaction handler",
+        "If unknown, triggers UnknownTxnType exception"
+      ],
+      "validated_at": "with_txn_type (switch statement)"
+    },
+    {
+      "field": "ctx (PreflightContext)",
+      "flow": [
+        "invoke_preflight(ctx)",
+        "with_txn_type(..., f)",
+        "f.template operator()<T>()",
+        "Transactor::invokePreflight<T>(ctx)",
+        "consequences_helper<T>(ctx)"
+      ],
+      "origin": "Passed as argument to invoke_preflight/invoke_preclaim/etc.",
+      "transformations": [
+        "Passed unchanged through call chain",
+        "Used to extract tx, rules, etc."
+      ],
+      "validated_at": "Transactor::invokePreflight<T>(ctx)"
+    },
+    {
+      "field": "tx (STTx)",
+      "flow": [
+        "ctx.tx",
+        "TxConsequences(ctx.tx)",
+        "consequences_helper<T>(ctx)"
+      ],
+      "origin": "ctx.tx",
+      "transformations": [
+        "Used to construct TxConsequences",
+        "May be passed to T::makeTxConsequences(ctx) for custom logic"
+      ],
+      "validated_at": "Transactor::invokePreflight<T>(ctx) (indirectly)"
+    }
+  ],
+  "description": "Implements transaction type dispatch and core transaction processing steps (preflight, preclaim, apply, fee calculation) for the XRPL ledger, using type-based dispatch and compile-time polymorphism.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "txnType",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field txnType validated by Custom switch-based validation using macro expansion (transactions.macro)",
+      "issue_pattern": "Missing validation for txnType",
+      "why_false_positive": "Custom switch-based validation using macro expansion (transactions.macro) validates txnType automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "txnType",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "with_txn_type (switch statement) at with_txn_type",
+      "issue_pattern": "Missing empty string validation for txnType",
+      "why_false_positive": "with_txn_type (switch statement) validates txnType for empty strings"
+    },
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/applySteps.cpp",
+  "functions": [
+    {
+      "args": [
+        "rules",
+        "txnType",
+        "f"
+      ],
+      "lineno": 26,
+      "name": "with_txn_type"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 74,
+      "name": "consequences_helper"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 82,
+      "name": "consequences_helper"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 90,
+      "name": "consequences_helper"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 97,
+      "name": "invoke_preflight"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 120,
+      "name": "invoke_preclaim"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 170,
+      "name": "invoke_calculateBaseFee"
+    },
+    {
+      "args": [
+        "ctx"
+      ],
+      "lineno": 217,
+      "name": "invoke_apply"
+    },
+    {
+      "args": [
+        "registry",
+        "rules",
+        "tx",
+        "flags",
+        "j"
+      ],
+      "lineno": 241,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "registry",
+        "rules",
+        "parentBatchId",
+        "tx",
+        "flags",
+        "j"
+      ],
+      "lineno": 253,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "preflightResult",
+        "registry",
+        "view"
+      ],
+      "lineno": 265,
+      "name": "preclaim"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 299,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "view",
+        "tx"
+      ],
+      "lineno": 303,
+      "name": "calculateDefaultBaseFee"
+    },
+    {
+      "args": [
+        "preclaimResult",
+        "registry",
+        "view"
+      ],
+      "lineno": 307,
+      "name": "doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code in applySteps.cpp is primarily template dispatch and type-based routing, so direct unit tests are rare. Instead, coverage is provided by higher-level transaction engine and validation tests, typically found in files like 'test/tx/Transactor_test.cpp', 'test/app/tx/applySteps_test.cpp', or integration tests that exercise transaction submission and validation. Gaps may exist for unknown/invalid txnType handling (UnknownTxnType exception), and for feature-flagged code paths (e.g., SingleAssetVault, LendingProtocol) unless specifically tested. Custom consequences logic (T::makeTxConsequences) may also lack direct coverage if not all transaction types are exercised in tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "txnType"
+    ],
+    "framework": "Custom switch-based validation using macro expansion (transactions.macro)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "UnknownTxnType",
+      "field": "txnType",
+      "location": "with_txn_type",
+      "validated_by": "with_txn_type (switch statement)",
+      "validates": [
+        "Checks if txnType matches a known transaction type defined in transactions.macro",
+        "Throws if txnType is not recognized"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

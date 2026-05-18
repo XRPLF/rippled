@@ -1,0 +1,499 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "InvariantChecker::visitEntry (framework)",
+        "ValidPermissionedDEX::visitEntry"
+      ],
+      "entry_point": "ValidPermissionedDEX::visitEntry",
+      "purpose": "Called for each ledger entry modified by a transaction. Collects domain IDs and flags malformed hybrid offers or regular offers.",
+      "validation_points": [
+        "after->isFieldPresent(sfDomainID)",
+        "after->isFlag(lsfHybrid)",
+        "after->isFieldPresent(sfAdditionalBooks)",
+        "after->getFieldArray(sfAdditionalBooks).size() > 1"
+      ]
+    },
+    {
+      "call_chain": [
+        "InvariantChecker::finalize (framework)",
+        "ValidPermissionedDEX::finalize"
+      ],
+      "entry_point": "ValidPermissionedDEX::finalize",
+      "purpose": "Called after all entries are visited for a transaction. Validates transaction type, result, domain existence, domain consistency, and offer regularity.",
+      "validation_points": [
+        "tx.getTxnType()",
+        "isTesSuccess(result)",
+        "badHybrids_",
+        "tx.isFieldPresent(sfDomainID)",
+        "view.exists(keylet::permissionedDomain(domain))",
+        "d != domain (for all domains_)",
+        "regularOffers_"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfDomainID (on DIR_NODE)",
+      "flow": [
+        "after->isFieldPresent(sfDomainID)",
+        "after->getFieldH256(sfDomainID)",
+        "domains_.insert(...)",
+        "domains_ checked in finalize"
+      ],
+      "origin": "Ledger entry (after) of type ltDIR_NODE",
+      "transformations": [
+        "Checked for presence",
+        "Extracted as H256",
+        "Inserted into set"
+      ],
+      "validated_at": "visitEntry (presence), finalize (consistency with tx domain)"
+    },
+    {
+      "field": "sfDomainID (on OFFER)",
+      "flow": [
+        "after->isFieldPresent(sfDomainID)",
+        "after->getFieldH256(sfDomainID)",
+        "domains_.insert(...)",
+        "domains_ checked in finalize"
+      ],
+      "origin": "Ledger entry (after) of type ltOFFER",
+      "transformations": [
+        "Checked for presence",
+        "Extracted as H256",
+        "Inserted into set"
+      ],
+      "validated_at": "visitEntry (presence), finalize (consistency with tx domain)"
+    },
+    {
+      "field": "lsfHybrid (flag on OFFER)",
+      "flow": [
+        "after->isFlag(lsfHybrid)",
+        "if true, check sfDomainID and sfAdditionalBooks"
+      ],
+      "origin": "Ledger entry (after) of type ltOFFER",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "visitEntry (hybrid offer validation)"
+    },
+    {
+      "field": "sfAdditionalBooks (on OFFER)",
+      "flow": [
+        "after->isFieldPresent(sfAdditionalBooks)",
+        "after->getFieldArray(sfAdditionalBooks).size() > 1"
+      ],
+      "origin": "Ledger entry (after) of type ltOFFER",
+      "transformations": [
+        "Checked for presence",
+        "Checked array size"
+      ],
+      "validated_at": "visitEntry (hybrid offer validation)"
+    },
+    {
+      "field": "Transaction Type",
+      "flow": [
+        "tx.getTxnType()",
+        "checked in finalize"
+      ],
+      "origin": "STTx (tx)",
+      "transformations": [
+        "Compared to ttPAYMENT and ttOFFER_CREATE"
+      ],
+      "validated_at": "finalize"
+    },
+    {
+      "field": "Transaction Result Code",
+      "flow": [
+        "isTesSuccess(result)"
+      ],
+      "origin": "TER result",
+      "transformations": [
+        "Boolean check"
+      ],
+      "validated_at": "finalize"
+    },
+    {
+      "field": "sfDomainID (on transaction)",
+      "flow": [
+        "tx.isFieldPresent(sfDomainID)",
+        "tx.getFieldH256(sfDomainID)",
+        "view.exists(keylet::permissionedDomain(domain))"
+      ],
+      "origin": "STTx (tx)",
+      "transformations": [
+        "Checked for presence",
+        "Extracted as H256",
+        "Used to look up domain existence"
+      ],
+      "validated_at": "finalize"
+    }
+  ],
+  "description": "Implements the ValidPermissionedDEX invariant check for XRPL transactions, ensuring that permissioned DEX offers and domains are handled correctly and that malformed or unauthorized domain interactions are detected and prevented.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID (on DIR_NODE and OFFER entries)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent(sfDomainID) at visitEntry",
+      "issue_pattern": "Missing empty string validation for sfDomainID (on DIR_NODE and OFFER entries)",
+      "why_false_positive": "isFieldPresent(sfDomainID) validates sfDomainID (on DIR_NODE and OFFER entries) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID (on OFFER entries)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFieldPresent(sfDomainID) at visitEntry",
+      "issue_pattern": "Missing empty string validation for sfDomainID (on OFFER entries)",
+      "why_false_positive": "isFieldPresent(sfDomainID) validates sfDomainID (on OFFER entries) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "lsfHybrid flag, sfDomainID, sfAdditionalBooks (on OFFER entries)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isFlag(lsfHybrid), isFieldPresent(sfDomainID), isFieldPresent(sfAdditionalBooks), getFieldArray(sfAdditionalBooks).size() > 1 at visitEntry",
+      "issue_pattern": "Missing empty string validation for lsfHybrid flag, sfDomainID, sfAdditionalBooks (on OFFER entries)",
+      "why_false_positive": "isFlag(lsfHybrid), isFieldPresent(sfDomainID), isFieldPresent(sfAdditionalBooks), getFieldArray(sfAdditionalBooks).size() > 1 validates lsfHybrid flag, sfDomainID, sfAdditionalBooks (on OFFER entries) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction type (ttPAYMENT, ttOFFER_CREATE)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx.getTxnType() at finalize",
+      "issue_pattern": "Missing empty string validation for transaction type (ttPAYMENT, ttOFFER_CREATE)",
+      "why_false_positive": "tx.getTxnType() validates transaction type (ttPAYMENT, ttOFFER_CREATE) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "transaction result code",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isTesSuccess(result) at finalize",
+      "issue_pattern": "Missing empty string validation for transaction result code",
+      "why_false_positive": "isTesSuccess(result) validates transaction result code for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "badHybrids_ (hybrid offer validity)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "badHybrids_ flag at finalize",
+      "issue_pattern": "Missing empty string validation for badHybrids_ (hybrid offer validity)",
+      "why_false_positive": "badHybrids_ flag validates badHybrids_ (hybrid offer validity) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID (on transaction)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tx.isFieldPresent(sfDomainID) at finalize",
+      "issue_pattern": "Missing empty string validation for sfDomainID (on transaction)",
+      "why_false_positive": "tx.isFieldPresent(sfDomainID) validates sfDomainID (on transaction) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDomainID (existence in ledger)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.exists(keylet::permissionedDomain(domain)) at finalize",
+      "issue_pattern": "Missing empty string validation for sfDomainID (existence in ledger)",
+      "why_false_positive": "view.exists(keylet::permissionedDomain(domain)) validates sfDomainID (existence in ledger) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "domains_ set (consumed domains)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "for (auto const& d : domains_) at finalize",
+      "issue_pattern": "Missing empty string validation for domains_ set (consumed domains)",
+      "why_false_positive": "for (auto const& d : domains_) validates domains_ set (consumed domains) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "regularOffers_ flag",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "regularOffers_ at finalize",
+      "issue_pattern": "Missing empty string validation for regularOffers_ flag",
+      "why_false_positive": "regularOffers_ validates regularOffers_ flag for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/invariants/PermissionedDEXInvariant.cpp",
+  "functions": [
+    {
+      "args": [
+        "bool",
+        "std::shared_ptr<SLE const> const& before",
+        "std::shared_ptr<SLE const> const& after"
+      ],
+      "lineno": 10,
+      "name": "ValidPermissionedDEX::visitEntry"
+    },
+    {
+      "args": [
+        "STTx const& tx",
+        "TER const result",
+        "XRPAmount const",
+        "ReadView const& view",
+        "beast::Journal const& j"
+      ],
+      "lineno": 38,
+      "name": "ValidPermissionedDEX::finalize"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "This invariant is likely tested in unit/integration tests for invariants, especially those covering OfferCreate and Payment transactions with/without sfDomainID, hybrid offers, and malformed offers. Look for test files such as 'Invariant_test.cpp', 'PermissionedDEXInvariant_test.cpp', or similar in the test/unit_test or test/integration directories. Gaps may exist for edge cases: multiple domains in domains_, malformed hybrid offers (missing fields or extra books), and regular offers affected by domain transactions. Ensure tests cover both success and all failure paths (badHybrids_, missing domain, domain mismatch, regularOffers_).",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom business logic (no external validation framework)",
+    "validation_layer": "business_logic (Invariant enforcement after transaction application)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (just tracks domains_ set)",
+      "field": "sfDomainID (on DIR_NODE and OFFER entries)",
+      "location": "visitEntry",
+      "validated_by": "isFieldPresent(sfDomainID)",
+      "validates": [
+        "Checks if sfDomainID is present on DIR_NODE or OFFER entries and collects domain IDs"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets regularOffers_ = true if missing)",
+      "field": "sfDomainID (on OFFER entries)",
+      "location": "visitEntry",
+      "validated_by": "isFieldPresent(sfDomainID)",
+      "validates": [
+        "Checks if OFFER entry is a regular offer (no sfDomainID)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (sets badHybrids_ = true if invalid)",
+      "field": "lsfHybrid flag, sfDomainID, sfAdditionalBooks (on OFFER entries)",
+      "location": "visitEntry",
+      "validated_by": "isFlag(lsfHybrid), isFieldPresent(sfDomainID), isFieldPresent(sfAdditionalBooks), getFieldArray(sfAdditionalBooks).size() > 1",
+      "validates": [
+        "If lsfHybrid is set, OFFER must have sfDomainID and sfAdditionalBooks present, and sfAdditionalBooks must have at most 1 entry"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns true if not relevant type)",
+      "field": "transaction type (ttPAYMENT, ttOFFER_CREATE)",
+      "location": "finalize",
+      "validated_by": "tx.getTxnType()",
+      "validates": [
+        "Only validates for ttPAYMENT and ttOFFER_CREATE transactions"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns true if not tesSUCCESS)",
+      "field": "transaction result code",
+      "location": "finalize",
+      "validated_by": "isTesSuccess(result)",
+      "validates": [
+        "Only validates if transaction result is tesSUCCESS"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "badHybrids_ (hybrid offer validity)",
+      "location": "finalize",
+      "validated_by": "badHybrids_ flag",
+      "validates": [
+        "If any malformed hybrid offers were found, transaction is invalid"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns true if not present)",
+      "field": "sfDomainID (on transaction)",
+      "location": "finalize",
+      "validated_by": "tx.isFieldPresent(sfDomainID)",
+      "validates": [
+        "If transaction does not specify a domain, skip further domain checks"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "sfDomainID (existence in ledger)",
+      "location": "finalize",
+      "validated_by": "view.exists(keylet::permissionedDomain(domain))",
+      "validates": [
+        "Checks that the domain specified in the transaction exists in the ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "domains_ set (consumed domains)",
+      "location": "finalize",
+      "validated_by": "for (auto const& d : domains_)",
+      "validates": [
+        "Ensures all affected domains match the domain specified in the transaction"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false, logs fatal error",
+      "field": "regularOffers_ flag",
+      "location": "finalize",
+      "validated_by": "regularOffers_",
+      "validates": [
+        "Ensures that domain transactions do not affect regular offers"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

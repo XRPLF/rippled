@@ -1,0 +1,131 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RPC framework dispatches request",
+        "RPC::JsonHandler<LedgerCurrent>::process",
+        "xrpl::doLedgerCurrent"
+      ],
+      "entry_point": "doLedgerCurrent",
+      "purpose": "Handles the 'ledger_current' RPC command, returning the current ledger index.",
+      "validation_points": [
+        "Template-based validation in RPC::JsonHandler<LedgerCurrent>::process (before doLedgerCurrent is called)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "context",
+      "flow": [
+        "RPC framework receives request",
+        "Parses JSON and builds RPC::JsonContext",
+        "Passes context to doLedgerCurrent"
+      ],
+      "origin": "RPC framework constructs RPC::JsonContext from incoming HTTP/JSON-RPC request",
+      "transformations": [
+        "Context is constructed from request; may be validated by template framework before handler is called"
+      ],
+      "validated_at": "Template-based validation in RPC::JsonHandler<LedgerCurrent>::process"
+    },
+    {
+      "field": "ledger_current_index",
+      "flow": [
+        "doLedgerCurrent calls context.ledgerMaster.getCurrentLedgerIndex()",
+        "Value assigned to jvResult[jss::ledger_current_index]",
+        "jvResult returned as JSON response"
+      ],
+      "origin": "context.ledgerMaster.getCurrentLedgerIndex()",
+      "transformations": [
+        "No transformation; value is directly fetched and inserted into result"
+      ],
+      "validated_at": "No explicit validation in doLedgerCurrent; assumes ledgerMaster is valid"
+    }
+  ],
+  "description": "Provides the implementation for retrieving the current ledger index in the XRPL server via the doLedgerCurrent RPC handler.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/LedgerCurrent.cpp",
+  "functions": [
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 8,
+      "name": "doLedgerCurrent"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The doLedgerCurrent handler is typically covered by RPC integration tests that issue the 'ledger_current' command and check the response. Likely test files: 'rpc/ledger_current_test.cpp', 'rpc/LedgerHandler_test.cpp', or similar. There is no explicit input validation in doLedgerCurrent itself; all validation is assumed to be handled by the RPC framework's template-based validation before the handler is invoked. Edge cases (e.g., malformed context, ledgerMaster not initialized) are not directly tested here and would rely on framework-level or integration tests.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpld/rpc (jss::, RPC::JsonContext)",
+    "validation_layer": "business_logic"
+  },
+  "validations": []
+}

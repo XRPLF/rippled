@@ -1,0 +1,119 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "TER t",
+        "bool a",
+        "std::optional<TxMeta> m = std::nullopt"
+      ],
+      "lineno": 10,
+      "name": "ApplyResult"
+    },
+    {
+      "args": [
+        "NotTEC pfResult",
+        "STTx const& tx",
+        "STTx const& tx, Category category",
+        "STTx const& tx, XRPAmount potentialSpend",
+        "STTx const& tx, std::uint32_t sequencesConsumed",
+        "TxConsequences const&",
+        "TxConsequences&&"
+      ],
+      "lineno": 36,
+      "name": "TxConsequences"
+    },
+    {
+      "args": [
+        "Context const& ctx_, std::pair<NotTEC, TxConsequences> const& result",
+        "PreflightResult const&"
+      ],
+      "lineno": 109,
+      "name": "PreflightResult"
+    },
+    {
+      "args": [
+        "Context const& ctx_, TER ter_",
+        "PreclaimResult const&"
+      ],
+      "lineno": 134,
+      "name": "PreclaimResult"
+    }
+  ],
+  "description": "Defines transaction preflight, preclaim, and application logic for the XRPL ledger, including result structures, fee calculations, and transaction consequence analysis.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/applySteps.h",
+  "functions": [
+    {
+      "args": [
+        "TER ter",
+        "ApplyFlags flags"
+      ],
+      "lineno": 22,
+      "name": "isTecClaimHardFail"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "Rules const& rules",
+        "STTx const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 143,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "ServiceRegistry& registry",
+        "Rules const& rules",
+        "uint256 const& parentBatchId",
+        "STTx const& tx",
+        "ApplyFlags flags",
+        "beast::Journal j"
+      ],
+      "lineno": 150,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreflightResult const& preflightResult",
+        "ServiceRegistry& registry",
+        "OpenView const& view"
+      ],
+      "lineno": 172,
+      "name": "preclaim"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 194,
+      "name": "calculateBaseFee"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "STTx const& tx"
+      ],
+      "lineno": 210,
+      "name": "calculateDefaultBaseFee"
+    },
+    {
+      "args": [
+        "PreclaimResult const& preclaimResult",
+        "ServiceRegistry& registry",
+        "OpenView& view"
+      ],
+      "lineno": 232,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "args": [
+    {
+      "lineno": 28,
+      "name": "tx"
+    },
+    {
+      "lineno": 91,
+      "name": "account"
+    },
+    {
+      "lineno": 91,
+      "name": "vaultID"
+    },
+    {
+      "lineno": 91,
+      "name": "holder"
+    },
+    {
+      "lineno": 91,
+      "name": "sequence"
+    },
+    {
+      "lineno": 91,
+      "name": "fee"
+    },
+    {
+      "lineno": 104,
+      "name": "tx"
+    },
+    {
+      "lineno": 116,
+      "name": "value"
+    },
+    {
+      "lineno": 124,
+      "name": "value"
+    },
+    {
+      "lineno": 132,
+      "name": "value"
+    },
+    {
+      "lineno": 140,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 140,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 26,
+      "name": "VaultClawback"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& vaultID, std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 88,
+      "name": "VaultClawbackBuilder"
+    }
+  ],
+  "description": "Defines the VaultClawback transaction type and its builder for the XRPL protocol, providing type-safe field access and a fluent interface for constructing VaultClawback transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/VaultClawback.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "VaultClawback"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "getVaultID"
+    },
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "getHolder"
+    },
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 73,
+      "name": "hasAmount"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& vaultID",
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& holder",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 91,
+      "name": "VaultClawbackBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 104,
+      "name": "VaultClawbackBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 116,
+      "name": "setVaultID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 124,
+      "name": "setHolder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 132,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 140,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

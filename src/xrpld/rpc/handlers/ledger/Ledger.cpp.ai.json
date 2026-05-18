@@ -1,0 +1,671 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "context"
+    },
+    {
+      "lineno": 61,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JsonContext& context"
+      ],
+      "lineno": 11,
+      "name": "LedgerHandler"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "LedgerHandler::check",
+        "lookupLedger",
+        "isUnlimited",
+        "getFeeTrack().isLoadedLocal",
+        "context_.app.getTxQ().getTxs"
+      ],
+      "entry_point": "LedgerHandler::check",
+      "purpose": "Validates input parameters for the ledger RPC, checks permissions, server load, and ledger existence before proceeding.",
+      "validation_points": [
+        "lookupLedger (validates ledger/ledger_hash/ledger_index)",
+        "isUnlimited (validates 'full' and 'accounts' permissions)",
+        "getFeeTrack().isLoadedLocal && !isUnlimited (validates server load for 'full' or 'accounts')",
+        "ledger_ && ledger_->open() (validates 'queue' parameter)"
+      ]
+    },
+    {
+      "call_chain": [
+        "LedgerHandler::writeResult",
+        "copyFrom",
+        "addJson",
+        "context_.app.getLedgerMaster().getClosedLedger",
+        "context_.app.getLedgerMaster().getCurrentLedger"
+      ],
+      "entry_point": "LedgerHandler::writeResult",
+      "purpose": "Formats and writes the result JSON, including ledger data and warnings.",
+      "validation_points": [
+        "No direct validation, but relies on prior validation in check()"
+      ]
+    },
+    {
+      "call_chain": [
+        "doLedgerGrpc",
+        "RPC::ledgerFromRequest"
+      ],
+      "entry_point": "doLedgerGrpc",
+      "purpose": "Handles gRPC ledger requests, validates and fetches ledger data.",
+      "validation_points": [
+        "RPC::ledgerFromRequest (validates ledger parameters)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger / ledger_hash / ledger_index",
+      "flow": [
+        "context_.params",
+        "LedgerHandler::check (needsLedger)",
+        "lookupLedger(ledger_, context_, result_)",
+        "ledger_ (used in writeResult)"
+      ],
+      "origin": "context_.params (JSON-RPC request)",
+      "transformations": [
+        "Checked for presence",
+        "Validated and resolved to ledger_"
+      ],
+      "validated_at": "lookupLedger"
+    },
+    {
+      "field": "full",
+      "flow": [
+        "context_.params[jss::full]",
+        "LedgerHandler::check (bool full)",
+        "options_ |= LedgerFill::full",
+        "Permission checked via isUnlimited(context_.role)",
+        "Used in addJson"
+      ],
+      "origin": "context_.params[jss::full]",
+      "transformations": [
+        "Converted to bool",
+        "Used to set options_ bitmask"
+      ],
+      "validated_at": "isUnlimited"
+    },
+    {
+      "field": "accounts",
+      "flow": [
+        "context_.params[jss::accounts]",
+        "LedgerHandler::check (bool accounts)",
+        "options_ |= LedgerFill::dumpState",
+        "Permission checked via isUnlimited(context_.role)",
+        "Used in addJson"
+      ],
+      "origin": "context_.params[jss::accounts]",
+      "transformations": [
+        "Converted to bool",
+        "Used to set options_ bitmask"
+      ],
+      "validated_at": "isUnlimited"
+    },
+    {
+      "field": "queue",
+      "flow": [
+        "context_.params[jss::queue]",
+        "LedgerHandler::check (bool queue)",
+        "options_ |= LedgerFill::dumpQueue",
+        "If true: validated by ledger_ && ledger_->open()",
+        "queueTxs_ = context_.app.getTxQ().getTxs()",
+        "Used in addJson"
+      ],
+      "origin": "context_.params[jss::queue]",
+      "transformations": [
+        "Converted to bool",
+        "Used to set options_ bitmask",
+        "Triggers fetching of queueTxs_"
+      ],
+      "validated_at": "ledger_ && ledger_->open()"
+    },
+    {
+      "field": "role",
+      "flow": [
+        "context_.role",
+        "isUnlimited(context_.role)",
+        "Used to gate 'full' and 'accounts' access"
+      ],
+      "origin": "context_.role (injected by framework)",
+      "transformations": [
+        "Checked for admin/unlimited status"
+      ],
+      "validated_at": "isUnlimited"
+    },
+    {
+      "field": "server load",
+      "flow": [
+        "context_.app.getFeeTrack().isLoadedLocal()",
+        "if (full || accounts) { ... if (isLoadedLocal && !isUnlimited) ... }",
+        "May return rpcTOO_BUSY"
+      ],
+      "origin": "context_.app.getFeeTrack().isLoadedLocal()",
+      "transformations": [
+        "Checked for server busy state"
+      ],
+      "validated_at": "getFeeTrack().isLoadedLocal() && !isUnlimited"
+    }
+  ],
+  "description": "Implements the LedgerHandler class and related gRPC handler for serving ledger data via JSON and gRPC in the XRPL server, including permission checks, ledger serialization, and response formatting.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for ledger",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates ledger automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_hash",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_hash validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for ledger_hash",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates ledger_hash automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger_index",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger_index validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for ledger_index",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates ledger_index automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "full",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field full validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for full",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates full automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transactions",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transactions validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for transactions",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates transactions automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "accounts",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field accounts validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for accounts",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates accounts automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "expand",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field expand validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for expand",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates expand automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "binary",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field binary validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for binary",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates binary automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "owner_funds",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field owner_funds validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for owner_funds",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates owner_funds automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "queue",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field queue validated by xrpl::jss (JSON field access/validation), custom business logic",
+      "issue_pattern": "Missing validation for queue",
+      "why_false_positive": "xrpl::jss (JSON field access/validation), custom business logic validates queue automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger / ledger_hash / ledger_index",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lookupLedger at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for ledger / ledger_hash / ledger_index",
+      "why_false_positive": "lookupLedger validates ledger / ledger_hash / ledger_index for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "full",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isUnlimited at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for full",
+      "why_false_positive": "isUnlimited validates full for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "accounts",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isUnlimited at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for accounts",
+      "why_false_positive": "isUnlimited validates accounts for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "full or accounts (when server is busy)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "getFeeTrack().isLoadedLocal() && !isUnlimited at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for full or accounts (when server is busy)",
+      "why_false_positive": "getFeeTrack().isLoadedLocal() && !isUnlimited validates full or accounts (when server is busy) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "queue",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ledger_ && ledger_->open() at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for queue",
+      "why_false_positive": "ledger_ && ledger_->open() validates queue for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "full, transactions, accounts, expand, binary, owner_funds, queue",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::field].asBool() at LedgerHandler::check",
+      "issue_pattern": "Missing empty string validation for full, transactions, accounts, expand, binary, owner_funds, queue",
+      "why_false_positive": "params[jss::field].asBool() validates full, transactions, accounts, expand, binary, owner_funds, queue for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "full, transactions, accounts, expand, binary, owner_funds, queue",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::field].asBool() at LedgerHandler::check",
+      "issue_pattern": "Missing type validation for full, transactions, accounts, expand, binary, owner_funds, queue",
+      "why_false_positive": "params[jss::field].asBool() validates full, transactions, accounts, expand, binary, owner_funds, queue type"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/Ledger.cpp",
+  "functions": [
+    {
+      "args": [
+        "JsonContext& context"
+      ],
+      "lineno": 12,
+      "name": "LedgerHandler::LedgerHandler"
+    },
+    {
+      "args": [],
+      "lineno": 16,
+      "name": "LedgerHandler::check"
+    },
+    {
+      "args": [
+        "Json::Value& value"
+      ],
+      "lineno": 61,
+      "name": "LedgerHandler::writeResult"
+    },
+    {
+      "args": [
+        "RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context"
+      ],
+      "lineno": 93,
+      "name": "doLedgerGrpc"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "RPC"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this handler would be in files like test/rpc/Ledger_test.cpp, test/rpc/LedgerHandler_test.cpp, or integration tests for the ledger RPC endpoint. Tests should cover: valid/invalid ledger identifiers, permission checks for 'full' and 'accounts', server busy conditions, queue parameter with open/closed ledgers, and deprecated field warnings. Gaps may exist in edge cases for malformed input, concurrent load conditions, or rare permission combinations. gRPC path (doLedgerGrpc) may have less coverage if tests focus on HTTP/JSON-RPC.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "ledger",
+      "ledger_hash",
+      "ledger_index",
+      "full",
+      "transactions",
+      "accounts",
+      "expand",
+      "binary",
+      "owner_funds",
+      "queue"
+    ],
+    "framework": "xrpl::jss (JSON field access/validation), custom business logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Status (rpc error code, e.g., rpcLGR_NOT_FOUND)",
+      "field": "ledger / ledger_hash / ledger_index",
+      "location": "LedgerHandler::check",
+      "validated_by": "lookupLedger",
+      "validates": [
+        "Presence and validity of ledger identifier (by name, hash, or index)",
+        "Ledger exists and can be loaded"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcNO_PERMISSION",
+      "field": "full",
+      "location": "LedgerHandler::check",
+      "validated_by": "isUnlimited",
+      "validates": [
+        "User has permission to request full ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcNO_PERMISSION",
+      "field": "accounts",
+      "location": "LedgerHandler::check",
+      "validated_by": "isUnlimited",
+      "validates": [
+        "User has permission to request all account state nodes"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcTOO_BUSY",
+      "field": "full or accounts (when server is busy)",
+      "location": "LedgerHandler::check",
+      "validated_by": "getFeeTrack().isLoadedLocal() && !isUnlimited",
+      "validates": [
+        "Server is not overloaded for heavy requests unless user is unlimited"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "rpcINVALID_PARAMS",
+      "field": "queue",
+      "location": "LedgerHandler::check",
+      "validated_by": "ledger_ && ledger_->open()",
+      "validates": [
+        "Queue can only be requested for open ledgers"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (implicit type conversion, but could throw if not bool-convertible)",
+      "field": "full, transactions, accounts, expand, binary, owner_funds, queue",
+      "location": "LedgerHandler::check",
+      "validated_by": "params[jss::field].asBool()",
+      "validates": [
+        "Field is present and can be interpreted as boolean"
+      ],
+      "validation_type": "type"
+    }
+  ]
+}

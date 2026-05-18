@@ -1,0 +1,128 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "ptu"
+    },
+    {
+      "lineno": 43,
+      "name": "ptu1"
+    },
+    {
+      "lineno": 43,
+      "name": "ptu2"
+    },
+    {
+      "lineno": 68,
+      "name": "type"
+    },
+    {
+      "lineno": 68,
+      "name": "val"
+    },
+    {
+      "lineno": 74,
+      "name": "selected"
+    },
+    {
+      "lineno": 74,
+      "name": "suppressed"
+    },
+    {
+      "lineno": 74,
+      "name": "notEnabled"
+    },
+    {
+      "lineno": 79,
+      "name": "missing"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ptu"
+      ],
+      "lineno": 15,
+      "name": "SingleMetrics"
+    },
+    {
+      "args": [
+        "ptu1",
+        "ptu2"
+      ],
+      "lineno": 41,
+      "name": "MultipleMetrics"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "TxMetrics"
+    }
+  ],
+  "description": "Defines metrics structures and methods for tracking and reporting rolling averages and statistics related to transaction relay and protocol message metrics in the XRPL overlay network.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/overlay/detail/TxMetrics.h",
+  "functions": [
+    {
+      "args": [
+        "val"
+      ],
+      "lineno": 32,
+      "name": "SingleMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "val2"
+      ],
+      "lineno": 48,
+      "name": "MultipleMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "val1",
+        "val2"
+      ],
+      "lineno": 52,
+      "name": "MultipleMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "type",
+        "val"
+      ],
+      "lineno": 67,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "selected",
+        "suppressed",
+        "notEnabled"
+      ],
+      "lineno": 73,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [
+        "missing"
+      ],
+      "lineno": 78,
+      "name": "TxMetrics::addMetrics"
+    },
+    {
+      "args": [],
+      "lineno": 83,
+      "name": "TxMetrics::json"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 10,
+      "name": "metrics"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "args": [
+    {
+      "lineno": 27,
+      "name": "tx"
+    },
+    {
+      "lineno": 59,
+      "name": "account"
+    },
+    {
+      "lineno": 59,
+      "name": "loanBrokerID"
+    },
+    {
+      "lineno": 59,
+      "name": "sequence"
+    },
+    {
+      "lineno": 59,
+      "name": "fee"
+    },
+    {
+      "lineno": 70,
+      "name": "tx"
+    },
+    {
+      "lineno": 81,
+      "name": "value"
+    },
+    {
+      "lineno": 90,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 90,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 22,
+      "name": "LoanBrokerDelete"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 54,
+      "name": "LoanBrokerDeleteBuilder"
+    }
+  ],
+  "description": "Defines the LoanBrokerDelete transaction type for the XRPL protocol, including its builder class for constructing and signing transactions, with type-safe field access and transaction-specific field setters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LoanBrokerDelete.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "LoanBrokerDelete::LoanBrokerDelete"
+    },
+    {
+      "args": [],
+      "lineno": 41,
+      "name": "LoanBrokerDelete::getLoanBrokerID"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 59,
+      "name": "LoanBrokerDeleteBuilder::LoanBrokerDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 70,
+      "name": "LoanBrokerDeleteBuilder::LoanBrokerDeleteBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 81,
+      "name": "LoanBrokerDeleteBuilder::setLoanBrokerID"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 90,
+      "name": "LoanBrokerDeleteBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

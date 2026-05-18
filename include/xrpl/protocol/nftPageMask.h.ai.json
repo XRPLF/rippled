@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines a constant mask (pageMask) used to access the low 96 bits of an NFToken value for ordering NFT directory pages in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/nftPageMask.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "nft"
+    }
+  ]
+}

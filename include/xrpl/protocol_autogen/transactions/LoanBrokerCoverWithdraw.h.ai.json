@@ -1,0 +1,122 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 24,
+      "name": "LoanBrokerCoverWithdraw"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID, std::decay_t<typename SF_AMOUNT::type::value_type> const& amount, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 104,
+      "name": "LoanBrokerCoverWithdrawBuilder"
+    }
+  ],
+  "description": "Defines the LoanBrokerCoverWithdraw transaction type for the XRPL protocol, including a type-safe wrapper and a builder class for constructing and signing such transactions.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/LoanBrokerCoverWithdraw.h",
+  "functions": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 28,
+      "name": "LoanBrokerCoverWithdraw"
+    },
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "getLoanBrokerID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getAmount"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getDestination"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "hasDestination"
+    },
+    {
+      "args": [],
+      "lineno": 85,
+      "name": "getDestinationTag"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "hasDestinationTag"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT256::type::value_type> const& loanBrokerID",
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& amount",
+        "std::optional<SF_UINT32::type::value_type> sequence = std::nullopt",
+        "std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt"
+      ],
+      "lineno": 112,
+      "name": "LoanBrokerCoverWithdrawBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 124,
+      "name": "LoanBrokerCoverWithdrawBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT256::type::value_type> const& value"
+      ],
+      "lineno": 136,
+      "name": "setLoanBrokerID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_AMOUNT::type::value_type> const& value"
+      ],
+      "lineno": 146,
+      "name": "setAmount"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_ACCOUNT::type::value_type> const& value"
+      ],
+      "lineno": 156,
+      "name": "setDestination"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 166,
+      "name": "setDestinationTag"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 176,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

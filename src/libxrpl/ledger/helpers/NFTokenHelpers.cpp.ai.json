@@ -1,0 +1,589 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "getPageForToken",
+        "view.peek",
+        "keylet::nftpage_min",
+        "keylet::nftpage",
+        "keylet::nftpage_max",
+        "view.succ"
+      ],
+      "entry_point": "getPageForToken",
+      "purpose": "Finds or creates the NFT page for a given owner and token id, splitting pages if full.",
+      "validation_points": [
+        "keylet::nftpage_min (validates owner)",
+        "keylet::nftpage (validates id)",
+        "view.peek (validates NFT page existence)",
+        "narr.size() != dirMaxTokensPerPage (validates NFT page capacity)"
+      ]
+    },
+    {
+      "call_chain": [
+        "locatePage",
+        "keylet::nftpage_min",
+        "keylet::nftpage",
+        "keylet::nftpage_max",
+        "view.succ",
+        "view.read"
+      ],
+      "entry_point": "locatePage (ReadView)",
+      "purpose": "Locates the NFT page for a given owner and token id (read-only).",
+      "validation_points": [
+        "keylet::nftpage_min (validates owner)",
+        "keylet::nftpage (validates id)",
+        "view.read (validates NFT page existence)"
+      ]
+    },
+    {
+      "call_chain": [
+        "locatePage",
+        "keylet::nftpage_min",
+        "keylet::nftpage",
+        "keylet::nftpage_max",
+        "view.succ",
+        "view.peek"
+      ],
+      "entry_point": "locatePage (ApplyView)",
+      "purpose": "Locates the NFT page for a given owner and token id (mutable view).",
+      "validation_points": [
+        "keylet::nftpage_min (validates owner)",
+        "keylet::nftpage (validates id)",
+        "view.peek (validates NFT page existence)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "owner (AccountID)",
+      "flow": [
+        "function argument",
+        "keylet::nftpage_min(owner)",
+        "keylet::nftpage_max(owner)",
+        "keylet::nftpage(base, id)"
+      ],
+      "origin": "Function argument (getPageForToken, locatePage)",
+      "transformations": [
+        "Used to compute NFT page key boundaries"
+      ],
+      "validated_at": "keylet::nftpage_min, keylet::nftpage_max"
+    },
+    {
+      "field": "id (uint256)",
+      "flow": [
+        "function argument",
+        "keylet::nftpage(base, id)",
+        "view.succ(first.key, last.key.next())"
+      ],
+      "origin": "Function argument (getPageForToken, locatePage)",
+      "transformations": [
+        "Used to compute specific NFT page key"
+      ],
+      "validated_at": "keylet::nftpage"
+    },
+    {
+      "field": "NFT page existence",
+      "flow": [
+        "view.read/peek(Keylet)",
+        "cp = ...",
+        "if (!cp) { ... create new page ... }"
+      ],
+      "origin": "Ledger state (view)",
+      "transformations": [
+        "Checked for existence, created if missing"
+      ],
+      "validated_at": "view.read, view.peek"
+    },
+    {
+      "field": "NFT page capacity",
+      "flow": [
+        "cp->getFieldArray(sfNFTokens)",
+        "narr.size()",
+        "if (narr.size() != dirMaxTokensPerPage)"
+      ],
+      "origin": "cp->getFieldArray(sfNFTokens)",
+      "transformations": [
+        "Checked for max capacity, triggers page split if full"
+      ],
+      "validated_at": "narr.size() != dirMaxTokensPerPage"
+    }
+  ],
+  "description": "This file provides helper functions for managing NFT (Non-Fungible Token) directories, pages, and offers in the XRPL ledger. It includes logic for inserting, removing, and finding NFTs, managing NFT offer creation and deletion, repairing directory links, and checking trustline authorization and freezing.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "AccountID",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field AccountID validated by None explicit; relies on C++ type system and business logic",
+      "issue_pattern": "Missing validation for AccountID",
+      "why_false_positive": "None explicit; relies on C++ type system and business logic validates AccountID automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "uint256",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field uint256 validated by None explicit; relies on C++ type system and business logic",
+      "issue_pattern": "Missing validation for uint256",
+      "why_false_positive": "None explicit; relies on C++ type system and business logic validates uint256 automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "owner (AccountID)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "keylet::nftpage_min, keylet::nftpage_max at locatePage, getPageForToken",
+      "issue_pattern": "Missing empty string validation for owner (AccountID)",
+      "why_false_positive": "keylet::nftpage_min, keylet::nftpage_max validates owner (AccountID) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "owner (AccountID)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "keylet::nftpage_min, keylet::nftpage_max at locatePage, getPageForToken",
+      "issue_pattern": "Missing type validation for owner (AccountID)",
+      "why_false_positive": "keylet::nftpage_min, keylet::nftpage_max validates owner (AccountID) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "id (uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "keylet::nftpage at locatePage, getPageForToken",
+      "issue_pattern": "Missing empty string validation for id (uint256)",
+      "why_false_positive": "keylet::nftpage validates id (uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "id (uint256)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "keylet::nftpage at locatePage, getPageForToken",
+      "issue_pattern": "Missing type validation for id (uint256)",
+      "why_false_positive": "keylet::nftpage validates id (uint256) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "NFT page existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "view.read, view.peek at locatePage, getPageForToken",
+      "issue_pattern": "Missing empty string validation for NFT page existence",
+      "why_false_positive": "view.read, view.peek validates NFT page existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "NFT page capacity",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "narr.size() != dirMaxTokensPerPage at getPageForToken",
+      "issue_pattern": "Missing empty string validation for NFT page capacity",
+      "why_false_positive": "narr.size() != dirMaxTokensPerPage validates NFT page capacity for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "NFT page capacity",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "narr.size() != dirMaxTokensPerPage at getPageForToken",
+      "issue_pattern": "Missing range validation for NFT page capacity",
+      "why_false_positive": "narr.size() != dirMaxTokensPerPage validates NFT page capacity range"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/helpers/NFTokenHelpers.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& owner",
+        "uint256 const& id"
+      ],
+      "lineno": 10,
+      "name": "locatePage"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& id"
+      ],
+      "lineno": 22,
+      "name": "locatePage"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& id",
+        "std::function<void(ApplyView&, AccountID const&)> const& createCallback"
+      ],
+      "lineno": 34,
+      "name": "getPageForToken"
+    },
+    {
+      "args": [
+        "uint256 const& a",
+        "uint256 const& b"
+      ],
+      "lineno": 99,
+      "name": "compareTokens"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& nftokenID",
+        "std::optional<xrpl::Slice> const& uri"
+      ],
+      "lineno": 110,
+      "name": "changeTokenURI"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID owner",
+        "STObject&& nft"
+      ],
+      "lineno": 134,
+      "name": "insertToken"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& p1",
+        "std::shared_ptr<SLE> const& p2"
+      ],
+      "lineno": 163,
+      "name": "mergePages"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& nftokenID"
+      ],
+      "lineno": 210,
+      "name": "removeToken"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& nftokenID",
+        "std::shared_ptr<SLE> const& curr"
+      ],
+      "lineno": 219,
+      "name": "removeToken"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& owner",
+        "uint256 const& nftokenID"
+      ],
+      "lineno": 308,
+      "name": "findToken"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner",
+        "uint256 const& nftokenID"
+      ],
+      "lineno": 324,
+      "name": "findTokenAndPage"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "Keylet const& directory",
+        "std::size_t maxDeletableOffers"
+      ],
+      "lineno": 342,
+      "name": "removeTokenOffersWithLimit"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "uint256 const& nftokenID"
+      ],
+      "lineno": 382,
+      "name": "notTooManyOffers"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "std::shared_ptr<SLE> const& offer"
+      ],
+      "lineno": 404,
+      "name": "deleteTokenOffer"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& owner"
+      ],
+      "lineno": 426,
+      "name": "repairNFTokenDirectoryLinks"
+    },
+    {
+      "args": [
+        "AccountID const& acctID",
+        "STAmount const& amount",
+        "std::optional<AccountID> const& dest",
+        "std::optional<std::uint32_t> const& expiration",
+        "std::uint16_t nftFlags",
+        "Rules const& rules",
+        "std::optional<AccountID> const& owner",
+        "std::uint32_t txFlags"
+      ],
+      "lineno": 522,
+      "name": "tokenOfferCreatePreflight"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const& acctID",
+        "AccountID const& nftIssuer",
+        "STAmount const& amount",
+        "std::optional<AccountID> const& dest",
+        "std::uint16_t nftFlags",
+        "std::uint16_t xferFee",
+        "beast::Journal j",
+        "std::optional<AccountID> const& owner",
+        "std::uint32_t txFlags"
+      ],
+      "lineno": 563,
+      "name": "tokenOfferCreatePreclaim"
+    },
+    {
+      "args": [
+        "ApplyView& view",
+        "AccountID const& acctID",
+        "STAmount const& amount",
+        "std::optional<AccountID> const& dest",
+        "std::optional<std::uint32_t> const& expiration",
+        "SeqProxy seqProxy",
+        "uint256 const& nftokenID",
+        "XRPAmount const& priorBalance",
+        "beast::Journal j",
+        "std::uint32_t txFlags"
+      ],
+      "lineno": 627,
+      "name": "tokenOfferCreateApply"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const id",
+        "beast::Journal const j",
+        "Issue const& issue"
+      ],
+      "lineno": 677,
+      "name": "checkTrustlineAuthorized"
+    },
+    {
+      "args": [
+        "ReadView const& view",
+        "AccountID const id",
+        "beast::Journal const j",
+        "Issue const& issue"
+      ],
+      "lineno": 713,
+      "name": "checkTrustlineDeepFrozen"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 9,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 11,
+      "name": "nft"
+    }
+  ],
+  "test_coverage_notes": "The core validation logic is exercised by higher-level transaction tests, typically in files like test/ledger/NFToken_test.cpp, test/app/ledger/NFTokenHelpers_test.cpp, or integration tests for NFT mint/burn/transfer. However, direct unit tests for edge cases (e.g., invalid owner, invalid id, page overflow, page creation) may be limited or absent. Exception handling paths (e.g., what happens if view.peek fails or returns unexpected data) may not be fully covered. Tests for page splitting logic and equivalent NFT grouping should be verified for completeness.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "AccountID",
+      "uint256"
+    ],
+    "framework": "None explicit; relies on C++ type system and business logic",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (relies on AccountID type safety)",
+      "field": "owner (AccountID)",
+      "location": "locatePage, getPageForToken",
+      "validated_by": "keylet::nftpage_min, keylet::nftpage_max",
+      "validates": [
+        "AccountID is a valid type for keylet functions"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.8,
+      "error_thrown": "none (relies on uint256 type safety)",
+      "field": "id (uint256)",
+      "location": "locatePage, getPageForToken",
+      "validated_by": "keylet::nftpage",
+      "validates": [
+        "id is a valid uint256 for keylet functions"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (returns nullptr if not found)",
+      "field": "NFT page existence",
+      "location": "locatePage, getPageForToken",
+      "validated_by": "view.read, view.peek",
+      "validates": [
+        "Checks if NFT page exists in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (splits page if full)",
+      "field": "NFT page capacity",
+      "location": "getPageForToken",
+      "validated_by": "narr.size() != dirMaxTokensPerPage",
+      "validates": [
+        "NFT page does not exceed max tokens per page"
+      ],
+      "validation_type": "range"
+    }
+  ]
+}

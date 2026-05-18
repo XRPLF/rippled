@@ -1,0 +1,115 @@
+{
+  "args": [
+    {
+      "lineno": 18,
+      "name": "now"
+    },
+    {
+      "lineno": 26,
+      "name": "value"
+    },
+    {
+      "lineno": 26,
+      "name": "now"
+    },
+    {
+      "lineno": 34,
+      "name": "now"
+    },
+    {
+      "lineno": 41,
+      "name": "now"
+    },
+    {
+      "lineno": 61,
+      "name": "now"
+    },
+    {
+      "lineno": 74,
+      "name": "value"
+    },
+    {
+      "lineno": 74,
+      "name": "now"
+    },
+    {
+      "lineno": 79,
+      "name": "now"
+    },
+    {
+      "lineno": 86,
+      "name": "now"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "time_point now"
+      ],
+      "lineno": 10,
+      "name": "DecayingSample"
+    },
+    {
+      "args": [
+        "time_point now"
+      ],
+      "lineno": 61,
+      "name": "DecayWindow"
+    }
+  ],
+  "description": "Provides two template classes for sampling functions using exponential decay: DecayingSample (with a fixed window) and DecayWindow (with a half-life), useful for tracking decaying averages or statistics over time.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/basics/DecayingSample.h",
+  "functions": [
+    {
+      "args": [
+        "value",
+        "now"
+      ],
+      "lineno": 26,
+      "name": "DecayingSample::add"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 34,
+      "name": "DecayingSample::value"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 41,
+      "name": "DecayingSample::decay"
+    },
+    {
+      "args": [
+        "value",
+        "now"
+      ],
+      "lineno": 74,
+      "name": "DecayWindow::add"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 79,
+      "name": "DecayWindow::value"
+    },
+    {
+      "args": [
+        "now"
+      ],
+      "lineno": 86,
+      "name": "DecayWindow::decay"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

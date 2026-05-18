@@ -1,0 +1,539 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "params"
+    },
+    {
+      "lineno": 9,
+      "name": "jvResult"
+    },
+    {
+      "lineno": 46,
+      "name": "context"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "doVaultInfo",
+        "parseVault",
+        "RPC::inject_error"
+      ],
+      "entry_point": "doVaultInfo",
+      "purpose": "Handles the 'vault_info' RPC command, validates input, computes vault index, fetches ledger entries, and returns vault info or error.",
+      "validation_points": [
+        "parseVault: Validates vault_id (parseHex), owner (parseBase58<AccountID>), seq (isInt/isUInt, range), and field combination logic",
+        "doVaultInfo: Checks parseVault result for beast::zero (malformedRequest), checks ledger entries for existence (entryNotFound)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "vault_id",
+      "flow": [
+        "context.params[jss::vault_id]",
+        "parseVault: params[jss::vault_id].asString()",
+        "uint256::parseHex",
+        "uNodeIndex",
+        "doVaultInfo: keylet::vault(uNodeIndex)"
+      ],
+      "origin": "context.params[jss::vault_id] (JSON RPC input)",
+      "transformations": [
+        "String to uint256 via parseHex",
+        "Used as key for ledger lookup"
+      ],
+      "validated_at": "parseVault (parseHex failure triggers error)"
+    },
+    {
+      "field": "owner",
+      "flow": [
+        "context.params[jss::owner]",
+        "parseVault: params[jss::owner].asString()",
+        "parseBase58<AccountID>",
+        "id",
+        "keylet::vault(*id, seq)"
+      ],
+      "origin": "context.params[jss::owner] (JSON RPC input)",
+      "transformations": [
+        "Base58 string to AccountID",
+        "Used in keylet::vault to compute vault index"
+      ],
+      "validated_at": "parseVault (parseBase58 failure triggers error)"
+    },
+    {
+      "field": "seq",
+      "flow": [
+        "context.params[jss::seq]",
+        "parseVault: params[jss::seq]",
+        "isInt/isUInt, asDouble() range checks",
+        "params[jss::seq].asUInt()",
+        "keylet::vault(*id, seq)"
+      ],
+      "origin": "context.params[jss::seq] (JSON RPC input)",
+      "transformations": [
+        "JSON value to unsigned int",
+        "Used in keylet::vault to compute vault index"
+      ],
+      "validated_at": "parseVault (type and range checks)"
+    },
+    {
+      "field": "vault_id/owner/seq combination",
+      "flow": [
+        "context.params",
+        "parseVault: checks presence/absence of vault_id, owner, seq",
+        "if/else logic to select valid combinations",
+        "error if invalid"
+      ],
+      "origin": "context.params (JSON RPC input)",
+      "transformations": [
+        "Manual logic to enforce only one valid combination"
+      ],
+      "validated_at": "parseVault (combination logic)"
+    }
+  ],
+  "description": "Implements the doVaultInfo RPC handler for retrieving information about a vault and its associated issuance from the ledger, including helper logic to parse vault identifiers from request parameters.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vault_id",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "uint256::parseHex at parseVault",
+      "issue_pattern": "Missing empty string validation for vault_id",
+      "why_false_positive": "uint256::parseHex validates vault_id for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "vault_id",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "uint256::parseHex at parseVault",
+      "issue_pattern": "Missing format validation for vault_id",
+      "why_false_positive": "uint256::parseHex validates vault_id format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "owner",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseBase58<AccountID> at parseVault",
+      "issue_pattern": "Missing empty string validation for owner",
+      "why_false_positive": "parseBase58<AccountID> validates owner for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "owner",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "parseBase58<AccountID> at parseVault",
+      "issue_pattern": "Missing format validation for owner",
+      "why_false_positive": "parseBase58<AccountID> validates owner format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::seq].isInt() || params[jss::seq].isUInt() at parseVault",
+      "issue_pattern": "Missing empty string validation for seq",
+      "why_false_positive": "params[jss::seq].isInt() || params[jss::seq].isUInt() validates seq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "seq",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "params[jss::seq].isInt() || params[jss::seq].isUInt() at parseVault",
+      "issue_pattern": "Missing type validation for seq",
+      "why_false_positive": "params[jss::seq].isInt() || params[jss::seq].isUInt() validates seq type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "seq",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "params[jss::seq].asDouble() <= 0.0 || params[jss::seq].asDouble() > double(Json::Value::maxUInt) at parseVault",
+      "issue_pattern": "Missing empty string validation for seq",
+      "why_false_positive": "params[jss::seq].asDouble() <= 0.0 || params[jss::seq].asDouble() > double(Json::Value::maxUInt) validates seq for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "seq",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "params[jss::seq].asDouble() <= 0.0 || params[jss::seq].asDouble() > double(Json::Value::maxUInt) at parseVault",
+      "issue_pattern": "Missing range validation for seq",
+      "why_false_positive": "params[jss::seq].asDouble() <= 0.0 || params[jss::seq].asDouble() > double(Json::Value::maxUInt) validates seq range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vault_id, owner, seq (combination)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual logic (if/else on presence of fields) at parseVault",
+      "issue_pattern": "Missing empty string validation for vault_id, owner, seq (combination)",
+      "why_false_positive": "manual logic (if/else on presence of fields) validates vault_id, owner, seq (combination) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "RPC::lookupLedger at doVaultInfo",
+      "issue_pattern": "Missing empty string validation for ledger existence",
+      "why_false_positive": "RPC::lookupLedger validates ledger existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vault_id/owner/seq (malformed request)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "parseVault return value check (uNodeIndex == beast::zero) at doVaultInfo",
+      "issue_pattern": "Missing empty string validation for vault_id/owner/seq (malformed request)",
+      "why_false_positive": "parseVault return value check (uNodeIndex == beast::zero) validates vault_id/owner/seq (malformed request) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "vault entry existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lpLedger->read(keylet::vault(uNodeIndex)) at doVaultInfo",
+      "issue_pattern": "Missing empty string validation for vault entry existence",
+      "why_false_positive": "lpLedger->read(keylet::vault(uNodeIndex)) validates vault entry existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "issuance entry existence",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID))) at doVaultInfo",
+      "issue_pattern": "Missing empty string validation for issuance entry existence",
+      "why_false_positive": "lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID))) validates issuance entry existence for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/VaultInfo.cpp",
+  "functions": [
+    {
+      "args": [
+        "params",
+        "jvResult"
+      ],
+      "lineno": 9,
+      "name": "parseVault"
+    },
+    {
+      "args": [
+        "context"
+      ],
+      "lineno": 46,
+      "name": "doVaultInfo"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by RPC-level tests for the 'vault_info' command, especially in files like 'rpc/Vault_test.cpp', 'rpc/VaultInfo_test.cpp', or integration tests for RPC handlers. Validation paths (invalid vault_id, malformed owner, bad seq, invalid field combinations) should be tested. Gaps may exist if tests do not cover all error branches (e.g., negative seq, seq > maxUInt, both vault_id and owner/seq present, missing all fields). No evidence of unit tests for parseVault itself; coverage depends on RPC test thoroughness.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "xrpl RPC framework (jss::, RPC::inject_error, parseBase58, uint256::parseHex)",
+    "validation_layer": "business_logic (parseVault, doVaultInfo)"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcINVALID_PARAMS, jvResult)",
+      "field": "vault_id",
+      "location": "parseVault",
+      "validated_by": "uint256::parseHex",
+      "validates": [
+        "vault_id must be a valid hex string"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcACT_MALFORMED, jvResult)",
+      "field": "owner",
+      "location": "parseVault",
+      "validated_by": "parseBase58<AccountID>",
+      "validates": [
+        "owner must be a valid base58-encoded AccountID"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcINVALID_PARAMS, jvResult)",
+      "field": "seq",
+      "location": "parseVault",
+      "validated_by": "params[jss::seq].isInt() || params[jss::seq].isUInt()",
+      "validates": [
+        "seq must be an integer or unsigned integer"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcINVALID_PARAMS, jvResult)",
+      "field": "seq",
+      "location": "parseVault",
+      "validated_by": "params[jss::seq].asDouble() <= 0.0 || params[jss::seq].asDouble() > double(Json::Value::maxUInt)",
+      "validates": [
+        "seq must be > 0 and <= maxUInt"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "RPC::inject_error(rpcINVALID_PARAMS, jvResult)",
+      "field": "vault_id, owner, seq (combination)",
+      "location": "parseVault",
+      "validated_by": "manual logic (if/else on presence of fields)",
+      "validates": [
+        "Either vault_id is present and owner/seq are absent, OR owner and seq are present and vault_id is absent"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error result from lookupLedger",
+      "field": "ledger existence",
+      "location": "doVaultInfo",
+      "validated_by": "RPC::lookupLedger",
+      "validates": [
+        "ledger must exist and be accessible"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = \"malformedRequest\"",
+      "field": "vault_id/owner/seq (malformed request)",
+      "location": "doVaultInfo",
+      "validated_by": "parseVault return value check (uNodeIndex == beast::zero)",
+      "validates": [
+        "parseVault must return a valid node index"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = \"entryNotFound\"",
+      "field": "vault entry existence",
+      "location": "doVaultInfo",
+      "validated_by": "lpLedger->read(keylet::vault(uNodeIndex))",
+      "validates": [
+        "vault entry must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "jvResult[jss::error] = \"entryNotFound\"",
+      "field": "issuance entry existence",
+      "location": "doVaultInfo",
+      "validated_by": "lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID)))",
+      "validates": [
+        "issuance entry must exist in ledger"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

@@ -1,0 +1,750 @@
+{
+  "args": [
+    {
+      "lineno": 16,
+      "name": "src_"
+    },
+    {
+      "lineno": 17,
+      "name": "dst_"
+    },
+    {
+      "lineno": 18,
+      "name": "currency_"
+    },
+    {
+      "lineno": 21,
+      "name": "prevStep_"
+    },
+    {
+      "lineno": 22,
+      "name": "isLast_"
+    },
+    {
+      "lineno": 23,
+      "name": "j_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "Currency const& c"
+      ],
+      "lineno": 13,
+      "name": "DirectStepI"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "Currency const& c"
+      ],
+      "lineno": 120,
+      "name": "DirectIPaymentStep"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "Currency const& c"
+      ],
+      "lineno": 153,
+      "name": "DirectIOfferCrossingStep"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "DirectStepI<TDerived>::DirectStepI",
+        "StepFactory::makeStep (likely)",
+        "Strand construction"
+      ],
+      "entry_point": "DirectStepI<TDerived> constructor",
+      "purpose": "Constructs a DirectStepI object as part of a payment path strand, initializing src, dst, currency, prevStep, isLast, and journal.",
+      "validation_points": [
+        "DirectStepI<TDerived>::DirectStepI (validates src, dst, currency, ctx.prevStep, ctx.isLast, ctx.j via type system)"
+      ]
+    },
+    {
+      "call_chain": [
+        "DirectIPaymentStep::check or DirectIOfferCrossingStep::check",
+        "DirectStepI<TDerived>::check (inherited)",
+        "StepChecks::check (possibly)",
+        "Validation logic"
+      ],
+      "entry_point": "DirectIPaymentStep::check / DirectIOfferCrossingStep::check",
+      "purpose": "Checks the validity of the step (e.g., account existence, trust lines, etc.) before using it in a payment path.",
+      "validation_points": [
+        "DirectStepI<TDerived>::check"
+      ]
+    },
+    {
+      "call_chain": [
+        "DirectIPaymentStep::maxFlow or DirectIOfferCrossingStep::maxFlow",
+        "DirectStepI<TDerived>::maxPaymentFlow"
+      ],
+      "entry_point": "DirectIPaymentStep::maxFlow / DirectIOfferCrossingStep::maxFlow",
+      "purpose": "Calculates the maximum amount that can flow through this step, considering trust lines and balances.",
+      "validation_points": [
+        "DirectStepI<TDerived>::maxPaymentFlow (uses validated fields)"
+      ]
+    },
+    {
+      "call_chain": [
+        "DirectStepI<TDerived>::revImp or fwdImp",
+        "DirectStepI<TDerived>::qualities / qualitiesSrcRedeems / qualitiesSrcIssues",
+        "DirectStepI<TDerived>::debtDirection"
+      ],
+      "entry_point": "DirectStepI<TDerived>::revImp / fwdImp",
+      "purpose": "Implements reverse and forward pass for payment pathfinding, computing actual amounts and qualities.",
+      "validation_points": [
+        "DirectStepI<TDerived>::qualities* (uses validated fields)"
+      ]
+    },
+    {
+      "call_chain": [
+        "DirectStepI<TDerived>::validFwd",
+        "DirectStepI<TDerived>::fwdImp"
+      ],
+      "entry_point": "DirectStepI<TDerived>::validFwd",
+      "purpose": "Checks if a forward step is valid for a given input amount.",
+      "validation_points": [
+        "DirectStepI<TDerived>::fwdImp"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "src_",
+      "flow": [
+        "constructor argument",
+        "DirectStepI<TDerived>::src_",
+        "used in qualities, maxPaymentFlow, debtDirection, etc."
+      ],
+      "origin": "DirectStepI<TDerived> constructor (from argument src)",
+      "transformations": [
+        "None (passed through as AccountID)"
+      ],
+      "validated_at": "DirectStepI<TDerived> constructor (type system)"
+    },
+    {
+      "field": "dst_",
+      "flow": [
+        "constructor argument",
+        "DirectStepI<TDerived>::dst_",
+        "used in qualities, maxPaymentFlow, debtDirection, etc."
+      ],
+      "origin": "DirectStepI<TDerived> constructor (from argument dst)",
+      "transformations": [
+        "None (passed through as AccountID)"
+      ],
+      "validated_at": "DirectStepI<TDerived> constructor (type system)"
+    },
+    {
+      "field": "currency_",
+      "flow": [
+        "constructor argument",
+        "DirectStepI<TDerived>::currency_",
+        "used in qualities, maxPaymentFlow, etc."
+      ],
+      "origin": "DirectStepI<TDerived> constructor (from argument c)",
+      "transformations": [
+        "None (passed through as Currency)"
+      ],
+      "validated_at": "DirectStepI<TDerived> constructor (type system)"
+    },
+    {
+      "field": "prevStep_",
+      "flow": [
+        "StrandContext",
+        "DirectStepI<TDerived>::prevStep_",
+        "used in qualitiesSrcIssues, etc."
+      ],
+      "origin": "StrandContext (ctx.prevStep)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "DirectStepI<TDerived> constructor (type system)"
+    },
+    {
+      "field": "isLast_",
+      "flow": [
+        "StrandContext",
+        "DirectStepI<TDerived>::isLast_",
+        "used in logic to determine step behavior"
+      ],
+      "origin": "StrandContext (ctx.isLast)",
+      "transformations": [
+        "None"
+      ],
+      "validated_at": "DirectStepI<TDerived> constructor (type system)"
+    },
+    {
+      "field": "cache_",
+      "flow": [
+        "revImp/fwdImp compute values",
+        "cache_ set to Cache{in, srcToDst, out, srcDebtDir}",
+        "cachedIn/cachedOut access cache_"
+      ],
+      "origin": "DirectStepI<TDerived>::Cache struct, set in revImp/fwdImp",
+      "transformations": [
+        "Set to std::optional<Cache> after computation"
+      ],
+      "validated_at": "std::optional enforces presence/absence"
+    },
+    {
+      "field": "IOUAmount in/out/srcToDst",
+      "flow": [
+        "revImp/fwdImp",
+        "Cache struct",
+        "cachedIn/cachedOut"
+      ],
+      "origin": "Computed in revImp/fwdImp",
+      "transformations": [
+        "Amounts are computed based on ledger state, qualities, and direction"
+      ],
+      "validated_at": "revImp/fwdImp (indirectly, via logic and type system)"
+    }
+  ],
+  "description": "Implements direct IOU transfer steps for XRPL payment and offer crossing paths, including logic for quality, trust line checks, liquidity calculation, and step validation.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "src",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field src validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for src",
+      "why_false_positive": "C++ type system, std::optional validates src automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "dst",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field dst validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for dst",
+      "why_false_positive": "C++ type system, std::optional validates dst automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "currency",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field currency validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for currency",
+      "why_false_positive": "C++ type system, std::optional validates currency automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "prevStep_",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field prevStep_ validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for prevStep_",
+      "why_false_positive": "C++ type system, std::optional validates prevStep_ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "isLast_",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field isLast_ validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for isLast_",
+      "why_false_positive": "C++ type system, std::optional validates isLast_ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "j_",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field j_ validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for j_",
+      "why_false_positive": "C++ type system, std::optional validates j_ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "cache_",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field cache_ validated by C++ type system, std::optional",
+      "issue_pattern": "Missing validation for cache_",
+      "why_false_positive": "C++ type system, std::optional validates cache_ automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "src, dst, currency",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "DirectStepI constructor (type system) at DirectStepI::DirectStepI",
+      "issue_pattern": "Missing empty string validation for src, dst, currency",
+      "why_false_positive": "DirectStepI constructor (type system) validates src, dst, currency for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "src, dst, currency",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "DirectStepI constructor (type system) at DirectStepI::DirectStepI",
+      "issue_pattern": "Missing type validation for src, dst, currency",
+      "why_false_positive": "DirectStepI constructor (type system) validates src, dst, currency type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ctx.prevStep, ctx.isLast, ctx.j",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "DirectStepI constructor (type system) at DirectStepI::DirectStepI",
+      "issue_pattern": "Missing empty string validation for ctx.prevStep, ctx.isLast, ctx.j",
+      "why_false_positive": "DirectStepI constructor (type system) validates ctx.prevStep, ctx.isLast, ctx.j for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "ctx.prevStep, ctx.isLast, ctx.j",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "DirectStepI constructor (type system) at DirectStepI::DirectStepI",
+      "issue_pattern": "Missing type validation for ctx.prevStep, ctx.isLast, ctx.j",
+      "why_false_positive": "DirectStepI constructor (type system) validates ctx.prevStep, ctx.isLast, ctx.j type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "cache_",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "std::optional (type system) at cache_ member and usage in cachedIn/cachedOut",
+      "issue_pattern": "Missing empty string validation for cache_",
+      "why_false_positive": "std::optional (type system) validates cache_ for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/DirectStep.cpp",
+  "functions": [
+    {
+      "args": [
+        "ReadView const& sb",
+        "QualityDirection qDir"
+      ],
+      "lineno": 181,
+      "name": "DirectIPaymentStep::quality"
+    },
+    {
+      "args": [
+        "ReadView const&",
+        "QualityDirection qDir"
+      ],
+      "lineno": 210,
+      "name": "DirectIOfferCrossingStep::quality"
+    },
+    {
+      "args": [
+        "ReadView const& sb",
+        "IOUAmount const&"
+      ],
+      "lineno": 215,
+      "name": "DirectIPaymentStep::maxFlow"
+    },
+    {
+      "args": [
+        "ReadView const& sb",
+        "IOUAmount const& desired"
+      ],
+      "lineno": 220,
+      "name": "DirectIOfferCrossingStep::maxFlow"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "std::shared_ptr<const SLE> const& sleSrc"
+      ],
+      "lineno": 246,
+      "name": "DirectIPaymentStep::check"
+    },
+    {
+      "args": [
+        "StrandContext const&",
+        "std::shared_ptr<const SLE> const&"
+      ],
+      "lineno": 292,
+      "name": "DirectIOfferCrossingStep::check"
+    },
+    {
+      "args": [
+        "ReadView const& sb"
+      ],
+      "lineno": 304,
+      "name": "DirectStepI<TDerived>::maxPaymentFlow"
+    },
+    {
+      "args": [
+        "ReadView const& sb",
+        "StrandDirection dir"
+      ],
+      "lineno": 314,
+      "name": "DirectStepI<TDerived>::debtDirection"
+    },
+    {
+      "args": [
+        "PaymentSandbox& sb",
+        "ApplyView& /*afView*/",
+        "boost::container::flat_set<uint256>& /*ofrsToRm*/",
+        "IOUAmount const& out"
+      ],
+      "lineno": 322,
+      "name": "DirectStepI<TDerived>::revImp"
+    },
+    {
+      "args": [
+        "IOUAmount const& fwdIn",
+        "IOUAmount const& fwdSrcToDst",
+        "IOUAmount const& fwdOut",
+        "DebtDirection srcDebtDir"
+      ],
+      "lineno": 370,
+      "name": "DirectStepI<TDerived>::setCacheLimiting"
+    },
+    {
+      "args": [
+        "PaymentSandbox& sb",
+        "ApplyView& /*afView*/",
+        "boost::container::flat_set<uint256>& /*ofrsToRm*/",
+        "IOUAmount const& in"
+      ],
+      "lineno": 399,
+      "name": "DirectStepI<TDerived>::fwdImp"
+    },
+    {
+      "args": [
+        "PaymentSandbox& sb",
+        "ApplyView& afView",
+        "EitherAmount const& in"
+      ],
+      "lineno": 438,
+      "name": "DirectStepI<TDerived>::validFwd"
+    },
+    {
+      "args": [
+        "ReadView const& sb"
+      ],
+      "lineno": 474,
+      "name": "DirectStepI<TDerived>::qualitiesSrcRedeems"
+    },
+    {
+      "args": [
+        "ReadView const& sb",
+        "DebtDirection prevStepDebtDirection"
+      ],
+      "lineno": 486,
+      "name": "DirectStepI<TDerived>::qualitiesSrcIssues"
+    },
+    {
+      "args": [
+        "ReadView const& sb",
+        "DebtDirection srcDebtDir",
+        "StrandDirection strandDir"
+      ],
+      "lineno": 504,
+      "name": "DirectStepI<TDerived>::qualities"
+    },
+    {
+      "args": [
+        "ReadView const& v"
+      ],
+      "lineno": 515,
+      "name": "DirectStepI<TDerived>::lineQualityIn"
+    },
+    {
+      "args": [
+        "ReadView const& v",
+        "DebtDirection prevStepDir"
+      ],
+      "lineno": 520,
+      "name": "DirectStepI<TDerived>::qualityUpperBound"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx"
+      ],
+      "lineno": 535,
+      "name": "DirectStepI<TDerived>::check"
+    },
+    {
+      "args": [
+        "Step const& step",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "Currency const& currency"
+      ],
+      "lineno": 601,
+      "name": "test::directStepEqual"
+    },
+    {
+      "args": [
+        "StrandContext const& ctx",
+        "AccountID const& src",
+        "AccountID const& dst",
+        "Currency const& c"
+      ],
+      "lineno": 613,
+      "name": "make_DirectStepI"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      },
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 11,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 599,
+      "name": "test"
+    }
+  ],
+  "test_coverage_notes": "DirectStepI is a template base for DirectIPaymentStep and DirectIOfferCrossingStep. Tests for these are typically found in 'src/test/app/paths/' such as 'DirectStep_test.cpp', 'Strand_test.cpp', 'PathCursor_test.cpp', and possibly 'OfferCrossing_test.cpp'. These tests cover construction, validation, and flow logic. However, coverage gaps may exist for edge cases (e.g., malformed input, rare trust line states, or exception paths). The constructor's type-based validation is not directly tested for invalid types (as C++ type system enforces this at compile time), but runtime validation (e.g., for account existence or trust line state) is tested in the derived classes' tests. There may be limited or no tests for error handling via exceptions in this specific file.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "src",
+      "dst",
+      "currency",
+      "prevStep_",
+      "isLast_",
+      "j_",
+      "cache_"
+    ],
+    "framework": "C++ type system, std::optional",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "src, dst, currency",
+      "location": "DirectStepI::DirectStepI",
+      "validated_by": "DirectStepI constructor (type system)",
+      "validates": [
+        "src is AccountID",
+        "dst is AccountID",
+        "currency is Currency"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (compile-time type enforcement)",
+      "field": "ctx.prevStep, ctx.isLast, ctx.j",
+      "location": "DirectStepI::DirectStepI",
+      "validated_by": "DirectStepI constructor (type system)",
+      "validates": [
+        "prevStep_ is Step const*",
+        "isLast_ is bool",
+        "j_ is beast::Journal const"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "n/a (optional checked at runtime, no exception thrown)",
+      "field": "cache_",
+      "location": "cache_ member and usage in cachedIn/cachedOut",
+      "validated_by": "std::optional (type system)",
+      "validates": [
+        "cache_ is present before access"
+      ],
+      "validation_type": "type/presence"
+    }
+  ]
+}

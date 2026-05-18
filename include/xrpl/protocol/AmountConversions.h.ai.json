@@ -1,0 +1,293 @@
+{
+  "args": [
+    {
+      "lineno": 9,
+      "name": "iou"
+    },
+    {
+      "lineno": 9,
+      "name": "asset"
+    },
+    {
+      "lineno": 17,
+      "name": "iou"
+    },
+    {
+      "lineno": 21,
+      "name": "xrp"
+    },
+    {
+      "lineno": 27,
+      "name": "xrp"
+    },
+    {
+      "lineno": 27,
+      "name": "asset"
+    },
+    {
+      "lineno": 32,
+      "name": "mpt"
+    },
+    {
+      "lineno": 36,
+      "name": "mpt"
+    },
+    {
+      "lineno": 36,
+      "name": "asset"
+    },
+    {
+      "lineno": 42,
+      "name": "amt"
+    },
+    {
+      "lineno": 45,
+      "name": "amt"
+    },
+    {
+      "lineno": 50,
+      "name": "amt"
+    },
+    {
+      "lineno": 62,
+      "name": "amt"
+    },
+    {
+      "lineno": 74,
+      "name": "amt"
+    },
+    {
+      "lineno": 91,
+      "name": "amt"
+    },
+    {
+      "lineno": 94,
+      "name": "amt"
+    },
+    {
+      "lineno": 98,
+      "name": "amt"
+    },
+    {
+      "lineno": 101,
+      "name": "amt"
+    },
+    {
+      "lineno": 105,
+      "name": "amt"
+    },
+    {
+      "lineno": 108,
+      "name": "amt"
+    },
+    {
+      "lineno": 112,
+      "name": "asset"
+    },
+    {
+      "lineno": 112,
+      "name": "n"
+    },
+    {
+      "lineno": 112,
+      "name": "mode"
+    },
+    {
+      "lineno": 134,
+      "name": "asset"
+    },
+    {
+      "lineno": 154,
+      "name": "asset"
+    },
+    {
+      "lineno": 154,
+      "name": "n"
+    },
+    {
+      "lineno": 154,
+      "name": "mode"
+    },
+    {
+      "lineno": 158,
+      "name": "amt"
+    },
+    {
+      "lineno": 172,
+      "name": "a"
+    }
+  ],
+  "classes": [],
+  "description": "Provides utility functions for converting between different XRPL amount types (IOUAmount, XRPAmount, MPTAmount, STAmount) and assets, as well as extracting assets and amounts from STAmount objects.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/AmountConversions.h",
+  "functions": [
+    {
+      "args": [
+        "iou",
+        "asset"
+      ],
+      "lineno": 9,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "iou"
+      ],
+      "lineno": 17,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "xrp"
+      ],
+      "lineno": 21,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "xrp",
+        "asset"
+      ],
+      "lineno": 27,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "mpt"
+      ],
+      "lineno": 32,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "mpt",
+        "asset"
+      ],
+      "lineno": 36,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 42,
+      "name": "toAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 45,
+      "name": "toAmount<STAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 50,
+      "name": "toAmount<IOUAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 62,
+      "name": "toAmount<XRPAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 74,
+      "name": "toAmount<MPTAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 91,
+      "name": "toAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 94,
+      "name": "toAmount<IOUAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 98,
+      "name": "toAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 101,
+      "name": "toAmount<XRPAmount>"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 105,
+      "name": "toAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 108,
+      "name": "toAmount<MPTAmount>"
+    },
+    {
+      "args": [
+        "asset",
+        "n",
+        "mode"
+      ],
+      "lineno": 112,
+      "name": "toAmount"
+    },
+    {
+      "args": [
+        "asset"
+      ],
+      "lineno": 134,
+      "name": "toMaxAmount"
+    },
+    {
+      "args": [
+        "asset",
+        "n",
+        "mode"
+      ],
+      "lineno": 154,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "amt"
+      ],
+      "lineno": 158,
+      "name": "getAsset"
+    },
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 172,
+      "name": "get"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

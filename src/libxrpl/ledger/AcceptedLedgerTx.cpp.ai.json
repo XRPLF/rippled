@@ -1,0 +1,546 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ledger"
+    },
+    {
+      "lineno": 11,
+      "name": "txn"
+    },
+    {
+      "lineno": 12,
+      "name": "met"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "AcceptedLedgerTx::AcceptedLedgerTx",
+        "XRPL_ASSERT(!ledger->open())",
+        "txn->getTransactionID()",
+        "ledger->seq()",
+        "*met",
+        "met->add(s)",
+        "mTxn->getJson()",
+        "mMeta.getJson()",
+        "mMeta.getResultTER()",
+        "mMeta.getAffectedAccounts()",
+        "mTxn->getTxnType()",
+        "mTxn->getAccountID(sfAccount)",
+        "mTxn->getFieldAmount(sfTakerGets)",
+        "accountFunds()"
+      ],
+      "entry_point": "AcceptedLedgerTx::AcceptedLedgerTx",
+      "purpose": "Constructs an AcceptedLedgerTx object, validates ledger state, serializes metadata, builds JSON representation, and (for OfferCreate) computes owner funds.",
+      "validation_points": [
+        "XRPL_ASSERT(!ledger->open())",
+        "C++ type system for txn, ledger, met (shared_ptr<T> const&)",
+        "C++ type system for txn->getTransactionID(), ledger->seq(), *met",
+        "mTxn->getTxnType() == ttOFFER_CREATE (enum/type check)"
+      ]
+    },
+    {
+      "call_chain": [
+        "AcceptedLedgerTx::getEscMeta",
+        "XRPL_ASSERT(!mRawMeta.empty())",
+        "sqlBlobLiteral(mRawMeta)"
+      ],
+      "entry_point": "AcceptedLedgerTx::getEscMeta",
+      "purpose": "Returns SQL-escaped metadata blob, ensuring metadata is present.",
+      "validation_points": [
+        "XRPL_ASSERT(!mRawMeta.empty())"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "ledger",
+      "flow": [
+        "constructor argument",
+        "XRPL_ASSERT(!ledger->open())",
+        "ledger->seq()",
+        "accountFunds(*ledger, ...)"
+      ],
+      "origin": "AcceptedLedgerTx constructor argument (std::shared_ptr<ReadView const> const&)",
+      "transformations": [
+        "Checked for open() state",
+        "Sequence number extracted",
+        "Passed to accountFunds"
+      ],
+      "validated_at": "XRPL_ASSERT(!ledger->open())"
+    },
+    {
+      "field": "txn",
+      "flow": [
+        "constructor argument",
+        "txn->getTransactionID()",
+        "txn->getJson()",
+        "txn->getTxnType()",
+        "txn->getAccountID(sfAccount)",
+        "txn->getFieldAmount(sfTakerGets)"
+      ],
+      "origin": "AcceptedLedgerTx constructor argument (std::shared_ptr<STTx const> const&)",
+      "transformations": [
+        "Transaction ID extracted",
+        "JSON representation generated",
+        "Transaction type checked",
+        "Account and amount fields extracted"
+      ],
+      "validated_at": "C++ type system (shared_ptr, STTx methods), enum/type check for getTxnType()"
+    },
+    {
+      "field": "met",
+      "flow": [
+        "constructor argument",
+        "met->add(s)",
+        "used in mMeta (AcceptedLedgerTxMeta)"
+      ],
+      "origin": "AcceptedLedgerTx constructor argument (std::shared_ptr<STObject const> const&)",
+      "transformations": [
+        "Serialized into mRawMeta",
+        "Used to construct mMeta"
+      ],
+      "validated_at": "C++ type system (shared_ptr, STObject methods)"
+    },
+    {
+      "field": "mRawMeta",
+      "flow": [
+        "constructed from met->add(s)",
+        "assigned to mRawMeta",
+        "used in mJson[jss::raw_meta]",
+        "used in getEscMeta()"
+      ],
+      "origin": "Serializer s; met->add(s); s.modData()",
+      "transformations": [
+        "Serialized to binary",
+        "Hex-encoded for JSON",
+        "SQL-escaped for getEscMeta"
+      ],
+      "validated_at": "XRPL_ASSERT(!mRawMeta.empty()) in getEscMeta"
+    },
+    {
+      "field": "mJson",
+      "flow": [
+        "initialized as Json::objectValue",
+        "populated with transaction, meta, raw_meta, result, affected, owner_funds"
+      ],
+      "origin": "Built in AcceptedLedgerTx constructor",
+      "transformations": [
+        "Populated with various fields and transformations"
+      ],
+      "validated_at": "Indirectly via validations on source fields"
+    },
+    {
+      "field": "mAffected",
+      "flow": [
+        "extracted from mMeta",
+        "used to populate mJson[jss::affected]"
+      ],
+      "origin": "mMeta.getAffectedAccounts()",
+      "transformations": [
+        "Converted to base58 for JSON"
+      ],
+      "validated_at": "C++ type system for mMeta"
+    }
+  ],
+  "description": "Implements the AcceptedLedgerTx class for the XRPL, representing a transaction accepted into a ledger, including its metadata, affected accounts, and JSON serialization.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "transaction type (via getTxnType)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field transaction type (via getTxnType) validated by XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system)",
+      "issue_pattern": "Missing validation for transaction type (via getTxnType)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system) validates transaction type (via getTxnType) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "account fields (via getAccountID, getFieldAmount)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field account fields (via getAccountID, getFieldAmount) validated by XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system)",
+      "issue_pattern": "Missing validation for account fields (via getAccountID, getFieldAmount)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system) validates account fields (via getAccountID, getFieldAmount) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "metadata presence (via XRPL_ASSERT)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field metadata presence (via XRPL_ASSERT) validated by XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system)",
+      "issue_pattern": "Missing validation for metadata presence (via XRPL_ASSERT)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system) validates metadata presence (via XRPL_ASSERT) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "ledger state (via XRPL_ASSERT)",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field ledger state (via XRPL_ASSERT) validated by XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system)",
+      "issue_pattern": "Missing validation for ledger state (via XRPL_ASSERT)",
+      "why_false_positive": "XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system) validates ledger state (via XRPL_ASSERT) automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "ledger->open()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at AcceptedLedgerTx constructor",
+      "issue_pattern": "Missing empty string validation for ledger->open()",
+      "why_false_positive": "XRPL_ASSERT validates ledger->open() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mRawMeta.empty()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at getEscMeta",
+      "issue_pattern": "Missing empty string validation for mRawMeta.empty()",
+      "why_false_positive": "XRPL_ASSERT validates mRawMeta.empty() for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "txn, ledger, met (constructor arguments)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system (std::shared_ptr<T> const&) at AcceptedLedgerTx constructor",
+      "issue_pattern": "Missing empty string validation for txn, ledger, met (constructor arguments)",
+      "why_false_positive": "C++ type system (std::shared_ptr<T> const&) validates txn, ledger, met (constructor arguments) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "txn, ledger, met (constructor arguments)",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system (std::shared_ptr<T> const&) at AcceptedLedgerTx constructor",
+      "issue_pattern": "Missing type validation for txn, ledger, met (constructor arguments)",
+      "why_false_positive": "C++ type system (std::shared_ptr<T> const&) validates txn, ledger, met (constructor arguments) type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.7,
+      "detection_keywords": [
+        "txn->getTransactionID(), ledger->seq(), *met",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ type system, STTx/STObject methods at AcceptedLedgerTx constructor (mMeta initialization)",
+      "issue_pattern": "Missing empty string validation for txn->getTransactionID(), ledger->seq(), *met",
+      "why_false_positive": "C++ type system, STTx/STObject methods validates txn->getTransactionID(), ledger->seq(), *met for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "type_safety"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "txn->getTransactionID(), ledger->seq(), *met",
+        "type",
+        "validation",
+        "check"
+      ],
+      "evidence": "C++ type system, STTx/STObject methods at AcceptedLedgerTx constructor (mMeta initialization)",
+      "issue_pattern": "Missing type validation for txn->getTransactionID(), ledger->seq(), *met",
+      "why_false_positive": "C++ type system, STTx/STObject methods validates txn->getTransactionID(), ledger->seq(), *met type"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "mTxn->getTxnType() == ttOFFER_CREATE",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ enum/type check at AcceptedLedgerTx constructor (conditional block)",
+      "issue_pattern": "Missing empty string validation for mTxn->getTxnType() == ttOFFER_CREATE",
+      "why_false_positive": "C++ enum/type check validates mTxn->getTxnType() == ttOFFER_CREATE for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "account != amount.getIssuer()",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "C++ operator==, AccountID/Issuer type at AcceptedLedgerTx constructor (OFFER_CREATE block)",
+      "issue_pattern": "Missing empty string validation for account != amount.getIssuer()",
+      "why_false_positive": "C++ operator==, AccountID/Issuer type validates account != amount.getIssuer() for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/ledger/AcceptedLedgerTx.cpp",
+  "functions": [
+    {
+      "args": [
+        "ledger",
+        "txn",
+        "met"
+      ],
+      "lineno": 9,
+      "name": "AcceptedLedgerTx"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "getEscMeta"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "AcceptedLedgerTx is a core ledger class, likely tested in integration and unit tests. Typical test files: 'test/ledger/AcceptedLedgerTx_test.cpp', 'test/ledger/Transaction_test.cpp', or higher-level transaction/ledger tests. Validations using XRPL_ASSERT may not be directly tested unless assertions are enabled in test builds. Data flow through JSON and meta serialization is likely covered by transaction application and ledger acceptance tests. Gaps: Direct assertion failures (e.g., ledger->open() == true) may not be tested unless negative tests are written. Edge cases for malformed meta or empty mRawMeta may not be fully covered.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "transaction type (via getTxnType)",
+      "account fields (via getAccountID, getFieldAmount)",
+      "metadata presence (via XRPL_ASSERT)",
+      "ledger state (via XRPL_ASSERT)"
+    ],
+    "framework": "XRPL custom (XRPL_ASSERT, jss:: for JSON keys, C++ type system)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "ledger->open()",
+      "location": "AcceptedLedgerTx constructor",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures the ledger is not open (must be a closed/finalized ledger)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "assertion failure (likely aborts or throws)",
+      "field": "mRawMeta.empty()",
+      "location": "getEscMeta",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that mRawMeta (serialized metadata) is not empty before use"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "undefined behavior if null, but not explicitly checked here",
+      "field": "txn, ledger, met (constructor arguments)",
+      "location": "AcceptedLedgerTx constructor",
+      "validated_by": "C++ type system (std::shared_ptr<T> const&)",
+      "validates": [
+        "Ensures arguments are shared pointers to expected types"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 0.7,
+      "error_thrown": "undefined behavior if null, but not explicitly checked here",
+      "field": "txn->getTransactionID(), ledger->seq(), *met",
+      "location": "AcceptedLedgerTx constructor (mMeta initialization)",
+      "validated_by": "C++ type system, STTx/STObject methods",
+      "validates": [
+        "Ensures that txn, ledger, and met are valid objects with required methods"
+      ],
+      "validation_type": "type"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (just conditional logic)",
+      "field": "mTxn->getTxnType() == ttOFFER_CREATE",
+      "location": "AcceptedLedgerTx constructor (conditional block)",
+      "validated_by": "C++ enum/type check",
+      "validates": [
+        "Checks if transaction type is OFFER_CREATE before accessing offer-specific fields"
+      ],
+      "validation_type": "type/business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "none (just conditional logic)",
+      "field": "account != amount.getIssuer()",
+      "location": "AcceptedLedgerTx constructor (OFFER_CREATE block)",
+      "validated_by": "C++ operator==, AccountID/Issuer type",
+      "validates": [
+        "Checks if offer is not self-funded before calculating owner funds"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

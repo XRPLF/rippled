@@ -1,0 +1,427 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "SHAMapTreeNode::makeFromWire",
+        "SHAMapTreeNode::makeTransaction | makeAccountState | makeTransactionWithMeta | SHAMapInnerNode::makeFullInner | SHAMapInnerNode::makeCompressedInner"
+      ],
+      "entry_point": "SHAMapTreeNode::makeFromWire",
+      "purpose": "Deserializes a wire-format node and dispatches to the appropriate node constructor based on type byte.",
+      "validation_points": [
+        "SHAMapTreeNode::makeTransactionWithMeta: size check, getBitString",
+        "SHAMapTreeNode::makeAccountState: size check, getBitString, tag.isZero"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapTreeNode::makeFromPrefix",
+        "SHAMapTreeNode::makeTransaction | makeAccountState | makeTransactionWithMeta | SHAMapInnerNode::makeFullInner | SHAMapInnerNode::makeCompressedInner"
+      ],
+      "entry_point": "SHAMapTreeNode::makeFromPrefix",
+      "purpose": "Deserializes a node with a 4-byte prefix and dispatches to the appropriate node constructor.",
+      "validation_points": [
+        "SHAMapTreeNode::makeFromPrefix: rawNode.size() < 4",
+        "SHAMapTreeNode::makeTransactionWithMeta: size check, getBitString",
+        "SHAMapTreeNode::makeAccountState: size check, getBitString, tag.isZero"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapTreeNode::makeTransactionWithMeta"
+      ],
+      "entry_point": "SHAMapTreeNode::makeTransactionWithMeta",
+      "purpose": "Constructs a transaction-with-metadata leaf node from serialized data.",
+      "validation_points": [
+        "size check (s.size() < tag.bytes)",
+        "getBitString (s.getBitString(tag, s.size() - tag.bytes))"
+      ]
+    },
+    {
+      "call_chain": [
+        "SHAMapTreeNode::makeAccountState"
+      ],
+      "entry_point": "SHAMapTreeNode::makeAccountState",
+      "purpose": "Constructs an account state leaf node from serialized data.",
+      "validation_points": [
+        "size check (s.size() < tag.bytes)",
+        "getBitString (s.getBitString(tag, s.size() - tag.bytes))",
+        "tag.isZero()"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "data (Slice)",
+      "flow": [
+        "Input to makeFromWire/makeFromPrefix",
+        "Passed to makeTransaction/makeTransactionWithMeta/makeAccountState",
+        "Wrapped in Serializer s",
+        "Used for size checks and getBitString",
+        "Chopped and passed to make_shamapitem",
+        "Used to construct SHAMap*LeafNode"
+      ],
+      "origin": "Input parameter to makeTransaction, makeTransactionWithMeta, makeAccountState, makeFromWire, makeFromPrefix",
+      "transformations": [
+        "Wrapped in Serializer",
+        "Chopped (s.chop(tag.bytes))",
+        "Sliced (s.slice())"
+      ],
+      "validated_at": "size check (s.size() < tag.bytes), getBitString"
+    },
+    {
+      "field": "tag (uint256)",
+      "flow": [
+        "Declared",
+        "Filled by getBitString",
+        "Used as key in make_shamapitem"
+      ],
+      "origin": "Declared in makeTransactionWithMeta and makeAccountState",
+      "transformations": [
+        "Filled by getBitString",
+        "Checked for isZero (in makeAccountState)"
+      ],
+      "validated_at": "getBitString, tag.isZero()"
+    },
+    {
+      "field": "rawNode (Slice)",
+      "flow": [
+        "Input",
+        "Type byte or prefix extracted",
+        "Suffix/prefix removed",
+        "Passed as data to makeTransaction/makeAccountState/makeTransactionWithMeta"
+      ],
+      "origin": "Input to makeFromWire/makeFromPrefix",
+      "transformations": [
+        "remove_suffix(1) or remove_prefix(4)"
+      ],
+      "validated_at": "makeFromWire: rawNode.empty(), makeFromPrefix: rawNode.size() < 4"
+    }
+  ],
+  "description": "Implements factory methods for creating various types of SHAMapTreeNode objects from serialized data, handling different node types (transaction, account state, inner, etc.) for the XRPL SHAMap structure.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "data (Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual size check (s.size() < tag.bytes) at SHAMapTreeNode::makeTransactionWithMeta",
+      "issue_pattern": "Missing empty string validation for data (Slice)",
+      "why_false_positive": "manual size check (s.size() < tag.bytes) validates data (Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "data (Slice)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual size check (s.size() < tag.bytes) at SHAMapTreeNode::makeTransactionWithMeta",
+      "issue_pattern": "Missing range validation for data (Slice)",
+      "why_false_positive": "manual size check (s.size() < tag.bytes) validates data (Slice) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "data (Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "s.getBitString(tag, s.size() - tag.bytes) at SHAMapTreeNode::makeTransactionWithMeta",
+      "issue_pattern": "Missing empty string validation for data (Slice)",
+      "why_false_positive": "s.getBitString(tag, s.size() - tag.bytes) validates data (Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "data (Slice)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "s.getBitString(tag, s.size() - tag.bytes) at SHAMapTreeNode::makeTransactionWithMeta",
+      "issue_pattern": "Missing format validation for data (Slice)",
+      "why_false_positive": "s.getBitString(tag, s.size() - tag.bytes) validates data (Slice) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "data (Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "manual size check (s.size() < tag.bytes) at SHAMapTreeNode::makeAccountState",
+      "issue_pattern": "Missing empty string validation for data (Slice)",
+      "why_false_positive": "manual size check (s.size() < tag.bytes) validates data (Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "bounds_check"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "data (Slice)",
+        "range",
+        "bounds",
+        "validation"
+      ],
+      "evidence": "manual size check (s.size() < tag.bytes) at SHAMapTreeNode::makeAccountState",
+      "issue_pattern": "Missing range validation for data (Slice)",
+      "why_false_positive": "manual size check (s.size() < tag.bytes) validates data (Slice) range"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "data (Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "s.getBitString(tag, s.size() - tag.bytes) at SHAMapTreeNode::makeAccountState",
+      "issue_pattern": "Missing empty string validation for data (Slice)",
+      "why_false_positive": "s.getBitString(tag, s.size() - tag.bytes) validates data (Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "data (Slice)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "s.getBitString(tag, s.size() - tag.bytes) at SHAMapTreeNode::makeAccountState",
+      "issue_pattern": "Missing format validation for data (Slice)",
+      "why_false_positive": "s.getBitString(tag, s.size() - tag.bytes) validates data (Slice) format"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "tag (uint256)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "tag.isZero() at SHAMapTreeNode::makeAccountState",
+      "issue_pattern": "Missing empty string validation for tag (uint256)",
+      "why_false_positive": "tag.isZero() validates tag (uint256) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rawNode (Slice)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "rawNode.empty() at SHAMapTreeNode::makeFromWire",
+      "issue_pattern": "Missing empty string validation for rawNode (Slice)",
+      "why_false_positive": "rawNode.empty() validates rawNode (Slice) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "rawNode (Slice)",
+        "format",
+        "validation",
+        "invalid"
+      ],
+      "evidence": "rawNode.empty() at SHAMapTreeNode::makeFromWire",
+      "issue_pattern": "Missing format validation for rawNode (Slice)",
+      "why_false_positive": "rawNode.empty() validates rawNode (Slice) format"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/shamap/SHAMapTreeNode.cpp",
+  "functions": [
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 11,
+      "name": "SHAMapTreeNode::makeTransaction"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 20,
+      "name": "SHAMapTreeNode::makeTransactionWithMeta"
+    },
+    {
+      "args": [
+        "Slice data",
+        "SHAMapHash const& hash",
+        "bool hashValid"
+      ],
+      "lineno": 41,
+      "name": "SHAMapTreeNode::makeAccountState"
+    },
+    {
+      "args": [
+        "Slice rawNode"
+      ],
+      "lineno": 62,
+      "name": "SHAMapTreeNode::makeFromWire"
+    },
+    {
+      "args": [
+        "Slice rawNode",
+        "SHAMapHash const& hash"
+      ],
+      "lineno": 89,
+      "name": "SHAMapTreeNode::makeFromPrefix"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const& id"
+      ],
+      "lineno": 115,
+      "name": "SHAMapTreeNode::getString"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is likely covered by SHAMap and SHAMapTreeNode unit tests, typically found in files like SHAMap_test.cpp, SHAMapTreeNode_test.cpp, or SHAMapInnerNode_test.cpp. These tests would exercise deserialization, error handling, and node construction. However, edge cases such as very short input slices, invalid tag values (e.g., tag.isZero()), and malformed wire types may not be exhaustively tested unless explicitly covered. The FIXME comments suggest some validation is ad hoc and could be missed by tests. There is no evidence of fuzz or property-based testing for malformed input, which could leave gaps in coverage for validation failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "manual validation (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "data (Slice)",
+      "location": "SHAMapTreeNode::makeTransactionWithMeta",
+      "validated_by": "manual size check (s.size() < tag.bytes)",
+      "validates": [
+        "Ensures input data is at least as large as tag.bytes (32 bytes for uint256)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::out_of_range",
+      "field": "data (Slice)",
+      "location": "SHAMapTreeNode::makeTransactionWithMeta",
+      "validated_by": "s.getBitString(tag, s.size() - tag.bytes)",
+      "validates": [
+        "Ensures getBitString can extract a uint256 from the data at the expected offset"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "data (Slice)",
+      "location": "SHAMapTreeNode::makeAccountState",
+      "validated_by": "manual size check (s.size() < tag.bytes)",
+      "validates": [
+        "Ensures input data is at least as large as tag.bytes (32 bytes for uint256)"
+      ],
+      "validation_type": "range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::out_of_range",
+      "field": "data (Slice)",
+      "location": "SHAMapTreeNode::makeAccountState",
+      "validated_by": "s.getBitString(tag, s.size() - tag.bytes)",
+      "validates": [
+        "Ensures getBitString can extract a uint256 from the data at the expected offset"
+      ],
+      "validation_type": "format"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "std::runtime_error",
+      "field": "tag (uint256)",
+      "location": "SHAMapTreeNode::makeAccountState",
+      "validated_by": "tag.isZero()",
+      "validates": [
+        "Ensures tag is not all zeroes (invalid account state node)"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns empty shared_ptr (no exception)",
+      "field": "rawNode (Slice)",
+      "location": "SHAMapTreeNode::makeFromWire",
+      "validated_by": "rawNode.empty()",
+      "validates": [
+        "Ensures input is not empty before parsing"
+      ],
+      "validation_type": "format"
+    }
+  ]
+}

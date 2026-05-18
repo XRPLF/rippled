@@ -1,0 +1,407 @@
+{
+  "args": [],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "PaymentChannelFund::preflight"
+      ],
+      "entry_point": "PaymentChannelFund::preflight",
+      "purpose": "Performs initial stateless validation of the PaymentChannelFund transaction before it is applied to the ledger.",
+      "validation_points": [
+        "Checks that sfAmount is XRP and > 0"
+      ]
+    },
+    {
+      "call_chain": [
+        "PaymentChannelFund::doApply"
+      ],
+      "entry_point": "PaymentChannelFund::doApply",
+      "purpose": "Performs all stateful validation and applies the PaymentChannelFund transaction to the ledger if valid.",
+      "validation_points": [
+        "Checks that payment channel exists (sfChannel)",
+        "Checks channel not expired (sfCancelAfter, sfExpiration)",
+        "Checks only owner can fund (sfAccount)",
+        "Checks expiration extension is valid (sfExpiration)",
+        "Checks source account exists (sfAccount)",
+        "Checks reserve and funds (sfBalance, sfOwnerCount, sfAmount)",
+        "Checks destination account exists (sfDestination)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfAmount",
+      "flow": [
+        "ctx.tx[sfAmount]",
+        "PaymentChannelFund::preflight (isXRP, > 0)",
+        "PaymentChannelFund::doApply (used for funding, balance checks, and updating channel)"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Validated as XRP and > 0 in preflight",
+        "Added to channel's sfAmount",
+        "Subtracted from source account's sfBalance"
+      ],
+      "validated_at": "preflight (isXRP, > 0), doApply (funds check)"
+    },
+    {
+      "field": "sfChannel",
+      "flow": [
+        "ctx.tx[sfChannel]",
+        "Keylet k constructed",
+        "ctx_.view().peek(k) to fetch channel SLE"
+      ],
+      "origin": "ctx.tx[sfChannel] (transaction input)",
+      "transformations": [
+        "Used to locate the payment channel in the ledger"
+      ],
+      "validated_at": "doApply (channel existence check)"
+    },
+    {
+      "field": "sfAccount (source)",
+      "flow": [
+        "ctx.tx[sfAccount]",
+        "compared to channel's sfAccount (src)",
+        "used to fetch source account SLE"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Checked for permission (must match channel owner)",
+        "Used to fetch account SLE"
+      ],
+      "validated_at": "doApply (permission check, account existence check)"
+    },
+    {
+      "field": "sfExpiration",
+      "flow": [
+        "ctx.tx[~sfExpiration]",
+        "if present, compared to minExpiration",
+        "if valid, updates channel's sfExpiration"
+      ],
+      "origin": "ctx.tx[~sfExpiration] (optional transaction input)",
+      "transformations": [
+        "Validated against minExpiration",
+        "Updates channel SLE if valid"
+      ],
+      "validated_at": "doApply (expiration extension check)"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "(*slep)[sfDestination]",
+        "ctx_.view().read(keylet::account(dst))"
+      ],
+      "origin": "(*slep)[sfDestination] (from channel SLE)",
+      "transformations": [
+        "Checked for existence in ledger"
+      ],
+      "validated_at": "doApply (destination existence check)"
+    },
+    {
+      "field": "sfBalance",
+      "flow": [
+        "(*sle)[sfBalance]",
+        "checked against reserve and funding amount",
+        "decremented by ctx_.tx[sfAmount] if funding succeeds"
+      ],
+      "origin": "(*sle)[sfBalance] (from source account SLE)",
+      "transformations": [
+        "Checked for sufficient funds",
+        "Decremented on successful fund"
+      ],
+      "validated_at": "doApply (funds/reserve check)"
+    }
+  ],
+  "description": "Implements the logic for the PaymentChannelFund transaction in the XRPL, handling the addition of funds to an existing payment channel, including validation, permission checks, expiration extension, and ledger updates.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRP() and (ctx.tx[sfAmount] <= beast::zero) at preflight",
+      "issue_pattern": "Missing empty string validation for sfAmount",
+      "why_false_positive": "isXRP() and (ctx.tx[sfAmount] <= beast::zero) validates sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfChannel",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx_.view().peek(k) at doApply",
+      "issue_pattern": "Missing empty string validation for sfChannel",
+      "why_false_positive": "ctx_.view().peek(k) validates sfChannel for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "src != txAccount at doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount",
+      "why_false_positive": "src != txAccount validates sfAccount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(*slep)[~sfExpiration] and (*extend < minExpiration) at doApply",
+      "issue_pattern": "Missing empty string validation for sfExpiration",
+      "why_false_positive": "(*slep)[~sfExpiration] and (*extend < minExpiration) validates sfExpiration for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfAccount (source account)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx_.view().peek(keylet::account(txAccount)) at doApply",
+      "issue_pattern": "Missing empty string validation for sfAccount (source account)",
+      "why_false_positive": "ctx_.view().peek(keylet::account(txAccount)) validates sfAccount (source account) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance and sfOwnerCount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balance < reserve at doApply",
+      "issue_pattern": "Missing empty string validation for sfBalance and sfOwnerCount",
+      "why_false_positive": "balance < reserve validates sfBalance and sfOwnerCount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfBalance and sfAmount",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "balance < reserve + ctx_.tx[sfAmount] at doApply",
+      "issue_pattern": "Missing empty string validation for sfBalance and sfAmount",
+      "why_false_positive": "balance < reserve + ctx_.tx[sfAmount] validates sfBalance and sfAmount for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "sfDestination",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "ctx_.view().read(keylet::account(dst)) at doApply",
+      "issue_pattern": "Missing empty string validation for sfDestination",
+      "why_false_positive": "ctx_.view().read(keylet::account(dst)) validates sfDestination for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "sfCancelAfter and sfExpiration",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "(cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration) at doApply",
+      "issue_pattern": "Missing empty string validation for sfCancelAfter and sfExpiration",
+      "why_false_positive": "(cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration) validates sfCancelAfter and sfExpiration for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/payment_channel/PaymentChannelFund.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 8,
+      "name": "PaymentChannelFund::makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "PaymentChannelFund::preflight"
+    },
+    {
+      "args": [],
+      "lineno": 20,
+      "name": "PaymentChannelFund::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "PaymentChannelFund is typically tested in integration and unit tests for payment channels. Likely test files include PaymentChannel_test.cpp, PaymentChannelFund_test.cpp, or broader transaction engine tests. The preflight and doApply validations (amount, channel existence, permissions, expiration, reserve, destination) are usually covered. Gaps may exist for rare edge cases (e.g., internal errors, simultaneous expiration/cancel, malformed SLEs). LCOV_EXCL_LINE indicates some error paths may not be directly tested.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom validation in business logic (no external framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_AMOUNT",
+      "field": "sfAmount",
+      "location": "preflight",
+      "validated_by": "isXRP() and (ctx.tx[sfAmount] <= beast::zero)",
+      "validates": [
+        "Checks that sfAmount is an XRP amount (not IOU)",
+        "Checks that sfAmount is greater than zero"
+      ],
+      "validation_type": "type|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_ENTRY",
+      "field": "sfChannel",
+      "location": "doApply",
+      "validated_by": "ctx_.view().peek(k)",
+      "validates": [
+        "Checks that the payment channel exists"
+      ],
+      "validation_type": "business_logic|existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_PERMISSION",
+      "field": "sfAccount",
+      "location": "doApply",
+      "validated_by": "src != txAccount",
+      "validates": [
+        "Checks that the transaction is submitted by the channel owner"
+      ],
+      "validation_type": "business_logic|ownership"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "temBAD_EXPIRATION",
+      "field": "sfExpiration",
+      "location": "doApply",
+      "validated_by": "(*slep)[~sfExpiration] and (*extend < minExpiration)",
+      "validates": [
+        "Checks that the new expiration is not before the minimum allowed expiration"
+      ],
+      "validation_type": "range|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tefINTERNAL",
+      "field": "sfAccount (source account)",
+      "location": "doApply",
+      "validated_by": "ctx_.view().peek(keylet::account(txAccount))",
+      "validates": [
+        "Checks that the source account exists"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecINSUFFICIENT_RESERVE",
+      "field": "sfBalance and sfOwnerCount",
+      "location": "doApply",
+      "validated_by": "balance < reserve",
+      "validates": [
+        "Checks that the account has enough balance to meet reserve requirements"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecUNFUNDED",
+      "field": "sfBalance and sfAmount",
+      "location": "doApply",
+      "validated_by": "balance < reserve + ctx_.tx[sfAmount]",
+      "validates": [
+        "Checks that the account has enough balance to fund the channel after reserve"
+      ],
+      "validation_type": "business_logic|range"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "tecNO_DST",
+      "field": "sfDestination",
+      "location": "doApply",
+      "validated_by": "ctx_.view().read(keylet::account(dst))",
+      "validates": [
+        "Checks that the destination account exists"
+      ],
+      "validation_type": "existence"
+    },
+    {
+      "confidence": 0.9,
+      "error_thrown": "closeChannel() (returns error code)",
+      "field": "sfCancelAfter and sfExpiration",
+      "location": "doApply",
+      "validated_by": "(cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration)",
+      "validates": [
+        "Checks if the channel should be closed due to expiration or cancelAfter"
+      ],
+      "validation_type": "business_logic|range"
+    }
+  ]
+}

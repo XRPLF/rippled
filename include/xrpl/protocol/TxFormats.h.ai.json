@@ -1,0 +1,31 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 51,
+      "name": "TxFormats"
+    }
+  ],
+  "description": "Defines transaction type identifiers (TxType enum) used in the XRPL protocol and declares the TxFormats class for managing known transaction formats.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/TxFormats.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 61,
+      "name": "getInstance"
+    },
+    {
+      "args": [],
+      "lineno": 64,
+      "name": "getCommonFields"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

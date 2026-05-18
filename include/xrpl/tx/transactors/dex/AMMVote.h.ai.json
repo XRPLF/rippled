@@ -1,0 +1,61 @@
+{
+  "args": [
+    {
+      "lineno": 32,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 22,
+      "name": "AMMVote"
+    }
+  ],
+  "description": "Implements the AMMVote transactor, allowing liquidity providers (LPs) holding LPTokens to vote on the TradingFee parameter of an AMM instance. Manages voting logic, updates, and TradingFee calculation based on weighted votes.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/dex/AMMVote.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 32,
+      "name": "AMMVote"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 36,
+      "name": "checkExtraFeatures"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 39,
+      "name": "preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 42,
+      "name": "preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 45,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

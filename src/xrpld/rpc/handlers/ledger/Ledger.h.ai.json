@@ -1,0 +1,71 @@
+{
+  "args": [
+    {
+      "lineno": 44,
+      "name": "context_"
+    },
+    {
+      "lineno": 45,
+      "name": "ledger_"
+    },
+    {
+      "lineno": 46,
+      "name": "queueTxs_"
+    },
+    {
+      "lineno": 47,
+      "name": "result_"
+    },
+    {
+      "lineno": 48,
+      "name": "options_"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "JsonContext&"
+      ],
+      "lineno": 26,
+      "name": "LedgerHandler"
+    }
+  ],
+  "description": "Defines the LedgerHandler class for handling the 'ledger' RPC command, including its interface, options, and metadata for API versioning and roles.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/handlers/ledger/Ledger.h",
+  "functions": [
+    {
+      "args": [
+        "JsonContext&"
+      ],
+      "lineno": 28,
+      "name": "LedgerHandler"
+    },
+    {
+      "args": [],
+      "lineno": 30,
+      "name": "check"
+    },
+    {
+      "args": [
+        "Json::Value&"
+      ],
+      "lineno": 33,
+      "name": "writeResult"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "Json"
+    },
+    {
+      "lineno": 17,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 18,
+      "name": "RPC"
+    }
+  ]
+}

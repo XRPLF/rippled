@@ -1,0 +1,193 @@
+{
+  "args": [
+    {
+      "lineno": 13,
+      "name": "ctx"
+    },
+    {
+      "lineno": 27,
+      "name": "ctx"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "VaultWithdraw::preflight"
+      ],
+      "entry_point": "VaultWithdraw::preflight",
+      "purpose": "Initial stateless validation of the VaultWithdraw transaction. Checks for malformed fields and basic constraints before further processing.",
+      "validation_points": [
+        "VaultWithdraw::preflight"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultWithdraw::preclaim",
+        "canTransfer",
+        "canWithdraw",
+        "sharesToAssetsWithdraw"
+      ],
+      "entry_point": "VaultWithdraw::preclaim",
+      "purpose": "Performs contextual validation using ledger state. Checks vault existence, asset correctness, withdrawal policy, and withdrawal limits.",
+      "validation_points": [
+        "VaultWithdraw::preclaim",
+        "canTransfer",
+        "canWithdraw",
+        "sharesToAssetsWithdraw"
+      ]
+    },
+    {
+      "call_chain": [
+        "VaultWithdraw::doApply"
+      ],
+      "entry_point": "VaultWithdraw::doApply",
+      "purpose": "Executes the transaction after all validations pass. Not shown in code, but typically applies state changes.",
+      "validation_points": [
+        "VaultWithdraw::preflight",
+        "VaultWithdraw::preclaim"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "sfVaultID",
+      "flow": [
+        "Transaction input",
+        "VaultWithdraw::preflight (checked for zero/empty)",
+        "VaultWithdraw::preclaim (used to look up vault in ledger)"
+      ],
+      "origin": "ctx.tx[sfVaultID] (transaction input)",
+      "transformations": [
+        "Checked for zero/empty",
+        "Used as key to fetch vault ledger entry"
+      ],
+      "validated_at": "VaultWithdraw::preflight, VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfAmount",
+      "flow": [
+        "Transaction input",
+        "VaultWithdraw::preflight (checked for <= 0)",
+        "VaultWithdraw::preclaim (used for asset checks, withdrawal limits)"
+      ],
+      "origin": "ctx.tx[sfAmount] (transaction input)",
+      "transformations": [
+        "Checked for <= 0",
+        "Compared against vault asset/share",
+        "May be converted from shares to assets"
+      ],
+      "validated_at": "VaultWithdraw::preflight, VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfDestination",
+      "flow": [
+        "Transaction input",
+        "VaultWithdraw::preflight (checked for zero/empty if present)",
+        "VaultWithdraw::preclaim (used as destination account, fallback to sfAccount)"
+      ],
+      "origin": "ctx.tx[~sfDestination] (optional transaction input)",
+      "transformations": [
+        "Checked for zero/empty",
+        "Defaulted to sfAccount if not present"
+      ],
+      "validated_at": "VaultWithdraw::preflight, VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfAccount",
+      "flow": [
+        "Transaction input",
+        "VaultWithdraw::preclaim (used as source account, fallback for destination)"
+      ],
+      "origin": "ctx.tx[sfAccount] (transaction input)",
+      "transformations": [
+        "Used as fallback for destination"
+      ],
+      "validated_at": "VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfAsset / sfShareMPTID",
+      "flow": [
+        "Ledger vault entry",
+        "VaultWithdraw::preclaim (compared to amount.asset())"
+      ],
+      "origin": "vault->at(sfAsset), vault->at(sfShareMPTID) (ledger vault entry)",
+      "transformations": [
+        "Compared to transaction asset"
+      ],
+      "validated_at": "VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfWithdrawalPolicy",
+      "flow": [
+        "Ledger vault entry",
+        "VaultWithdraw::preclaim (compared to vaultStrategyFirstComeFirstServe)"
+      ],
+      "origin": "vault->at(sfWithdrawalPolicy) (ledger vault entry)",
+      "transformations": [
+        "Checked for allowed withdrawal policy"
+      ],
+      "validated_at": "VaultWithdraw::preclaim"
+    },
+    {
+      "field": "sfShareMPTID (shares)",
+      "flow": [
+        "Ledger vault entry",
+        "VaultWithdraw::preclaim (if amount.asset() == vaultShare, triggers share-to-asset conversion)"
+      ],
+      "origin": "vault->at(sfShareMPTID) (ledger vault entry)",
+      "transformations": [
+        "Converted to asset amount via sharesToAssetsWithdraw"
+      ],
+      "validated_at": "VaultWithdraw::preclaim (post-fixSecurity3_1_3)"
+    }
+  ],
+  "description": "Implements the VaultWithdraw transaction logic for the XRPL, including preflight, preclaim, and application of vault asset withdrawals, with checks for asset validity, withdrawal policy, authorization, and asset conversion.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/transactors/vault/VaultWithdraw.cpp",
+  "functions": [
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 13,
+      "name": "VaultWithdraw::preflight"
+    },
+    {
+      "args": [
+        "PreclaimContext const& ctx"
+      ],
+      "lineno": 27,
+      "name": "VaultWithdraw::preclaim"
+    },
+    {
+      "args": [],
+      "lineno": 97,
+      "name": "VaultWithdraw::doApply"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      }
+    ],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for transaction validation includes malformed transactions (missing/zero fields), invalid amounts, wrong assets, unauthorized withdrawals, and policy enforcement. Likely test files: 'test/tx/VaultWithdraw_test.cpp', 'test/ledger/Vault_test.cpp', or similar. Gaps: Exception paths (e.g., overflow in sharesToAssetsWithdraw), internal errors (tefINTERNAL), and rare policy configurations may not be fully covered. LCOV_EXCL annotations suggest some error branches are not covered by tests.",
+  "validation_architecture": {},
+  "validations": []
+}

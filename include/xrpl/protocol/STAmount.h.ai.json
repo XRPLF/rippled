@@ -1,0 +1,334 @@
+{
+  "args": [
+    {
+      "lineno": 39,
+      "name": "sit"
+    },
+    {
+      "lineno": 39,
+      "name": "name"
+    },
+    {
+      "lineno": 44,
+      "name": "asset"
+    },
+    {
+      "lineno": 44,
+      "name": "mantissa"
+    },
+    {
+      "lineno": 44,
+      "name": "exponent"
+    },
+    {
+      "lineno": 44,
+      "name": "negative"
+    },
+    {
+      "lineno": 97,
+      "name": "amount"
+    },
+    {
+      "lineno": 97,
+      "name": "issue"
+    },
+    {
+      "lineno": 101,
+      "name": "mptIssue"
+    },
+    {
+      "lineno": 443,
+      "name": "v"
+    },
+    {
+      "lineno": 443,
+      "name": "field"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "SerialIter& sit, SField const& name",
+        "SField const& name, A const& asset, mantissa_type mantissa, exponent_type exponent, bool negative, unchecked",
+        "A const& asset, mantissa_type mantissa, exponent_type exponent, bool negative, unchecked",
+        "SField const& name, A const& asset, mantissa_type mantissa = 0, exponent_type exponent = 0, bool negative = false",
+        "SField const& name, std::int64_t mantissa",
+        "SField const& name, std::uint64_t mantissa = 0, bool negative = false",
+        "std::uint64_t mantissa = 0, bool negative = false",
+        "SField const& name, STAmount const& amt",
+        "A const& asset, std::uint64_t mantissa = 0, int exponent = 0, bool negative = false",
+        "A const& asset, std::uint32_t mantissa, int exponent = 0, bool negative = false",
+        "A const& asset, std::int64_t mantissa, int exponent = 0",
+        "A const& asset, int mantissa, int exponent = 0",
+        "A const& asset, Number const& number",
+        "IOUAmount const& amount, Issue const& issue",
+        "XRPAmount const& amount",
+        "MPTAmount const& amount, MPTIssue const& mptIssue"
+      ],
+      "lineno": 18,
+      "name": "STAmount"
+    },
+    {
+      "args": [
+        "explicit unchecked() = default"
+      ],
+      "lineno": 38,
+      "name": "unchecked"
+    }
+  ],
+  "description": "Defines the STAmount class and related functions for representing and manipulating amounts (XRP, IOU, MPT) in the XRPL protocol, including arithmetic, serialization, and rounding utilities.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/STAmount.h",
+  "functions": [
+    {
+      "args": [
+        "rate"
+      ],
+      "lineno": 210,
+      "name": "amountFromQuality"
+    },
+    {
+      "args": [
+        "asset",
+        "amount"
+      ],
+      "lineno": 213,
+      "name": "amountFromString"
+    },
+    {
+      "args": [
+        "name",
+        "v"
+      ],
+      "lineno": 215,
+      "name": "amountFromJson"
+    },
+    {
+      "args": [
+        "result",
+        "jvSource"
+      ],
+      "lineno": 217,
+      "name": "amountFromJsonNoThrow"
+    },
+    {
+      "args": [
+        "a"
+      ],
+      "lineno": 221,
+      "name": "toSTAmount"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 324,
+      "name": "isLegalNet"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 329,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 330,
+      "name": "operator<"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 332,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 336,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 340,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 344,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 348,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "v1",
+        "v2"
+      ],
+      "lineno": 353,
+      "name": "operator+"
+    },
+    {
+      "args": [
+        "v1",
+        "v2"
+      ],
+      "lineno": 354,
+      "name": "operator-"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset"
+      ],
+      "lineno": 356,
+      "name": "divide"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset"
+      ],
+      "lineno": 358,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 361,
+      "name": "mulRound"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 364,
+      "name": "mulRoundStrict"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 367,
+      "name": "divRound"
+    },
+    {
+      "args": [
+        "v1",
+        "v2",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 370,
+      "name": "divRoundStrict"
+    },
+    {
+      "args": [
+        "offerOut",
+        "offerIn"
+      ],
+      "lineno": 374,
+      "name": "getRate"
+    },
+    {
+      "args": [
+        "value",
+        "scale",
+        "rounding"
+      ],
+      "lineno": 386,
+      "name": "roundToScale"
+    },
+    {
+      "args": [
+        "asset",
+        "value"
+      ],
+      "lineno": 401,
+      "name": "roundToAsset"
+    },
+    {
+      "args": [
+        "asset",
+        "value",
+        "scale",
+        "rounding"
+      ],
+      "lineno": 414,
+      "name": "roundToAsset"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 432,
+      "name": "isXRP"
+    },
+    {
+      "args": [
+        "amt1",
+        "amt2"
+      ],
+      "lineno": 435,
+      "name": "canAdd"
+    },
+    {
+      "args": [
+        "amt1",
+        "amt2"
+      ],
+      "lineno": 437,
+      "name": "canSubtract"
+    },
+    {
+      "args": [
+        "v",
+        "field"
+      ],
+      "lineno": 442,
+      "name": "getOrThrow"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 440,
+      "name": "Json"
+    }
+  ]
+}

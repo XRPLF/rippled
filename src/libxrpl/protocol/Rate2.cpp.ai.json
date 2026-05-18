@@ -1,0 +1,500 @@
+{
+  "args": [
+    {
+      "lineno": 14,
+      "name": "rate"
+    },
+    {
+      "lineno": 21,
+      "name": "fee"
+    },
+    {
+      "lineno": 27,
+      "name": "amount"
+    },
+    {
+      "lineno": 27,
+      "name": "rate"
+    },
+    {
+      "lineno": 38,
+      "name": "amount"
+    },
+    {
+      "lineno": 38,
+      "name": "rate"
+    },
+    {
+      "lineno": 38,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 49,
+      "name": "amount"
+    },
+    {
+      "lineno": 49,
+      "name": "rate"
+    },
+    {
+      "lineno": 49,
+      "name": "asset"
+    },
+    {
+      "lineno": 49,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 62,
+      "name": "amount"
+    },
+    {
+      "lineno": 62,
+      "name": "rate"
+    },
+    {
+      "lineno": 73,
+      "name": "amount"
+    },
+    {
+      "lineno": 73,
+      "name": "rate"
+    },
+    {
+      "lineno": 73,
+      "name": "roundUp"
+    },
+    {
+      "lineno": 84,
+      "name": "amount"
+    },
+    {
+      "lineno": 84,
+      "name": "rate"
+    },
+    {
+      "lineno": 84,
+      "name": "asset"
+    },
+    {
+      "lineno": 84,
+      "name": "roundUp"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "multiply",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "multiply(amount, STAmount, Asset)"
+      ],
+      "entry_point": "multiply",
+      "purpose": "Multiplies an STAmount by a Rate, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "multiply (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "multiplyRound",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "mulRound(amount, STAmount, Asset, roundUp)"
+      ],
+      "entry_point": "multiplyRound",
+      "purpose": "Multiplies an STAmount by a Rate with rounding, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "multiplyRound (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "multiplyRound(amount, rate, asset, roundUp)",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "mulRound(amount, STAmount, asset, roundUp)"
+      ],
+      "entry_point": "multiplyRound (with Asset)",
+      "purpose": "Multiplies an STAmount by a Rate with rounding and explicit Asset, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "multiplyRound (with Asset) (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "divide",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "divide(amount, STAmount, Asset)"
+      ],
+      "entry_point": "divide",
+      "purpose": "Divides an STAmount by a Rate, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "divide (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "divideRound",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "divRound(amount, STAmount, Asset, roundUp)"
+      ],
+      "entry_point": "divideRound",
+      "purpose": "Divides an STAmount by a Rate with rounding, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "divideRound (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "divideRound(amount, rate, asset, roundUp)",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate)",
+        "divRound(amount, STAmount, asset, roundUp)"
+      ],
+      "entry_point": "divideRound (with Asset)",
+      "purpose": "Divides an STAmount by a Rate with rounding and explicit Asset, returning a new STAmount. Validates that the rate is nonzero.",
+      "validation_points": [
+        "divideRound (with Asset) (XRPL_ASSERT(rate.value))"
+      ]
+    },
+    {
+      "call_chain": [
+        "transferFeeAsRate",
+        "Rate{static_cast<uint32_t>(fee) * 10000}"
+      ],
+      "entry_point": "nft::transferFeeAsRate",
+      "purpose": "Converts a uint16_t fee to a Rate object. No validation here.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "rate.value",
+      "flow": [
+        "Function parameter (Rate const& rate)",
+        "XRPL_ASSERT(rate.value)",
+        "detail::as_amount(rate) \u2192 STAmount",
+        "Used in multiply/divide/mulRound/divRound"
+      ],
+      "origin": "Passed as part of Rate parameter to multiply/divide/multiplyRound/divideRound",
+      "transformations": [
+        "Checked for nonzero (validation)",
+        "Converted to STAmount via as_amount"
+      ],
+      "validated_at": "Immediately at function entry (XRPL_ASSERT in each function)"
+    },
+    {
+      "field": "amount",
+      "flow": [
+        "Function parameter (STAmount const& amount)",
+        "Passed through to multiply/divide/mulRound/divRound"
+      ],
+      "origin": "Passed as STAmount parameter to multiply/divide/multiplyRound/divideRound",
+      "transformations": [
+        "Combined with rate (as STAmount) in arithmetic operation"
+      ],
+      "validated_at": "Not directly validated in this file"
+    },
+    {
+      "field": "fee (uint16_t)",
+      "flow": [
+        "Function parameter (fee)",
+        "Converted to uint32_t and multiplied by 10000",
+        "Used to construct Rate"
+      ],
+      "origin": "Passed to nft::transferFeeAsRate",
+      "transformations": [
+        "Casted and scaled"
+      ],
+      "validated_at": "Not validated in this file"
+    }
+  ],
+  "description": "Implements utility functions for multiplying and dividing STAmount values by Rate, including rounding and asset-specific variants, primarily for use in XRPL NFT and asset protocols.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "rate.value",
+        "validation",
+        "missing",
+        "check"
+      ],
+      "evidence": "Field rate.value validated by XRPL_ASSERT (custom assertion macro/function)",
+      "issue_pattern": "Missing validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT (custom assertion macro/function) validates rate.value automatically"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at multiply",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at multiplyRound (STAmount const&, Rate const&, bool)",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at multiplyRound (STAmount const&, Rate const&, Asset const&, bool)",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at divide",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at divideRound (STAmount const&, Rate const&, bool)",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "rate.value",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at divideRound (STAmount const&, Rate const&, Asset const&, bool)",
+      "issue_pattern": "Missing empty string validation for rate.value",
+      "why_false_positive": "XRPL_ASSERT validates rate.value for empty strings"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Rate2.cpp",
+  "functions": [
+    {
+      "args": [
+        "rate"
+      ],
+      "lineno": 14,
+      "name": "as_amount"
+    },
+    {
+      "args": [
+        "fee"
+      ],
+      "lineno": 21,
+      "name": "transferFeeAsRate"
+    },
+    {
+      "args": [
+        "amount",
+        "rate"
+      ],
+      "lineno": 27,
+      "name": "multiply"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "roundUp"
+      ],
+      "lineno": 38,
+      "name": "multiplyRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 49,
+      "name": "multiplyRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate"
+      ],
+      "lineno": 62,
+      "name": "divide"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "roundUp"
+      ],
+      "lineno": 73,
+      "name": "divideRound"
+    },
+    {
+      "args": [
+        "amount",
+        "rate",
+        "asset",
+        "roundUp"
+      ],
+      "lineno": 84,
+      "name": "divideRound"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 12,
+      "name": "detail"
+    },
+    {
+      "lineno": 19,
+      "name": "nft"
+    }
+  ],
+  "test_coverage_notes": "The validation of rate.value (nonzero) is enforced at the entry of all multiply/divide/multiplyRound/divideRound functions via XRPL_ASSERT. These functions are likely tested in unit tests for Rate, STAmount, and NFT transfer fee logic, typically found in files like Rate_test.cpp, STAmount_test.cpp, or NFT-related test files. However, the code does not validate the range or upper bound of rate.value, only that it is nonzero. There is no explicit test coverage shown here for invalid (zero) rates, negative values, or overflow scenarios. The transferFeeAsRate function does not validate its input. Test coverage gaps may include: passing zero or invalid rates, edge cases for fee conversion, and ensuring that XRPL_ASSERT triggers as expected.",
+  "validation_architecture": {
+    "auto_validated_fields": [
+      "rate.value"
+    ],
+    "framework": "XRPL_ASSERT (custom assertion macro/function)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "multiply",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to multiply is nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "multiplyRound (STAmount const&, Rate const&, bool)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to multiplyRound is nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "multiplyRound (STAmount const&, Rate const&, Asset const&, bool)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to multiplyRound (with Asset) is nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "divide",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to divide is nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "divideRound (STAmount const&, Rate const&, bool)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to divideRound is nonzero"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely abort or exception, depending on XRPL_ASSERT implementation)",
+      "field": "rate.value",
+      "location": "divideRound (STAmount const&, Rate const&, Asset const&, bool)",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the Rate input to divideRound (with Asset) is nonzero"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

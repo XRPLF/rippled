@@ -1,0 +1,70 @@
+{
+  "args": [
+    {
+      "lineno": 21,
+      "name": "ledgerEntryType"
+    },
+    {
+      "lineno": 21,
+      "name": "flags"
+    },
+    {
+      "lineno": 52,
+      "name": "value"
+    },
+    {
+      "lineno": 62,
+      "name": "value"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "LedgerEntryBuilderBase"
+    }
+  ],
+  "description": "Defines a base template class for building XRPL ledger entries, providing common field setters and validation for derived ledger entry builder types.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/LedgerEntryBuilderBase.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 18,
+      "name": "LedgerEntryBuilderBase"
+    },
+    {
+      "args": [
+        "SF_UINT16::type::value_type ledgerEntryType",
+        "SF_UINT32::type::value_type flags"
+      ],
+      "lineno": 20,
+      "name": "LedgerEntryBuilderBase"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "validate"
+    },
+    {
+      "args": [
+        "uint256 const& value"
+      ],
+      "lineno": 51,
+      "name": "setLedgerIndex"
+    },
+    {
+      "args": [
+        "uint32_t value"
+      ],
+      "lineno": 61,
+      "name": "setFlags"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "xrpl::ledger_entries"
+    }
+  ]
+}

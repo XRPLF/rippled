@@ -1,0 +1,42 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "ts..."
+      ],
+      "lineno": 34,
+      "name": "CombineVisitors"
+    }
+  ],
+  "description": "This file defines C++ concepts and utility templates for type-checking and visitation patterns related to XRPL protocol types such as assets, issues, and amounts. It provides concepts for compile-time validation of types and utilities for combining and applying multiple visitors to variants.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Concepts.h",
+  "functions": [
+    {
+      "args": [
+        "ts..."
+      ],
+      "lineno": 48,
+      "name": "make_combine_visitors"
+    },
+    {
+      "args": [
+        "v",
+        "visitors..."
+      ],
+      "lineno": 61,
+      "name": "visit"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 28,
+      "name": "detail"
+    }
+  ]
+}

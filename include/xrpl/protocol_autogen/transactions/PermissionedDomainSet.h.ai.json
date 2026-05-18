@@ -1,0 +1,109 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "tx"
+    },
+    {
+      "lineno": 75,
+      "name": "account"
+    },
+    {
+      "lineno": 75,
+      "name": "acceptedCredentials"
+    },
+    {
+      "lineno": 75,
+      "name": "sequence"
+    },
+    {
+      "lineno": 75,
+      "name": "fee"
+    },
+    {
+      "lineno": 86,
+      "name": "tx"
+    },
+    {
+      "lineno": 94,
+      "name": "value"
+    },
+    {
+      "lineno": 103,
+      "name": "value"
+    },
+    {
+      "lineno": 112,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 112,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 27,
+      "name": "PermissionedDomainSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, STArray const& acceptedCredentials, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 71,
+      "name": "PermissionedDomainSetBuilder"
+    }
+  ],
+  "description": "Defines the PermissionedDomainSet transaction type for XRPL, including its immutable wrapper and builder for constructing and signing transactions with type-safe field access.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/PermissionedDomainSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "getDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 49,
+      "name": "hasDomainID"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "getAcceptedCredentials"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 93,
+      "name": "setDomainID"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 102,
+      "name": "setAcceptedCredentials"
+    },
+    {
+      "args": [
+        "publicKey",
+        "secretKey"
+      ],
+      "lineno": 111,
+      "name": "build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

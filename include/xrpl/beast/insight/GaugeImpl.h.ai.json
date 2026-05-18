@@ -1,0 +1,44 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 8,
+      "name": "GaugeImpl"
+    }
+  ],
+  "description": "Defines the GaugeImpl abstract base class for representing a gauge metric, which can be set or incremented, within the beast::insight metrics framework.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/insight/GaugeImpl.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "~GaugeImpl"
+    },
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 14,
+      "name": "set"
+    },
+    {
+      "args": [
+        "amount"
+      ],
+      "lineno": 16,
+      "name": "increment"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "beast"
+    },
+    {
+      "lineno": 5,
+      "name": "insight"
+    }
+  ]
+}

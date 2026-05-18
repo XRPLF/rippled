@@ -1,0 +1,389 @@
+{
+  "args": [
+    {
+      "lineno": 813,
+      "name": "name"
+    },
+    {
+      "lineno": 813,
+      "name": "json"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "name",
+        "json"
+      ],
+      "lineno": 813,
+      "name": "STParsedJSONObject"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "STParsedJSON::STParsedJSON",
+        "STParsedJSONDetail::to_unsigned",
+        "STParsedJSONDetail::make_name",
+        "STParsedJSONDetail::not_an_object / not_an_array / unknown_field / out_of_range / bad_type / invalid_data"
+      ],
+      "entry_point": "STParsedJSON (constructor or parse function, not shown in snippet)",
+      "purpose": "Parses and validates JSON input into strongly-typed protocol objects (e.g., STObject, STAmount, etc.), ensuring fields are present, of correct type, and within valid ranges.",
+      "validation_points": [
+        "STParsedJSONDetail::to_unsigned (range validation)",
+        "STParsedJSONDetail::not_an_object (type validation)",
+        "STParsedJSONDetail::not_an_array (type validation)",
+        "STParsedJSONDetail::unknown_field (field existence validation)",
+        "STParsedJSONDetail::out_of_range (range validation)",
+        "STParsedJSONDetail::bad_type (type validation)",
+        "STParsedJSONDetail::invalid_data (semantic validation)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "JSON field (generic, e.g., 'Amount', 'Account', etc.)",
+      "flow": [
+        "JSON input",
+        "STParsedJSON::STParsedJSON (or parse function)",
+        "Field-specific validation (e.g., to_unsigned, type checks)",
+        "Error reporting via RPC::make_error or exception",
+        "Construction of protocol object (e.g., STAmount, STAccount)"
+      ],
+      "origin": "JSON input (likely from RPC or transaction submission)",
+      "transformations": [
+        "Type conversion (e.g., string to uint, int to unsigned)",
+        "Range checking (to_unsigned)",
+        "Type checking (is object/array/string)",
+        "Semantic validation (e.g., valid AccountID, valid Amount format)"
+      ],
+      "validated_at": "STParsedJSONDetail::* validation helpers (to_unsigned, not_an_object, etc.)"
+    }
+  ],
+  "description": "This file provides functions for parsing JSON into XRPL protocol objects, handling various field types, error reporting, and recursive parsing of nested objects and arrays. It is used to convert JSON representations into strongly-typed protocol objects for the XRPL (XRP Ledger) system.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "error_handling"
+      ],
+      "confidence": 0.8,
+      "detection_keywords": [
+        "error",
+        "return",
+        "value",
+        "check"
+      ],
+      "evidence": "Code uses throw statements",
+      "issue_pattern": "Missing error return value",
+      "why_false_positive": "Function uses exceptions for error reporting, not return codes"
+    },
+    {
+      "applies_to": [
+        "error_handling",
+        "return_value"
+      ],
+      "confidence": 0.82,
+      "detection_keywords": [
+        "error",
+        "code",
+        "return",
+        "status"
+      ],
+      "evidence": "Code uses exception-based error handling",
+      "issue_pattern": "Function does not return error code",
+      "why_false_positive": "Errors are reported via exceptions, not return values"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/STParsedJSON.cpp",
+  "functions": [
+    {
+      "args": [
+        "value"
+      ],
+      "lineno": 18,
+      "name": "to_unsigned"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 34,
+      "name": "make_name"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 40,
+      "name": "not_an_object"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 46,
+      "name": "not_an_object"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 51,
+      "name": "not_an_array"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 56,
+      "name": "unknown_field"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 62,
+      "name": "out_of_range"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 68,
+      "name": "bad_type"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 74,
+      "name": "invalid_data"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 80,
+      "name": "invalid_data"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 85,
+      "name": "array_expected"
+    },
+    {
+      "args": [
+        "object",
+        "field"
+      ],
+      "lineno": 91,
+      "name": "string_expected"
+    },
+    {
+      "args": [
+        "object"
+      ],
+      "lineno": 97,
+      "name": "too_deep"
+    },
+    {
+      "args": [
+        "object",
+        "index"
+      ],
+      "lineno": 103,
+      "name": "singleton_expected"
+    },
+    {
+      "args": [
+        "sField"
+      ],
+      "lineno": 110,
+      "name": "template_mismatch"
+    },
+    {
+      "args": [
+        "item",
+        "index"
+      ],
+      "lineno": 117,
+      "name": "non_object_in_array"
+    },
+    {
+      "args": [
+        "field",
+        "json_name",
+        "fieldName",
+        "name",
+        "value",
+        "error"
+      ],
+      "lineno": 126,
+      "name": "parseUnsigned"
+    },
+    {
+      "args": [
+        "field",
+        "json_name",
+        "fieldName",
+        "name",
+        "value",
+        "error"
+      ],
+      "lineno": 154,
+      "name": "parseUint16"
+    },
+    {
+      "args": [
+        "field",
+        "json_name",
+        "fieldName",
+        "name",
+        "value",
+        "error"
+      ],
+      "lineno": 202,
+      "name": "parseUint32"
+    },
+    {
+      "args": [
+        "json_name",
+        "fieldName",
+        "name",
+        "value",
+        "error"
+      ],
+      "lineno": 249,
+      "name": "parseLeaf"
+    },
+    {
+      "args": [
+        "json_name",
+        "json",
+        "inName",
+        "depth",
+        "error"
+      ],
+      "lineno": 670,
+      "name": "parseArray"
+    },
+    {
+      "args": [
+        "json_name",
+        "json",
+        "inName",
+        "depth",
+        "error"
+      ],
+      "lineno": 677,
+      "name": "parseObject"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Errors reported via exceptions, not return codes",
+        "false_positive_risk": "Missing error return value",
+        "pattern": "throw statement",
+        "type": "exception_throwing"
+      },
+      {
+        "audit_implication": "Exception handling present",
+        "context": "Test code may use try-catch as assertion",
+        "pattern": "try-catch block",
+        "type": "exception_handling"
+      },
+      {
+        "audit_implication": "Uses std::exception for error reporting",
+        "exception_type": "std::exception",
+        "type": "exception_type"
+      },
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Fields validated before use",
+        "error_behavior": "Throws exception if invalid",
+        "false_positive_risk": "Missing validation check",
+        "template_type": "STObject",
+        "type": "template_constructor",
+        "validates": "Input validated on construction"
+      },
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 16,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 17,
+      "name": "STParsedJSONDetail"
+    }
+  ],
+  "test_coverage_notes": "Validation helpers are typically tested indirectly via higher-level tests (e.g., transaction submission, RPC command tests). Look for test files in 'src/test/protocol', 'src/test/rpc', or 'src/test/app' that submit malformed or boundary-case JSON to the system. Direct unit tests for STParsedJSONDetail helpers are unlikely; coverage may be incomplete for edge cases (e.g., very large numbers, deeply nested objects, unknown fields). LCOV_EXCL_START suggests some helpers are not covered by tests. Gaps may exist for rare or malformed input cases.",
+  "validation_architecture": {},
+  "validations": []
+}

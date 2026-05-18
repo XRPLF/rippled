@@ -1,0 +1,273 @@
+{
+  "args": [
+    {
+      "lineno": 31,
+      "name": "jv"
+    },
+    {
+      "lineno": 47,
+      "name": "ac"
+    },
+    {
+      "lineno": 59,
+      "name": "is"
+    },
+    {
+      "lineno": 64,
+      "name": "v"
+    },
+    {
+      "lineno": 108,
+      "name": "os"
+    },
+    {
+      "lineno": 108,
+      "name": "x"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "issueFromJson",
+        "to_currency",
+        "isXRP",
+        "parseBase58<AccountID>"
+      ],
+      "entry_point": "issueFromJson",
+      "purpose": "Parses a JSON object into an Issue, validating currency and issuer fields.",
+      "validation_points": [
+        "issueFromJson: checks v.isObject()",
+        "issueFromJson: checks for mpt_issuance_id",
+        "issueFromJson: checks currency is string",
+        "issueFromJson: validates currency value",
+        "issueFromJson: checks issuer presence/absence for XRP",
+        "issueFromJson: checks issuer is string",
+        "issueFromJson: validates issuer via parseBase58"
+      ]
+    },
+    {
+      "call_chain": [
+        "to_json",
+        "Issue::setJson"
+      ],
+      "entry_point": "to_json",
+      "purpose": "Serializes an Issue to JSON, including currency and issuer if not XRP.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "to_string",
+        "isXRP",
+        "to_string (currency/account)"
+      ],
+      "entry_point": "to_string",
+      "purpose": "Converts Issue to string representation.",
+      "validation_points": []
+    },
+    {
+      "call_chain": [
+        "isConsistent",
+        "isXRP"
+      ],
+      "entry_point": "isConsistent",
+      "purpose": "Checks if Issue's currency/account XRP-ness matches.",
+      "validation_points": []
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "currency",
+      "flow": [
+        "JSON input",
+        "curStr = v[jss::currency]",
+        "to_currency(curStr.asString())",
+        "currency variable",
+        "Issue{currency, ...}"
+      ],
+      "origin": "Json::Value v[jss::currency] in issueFromJson",
+      "transformations": [
+        "Extracted as string from JSON",
+        "Converted to Currency type via to_currency"
+      ],
+      "validated_at": "issueFromJson: checks string type and valid currency"
+    },
+    {
+      "field": "issuer/account",
+      "flow": [
+        "JSON input",
+        "issStr = v[jss::issuer]",
+        "parseBase58<AccountID>(issStr.asString())",
+        "issuer variable",
+        "Issue{..., issuer}"
+      ],
+      "origin": "Json::Value v[jss::issuer] in issueFromJson",
+      "transformations": [
+        "Extracted as string from JSON",
+        "Parsed to AccountID via parseBase58"
+      ],
+      "validated_at": "issueFromJson: checks string type and valid account"
+    },
+    {
+      "field": "Issue object",
+      "flow": [
+        "Validated currency and issuer",
+        "Issue{currency, issuer}",
+        "Returned to caller"
+      ],
+      "origin": "Constructed in issueFromJson",
+      "transformations": [
+        "Constructed from validated fields"
+      ],
+      "validated_at": "issueFromJson: after all field validations"
+    },
+    {
+      "field": "Json::Value output",
+      "flow": [
+        "Issue object",
+        "is.setJson(jv)",
+        "jv[jss::currency] = to_string(currency)",
+        "if not XRP: jv[jss::issuer] = toBase58(account)",
+        "return jv"
+      ],
+      "origin": "to_json(Issue const& is)",
+      "transformations": [
+        "Fields converted to string/base58 for JSON"
+      ],
+      "validated_at": "No validation in to_json/setJson; assumes Issue is valid"
+    }
+  ],
+  "description": "Implements the xrpl::Issue class and related functions for handling currency/issuer pairs in the XRP Ledger, including serialization, JSON conversion, and consistency checks.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "input_validation"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "jss",
+        "validation",
+        "missing"
+      ],
+      "evidence": "Uses jss:: namespace accessor",
+      "issue_pattern": "Missing validation for jss:: field",
+      "why_false_positive": "JSON String constants - indicates template validation"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "field_access"
+      ],
+      "confidence": 0.83,
+      "detection_keywords": [
+        "jss",
+        "unvalidated",
+        "field"
+      ],
+      "evidence": "Framework validates all jss:: fields",
+      "issue_pattern": "Unvalidated field access via jss::",
+      "why_false_positive": "jss:: namespace indicates framework-validated fields"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/protocol/Issue.cpp",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 11,
+      "name": "Issue::getText"
+    },
+    {
+      "args": [
+        "jv"
+      ],
+      "lineno": 31,
+      "name": "Issue::setJson"
+    },
+    {
+      "args": [],
+      "lineno": 39,
+      "name": "Issue::native"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "Issue::integral"
+    },
+    {
+      "args": [
+        "ac"
+      ],
+      "lineno": 47,
+      "name": "isConsistent"
+    },
+    {
+      "args": [
+        "ac"
+      ],
+      "lineno": 52,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "is"
+      ],
+      "lineno": 59,
+      "name": "to_json"
+    },
+    {
+      "args": [
+        "v"
+      ],
+      "lineno": 64,
+      "name": "issueFromJson"
+    },
+    {
+      "args": [
+        "os",
+        "x"
+      ],
+      "lineno": 108,
+      "name": "operator<<"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [
+      {
+        "audit_implication": "Uses std::runtime_error for error reporting",
+        "exception_type": "std::runtime_error",
+        "type": "exception_type"
+      }
+    ],
+    "namespace_accessors": [
+      {
+        "audit_implication": "Fields accessed via this namespace are framework-validated",
+        "false_positive_risk": "Missing validation for framework-managed fields",
+        "meaning": "JSON String constants - indicates template validation",
+        "namespace": "jss"
+      }
+    ],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": [
+      {
+        "audit_implication": "Field guaranteed valid by framework",
+        "false_positive_risk": "Missing field validation",
+        "namespace": "jss",
+        "pattern": "jss::FieldName",
+        "type": "namespace_accessor",
+        "validates": "Field access implies template validation"
+      }
+    ]
+  },
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Typical test coverage for this code would be in protocol/Issue_test.cpp or similar files. Tests should cover: valid/invalid JSON input to issueFromJson (missing fields, wrong types, invalid currency/account, XRP with issuer, etc.), serialization via to_json/setJson, and string conversion. Gaps may exist if tests do not cover all error branches (e.g., mpt_issuance_id presence, badCurrency, noCurrency, issuer not string, issuer parse failure). No direct evidence of test files in this snippet; coverage depends on the presence and thoroughness of protocol/Issue_test.cpp or related test suites.",
+  "validation_architecture": {},
+  "validations": []
+}

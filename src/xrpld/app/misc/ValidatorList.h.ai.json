@@ -1,0 +1,109 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 52,
+      "name": "TrustChanges"
+    },
+    {
+      "args": [],
+      "lineno": 59,
+      "name": "ValidatorBlobInfo"
+    },
+    {
+      "args": [
+        "ManifestCache& validatorManifests",
+        "ManifestCache& publisherManifests",
+        "TimeKeeper& timeKeeper",
+        "std::string const& databasePath",
+        "beast::Journal j",
+        "std::optional<std::size_t> minimumQuorum = std::nullopt"
+      ],
+      "lineno": 87,
+      "name": "ValidatorList"
+    },
+    {
+      "args": [],
+      "lineno": 89,
+      "name": "ValidatorList::PublisherList"
+    },
+    {
+      "args": [],
+      "lineno": 106,
+      "name": "ValidatorList::PublisherListCollection"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "ValidatorList::PublisherListStats"
+    },
+    {
+      "args": [],
+      "lineno": 187,
+      "name": "ValidatorList::MessageWithHash"
+    }
+  ],
+  "description": "This file defines the ValidatorList class and related structures/enums for managing trusted validator lists in the XRPL (XRP Ledger) node software. It handles loading, applying, updating, and broadcasting validator lists, as well as tracking trusted keys, publishers, and quorum calculations.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/ValidatorList.h",
+  "functions": [
+    {
+      "args": [
+        "disposition"
+      ],
+      "lineno": 49,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "ValidatorBlobInfo const& blobInfo"
+      ],
+      "lineno": 496,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::vector<ValidatorBlobInfo> const& blobs"
+      ],
+      "lineno": 505,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "std::map<std::size_t, ValidatorBlobInfo> const& blobs"
+      ],
+      "lineno": 511,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "TMValidatorList const& msg"
+      ],
+      "lineno": 523,
+      "name": "hash_append"
+    },
+    {
+      "args": [
+        "Hasher& h",
+        "TMValidatorListCollection const& msg"
+      ],
+      "lineno": 530,
+      "name": "hash_append"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "protocol"
+    },
+    {
+      "lineno": 18,
+      "name": "xrpl"
+    }
+  ]
+}

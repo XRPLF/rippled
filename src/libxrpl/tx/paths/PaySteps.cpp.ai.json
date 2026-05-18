@@ -1,0 +1,344 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "view_",
+        "strand_",
+        "strandSrc_",
+        "strandDst_",
+        "strandDeliver_",
+        "limitQuality_",
+        "isLast_",
+        "ownerPaysTransferFee_",
+        "offerCrossing_",
+        "isDefaultPath_",
+        "seenDirectAssets_",
+        "seenBookOuts_",
+        "ammContext_",
+        "domainID_",
+        "j_"
+      ],
+      "lineno": 470,
+      "name": "StrandContext"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "toStrand(s) -> toStep -> checkNear / isXRPAccount"
+      ],
+      "entry_point": "toStrand / toStrands",
+      "purpose": "Builds a payment path (strand) from a sequence of STPathElements, validating each step and constructing the appropriate Step objects.",
+      "validation_points": [
+        "toStep: Validates STPathElement types and asset/currency/issuer relationships.",
+        "isXRPAccount: Validates if a path element is an XRP account.",
+        "checkNear: Used (elsewhere, not directly in toStep) to validate IOUAmount values for near-equality."
+      ]
+    },
+    {
+      "call_chain": [
+        "toStep -> isXRPAccount",
+        "toStep -> checkNear (indirect, via steps that use IOUAmount validation)"
+      ],
+      "entry_point": "toStep",
+      "purpose": "Converts two adjacent STPathElements and an Asset into a Step, validating the types and relationships between elements.",
+      "validation_points": [
+        "isXRPAccount: Validates if an account is an XRP account.",
+        "XRPL_ASSERT: Validates node types and asset/issuer relationships.",
+        "checkNear: Used in downstream steps for IOUAmount validation."
+      ]
+    },
+    {
+      "call_chain": [
+        "checkNear"
+      ],
+      "entry_point": "checkNear",
+      "purpose": "Validates that two IOUAmount values are nearly equal, within a tolerance.",
+      "validation_points": [
+        "checkNear: Directly validates IOUAmount values."
+      ]
+    },
+    {
+      "call_chain": [
+        "isXRPAccount"
+      ],
+      "entry_point": "isXRPAccount",
+      "purpose": "Checks if a given STPathElement represents an XRP account.",
+      "validation_points": [
+        "isXRPAccount: Validates node type and account type."
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "IOUAmount (expected, actual)",
+      "flow": [
+        "Payment calculation logic",
+        "checkNear",
+        "Result used to determine if amounts are acceptably close"
+      ],
+      "origin": "Passed as arguments to checkNear (likely from payment calculation logic)",
+      "transformations": [
+        "Exponent and mantissa compared, tolerance applied"
+      ],
+      "validated_at": "checkNear"
+    },
+    {
+      "field": "STPathElement (pe, e1, e2)",
+      "flow": [
+        "User-supplied path (via transaction)",
+        "toStrand(s)",
+        "toStep (e1, e2)",
+        "isXRPAccount (pe or *e1)",
+        "Step construction"
+      ],
+      "origin": "Input to toStep (from toStrand(s)), or to isXRPAccount",
+      "transformations": [
+        "Node type checked",
+        "AccountID, Asset, Issuer extracted"
+      ],
+      "validated_at": "isXRPAccount, toStep (XRPL_ASSERTs)"
+    },
+    {
+      "field": "Asset (curAsset)",
+      "flow": [
+        "Transaction context",
+        "toStep",
+        "Used to determine step type and asset relationships"
+      ],
+      "origin": "Derived from path or transaction context",
+      "transformations": [
+        "visit() pattern to dispatch on asset type"
+      ],
+      "validated_at": "toStep (via asset type checks and XRPL_ASSERTs)"
+    }
+  ],
+  "description": "This file implements the logic for constructing and validating payment paths (strands) in the XRPL ledger, including normalization, validation, and conversion of path elements into executable steps for payment processing. It handles both XRP and issued assets, including Multi-Party Tokens (MPT), and ensures path correctness and compliance with protocol rules.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "IOUAmount (expected, actual)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "checkNear at checkNear function",
+      "issue_pattern": "Missing empty string validation for IOUAmount (expected, actual)",
+      "why_false_positive": "checkNear validates IOUAmount (expected, actual) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "STPathElement (pe)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "isXRPAccount at isXRPAccount function",
+      "issue_pattern": "Missing empty string validation for STPathElement (pe)",
+      "why_false_positive": "isXRPAccount validates STPathElement (pe) for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "STPathElement (e1, e2)",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "toStep at toStep function",
+      "issue_pattern": "Missing empty string validation for STPathElement (e1, e2)",
+      "why_false_positive": "toStep validates STPathElement (e1, e2) for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::unique_ptr"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Missing null check for std::unique_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::unique_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/tx/paths/PaySteps.cpp",
+  "functions": [
+    {
+      "args": [
+        "expected",
+        "actual"
+      ],
+      "lineno": 9,
+      "name": "checkNear"
+    },
+    {
+      "args": [
+        "pe"
+      ],
+      "lineno": 27,
+      "name": "isXRPAccount"
+    },
+    {
+      "args": [
+        "ctx",
+        "e1",
+        "e2",
+        "curAsset"
+      ],
+      "lineno": 33,
+      "name": "toStep"
+    },
+    {
+      "args": [
+        "view",
+        "src",
+        "dst",
+        "deliver",
+        "limitQuality",
+        "sendMaxAsset",
+        "path",
+        "ownerPaysTransferFee",
+        "offerCrossing",
+        "ammContext",
+        "domainID",
+        "j"
+      ],
+      "lineno": 109,
+      "name": "toStrand"
+    },
+    {
+      "args": [
+        "view",
+        "src",
+        "dst",
+        "deliver",
+        "limitQuality",
+        "sendMax",
+        "paths",
+        "addDefaultPath",
+        "ownerPaysTransferFee",
+        "offerCrossing",
+        "ammContext",
+        "domainID",
+        "j"
+      ],
+      "lineno": 370,
+      "name": "toStrands"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::unique_ptr",
+        "type": "smart_pointer"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Cannot be null after construction, auto cleanup",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "exclusive",
+        "type": "unique_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Core validation logic (checkNear, isXRPAccount, toStep) is likely covered by pathfinding and payment engine tests, typically found in test files such as 'Path_test.cpp', 'Strand_test.cpp', or 'PaymentSandbox_test.cpp'. However, some error branches (e.g., offer/account payment step, xrp/xrp offer payment step) are marked as unreachable or excluded from coverage (LCOV_EXCL_START), indicating that these are not directly tested. Edge cases involving malformed paths or asset types may not be fully covered unless explicitly tested in negative test cases.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "Custom C++ logic (no external validation framework)",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "IOUAmount (expected, actual)",
+      "location": "checkNear function",
+      "validated_by": "checkNear",
+      "validates": [
+        "Exponent difference is at most 1",
+        "If actual.exponent() < -20, always true",
+        "Mantissa values are close within a relative tolerance of 0.001"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns false (no exception)",
+      "field": "STPathElement (pe)",
+      "location": "isXRPAccount function",
+      "validated_by": "isXRPAccount",
+      "validates": [
+        "pe.getNodeType() == STPathElement::typeAccount",
+        "pe.getAccountID() is XRP"
+      ],
+      "validation_type": "type|business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "returns error code (TER) or unique_ptr<Step>",
+      "field": "STPathElement (e1, e2)",
+      "location": "toStep function",
+      "validated_by": "toStep",
+      "validates": [
+        "e1->isAccount()",
+        "e2->isAccount()",
+        "e1->getNodeType() & STPathElement::typeCurrency",
+        "e1->getPathAsset().isXRP()",
+        "isXRPAccount(*e1)",
+        "e2->isAccount()",
+        "e1->isOffer() && e2->isAccount()"
+      ],
+      "validation_type": "type|business_logic"
+    }
+  ]
+}

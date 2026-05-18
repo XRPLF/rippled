@@ -1,0 +1,43 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 12,
+      "name": "LedgerMaster"
+    },
+    {
+      "args": [],
+      "lineno": 13,
+      "name": "ValidatorKeys"
+    }
+  ],
+  "description": "This header file declares the factory function make_NetworkOPs for creating a NetworkOPs instance, and forward-declares related classes and includes necessary dependencies for network operations in the XRPL server.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/make_NetworkOPs.h",
+  "functions": [
+    {
+      "args": [
+        "registry",
+        "clock",
+        "standalone",
+        "minPeerCount",
+        "startValid",
+        "jobQueue",
+        "ledgerMaster",
+        "validatorKeys",
+        "ioCtx",
+        "journal",
+        "collector"
+      ],
+      "lineno": 15,
+      "name": "make_NetworkOPs"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 10,
+      "name": "xrpl"
+    }
+  ]
+}

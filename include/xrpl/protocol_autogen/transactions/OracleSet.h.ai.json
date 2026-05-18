@@ -1,0 +1,210 @@
+{
+  "args": [
+    {
+      "lineno": 36,
+      "name": "tx"
+    },
+    {
+      "lineno": 147,
+      "name": "account"
+    },
+    {
+      "lineno": 148,
+      "name": "oracleDocumentID"
+    },
+    {
+      "lineno": 149,
+      "name": "lastUpdateTime"
+    },
+    {
+      "lineno": 150,
+      "name": "priceDataSeries"
+    },
+    {
+      "lineno": 151,
+      "name": "sequence"
+    },
+    {
+      "lineno": 152,
+      "name": "fee"
+    },
+    {
+      "lineno": 160,
+      "name": "tx"
+    },
+    {
+      "lineno": 172,
+      "name": "value"
+    },
+    {
+      "lineno": 181,
+      "name": "value"
+    },
+    {
+      "lineno": 190,
+      "name": "value"
+    },
+    {
+      "lineno": 199,
+      "name": "value"
+    },
+    {
+      "lineno": 208,
+      "name": "value"
+    },
+    {
+      "lineno": 217,
+      "name": "value"
+    },
+    {
+      "lineno": 226,
+      "name": "publicKey"
+    },
+    {
+      "lineno": 226,
+      "name": "secretKey"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 32,
+      "name": "OracleSet"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account, std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID, std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime, STArray const& priceDataSeries, std::optional<SF_UINT32::type::value_type> sequence = std::nullopt, std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt",
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 137,
+      "name": "OracleSetBuilder"
+    }
+  ],
+  "description": "Defines the OracleSet transaction type for the XRPL protocol, including a type-safe wrapper class and a builder class for constructing OracleSet transactions with required and optional fields.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol_autogen/transactions/OracleSet.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 44,
+      "name": "OracleSet::getOracleDocumentID"
+    },
+    {
+      "args": [],
+      "lineno": 54,
+      "name": "OracleSet::getProvider"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "OracleSet::hasProvider"
+    },
+    {
+      "args": [],
+      "lineno": 75,
+      "name": "OracleSet::getURI"
+    },
+    {
+      "args": [],
+      "lineno": 86,
+      "name": "OracleSet::hasURI"
+    },
+    {
+      "args": [],
+      "lineno": 96,
+      "name": "OracleSet::getAssetClass"
+    },
+    {
+      "args": [],
+      "lineno": 107,
+      "name": "OracleSet::hasAssetClass"
+    },
+    {
+      "args": [],
+      "lineno": 117,
+      "name": "OracleSet::getLastUpdateTime"
+    },
+    {
+      "args": [],
+      "lineno": 124,
+      "name": "OracleSet::getPriceDataSeries"
+    },
+    {
+      "args": [
+        "SF_ACCOUNT::type::value_type account",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& oracleDocumentID",
+        "std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime",
+        "STArray const& priceDataSeries",
+        "std::optional<SF_UINT32::type::value_type> sequence",
+        "std::optional<SF_AMOUNT::type::value_type> fee"
+      ],
+      "lineno": 146,
+      "name": "OracleSetBuilder::OracleSetBuilder"
+    },
+    {
+      "args": [
+        "std::shared_ptr<STTx const> tx"
+      ],
+      "lineno": 159,
+      "name": "OracleSetBuilder::OracleSetBuilder"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 170,
+      "name": "OracleSetBuilder::setOracleDocumentID"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 179,
+      "name": "OracleSetBuilder::setProvider"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 188,
+      "name": "OracleSetBuilder::setURI"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_VL::type::value_type> const& value"
+      ],
+      "lineno": 197,
+      "name": "OracleSetBuilder::setAssetClass"
+    },
+    {
+      "args": [
+        "std::decay_t<typename SF_UINT32::type::value_type> const& value"
+      ],
+      "lineno": 206,
+      "name": "OracleSetBuilder::setLastUpdateTime"
+    },
+    {
+      "args": [
+        "STArray const& value"
+      ],
+      "lineno": 215,
+      "name": "OracleSetBuilder::setPriceDataSeries"
+    },
+    {
+      "args": [
+        "PublicKey const& publicKey",
+        "SecretKey const& secretKey"
+      ],
+      "lineno": 224,
+      "name": "OracleSetBuilder::build"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl::transactions"
+    }
+  ]
+}

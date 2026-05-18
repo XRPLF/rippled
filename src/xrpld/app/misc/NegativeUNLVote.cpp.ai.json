@@ -1,0 +1,299 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "NodeID const& myId",
+        "beast::Journal j"
+      ],
+      "lineno": 7,
+      "name": "NegativeUNLVote"
+    }
+  ],
+  "code_paths": [
+    {
+      "call_chain": [
+        "NegativeUNLVote::doVoting",
+        "buildScoreTable",
+        "findAllCandidates",
+        "choose",
+        "addTx"
+      ],
+      "entry_point": "NegativeUNLVote::doVoting",
+      "purpose": "Performs the Negative UNL voting process: builds validator reliability scores, determines candidates for disabling/enabling, and adds transactions to modify the Negative UNL.",
+      "validation_points": [
+        "XRPL_ASSERT(nidToKeyMap.contains(n), ...) in doVoting (twice: once for disable, once for enable)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "unlKeys (hash_set<PublicKey>)",
+      "flow": [
+        "doVoting parameter",
+        "for loop: calcNodeID(k) for each k",
+        "nidToKeyMap.emplace(nid, k)",
+        "unlNodeIDs.emplace(nid)",
+        "nidToKeyMap used for validation and transaction creation"
+      ],
+      "origin": "Input parameter to doVoting",
+      "transformations": [
+        "PublicKey \u2192 NodeID via calcNodeID",
+        "Mapped into nidToKeyMap and unlNodeIDs"
+      ],
+      "validated_at": "XRPL_ASSERT(nidToKeyMap.contains(n), ...) in doVoting"
+    },
+    {
+      "field": "NodeID n (candidate to disable/enable)",
+      "flow": [
+        "choose returns NodeID n",
+        "XRPL_ASSERT(nidToKeyMap.contains(n), ...)",
+        "nidToKeyMap.at(n) retrieves PublicKey",
+        "addTx called with PublicKey"
+      ],
+      "origin": "Result of choose(prevLedger->header().hash, candidates...)",
+      "transformations": [
+        "NodeID selected from candidate set",
+        "Mapped back to PublicKey"
+      ],
+      "validated_at": "XRPL_ASSERT(nidToKeyMap.contains(n), ...)"
+    },
+    {
+      "field": "negUnlKeys (hash_set<PublicKey>)",
+      "flow": [
+        "negUnlKeys initialized from prevLedger",
+        "negUnlToDisable/negUnlToReEnable applied",
+        "for loop: calcNodeID(k) for each k",
+        "negUnlNodeIDs.emplace(nid)",
+        "nidToKeyMap updated if nid not present"
+      ],
+      "origin": "prevLedger->negativeUNL()",
+      "transformations": [
+        "PublicKey \u2192 NodeID via calcNodeID",
+        "Set insertions/removals based on ledger state"
+      ],
+      "validated_at": "nidToKeyMap updated to ensure mapping exists before validation"
+    }
+  ],
+  "description": "Implements the NegativeUNLVote class, which manages voting logic for the Negative UNL (Unique Node List) feature in XRPL consensus, including scoring validators, selecting candidates for disabling/re-enabling, and constructing related transactions.",
+  "false_positive_patterns": [
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "NodeID presence in nidToKeyMap",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at NegativeUNLVote::doVoting",
+      "issue_pattern": "Missing empty string validation for NodeID presence in nidToKeyMap",
+      "why_false_positive": "XRPL_ASSERT validates NodeID presence in nidToKeyMap for empty strings"
+    },
+    {
+      "applies_to": [
+        "validation",
+        "null_empty"
+      ],
+      "confidence": 1.0,
+      "detection_keywords": [
+        "NodeID presence in nidToKeyMap",
+        "empty",
+        "string",
+        "validation"
+      ],
+      "evidence": "XRPL_ASSERT at NegativeUNLVote::doVoting",
+      "issue_pattern": "Missing empty string validation for NodeID presence in nidToKeyMap",
+      "why_false_positive": "XRPL_ASSERT validates NodeID presence in nidToKeyMap for empty strings"
+    },
+    {
+      "applies_to": [
+        "null_check",
+        "memory_safety"
+      ],
+      "confidence": 0.9,
+      "detection_keywords": [
+        "null",
+        "nullptr",
+        "check",
+        "std::shared_ptr"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Missing null check for std::shared_ptr",
+      "why_false_positive": "RAII smart pointers guarantee initialization"
+    },
+    {
+      "applies_to": [
+        "memory_safety",
+        "resource_leak"
+      ],
+      "confidence": 0.85,
+      "detection_keywords": [
+        "memory",
+        "leak",
+        "delete"
+      ],
+      "evidence": "Code uses std::shared_ptr",
+      "issue_pattern": "Memory leak - missing delete",
+      "why_false_positive": "Smart pointer handles cleanup automatically"
+    },
+    {
+      "applies_to": [
+        "resource_management",
+        "cleanup"
+      ],
+      "confidence": 0.88,
+      "detection_keywords": [
+        "mutex lock",
+        "cleanup",
+        "release",
+        "close"
+      ],
+      "evidence": "Code uses std::lock_guard",
+      "issue_pattern": "Missing mutex lock cleanup",
+      "why_false_positive": "std::lock_guard provides automatic mutex lock cleanup"
+    }
+  ],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/app/misc/NegativeUNLVote.cpp",
+  "functions": [
+    {
+      "args": [
+        "NodeID const& myId",
+        "beast::Journal j"
+      ],
+      "lineno": 7,
+      "name": "NegativeUNLVote::NegativeUNLVote"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& prevLedger",
+        "hash_set<PublicKey> const& unlKeys",
+        "RCLValidations& validations",
+        "std::shared_ptr<SHAMap> const& initialSet"
+      ],
+      "lineno": 11,
+      "name": "NegativeUNLVote::doVoting"
+    },
+    {
+      "args": [
+        "LedgerIndex seq",
+        "PublicKey const& vp",
+        "NegativeUNLModify modify",
+        "std::shared_ptr<SHAMap> const& initialSet"
+      ],
+      "lineno": 67,
+      "name": "NegativeUNLVote::addTx"
+    },
+    {
+      "args": [
+        "uint256 const& randomPadData",
+        "std::vector<NodeID> const& candidates"
+      ],
+      "lineno": 86,
+      "name": "NegativeUNLVote::choose"
+    },
+    {
+      "args": [
+        "std::shared_ptr<Ledger const> const& prevLedger",
+        "hash_set<NodeID> const& unl",
+        "RCLValidations& validations"
+      ],
+      "lineno": 102,
+      "name": "NegativeUNLVote::buildScoreTable"
+    },
+    {
+      "args": [
+        "hash_set<NodeID> const& unl",
+        "hash_set<NodeID> const& negUnl",
+        "hash_map<NodeID, std::uint32_t> const& scoreTable"
+      ],
+      "lineno": 157,
+      "name": "NegativeUNLVote::findAllCandidates"
+    },
+    {
+      "args": [
+        "LedgerIndex seq",
+        "hash_set<NodeID> const& nowTrusted"
+      ],
+      "lineno": 210,
+      "name": "NegativeUNLVote::newValidators"
+    },
+    {
+      "args": [
+        "LedgerIndex seq"
+      ],
+      "lineno": 222,
+      "name": "NegativeUNLVote::purgeNewValidators"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [
+      {
+        "audit_implication": "No manual delete needed, no null checks after construction",
+        "false_positive_risk": "Missing null check, memory leak",
+        "pointer_type": "std::shared_ptr",
+        "type": "smart_pointer"
+      },
+      {
+        "audit_implication": "Automatic mutex lock cleanup",
+        "false_positive_risk": "Missing mutex lock cleanup",
+        "resource": "mutex lock",
+        "type": "raii_wrapper",
+        "wrapper_type": "std::lock_guard"
+      }
+    ],
+    "smart_pointers": [
+      {
+        "audit_note": "Reference counted, auto cleanup when last ref dropped",
+        "cleanup_needed": false,
+        "false_positive_risk": "Missing null check or manual delete",
+        "null_check_needed": false,
+        "ownership": "shared",
+        "type": "shared_ptr"
+      }
+    ],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "The code is core consensus logic and likely covered by integration/consensus tests, possibly in files like test/consensus/NegativeUNL_test.cpp or test/app/misc/NegativeUNLVote_test.cpp. However, the specific XRPL_ASSERT validations (NodeID presence in nidToKeyMap) are only triggered on logic errors (should never fail in correct operation), so negative test coverage (ensuring assertion triggers on bad input) may be missing. There may be limited or no direct unit tests for error paths where nidToKeyMap is missing a NodeID, as this would indicate a bug in the code logic or data preparation. Test coverage is likely strong for normal flows but weak for assertion/validation failures.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": "XRPL_ASSERT (custom assertion macro), C++ type system",
+    "validation_layer": "business_logic"
+  },
+  "validations": [
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "NodeID presence in nidToKeyMap",
+      "location": "NegativeUNLVote::doVoting",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the NodeID selected to disable is present in nidToKeyMap before proceeding"
+      ],
+      "validation_type": "business_logic"
+    },
+    {
+      "confidence": 1.0,
+      "error_thrown": "Assertion failure (likely aborts or logs error)",
+      "field": "NodeID presence in nidToKeyMap",
+      "location": "NegativeUNLVote::doVoting",
+      "validated_by": "XRPL_ASSERT",
+      "validates": [
+        "Ensures that the NodeID selected to re-enable is present in nidToKeyMap before proceeding"
+      ],
+      "validation_type": "business_logic"
+    }
+  ]
+}

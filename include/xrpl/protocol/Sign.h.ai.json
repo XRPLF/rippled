@@ -1,0 +1,96 @@
+{
+  "args": [
+    {
+      "lineno": 15,
+      "name": "st"
+    },
+    {
+      "lineno": 16,
+      "name": "prefix"
+    },
+    {
+      "lineno": 17,
+      "name": "type"
+    },
+    {
+      "lineno": 18,
+      "name": "sk"
+    },
+    {
+      "lineno": 19,
+      "name": "sigField"
+    },
+    {
+      "lineno": 35,
+      "name": "pk"
+    },
+    {
+      "lineno": 44,
+      "name": "obj"
+    },
+    {
+      "lineno": 44,
+      "name": "signingID"
+    },
+    {
+      "lineno": 59,
+      "name": "s"
+    }
+  ],
+  "classes": [],
+  "description": "Provides functions for signing and verifying STObject instances, as well as building and optimizing multisigning data for transactions in the XRPL protocol.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Sign.h",
+  "functions": [
+    {
+      "args": [
+        "st",
+        "prefix",
+        "type",
+        "sk",
+        "sigField"
+      ],
+      "lineno": 15,
+      "name": "sign"
+    },
+    {
+      "args": [
+        "st",
+        "prefix",
+        "pk",
+        "sigField"
+      ],
+      "lineno": 32,
+      "name": "verify"
+    },
+    {
+      "args": [
+        "obj",
+        "signingID"
+      ],
+      "lineno": 44,
+      "name": "buildMultiSigningData"
+    },
+    {
+      "args": [
+        "obj"
+      ],
+      "lineno": 54,
+      "name": "startMultiSigningData"
+    },
+    {
+      "args": [
+        "signingID",
+        "s"
+      ],
+      "lineno": 59,
+      "name": "finishMultiSigningData"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    }
+  ]
+}

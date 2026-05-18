@@ -1,0 +1,52 @@
+{
+  "args": [
+    {
+      "lineno": 23,
+      "name": "ledgerSeq"
+    },
+    {
+      "lineno": 24,
+      "name": "txnIndex"
+    },
+    {
+      "lineno": 25,
+      "name": "networkID"
+    },
+    {
+      "lineno": 44,
+      "name": "ctid"
+    }
+  ],
+  "classes": [],
+  "description": "Provides functions to encode and decode Concise Transaction IDs (CTIDs) as specified in XLS-15d, allowing conversion between ledger sequence, transaction index, network ID, and their compact hexadecimal representation.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/CTID.h",
+  "functions": [
+    {
+      "args": [
+        "ledgerSeq",
+        "txnIndex",
+        "networkID"
+      ],
+      "lineno": 19,
+      "name": "encodeCTID"
+    },
+    {
+      "args": [
+        "ctid"
+      ],
+      "lineno": 39,
+      "name": "decodeCTID"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 9,
+      "name": "RPC"
+    }
+  ]
+}

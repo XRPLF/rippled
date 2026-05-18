@@ -1,0 +1,28 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Declares a function to add synthetic NFT-related fields to transaction-related JSON responses within the xrpl::RPC namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/NFTSyntheticSerializer.h",
+  "functions": [
+    {
+      "args": [
+        "Json::Value&",
+        "std::shared_ptr<STTx const> const&",
+        "TxMeta const&"
+      ],
+      "lineno": 15,
+      "name": "insertNFTSyntheticInJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 8,
+      "name": "RPC"
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "args": [
+    {
+      "lineno": 1,
+      "name": "s"
+    },
+    {
+      "lineno": 1,
+      "name": "start"
+    },
+    {
+      "lineno": 1,
+      "name": "length"
+    },
+    {
+      "lineno": 1,
+      "name": "strHuman"
+    },
+    {
+      "lineno": 1,
+      "name": "strData"
+    },
+    {
+      "lineno": 1,
+      "name": "x"
+    },
+    {
+      "lineno": 1,
+      "name": "strWord"
+    },
+    {
+      "lineno": 1,
+      "name": "iMin"
+    },
+    {
+      "lineno": 1,
+      "name": "iMax"
+    },
+    {
+      "lineno": 1,
+      "name": "vsHuman"
+    },
+    {
+      "lineno": 1,
+      "name": "strKey"
+    },
+    {
+      "lineno": 1,
+      "name": "strHuman"
+    },
+    {
+      "lineno": 1,
+      "name": "blob"
+    },
+    {
+      "lineno": 1,
+      "name": "bytes"
+    }
+  ],
+  "classes": [],
+  "code_paths": [
+    {
+      "call_chain": [
+        "RFC1751::getKeyFromEnglish",
+        "boost::algorithm::split (splits input into words)",
+        "RFC1751::wsrch (validates each word against dictionary)",
+        "RFC1751::etob (converts words to binary key)"
+      ],
+      "entry_point": "RFC1751::getKeyFromEnglish",
+      "purpose": "Converts a space-separated list of RFC1751 words into a binary key. Validates that each word is in the dictionary.",
+      "validation_points": [
+        "RFC1751::wsrch (checks if word is in dictionary, returns -1 if not found)",
+        "RFC1751::etob (checks word count, word validity, and binary conversion correctness)"
+      ]
+    },
+    {
+      "call_chain": [
+        "RFC1751::getEnglishFromKey",
+        "RFC1751::btoe (converts binary key to word indices)",
+        "RFC1751::getWordFromBlob (maps indices to words)"
+      ],
+      "entry_point": "RFC1751::getEnglishFromKey",
+      "purpose": "Converts a binary key into a space-separated list of RFC1751 words.",
+      "validation_points": [
+        "RFC1751::btoe (validates key length and conversion correctness)"
+      ]
+    }
+  ],
+  "data_flows": [
+    {
+      "field": "english_words (std::string)",
+      "flow": [
+        "User input",
+        "boost::algorithm::split (splits into vector<string> words)",
+        "RFC1751::wsrch (each word validated against dictionary)",
+        "RFC1751::etob (words converted to binary key)",
+        "Output: binary key (std::vector<uint8_t>)"
+      ],
+      "origin": "User input to RFC1751::getKeyFromEnglish",
+      "transformations": [
+        "Trimmed and split into words",
+        "Each word mapped to dictionary index",
+        "Indices packed into binary"
+      ],
+      "validated_at": "RFC1751::wsrch (word validity), RFC1751::etob (word count and conversion)"
+    },
+    {
+      "field": "binary_key (std::vector<uint8_t>)",
+      "flow": [
+        "User input",
+        "RFC1751::btoe (binary to word indices)",
+        "RFC1751::getWordFromBlob (indices to words)",
+        "Output: space-separated words (std::string)"
+      ],
+      "origin": "User input to RFC1751::getEnglishFromKey",
+      "transformations": [
+        "Binary unpacked to indices",
+        "Indices mapped to dictionary words"
+      ],
+      "validated_at": "RFC1751::btoe (key length and conversion)"
+    }
+  ],
+  "description": "Implements RFC 1751 English encoding/decoding for binary keys, including conversion between binary data and human-readable word sequences, using a fixed dictionary. Provides functions for encoding, decoding, and validating keys, as well as utility functions for word normalization and hashing.",
+  "false_positive_patterns": [],
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/libxrpl/crypto/RFC1751.cpp",
+  "functions": [
+    {
+      "args": [
+        "s",
+        "start",
+        "length"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::extract"
+    },
+    {
+      "args": [
+        "strHuman",
+        "strData"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::btoe"
+    },
+    {
+      "args": [
+        "s",
+        "x",
+        "start",
+        "length"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::insert"
+    },
+    {
+      "args": [
+        "strWord"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::standard"
+    },
+    {
+      "args": [
+        "strWord",
+        "iMin",
+        "iMax"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::wsrch"
+    },
+    {
+      "args": [
+        "strData",
+        "vsHuman"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::etob"
+    },
+    {
+      "args": [
+        "strKey",
+        "strHuman"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::getKeyFromEnglish"
+    },
+    {
+      "args": [
+        "strHuman",
+        "strKey"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::getEnglishFromKey"
+    },
+    {
+      "args": [
+        "blob",
+        "bytes"
+      ],
+      "lineno": 1,
+      "name": "RFC1751::getWordFromBlob"
+    }
+  ],
+  "language": "cpp",
+  "language_patterns": {
+    "exception_patterns": [],
+    "namespace_accessors": [],
+    "raii_usage": [],
+    "smart_pointers": [],
+    "template_validation": []
+  },
+  "namespaces": [
+    {
+      "lineno": 1,
+      "name": "xrpl"
+    }
+  ],
+  "test_coverage_notes": "Test coverage for RFC1751 is typically found in unit tests for mnemonic encoding/decoding (e.g., test/crypto/RFC1751_test.cpp or similar). These tests usually cover valid conversions (key <-> words), invalid word detection, and edge cases (wrong word count, invalid words). Gaps may include: malformed input (extra spaces, mixed case), dictionary boundary cases, and fuzzed/invalid binary input. No evidence of property-based or fuzz testing in standard test suites.",
+  "validation_architecture": {
+    "auto_validated_fields": [],
+    "framework": null,
+    "validation_layer": null
+  },
+  "validations": []
+}

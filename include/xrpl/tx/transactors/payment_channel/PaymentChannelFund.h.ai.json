@@ -1,0 +1,54 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "ctx"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 7,
+      "name": "PaymentChannelFund"
+    }
+  ],
+  "description": "Defines the PaymentChannelFund transactor class for handling the funding of payment channels in the XRPL transaction processing system.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/tx/transactors/payment_channel/PaymentChannelFund.h",
+  "functions": [
+    {
+      "args": [
+        "ApplyContext& ctx"
+      ],
+      "lineno": 10,
+      "name": "PaymentChannelFund"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 15,
+      "name": "makeTxConsequences"
+    },
+    {
+      "args": [
+        "PreflightContext const& ctx"
+      ],
+      "lineno": 18,
+      "name": "preflight"
+    },
+    {
+      "args": [],
+      "lineno": 21,
+      "name": "doApply"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 4,
+      "name": "xrpl"
+    }
+  ]
+}

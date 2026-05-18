@@ -1,0 +1,18 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "Defines constants, enums, and a type alias related to batch writing and status codes for NodeStore backends in the XRPL project.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/Types.h",
+  "functions": [],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 6,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 7,
+      "name": "NodeStore"
+    }
+  ]
+}

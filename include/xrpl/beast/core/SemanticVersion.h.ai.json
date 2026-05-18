@@ -1,0 +1,80 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [
+        "void",
+        "std::string_view version"
+      ],
+      "lineno": 11,
+      "name": "SemanticVersion"
+    }
+  ],
+  "description": "Defines a SemanticVersion class for representing and comparing semantic version numbers according to the Semantic Versioning Specification.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/core/SemanticVersion.h",
+  "functions": [
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 46,
+      "name": "compare"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 49,
+      "name": "operator=="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 54,
+      "name": "operator!="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 59,
+      "name": "operator>="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 64,
+      "name": "operator<="
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 69,
+      "name": "operator>"
+    },
+    {
+      "args": [
+        "lhs",
+        "rhs"
+      ],
+      "lineno": 74,
+      "name": "operator<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "beast"
+    }
+  ]
+}

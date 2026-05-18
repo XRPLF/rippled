@@ -1,0 +1,86 @@
+{
+  "args": [],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 9,
+      "name": "json_body"
+    },
+    {
+      "args": [
+        "boost::beast::http::message<isRequest, json_body, Fields> const& m"
+      ],
+      "lineno": 14,
+      "name": "json_body::reader"
+    },
+    {
+      "args": [
+        "boost::beast::http::header<isRequest, Fields> const& fields",
+        "value_type const& value"
+      ],
+      "lineno": 48,
+      "name": "json_body::writer"
+    }
+  ],
+  "description": "Defines a json_body struct for use as a custom body type in Boost.Beast HTTP messages, enabling serialization and deserialization of JSON payloads using Json::Value.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/json_body.h",
+  "functions": [
+    {
+      "args": [
+        "boost::beast::http::message<isRequest, json_body, Fields> const& m"
+      ],
+      "lineno": 22,
+      "name": "json_body::reader::reader"
+    },
+    {
+      "args": [
+        "boost::beast::error_code&"
+      ],
+      "lineno": 31,
+      "name": "json_body::reader::init"
+    },
+    {
+      "args": [
+        "boost::beast::error_code& ec"
+      ],
+      "lineno": 37,
+      "name": "json_body::reader::get"
+    },
+    {
+      "args": [
+        "boost::beast::error_code&"
+      ],
+      "lineno": 44,
+      "name": "json_body::reader::finish"
+    },
+    {
+      "args": [
+        "boost::beast::http::header<isRequest, Fields> const& fields",
+        "value_type const& value"
+      ],
+      "lineno": 52,
+      "name": "json_body::writer::writer"
+    },
+    {
+      "args": [
+        "boost::beast::error_code& ec"
+      ],
+      "lineno": 58,
+      "name": "json_body::writer::init"
+    },
+    {
+      "args": [
+        "boost::beast::error_code& ec"
+      ],
+      "lineno": 64,
+      "name": "json_body::writer::get"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 7,
+      "name": "xrpl"
+    }
+  ]
+}

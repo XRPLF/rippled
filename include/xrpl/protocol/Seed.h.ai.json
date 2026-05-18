@@ -1,0 +1,143 @@
+{
+  "args": [
+    {
+      "lineno": 29,
+      "name": "slice"
+    },
+    {
+      "lineno": 30,
+      "name": "seed"
+    },
+    {
+      "lineno": 69,
+      "name": "passPhrase"
+    },
+    {
+      "lineno": 80,
+      "name": "s"
+    },
+    {
+      "lineno": 87,
+      "name": "str"
+    },
+    {
+      "lineno": 87,
+      "name": "rfc1751"
+    },
+    {
+      "lineno": 93,
+      "name": "seed"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Slice const& slice",
+        "uint128 const& seed"
+      ],
+      "lineno": 10,
+      "name": "Seed"
+    }
+  ],
+  "description": "Defines the Seed class and related functions for generating, parsing, and encoding cryptographic seeds used to generate deterministic secret keys in XRPL.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/Seed.h",
+  "functions": [
+    {
+      "args": [],
+      "lineno": 25,
+      "name": "~Seed"
+    },
+    {
+      "args": [
+        "Slice const& slice"
+      ],
+      "lineno": 29,
+      "name": "Seed"
+    },
+    {
+      "args": [
+        "uint128 const& seed"
+      ],
+      "lineno": 30,
+      "name": "Seed"
+    },
+    {
+      "args": [],
+      "lineno": 33,
+      "name": "data"
+    },
+    {
+      "args": [],
+      "lineno": 38,
+      "name": "size"
+    },
+    {
+      "args": [],
+      "lineno": 43,
+      "name": "begin"
+    },
+    {
+      "args": [],
+      "lineno": 48,
+      "name": "cbegin"
+    },
+    {
+      "args": [],
+      "lineno": 53,
+      "name": "end"
+    },
+    {
+      "args": [],
+      "lineno": 58,
+      "name": "cend"
+    },
+    {
+      "args": [],
+      "lineno": 65,
+      "name": "randomSeed"
+    },
+    {
+      "args": [
+        "std::string const& passPhrase"
+      ],
+      "lineno": 69,
+      "name": "generateSeed"
+    },
+    {
+      "args": [
+        "std::string const& s"
+      ],
+      "lineno": 80,
+      "name": "parseBase58"
+    },
+    {
+      "args": [
+        "std::string const& str",
+        "bool rfc1751 = true"
+      ],
+      "lineno": 87,
+      "name": "parseGenericSeed"
+    },
+    {
+      "args": [
+        "Seed const& seed"
+      ],
+      "lineno": 93,
+      "name": "seedAs1751"
+    },
+    {
+      "args": [
+        "Seed const& seed"
+      ],
+      "lineno": 97,
+      "name": "toBase58"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 8,
+      "name": "xrpl"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "args": [
+    {
+      "lineno": 12,
+      "name": "s"
+    },
+    {
+      "lineno": 23,
+      "name": "type"
+    },
+    {
+      "lineno": 34,
+      "name": "s"
+    },
+    {
+      "lineno": 34,
+      "name": "type"
+    }
+  ],
+  "classes": [],
+  "description": "Defines the KeyType enum for cryptographic key types and provides utility functions for converting between KeyType and string representations in the xrpl namespace.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/protocol/KeyType.h",
+  "functions": [
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 11,
+      "name": "keyTypeFromString"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 22,
+      "name": "to_string"
+    },
+    {
+      "args": [
+        "s",
+        "type"
+      ],
+      "lineno": 33,
+      "name": "operator<<"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

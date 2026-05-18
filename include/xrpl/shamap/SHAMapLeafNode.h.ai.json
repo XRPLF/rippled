@@ -1,0 +1,105 @@
+{
+  "args": [
+    {
+      "lineno": 10,
+      "name": "item"
+    },
+    {
+      "lineno": 10,
+      "name": "cowid"
+    },
+    {
+      "lineno": 13,
+      "name": "hash"
+    },
+    {
+      "lineno": 32,
+      "name": "is_root"
+    },
+    {
+      "lineno": 44,
+      "name": "i"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid"
+      ],
+      "lineno": 8,
+      "name": "SHAMapLeafNode"
+    }
+  ],
+  "description": "Defines the SHAMapLeafNode class, representing a leaf node in the SHAMap data structure, which holds a pointer to a SHAMapItem and provides methods for item access, mutation, and node property queries.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/shamap/SHAMapLeafNode.h",
+  "functions": [
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid"
+      ],
+      "lineno": 10,
+      "name": "SHAMapLeafNode"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> item",
+        "std::uint32_t cowid",
+        "SHAMapHash const& hash"
+      ],
+      "lineno": 13,
+      "name": "SHAMapLeafNode"
+    },
+    {
+      "args": [
+        "SHAMapLeafNode const&"
+      ],
+      "lineno": 19,
+      "name": "operator="
+    },
+    {
+      "args": [],
+      "lineno": 22,
+      "name": "isLeaf"
+    },
+    {
+      "args": [],
+      "lineno": 27,
+      "name": "isInner"
+    },
+    {
+      "args": [
+        "bool is_root = false"
+      ],
+      "lineno": 32,
+      "name": "invariants"
+    },
+    {
+      "args": [],
+      "lineno": 37,
+      "name": "peekItem"
+    },
+    {
+      "args": [
+        "boost::intrusive_ptr<SHAMapItem const> i"
+      ],
+      "lineno": 44,
+      "name": "setItem"
+    },
+    {
+      "args": [
+        "SHAMapNodeID const&"
+      ],
+      "lineno": 53,
+      "name": "getString"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    }
+  ]
+}

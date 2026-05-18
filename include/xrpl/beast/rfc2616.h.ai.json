@@ -1,0 +1,210 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "c1"
+    },
+    {
+      "lineno": 19,
+      "name": "c2"
+    },
+    {
+      "lineno": 27,
+      "name": "c"
+    },
+    {
+      "lineno": 34,
+      "name": "c"
+    },
+    {
+      "lineno": 46,
+      "name": "first"
+    },
+    {
+      "lineno": 46,
+      "name": "last"
+    },
+    {
+      "lineno": 58,
+      "name": "s"
+    },
+    {
+      "lineno": 74,
+      "name": "first"
+    },
+    {
+      "lineno": 74,
+      "name": "last"
+    },
+    {
+      "lineno": 74,
+      "name": "delim"
+    },
+    {
+      "lineno": 120,
+      "name": "first"
+    },
+    {
+      "lineno": 120,
+      "name": "last"
+    },
+    {
+      "lineno": 126,
+      "name": "s"
+    },
+    {
+      "lineno": 134,
+      "name": "begin"
+    },
+    {
+      "lineno": 134,
+      "name": "end"
+    },
+    {
+      "lineno": 222,
+      "name": "s1"
+    },
+    {
+      "lineno": 222,
+      "name": "s2"
+    },
+    {
+      "lineno": 227,
+      "name": "field"
+    },
+    {
+      "lineno": 235,
+      "name": "value"
+    },
+    {
+      "lineno": 235,
+      "name": "token"
+    },
+    {
+      "lineno": 245,
+      "name": "m"
+    }
+  ],
+  "classes": [
+    {
+      "args": [],
+      "lineno": 15,
+      "name": "ci_equal_pred"
+    },
+    {
+      "args": [
+        "begin",
+        "end"
+      ],
+      "lineno": 134,
+      "name": "list_iterator"
+    }
+  ],
+  "description": "Utilities for parsing and handling HTTP header lists and tokens according to RFC 2616, including case-insensitive comparison, whitespace trimming, splitting comma-separated values, and iterating over header lists.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/beast/rfc2616.h",
+  "functions": [
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 27,
+      "name": "is_lws"
+    },
+    {
+      "args": [
+        "c"
+      ],
+      "lineno": 34,
+      "name": "is_white"
+    },
+    {
+      "args": [
+        "first",
+        "last"
+      ],
+      "lineno": 46,
+      "name": "trim_right"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 58,
+      "name": "trim_right"
+    },
+    {
+      "args": [
+        "first",
+        "last",
+        "delim"
+      ],
+      "lineno": 74,
+      "name": "split"
+    },
+    {
+      "args": [
+        "first",
+        "last"
+      ],
+      "lineno": 120,
+      "name": "split_commas"
+    },
+    {
+      "args": [
+        "s"
+      ],
+      "lineno": 126,
+      "name": "split_commas"
+    },
+    {
+      "args": [],
+      "lineno": 170,
+      "name": "increment"
+    },
+    {
+      "args": [
+        "s1",
+        "s2"
+      ],
+      "lineno": 222,
+      "name": "ci_equal"
+    },
+    {
+      "args": [
+        "field"
+      ],
+      "lineno": 227,
+      "name": "make_list"
+    },
+    {
+      "args": [
+        "value",
+        "token"
+      ],
+      "lineno": 235,
+      "name": "token_in_list"
+    },
+    {
+      "args": [
+        "m"
+      ],
+      "lineno": 245,
+      "name": "is_keep_alive"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 12,
+      "name": "beast"
+    },
+    {
+      "lineno": 13,
+      "name": "rfc2616"
+    },
+    {
+      "lineno": 14,
+      "name": "detail"
+    }
+  ]
+}

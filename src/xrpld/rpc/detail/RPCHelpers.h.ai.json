@@ -1,0 +1,100 @@
+{
+  "args": [],
+  "classes": [],
+  "description": "This header file declares utility functions for XRPL RPC handling, including account object traversal, parsing account IDs, extracting seeds and keypairs from RPC parameters, validating ledger entry types, and parsing subscribe/unsubscribe parameters.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/src/xrpld/rpc/detail/RPCHelpers.h",
+  "functions": [
+    {
+      "args": [
+        "sle",
+        "accountID"
+      ],
+      "lineno": 22,
+      "name": "getStartHint"
+    },
+    {
+      "args": [
+        "ledger",
+        "sle",
+        "accountID"
+      ],
+      "lineno": 34,
+      "name": "isRelatedToAccount"
+    },
+    {
+      "args": [
+        "jvArray"
+      ],
+      "lineno": 47,
+      "name": "parseAccountIds"
+    },
+    {
+      "args": [
+        "limit",
+        "range",
+        "context"
+      ],
+      "lineno": 57,
+      "name": "readLimitField"
+    },
+    {
+      "args": [
+        "params",
+        "error"
+      ],
+      "lineno": 71,
+      "name": "getSeedFromRPC"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 82,
+      "name": "parseXrplLibSeed"
+    },
+    {
+      "args": [
+        "params"
+      ],
+      "lineno": 91,
+      "name": "chooseLedgerEntryType"
+    },
+    {
+      "args": [
+        "type"
+      ],
+      "lineno": 104,
+      "name": "isAccountObjectsValidType"
+    },
+    {
+      "args": [
+        "params",
+        "error",
+        "apiVersion"
+      ],
+      "lineno": 115,
+      "name": "keypairForSignature"
+    },
+    {
+      "args": [
+        "asset",
+        "jv",
+        "name",
+        "j"
+      ],
+      "lineno": 132,
+      "name": "parseSubUnsubJson"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 13,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 15,
+      "name": "RPC"
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "args": [
+    {
+      "lineno": 19,
+      "name": "scheduler"
+    },
+    {
+      "lineno": 20,
+      "name": "readThreads"
+    },
+    {
+      "lineno": 21,
+      "name": "writableBackend"
+    },
+    {
+      "lineno": 22,
+      "name": "archiveBackend"
+    },
+    {
+      "lineno": 23,
+      "name": "config"
+    },
+    {
+      "lineno": 24,
+      "name": "j"
+    },
+    {
+      "lineno": 32,
+      "name": "newBackend"
+    },
+    {
+      "lineno": 33,
+      "name": "f"
+    },
+    {
+      "lineno": 45,
+      "name": "source"
+    },
+    {
+      "lineno": 54,
+      "name": "type"
+    },
+    {
+      "lineno": 54,
+      "name": "data"
+    },
+    {
+      "lineno": 54,
+      "name": "hash"
+    },
+    {
+      "lineno": 63,
+      "name": "fetchReport"
+    },
+    {
+      "lineno": 63,
+      "name": "duplicate"
+    }
+  ],
+  "classes": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "std::shared_ptr<Backend> writableBackend",
+        "std::shared_ptr<Backend> archiveBackend",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 11,
+      "name": "DatabaseRotatingImp"
+    }
+  ],
+  "description": "This file defines the DatabaseRotatingImp class, an implementation of the DatabaseRotating interface for managing a rotating node store database in the XRPL NodeStore module.",
+  "file_path": "workflow/XRPLF-rippled-develop/source/include/xrpl/nodestore/detail/DatabaseRotatingImp.h",
+  "functions": [
+    {
+      "args": [
+        "Scheduler& scheduler",
+        "int readThreads",
+        "std::shared_ptr<Backend> writableBackend",
+        "std::shared_ptr<Backend> archiveBackend",
+        "Section const& config",
+        "beast::Journal j"
+      ],
+      "lineno": 18,
+      "name": "DatabaseRotatingImp"
+    },
+    {
+      "args": [],
+      "lineno": 26,
+      "name": "~DatabaseRotatingImp"
+    },
+    {
+      "args": [
+        "std::unique_ptr<NodeStore::Backend>&& newBackend",
+        "std::function<void(std::string const& writableName, std::string const& archiveName)> const& f"
+      ],
+      "lineno": 30,
+      "name": "rotate"
+    },
+    {
+      "args": [],
+      "lineno": 36,
+      "name": "getName"
+    },
+    {
+      "args": [],
+      "lineno": 40,
+      "name": "getWriteLoad"
+    },
+    {
+      "args": [
+        "Database& source"
+      ],
+      "lineno": 44,
+      "name": "importDatabase"
+    },
+    {
+      "args": [
+        "std::uint32_t",
+        "std::uint32_t"
+      ],
+      "lineno": 48,
+      "name": "isSameDB"
+    },
+    {
+      "args": [
+        "NodeObjectType type",
+        "Blob&& data",
+        "uint256 const& hash",
+        "std::uint32_t"
+      ],
+      "lineno": 54,
+      "name": "store"
+    },
+    {
+      "args": [],
+      "lineno": 56,
+      "name": "sync"
+    },
+    {
+      "args": [
+        "uint256 const& hash",
+        "std::uint32_t",
+        "FetchReport& fetchReport",
+        "bool duplicate"
+      ],
+      "lineno": 63,
+      "name": "fetchNodeObject"
+    },
+    {
+      "args": [
+        "std::function<void(std::shared_ptr<NodeObject>)> f"
+      ],
+      "lineno": 67,
+      "name": "for_each"
+    }
+  ],
+  "language": "c header",
+  "namespaces": [
+    {
+      "lineno": 5,
+      "name": "xrpl"
+    },
+    {
+      "lineno": 6,
+      "name": "NodeStore"
+    }
+  ]
+}
