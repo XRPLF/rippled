@@ -1592,7 +1592,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create MPT with locking enabled
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
         PrettyAsset const mpt{mptt.issuanceID()};
