@@ -1961,7 +1961,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.fund(XRP(100'000), issuer, alice);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
 
