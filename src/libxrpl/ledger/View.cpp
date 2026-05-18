@@ -63,7 +63,7 @@ isVaultPseudoAccountFrozen(
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
-    if (depth >= kMAX_ASSET_CHECK_DEPTH)
+    if (depth >= kMaxAssetCheckDepth)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");

@@ -123,7 +123,7 @@ assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
  *
  *  Vault shares carry sfReferenceHolding; when present and the call is not
  *  waived, the check resolves the holding's underlying asset and recurses.
- *  @p depth bounds that recursion at kMAX_ASSET_CHECK_DEPTH (defensive -
+ *  @p depth bounds that recursion at kMaxAssetCheckDepth (defensive -
  *  vault-of-vault-shares is disallowed at vault creation).
  */
 [[nodiscard]] TER
@@ -138,7 +138,7 @@ canTransfer(
 /** Check if Asset can be traded on DEX. return tecNO_PERMISSION
  * if it doesn't and tesSUCCESS otherwise. For vault shares the check
  * inherits the underlying asset's tradability via sfReferenceHolding;
- * @p depth bounds that recursion at kMAX_ASSET_CHECK_DEPTH.
+ * @p depth bounds that recursion at kMaxAssetCheckDepth.
  */
 [[nodiscard]] TER
 canTrade(ReadView const& view, Asset const& asset, int depth = 0);

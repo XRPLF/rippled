@@ -320,7 +320,7 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+        if (depth >= kMaxAssetCheckDepth)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::MPTokenHelpers::requireAuth : reached asset check depth");
@@ -558,7 +558,7 @@ canTransfer(
     {
         // Defensive depth bound on the inheritance recursion. Unreachable
         // in practice (vault-of-vault-shares is forbidden at VaultCreate).
-        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+        if (depth >= kMaxAssetCheckDepth)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
@@ -604,7 +604,7 @@ canTrade(ReadView const& view, Asset const& asset, int depth)
                 // Defensive depth bound on the inheritance recursion.
                 // Unreachable in practice (vault-of-vault-shares
                 // forbidden at VaultCreate).
-                if (depth >= kMAX_ASSET_CHECK_DEPTH)
+                if (depth >= kMaxAssetCheckDepth)
                 {
                     // LCOV_EXCL_START
                     UNREACHABLE("xrpl::MPTokenHelpers::canTrade : reached asset check depth");
@@ -1050,7 +1050,7 @@ checkMPTAllowed(
             // Defensive depth bound on the inheritance recursion.
             // Reachable only post-fixCleanup3_2_0 and unreachable in
             // practice (vault-of-vault-shares forbidden at VaultCreate).
-            if (depth >= kMAX_ASSET_CHECK_DEPTH)
+            if (depth >= kMaxAssetCheckDepth)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::MPTokenHelpers::checkMPTAllowed : reached asset check depth");
