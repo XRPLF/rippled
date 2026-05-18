@@ -7771,8 +7771,8 @@ protected:
 
         // The new (vaultScale) minimum must be strictly larger than the
         // old (debtScale) minimum — that is the gap the amendment closes.
-        Number expectedNewMin{1330650518688500000, -15};
-        Number expectedOldMin{1330650518688472000, -15};
+        Number const expectedNewMin{1330650518688500000, -15};
+        Number const expectedOldMin{1330650518688472000, -15};
         BEAST_EXPECT(newMin == expectedNewMin);
         BEAST_EXPECT(oldMin == expectedOldMin);
 
