@@ -78,7 +78,7 @@ ServerDefinitions::translate(std::string const& inp)
         return replace("UINT", "UInt");
     }
 
-    static std::unordered_map<std::string_view, std::string_view> const kREPLACEMENTS{
+    static std::unordered_map<std::string_view, std::string_view> const kReplacements{
         {"OBJECT", "STObject"},
         {"ARRAY", "STArray"},
         {"ACCOUNT", "AccountID"},
@@ -89,7 +89,7 @@ ServerDefinitions::translate(std::string const& inp)
         {"XCHAIN_BRIDGE", "XChainBridge"},
     };
 
-    if (auto const& it = kREPLACEMENTS.find(inp); it != kREPLACEMENTS.end())
+    if (auto const& it = kReplacements.find(inp); it != kReplacements.end())
     {
         return std::string(it->second);
     }
@@ -129,7 +129,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
 
     defs_[jss::TYPES]["Done"] = -1;
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
-    for (auto const& [rawName, typeValue] : kS_TYPE_MAP)
+    for (auto const& [rawName, typeValue] : kSTypeMap)
     {
         std::string const typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
@@ -216,10 +216,10 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
     }
 
     // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
-    static std::map<int, SField const*> const kSORTED_FIELDS(
+    static std::map<int, SField const*> const kSortedFields(
         xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
 
-    for (auto const& [code, field] : kSORTED_FIELDS)
+    for (auto const& [code, field] : kSortedFields)
     {
         if (field->fieldName.empty())
             continue;
@@ -369,8 +369,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
 ServerDefinitions const&
 getDefinitions()
 {
-    static ServerDefinitions const kDEFS{};
-    return kDEFS;
+    static ServerDefinitions const kDefs{};
+    return kDefs;
 }
 
 }  // namespace detail

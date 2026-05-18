@@ -522,9 +522,9 @@ public:
                 // carol's offer can be partially crossed when EUR is IOU:
                 // 10e-3EUR/1USD
                 using tEUR = std::decay_t<decltype(eur)>;
-                bool constexpr kIS_EURIOU = std::is_same_v<tEUR, IOU>;
+                static constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
                 // partially crossed if IOU, removed but not taken if MPT
-                auto const balanceCarolUSD = kIS_EURIOU ? usd(0) : initialCarolUSD;
+                auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
 
                 env.require(offers(carol, 0), Balance(carol, balanceCarolUSD));
                 if (crossBothOffers)
@@ -535,7 +535,7 @@ public:
                 else
                 {
                     // partially crossed if IOU, not crossed if MPT
-                    auto const balanceAliceUSD = kIS_EURIOU ? usd(1) : usd(0);
+                    auto const balanceAliceUSD = kIsEuriou ? usd(1) : usd(0);
                     env.require(offers(alice, 1), Balance(alice, balanceAliceUSD));
                 }
             }
@@ -590,9 +590,9 @@ public:
                     // carol's offer can be partially crossed when EUR is IOU:
                     // 10e-3EUR/1USD
                     using tEUR = std::decay_t<decltype(eur)>;
-                    bool constexpr kIS_EURIOU = std::is_same_v<tEUR, IOU>;
+                    static constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
                     // partially crossed if IOU, removed but not taken if MPT
-                    auto const balanceCarolUSD = kIS_EURIOU ? usd(0) : initialCarolUSD;
+                    auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
                     env.require(offers(carol, 0));
                     env.require(Balance(carol, balanceCarolUSD));
                 }
@@ -784,7 +784,7 @@ public:
                 Owners(alice, 1),
                 offers(alice, 0),
                 Balance(bob, startBalance - (f * 2)),
-                Balance(bob, usd(kNONE)),
+                Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
 
@@ -1057,7 +1057,7 @@ public:
             offers(alice, 0),
             Owners(alice, 1),
             Balance(bob, startBalance - f),
-            Balance(bob, usd(kNONE)),
+            Balance(bob, usd(kNone)),
             offers(bob, 1),
             Owners(bob, 1));
     }
@@ -1764,7 +1764,7 @@ public:
             env.require(Owners(alice, 2));
 
             env.require(Balance(carol, usd(0)));
-            env.require(Balance(carol, eur(kNONE)));
+            env.require(Balance(carol, eur(kNone)));
 
             env.require(offers(carol, 0));
             env.require(Owners(carol, 1));
@@ -2309,8 +2309,8 @@ public:
             env.close();
 
             env.require(Balance(alice, usd(1'000)));
-            env.require(Balance(alice, eur(kNONE)));
-            env.require(Balance(bob, usd(kNONE)));
+            env.require(Balance(alice, eur(kNone)));
+            env.require(Balance(bob, usd(kNone)));
             env.require(Balance(bob, eur(1'000)));
             env.require(offers(alice, 0));
             env.require(offers(bob, 0));
@@ -2667,7 +2667,7 @@ public:
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
             env(offer(alice, usd(21), XRP(2'100), tfSell | tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(alice, usd(kNONE)));
+            env.require(Balance(alice, usd(kNone)));
             env.require(offers(alice, 0));
             env.require(Balance(bob, usd(100)));
         }
@@ -3439,14 +3439,14 @@ public:
                  .token = "JPY",
                  .issuer = gw,
                  .holders = {alice},
-                 .limit = kMAX_MP_TOKEN_AMOUNT,
+                 .limit = kMaxMpTokenAmount,
                  .transferFee = 2'000});
             auto const btc = issue2(
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
                  .holders = {bob},
-                 .limit = kMAX_MP_TOKEN_AMOUNT,
+                 .limit = kMaxMpTokenAmount,
                  .transferFee = 2'000});
 
             env(pay(gw, alice, jpy(3'699'034'802'280'317)));
@@ -3859,7 +3859,7 @@ public:
 
         // GW requires authorization for holders of its IOUs
         auto gwMUSD =
-            MPTTester({.env = env, .issuer = gw, .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth});
+            MPTTester({.env = env, .issuer = gw, .flags = kMptDexFlags | tfMPTRequireAuth});
         MPT const gwUSD = gwMUSD;
 
         // Have gw authorize bob and alice
@@ -3918,7 +3918,7 @@ public:
         env.close();
 
         auto gwMUSD =
-            MPTTester({.env = env, .issuer = gw, .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth});
+            MPTTester({.env = env, .issuer = gw, .flags = kMptDexFlags | tfMPTRequireAuth});
         MPT const gwUSD = gwMUSD;
 
         // alice can't create an offer because alice doesn't own
@@ -3927,7 +3927,7 @@ public:
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
 
         gwMUSD.authorize({.account = bob});
         gwMUSD.authorize({.account = gw, .holder = bob});
@@ -3998,7 +3998,7 @@ public:
         env.close();
 
         auto gwMUSD =
-            MPTTester({.env = env, .issuer = gw, .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth});
+            MPTTester({.env = env, .issuer = gw, .flags = kMptDexFlags | tfMPTRequireAuth});
         MPT const gwUSD = gwMUSD;
 
         // Test that gw can create an offer to buy gw's currency.
@@ -4769,8 +4769,8 @@ public:
     run() override
     {
         using namespace jtx;
-        static FeatureBitset const kALL{testableAmendments()};
-        testAll(kALL);
+        static FeatureBitset const kAll{testableAmendments()};
+        testAll(kAll);
     }
 };
 
