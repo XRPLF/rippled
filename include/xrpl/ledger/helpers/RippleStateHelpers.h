@@ -110,7 +110,7 @@ isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
-    int = 0 /*ignored*/)
+    std::uint8_t = 0 /*ignored*/)
 {
     return isDeepFrozen(view, account, issue.currency, issue.account);
 }
