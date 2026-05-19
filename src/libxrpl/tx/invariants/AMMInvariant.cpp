@@ -201,7 +201,7 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal 
         }
         // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceOnDelete_ is set with
         // ammDeleted_ in visitEntry
-        else if (*lptAMMBalanceOnDelete_ != beast::zero)
+        else if (*lptAMMBalanceOnDelete_ != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j.error()) << "AMMDelete invariant failed: AMM deleted with non-zero LP balance: "
@@ -322,7 +322,7 @@ ValidAMM::finalizeWithdraw(
         // Last Withdraw or Clawback deleted AMM - verify empty state
         // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceOnDelete_ is set with
         // ammDeleted_ in visitEntry
-        if (enforceNew && *lptAMMBalanceOnDelete_ != beast::zero)
+        if (enforceNew && *lptAMMBalanceOnDelete_ != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j.error())
