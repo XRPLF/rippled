@@ -156,20 +156,20 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
+                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
-    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
+    else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
+        if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -179,15 +179,15 @@ VaultDeposit::doApply()
         {
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
-                account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+                accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {},       // flags
-                    account_  // holderID
+                    {},         // flags
+                    accountID_  // holderID
                 );
                 !isTesSuccess(err))
                 return err;
@@ -247,15 +247,15 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), accountID_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
-            account_,
+            accountID_,
             assetsDeposited.asset(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
@@ -269,7 +269,7 @@ VaultDeposit::doApply()
 
     // Transfer shares from vault to depositor.
     if (auto const ter =
-            accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
+            accountSend(view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
