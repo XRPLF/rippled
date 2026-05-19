@@ -2,6 +2,16 @@
 #
 # These packages are required to run the code generation scripts that
 # parse macro files and generate C++ wrapper classes.
+#
+# After updating a package version, regenerate its hashes by running:
+#   pip install hashin
+#   hashin <package> cmake/scripts/codegen/requirements.txt
+# Or to pin a specific version:
+#   hashin <package>==<version> cmake/scripts/codegen/requirements.txt
+#
+# If pip install fails because a transitive dependency is missing hashes,
+# use hashin to pin that dependency with hashes here as well:
+#   hashin <dependency> cmake/scripts/codegen/requirements.txt
 
 # C preprocessor for Python - used to preprocess macro files
 pcpp==1.30 \
