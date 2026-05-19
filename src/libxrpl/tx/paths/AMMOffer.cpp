@@ -1,6 +1,24 @@
-#include <xrpl/protocol/QualityFunction.h>
-#include <xrpl/tx/paths/AMMLiquidity.h>
 #include <xrpl/tx/paths/AMMOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -76,7 +94,7 @@ AMMOffer<TIn, TOut>::limitOut(
     {
         // It turns out that the ceil_out implementation has some slop in
         // it, which ceil_out_strict removes.
-        return quality().ceil_out_strict(offerAmount, limit, roundUp);
+        return quality().ceilOutStrict(offerAmount, limit, roundUp);
     }
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
@@ -94,9 +112,9 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
     {
         if (auto const& rules = getCurrentTransactionRules();
             rules && rules->enabled(fixReducedOffersV2))
-            return quality().ceil_in_strict(offerAmount, limit, roundUp);
+            return quality().ceilInStrict(offerAmount, limit, roundUp);
 
-        return quality().ceil_in(offerAmount, limit);
+        return quality().ceilIn(offerAmount, limit);
     }
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }

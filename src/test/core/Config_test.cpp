@@ -4,13 +4,14 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
 #include <boost/filesystem/operations.hpp>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/protocol/SystemParameters.h"
+#include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
@@ -35,7 +36,7 @@ namespace detail {
 std::string
 configContents(std::string const& dbPath, std::string const& validatorsFile)
 {
-    static boost::format configContentsTemplate(R"xrpldConfig(
+    static boost::format kConfigContentsTemplate(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -119,7 +120,7 @@ backend=sqlite
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
     std::string valFileSection =
         validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
-    return boost::str(configContentsTemplate % dbPathSection % valFileSection);
+    return boost::str(kConfigContentsTemplate % dbPathSection % valFileSection);
 }
 
 /**
@@ -265,8 +266,7 @@ public:
         return absolute(file()).string();
     }
 
-    ~ValidatorsTxtGuard()
-    = default;
+    ~ValidatorsTxtGuard() = default;
 };
 }  // namespace detail
 
@@ -296,7 +296,8 @@ port_wss_admin
         c.loadFromString(toLoad);
 
         BEAST_EXPECT(c.legacy("ssl_verify") == "0");
-        expectException([&c] { c.legacy("server"); });  // not a single line
+        expectException(
+            [&c] { [[maybe_unused]] auto _ = c.legacy("server"); });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -507,7 +508,7 @@ port_wss_admin
 
         {
             Config c;
-            static boost::format configTemplate(R"xrpldConfig(
+            static boost::format kConfigTemplate(R"xrpldConfig(
 [validation_seed]
 %1%
 
@@ -520,7 +521,7 @@ port_wss_admin
                 "and [validator_token] config sections";
             try
             {
-                c.loadFromString(boost::str(configTemplate % validationSeed % token));
+                c.loadFromString(boost::str(kConfigTemplate % validationSeed % token));
             }
             catch (std::runtime_error const& e)
             {
@@ -1122,11 +1123,11 @@ trust-these-validators.gov
         if (!BEAST_EXPECT(conf.exists("port_wss_admin")))
             return;
         ParsedPort rpc;
-        if (!unexcept([&]() { parse_Port(rpc, conf["port_rpc"], log); }))
+        if (!unexcept([&]() { parsePort(rpc, conf["port_rpc"], log); }))
             return;
         BEAST_EXPECT(rpc.admin_nets_v4.size() + rpc.admin_nets_v6.size() == 2);
         ParsedPort wss;
-        if (!unexcept([&]() { parse_Port(wss, conf["port_wss_admin"], log); }))
+        if (!unexcept([&]() { parsePort(wss, conf["port_wss_admin"], log); }))
             return;
         BEAST_EXPECT(wss.admin_nets_v4.size() + wss.admin_nets_v6.size() == 1);
     }
@@ -1277,20 +1278,41 @@ r.ripple.com:51235
         };
 
         std::array<TestCommentData, 13> const tests = {
-            {{.line="password = aaaa\\#bbbb", .field="password", .expect="aaaa#bbbb", .had_comment=false},
-             {.line="password = aaaa#bbbb", .field="password", .expect="aaaa", .had_comment=true},
-             {.line="password = aaaa #bbbb", .field="password", .expect="aaaa", .had_comment=true},
+            {{.line = "password = aaaa\\#bbbb",
+              .field = "password",
+              .expect = "aaaa#bbbb",
+              .had_comment = false},
+             {.line = "password = aaaa#bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
+             {.line = "password = aaaa #bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
              // since the value is all comment, this doesn't parse as k=v :
-             {.line="password = #aaaa #bbbb", .field="", .expect="password =", .had_comment=true},
-             {.line="password = aaaa\\# #bbbb", .field="password", .expect="aaaa#", .had_comment=true},
-             {.line="password = aaaa\\##bbbb", .field="password", .expect="aaaa#", .had_comment=true},
-             {.line="aaaa#bbbb", .field="", .expect="aaaa", .had_comment=true},
-             {.line="aaaa\\#bbbb", .field="", .expect="aaaa#bbbb", .had_comment=false},
-             {.line="aaaa\\##bbbb", .field="", .expect="aaaa#", .had_comment=true},
-             {.line="aaaa #bbbb", .field="", .expect="aaaa", .had_comment=true},
-             {.line="1 #comment", .field="", .expect="1", .had_comment=true},
-             {.line="#whole thing is comment", .field="", .expect="", .had_comment=false},
-             {.line="  #whole comment with space", .field="", .expect="", .had_comment=false}}};
+             {.line = "password = #aaaa #bbbb",
+              .field = "",
+              .expect = "password =",
+              .had_comment = true},
+             {.line = "password = aaaa\\# #bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "password = aaaa\\##bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .had_comment = false},
+             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .had_comment = true},
+             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "1 #comment", .field = "", .expect = "1", .had_comment = true},
+             {.line = "#whole thing is comment", .field = "", .expect = "", .had_comment = false},
+             {.line = "  #whole comment with space",
+              .field = "",
+              .expect = "",
+              .had_comment = false}}};
 
         for (auto const& t : tests)
         {
@@ -1357,11 +1379,11 @@ r.ripple.com:51235
             BEAST_EXPECT(val5 == "default");
 
             auto val6 = "value 6"s;
-            BEAST_EXPECT(get_if_exists(s, "a_string", val6));
+            BEAST_EXPECT(getIfExists(s, "a_string", val6));
             BEAST_EXPECT(val6 == "mystring");
 
             auto val7 = "value 7"s;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val7));
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", val7));
             BEAST_EXPECT(val7 == "value 7");
         }
 
@@ -1388,21 +1410,21 @@ r.ripple.com:51235
             BEAST_EXPECT(val7 == 6);
 
             int val8 = 8;
-            BEAST_EXPECT(get_if_exists(s, "positive_int", val8));
+            BEAST_EXPECT(getIfExists(s, "positive_int", val8));
             BEAST_EXPECT(val8 == 2);
 
             auto val9 = 9;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", val9));
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", val9));
             BEAST_EXPECT(val9 == 9);
 
             auto val10 = 10;
-            BEAST_EXPECT(!get_if_exists(s, "a_string", val10));
+            BEAST_EXPECT(!getIfExists(s, "a_string", val10));
             BEAST_EXPECT(val10 == 10);
 
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
-                s.get<int>("a_string");
+                [[maybe_unused]] auto _ = s.get<int>("a_string");
                 fail();
             }
             catch (boost::bad_lexical_cast&)
@@ -1413,11 +1435,11 @@ r.ripple.com:51235
 
         {
             bool flag1 = false;
-            BEAST_EXPECT(get_if_exists(s, "bool_ish", flag1));
+            BEAST_EXPECT(getIfExists(s, "bool_ish", flag1));
             BEAST_EXPECT(flag1 == true);
 
             bool flag2 = false;
-            BEAST_EXPECT(!get_if_exists(s, "not_a_key", flag2));
+            BEAST_EXPECT(!getIfExists(s, "not_a_key", flag2));
             BEAST_EXPECT(flag2 == false);
         }
     }

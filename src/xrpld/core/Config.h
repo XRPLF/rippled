@@ -12,10 +12,8 @@
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
 #include <cstdint>
-#include <cstdlib>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -53,10 +51,10 @@ struct FeeSetup
     XRPAmount reference_fee{10};
 
     /** The account reserve requirement in drops. */
-    XRPAmount account_reserve{10 * dropsPerXrp};
+    XRPAmount account_reserve{10 * kDropsPerXrp};
 
     /** The per-owned item reserve requirement in drops. */
-    XRPAmount owner_reserve{2 * dropsPerXrp};
+    XRPAmount owner_reserve{2 * kDropsPerXrp};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -211,11 +209,11 @@ public:
 
     // Work queue limits
     int MAX_TRANSACTIONS = 250;
-    static constexpr int maxJobQueueTx = 1000;
-    static constexpr int minJobQueueTx = 100;
+    static constexpr int kMaxJobQueueTx = 1000;
+    static constexpr int kMinJobQueueTx = 100;
 
     // Amendment majority time
-    std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = kDefaultAmendmentMajorityTime;
 
     // Thread pool configuration (0 = choose for me)
     int WORKERS = 0;           // jobqueue thread count. default: upto 6
@@ -377,9 +375,9 @@ public:
 };
 
 FeeSetup
-setup_FeeVote(Section const& section);
+setupFeeVote(Section const& section);
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
+setupDatabaseCon(Config const& c, std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

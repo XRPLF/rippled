@@ -1,20 +1,21 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
-#include "xrpl/basics/Blob.h"
-#include "xrpl/basics/IntrusivePointer.h"
-#include "xrpl/basics/Log.h"
-#include "xrpl/basics/Slice.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/beast/utility/instrumentation.h"
-#include "xrpl/protocol/Serializer.h"
-#include "xrpl/shamap/SHAMapAddNode.h"
-#include "xrpl/shamap/SHAMapInnerNode.h"
-#include "xrpl/shamap/SHAMapItem.h"
-#include "xrpl/shamap/SHAMapNodeID.h"
-#include "xrpl/shamap/SHAMapTreeNode.h"
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <cstdint>
@@ -60,7 +61,7 @@ SHAMap::visitLeaves(
 {
     visitNodes([&leafFunction](SHAMapTreeNode& node) {
         if (!node.isInner())
-            leafFunction(safe_downcast<SHAMapLeafNode&>(node).peekItem());
+            leafFunction(safeDowncast<SHAMapLeafNode&>(node).peekItem());
         return true;
     });
 }
@@ -79,7 +80,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
     using StackEntry = std::pair<int, intr_ptr::SharedPtr<SHAMapInnerNode>>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
 
-    auto node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_);
+    auto node = intr_ptr::staticPointerCast<SHAMapInnerNode>(root_);
     int pos = 0;
 
     while (true)
@@ -109,7 +110,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                     }
 
                     // descend to the child's first position
-                    node = intr_ptr::static_pointer_cast<SHAMapInnerNode>(child);
+                    node = intr_ptr::staticPointerCast<SHAMapInnerNode>(child);
                     pos = 0;
                 }
             }
@@ -145,7 +146,7 @@ SHAMap::visitDifferences(
 
     if (root_->isLeaf())
     {
-        auto leaf = intr_ptr::static_pointer_cast<SHAMapLeafNode>(root_);
+        auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
         if ((have == nullptr) || !have->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
@@ -154,7 +155,7 @@ SHAMap::visitDifferences(
     using StackEntry = std::pair<SHAMapInnerNode*, SHAMapNodeID>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
 
-    stack.emplace(safe_downcast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID{});
+    stack.emplace(safeDowncast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID{});
 
     while (!stack.empty())
     {
@@ -177,12 +178,12 @@ SHAMap::visitDifferences(
                 if (next->isInner())
                 {
                     if ((have == nullptr) || !have->hasInnerNode(childID, childHash))
-                        stack.emplace(safe_downcast<SHAMapInnerNode*>(next), childID);
+                        stack.emplace(safeDowncast<SHAMapInnerNode*>(next), childID);
                 }
                 else if (
                     (have == nullptr) ||
                     !have->hasLeafNode(
-                        safe_downcast<SHAMapLeafNode*>(next)->peekItem()->key(), childHash))
+                        safeDowncast<SHAMapLeafNode*>(next)->peekItem()->key(), childHash))
                 {
                     if (!function(*next))
                         return;
@@ -220,7 +221,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         }
         else if (
             !backed_ || !useFullBelowCache() ||
-            !f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -247,21 +248,19 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 fullBelow = false;  // for now, not known full below
                 mn.missingHashes.insert(childHash);
-                mn.missingNodes.emplace_back(
-                    nodeID.getChildNodeID(branch), childHash.asUint256());
+                mn.missingNodes.emplace_back(nodeID.getChildNodeID(branch), childHash.asUInt256());
 
                 if (--mn.max <= 0)
                     return;
             }
-            else if (
-                d->isInner() && !safe_downcast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
+            else if (d->isInner() && !safeDowncast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
             {
                 mn.stack.push(se);
 
                 // Switch to processing the child node
-                node = safe_downcast<SHAMapInnerNode*>(d);
+                node = safeDowncast<SHAMapInnerNode*>(d);
                 nodeID = nodeID.getChildNodeID(branch);
-                firstChild = rand_int(255);
+                firstChild = randInt(255);
                 currentChild = 0;
                 fullBelow = true;
             }
@@ -276,7 +275,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         node->setFullBelowGen(mn.generation);
         if (backed_ && useFullBelowCache())
         {
-            f_.getFullBelowCache()->insert(node->getHash().asUint256());
+            f_.getFullBelowCache()->insert(node->getHash().asUInt256());
         }
     }
 
@@ -318,7 +317,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
         }
         else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
         {
-            mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUint256());
+            mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUInt256());
             --mn.max;
         }
     }
@@ -345,7 +344,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         f_.getFullBelowCache()->getGeneration());
 
     if (!root_->isInner() ||
-        intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(mn.generation))
+        intr_ptr::staticPointerCast<SHAMapInnerNode>(root_)->isFullBelow(mn.generation))
     {
         clearSynching();
         return std::move(mn.missingNodes);
@@ -358,7 +357,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     // that the two threads will produce different request sets (which is
     // more efficient than sending identical requests).
     MissingNodes::StackEntry pos{
-        safe_downcast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID(), rand_int(255), 0, true};
+        safeDowncast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID(), randInt(255), 0, true};
     auto& node = std::get<0>(pos);
     auto& nextChild = std::get<3>(pos);
     auto& fullBelow = std::get<4>(pos);
@@ -411,7 +410,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 for (auto const& [innerNode, nodeId] : mn.resumes)
                 {
                     if (!innerNode->isFullBelow(mn.generation))
-                        mn.stack.emplace(innerNode, nodeId, rand_int(255), 0, true);
+                        mn.stack.emplace(innerNode, nodeId, randInt(255), 0, true);
                 }
 
                 mn.resumes.clear();
@@ -454,7 +453,7 @@ SHAMap::getNodeFat(
     while ((node != nullptr) && node->isInner() && (nodeID.getDepth() < wanted.getDepth()))
     {
         int const branch = selectBranch(nodeID, wanted.getNodeID());
-        auto inner = safe_downcast<SHAMapInnerNode*>(node);
+        auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
         node = descendThrow(inner, branch);
@@ -468,7 +467,7 @@ SHAMap::getNodeFat(
         return false;
     }
 
-    if (node->isInner() && safe_downcast<SHAMapInnerNode*>(node)->isEmpty())
+    if (node->isInner() && safeDowncast<SHAMapInnerNode*>(node)->isEmpty())
     {
         JLOG(journal_.warn()) << "peer requests empty node";
         return false;
@@ -493,7 +492,7 @@ SHAMap::getNodeFat(
         {
             // We descend inner nodes with only a single child
             // without decrementing the depth
-            auto inner = safe_downcast<SHAMapInnerNode*>(node);
+            auto inner = safeDowncast<SHAMapInnerNode*>(node);
             int const bc = inner->getBranchCount();
 
             if ((depth > 0) || (bc == 1))
@@ -585,12 +584,12 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
     auto currNode = root_.get();
 
     while (currNode->isInner() &&
-           !safe_downcast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
+           !safeDowncast<SHAMapInnerNode*>(currNode)->isFullBelow(generation) &&
            (currNodeID.getDepth() < node.getDepth()))
     {
         int const branch = selectBranch(currNodeID, node.getNodeID());
         XRPL_ASSERT(branch >= 0, "xrpl::SHAMap::addKnownNode : valid branch");
-        auto inner = safe_downcast<SHAMapInnerNode*>(currNode);
+        auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
         {
             JLOG(journal_.warn()) << "Add known node for empty branch" << node;
@@ -598,7 +597,7 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (useFullBelowCache() && f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
+        if (useFullBelowCache() && f_.getFullBelowCache()->touchIfExists(childHash.asUInt256()))
         {
             return SHAMapAddNode::duplicate();
         }
@@ -625,7 +624,7 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         if (newNode->isLeaf())
         {
             auto const& actualKey =
-                safe_downcast<SHAMapLeafNode const*>(newNode.get())->peekItem()->key();
+                safeDowncast<SHAMapLeafNode const*>(newNode.get())->peekItem()->key();
 
             // Validate that this leaf belongs at the target position
             auto const expectedNodeID = SHAMapNodeID::createID(node.getDepth(), actualKey);
@@ -641,8 +640,8 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         // Inner nodes must be at a level strictly less than 64
         // but leaf nodes (while notionally at level 64) can be
         // at any depth up to and including 64:
-        if ((currNodeID.getDepth() > leafDepth) ||
-            (newNode->isInner() && currNodeID.getDepth() == leafDepth))
+        if ((currNodeID.getDepth() > kLeafDepth) ||
+            (newNode->isInner() && currNodeID.getDepth() == kLeafDepth))
         {
             // Map is provably invalid
             state_ = SHAMapState::Invalid;
@@ -707,8 +706,8 @@ SHAMap::deepCompare(SHAMap& other) const
         {
             if (!otherNode->isLeaf())
                 return false;
-            auto& nodePeek = safe_downcast<SHAMapLeafNode*>(node)->peekItem();
-            auto& otherNodePeek = safe_downcast<SHAMapLeafNode*>(otherNode)->peekItem();
+            auto& nodePeek = safeDowncast<SHAMapLeafNode*>(node)->peekItem();
+            auto& otherNodePeek = safeDowncast<SHAMapLeafNode*>(otherNode)->peekItem();
             if (nodePeek->key() != otherNodePeek->key())
                 return false;
             if (nodePeek->slice() != otherNodePeek->slice())
@@ -718,8 +717,8 @@ SHAMap::deepCompare(SHAMap& other) const
         {
             if (!otherNode->isInner())
                 return false;
-            auto nodeInner = safe_downcast<SHAMapInnerNode*>(node);
-            auto otherInner = safe_downcast<SHAMapInnerNode*>(otherNode);
+            auto nodeInner = safeDowncast<SHAMapInnerNode*>(node);
+            auto otherInner = safeDowncast<SHAMapInnerNode*>(otherNode);
             for (int i = 0; i < 16; ++i)
             {
                 if (nodeInner->isEmptyBranch(i))
@@ -759,7 +758,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
     while (node->isInner() && (nodeID.getDepth() < targetNodeID.getDepth()))
     {
         int const branch = selectBranch(nodeID, targetNodeID.getNodeID());
-        auto inner = safe_downcast<SHAMapInnerNode*>(node);
+        auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
 
@@ -784,7 +783,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
     do
     {
         int const branch = selectBranch(nodeID, tag);
-        auto inner = safe_downcast<SHAMapInnerNode*>(node);
+        auto inner = safeDowncast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;  // Dead end, node must not be here
 
@@ -812,7 +811,7 @@ SHAMap::getProofPath(uint256 const& key) const
     }
 
     if (auto const& node = stack.top().first; !node || node->isInner() ||
-        intr_ptr::static_pointer_cast<SHAMapLeafNode>(node)->peekItem()->key() != key)
+        intr_ptr::staticPointerCast<SHAMapLeafNode>(node)->peekItem()->key() != key)
     {
         JLOG(journal_.debug()) << "no path to " << key;
         return {};
@@ -855,7 +854,7 @@ SHAMap::verifyProofPath(uint256 const& rootHash, uint256 const& key, std::vector
             if (node->isInner())
             {
                 auto nodeId = SHAMapNodeID::createID(depth, key);
-                hash = safe_downcast<SHAMapInnerNode*>(node.get())
+                hash = safeDowncast<SHAMapInnerNode*>(node.get())
                            ->getChildHash(selectBranch(nodeId, key));
             }
             else

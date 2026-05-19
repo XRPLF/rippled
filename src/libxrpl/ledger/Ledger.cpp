@@ -1,51 +1,46 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Ledger.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/digest.h>
-#include "xrpl/basics/Slice.h"
-#include "xrpl/basics/UnorderedContainers.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/basics/chrono.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/beast/utility/Zero.h"
-#include "xrpl/ledger/ReadView.h"
-#include "xrpl/nodestore/NodeObject.h"
-#include "xrpl/protocol/Fees.h"
-#include "xrpl/protocol/KeyType.h"
-#include "xrpl/protocol/Keylet.h"
-#include "xrpl/protocol/LedgerHeader.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpl/protocol/Rules.h"
-#include "xrpl/protocol/SField.h"
-#include "xrpl/protocol/STArray.h"
-#include "xrpl/protocol/STLedgerEntry.h"
-#include "xrpl/protocol/STObject.h"
-#include "xrpl/protocol/STTx.h"
-#include "xrpl/protocol/Seed.h"
-#include "xrpl/protocol/Serializer.h"
-#include "xrpl/protocol/SystemParameters.h"
-#include "xrpl/shamap/Family.h"
-#include "xrpl/shamap/SHAMap.h"
-#include "xrpl/shamap/SHAMapItem.h"
-#include "xrpl/shamap/SHAMapMissingNode.h"
-#include "xrpl/shamap/SHAMapTreeNode.h"
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <algorithm>
-#include <algorithm>
 #include <cstdint>
-#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <optional>
-#include <stdexcept>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -180,11 +175,11 @@ public:
 
 Ledger::Ledger(
     CreateGenesisT,
-    Rules  rules,
+    Rules rules,
     Fees const& fees,
     std::vector<uint256> const& amendments,
     Family& family)
-    : mImmutable_(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
@@ -192,15 +187,15 @@ Ledger::Ledger(
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
-    header_.drops = initialXrp;
-    header_.closeTimeResolution = ledgerGenesisTimeResolution;
+    header_.drops = kInitialXrp;
+    header_.closeTimeResolution = kLedgerGenesisTimeResolution;
 
-    static auto const kId =
+    static auto const kID =
         calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
     {
-        auto const sle = std::make_shared<SLE>(keylet::account(kId));
+        auto const sle = std::make_shared<SLE>(keylet::account(kID));
         sle->setFieldU32(sfSequence, 1);
-        sle->setAccountID(sfAccount, kId);
+        sle->setAccountID(sfAccount, kID);
         sle->setFieldAmount(sfBalance, header_.drops);
         rawInsert(sle);
     }
@@ -229,12 +224,12 @@ Ledger::Ledger(
                 sle->at(sfReserveBase) = *f;
             if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = feeUnitsDeprecated;
+            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
         }
         rawInsert(sle);
     }
 
-    stateMap_.flushDirty(HotAccountNode);
+    stateMap_.flushDirty(NodeObjectType::AccountNode);
     setImmutable();
     setFullyWired();
 }
@@ -243,11 +238,11 @@ Ledger::Ledger(
     LedgerHeader const& info,
     bool& loaded,
     bool acquire,
-    Rules  rules,
+    Rules rules,
     Fees const& fees,
     Family& family,
     beast::Journal j)
-    : mImmutable_(true)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
@@ -286,13 +281,13 @@ Ledger::Ledger(
 
 // Create a new ledger that follows this one
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
-    : mImmutable_(false)
-    , fullyWired_(prevLedger.isFullyWired())
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
     , stateMap_(prevLedger.stateMap_, true)
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
     , j_(beast::Journal(beast::Journal::getNullSink()))
+    , fullyWired_(prevLedger.isFullyWired())
 {
     header_.seq = prevLedger.header_.seq + 1;
     header_.parentCloseTime = prevLedger.header_.closeTime;
@@ -313,8 +308,8 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
-Ledger::Ledger(LedgerHeader const& info, Rules  rules, Family& family)
-    : mImmutable_(true)
+Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
+    : immutable_(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , rules_(std::move(rules))
@@ -327,10 +322,10 @@ Ledger::Ledger(LedgerHeader const& info, Rules  rules, Family& family)
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
     NetClock::time_point closeTime,
-    Rules  rules,
+    Rules rules,
     Fees const& fees,
     Family& family)
-    : mImmutable_(false)
+    : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
@@ -339,7 +334,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = ledgerDefaultTimeResolution;
+    header_.closeTimeResolution = kLedgerDefaultTimeResolution;
     setup();
 }
 
@@ -348,16 +343,16 @@ Ledger::setImmutable(bool rehash)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
-    if (!mImmutable_ && rehash)
+    if (!immutable_ && rehash)
     {
-        header_.txHash = txMap_.getHash().asUint256();
-        header_.accountHash = stateMap_.getHash().asUint256();
+        header_.txHash = txMap_.getHash().asUInt256();
+        header_.accountHash = stateMap_.getHash().asUInt256();
     }
 
     if (rehash)
         header_.hash = calculateLedgerHash(header_);
 
-    mImmutable_ = true;
+    immutable_ = true;
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();
@@ -405,8 +400,7 @@ bool
 Ledger::addSLE(SLE const& sle)
 {
     auto const s = sle.getSerializer();
-    return stateMap_.addItem(
-        SHAMapNodeType::TnAccountState, make_shamapitem(sle.key(), s.slice()));
+    return stateMap_.addItem(SHAMapNodeType::TnAccountState, makeShamapitem(sle.key(), s.slice()));
 }
 
 //------------------------------------------------------------------------------
@@ -463,7 +457,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
-    if (k.key == beast::zero)
+    if (k.key == beast::kZero)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::Ledger::read : zero key");
@@ -539,7 +533,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
     //        from the NodeStore needlessly.
     if (!stateMap_.peekItem(key, digest))
         return std::nullopt;
-    return digest.asUint256();
+    return digest.asUInt256();
 }
 
 //------------------------------------------------------------------------------
@@ -548,14 +542,14 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        logicError("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        logicError("Ledger::rawErase: key not found");
 }
 
 void
@@ -564,8 +558,10 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.addGiveItem(
-            SHAMapNodeType::TnAccountState, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawInsert: key already exists");
+            SHAMapNodeType::TnAccountState, makeShamapitem(sle->key(), ss.slice())))
+    {
+        logicError("Ledger::rawInsert: key already exists");
+    }
 }
 
 void
@@ -574,8 +570,10 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
-            SHAMapNodeType::TnAccountState, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawReplace: key not found");
+            SHAMapNodeType::TnAccountState, makeShamapitem(sle->key(), ss.slice())))
+    {
+        logicError("Ledger::rawReplace: key not found");
+    }
 }
 
 void
@@ -590,28 +588,8 @@ Ledger::rawTxInsert(
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
-    if (!txMap_.addGiveItem(SHAMapNodeType::TnTransactionMd, make_shamapitem(key, s.slice())))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
-}
-
-uint256
-Ledger::rawTxInsertWithHash(
-    uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
-{
-    XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
-
-    // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
-    auto item = make_shamapitem(key, s.slice());
-    auto hash = sha512Half(HashPrefix::TxNode, item->slice(), item->key());
-    if (!txMap_.addGiveItem(SHAMapNodeType::TnTransactionMd, std::move(item)))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
-
-    return hash;
+    if (!txMap_.addGiveItem(SHAMapNodeType::TnTransactionMd, makeShamapitem(key, s.slice())))
+        logicError("duplicate_tx: " + to_string(key));
 }
 
 bool
@@ -630,7 +608,7 @@ Ledger::setup()
     catch (std::exception const& ex)
     {
         JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-        Rethrow();
+        rethrow();
     }
 
     try
@@ -692,7 +670,7 @@ Ledger::setup()
     catch (std::exception const& ex)
     {
         JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-        Rethrow();
+        rethrow();
     }
 
     return ret;
@@ -870,9 +848,9 @@ Ledger::isSensible() const
         return false;
     if (header_.accountHash.isZero())
         return false;
-    if (header_.accountHash != stateMap_.getHash().asUint256())
+    if (header_.accountHash != stateMap_.getHash().asUInt256())
         return false;
-    if (header_.txHash != txMap_.getHash().asUint256())
+    if (header_.txHash != txMap_.getHash().asUInt256())
         return false;
     return true;
 }

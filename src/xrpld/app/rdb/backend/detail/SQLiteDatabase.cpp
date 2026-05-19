@@ -1,27 +1,24 @@
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
-#include <xrpld/app/rdb/backend/RWDBDatabase.h>
-#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
-#include <xrpld/core/ConfigSections.h>
+#include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/basics/Blob.h"
-#include "xrpl/basics/Log.h"
-#include "xrpl/basics/RangeSet.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/basics/contract.h"
-#include "xrpl/ledger/Ledger.h"
-#include "xrpl/protocol/ErrorCodes.h"
-#include "xrpl/protocol/LedgerHeader.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpl/protocol/TxSearched.h"
-#include "xrpl/rdb/RelationalDatabase.h"
-#include "xrpld/core/Config.h"
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -197,7 +194,7 @@ SQLiteDatabase::getLedgerCountMinMax()
         return detail::getRowsMinMax(*db, detail::TableType::Ledgers);
     }
 
-    return {.numberOfRows=0, .minLedgerSequence=0, .maxLedgerSequence=0};
+    return {.numberOfRows = 0, .minLedgerSequence = 0, .maxLedgerSequence = 0};
 }
 
 bool
@@ -638,31 +635,23 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , useTxTables_(config.useTxTables())
     , j_(registry.getJournal("SQLiteDatabase"))
 {
-    DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{.jobQueue=&jobQueue, .registry=registry_}))
+    DatabaseCon::Setup const setup = setupDatabaseCon(config, j_);
+    if (!makeLedgerDBs(
+            config,
+            setup,
+            DatabaseCon::CheckpointerSetup{.jobQueue = &jobQueue, .registry = registry_}))
     {
-        std::string_view constexpr error = "Failed to create ledger databases";
+        static constexpr std::string_view kError = "Failed to create ledger databases";
 
-        JLOG(j_.fatal()) << error;
-        Throw<std::runtime_error>(error.data());
+        JLOG(j_.fatal()) << kError;
+        Throw<std::runtime_error>(kError.data());
     }
 }
 
-std::unique_ptr<RelationalDatabase>
-setup_RelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
+SQLiteDatabase
+setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
-    if (!rdbSection.empty())
-    {
-        auto const backend = get(rdbSection, "backend");
-        if (boost::iequals(backend, "sqlite"))
-            return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
-        if (boost::iequals(backend, "rwdb"))
-            return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
-        Throw<std::runtime_error>("Invalid relational_db backend value: " + backend);
-    }
-
-    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
+    return {registry, config, jobQueue};
 }
 
 }  // namespace xrpl

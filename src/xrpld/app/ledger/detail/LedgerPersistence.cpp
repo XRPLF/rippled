@@ -1,15 +1,17 @@
 #include <xrpld/app/ledger/LedgerPersistence.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/RelationalDatabase.h>
-#include "xrpl/basics/Log.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/core/Job.h"
-#include "xrpl/protocol/Rules.h"
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -125,7 +127,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
     }
 
     XRPL_ASSERT(
-        ledger->header().seq < XRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 

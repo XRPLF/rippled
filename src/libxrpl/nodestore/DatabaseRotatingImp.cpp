@@ -1,26 +1,25 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/basics/Blob.h"
-#include "xrpl/basics/Log.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/basics/contract.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/nodestore/Backend.h"
-#include "xrpl/nodestore/Database.h"
-#include "xrpl/nodestore/DatabaseRotating.h"
-#include "xrpl/nodestore/NodeObject.h"
-#include "xrpl/nodestore/Scheduler.h"
-#include "xrpl/nodestore/Types.h"
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <shared_mutex>
 #include <string>
 #include <utility>
-
 
 namespace xrpl::NodeStore {
 
@@ -54,13 +53,9 @@ DatabaseRotatingImp::rotate(
     // deleted.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     {
-        std::unique_lock const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
-        // Do NOT call setDeletePath() inside this lock.  For in-memory
-        // backends, setDeletePath() calls close() which destructs the entire
-        // table_ map (millions of shared_ptr<NodeObject> ref-count decrements)
-        // while the lock is held, blocking every concurrent fetchNodeObject
-        // call for several seconds and starving consensus reads.
+        archiveBackend_->setDeletePath();
         oldArchiveBackend = std::move(archiveBackend_);
 
         archiveBackend_ = std::move(writableBackend_);
@@ -69,23 +64,20 @@ DatabaseRotatingImp::rotate(
         writableBackend_ = std::move(newBackend);
     }
 
-    // Lock released — clear the old archive now without blocking fetches.
-    oldArchiveBackend->setDeletePath();
-
     f(newWritableBackendName, newArchiveBackendName);
 }
 
 std::string
 DatabaseRotatingImp::getName() const
 {
-    std::shared_lock const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    std::shared_lock const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -93,7 +85,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        std::shared_lock const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return writableBackend_;
     }();
 
@@ -103,7 +95,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    std::unique_lock const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -113,7 +105,7 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        std::shared_lock const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return writableBackend_;
     }();
 
@@ -129,7 +121,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status = Ok;
+        Status status = Status::Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
@@ -138,19 +130,19 @@ DatabaseRotatingImp::fetchNodeObject(
         catch (std::exception const& e)
         {
             JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
+            rethrow();
         }
 
         switch (status)
         {
-            case Ok:
-            case NotFound:
+            case Status::Ok:
+            case Status::NotFound:
                 break;
-            case DataCorrupt:
+            case Status::DataCorrupt:
                 JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
                 break;
             default:
-                JLOG(j_.warn()) << "Unknown status=" << status;
+                JLOG(j_.warn()) << "Unknown status=" << static_cast<int>(status);
                 break;
         }
 
@@ -161,7 +153,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        std::shared_lock const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -175,7 +167,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                std::shared_lock const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -192,10 +184,10 @@ DatabaseRotatingImp::fetchNodeObject(
 }
 
 void
-DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
+DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        std::shared_lock const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -206,5 +198,4 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     archive->forEach(f);
 }
 
-} // namespace xrpl::NodeStore
-
+}  // namespace xrpl::NodeStore

@@ -1,17 +1,18 @@
-#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
-#include <algorithm>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
+
 #include <boost/algorithm/string/predicate.hpp>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/basics/contract.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/beast/utility/instrumentation.h"
-#include "xrpl/nodestore/Backend.h"
-#include "xrpl/nodestore/Database.h"
-#include "xrpl/nodestore/Manager.h"
-#include "xrpl/nodestore/NodeObject.h"
-#include "xrpl/nodestore/Scheduler.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -20,15 +21,13 @@
 #include <string>
 #include <utility>
 
-
-
 namespace xrpl::NodeStore {
 
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp _;
-    return _;
+    static ManagerImp kInst;
+    return kInst;
 }
 
 void
@@ -64,7 +63,7 @@ ManagerImp::ManagerImp()
 }
 
 std::unique_ptr<Backend>
-ManagerImp::make_Backend(
+ManagerImp::makeBackend(
     Section const& parameters,
     std::size_t burstSize,
     Scheduler& scheduler,
@@ -80,18 +79,19 @@ ManagerImp::make_Backend(
         missingBackend();
     }
 
-    return factory->createInstance(NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
+    return factory->createInstance(
+        NodeObject::kKeyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
-ManagerImp::make_Database(
+ManagerImp::makeDatabase(
     std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
     Section const& config,
     beast::Journal journal)
 {
-    auto backend{make_Backend(config, burstSize, scheduler, journal)};
+    auto backend{makeBackend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
         scheduler, readThreads, std::move(backend), config, journal);
@@ -108,8 +108,8 @@ void
 ManagerImp::erase(Factory& factory)
 {
     std::scoped_lock const _(mutex_);
-    auto const iter = std::ranges::find_if(
-        list_, [&factory](Factory* other) { return other == &factory; });
+    auto const iter =
+        std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
     XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
@@ -118,9 +118,8 @@ Factory*
 ManagerImp::find(std::string const& name)
 {
     std::scoped_lock const _(mutex_);
-    auto const iter = std::ranges::find_if(list_, [&name](Factory* other) {
-        return boost::iequals(name, other->getName());
-    });
+    auto const iter = std::ranges::find_if(
+        list_, [&name](Factory* other) { return boost::iequals(name, other->getName()); });
     if (iter == list_.end())
         return nullptr;
     return *iter;
@@ -134,5 +133,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-} // namespace xrpl::NodeStore
-
+}  // namespace xrpl::NodeStore

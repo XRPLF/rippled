@@ -80,7 +80,6 @@ private:
 
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
-    bool isNullBackend_ = false;
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
@@ -95,7 +94,7 @@ private:
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
 
-    static constexpr auto nodeStoreName = "NodeStore";
+    static constexpr auto kNodeStoreName = "NodeStore";
 
 public:
     SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
@@ -171,7 +170,7 @@ private:
         for (auto const& key : cache.getKeys())
         {
             dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
-            if (!(++check % checkHealthInterval_) && healthWait() == Stopping)
+            if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
                 return true;
         }
 
@@ -202,7 +201,7 @@ private:
      *
      * @return Whether the server is stopping.
      */
-    enum HealthResult { Stopping, KeepGoing };
+    enum class HealthResult { Stopping, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
 

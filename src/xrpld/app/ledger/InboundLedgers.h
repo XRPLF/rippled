@@ -51,7 +51,7 @@ public:
     virtual void
     clearFailures() = 0;
 
-    virtual Json::Value
+    virtual json::Value
     getInfo() = 0;
 
     /** Returns the rate of historical ledger fetches per minute. */
@@ -78,7 +78,7 @@ public:
 };
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers(
+makeInboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector);

@@ -4,8 +4,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/nodestore/Database.h>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class DatabaseNodeImp : public Database
 {
@@ -29,7 +28,7 @@ public:
             "backend");
     }
 
-    ~DatabaseNodeImp()
+    ~DatabaseNodeImp() override
     {
         stop();
     }
@@ -86,11 +85,10 @@ private:
         override;
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        backend_->for_each(f);
+        backend_->forEach(f);
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

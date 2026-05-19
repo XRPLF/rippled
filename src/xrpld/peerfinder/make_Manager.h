@@ -6,18 +6,15 @@
 
 #include <memory>
 
-
 namespace xrpl::PeerFinder {
 
 /** Create a new Manager. */
 std::unique_ptr<Manager>
-make_Manager(
+makeManager(
     boost::asio::io_context& ioContext,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
-    beast::insight::Collector::ptr const& collector,
-    bool useSqliteStore = true);
+    beast::insight::Collector::ptr const& collector);
 
-} // namespace xrpl::PeerFinder
-
+}  // namespace xrpl::PeerFinder

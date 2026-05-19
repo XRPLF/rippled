@@ -1,27 +1,29 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include "test/jtx/Env.h"
-#include "test/jtx/amount.h"
-#include "xrpl/basics/ByteUtilities.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/beast/unit_test/suite.h"
-#include "xrpl/json/json_value.h"
-#include "xrpl/nodestore/Backend.h"
-#include "xrpl/protocol/ErrorCodes.h"
-#include "xrpl/protocol/LedgerHeader.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpl/protocol/XRPAmount.h"
-#include "xrpld/core/Config.h"
-#include <atomic>
+
 #include <boost/filesystem/path.hpp>
+
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -29,7 +31,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-
 
 namespace xrpl::test {
 
@@ -63,14 +64,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     }
 
     static bool
-    goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
+    goodLedger(jtx::Env& env, json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !RPC::contains_error(json[jss::result]) &&
-            json[jss::result][jss::ledger][jss::ledgerIndex] == ledgerID;
+        auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
+            json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
 
-        auto const seq = json[jss::result][jss::ledgerIndex].asUInt();
+        auto const seq = json[jss::result][jss::ledger_index].asUInt();
 
         std::optional<LedgerHeader> outInfo =
             env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
@@ -90,32 +91,32 @@ class SHAMapStore_test : public beast::unit_test::Suite
         std::string const outTxHash = to_string(info.txHash);
 
         auto const& ledger = json[jss::result][jss::ledger];
-        return outHash == ledger[jss::ledgerHash].asString() && outSeq == seq &&
-            outParentHash == ledger[jss::parentHash].asString() &&
-            outDrops == ledger[jss::totalCoins].asString() &&
-            outCloseTime == ledger[jss::closeTime].asUInt() &&
-            outParentCloseTime == ledger[jss::parentCloseTime].asUInt() &&
-            outCloseTimeResolution == ledger[jss::closeTimeResolution].asUInt() &&
-            outCloseFlags == ledger[jss::closeFlags].asUInt() &&
-            outAccountHash == ledger[jss::accountHash].asString() &&
-            outTxHash == ledger[jss::transactionHash].asString();
+        return outHash == ledger[jss::ledger_hash].asString() && outSeq == seq &&
+            outParentHash == ledger[jss::parent_hash].asString() &&
+            outDrops == ledger[jss::total_coins].asString() &&
+            outCloseTime == ledger[jss::close_time].asUInt() &&
+            outParentCloseTime == ledger[jss::parent_close_time].asUInt() &&
+            outCloseTimeResolution == ledger[jss::close_time_resolution].asUInt() &&
+            outCloseFlags == ledger[jss::close_flags].asUInt() &&
+            outAccountHash == ledger[jss::account_hash].asString() &&
+            outTxHash == ledger[jss::transaction_hash].asString();
     }
 
     static bool
-    bad(Json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
+    bad(json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
-        return json.isMember(jss::result) && RPC::contains_error(json[jss::result]) &&
-            json[jss::result][jss::errorCode] == error;
+        return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
+            json[jss::result][jss::error_code] == error;
     }
 
     std::string
-    getHash(Json::Value const& json)
+    getHash(json::Value const& json)
     {
         BEAST_EXPECT(
             json.isMember(jss::result) && json[jss::result].isMember(jss::ledger) &&
-            json[jss::result][jss::ledger].isMember(jss::ledgerHash) &&
-            json[jss::result][jss::ledger][jss::ledgerHash].isString());
-        return json[jss::result][jss::ledger][jss::ledgerHash].asString();
+            json[jss::result][jss::ledger].isMember(jss::ledger_hash) &&
+            json[jss::result][jss::ledger][jss::ledger_hash].isString());
+        return json[jss::result][jss::ledger][jss::ledger_hash].asString();
     }
 
     void
@@ -174,13 +175,13 @@ public:
         Env env(*this, envconfig(onlineDelete));
 
         auto& store = env.app().getSHAMapStore();
-        env.fund(kXrp(10000), noripple("alice"));
+        env.fund(XRP(10000), noripple("alice"));
 
         ledgerCheck(env, 1, 2);
         transactionCheck(env, 0);
         accountTransactionCheck(env, 0);
 
-        std::map<std::uint32_t, Json::Value const> ledgers;
+        std::map<std::uint32_t, json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
@@ -205,7 +206,7 @@ public:
 
         for (auto i = firstSeq + 1; i < kDeleteInterval + firstSeq; ++i)
         {
-            env.fund(kXrp(10000), noripple("test" + std::to_string(i)));
+            env.fund(XRP(10000), noripple("test" + std::to_string(i)));
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
@@ -352,12 +353,12 @@ public:
         BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == 0);
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == 0);
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const firstBatch = kDeleteInterval + ledgerSeq;
         for (; ledgerSeq < firstBatch; ++ledgerSeq)
@@ -375,8 +376,8 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (kDeleteInterval / 2)));
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == ledgerSeq + (kDeleteInterval / 2));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
         store.rendezvous();
 
@@ -428,9 +429,9 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
-            canDelete[jss::result][jss::canDelete] == std::numeric_limits<unsigned int>::max());
+            canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
@@ -462,8 +463,8 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == ledgerSeq - 1);
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
 
         for (; ledgerSeq < lastRotated + kDeleteInterval; ++ledgerSeq)
         {
@@ -534,11 +535,11 @@ public:
         auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
-        constexpr int readThreads = 4;
+        static constexpr int kReadThreads = 4;
         auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,
-            readThreads,
+            kReadThreads,
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
@@ -647,20 +648,20 @@ public:
         BEAST_EXPECT(initialRotated > 0);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == 0);
 
         auto const requested = ledgerSeq + (kDeleteInterval / 2);
         canDelete = env.rpc("can_delete", std::to_string(requested));
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::canDelete] == requested);
 
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::canDelete] == std::numeric_limits<unsigned int>::max());
 
@@ -668,7 +669,7 @@ public:
         store.rendezvous();
 
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::canDelete].asUInt() > 0);
         BEAST_EXPECT(store.getLastRotated() >= initialRotated);
     }
@@ -688,5 +689,4 @@ public:
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
-} // namespace xrpl::test
-
+}  // namespace xrpl::test

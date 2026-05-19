@@ -1,33 +1,36 @@
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
+
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/basics/ByteUtilities.h"
-#include "xrpl/basics/Log.h"
-#include "xrpl/basics/contract.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/beast/utility/instrumentation.h"
-#include "xrpl/ledger/Ledger.h"
-#include "xrpl/nodestore/Database.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpl/shamap/SHAMapTreeNode.h"
-#include "xrpld/app/misc/SHAMapStore.h"
-#include "xrpld/core/Config.h"
-#include <algorithm>
 #include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+
+#include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -118,7 +121,7 @@ SHAMapStoreImp::SHAMapStoreImp(
             section.set("filter_bits", "10");
     }
 
-    get_if_exists(section, "online_delete", deleteInterval_);
+    getIfExists(section, "online_delete", deleteInterval_);
     isNullBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
     // RWDB is always null-backend: the in-memory node store never
@@ -139,7 +142,7 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     // For RWDB, default online_delete to ledger_history only if user did not
     // explicitly set online_delete.  Clamp to the minimum so an implicit
-    // value never triggers the "online_delete must be at least …" throw.
+    // value never triggers the "online_delete must be at least ..." throw.
     if (isNullBackend_ && deleteInterval_ == 0)
     {
         auto const minInterval =
@@ -150,20 +153,20 @@ SHAMapStoreImp::SHAMapStoreImp(
     if (deleteInterval_ != 0u)
     {
         // Configuration that affects the behavior of online delete
-        get_if_exists(section, "delete_batch", deleteBatch_);
+        getIfExists(section, "delete_batch", deleteBatch_);
         std::uint32_t temp = 0;
-        if (get_if_exists(section, "back_off_milliseconds", temp) ||
+        if (getIfExists(section, "back_off_milliseconds", temp) ||
             // Included for backward compatibility with an undocumented setting
-            get_if_exists(section, "backOff", temp))
+            getIfExists(section, "backOff", temp))
         {
             backOff_ = std::chrono::milliseconds{temp};
         }
-        if (get_if_exists(section, "age_threshold_seconds", temp))
+        if (getIfExists(section, "age_threshold_seconds", temp))
             ageThreshold_ = std::chrono::seconds{temp};
-        if (get_if_exists(section, "recovery_wait_seconds", temp))
+        if (getIfExists(section, "recovery_wait_seconds", temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
 
-        get_if_exists(section, "advisory_delete", advisoryDelete_);
+        getIfExists(section, "advisory_delete", advisoryDelete_);
 
         auto const minInterval =
             config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
@@ -203,7 +206,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(nodeStoreName));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     else if (deleteInterval_ != 0u)
@@ -226,7 +229,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            app_.getJournal(nodeStoreName));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
@@ -238,7 +241,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(nodeStoreName));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     return db;
@@ -276,10 +279,10 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
-        node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
-        if (healthWait() == Stopping)
+        if (healthWait() == HealthResult::Stopping)
             return false;
     }
 
@@ -329,7 +332,7 @@ SHAMapStoreImp::run()
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && healthWait() == KeepGoing;
+            canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
@@ -341,7 +344,7 @@ SHAMapStoreImp::run()
                                   << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
-            if (healthWait() == Stopping)
+            if (healthWait() == HealthResult::Stopping)
                 return;
 
             if (isNullBackend_)
@@ -362,59 +365,64 @@ SHAMapStoreImp::run()
             }
             else
             {
-                JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
-                std::uint64_t nodeCount = 0;
 
-                try
-                {
-                    validatedLedger->stateMap().snapShot(false)->visitNodes(
-                        std::bind(
-                            &SHAMapStoreImp::copyNode,
-                            this,
-                            std::ref(nodeCount),
-                            std::placeholders::_1));
-                }
-                catch (SHAMapMissingNode const& e)
-                {
-                    JLOG(journal_.error())
-                        << "Missing node while copying ledger before rotate: " << e.what();
-                    continue;
-                }
+            JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
+            std::uint64_t nodeCount = 0;
 
-                if (healthWait() == Stopping)
-                    return;
-                JLOG(journal_.debug())
-                    << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
-
-                JLOG(journal_.debug()) << "freshening caches";
-                freshenCaches();
-                if (healthWait() == Stopping)
-                    return;
-                JLOG(journal_.debug()) << validatedSeq << " freshened caches";
-
-                JLOG(journal_.trace()) << "Making a new backend";
-                auto newBackend = makeBackendRotating();
-                JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
-
-                clearCaches(validatedSeq);
-                if (healthWait() == Stopping)
-                    return;
-
-                lastRotated = validatedSeq;
-
-                dbRotating_->rotate(
-                    std::move(newBackend),
-                    [&](std::string const& writableName, std::string const& archiveName) {
-                        SavedState savedState;
-                        savedState.writableDb = writableName;
-                        savedState.archiveDb = archiveName;
-                        savedState.lastRotated = lastRotated;
-                        state_db_.setState(savedState);
-                        clearCaches(validatedSeq);
-                    });
-
-                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
+            try
+            {
+                validatedLedger->stateMap().snapShot(false)->visitNodes(
+                    std::bind(
+                        &SHAMapStoreImp::copyNode,
+                        this,
+                        std::ref(nodeCount),
+                        std::placeholders::_1));
             }
+            catch (SHAMapMissingNode const& e)
+            {
+                JLOG(journal_.error())
+                    << "Missing node while copying ledger before rotate: " << e.what();
+                continue;
+            }
+
+            if (healthWait() == HealthResult::Stopping)
+                return;
+            // Only log if we completed without a "health" abort
+            JLOG(journal_.debug())
+                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+
+            JLOG(journal_.debug()) << "freshening caches";
+            freshenCaches();
+            if (healthWait() == HealthResult::Stopping)
+                return;
+            // Only log if we completed without a "health" abort
+            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+
+            JLOG(journal_.trace()) << "Making a new backend";
+            auto newBackend = makeBackendRotating();
+            JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
+
+            clearCaches(validatedSeq);
+            if (healthWait() == HealthResult::Stopping)
+                return;
+
+            lastRotated = validatedSeq;
+
+            dbRotating_->rotate(
+                std::move(newBackend),
+                [&](std::string const& writableName, std::string const& archiveName) {
+                    SavedState savedState;
+                    savedState.writableDb = writableName;
+                    savedState.archiveDb = archiveName;
+                    savedState.lastRotated = lastRotated;
+                    state_db_.setState(savedState);
+
+                    clearCaches(validatedSeq);
+                });
+
+            } // end !isNullBackend_
+
+            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }
     }
 }
@@ -537,7 +545,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
-        app_.getJournal(nodeStoreName))};
+        app_.getJournal(kNodeStoreName))};
     backend->open();
     return backend;
 }
@@ -561,7 +569,7 @@ SHAMapStoreImp::clearSql(
         min = *m;
     }
 
-    if (min > lastRotated || healthWait() == Stopping)
+    if (min > lastRotated || healthWait() == HealthResult::Stopping)
         return;
     if (min == lastRotated)
     {
@@ -580,11 +588,11 @@ SHAMapStoreImp::clearSql(
         deleteBeforeSeq(min);
         JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
                                << min << " from: " << tableName;
-        if (healthWait() == Stopping)
+        if (healthWait() == HealthResult::Stopping)
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
-        if (healthWait() == Stopping)
+        if (healthWait() == HealthResult::Stopping)
             return;
     }
     JLOG(journal_.debug()) << "finished deleting from: " << tableName;
@@ -627,7 +635,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     JLOG(journal_.trace()) << "Begin: Clear internal ledgers up to " << lastRotated;
     ledgerMaster_->clearPriorLedgers(lastRotated);
     JLOG(journal_.trace()) << "End: Clear internal ledgers up to " << lastRotated;
-    if (healthWait() == Stopping)
+    if (healthWait() == HealthResult::Stopping)
         return;
 
     auto& db = app_.getRelationalDatabase();
@@ -637,7 +645,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Ledgers",
         [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
-    if (healthWait() == Stopping)
+    if (healthWait() == HealthResult::Stopping)
         return;
 
     if (!app_.config().useTxTables())
@@ -648,7 +656,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Transactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == Stopping)
+    if (healthWait() == HealthResult::Stopping)
         return;
 
     clearSql(
@@ -656,7 +664,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "AccountTransactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == Stopping)
+    if (healthWait() == HealthResult::Stopping)
         return;
 }
 
@@ -679,7 +687,7 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
-    return stop_ ? Stopping : KeepGoing;
+    return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
 }
 
 void
@@ -709,7 +717,7 @@ SHAMapStoreImp::minimumOnline() const
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
+makeSHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal)
 {
     return std::make_unique<SHAMapStoreImp>(app, scheduler, journal);
 }

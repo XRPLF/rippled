@@ -100,18 +100,18 @@ public:
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
         if (nullMode())
-            return notFound;
+            return Status::NotFound;
 
         std::shared_lock lock(mutex_);
         if (!isOpen_)
-            return notFound;
+            return Status::NotFound;
 
         auto const iter = table_.find(hash);
         if (iter == table_.end())
-            return notFound;
+            return Status::NotFound;
 
         *pObject = iter->second;
-        return ok;
+        return Status::Ok;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -123,13 +123,13 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Status::Ok)
                 results.push_back({});
             else
                 results.push_back(nObj);
         }
 
-        return {results, ok};
+        return {results, Status::Ok};
     }
 
     void
@@ -161,7 +161,7 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         std::shared_lock lock(mutex_);
         if (!isOpen_)

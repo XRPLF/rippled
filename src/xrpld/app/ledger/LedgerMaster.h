@@ -18,7 +18,6 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/messages.h>
 
-#include <deque>
 #include <mutex>
 #include <optional>
 
@@ -60,7 +59,7 @@ public:
     std::shared_ptr<Ledger const>
     getClosedLedger()
     {
-        return mClosedLedger_.get();
+        return closedLedger_.get();
     }
 
     // The validated ledger is the last fully validated ledger.
@@ -152,9 +151,6 @@ public:
     std::shared_ptr<Ledger const>
     getLedgerByHash(uint256 const& hash);
 
-    std::shared_ptr<Ledger const>
-    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger);
-
     void
     setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV);
 
@@ -193,7 +189,7 @@ public:
     consensusBuilt(
         std::shared_ptr<Ledger const> const& ledger,
         uint256 const& consensusHash,
-        Json::Value consensus);
+        json::Value consensus);
 
     void
     setBuildingLedger(LedgerIndex index);
@@ -246,7 +242,7 @@ public:
     bool
     haveValidated()
     {
-        return !mValidLedger_.empty();
+        return !validLedger_.empty();
     }
 
     // Returns the minimum ledger sequence in SQL database, if any.
@@ -281,7 +277,7 @@ private:
         InboundLedger::Reason reason,
         std::unique_lock<std::recursive_mutex>&);
     // Try to publish ledgers, acquire missing ledgers.  Always called with
-    // m_mutex locked.  The passed lock is a reminder to callers.
+    // mutex_ locked.  The passed lock is a reminder to callers.
     void
     doAdvance(std::unique_lock<std::recursive_mutex>&);
 
@@ -291,67 +287,67 @@ private:
     void
     updatePaths();
 
-    // Returns true if work started.  Always called with m_mutex locked.
+    // Returns true if work started.  Always called with mutex_ locked.
     // The passed lock is a reminder to callers.
     bool
     newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&);
 
     Application& app_;
-    beast::Journal m_journal_;
+    beast::Journal journal_;
 
-    std::recursive_mutex mutable m_mutex_;
+    std::recursive_mutex mutable mutex_;
 
     // The ledger that most recently closed.
-    LedgerHolder mClosedLedger_;
+    LedgerHolder closedLedger_;
 
     // The highest-sequence ledger we have fully accepted.
-    LedgerHolder mValidLedger_;
+    LedgerHolder validLedger_;
 
     // The last ledger we have published.
-    std::shared_ptr<Ledger const> mPubLedger_;
+    std::shared_ptr<Ledger const> pubLedger_;
 
     // The last ledger we did pathfinding against.
-    std::shared_ptr<Ledger const> mPathLedger_;
+    std::shared_ptr<Ledger const> pathLedger_;
 
     // The last ledger we handled fetching history
-    std::shared_ptr<Ledger const> mHistLedger_;
+    std::shared_ptr<Ledger const> histLedger_;
 
     // Sliding window of recently validated ledgers pinned in memory so their
     // SHAMap state trees remain reachable via shared_ptr. Required when the
     // node store does not persist state nodes (e.g. RWDB null mode).
-    // Guarded by m_mutex.
-    std::deque<std::shared_ptr<Ledger const>> mRetainedLedgers_;
+    // Guarded by mutex_.
+    std::deque<std::shared_ptr<Ledger const>> retainedLedgers_;
 
     // Fully validated ledger, whether or not we have the ledger resident.
-    std::pair<uint256, LedgerIndex> mLastValidLedger_{uint256(), 0};
+    std::pair<uint256, LedgerIndex> lastValidLedger_{uint256(), 0};
 
-    LedgerHistory mLedgerHistory_;
+    LedgerHistory ledgerHistory_;
 
-    CanonicalTXSet mHeldTransactions_{uint256()};
+    CanonicalTXSet heldTransactions_{uint256()};
 
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData_;
 
-    std::recursive_mutex mCompleteLock_;
-    RangeSet<std::uint32_t> mCompleteLedgers_;
+    std::recursive_mutex completeLock_;
+    RangeSet<std::uint32_t> completeLedgers_;
 
     // Publish thread is running.
-    bool mAdvanceThread_{false};
+    bool advanceThread_{false};
 
     // Publish thread has work to do.
-    bool mAdvanceWork_{false};
-    int mFillInProgress_{0};
+    bool advanceWork_{false};
+    int fillInProgress_{0};
 
-    int mPathFindThread_{0};  // Pathfinder jobs dispatched
-    bool mPathFindNewRequest_{false};
+    int pathFindThread_{0};  // Pathfinder jobs dispatched
+    bool pathFindNewRequest_{false};
 
-    std::atomic_flag mGotFetchPackThread_ = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag gotFetchPackThread_ = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
-    std::atomic<std::uint32_t> mPubLedgerClose_{0};
-    std::atomic<LedgerIndex> mPubLedgerSeq_{0};
-    std::atomic<std::uint32_t> mValidLedgerSign_{0};
-    std::atomic<LedgerIndex> mValidLedgerSeq_{0};
-    std::atomic<LedgerIndex> mBuildingLedgerSeq_{0};
+    std::atomic<std::uint32_t> pubLedgerClose_{0};
+    std::atomic<LedgerIndex> pubLedgerSeq_{0};
+    std::atomic<std::uint32_t> validLedgerSign_{0};
+    std::atomic<LedgerIndex> validLedgerSeq_{0};
+    std::atomic<LedgerIndex> buildingLedgerSeq_{0};
 
     // The server is in standalone mode
     bool const standalone_;
@@ -391,15 +387,15 @@ private:
         beast::insight::Gauge publishedLedgerAge;
     };
 
-    Stats m_stats_;
+    Stats stats_;
 
 private:
     void
     collectMetrics()
     {
-        std::scoped_lock const lock(m_mutex_);
-        m_stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());
-        m_stats_.publishedLedgerAge.set(getPublishedLedgerAge().count());
+        std::scoped_lock const lock(mutex_);
+        stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());
+        stats_.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }
 };
 

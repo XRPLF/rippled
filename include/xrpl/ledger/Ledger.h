@@ -84,12 +84,12 @@ public:
     */
     Ledger(
         CreateGenesisT,
-        Rules  rules,
+        Rules rules,
         Fees const& fees,
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerHeader const& info, Rules  rules, Family& family);
+    Ledger(LedgerHeader const& info, Rules rules, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
@@ -102,7 +102,7 @@ public:
         LedgerHeader const& info,
         bool& loaded,
         bool acquire,
-        Rules  rules,
+        Rules rules,
         Fees const& fees,
         Family& family,
         beast::Journal j);
@@ -119,7 +119,7 @@ public:
     Ledger(
         std::uint32_t ledgerSeq,
         NetClock::time_point closeTime,
-        Rules  rules,
+        Rules rules,
         Fees const& fees,
         Family& family);
 
@@ -231,19 +231,6 @@ public:
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
-    // Insert the transaction, and return the hash of the SHAMap leaf node
-    // holding the transaction. The hash can be used to fetch the transaction
-    // directly, instead of traversing the SHAMap
-    // @param key transaction ID
-    // @param txn transaction
-    // @param metaData transaction metadata
-    // @return hash of SHAMap leaf node that holds the transaction
-    uint256
-    rawTxInsertWithHash(
-        uint256 const& key,
-        std::shared_ptr<Serializer const> const& txn,
-        std::shared_ptr<Serializer const> const& metaData);
-
     //--------------------------------------------------------------------------
 
     void
@@ -264,7 +251,7 @@ public:
     bool
     isImmutable() const
     {
-        return mImmutable_;
+        return immutable_;
     }
 
     bool
@@ -422,7 +409,7 @@ private:
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);
 
-    bool mImmutable_;
+    bool immutable_;
     mutable std::atomic<bool> fullyWired_{false};
 
     // A SHAMap containing the transactions associated with this ledger.

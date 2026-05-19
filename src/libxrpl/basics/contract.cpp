@@ -1,10 +1,13 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #ifndef BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 #endif
+
+#include <boost/stacktrace.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -14,7 +17,7 @@
 namespace xrpl {
 
 void
-LogThrow(std::string const& title)
+logThrow(std::string const& title)
 {
     std::ostringstream oss;
     oss << title << '\n' << boost::stacktrace::stacktrace();
@@ -25,7 +28,7 @@ LogThrow(std::string const& title)
 }
 
 [[noreturn]] void
-LogicError(std::string const& s) noexcept
+logicError(std::string const& s) noexcept
 {
     // LCOV_EXCL_START
     JLOG(debugLog().fatal()) << s;

@@ -1,22 +1,21 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
-#include "xrpl/basics/BasicConfig.h"
-#include "xrpl/beast/unit_test/suite.h"
-#include "xrpl/beast/xor_shift_engine.h"
-#include "xrpl/nodestore/Backend.h"
-#include "xrpl/nodestore/Types.h"
+#include <xrpl/nodestore/Types.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
-
-
 
 namespace xrpl::NodeStore {
 
@@ -42,7 +41,7 @@ public:
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Backend_test", *this);
 
         {
@@ -109,5 +108,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
 
-} // namespace xrpl::NodeStore
-
+}  // namespace xrpl::NodeStore
