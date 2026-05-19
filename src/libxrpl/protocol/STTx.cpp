@@ -570,6 +570,10 @@ STTx::buildBatchTxnIds()
         return;
 
     auto const& raw = getFieldArray(sfRawTransactions);
+
+    if (raw.size() > maxBatchTxCount)
+        return;
+
     batchTxnIds_.reserve(raw.size());
     for (STObject const& rb : raw)
         batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
