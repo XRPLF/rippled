@@ -16,7 +16,7 @@ class STAmount;
 namespace test::jtx {
 
 Buffer
-sign_claim_attestation(
+signClaimAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -28,7 +28,7 @@ sign_claim_attestation(
     std::optional<AccountID> const& dst);
 
 Buffer
-sign_create_account_attestation(
+signCreateAccountAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,

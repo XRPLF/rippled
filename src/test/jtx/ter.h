@@ -9,17 +9,17 @@ namespace xrpl::test::jtx {
 /** Set the expected result code for a JTx
     The test will fail if the code doesn't match.
 */
-class ter
+class Ter
 {
 private:
     std::optional<TER> v_;
 
 public:
-    explicit ter(decltype(std::ignore))
+    explicit Ter(decltype(std::ignore))
     {
     }
 
-    explicit ter(TER v) : v_(v)
+    explicit Ter(TER v) : v_(v)
     {
     }
 

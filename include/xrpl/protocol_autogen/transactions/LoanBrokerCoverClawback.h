@@ -19,9 +19,9 @@ class LoanBrokerCoverClawbackBuilder;
  * @brief Transaction: LoanBrokerCoverClawback
  *
  * Type: ttLOAN_BROKER_COVER_CLAWBACK (78)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureLendingProtocol
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LoanBrokerCoverClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLoanBrokerID (soeOPTIONAL)
+     * @brief Get sfLoanBrokerID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -105,7 +105,7 @@ public:
  * @brief Builder for LoanBrokerCoverClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LoanBrokerCoverClawbackBuilder : public TransactionBuilderBase<LoanBrokerCoverClawbackBuilder>
@@ -142,7 +142,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLoanBrokerID (soeOPTIONAL)
+     * @brief Set sfLoanBrokerID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LoanBrokerCoverClawbackBuilder&
@@ -153,7 +153,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */

@@ -20,7 +20,7 @@ struct Keylet
     uint256 key;
     LedgerEntryType type;
 
-    Keylet(LedgerEntryType type_, uint256 const& key_) : key(key_), type(type_)
+    Keylet(LedgerEntryType type, uint256 const& key) : key(key), type(type)
     {
     }
 

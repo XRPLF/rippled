@@ -15,7 +15,7 @@ mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
 
     result /= div;
 
-    if (result > xrpl::muldiv_max)
+    if (result > xrpl::kMuldivMax)
         return std::nullopt;
 
     return static_cast<std::uint64_t>(result);

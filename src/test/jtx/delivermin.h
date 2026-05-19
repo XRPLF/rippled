@@ -9,13 +9,13 @@
 namespace xrpl::test::jtx {
 
 /** Sets the DeliverMin on a JTx. */
-class deliver_min
+class DeliverMin
 {
 private:
     STAmount amount_;
 
 public:
-    deliver_min(STAmount amount) : amount_(std::move(amount))
+    DeliverMin(STAmount amount) : amount_(std::move(amount))
     {
     }
 
