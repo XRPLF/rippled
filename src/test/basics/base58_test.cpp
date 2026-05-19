@@ -38,12 +38,12 @@ randEngine() -> std::mt19937&
     return kR;
 }
 
-constexpr int kNUM_TOKEN_TYPE_INDEXES = 9;
+constexpr int kNumTokenTypeIndexes = 9;
 
 [[nodiscard]] inline auto
 tokenTypeAndSize(int i) -> std::tuple<xrpl::TokenType, std::size_t>
 {
-    assert(i < kNUM_TOKEN_TYPE_INDEXES);
+    assert(i < kNumTokenTypeIndexes);
 
     switch (i)
     {
@@ -166,11 +166,11 @@ class base58_test : public beast::unit_test::Suite
 
         using namespace boost::multiprecision;
 
-        constexpr std::size_t kITERS = 100000;
+        static constexpr std::size_t kIters = 100000;
         auto eng = randEngine();
         std::uniform_int_distribution<std::uint64_t> dist;
         std::uniform_int_distribution<std::uint64_t> dist1(1);
-        for (int i = 0; i < kITERS; ++i)
+        for (int i = 0; i < kIters; ++i)
         {
             std::uint64_t const d = dist(eng);
             if (d == 0u)
@@ -188,7 +188,7 @@ class base58_test : public beast::unit_test::Suite
             BEAST_EXPECT(refMod.convert_to<std::uint64_t>() == mod);
             BEAST_EXPECT(foundDiv == refDiv);
         }
-        for (int i = 0; i < kITERS; ++i)
+        for (int i = 0; i < kIters; ++i)
         {
             std::uint64_t const d = dist(eng);
             auto bigInt = multiprecision_utils::randomBigInt(/*minSize*/ 2);
@@ -207,7 +207,7 @@ class base58_test : public beast::unit_test::Suite
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refAdd == foundAdd);
         }
-        for (int i = 0; i < kITERS; ++i)
+        for (int i = 0; i < kIters; ++i)
         {
             std::uint64_t const d = dist1(eng);
             // Force overflow
@@ -224,7 +224,7 @@ class base58_test : public beast::unit_test::Suite
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refAdd != foundAdd);
         }
-        for (int i = 0; i < kITERS; ++i)
+        for (int i = 0; i < kIters; ++i)
         {
             std::uint64_t const d = dist(eng);
             auto bigInt = multiprecision_utils::randomBigInt(/* minSize */ 2);
@@ -242,7 +242,7 @@ class base58_test : public beast::unit_test::Suite
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refMul == foundMul);
         }
-        for (int i = 0; i < kITERS; ++i)
+        for (int i = 0; i < kIters; ++i)
         {
             std::uint64_t const d = dist1(eng);
             // Force overflow
@@ -403,7 +403,7 @@ class base58_test : public beast::unit_test::Suite
 
         // test every token type with data where every byte is the same and the
         // bytes range from 0-255
-        for (int i = 0; i < kNUM_TOKEN_TYPE_INDEXES; ++i)
+        for (int i = 0; i < kNumTokenTypeIndexes; ++i)
         {
             std::array<std::uint8_t, 128> b256DataBuf{};
             auto const [tokType, tokSize] = tokenTypeAndSize(i);
@@ -415,8 +415,8 @@ class base58_test : public beast::unit_test::Suite
         }
 
         // test with random data
-        constexpr std::size_t kITERS = 100000;
-        for (int i = 0; i < kITERS; ++i)
+        static constexpr std::size_t kIters = 100000;
+        for (int i = 0; i < kIters; ++i)
         {
             std::array<std::uint8_t, 128> b256DataBuf{};
             auto const [tokType, b256Data] = randomB256TestData(b256DataBuf);

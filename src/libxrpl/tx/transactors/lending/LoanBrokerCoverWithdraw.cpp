@@ -38,11 +38,11 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -50,7 +50,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZERO)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -178,7 +178,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
-    auto const dstAcct = tx[~sfDestination].value_or(account_);
+    auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
@@ -198,7 +198,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return doWithdraw(view(), tx, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
 void

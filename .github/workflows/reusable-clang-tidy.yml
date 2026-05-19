@@ -176,7 +176,7 @@ jobs:
 
       - name: Create issue
         if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
-        uses: XRPLF/actions/create-issue@fbcc16eb7f20dc3199eaf1aed0d3523a5ba9008c
+        uses: XRPLF/actions/create-issue@36d450d12d301e8410c1b7936e5de70c291cbe36
         with:
           title: "Clang-tidy check failed"
           body_file: ${{ env.ISSUE_FILE }}

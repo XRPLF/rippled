@@ -70,7 +70,7 @@ class Vault_test : public beast::unit_test::Suite
     using PrettyAsset = xrpl::test::jtx::PrettyAsset;
     using PrettyAmount = xrpl::test::jtx::PrettyAmount;
 
-    static auto constexpr kNEGATIVE_AMOUNT = [](PrettyAsset const& asset) -> PrettyAmount {
+    static constexpr auto kNegativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::Unchecked{}}, ""};
     };
 
@@ -571,7 +571,7 @@ class Vault_test : public beast::unit_test::Suite
         });
 
         testCases("MPT", [&](Env& env) -> Asset {
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = depositor});
@@ -635,7 +635,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, kDATA("test"), Ter{resultAfterCreate});
+                    env(tx, kData("test"), Ter{resultAfterCreate});
                 }
 
                 {
@@ -684,7 +684,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, kDATA("Test"));
+                    env(tx, kData("Test"));
 
                     tx[sfDomainID] = to_string(BaseUInt<256>(13ul));
                     env(tx, Ter{temDISABLED});
@@ -816,33 +816,33 @@ class Vault_test : public beast::unit_test::Suite
             {
                 auto tx = vault.set({
                     .owner = owner,
-                    .id = beast::kZERO,
+                    .id = beast::kZero,
                 });
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx =
-                    vault.deposit({.depositor = owner, .id = beast::kZERO, .amount = asset(10)});
+                    vault.deposit({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
                 auto tx =
-                    vault.withdraw({.depositor = owner, .id = beast::kZERO, .amount = asset(10)});
+                    vault.withdraw({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx = vault.clawback(
-                    {.issuer = issuer, .id = beast::kZERO, .holder = owner, .amount = asset(10)});
+                    {.issuer = issuer, .id = beast::kZero, .holder = owner, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx = vault.del({
                     .owner = owner,
-                    .id = beast::kZERO,
+                    .id = beast::kZero,
                 });
                 env(tx, Ter{temMALFORMED});
             }
@@ -983,7 +983,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
+                    tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
                     env(tx, Ter{temMALFORMED});
                 }
             });
@@ -996,7 +996,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.deposit(
-                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
@@ -1028,7 +1028,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.withdraw(
-                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
@@ -1061,7 +1061,7 @@ class Vault_test : public beast::unit_test::Suite
                     {.issuer = issuer,
                      .id = keylet.key,
                      .holder = owner,
-                     .amount = kNEGATIVE_AMOUNT(asset)});
+                     .amount = kNegativeAmount(asset)});
                 env(tx, Ter(temBAD_AMOUNT));
             }
         });
@@ -1086,7 +1086,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = tx1;
-                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
+                    tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
                     env(tx, Ter{temMALFORMED});
                 }
 
@@ -1416,7 +1416,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
             Vault vault{env};
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             // Locked because that is the default flag.
             mptt.create();
             Asset const asset = mptt.issuanceID();
@@ -1589,12 +1589,12 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
-            auto const kNONE = LedgerSpecificFlags(0);
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            auto const kNone = LedgerSpecificFlags(0);
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.enableClawback ? tfMPTCanClawback : kNONE) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNONE),
+                     (args.enableClawback ? tfMPTCanClawback : kNone) |
+                     (args.requireAuth ? tfMPTRequireAuth : kNone),
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -1873,8 +1873,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
-                env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
+                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
         testCase(
@@ -2212,7 +2212,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock | lsfMPTCanClawback | tfMPTRequireAuth});
             mptt.authorize({.account = owner});
@@ -2821,10 +2821,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
-                    BEAST_EXPECT(env.balance(vaultAccount(keylet), asset) == beast::kZERO);
+                    BEAST_EXPECT(env.balance(vaultAccount(keylet), asset) == beast::kZero);
                     auto const vault = env.le(keylet);
-                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::kZERO);
-                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::kZERO);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::kZero);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::kZero);
                 }
 
                 env(vault.del({.owner = owner, .id = keylet.key}));
@@ -2835,8 +2835,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
-                env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
+                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
         testCase(
@@ -3377,9 +3377,9 @@ class Vault_test : public beast::unit_test::Suite
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
             env(pay(env.master.id(), accountId, XRP(1000)),
-                Seq(kAUTOFILL),
-                Fee(kAUTOFILL),
-                Sig(kAUTOFILL));
+                Seq(kAutofill),
+                Fee(kAutofill),
+                Sig(kAutofill));
         }
 
         auto [tx, keylet1] = vault.create({.owner = owner, .asset = xrpIssue()});
@@ -4199,10 +4199,10 @@ class Vault_test : public beast::unit_test::Suite
 
             // Borrow 40: assetsAvailable=60, assetsTotal=100
             env(set(d.depositor, brokerKeylet.key, STAmount(d.asset, Number(40, 0))),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, d.owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -4281,17 +4281,17 @@ class Vault_test : public beast::unit_test::Suite
                                json::Value const& issuance = json::ValueType::Null) {
             BEAST_EXPECT(vault.isObject());
 
-            constexpr auto kCHECK_STRING =
+            static constexpr auto kCheckString =
                 [](auto& node, SField const& field, std::string v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isString() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCHECK_OBJECT =
+            static constexpr auto kCheckObject =
                 [](auto& node, SField const& field, json::Value v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isObject() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCHECK_INT = [](auto& node, SField const& field, int v) -> bool {
+            static constexpr auto kCheckInt = [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
                     ((node[field.fieldName].isInt() && node[field.fieldName] == json::Int(v)) ||
                      (node[field.fieldName].isUInt() && node[field.fieldName] == json::UInt(v)));
@@ -4299,31 +4299,30 @@ class Vault_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(vault["LedgerEntryType"].asString() == "Vault");
             BEAST_EXPECT(vault[jss::index].asString() == strHex(keylet.key));
-            BEAST_EXPECT(kCHECK_INT(vault, sfFlags, 0));
+            BEAST_EXPECT(kCheckInt(vault, sfFlags, 0));
             // Ignore all other standard fields, this test doesn't care
 
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAccount, toBase58(sle->at(sfAccount))));
-            BEAST_EXPECT(kCHECK_OBJECT(vault, sfAsset, toJson(sle->at(sfAsset))));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsAvailable, "50"));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsMaximum, "1000"));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(kCheckString(vault, sfAccount, toBase58(sle->at(sfAccount))));
+            BEAST_EXPECT(kCheckObject(vault, sfAsset, toJson(sle->at(sfAsset))));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsAvailable, "50"));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsMaximum, "1000"));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsTotal, "50"));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfShareMPTID, strShareID));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfOwner, toBase58(owner.id())));
-            BEAST_EXPECT(kCHECK_INT(vault, sfSequence, sequence));
-            BEAST_EXPECT(
-                kCHECK_INT(vault, sfWithdrawalPolicy, kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE));
+            BEAST_EXPECT(kCheckString(vault, sfShareMPTID, strShareID));
+            BEAST_EXPECT(kCheckString(vault, sfOwner, toBase58(owner.id())));
+            BEAST_EXPECT(kCheckInt(vault, sfSequence, sequence));
+            BEAST_EXPECT(kCheckInt(vault, sfWithdrawalPolicy, kVaultStrategyFirstComeFirstServe));
 
             if (issuance.isObject())
             {
                 BEAST_EXPECT(issuance["LedgerEntryType"].asString() == "MPTokenIssuance");
                 BEAST_EXPECT(issuance[jss::mpt_issuance_id].asString() == strShareID);
-                BEAST_EXPECT(kCHECK_INT(issuance, sfSequence, 1));
-                BEAST_EXPECT(kCHECK_INT(
+                BEAST_EXPECT(kCheckInt(issuance, sfSequence, 1));
+                BEAST_EXPECT(kCheckInt(
                     issuance, sfFlags, int(lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer)));
-                BEAST_EXPECT(kCHECK_STRING(issuance, sfOutstandingAmount, "50000000"));
+                BEAST_EXPECT(kCheckString(issuance, sfOutstandingAmount, "50000000"));
             }
         };
 
@@ -4717,10 +4716,10 @@ class Vault_test : public beast::unit_test::Suite
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -4898,7 +4897,7 @@ class Vault_test : public beast::unit_test::Suite
         testCase(iou, "IOU (owner is issuer)", issuer, depositor);
 
         // Test MPT
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const mpt = mptt.issuanceID();
         mptt.authorize({.account = owner});
@@ -4917,7 +4916,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace loanBroker;
         using namespace loan;
         Env env(*this);
-        env.enableFeature(fixSecurity3_1_3);
+        env.enableFeature(fixCleanup3_1_3);
 
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
@@ -5108,10 +5107,10 @@ class Vault_test : public beast::unit_test::Suite
                 // Depositor borrows 40 units, reducing assetsAvailable to 60
                 // while assetsTotal stays at 100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5165,10 +5164,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5220,10 +5219,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5274,10 +5273,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5322,10 +5321,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows all 100 units: assetsAvailable=0, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(100).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5394,7 +5393,7 @@ class Vault_test : public beast::unit_test::Suite
         testCase(iou, "IOU", owner, depositor, issuer);
 
         // Test MPT
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
         PrettyAsset const mpt = mptt.issuanceID();
@@ -5404,14 +5403,14 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
         testCase(mpt, "MPT", owner, depositor, issuer);
 
-        // Test pre-fixSecurity3_1_3 legacy path: zero-amount clawback
+        // Test pre-fixCleanup3_1_3 legacy path: zero-amount clawback
         // returns early without clamping to assetsAvailable.
         {
             testcase(
-                "VaultClawback (asset) - IOU pre-fixSecurity3_1_3"
+                "VaultClawback (asset) - IOU pre-fixCleanup3_1_3"
                 " zero-amount clawback unclamped with outstanding loan");
 
-            env.disableFeature(fixSecurity3_1_3);
+            env.disableFeature(fixCleanup3_1_3);
 
             auto [vault, vaultKeylet] = setupVault(iou, owner, depositor, issuer);
 
@@ -5430,10 +5429,10 @@ class Vault_test : public beast::unit_test::Suite
             // Depositor borrows 40 units, reducing assetsAvailable to 60
             // while assetsTotal stays at 100
             env(set(depositor, brokerKeylet.key, iou(40).value()),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -5469,7 +5468,7 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(sharesAfter == sharesBefore);
             }
 
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
@@ -5496,10 +5495,10 @@ class Vault_test : public beast::unit_test::Suite
             static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1);
         BEAST_EXPECT(maxInt64Plus1 == "9223372036854775808");
 
-        auto const initialXRP = to_string(kINITIAL_XRP);
+        auto const initialXRP = to_string(kInitialXrp);
         BEAST_EXPECT(initialXRP == "100000000000000000");
 
-        auto const initialXRPPlus1 = to_string(kINITIAL_XRP + 1);
+        auto const initialXRPPlus1 = to_string(kInitialXrp + 1);
         BEAST_EXPECT(initialXRPPlus1 == "100000000000000001");
 
         {
@@ -5547,7 +5546,7 @@ class Vault_test : public beast::unit_test::Suite
             testcase("Assets Maximum: MPT");
 
             PrettyAsset const mptAsset = [&]() {
-                MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 env.close();
                 PrettyAsset const mptAsset = mptt["MPT"];
@@ -5687,7 +5686,7 @@ class Vault_test : public beast::unit_test::Suite
                 if (!BEAST_EXPECT(vaultSle))
                     return;
 
-                BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == kNUM_ZERO);
+                BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == kNumZero);
             }
 
             // What _can't_ IOUs do?
@@ -5739,7 +5738,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5752,8 +5751,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60 of 100 MPT tokens: sfMPTAmount drops to 40
             auto const escrowSeq = env.seq(depositor);
             env(escrow::create(depositor, bob, asset(60)),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5781,8 +5780,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // Clean up escrow
             env(escrow::finish(bob, depositor, escrowSeq),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFULFILLMENT(escrow::kFB1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5801,7 +5800,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5841,8 +5840,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60% of shares
             auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
             env(escrow::create(depositor, bob, escrowAmount),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5868,7 +5867,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testableAmendments() | fixSecurity3_1_3};
+            Env env{*this, testableAmendments() | fixCleanup3_1_3};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5878,7 +5877,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5918,8 +5917,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60% of shares
             auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
             env(escrow::create(depositor, bob, escrowAmount),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5958,9 +5957,9 @@ class Vault_test : public beast::unit_test::Suite
 
         auto const allAmendments = testableAmendments() | featureSingleAssetVault;
 
-        for (auto const& features : {allAmendments, allAmendments - fixSecurity3_1_3})
+        for (auto const& features : {allAmendments, allAmendments - fixCleanup3_1_3})
         {
-            bool const withFix = features[fixSecurity3_1_3];
+            bool const withFix = features[fixCleanup3_1_3];
 
             Env env{*this, features};
             Account const owner{"owner"};
@@ -6067,7 +6066,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             // Create an MPT asset for the vault
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6098,8 +6097,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // Escrow 500 of those shares
             env(escrow::create(depositor, bob, STAmount{shareIssue, 500}),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -6118,7 +6117,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const sleMptAfter = env.le(keylet::mptoken(shareMptID, depositor));
-            if (!f[fixSecurity3_1_3])
+            if (!f[fixCleanup3_1_3])
             {
                 // Without the fix, removeEmptyHolding deletes the MPToken
                 // even though sfLockedAmount > 0, leaving the escrow's locked
@@ -6138,7 +6137,7 @@ class Vault_test : public beast::unit_test::Suite
             }
         };
 
-        runTest(amendments - fixSecurity3_1_3);
+        runTest(amendments - fixCleanup3_1_3);
         runTest(amendments);
     }
 

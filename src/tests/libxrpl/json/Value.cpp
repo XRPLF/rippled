@@ -23,38 +23,38 @@ namespace xrpl {
 TEST(json_value, limits)
 {
     using namespace json;
-    static_assert(Value::kMIN_INT == Int(~(UInt(-1) / 2)));
-    static_assert(Value::kMAX_INT == Int(UInt(-1) / 2));
-    static_assert(Value::kMAX_UINT == UInt(-1));
+    static_assert(Value::kMinInt == Int(~(UInt(-1) / 2)));
+    static_assert(Value::kMaxInt == Int(UInt(-1) / 2));
+    static_assert(Value::kMaxUInt == UInt(-1));
 }
 
 TEST(json_value, construct_and_compare_Json_StaticString)
 {
-    static constexpr char kSAMPLE[]{"Contents of a json::StaticString"};
+    static constexpr char kSample[]{"Contents of a json::StaticString"};
 
-    static constexpr json::StaticString kTEST1(kSAMPLE);
-    char const* addrTest1{kTEST1};
+    static constexpr json::StaticString kTest1(kSample);
+    char const* addrTest1{kTest1};
 
-    EXPECT_EQ(addrTest1, &kSAMPLE[0]);
-    EXPECT_EQ(kTEST1.cStr(), &kSAMPLE[0]);
+    EXPECT_EQ(addrTest1, &kSample[0]);
+    EXPECT_EQ(kTest1.cStr(), &kSample[0]);
 
-    static constexpr json::StaticString kTEST2{"Contents of a json::StaticString"};
-    static constexpr json::StaticString kTEST3{"Another StaticString"};
+    static constexpr json::StaticString kTest2{"Contents of a json::StaticString"};
+    static constexpr json::StaticString kTest3{"Another StaticString"};
 
-    EXPECT_EQ(kTEST1, kTEST2);
-    EXPECT_NE(kTEST1, kTEST3);
+    EXPECT_EQ(kTest1, kTest2);
+    EXPECT_NE(kTest1, kTest3);
 
-    std::string const str{kSAMPLE};
-    EXPECT_EQ(str, kTEST2);
-    EXPECT_NE(str, kTEST3);
-    EXPECT_EQ(kTEST2, str);
-    EXPECT_NE(kTEST3, str);
+    std::string const str{kSample};
+    EXPECT_EQ(str, kTest2);
+    EXPECT_NE(str, kTest3);
+    EXPECT_EQ(kTest2, str);
+    EXPECT_NE(kTest3, str);
 }
 
 TEST(json_value, different_types)
 {
     // Exercise ValueType constructor
-    static constexpr json::StaticString kSTATIC_STR{"staticStr"};
+    static constexpr json::StaticString kStaticStr{"staticStr"};
 
     auto testCopy = [](json::ValueType typ) {
         json::Value val{typ};
@@ -139,7 +139,7 @@ TEST(json_value, different_types)
         EXPECT_FALSE(stringV.isObjectOrNull());
     }
     {
-        json::Value const staticStrV{kSTATIC_STR};
+        json::Value const staticStrV{kStaticStr};
         {
             json::Value const cpy{staticStrV};
             EXPECT_EQ(staticStrV.type(), json::ValueType::String);
@@ -1124,23 +1124,23 @@ TEST(json_value, access_members)
     val = json::Value(json::ValueType::Object);
     EXPECT_EQ(val.type(), json::ValueType::Object);
     EXPECT_EQ(val.size(), 0);
-    static json::StaticString const kSTATIC_THREE("three");
-    val[kSTATIC_THREE] = 3;
+    static json::StaticString const kStaticThree("three");
+    val[kStaticThree] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
     EXPECT_TRUE(val.isValidIndex(1));
     EXPECT_FALSE(val.isValidIndex(2));
-    EXPECT_EQ(val[kSTATIC_THREE], 3);
+    EXPECT_EQ(val[kStaticThree], 3);
     EXPECT_TRUE(val.isMember("two"));
-    EXPECT_TRUE(val.isMember(kSTATIC_THREE));
+    EXPECT_TRUE(val.isMember(kStaticThree));
     EXPECT_FALSE(val.isMember("key"));
     {
         json::Value const constVal = val;
         EXPECT_EQ(constVal["two"], 2);
         EXPECT_EQ(constVal["four"].type(), json::ValueType::Null);
-        EXPECT_EQ(constVal[kSTATIC_THREE], 3);
+        EXPECT_EQ(constVal[kStaticThree], 3);
         EXPECT_TRUE(constVal.isMember("two"));
-        EXPECT_TRUE(constVal.isMember(kSTATIC_THREE));
+        EXPECT_TRUE(constVal.isMember(kStaticThree));
         EXPECT_FALSE(constVal.isMember("key"));
         EXPECT_EQ(val.get(std::string("two"), "backup"), 2);
         EXPECT_EQ(val.get("missing", "default2"), "default2");
@@ -1172,18 +1172,18 @@ TEST(json_value, remove_members)
     EXPECT_EQ(val.removeMember(std::string("member")).type(), json::ValueType::Null);
 
     val = json::Value(json::ValueType::Object);
-    static json::StaticString const kSTATIC_THREE("three");
-    val[kSTATIC_THREE] = 3;
+    static json::StaticString const kStaticThree("three");
+    val[kStaticThree] = 3;
     val["two"] = 2;
     EXPECT_EQ(val.size(), 2);
 
     EXPECT_EQ(val.removeMember(std::string("six")).type(), json::ValueType::Null);
     EXPECT_EQ(val.size(), 2);
 
-    EXPECT_EQ(val.removeMember(kSTATIC_THREE), 3);
+    EXPECT_EQ(val.removeMember(kStaticThree), 3);
     EXPECT_EQ(val.size(), 1);
 
-    EXPECT_EQ(val.removeMember(kSTATIC_THREE).type(), json::ValueType::Null);
+    EXPECT_EQ(val.removeMember(kStaticThree).type(), json::ValueType::Null);
     EXPECT_EQ(val.size(), 1);
 
     EXPECT_EQ(val.removeMember(std::string("two")), 2);
@@ -1295,14 +1295,14 @@ TEST(json_value, nest_limits)
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, json::Reader::kNEST_LIMIT))};
+            auto json{nest(std::min(10u, json::Reader::kNestLimit))};
             json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+            auto json{nest(json::Reader::kNestLimit + 1)};
             json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
@@ -1319,7 +1319,7 @@ TEST(json_value, nest_limits)
     };
     {
         // Exceed array nest limit
-        auto json{nest(json::Reader::kNEST_LIMIT + 1)};
+        auto json{nest(json::Reader::kNestLimit + 1)};
         json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }
