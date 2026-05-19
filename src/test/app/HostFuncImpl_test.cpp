@@ -1,12 +1,64 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/token.h>
+#include <test/unit_test/SuiteJournal.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmVM.h>
 #include <xrpl/tx/wasm/WasmiVM.h>
 
-namespace xrpl {
-namespace test {
+#include <wasm.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <iomanip>
+#include <ios>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+
+namespace xrpl::test {
 
 static Bytes
 toBytes(std::uint8_t value)
@@ -108,10 +160,10 @@ public:
     {
     }
 
-    wmem
+    Wmem
     getMem() override
     {
-        return {buffer_.data(), buffer_.size()};
+        return {.p = buffer_.data(), .s = buffer_.size()};
     }
 
     std::int64_t
@@ -153,7 +205,7 @@ public:
             Throw<std::runtime_error>("Out of bounds");
     }
 
-    Slice
+    [[nodiscard]] Slice
     getBuffer(WasmValVec const& params, size_t i) const
     {
         checkIdx(params, i);
@@ -162,7 +214,7 @@ public:
         return {&buffer_[ptr], static_cast<size_t>(size)};
     }
 
-    Bytes
+    [[nodiscard]] Bytes
     getBytes(WasmValVec const& params, size_t i) const
     {
         checkIdx(params, i);
@@ -180,7 +232,7 @@ public:
     }
 
     template <class T>
-    T
+    [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] T
     getInt(WasmValVec const& params, size_t i) const
     {
         checkIdx(params, i);
@@ -191,25 +243,25 @@ public:
         return *reinterpret_cast<T const*>(&buffer_[ptr]);
     }
 
-    std::int32_t
+    [[nodiscard]] std::int32_t
     getInt32(WasmValVec const& params, size_t i) const
     {
         return getInt<std::int32_t>(params, i);
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getUint32(WasmValVec const& params, size_t i) const
     {
         return getInt<std::uint32_t>(params, i);
     }
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getInt64(WasmValVec const& params, size_t i) const
     {
         return getInt<std::int64_t>(params, i);
     }
 
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     getUint64(WasmValVec const& params, size_t i) const
     {
         return getInt<std::uint64_t>(params, i);
@@ -265,9 +317,9 @@ ww(F&& f, E&& e, P&& params, P&& result, Args... args)
 
 constexpr int64_t min64 = std::numeric_limits<int64_t>::min();
 constexpr int64_t max64 = std::numeric_limits<int64_t>::max();
-constexpr int32_t FLOAT_SIZE = 12;
+constexpr int32_t floatSize = 12;
 
-struct HostFuncImpl_test : public beast::unit_test::suite
+struct HostFuncImpl_test : public beast::unit_test::Suite
 {
     void
     testGetLedgerSqn()
@@ -362,15 +414,15 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   uint256::bytes);
+                   Bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == uint256::bytes);
+                BEAST_EXPECT(result[0].of.i32 == Bytes);
             auto const resultBytes = vrt.getBytes(params, 0);
             auto const expectedHash = env.current()->header().parentHash;
             BEAST_EXPECT(
-                resultBytes.size() == uint256::bytes &&
-                std::memcmp(resultBytes.data(), expectedHash.data(), uint256::bytes) == 0);
+                resultBytes.size() == Bytes &&
+                std::memcmp(resultBytes.data(), expectedHash.data(), Bytes) == 0);
         }
     }
 
@@ -429,14 +481,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.isAmendmentEnabled(amendmentId);
         {
             WasmValVec params(2), result(1);
-            vrt.setBytes(0, amendmentId.data(), uint256::bytes);
-            auto* trap =
-                ww(isAmendmentEnabled_wrap,
-                   &import.at("amendment_enabled"),
-                   params,
-                   result,
-                   0,
-                   uint256::bytes);
+            vrt.setBytes(0, amendmentId.data(), Bytes);
+            auto* trap = ww(
+                isAmendmentEnabled_wrap, &import.at("amendment_enabled"), params, result, 0, Bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
@@ -463,14 +510,9 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         // hfs.isAmendmentEnabled(fakeId);
         {
             WasmValVec params(2), result(1);
-            vrt.setBytes(0, fakeId.data(), uint256::bytes);
-            auto* trap =
-                ww(isAmendmentEnabled_wrap,
-                   &import.at("amendment_enabled"),
-                   params,
-                   result,
-                   0,
-                   uint256::bytes);
+            vrt.setBytes(0, fakeId.data(), Bytes);
+            auto* trap = ww(
+                isAmendmentEnabled_wrap, &import.at("amendment_enabled"), params, result, 0, Bytes);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -515,64 +557,62 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.cacheLedgerObj(accountKeylet.key, -1);
             {
                 WasmValVec params(3), result(1);
-                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                vrt.setBytes(0, accountKeylet.key.data(), Bytes);
                 auto* trap =
                     ww(cacheLedgerObj_wrap,
                        &import.at("cache_ledger_obj"),
                        params,
                        result,
                        0,
-                       uint256::bytes,
+                       Bytes,
                        -1);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotOutRange));
             }
 
             // hfs.cacheLedgerObj(accountKeylet.key, 257);
             {
                 WasmValVec params(3), result(1);
-                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                vrt.setBytes(0, accountKeylet.key.data(), Bytes);
                 auto* trap =
                     ww(cacheLedgerObj_wrap,
                        &import.at("cache_ledger_obj"),
                        params,
                        result,
                        0,
-                       uint256::bytes,
+                       Bytes,
                        257);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotOutRange));
             }
 
             // hfs.cacheLedgerObj(dummyEscrow.key, 0);
             {
                 WasmValVec params(3), result(1);
-                vrt.setBytes(0, dummyEscrow.key.data(), uint256::bytes);
+                vrt.setBytes(0, dummyEscrow.key.data(), Bytes);
                 auto* trap =
                     ww(cacheLedgerObj_wrap,
                        &import.at("cache_ledger_obj"),
                        params,
                        result,
                        0,
-                       uint256::bytes,
+                       Bytes,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
                         result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
+                        static_cast<int32_t>(HostFunctionError::LedgerObjNotFound));
             }
 
             // hfs.cacheLedgerObj(accountKeylet.key, 0);
             {
                 WasmValVec params(3), result(1);
-                vrt.setBytes(0, accountKeylet.key.data(), uint256::bytes);
+                vrt.setBytes(0, accountKeylet.key.data(), Bytes);
                 auto* trap =
                     ww(cacheLedgerObj_wrap,
                        &import.at("cache_ledger_obj"),
@@ -624,7 +664,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOTS_FULL));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotsFull));
             }
         }
 
@@ -673,7 +713,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOTS_FULL));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotsFull));
             }
         }
     }
@@ -798,8 +838,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
             }
 
             // hfs.getTxField(sfMemos);
@@ -816,8 +855,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::NOT_LEAF_FIELD));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NotLeafField));
             }
 
             // hfs.getTxField(sfCredentialIDs);
@@ -834,7 +872,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
                 BEAST_EXPECTS(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NOT_LEAF_FIELD),
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NotLeafField),
                     std::to_string(result[0].of.i32));
             }
 
@@ -852,8 +890,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
             }
 
             // hfs.getTxField(sfGeneric);
@@ -870,8 +907,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
-                        result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                        result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
             }
         }
 
@@ -1126,7 +1162,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
         }
 
         {
@@ -1152,7 +1188,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
                         result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
+                        static_cast<int32_t>(HostFunctionError::LedgerObjNotFound));
             }
         }
     }
@@ -1256,7 +1292,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotOutRange));
         }
 
         // hfs.getLedgerObjField(257, sfAccount);
@@ -1274,7 +1310,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotOutRange));
         }
 
         // hfs.getLedgerObjField(2, sfAccount);
@@ -1292,7 +1328,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EMPTY_SLOT));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EmptySlot));
         }
 
         // hfs.getLedgerObjField(1, sfOwner);
@@ -1310,7 +1346,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
         }
     }
 
@@ -1489,7 +1525,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfSigners.fieldCode,  // sfSigners does not exist
              0,
              sfAccount.fieldCode},
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
         // Locator for non-existent index
@@ -1497,13 +1533,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfMemos.fieldCode,
              1,  // index 1 does not exist
              sfMemoData.fieldCode},
-            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            HostFunctionError::IndexOutOfBounds);
 
         // hfs.getTxNestedField(locator);
         // Locator for non-existent index
         expectError(
             {sfCredentialIDs.fieldCode, 1},  // index 1 does not exist
-            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            HostFunctionError::IndexOutOfBounds);
 
         // hfs.getTxNestedField(locator);
         // Locator for negative index (STArray)
@@ -1511,19 +1547,19 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfMemos.fieldCode,
              -1,  // negative index
              sfMemoData.fieldCode},
-            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            HostFunctionError::IndexOutOfBounds);
 
         // hfs.getTxNestedField(locator);
         // Locator for negative index (STVector256)
         expectError(
             {sfCredentialIDs.fieldCode, -1},  // negative index
-            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            HostFunctionError::IndexOutOfBounds);
 
         // hfs.getTxNestedField(locator);
         // Locator for non-existent nested field
         expectError(
             {sfMemos.fieldCode, 0, sfURI.fieldCode},  // sfURI does not exist in the memo
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
         // Locator for non-existent base sfield
@@ -1531,7 +1567,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {field_code(20000, 20000),  // nonexistent SField code
              0,
              sfAccount.fieldCode},
-            HostFunctionError::INVALID_FIELD);
+            HostFunctionError::InvalidField);
 
         // hfs.getTxNestedField(locator);
         // Locator for non-existent nested sfield
@@ -1539,7 +1575,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfMemos.fieldCode,  // nonexistent SField code
              0,
              field_code(20000, 20000)},
-            HostFunctionError::INVALID_FIELD);
+            HostFunctionError::InvalidField);
 
         // hfs.getTxNestedField(locator);
         // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
@@ -1547,7 +1583,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {-1,  // sfInvalid's field code
              0,
              sfAccount.fieldCode},
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
         // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
@@ -1555,28 +1591,28 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {0,  // sfGeneric's field code
              0,
              sfAccount.fieldCode},
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
         // Locator for very negative base sfield code (not in knownCodeToField map)
         expectError(
             {std::numeric_limits<int32_t>::min(), 0, sfAccount.fieldCode},
-            HostFunctionError::INVALID_FIELD);
+            HostFunctionError::InvalidField);
 
         // hfs.getTxNestedField(locator);
         // Locator for negative nested sfield code in STObject context
         // (sfMemos[0] is an STObject, then -1 is looked up as SField)
         expectError(
             {sfMemos.fieldCode, 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
         // Locator for STArray
-        expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+        expectError({sfMemos.fieldCode}, HostFunctionError::NotLeafField);
 
         // hfs.getTxNestedField(locator);
         // Locator for STVector256
-        expectError({sfCredentialIDs.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+        expectError({sfCredentialIDs.fieldCode}, HostFunctionError::NotLeafField);
 
         // hfs.getTxNestedField(locator);
         // Locator for nesting into non-array/object field
@@ -1584,11 +1620,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfAccount.fieldCode,  // sfAccount is not an array or object
              0,
              sfAccount.fieldCode},
-            HostFunctionError::LOCATOR_MALFORMED);
+            HostFunctionError::LocatorMalformed);
 
         // hfs.getTxNestedField(locator);
         // Locator for empty locator
-        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
+        expectError({}, HostFunctionError::LocatorMalformed);
 
         // hfs.getTxNestedField(locator);
         // Locator for malformed locator (not multiple of 4)
@@ -1609,7 +1645,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LocatorMalformed));
         }
     }
 
@@ -1691,7 +1727,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfSigners.fieldCode,  // sfSigners does not exist
              0,
              sfAccount.fieldCode},
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // hfs.getCurrentLedgerObjNestedField(locator);
         // Locator for nesting into non-array/object field
@@ -1699,7 +1735,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfSignerQuorum.fieldCode,  // sfSignerQuorum is not an array or object
              0,
              sfAccount.fieldCode},
-            HostFunctionError::LOCATOR_MALFORMED);
+            HostFunctionError::LocatorMalformed);
 
         // hfs.getCurrentLedgerObjNestedField(emptyLocator);
         // Locator for empty locator
@@ -1717,7 +1753,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LocatorMalformed));
         }
 
         // hfs.getCurrentLedgerObjNestedField(malformedLocator);
@@ -1739,7 +1775,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LocatorMalformed));
         }
 
         // hfs.getCurrentLedgerObjNestedField(locator);
@@ -1767,7 +1803,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND),
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LedgerObjNotFound),
                 std::to_string(result[0].of.i32));
         }
     }
@@ -1951,14 +1987,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {sfSigners.fieldCode,  // sfSigners does not exist
              0,
              sfAccount.fieldCode},
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // Error: index out of bounds
         expectError(
             {sfSignerEntries.fieldCode,
              2,  // index 2 does not exist
              sfAccount.fieldCode},
-            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+            HostFunctionError::IndexOutOfBounds);
 
         // Error: nested field not found
         expectError(
@@ -1967,34 +2003,34 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 0,
                 sfDestination.fieldCode  // sfDestination does not exist
             },
-            HostFunctionError::FIELD_NOT_FOUND);
+            HostFunctionError::FieldNotFound);
 
         // Error: invalid field code
         expectError(
-            {field_code(99999, 99999), 0, sfAccount.fieldCode}, HostFunctionError::INVALID_FIELD);
+            {field_code(99999, 99999), 0, sfAccount.fieldCode}, HostFunctionError::InvalidField);
 
         // Error: invalid nested field code
         expectError(
             {sfSignerEntries.fieldCode, 0, field_code(99999, 99999)},
-            HostFunctionError::INVALID_FIELD);
+            HostFunctionError::InvalidField);
 
         // Error: slot out of range
-        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::SLOT_OUT_RANGE, 0);
-        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::SLOT_OUT_RANGE, 257);
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::SlotOutRange, 0);
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::SlotOutRange, 257);
 
         // Error: empty slot
-        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::EMPTY_SLOT, 2);
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::EmptySlot, 2);
 
         // Error: locator for STArray (not leaf field)
-        expectError({sfSignerEntries.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+        expectError({sfSignerEntries.fieldCode}, HostFunctionError::NotLeafField);
 
         // Error: nesting into non-array/object field
         expectError(
             {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
-            HostFunctionError::LOCATOR_MALFORMED);
+            HostFunctionError::LocatorMalformed);
 
         // Error: empty locator
-        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
+        expectError({}, HostFunctionError::LocatorMalformed);
 
         // Error: locator malformed (not multiple of 4)
         {
@@ -2015,7 +2051,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LocatorMalformed));
         }
     }
 
@@ -2089,7 +2125,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
-            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NoArray));
         }
 
         // Should return error for missing array field
@@ -2105,7 +2141,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
         }
 
         // Should return 1 for sfCredentialIDs
@@ -2175,7 +2211,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
         }
 
         // Should return NO_ARRAY for non-array field
@@ -2190,7 +2226,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
-            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NoArray));
         }
 
         {
@@ -2212,7 +2248,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LedgerObjNotFound));
         }
     }
 
@@ -2286,8 +2322,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    sfSignerEntries.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
-            BEAST_EXPECT(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SLOT_OUT_RANGE));
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::SlotOutRange));
         }
 
         {
@@ -2303,7 +2338,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    sfAccount.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
-            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NO_ARRAY));
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::NoArray));
         }
 
         {
@@ -2319,7 +2354,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    sfSignerEntries.fieldCode);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
-            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EMPTY_SLOT));
+            BEAST_EXPECT(result[0].of.i32 == static_cast<int32_t>(HostFunctionError::EmptySlot));
         }
 
         {
@@ -2336,7 +2371,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECT(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FIELD_NOT_FOUND));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
         }
     }
 
@@ -2404,10 +2439,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Error: non-array field
-        expectError({sfAccount.fieldCode}, HostFunctionError::NO_ARRAY);
+        expectError({sfAccount.fieldCode}, HostFunctionError::NoArray);
 
         // Error: missing field
-        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
+        expectError({sfSigners.fieldCode}, HostFunctionError::FieldNotFound);
     }
 
     void
@@ -2472,10 +2507,10 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Error: non-array field
-        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NO_ARRAY);
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NoArray);
 
         // Error: missing field
-        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
+        expectError({sfSigners.fieldCode}, HostFunctionError::FieldNotFound);
 
         {
             auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master) + 5);
@@ -2499,7 +2534,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LEDGER_OBJ_NOT_FOUND),
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LedgerObjNotFound),
                 std::to_string(result[0].of.i32));
         }
     }
@@ -2586,20 +2621,20 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         };
 
         // Error: non-array field
-        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NO_ARRAY);
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NoArray);
 
         // Error: missing field
-        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
+        expectError({sfSigners.fieldCode}, HostFunctionError::FieldNotFound);
 
         // Slot out of range
-        expectError(locatorVec, HostFunctionError::SLOT_OUT_RANGE, 0);
-        expectError(locatorVec, HostFunctionError::SLOT_OUT_RANGE, 257);
+        expectError(locatorVec, HostFunctionError::SlotOutRange, 0);
+        expectError(locatorVec, HostFunctionError::SlotOutRange, 257);
 
         // Empty slot
-        expectError(locatorVec, HostFunctionError::EMPTY_SLOT, 2);
+        expectError(locatorVec, HostFunctionError::EmptySlot, 2);
 
         // Error: empty locator
-        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
+        expectError({}, HostFunctionError::LocatorMalformed);
 
         // Error: locator malformed (not multiple of 4)
         {
@@ -2617,13 +2652,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LOCATOR_MALFORMED));
+                    result[0].of.i32 == static_cast<int32_t>(HostFunctionError::LocatorMalformed));
         }
 
         // Error: locator for non-STArray field
         expectError(
             {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
-            HostFunctionError::LOCATOR_MALFORMED);
+            HostFunctionError::LocatorMalformed);
     }
 
     void
@@ -2672,7 +2707,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE));
+                    result[0].of.i32 == HfErrorToInt(HostFunctionError::DataFieldTooLarge));
         }
     }
 
@@ -2777,7 +2812,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    badPk.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for empty public key
@@ -2802,7 +2837,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for empty signature
@@ -2943,7 +2978,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -2976,7 +3011,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(ammKeylet_wrap,
@@ -2989,7 +3024,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
         }
 
         {
@@ -3021,7 +3056,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         std::string const credTypeStr = "test";
@@ -3063,7 +3098,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(credentialKeylet_wrap,
@@ -3077,7 +3112,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap4 =
                 ww(credentialKeylet_wrap,
@@ -3091,7 +3126,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3109,7 +3144,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 ww(didKeylet_wrap, &imp.at("did_keylet"), params, result, xrpAccount(), 1024, 32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3141,7 +3176,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(delegateKeylet_wrap,
@@ -3154,7 +3189,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap4 =
                 ww(delegateKeylet_wrap,
@@ -3167,7 +3202,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3199,7 +3234,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(depositPreauthKeylet_wrap,
@@ -3212,7 +3247,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap4 =
                 ww(depositPreauthKeylet_wrap,
@@ -3225,7 +3260,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3257,7 +3292,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         Currency const usd = to_currency("USD");
@@ -3292,7 +3327,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(lineKeylet_wrap,
@@ -3306,7 +3341,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap4 =
                 ww(lineKeylet_wrap,
@@ -3320,7 +3355,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap5 =
                 ww(lineKeylet_wrap,
@@ -3334,7 +3369,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap5 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
         }
 
         {
@@ -3366,7 +3401,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3398,7 +3433,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(mptokenKeylet_wrap,
@@ -3411,7 +3446,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3443,7 +3478,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3475,7 +3510,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3507,7 +3542,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3541,7 +3576,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_PARAMS));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidParams));
 
             auto* trap3 =
                 ww(paychanKeylet_wrap,
@@ -3555,7 +3590,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap3 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
 
             auto* trap4 =
                 ww(paychanKeylet_wrap,
@@ -3569,7 +3604,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap4 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3601,7 +3636,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3625,7 +3660,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3657,7 +3692,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
 
         {
@@ -3689,7 +3724,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    32);
             BEAST_EXPECT(
                 !trap2 && result[0].kind == WASM_I32 &&
-                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::INVALID_ACCOUNT));
+                result[0].of.i32 == static_cast<int32_t>(HostFunctionError::InvalidAccount));
         }
     }
 
@@ -3769,7 +3804,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_ACCOUNT));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidAccount));
         }
 
         // Should fail for invalid nftId
@@ -3792,7 +3827,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for invalid nftId
@@ -3816,7 +3851,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == HfErrorToInt(HostFunctionError::LEDGER_OBJ_NOT_FOUND));
+                    result[0].of.i32 == HfErrorToInt(HostFunctionError::LedgerObjNotFound));
         }
 
         {
@@ -3837,7 +3872,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::FIELD_NOT_FOUND));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::FieldNotFound));
         }
     }
 
@@ -3904,7 +3939,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    AccountID::bytes);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::INVALID_PARAMS));
+                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
         }
     }
 
@@ -4593,7 +4628,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         std::cout << std::dec << std::setfill(' ') << std::endl;
     }
 
-    void
+    static void
     printNumbersBin()
     {
         printFloats("int64.min", std::numeric_limits<int64_t>::min(), 0);
@@ -4745,13 +4780,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    result,
                    min64,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -4764,13 +4799,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    result,
                    min64,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -4783,11 +4818,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    result,
                    min64,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 1);
             BEAST_EXPECT(resultBytes == floatIntMin);
         }
@@ -4802,11 +4837,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    result,
                    0ll,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 1);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -4821,11 +4856,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    result,
                    max64,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 1);
             BEAST_EXPECT(resultBytes == floatIntMax);
         }
@@ -4860,13 +4895,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    8,
                    16,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -4882,13 +4917,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    8,
                    16,
-                   FLOAT_SIZE,
+                   floatSize,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -4904,11 +4939,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    8,
                    16,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -4926,11 +4961,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    8,
                    16,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatUIntMax);
         }
@@ -4964,13 +4999,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -4984,13 +5019,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5004,13 +5039,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::maxExponent + normalExp + 1,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5024,11 +5059,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::minExponent + normalExp - 1,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -5044,11 +5079,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::maxExponent + normalExp,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMaxExp);
         }
@@ -5064,11 +5099,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    -1ll,
                    Number::maxExponent + normalExp,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
@@ -5084,11 +5119,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::maxExponent + normalExp - 1,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatPreMaxExp);
         }
@@ -5104,11 +5139,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    static_cast<int64_t>(STAmount::cMaxValue),
                    STAmount::cMaxOffset,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
@@ -5124,11 +5159,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::minExponent - normalExp,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMinExp);
         }
@@ -5144,11 +5179,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    10ll,
                    -1,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == float1);
         }
@@ -5164,13 +5199,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    1ll,
                    Number::maxExponent + normalExp + 1,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
     }
 
@@ -5198,7 +5233,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5206,49 +5241,49 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             WasmValVec params(4), result(1);
             vrt.setBytes(0, floatInvalidZero.data(), floatInvalidZero.size());
             auto* trap =
-                ww(floatCompare_wrap, &import.at("float_add"), params, result, 0, FLOAT_SIZE, 0, 0);
+                ww(floatCompare_wrap, &import.at("float_add"), params, result, 0, floatSize, 0, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
             WasmValVec params(4), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            vrt.setBytes(floatSize, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatCompare_wrap,
                    &import.at("float_add"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    invalid.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatCompare(makeSlice(floatIntMin), makeSlice(floatIntZero));
             WasmValVec params(4), result(1);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(floatSize, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatCompare_wrap,
                    &import.at("float_add"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE);
+                   floatSize,
+                   floatSize,
+                   floatSize);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 2);
@@ -5258,16 +5293,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatCompare(makeSlice(floatIntMax), makeSlice(floatIntZero));
             WasmValVec params(4), result(1);
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(floatSize, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatCompare_wrap,
                    &import.at("float_add"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE);
+                   floatSize,
+                   floatSize,
+                   floatSize);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 1);
@@ -5277,16 +5312,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatCompare(makeSlice(float1), makeSlice(float1));
             WasmValVec params(4), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            vrt.setBytes(floatSize, float1.data(), float1.size());
             auto* trap =
                 ww(floatCompare_wrap,
                    &import.at("float_add"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE);
+                   floatSize,
+                   floatSize,
+                   floatSize);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == 0);
@@ -5322,13 +5357,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5344,37 +5379,37 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            vrt.setBytes(floatSize, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatAdd_wrap,
                    &import.at("float_subtract"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    invalid.size(),
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5382,22 +5417,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // max IOU is too small to make any change
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatMaxIOU.data(), floatMaxIOU.size());
-            vrt.setBytes(FLOAT_SIZE, floatMaxExp.data(), floatMaxExp.size());
+            vrt.setBytes(floatSize, floatMaxExp.data(), floatMaxExp.size());
             auto* trap =
                 ww(floatAdd_wrap,
                    &import.at("float_subtract"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatMaxExp);
         }
@@ -5406,22 +5441,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatAdd(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(floatSize, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatAdd_wrap,
                    &import.at("float_subtract"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatIntMin);
         }
@@ -5431,22 +5466,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             //  Number can't hold int64.min, it is rounded and we get -3, not -1
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntMin.data(), floatIntMin.size());
+            vrt.setBytes(floatSize, floatIntMin.data(), floatIntMin.size());
             auto* trap =
                 ww(floatAdd_wrap,
                    &import.at("float_subtract"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatMinus3);
         }
@@ -5481,13 +5516,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5503,59 +5538,59 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            vrt.setBytes(floatSize, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatSubtract_wrap,
                    &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    invalid.size(),
-                   FLOAT_SIZE * 2,
-                   FLOAT_SIZE,
+                   floatSize * 2,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatSubtract(makeSlice(floatMinusMaxExp), makeSlice(floatMaxIOU), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatMinusMaxExp.data(), floatMinusMaxExp.size());
-            vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
+            vrt.setBytes(floatSize, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatSubtract_wrap,
                    &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
@@ -5564,22 +5599,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatSubtract(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(floatSize, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatSubtract_wrap,
                    &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatIntMin);
         }
@@ -5588,22 +5623,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatSubtract(makeSlice(floatIntZero), makeSlice(float1), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
-            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            vrt.setBytes(floatSize, float1.data(), float1.size());
             auto* trap =
                 ww(floatSubtract_wrap,
                    &import.at("float_from_mant_exp"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatMinus1);
         }
@@ -5638,13 +5673,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5660,83 +5695,83 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            vrt.setBytes(floatSize, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatMultiply_wrap,
                    &import.at("float_multiply"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    invalid.size(),
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
             // hfs.floatMultiply(makeSlice(floatMax), makeSlice(float1More), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatMax.data(), floatMax.size());
-            vrt.setBytes(FLOAT_SIZE, float1More.data(), float1More.size());
+            vrt.setBytes(floatSize, float1More.data(), float1More.size());
             auto* trap =
                 ww(floatMultiply_wrap,
                    &import.at("float_multiply"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
         }
 
         {
             // hfs.floatMultiply(makeSlice(float1), makeSlice(float1), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            vrt.setBytes(floatSize, float1.data(), float1.size());
             auto* trap =
                 ww(floatMultiply_wrap,
                    &import.at("float_multiply"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == float1);
         }
@@ -5745,22 +5780,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatMultiply(makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
-            vrt.setBytes(FLOAT_SIZE, floatMaxIOU.data(), floatMaxIOU.size());
+            vrt.setBytes(floatSize, floatMaxIOU.data(), floatMaxIOU.size());
             auto* trap =
                 ww(floatMultiply_wrap,
                    &import.at("float_multiply"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -5769,22 +5804,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             // hfs.floatMultiply(makeSlice(float10), makeSlice(floatPreMaxExp), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float10.data(), float10.size());
-            vrt.setBytes(FLOAT_SIZE, floatPreMaxExp.data(), floatPreMaxExp.size());
+            vrt.setBytes(floatSize, floatPreMaxExp.data(), floatPreMaxExp.size());
             auto* trap =
                 ww(floatMultiply_wrap,
                    &import.at("float_multiply"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatMaxExp);
         }
@@ -5819,13 +5854,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -5841,59 +5876,59 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    0,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, invalid.data(), invalid.size());
+            vrt.setBytes(floatSize, invalid.data(), invalid.size());
             auto* trap =
                 ww(floatDivide_wrap,
                    &import.at("float_divide"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    invalid.size(),
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, float1.data(), float1.size());
-            vrt.setBytes(FLOAT_SIZE, floatIntZero.data(), floatIntZero.size());
+            vrt.setBytes(floatSize, floatIntZero.data(), floatIntZero.size());
             auto* trap =
                 ww(floatDivide_wrap,
                    &import.at("float_divide"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
         }
 
         {  // hfs.floatDivide(makeSlice(floatMax), makeSlice(*y), 0);
@@ -5903,46 +5938,46 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             {
                 WasmValVec params(7), result(1);
                 vrt.setBytes(0, floatMax.data(), floatMax.size());
-                vrt.setBytes(FLOAT_SIZE, y->data(), y->size());
+                vrt.setBytes(floatSize, y->data(), y->size());
                 auto* trap =
                     ww(floatDivide_wrap,
                        &import.at("float_divide"),
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       FLOAT_SIZE,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       floatSize,
+                       floatSize,
+                       floatSize,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
                         result[0].of.i32 ==
-                        static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                        static_cast<int32_t>(HostFunctionError::FloatComputationError));
             }
         }
 
         {  // hfs.floatDivide(makeSlice(floatIntZero), makeSlice(float1), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntZero.data(), floatIntZero.size());
-            vrt.setBytes(FLOAT_SIZE, float1.data(), float1.size());
+            vrt.setBytes(floatSize, float1.data(), float1.size());
             auto* trap =
                 ww(floatDivide_wrap,
                    &import.at("float_divide"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -5950,22 +5985,22 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {  // hfs.floatDivide(makeSlice(floatMaxExp), makeSlice(float10), 0);
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatMaxExp.data(), floatMaxExp.size());
-            vrt.setBytes(FLOAT_SIZE, float10.data(), float10.size());
+            vrt.setBytes(floatSize, float10.data(), float10.size());
             auto* trap =
                 ww(floatDivide_wrap,
                    &import.at("float_divide"),
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
+                   floatSize,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
             BEAST_EXPECT(resultBytes == floatPreMaxExp);
         }
@@ -5998,13 +6033,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    2,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatRoot(makeSlice(invalid), 3, 0);
@@ -6018,14 +6053,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    invalid.size(),
                    3,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatRoot(makeSlice(float1), -2, 0);
@@ -6037,16 +6072,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -2,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatRoot(makeSlice(floatIntZero), 2, 0);
@@ -6058,14 +6093,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    2,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 3);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -6079,14 +6114,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    1,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 3);
             BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
@@ -6104,14 +6139,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
+                       floatSize,
                        2,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 3);
                 BEAST_EXPECT(resultBytes == float10);
             }
@@ -6130,14 +6165,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
+                       floatSize,
                        3,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 3);
                 BEAST_EXPECT(resultBytes == float10);
             }
@@ -6157,14 +6192,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
+                       floatSize,
                        2,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 3);
                 BEAST_EXPECT(resultBytes == *y);
             }
@@ -6198,13 +6233,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    2,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatPower(makeSlice(invalid), 3, 0);
@@ -6218,14 +6253,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    invalid.size(),
                    3,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {  // hfs.floatPower(makeSlice(float1), -2, 0);
@@ -6237,16 +6272,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    -2,
-                   2 * FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   2 * floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6259,16 +6294,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    2,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
         }
 
         {
@@ -6281,16 +6316,16 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    Number::maxExponent + 1,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6303,14 +6338,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    0,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 3);
             BEAST_EXPECT(resultBytes == float1);
         }
@@ -6324,14 +6359,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    1,
-                   FLOAT_SIZE,
-                   FLOAT_SIZE,
+                   floatSize,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 3);
             BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
@@ -6349,14 +6384,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
+                       floatSize,
                        2,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 3);
                 BEAST_EXPECT(resultBytes == *x);
             }
@@ -6376,14 +6411,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        params,
                        result,
                        0,
-                       FLOAT_SIZE,
+                       floatSize,
                        2,
-                       2 * FLOAT_SIZE,
-                       FLOAT_SIZE,
+                       2 * floatSize,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 3);
                 BEAST_EXPECT(resultBytes == *y);
             }
@@ -6441,13 +6476,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6464,13 +6499,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6487,11 +6522,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatIntZero);
         }
@@ -6513,11 +6548,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                        0,
                        amountBytes.size(),
                        256,
-                       FLOAT_SIZE,
+                       floatSize,
                        0);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                    BEAST_EXPECT(result[0].of.i32 == floatSize);
                 auto const resultBytes = vrt.getBytes(params, 2);
                 BEAST_EXPECT(resultBytes == *y);
             }
@@ -6538,11 +6573,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == *y);
         }
@@ -6562,7 +6597,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(ex);
         }
 
-        auto const USD = env.master["USD"];
+        auto const usd = env.master["USD"];
         {
             // hfs.floatFromSTAmount(amount, 0);
             STAmount const amount(
@@ -6578,11 +6613,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMinIOU);
         }
@@ -6602,11 +6637,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    amountBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMaxIOU);
         }
@@ -6643,13 +6678,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    numBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    -1);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6666,13 +6701,13 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    numBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6690,11 +6725,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    numBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatUIntMax);
         }
@@ -6713,11 +6748,11 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    0,
                    numBytes.size(),
                    256,
-                   FLOAT_SIZE,
+                   floatSize,
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 2);
             BEAST_EXPECT(resultBytes == floatMinusMaxExp);
         }
@@ -6749,7 +6784,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    -1);
@@ -6757,7 +6792,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6770,7 +6805,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    4);
@@ -6778,7 +6813,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6790,7 +6825,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6803,7 +6838,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6811,7 +6846,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -6824,7 +6859,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6849,7 +6884,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6874,7 +6909,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6899,7 +6934,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6926,7 +6961,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6934,7 +6969,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
         }
 
         {
@@ -6947,7 +6982,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6955,7 +6990,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_COMPUTATION_ERROR));
+                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
         }
 
         // Test rounding modes with pi (3.141592653589793)
@@ -6970,7 +7005,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    0);
@@ -6992,7 +7027,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    1);
@@ -7014,7 +7049,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    2);
@@ -7036,7 +7071,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    3);
@@ -7074,7 +7109,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
@@ -7083,7 +7118,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FLOAT_INPUT_MALFORMED));
+                    static_cast<int32_t>(HostFunctionError::FloatInputMalformed));
         }
 
         {
@@ -7096,14 +7131,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == 0) &&
@@ -7124,14 +7159,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == 1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
@@ -7151,14 +7186,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == -1000000000000000000) && BEAST_EXPECT(exponent == -normalExp);
@@ -7178,14 +7213,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == 1000000000000000000) &&
@@ -7206,14 +7241,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == 3141592653589793000) && BEAST_EXPECT(exponent == -normalExp);
@@ -7233,14 +7268,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == std::numeric_limits<int64_t>::max()) &&
@@ -7261,14 +7296,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
@@ -7289,14 +7324,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                    params,
                    result,
                    0,
-                   FLOAT_SIZE,
+                   floatSize,
                    256,
                    8,
                    512,
                    4);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == FLOAT_SIZE);
+                BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
             BEAST_EXPECT(mantissa == Number::maxRep) &&
@@ -7432,5 +7467,4 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

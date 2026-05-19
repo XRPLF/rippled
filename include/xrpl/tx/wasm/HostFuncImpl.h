@@ -13,8 +13,8 @@ class WasmHostFunctionsImpl : public HostFunctions
     Keylet leKey_;
     mutable std::optional<std::shared_ptr<SLE const>> currentLedgerObj_;
 
-    static int constexpr MAX_CACHE = 256;
-    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache_;
+    static int constexpr maxCache = 256;
+    std::array<std::shared_ptr<SLE const>, maxCache> cache_;
 
     std::optional<Bytes> data_;
 
@@ -27,17 +27,17 @@ class WasmHostFunctionsImpl : public HostFunctions
             currentLedgerObj_ = ctx_.view().read(leKey_);
         if (*currentLedgerObj_)
             return *currentLedgerObj_;
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        return Unexpected(HostFunctionError::LedgerObjNotFound);
     }
 
     Expected<int32_t, HostFunctionError>
     normalizeCacheIndex(int32_t cacheIdx) const
     {
         --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        if (cacheIdx < 0 || cacheIdx >= maxCache)
+            return Unexpected(HostFunctionError::SlotOutRange);
         if (!cache_[cacheIdx])
-            return Unexpected(HostFunctionError::EMPTY_SLOT);
+            return Unexpected(HostFunctionError::EmptySlot);
         return cacheIdx;
     }
 
@@ -52,7 +52,7 @@ class WasmHostFunctionsImpl : public HostFunctions
             return;
         auto j = getJournal().trace();
 #endif
-        j << "WasmTrace[" << to_short_string(leKey_.key) << "]: " << msg << " " << dataFn();
+        j << "WasmTrace[" << toShortString(leKey_.key) << "]: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -65,19 +65,19 @@ public:
     {
     }
 
-    virtual void
+    void
     setRT(void* rt) override
     {
         rt_ = rt;
     }
 
-    virtual void*
+    void*
     getRT() const override
     {
         return rt_;
     }
 
-    virtual bool
+    bool
     checkSelf() const override
     {
         return !currentLedgerObj_ && !data_ &&

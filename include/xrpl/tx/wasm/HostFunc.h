@@ -14,27 +14,27 @@ namespace xrpl {
 
 enum class HostFunctionError : int32_t {
     INTERNAL = -1,
-    FIELD_NOT_FOUND = -2,
-    BUFFER_TOO_SMALL = -3,
-    NO_ARRAY = -4,
-    NOT_LEAF_FIELD = -5,
-    LOCATOR_MALFORMED = -6,
-    SLOT_OUT_RANGE = -7,
-    SLOTS_FULL = -8,
-    EMPTY_SLOT = -9,
-    LEDGER_OBJ_NOT_FOUND = -10,
+    FieldNotFound = -2,
+    BufferTooSmall = -3,
+    NoArray = -4,
+    NotLeafField = -5,
+    LocatorMalformed = -6,
+    SlotOutRange = -7,
+    SlotsFull = -8,
+    EmptySlot = -9,
+    LedgerObjNotFound = -10,
     DECODING = -11,
-    DATA_FIELD_TOO_LARGE = -12,
-    POINTER_OUT_OF_BOUNDS = -13,
-    NO_MEM_EXPORTED = -14,
-    INVALID_PARAMS = -15,
-    INVALID_ACCOUNT = -16,
-    INVALID_FIELD = -17,
-    INDEX_OUT_OF_BOUNDS = -18,
-    FLOAT_INPUT_MALFORMED = -19,
-    FLOAT_COMPUTATION_ERROR = -20,
-    NO_RUNTIME = -21,
-    OUT_OF_GAS = -22,
+    DataFieldTooLarge = -12,
+    PointerOutOfBounds = -13,
+    NoMemExported = -14,
+    InvalidParams = -15,
+    InvalidAccount = -16,
+    InvalidField = -17,
+    IndexOutOfBounds = -18,
+    FloatInputMalformed = -19,
+    FloatComputationError = -20,
+    NoRuntime = -21,
+    OutOfGas = -22,
 };
 
 using FloatPair = std::pair<int64_t, int32_t>;
@@ -97,9 +97,9 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
 // Intended to work only through wasm runtime. Don't call them directly, except with unit tests
 struct HostFunctions
 {
-    beast::Journal j_;
+    beast::Journal j;
 
-    HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j_(j)
+    HostFunctions(beast::Journal j = beast::Journal{beast::Journal::getNullSink()}) : j(j)
     {
     }
 
@@ -109,19 +109,19 @@ struct HostFunctions
     {
     }
 
-    virtual void*
+    [[nodiscard]] virtual void*
     getRT() const
     {
         return nullptr;
     }
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     getJournal() const
     {
-        return j_;
+        return j;
     }
 
-    virtual bool
+    [[nodiscard]] virtual bool
     checkSelf() const
     {
         return true;

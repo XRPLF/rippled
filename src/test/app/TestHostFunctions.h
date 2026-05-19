@@ -8,36 +8,34 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 struct TestLedgerDataProvider : public HostFunctions
 {
-    jtx::Env& env_;
-    void* rt_ = nullptr;
+    jtx::Env& env;
+    void* rt = nullptr;
 
 public:
-    TestLedgerDataProvider(jtx::Env& env) : HostFunctions(env.journal), env_(env)
+    TestLedgerDataProvider(jtx::Env& env) : HostFunctions(env.journal), env(env)
     {
     }
 
-    virtual void
+    void
     setRT(void* rt) override
     {
-        rt_ = rt;
+        rt = rt;
     }
 
-    virtual void*
+    [[nodiscard]] void*
     getRT() const override
     {
-        return rt_;
+        return rt;
     }
 
     Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() const override
     {
-        return env_.current()->seq();
+        return env.current()->seq();
     }
 };
 
@@ -46,28 +44,28 @@ struct TestHostFunctions : public HostFunctions
     test::jtx::Env& env_;
     AccountID accountID_;
     Bytes data_;
-    int clock_drift_ = 0;
-    void* rt_ = nullptr;
+    int clock_drift = 0;
+    void* rt = nullptr;
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : HostFunctions(env.journal), env_(env), clock_drift_(cd)
+        : HostFunctions(env.journal), env_(env), clock_drift(cd)
     {
         accountID_ = env_.master.id();
         std::string t = "10000";
         data_ = Bytes{t.begin(), t.end()};
     }
 
-    virtual void
+    void
     setRT(void* rt) override
     {
-        rt_ = rt;
+        rt = rt;
     }
 
-    virtual void*
+    [[nodiscard]] void*
     getRT() const override
     {
-        return rt_;
+        return rt;
     }
 
     Expected<std::uint32_t, HostFunctionError>
@@ -106,7 +104,7 @@ public:
         return 1;
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override
     {
         return 1;
@@ -116,8 +114,10 @@ public:
     getTxField(SField const& fname) const override
     {
         if (fname == sfAccount)
+        {
             return Bytes(accountID_.begin(), accountID_.end());
-        else if (fname == sfFee)
+        }
+        if (fname == sfFee)
         {
             int64_t x = 235;
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
@@ -141,8 +141,10 @@ public:
     {
         auto const& sn = fname.getName();
         if (sn == "Destination" || sn == "Account")
+        {
             return Bytes(accountID_.begin(), accountID_.end());
-        else if (sn == "Data")
+        }
+        if (sn == "Data")
             return data_;
         else if (sn == "FinishAfter")
         {
@@ -163,7 +165,7 @@ public:
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
         }
-        else if (fname == sfAccount)
+        if (fname == sfAccount)
         {
             return Bytes(accountID_.begin(), accountID_.end());
         }
@@ -282,7 +284,7 @@ public:
     accountKeylet(AccountID const& account) const override
     {
         if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+            return Unexpected(HostFunctionError::InvalidAccount);
         auto const keylet = keylet::account(account);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -291,9 +293,9 @@ public:
     ammKeylet(Asset const& issue1, Asset const& issue2) const override
     {
         if (issue1 == issue2)
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return Unexpected(HostFunctionError::InvalidParams);
         if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return Unexpected(HostFunctionError::InvalidParams);
         auto const keylet = keylet::amm(issue1, issue2);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -302,7 +304,7 @@ public:
     checkKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+            return Unexpected(HostFunctionError::InvalidAccount);
         auto const keylet = keylet::check(account, seq);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -312,8 +314,8 @@ public:
         const override
     {
         if (!subject || !issuer || credentialType.empty() ||
-            credentialType.size() > maxCredentialTypeLength)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+            credentialType.size() > kMaxCredentialTypeLength)
+            return Unexpected(HostFunctionError::InvalidAccount);
         auto const keylet = keylet::credential(subject, issuer, credentialType);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -322,7 +324,7 @@ public:
     escrowKeylet(AccountID const& account, std::uint32_t seq) const override
     {
         if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+            return Unexpected(HostFunctionError::InvalidAccount);
         auto const keylet = keylet::escrow(account, seq);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -331,7 +333,7 @@ public:
     oracleKeylet(AccountID const& account, std::uint32_t documentId) const override
     {
         if (!account)
-            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+            return Unexpected(HostFunctionError::InvalidAccount);
         auto const keylet = keylet::oracle(account, documentId);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -341,7 +343,7 @@ public:
     {
         if (!account || !nftId)
         {
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return Unexpected(HostFunctionError::InvalidParams);
         }
 
         std::string s = "https://ripple.com";
@@ -476,7 +478,7 @@ public:
         return wasm_float::floatToIntImpl(x, mode);
     }
 
-    virtual Expected<FloatPair, HostFunctionError>
+    Expected<FloatPair, HostFunctionError>
     floatToMantExp(Slice const& x) const override
     {
         return wasm_float::floatToMantExpImpl(x);
@@ -533,22 +535,21 @@ public:
 
 struct TestHostFunctionsSink : public TestHostFunctions
 {
-    test::StreamSink sink_;
-    void const* rt_ = nullptr;
+    test::StreamSink sink;
+    void const* rt = nullptr;
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
         : TestHostFunctions(env, cd), sink_(beast::severities::kDebug)
     {
-        j_ = beast::Journal(sink_);
+        j = beast::Journal(sink);
     }
 
     test::StreamSink&
     getSink()
     {
-        return sink_;
+        return sink;
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

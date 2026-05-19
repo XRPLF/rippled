@@ -6,19 +6,19 @@
 
 namespace xrpl {
 
-std::string_view inline constexpr W_ENV = "env";
-std::string_view inline constexpr W_HOST_LIB = "host_lib";
-std::string_view inline constexpr W_MEM = "memory";
-std::string_view inline constexpr W_STORE = "store";
-std::string_view inline constexpr W_LOAD = "load";
-std::string_view inline constexpr W_SIZE = "size";
-std::string_view inline constexpr W_ALLOC = "allocate";
-std::string_view inline constexpr W_DEALLOC = "deallocate";
-std::string_view inline constexpr W_PROC_EXIT = "proc_exit";
+std::string_view inline constexpr wEnv = "env";
+std::string_view inline constexpr wHostLib = "host_lib";
+std::string_view inline constexpr wMem = "memory";
+std::string_view inline constexpr wStore = "store";
+std::string_view inline constexpr wLoad = "load";
+std::string_view inline constexpr wSize = "size";
+std::string_view inline constexpr wAlloc = "allocate";
+std::string_view inline constexpr wDealloc = "deallocate";
+std::string_view inline constexpr wProcExit = "proc_exit";
 
-std::string_view inline constexpr ESCROW_FUNCTION_NAME = "finish";
+std::string_view inline constexpr escrowFunctionName = "finish";
 
-uint32_t inline constexpr MAX_PAGES = 128;  // 8MB = 64KB*128
+uint32_t inline constexpr maxPages = 128;  // 8MB = 64KB*128
 
 class WasmiEngine;
 
@@ -61,7 +61,7 @@ public:
     void*
     newTrap(std::string const& txt = std::string());
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     getJournal() const;
 };
 
@@ -75,14 +75,14 @@ runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
     int64_t gasLimit,
-    std::string_view funcName = ESCROW_FUNCTION_NAME,
+    std::string_view funcName = escrowFunctionName,
     std::vector<WasmParam> const& params = {});
 
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
-    std::string_view funcName = ESCROW_FUNCTION_NAME,
+    std::string_view funcName = escrowFunctionName,
     std::vector<WasmParam> const& params = {});
 
 }  // namespace xrpl

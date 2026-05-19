@@ -1,6 +1,16 @@
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+
+#include <boost/algorithm/hex.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <string>
+#include <string_view>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1

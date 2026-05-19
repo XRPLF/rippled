@@ -1,10 +1,27 @@
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
+
+#include <cstdint>
+#include <cstring>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
-typedef std::variant<STBase const*, uint256 const*> FieldValue;
+using FieldValue = std::variant<STBase const*, uint256 const*>;
 
 template <class T>
 Bytes
@@ -23,7 +40,7 @@ static Expected<Bytes, HostFunctionError>
 getAnyFieldData(STBase const* obj)
 {
     if (obj == nullptr)
-        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+        return Unexpected(HostFunctionError::FieldNotFound);
 
     auto const stype = obj->getSType();
     switch (stype)
@@ -31,13 +48,13 @@ getAnyFieldData(STBase const* obj)
         // LCOV_EXCL_START
         case STI_UNKNOWN:
         case STI_NOTPRESENT:
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+            return Unexpected(HostFunctionError::FieldNotFound);
             // LCOV_EXCL_STOP
 
         case STI_OBJECT:
         case STI_ARRAY:
         case STI_VECTOR256:
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
+            return Unexpected(HostFunctionError::NotLeafField);
 
         case STI_ACCOUNT: {
             auto const* account(static_cast<STAccount const*>(obj));  // NOLINT
@@ -125,7 +142,7 @@ static Expected<FieldValue, HostFunctionError>
 locateField(STObject const& obj, Slice const& locator)
 {
     if (locator.empty() || ((locator.size() & 3) != 0u))  // must be multiple of 4
-        return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
+        return Unexpected(HostFunctionError::LocatorMalformed);
 
     static_assert(maxWasmParamLength % sizeof(int32_t) == 0);
     int32_t locBuf[maxWasmParamLength / sizeof(int32_t)];
@@ -151,12 +168,12 @@ locateField(STObject const& obj, Slice const& locator)
         int32_t const sfieldCode = adjustWasmEndianess(locPtr[0]);
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
-            return Unexpected(HostFunctionError::INVALID_FIELD);
+            return Unexpected(HostFunctionError::InvalidField);
 
         auto const& fname(*it->second);
         field = obj.peekAtPField(fname);
         if (noField(field))
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+            return Unexpected(HostFunctionError::FieldNotFound);
     }
 
     for (int i = 1; i < locSize; ++i)
@@ -167,7 +184,7 @@ locateField(STObject const& obj, Slice const& locator)
         {
             auto const* arr = static_cast<STArray const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, arr->size()))
-                return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+                return Unexpected(HostFunctionError::IndexOutOfBounds);
             field = &(arr->operator[](sfieldCode));
         }
         else if (STI_OBJECT == field->getSType())
@@ -176,7 +193,7 @@ locateField(STObject const& obj, Slice const& locator)
 
             auto const it = knownSFields.find(sfieldCode);
             if (it == knownSFields.end())
-                return Unexpected(HostFunctionError::INVALID_FIELD);
+                return Unexpected(HostFunctionError::InvalidField);
 
             auto const& fname(*it->second);
             field = o->peekAtPField(fname);
@@ -185,16 +202,16 @@ locateField(STObject const& obj, Slice const& locator)
         {
             auto const* v = static_cast<STVector256 const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, v->size()))
-                return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+                return Unexpected(HostFunctionError::IndexOutOfBounds);
             return FieldValue(&(v->operator[](sfieldCode)));
         }
         else  // simple field must be the last one
         {
-            return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
+            return Unexpected(HostFunctionError::LocatorMalformed);
         }
 
         if (noField(field))
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+            return Unexpected(HostFunctionError::FieldNotFound);
     }
 
     return FieldValue(field);
@@ -212,19 +229,19 @@ getArrayLen(FieldValue const& variantField)
     }
     // uint256 is not an array so that variant should still return NO_ARRAY
 
-    return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::NoArray);  // LCOV_EXCL_LINE
 }
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
-    if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    if (cacheIdx < 0 || cacheIdx > maxCache)
+        return Unexpected(HostFunctionError::SlotOutRange);
 
     if (cacheIdx == 0)
     {
-        for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
+        for (cacheIdx = 0; cacheIdx < maxCache; ++cacheIdx)
         {
             if (!cache_[cacheIdx])
                 break;
@@ -235,12 +252,12 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
         cacheIdx--;  // convert to 0-based index
     }
 
-    if (cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOTS_FULL);
+    if (cacheIdx >= maxCache)
+        return Unexpected(HostFunctionError::SlotsFull);
 
     cache_[cacheIdx] = ctx_.view().read(keylet);
     if (!cache_[cacheIdx])
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        return Unexpected(HostFunctionError::LedgerObjNotFound);
     return cacheIdx + 1;  // return 1-based index
 }
 
@@ -316,11 +333,11 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getTxArrayLen(SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NoArray);
 
     auto const* field = ctx_.tx.peekAtPField(fname);
     if (noField(field))
-        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+        return Unexpected(HostFunctionError::FieldNotFound);
 
     return getArrayLen(field);
 }
@@ -329,7 +346,7 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NoArray);
 
     auto const sle = getCurrentLedgerObj();
     if (!sle.has_value())
@@ -337,7 +354,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname) const
 
     auto const* field = sle.value()->peekAtPField(fname);
     if (noField(field))
-        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+        return Unexpected(HostFunctionError::FieldNotFound);
 
     return getArrayLen(field);
 }
@@ -346,7 +363,7 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NoArray);
 
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -354,7 +371,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fnam
 
     auto const* field = cache_[normalizedIdx.value()]->peekAtPField(fname);
     if (noField(field))
-        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+        return Unexpected(HostFunctionError::FieldNotFound);
 
     return getArrayLen(field);
 }
