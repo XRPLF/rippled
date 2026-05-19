@@ -165,8 +165,8 @@ InnerObjectFormats::InnerObjectFormats()
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats const kINSTANCE;
-    return kINSTANCE;
+    static InnerObjectFormats const kInstance;
+    return kInstance;
 }
 
 SOTemplate const*

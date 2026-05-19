@@ -1,0 +1,23 @@
+Source: xrpld
+Section: net
+Priority: optional
+Maintainer: XRPL Foundation <contact@xrplf.org>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/XRPLF/rippled
+Vcs-Git: https://github.com/XRPLF/rippled.git
+Vcs-Browser: https://github.com/XRPLF/rippled
+
+Package: xrpld
+Section: net
+Priority: optional
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
+Description: XRP Ledger daemon
+ Reference implementation of the XRP Ledger protocol.
+ Participates in the peer-to-peer network, processes transactions,
+ and maintains a local ledger copy.

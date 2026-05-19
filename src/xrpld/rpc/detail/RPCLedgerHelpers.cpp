@@ -36,7 +36,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
     if (standalone)
         return false;
 
-    return ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE;
+    return ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge;
 }
 
 template <class T>
@@ -304,9 +304,9 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
             return {RpcNotSynced, "notSynced"};
         }
 
-        static auto const kMIN_SEQUENCE_GAP = 10;
+        static auto const kMinSequenceGap = 10;
 
-        if (ledger->header().seq + kMIN_SEQUENCE_GAP < context.ledgerMaster.getValidLedgerIndex())
+        if (ledger->header().seq + kMinSequenceGap < context.ledgerMaster.getValidLedgerIndex())
         {
             ledger.reset();
             if (context.apiVersion == 1)
@@ -342,7 +342,7 @@ getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 // In the absence of the "ledger_hash" or "ledger_index" parameters, the code
 // assumes that "ledger_index" has the value "current".
 //
-// Returns a json::objectValue.  If there was an error, it will be in that
+// Returns a json::ValueType::Object.  If there was an error, it will be in that
 // return value.  Otherwise, the object contains the field "validated" and
 // optionally the fields "ledger_hash", "ledger_index" and
 // "ledger_current_index", if they are defined.
@@ -401,18 +401,18 @@ getOrAcquireLedger(RPC::JsonContext const& context)
 
     if (hasHash)
     {
-        auto const& jsonHash = context.params.get(jss::ledger_hash, json::NullValue);
+        auto const& jsonHash = context.params.get(jss::ledger_hash, json::ValueType::Null);
         if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
             return Unexpected(RPC::expectedFieldError(jss::ledger_hash, "hex string"));
     }
     else
     {
-        auto const& jsonIndex = context.params.get(jss::ledger_index, json::NullValue);
+        auto const& jsonIndex = context.params.get(jss::ledger_index, json::ValueType::Null);
         if (!jsonIndex.isInt() && !jsonIndex.isUInt())
             return Unexpected(RPC::expectedFieldError(jss::ledger_index, "number"));
 
         // We need a validated ledger to get the hash from the sequence
-        if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
+        if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return Unexpected(rpcError(RpcNoCurrent));
@@ -471,7 +471,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         XRPL_ASSERT(neededHash, "xrpl::RPC::getOrAcquireLedger : nonzero needed hash");
-        ledgerHash = neededHash ? *neededHash : beast::kZERO;  // kludge
+        ledgerHash = neededHash ? *neededHash : beast::kZero;  // kludge
     }
 
     // Try to get the desired ledger
