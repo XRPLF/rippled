@@ -1312,10 +1312,14 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);
 
             BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
+            auto const messages = sink.messages().str();
             if (!expectedLog.empty())
             {
-                auto const messages = sink.messages().str();
                 BEAST_EXPECTS(messages.find(expectedLog) != std::string::npos, expectedLog);
+            }
+            else
+            {
+                BEAST_EXPECTS(messages.empty(), messages);
             }
         };
 

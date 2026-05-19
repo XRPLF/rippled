@@ -188,26 +188,27 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal 
             return false;
         // LCOV_EXCL_STOP
     }
-    else if (isTesSuccess(res))
+    if (!enforceNew)
+        return true;
+
+    if (isTesSuccess(res))
     {
         if (!ammDeleted_)
         {
             // LCOV_EXCL_START
             JLOG(j.error())
                 << "AMMDelete invariant failed: AMM object is not deleted on tesSUCCESS";
-            if (enforceNew)
-                return false;
+            return false;
             // LCOV_EXCL_STOP
         }
         // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceOnDelete_ is set with
         // ammDeleted_ in visitEntry
-        else if (*lptAMMBalanceOnDelete_ != beast::kZero)
+        if (*lptAMMBalanceOnDelete_ != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j.error()) << "AMMDelete invariant failed: AMM deleted with non-zero LP balance: "
                             << *lptAMMBalanceOnDelete_;
-            if (enforceNew)
-                return false;
+            return false;
             // LCOV_EXCL_STOP
         }
         // NOLINTEND(bugprone-unchecked-optional-access)
@@ -217,8 +218,7 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal 
         // AMM should not be fully deleted on tecINCOMPLETE
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMDelete invariant failed: AMM object is deleted on tecINCOMPLETE";
-        if (enforceNew)
-            return false;
+        return false;
         // LCOV_EXCL_STOP
     }
 
@@ -359,7 +359,7 @@ ValidAMM::finalize(
     bool const enforceNew = view.rules().enabled(fixCleanup3_2_0);
 
     // AMM can only be deleted by AMMWithdraw, AMMClawback, and AMMDelete
-    if (ammDeleted_)
+    if (enforceNew && ammDeleted_)
     {
         switch (tx.getTxnType())
         {
@@ -371,8 +371,7 @@ ValidAMM::finalize(
                 // LCOV_EXCL_START
                 JLOG(j.error()) << "AMM invariant failed: unexpected AMM deletion by "
                                 << tx.getTxnType();
-                if (enforceNew)
-                    return false;
+                return false;
                 // LCOV_EXCL_STOP
         }
     }
