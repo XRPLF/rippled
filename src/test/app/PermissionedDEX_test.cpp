@@ -2,6 +2,7 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
@@ -967,11 +968,15 @@ class PermissionedDEX_test : public beast::unit_test::suite
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
-        auto const EUR = gw["EUR"];
+        auto const eur = gw["EUR"];
+        auto const withDomain = [&](Json::Value jv) {
+            jv[sfDomainID.jsonName] = to_string(domainID);
+            return jv;
+        };
 
-        env.trust(EUR(1000), bob, domainOwner);
+        env.trust(eur(1000), bob, domainOwner);
         env.close();
-        env(pay(gw, bob, EUR(100)));
+        env(pay(gw, bob, eur(100)));
         env.close();
 
         env(pay(gw, alice, USD(500)));
@@ -983,15 +988,15 @@ class PermissionedDEX_test : public beast::unit_test::suite
         AMM const amm(env, alice, XRP(10), USD(500));
 
         auto const directOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), USD(10)), domain(domainID));
+        env(withDomain(offer(bob, XRP(10), USD(10))));
         env.close();
 
         auto const xrpEurOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), EUR(20)), domain(domainID));
+        env(withDomain(offer(bob, XRP(10), eur(20))));
         env.close();
 
         auto const eurUsdOfferSeq{env.seq(domainOwner)};
-        env(offer(domainOwner, EUR(20), USD(20)), domain(domainID));
+        env(withDomain(offer(domainOwner, eur(20), USD(20))));
         env.close();
 
         auto const carolBalBefore = env.balance(carol, USD);
@@ -1001,12 +1006,13 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // but crossing can only consume the 1:1 LOB offer. With the fix, the
         // direct book is ranked by its domain LOB quality, so the 2:1
         // XRP->EUR->USD path executes first.
-        env(pay(alice, carol, USD(100)),
-            path(~USD),
-            path(~EUR, ~USD),
-            sendmax(XRP(10)),
-            txflags(tfPartialPayment | tfNoRippleDirect),
-            domain(domainID));
+        auto payment = withDomain(pay(alice, carol, USD(100)));
+        auto const pathSet = ::xrpl::test::PathSet(
+            ::xrpl::test::Path(USD.issue()), ::xrpl::test::Path(eur.issue(), USD.issue()));
+        payment[sfPaths.jsonName] = pathSet.paths.getJson(JsonOptions::none);
+        payment[sfSendMax.jsonName] = XRP(10).value().getJson(JsonOptions::none);
+        payment[sfFlags.jsonName] = tfPartialPayment | tfNoRippleDirect;
+        env(payment);
         env.close();
 
         auto const delivered = env.balance(carol, USD) - carolBalBefore;
@@ -1023,8 +1029,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             BEAST_EXPECT(delivered == USD(10));
 
             BEAST_EXPECT(!offerExists(env, bob, directOfferSeq));
-            BEAST_EXPECT(checkOffer(env, bob, xrpEurOfferSeq, XRP(10), EUR(20), 0, true));
-            BEAST_EXPECT(checkOffer(env, domainOwner, eurUsdOfferSeq, EUR(20), USD(20), 0, true));
+            BEAST_EXPECT(checkOffer(env, bob, xrpEurOfferSeq, XRP(10), eur(20), 0, true));
+            BEAST_EXPECT(checkOffer(env, domainOwner, eurUsdOfferSeq, eur(20), USD(20), 0, true));
         }
 
         auto [xrp, usd, lpt] = amm.balances(XRP, USD);
