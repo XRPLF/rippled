@@ -183,11 +183,6 @@ TEST(NodeStoreDatabase, MemoryEarliestSeq)
         auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
         EXPECT_EQ(db->earliestLedgerSeq(), 1u);
     }
-
-    // Note: the legacy beast test had a fourth sub-case that expected a
-    // "earliest_seq set more than once" runtime_error. That check was removed
-    // from production in commit a02d91409 (May 2019); the catch block has been
-    // unreachable since. Dropped from the port to avoid carrying dead tests.
 }
 
 class DatabaseImportTest : public ::testing::TestWithParam<std::string>
