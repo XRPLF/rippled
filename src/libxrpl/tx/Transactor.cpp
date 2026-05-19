@@ -575,7 +575,17 @@ Transactor::payFee()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const feeAmountAfter = sle->getFieldAmount(payer.balanceField) - feePaid;
-    sle->at(payer.balanceField) =  feeAmountAfter;
+
+    if (feeAmountAfter == beast::kZero && payer.balanceField == sfFeeAmount)
+    {
+        // Because ltSponsorship.sfFeeAmount is soeOptional
+        sle->makeFieldAbsent(payer.balanceField);
+    }
+    else
+    {
+        sle->setFieldAmount(payer.balanceField, feeAmountAfter);
+    }
+
     view().update(sle);
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
@@ -1273,7 +1283,7 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     auto const feeAmountAfter = balance - fee;
-    if (feeAmountAfter == beast::kZERO && payer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::kZero && payer.balanceField == sfFeeAmount)
     {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         payerSle->makeFieldAbsent(payer.balanceField);

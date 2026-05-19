@@ -454,8 +454,7 @@ doWithdraw(
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
-    return accountSend(
-        view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
+    return accountSend(view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER

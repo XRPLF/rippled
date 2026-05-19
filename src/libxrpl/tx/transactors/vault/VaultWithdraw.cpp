@@ -257,7 +257,13 @@ VaultWithdraw::doApply()
 
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, sharesRedeemed, j_, *sponsorSle, WaiveTransferFee::Yes);
+            view(),
+            accountID_,
+            vaultAccount,
+            sharesRedeemed,
+            j_,
+            *sponsorSle,
+            WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

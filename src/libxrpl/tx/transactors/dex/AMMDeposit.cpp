@@ -669,7 +669,8 @@ AMMDeposit::deposit(
     }
 
     // Deposit LP tokens
-    res = accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal, *sponsorSle);
+    res =
+        accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal, *sponsorSle);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";

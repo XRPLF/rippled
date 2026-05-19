@@ -129,7 +129,7 @@ Payment::preflight(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featureSponsor))
             return temDISABLED;
 
-        if (tx.isFlag(tfNoRippleDirect) || tx.isFlag(tfPartialPayment) ||  tx.isFlag(tfLimitQuality))
+        if (tx.isFlag(tfNoRippleDirect) || tx.isFlag(tfPartialPayment) || tx.isFlag(tfLimitQuality))
             return temINVALID_FLAG;
 
         if (!dstAmount.native())
@@ -355,7 +355,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        if (tx.isFlag(tfSponsorCreatedAccount))
+        if (ctx.tx.isFlag(tfSponsorCreatedAccount))
         {
             // The minimum amount when creating a Sponsored Account is 1 drop.
             // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment
@@ -379,11 +379,10 @@ Payment::preclaim(PreclaimContext const& ctx)
         // The tfSponsorCreatedAccount flag is specific to account creation via
         // sponsorship. If the destination account already exists, applying this
         // flag is invalid.
-        if (tx.isFlag(tfSponsorCreatedAccount))
+        if (ctx.tx.isFlag(tfSponsorCreatedAccount))
             return tecNO_SPONSOR_PERMISSION;
 
-        if (sleDst->isFlag(lsfRequireDestTag) &&
-            !ctx.tx.isFieldPresent(sfDestinationTag))
+        if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -457,9 +456,9 @@ Payment::doApply()
         sleDst->setFieldU32(sfSequence, view().seq());
         sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
-        if ((txFlags & tfSponsorCreatedAccount) != 0u)
+        if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
         {
-            auto const sponsor = view().peek(keylet::account(account_));
+            auto const sponsor = view().peek(keylet::account(accountID_));
             if (!sponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
@@ -467,7 +466,7 @@ Payment::doApply()
             if (currentSponsoringAccountCount == std::numeric_limits<std::uint32_t>::max())
             {
                 JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
-                                 << to_string(account_);
+                                 << to_string(accountID_);
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);

@@ -4606,14 +4606,14 @@ public:
         // IOU/IOU, XRP/IOU, IOU/XRP offers have TickSize logic unchanged
         // IOU/MPT, MPT/IOU have TickSize logic applied to adjust IOU only
         std::vector<TestInfo> const tests = {
-            {.toAsset1=getIOU, .toAsset2=getIOU, .val1=10, .val2=30},
-            {.toAsset1=getIOU, .toAsset2=getXRP, .val1=10, .val2=30'000'000},
-            {.toAsset1=getXRP, .toAsset2=getIOU, .val1=10'000'000, .val2=30},
-            {.toAsset1=getMPT, .toAsset2=getXRP, .val1=10'000'000, .val2=30'000'000},
-            {.toAsset1=getXRP, .toAsset2=getMPT, .val1=10'000'000, .val2=30'000'000},
-            {.toAsset1=getIOU, .toAsset2=getMPT, .val1=10, .val2=30'000'000},
-            {.toAsset1=getMPT, .toAsset2=getIOU, .val1=10'000'000, .val2=30},
-            {.toAsset1=getMPT, .toAsset2=getMPT, .val1=10'000'000, .val2=30'000'000}};
+            {.toAsset1 = getIOU, .toAsset2 = getIOU, .val1 = 10, .val2 = 30},
+            {.toAsset1 = getIOU, .toAsset2 = getXRP, .val1 = 10, .val2 = 30'000'000},
+            {.toAsset1 = getXRP, .toAsset2 = getIOU, .val1 = 10'000'000, .val2 = 30},
+            {.toAsset1 = getMPT, .toAsset2 = getXRP, .val1 = 10'000'000, .val2 = 30'000'000},
+            {.toAsset1 = getXRP, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000},
+            {.toAsset1 = getIOU, .toAsset2 = getMPT, .val1 = 10, .val2 = 30'000'000},
+            {.toAsset1 = getMPT, .toAsset2 = getIOU, .val1 = 10'000'000, .val2 = 30},
+            {.toAsset1 = getMPT, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000}};
         for (TestInfo const& t : tests)
         {
             Env env{*this, features};

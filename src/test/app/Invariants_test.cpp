@@ -348,7 +348,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 sleA1->setFieldU32(sfSponsoredOwnerCount, 1);
 
                 ac.view().erase(sleA1);
@@ -364,7 +364,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 sleA1->setFieldU32(sfSponsoringOwnerCount, 1);
 
                 ac.view().erase(sleA1);
@@ -381,7 +381,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1Id));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 sleA1->setFieldU32(sfSponsoringAccountCount, 1);
 
                 ac.view().erase(sleA1);
@@ -397,7 +397,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
                     return false;
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 sleA1->setAccountID(sfSponsor, a2.id());
 
                 ac.view().erase(sleA1);

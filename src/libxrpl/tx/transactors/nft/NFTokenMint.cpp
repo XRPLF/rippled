@@ -343,11 +343,11 @@ NFTokenMint::doApply()
     if (auto const ownerCountAfter =
             view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
-    {        
+    {
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
                 ctx_.tx,
-                view().read(keylet::account(account_)),
+                view().read(keylet::account(accountID_)),
                 preFeeBalance_,
                 *sponsorSle,
                 0,

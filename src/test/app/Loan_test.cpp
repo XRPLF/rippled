@@ -6882,7 +6882,7 @@ protected:
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{.issuer=issuer, .credType=credType}};
+        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -6985,7 +6985,7 @@ protected:
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{.issuer=issuer, .credType=credType}};
+        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 

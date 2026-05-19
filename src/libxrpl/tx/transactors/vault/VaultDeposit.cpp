@@ -256,13 +256,7 @@ VaultDeposit::doApply()
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
-            view(),
-            accountID_,
-            vaultAccount,
-            assetsDeposited,
-            j_,
-            {},
-            WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, assetsDeposited, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -287,7 +281,13 @@ VaultDeposit::doApply()
 
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
-            view(), vaultAccount, accountID_, sharesCreated, j_, *sponsorSle, WaiveTransferFee::Yes);
+            view(),
+            vaultAccount,
+            accountID_,
+            sharesCreated,
+            j_,
+            *sponsorSle,
+            WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
