@@ -979,7 +979,7 @@ public:
             MPT const usd1 = MPTTester({.env = env1, .issuer = gw, .holders = {alice}});
             auto const err = feature[fixCleanup3_2_0] ? temBAD_AMOUNT : temBAD_OFFER;
             env1(offer(alice, -usd1(1'000), XRP(1'000)), Ter(err));
-            env.require(Owners(alice, 1), offers(alice, 0));
+            env1.require(Owners(alice, 1), offers(alice, 0));
         }
 
         // Bad MPT
