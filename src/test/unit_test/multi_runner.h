@@ -90,8 +90,8 @@ class MultiRunnerBase
         std::atomic<std::size_t> jobIndex{0};
         std::atomic<std::size_t> testIndex{0};
         std::atomic<bool> anyFailedFlag{false};
-        // A parent process will periodically increment `keep_alive_`. The child
-        // processes will check if `keep_alive_` is being incremented. If it is
+        // A parent process will periodically increment `keepAlive`. The child
+        // processes will check if `keepAlive` is being incremented. If it is
         // not incremented for a sufficiently long time, the child will assume
         // the parent process has died.
         std::atomic<std::size_t> keepAlive{0};
