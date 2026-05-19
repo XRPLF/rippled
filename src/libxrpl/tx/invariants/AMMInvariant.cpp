@@ -231,7 +231,8 @@ ValidAMM::generalInvariant(
     // reached when the strong check passes or the weak check saves it.
     auto weakInvariantCheck = [&]() {
         return *lptAMMBalanceAfter_ != beast::kZero &&
-            withinRelativeDistance(poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});
+            withinRelativeDistance(
+                poolProductMean, Number{*lptAMMBalanceAfter_}, kAMMInvariantRelativeTolerance);
     };
     if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
     {

@@ -458,7 +458,8 @@ checkAMMPrecisionLoss(
         return tesSUCCESS;
     // Strong check failed. Allow the same relative tolerance as the invariant
     // checker's weak check. Only return tecPRECISION_LOSS when both fail.
-    if (withinRelativeDistance(poolProductMean, Number{newLPTokenBalance}, Number{1, -11}))
+    if (withinRelativeDistance(
+            poolProductMean, Number{newLPTokenBalance}, kAMMInvariantRelativeTolerance))
         return tesSUCCESS;
     return tecPRECISION_LOSS;
 }

@@ -36,6 +36,8 @@ reduceOffer(auto const& amount)
 
 enum class IsDeposit : bool { No = false, Yes = true };
 
+inline Number const kAMMInvariantRelativeTolerance{1, -11};
+
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve
