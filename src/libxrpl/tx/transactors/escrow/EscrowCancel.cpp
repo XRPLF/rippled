@@ -100,6 +100,8 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 
         AccountID const account = (*slep)[sfAccount];
         STAmount const amount = (*slep)[sfAmount];
+        if (!isLegalMPTAmount(ctx.view.rules(), amount))
+            return temBAD_AMOUNT;
 
         if (!isXRP(amount))
         {

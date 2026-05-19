@@ -62,7 +62,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
 
         // This should be redundant
-        if (!isLegalNet(*amount))
+        if (!isLegalNet(ctx.rules, *amount))
             return temBAD_AMOUNT;  // LCOV_EXCL_LINE
 
         if (!brokerID)

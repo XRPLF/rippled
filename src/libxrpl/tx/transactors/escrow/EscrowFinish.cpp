@@ -211,6 +211,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
         AccountID const dest = (*slep)[sfDestination];
         STAmount const amount = (*slep)[sfAmount];
+        if (!isLegalMPTAmount(ctx.view.rules(), amount))
+            return temBAD_AMOUNT;
 
         if (!isXRP(amount))
         {

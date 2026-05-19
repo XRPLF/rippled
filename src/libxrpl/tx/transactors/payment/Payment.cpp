@@ -151,7 +151,7 @@ Payment::preflight(PreflightContext const& ctx)
 
     bool const xrpDirect = srcAsset.native() && dstAsset.native();
 
-    if (!isLegalNet(dstAmount) || !isLegalNet(maxSourceAmount))
+    if (!isLegalNet(ctx.rules, dstAmount) || !isLegalNet(ctx.rules, maxSourceAmount))
         return temBAD_AMOUNT;
 
     auto const dstAccountID = tx.getAccountID(sfDestination);
@@ -239,7 +239,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
 
         auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::kZero)
+        if (!isLegalNet(ctx.rules, dMin) || dMin <= beast::kZero)
         {
             JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.cStr()
                             << " amount. " << dMin.getFullText();

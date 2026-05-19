@@ -11,18 +11,100 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 
 namespace xrpl {
+
+namespace {
+
+bool
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth = 0);
+
+bool
+hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth)
+{
+    return std::ranges::any_of(
+        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth); });
+}
+
+bool
+hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth)
+{
+    return std::ranges::any_of(
+        array, [&](STObject const& object) { return hasInvalidMPTAmount(rules, object, depth); });
+}
+
+bool
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth)
+{
+    if (depth > 10)
+        return false;  // LCOV_EXCL_LINE
+
+    if (auto const amount = dynamic_cast<STAmount const*>(&field))
+        return !isLegalMPTAmount(rules, *amount);
+
+    if (auto const object = dynamic_cast<STObject const*>(&field))
+        return hasInvalidMPTAmount(rules, *object, depth + 1);
+
+    if (auto const array = dynamic_cast<STArray const*>(&field))
+        return hasInvalidMPTAmount(rules, *array, depth + 1);
+
+    return false;
+}
+
+}  // namespace
+
+void
+ValidMPTAmounts::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (!isDelete && after)
+        afterEntries_.push_back(after);
+}
+
+bool
+ValidMPTAmounts::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    auto const& rules = view.rules();
+    if (!rules.enabled(fixCleanup3_2_0))
+        return true;
+
+    bool const badTx = hasInvalidMPTAmount(rules, tx);
+    bool const badLedgerEntry = std::ranges::any_of(
+        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(rules, *sle); });
+
+    if (badTx)
+    {
+        JLOG(j.fatal()) << "Invariant failed: transaction contains non-canonical MPT amount";
+    }
+    if (badLedgerEntry)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ledger entry contains non-canonical MPT amount";
+    }
+
+    return !badTx && !badLedgerEntry;
+}
 
 void
 ValidMPTIssuance::visitEntry(
