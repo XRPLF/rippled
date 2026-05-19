@@ -1,729 +1,245 @@
-#include <test/jtx/CheckMessageLogs.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
-#include <test/nodestore/TestBase.h>
-#include <test/unit_test/SuiteJournal.h>
-
-#include <xrpld/core/Config.h>
+#include <xrpl/nodestore/Database.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
-#include <xrpl/config/Constants.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/rdb/DatabaseCon.h>
+
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+#include <nodestore/TestBase.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <utility>
+#include <vector>
 
 namespace xrpl::NodeStore {
 
-class Database_test : public TestBase
+namespace {
+
+constexpr std::int64_t kSeedValue = 50;
+constexpr int kNumObjects = 2000;
+
+std::vector<std::string>
+allBackends()
 {
-    test::SuiteJournal journal_;
-
-public:
-    Database_test() : journal_("Database_test", *this)
-    {
-    }
-
-    void
-    testConfig()
-    {
-        testcase("Config");
-
-        using namespace xrpl::test;
-        using namespace xrpl::test::jtx;
-
-        auto const integrityWarning =
-            "reducing the data integrity guarantees from the "
-            "default [sqlite] behavior is not recommended for "
-            "nodes storing large amounts of history, because of the "
-            "difficulty inherent in rebuilding corrupted data.";
-        {
-            // defaults
-            Env env(*this);
-
-            auto const s = setupDatabaseCon(env.app().config());
-
-            if (BEAST_EXPECT(s.globalPragma->size() == 3))
-            {
-                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
-                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
-                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=file;");
-            }
-        }
-        {
-            // High safety level
-            DatabaseCon::Setup::globalPragma.reset();
-
-            bool found = false;
-            Env env = [&]() {
-                auto p = test::jtx::envconfig();
-                {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kSafetyLevel, "high");
-                }
-                p->ledgerHistory = 100'000'000;
-
-                return Env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
-            }();
-
-            BEAST_EXPECT(!found);
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.globalPragma->size() == 3))
-            {
-                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
-                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
-                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=file;");
-            }
-        }
-        {
-            // Low safety level
-            DatabaseCon::Setup::globalPragma.reset();
-
-            bool found = false;
-            Env env = [&]() {
-                auto p = test::jtx::envconfig();
-                {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kSafetyLevel, "low");
-                }
-                p->ledgerHistory = 100'000'000;
-
-                return Env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
-            }();
-
-            BEAST_EXPECT(found);
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.globalPragma->size() == 3))
-            {
-                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
-                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=off;");
-                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=memory;");
-            }
-        }
-        {
-            // Override individual settings
-            DatabaseCon::Setup::globalPragma.reset();
-
-            bool found = false;
-            Env env = [&]() {
-                auto p = test::jtx::envconfig();
-                {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kJournalMode, "off");
-                    section.set(Keys::kSynchronous, "extra");
-                    section.set(Keys::kTempStore, "default");
-                }
-
-                return Env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
-            }();
-
-            // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
-            BEAST_EXPECT(!found);
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.globalPragma->size() == 3))
-            {
-                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
-                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
-                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=default;");
-            }
-        }
-        {
-            // Override individual settings with large history
-            DatabaseCon::Setup::globalPragma.reset();
-
-            bool found = false;
-            Env env = [&]() {
-                auto p = test::jtx::envconfig();
-                {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kJournalMode, "off");
-                    section.set(Keys::kSynchronous, "extra");
-                    section.set(Keys::kTempStore, "default");
-                }
-                p->ledgerHistory = 50'000'000;
-
-                return Env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
-            }();
-
-            // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
-            BEAST_EXPECT(found);
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.globalPragma->size() == 3))
-            {
-                BEAST_EXPECT(s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
-                BEAST_EXPECT(s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
-                BEAST_EXPECT(s.globalPragma->at(2) == "PRAGMA temp_store=default;");
-            }
-        }
-        {
-            // Error: Mix safety_level and individual settings
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: "
-                "Configuration file may not define both \"safety_level\" and "
-                "\"journal_mode\"";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "low");
-                section.set(Keys::kJournalMode, "off");
-                section.set(Keys::kSynchronous, "extra");
-                section.set(Keys::kTempStore, "default");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Mix safety_level and one setting (gotta catch 'em all)
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Configuration file may "
-                "not define both \"safety_level\" and \"journal_mode\"";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "high");
-                section.set(Keys::kJournalMode, "off");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Mix safety_level and one setting (gotta catch 'em all)
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Configuration file may "
-                "not define both \"safety_level\" and \"synchronous\"";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "low");
-                section.set(Keys::kSynchronous, "extra");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Mix safety_level and one setting (gotta catch 'em all)
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Configuration file may "
-                "not define both \"safety_level\" and \"temp_store\"";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "high");
-                section.set(Keys::kTempStore, "default");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid value
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Invalid safety_level "
-                "value: slow";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSafetyLevel, "slow");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid value
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Invalid journal_mode "
-                "value: fast";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kJournalMode, "fast");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid value
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Invalid synchronous "
-                "value: instant";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kSynchronous, "instant");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid value
-            DatabaseCon::Setup::globalPragma.reset();
-            auto const expected =
-                "Failed to initialize SQL databases: Invalid temp_store "
-                "value: network";
-            bool found = false;
-
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kTempStore, "network");
-            }
-
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // N/A: Default values
-            Env env(*this);
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.txPragma.size() == 4))
-            {
-                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=4096;");
-                BEAST_EXPECT(s.txPragma.at(1) == "PRAGMA journal_size_limit=1582080;");
-                BEAST_EXPECT(s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
-                BEAST_EXPECT(s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
-            }
-        }
-        {
-            // Success: Valid values
-            Env env = [&]() {
-                auto p = test::jtx::envconfig();
-                {
-                    auto& section = p->section(Sections::kSqlite);
-                    section.set(Keys::kPageSize, "512");
-                    section.set(Keys::kJournalSizeLimit, "2582080");
-                }
-                return Env(*this, std::move(p));
-            }();
-            auto const s = setupDatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.txPragma.size() == 4))
-            {
-                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=512;");
-                BEAST_EXPECT(s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
-                BEAST_EXPECT(s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
-                BEAST_EXPECT(s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
-            }
-        }
-        {
-            // Error: Invalid values
-            auto const expected = "Invalid page_size. Must be between 512 and 65536.";
-            bool found = false;
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "256");
-            }
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid values
-            auto const expected = "Invalid page_size. Must be between 512 and 65536.";
-            bool found = false;
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "131072");
-            }
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-        {
-            // Error: Invalid values
-            auto const expected = "Invalid page_size. Must be a power of 2.";
-            bool found = false;
-            auto p = test::jtx::envconfig();
-            {
-                auto& section = p->section(Sections::kSqlite);
-                section.set(Keys::kPageSize, "513");
-            }
-            try
-            {
-                Env const env(
-                    *this,
-                    std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
-                fail();
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(found);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
-    void
-    testImport(
-        std::string const& destBackendType,
-        std::string const& srcBackendType,
-        std::int64_t seedValue)
-    {
-        DummyScheduler scheduler;
-
-        beast::TempDir const nodeDb;
-        Section srcParams;
-        srcParams.set(Keys::kType, srcBackendType);
-        srcParams.set(Keys::kPath, nodeDb.path());
-
-        // Create a batch
-        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
-
-        // Write to source db
-        {
-            std::unique_ptr<Database> src =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
-            storeBatch(*src, batch);
-        }
-
-        Batch copy;
-
-        {
-            // Re-open the db
-            std::unique_ptr<Database> src =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal_);
-
-            // Set up the destination database
-            beast::TempDir const destDb;
-            Section destParams;
-            destParams.set(Keys::kType, destBackendType);
-            destParams.set(Keys::kPath, destDb.path());
-
-            std::unique_ptr<Database> dest =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
-
-            testcase("import into '" + destBackendType + "' from '" + srcBackendType + "'");
-
-            // Do the import
-            dest->importDatabase(*src);
-
-            // Get the results of the import
-            fetchCopyOfBatch(*dest, &copy, batch);
-        }
-
-        // Canonicalize the source and destination batches
-        std::ranges::sort(batch, LessThan{});
-        std::ranges::sort(copy, LessThan{});
-        BEAST_EXPECT(areBatchesEqual(batch, copy));
-    }
-
-    //--------------------------------------------------------------------------
-
-    void
-    testNodeStore(
-        std::string const& type,
-        bool const testPersistence,
-        std::int64_t const seedValue,
-        int numObjsToTest = 2000)
-    {
-        DummyScheduler scheduler;
-
-        std::string const s = "NodeStore backend '" + type + "'";
-
-        testcase(s);
-
-        beast::TempDir const nodeDb;
-        Section nodeParams;
-        nodeParams.set(Keys::kType, type);
-        nodeParams.set(Keys::kPath, nodeDb.path());
-
-        beast::xor_shift_engine rng(seedValue);
-
-        // Create a batch
-        auto batch = createPredictableBatch(numObjsToTest, rng());
-
-        {
-            // Open the database
-            std::unique_ptr<Database> db =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
-
-            // Write the batch
-            storeBatch(*db, batch);
-
-            {
-                // Read it back in
-                Batch copy;
-                fetchCopyOfBatch(*db, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-
-            {
-                // Reorder and read the copy again
-                std::shuffle(batch.begin(), batch.end(), rng);
-                Batch copy;
-                fetchCopyOfBatch(*db, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-        }
-
-        if (testPersistence)
-        {
-            // Re-open the database without the ephemeral DB
-            std::unique_ptr<Database> db =
-                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
-
-            // Read it back in
-            Batch copy;
-            fetchCopyOfBatch(*db, &copy, batch);
-
-            // Canonicalize the source and destination batches
-            std::ranges::sort(batch, LessThan{});
-            std::ranges::sort(copy, LessThan{});
-            BEAST_EXPECT(areBatchesEqual(batch, copy));
-        }
-
-        if (type == "memory")
-        {
-            // Verify default earliest ledger sequence
-            {
-                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == kXrpLedgerEarliestSeq);
-            }
-
-            // Set an invalid earliest ledger sequence
-            try
-            {
-                nodeParams.set(Keys::kEarliestSeq, "0");
-                std::unique_ptr<Database> const db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(std::strcmp(e.what(), "Invalid earliest_seq") == 0);
-            }
-
-            {
-                // Set a valid earliest ledger sequence
-                nodeParams.set(Keys::kEarliestSeq, "1");
-                std::unique_ptr<Database> db = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-
-                // Verify database uses the earliest ledger sequence setting
-                BEAST_EXPECT(db->earliestLedgerSeq() == 1);
-            }
-
-            // Create another database that attempts to set the value again
-            try
-            {
-                // Set to default earliest ledger sequence
-                nodeParams.set(Keys::kEarliestSeq, std::to_string(kXrpLedgerEarliestSeq));
-                std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
-                    megabytes(4), scheduler, 2, nodeParams, journal_);
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(std::strcmp(e.what(), "earliest_seq set more than once") == 0);
-            }
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
-    void
-    run() override
-    {
-        std::int64_t const seedValue = 50;
-
-        testConfig();
-
-        testNodeStore("memory", false, seedValue);
-
-        // Persistent backend tests
-        {
-            testNodeStore("nudb", true, seedValue);
-
+    std::vector<std::string> types{"memory", "nudb"};
 #if XRPL_ROCKSDB_AVAILABLE
-            testNodeStore("rocksdb", true, seedValue);
+    types.emplace_back("rocksdb");
 #endif
-        }
+    return types;
+}
 
-        // Import tests
-        {
-            testImport("nudb", "nudb", seedValue);
-
+std::vector<std::string>
+persistentBackends()
+{
+    std::vector<std::string> types{"nudb"};
 #if XRPL_ROCKSDB_AVAILABLE
-            testImport("rocksdb", "rocksdb", seedValue);
+    types.emplace_back("rocksdb");
 #endif
+    return types;
+}
 
-#if XRPL_ENABLE_SQLITE_BACKEND_TESTS
-            testImport("sqlite", "sqlite", seedValue);
+std::vector<std::string>
+importBackends()
+{
+    std::vector<std::string> types{"nudb"};
+#if XRPL_ROCKSDB_AVAILABLE
+    types.emplace_back("rocksdb");
 #endif
-        }
-    }
+#ifdef XRPL_ENABLE_SQLITE_BACKEND_TESTS
+    types.push_back("sqlite");
+#endif
+    return types;
+}
+
+}  // namespace
+
+class NodeStoreDatabaseTest : public ::testing::TestWithParam<std::string>
+{
 };
 
-BEAST_DEFINE_TESTSUITE(Database, nodestore, xrpl);
+class NodeStoreDatabasePersistenceTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(NodeStoreDatabaseTest, StoreAndFetch)
+{
+    auto const type = GetParam();
+
+    DummyScheduler scheduler;
+    beast::TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", type);
+    nodeParams.set("path", nodeDb.path());
+
+    beast::Journal const journal(TestSink::instance());
+    beast::xor_shift_engine rng(kSeedValue);
+    auto batch = createPredictableBatch(kNumObjects, rng());
+
+    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+
+    storeBatch(*db, batch);
+
+    {
+        SCOPED_TRACE("read in original order");
+        Batch copy;
+        fetchCopyOfBatch(*db, &copy, batch);
+        EXPECT_TRUE(areBatchesEqual(batch, copy));
+    }
+
+    {
+        SCOPED_TRACE("read in shuffled order");
+        std::shuffle(batch.begin(), batch.end(), rng);
+        Batch copy;
+        fetchCopyOfBatch(*db, &copy, batch);
+        EXPECT_TRUE(areBatchesEqual(batch, copy));
+    }
+}
+
+TEST_P(NodeStoreDatabasePersistenceTest, RoundTrip)
+{
+    auto const type = GetParam();
+
+    DummyScheduler scheduler;
+    beast::TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", type);
+    nodeParams.set("path", nodeDb.path());
+
+    beast::Journal const journal(TestSink::instance());
+    beast::xor_shift_engine rng(kSeedValue);
+    auto batch = createPredictableBatch(kNumObjects, rng());
+
+    {
+        auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+        storeBatch(*db, batch);
+    }
+
+    // re-open without the ephemeral db
+    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+
+    Batch copy;
+    fetchCopyOfBatch(*db, &copy, batch);
+    std::ranges::sort(batch, LessThan{});
+    std::ranges::sort(copy, LessThan{});
+    EXPECT_TRUE(areBatchesEqual(batch, copy));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NodeStoreBackends,
+    NodeStoreDatabaseTest,
+    ::testing::ValuesIn(allBackends()),
+    [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
+
+INSTANTIATE_TEST_SUITE_P(
+    PersistentBackends,
+    NodeStoreDatabasePersistenceTest,
+    ::testing::ValuesIn(persistentBackends()),
+    [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
+
+TEST(NodeStoreDatabase, MemoryEarliestSeq)
+{
+    DummyScheduler scheduler;
+    beast::TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", "memory");
+    nodeParams.set("path", nodeDb.path());
+
+    beast::Journal const journal(TestSink::instance());
+
+    // default earliest ledger sequence
+    {
+        auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+        EXPECT_EQ(db->earliestLedgerSeq(), kXrpLedgerEarliestSeq);
+    }
+
+    // invalid earliest_seq value
+    {
+        nodeParams.set("earliest_seq", "0");
+        try
+        {
+            auto db =
+                Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+            FAIL() << "expected runtime_error for earliest_seq=0";
+        }
+        catch (std::runtime_error const& e)
+        {
+            EXPECT_STREQ(e.what(), "Invalid earliest_seq");
+        }
+    }
+
+    // valid earliest_seq value
+    {
+        nodeParams.set("earliest_seq", "1");
+        auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+        EXPECT_EQ(db->earliestLedgerSeq(), 1u);
+    }
+
+    // Note: the legacy beast test had a fourth sub-case that expected a
+    // "earliest_seq set more than once" runtime_error. That check was removed
+    // from production in commit a02d91409 (May 2019); the catch block has been
+    // unreachable since. Dropped from the port to avoid carrying dead tests.
+}
+
+class DatabaseImportTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(DatabaseImportTest, SameBackend)
+{
+    auto const type = GetParam();
+
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+
+    beast::TempDir const srcDir;
+    Section srcParams;
+    srcParams.set("type", type);
+    srcParams.set("path", srcDir.path());
+
+    auto batch = createPredictableBatch(kNumObjects, kSeedValue);
+
+    // write to source db
+    {
+        auto src = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal);
+        storeBatch(*src, batch);
+    }
+
+    Batch copy;
+    {
+        // re-open source and import into a fresh destination
+        auto src = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, srcParams, journal);
+
+        beast::TempDir const destDir;
+        Section destParams;
+        destParams.set("type", type);
+        destParams.set("path", destDir.path());
+
+        auto dest =
+            Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal);
+
+        dest->importDatabase(*src);
+        fetchCopyOfBatch(*dest, &copy, batch);
+    }
+
+    std::ranges::sort(batch, LessThan{});
+    std::ranges::sort(copy, LessThan{});
+    EXPECT_TRUE(areBatchesEqual(batch, copy));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ImportBackends,
+    DatabaseImportTest,
+    ::testing::ValuesIn(importBackends()),
+    [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
 }  // namespace xrpl::NodeStore

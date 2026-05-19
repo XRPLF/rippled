@@ -1,110 +1,98 @@
-#include <test/nodestore/TestBase.h>
-#include <test/unit_test/SuiteJournal.h>
+#include <xrpl/nodestore/Backend.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
-#include <xrpl/config/Constants.h>
-#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
+
+#include <gtest/gtest.h>
+#include <helpers/TestSink.h>
+#include <nodestore/TestBase.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace xrpl::NodeStore {
 
-// Tests the Backend interface
-//
-class Backend_test : public TestBase
+namespace {
+
+constexpr std::uint64_t kSeedValue = 50;
+constexpr int kNumObjects = 2000;
+
+std::vector<std::string>
+backendTypes()
 {
-public:
-    void
-    testBackend(std::string const& type, std::uint64_t const seedValue, int numObjsToTest = 2000)
-    {
-        DummyScheduler scheduler;
-
-        testcase("Backend type=" + type);
-
-        Section params;
-        beast::TempDir const tempDir;
-        params.set(Keys::kType, type);
-        params.set(Keys::kPath, tempDir.path());
-
-        beast::xor_shift_engine rng(seedValue);
-
-        // Create a batch
-        auto batch = createPredictableBatch(numObjsToTest, rng());
-
-        using beast::Severity;
-        test::SuiteJournal journal("Backend_test", *this);
-
-        {
-            // Open the backend
-            std::unique_ptr<Backend> backend =
-                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-            backend->open();
-
-            // Write the batch
-            storeBatch(*backend, batch);
-
-            {
-                // Read it back in
-                Batch copy;
-                fetchCopyOfBatch(*backend, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-
-            {
-                // Reorder and read the copy again
-                std::shuffle(batch.begin(), batch.end(), rng);
-                Batch copy;
-                fetchCopyOfBatch(*backend, &copy, batch);
-                BEAST_EXPECT(areBatchesEqual(batch, copy));
-            }
-        }
-
-        {
-            // Re-open the backend
-            std::unique_ptr<Backend> backend =
-                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-            backend->open();
-
-            // Read it back in
-            Batch copy;
-            fetchCopyOfBatch(*backend, &copy, batch);
-            // Canonicalize the source and destination batches
-            std::ranges::sort(batch, LessThan{});
-            std::ranges::sort(copy, LessThan{});
-            BEAST_EXPECT(areBatchesEqual(batch, copy));
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
-    void
-    run() override
-    {
-        std::uint64_t const seedValue = 50;
-
-        testBackend("nudb", seedValue);
-
+    std::vector<std::string> types{"nudb"};
 #if XRPL_ROCKSDB_AVAILABLE
-        testBackend("rocksdb", seedValue);
+    types.emplace_back("rocksdb");
 #endif
-
 #ifdef XRPL_ENABLE_SQLITE_BACKEND_TESTS
-        testBackend("sqlite", seedValue);
+    types.push_back("sqlite");
 #endif
-    }
+    return types;
+}
+
+}  // namespace
+
+class BackendTypeTest : public ::testing::TestWithParam<std::string>
+{
 };
 
-BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
+TEST_P(BackendTypeTest, RoundTrip)
+{
+    auto const type = GetParam();
+
+    DummyScheduler scheduler;
+    beast::TempDir const tempDir;
+    Section params;
+    params.set("type", type);
+    params.set("path", tempDir.path());
+
+    beast::xor_shift_engine rng(kSeedValue);
+    auto batch = createPredictableBatch(kNumObjects, rng());
+
+    beast::Journal const journal(TestSink::instance());
+
+    {
+        SCOPED_TRACE("write then read in order");
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+        backend->open();
+        storeBatch(*backend, batch);
+
+        Batch copy;
+        fetchCopyOfBatch(*backend, &copy, batch);
+        EXPECT_TRUE(areBatchesEqual(batch, copy));
+
+        std::shuffle(batch.begin(), batch.end(), rng);
+        Batch shuffledCopy;
+        fetchCopyOfBatch(*backend, &shuffledCopy, batch);
+        EXPECT_TRUE(areBatchesEqual(batch, shuffledCopy));
+    }
+
+    {
+        SCOPED_TRACE("re-open and verify persistence");
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+        backend->open();
+
+        Batch copy;
+        fetchCopyOfBatch(*backend, &copy, batch);
+        std::ranges::sort(batch, LessThan{});
+        std::ranges::sort(copy, LessThan{});
+        EXPECT_TRUE(areBatchesEqual(batch, copy));
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    BackendTypes,
+    BackendTypeTest,
+    ::testing::ValuesIn(backendTypes()),
+    [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
 }  // namespace xrpl::NodeStore
