@@ -314,24 +314,13 @@ ValidAMM::finalizeWithdraw(
     xrpl::STTx const& tx,
     xrpl::ReadView const& view,
     bool enforce,
-    bool enforceNew,
     beast::Journal const& j) const
 {
     if (ammDeleted_)
     {
-        // Last Withdraw or Clawback deleted AMM - verify empty state
-        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceOnDelete_ is set with
-        // ammDeleted_ in visitEntry
-        if (enforceNew && *lptAMMBalanceOnDelete_ != beast::kZero)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.error())
-                << "AMMWithdraw invariant failed: AMM deleted with non-zero LP balance: "
-                << *lptAMMBalanceOnDelete_;
-            return false;
-            // LCOV_EXCL_STOP
-        }
-        // NOLINTEND(bugprone-unchecked-optional-access)
+        // Last Withdraw or Clawback can delete the AMM. The deleted AMM entry's
+        // old LP balance is allowed to be non-zero because the transaction
+        // redeems those LP tokens and deletes the AMM in the same step.
     }
     else if (ammAccount_ && !generalInvariant(tx, view, ZeroAllowed::Yes, j))
     {
@@ -384,7 +373,7 @@ ValidAMM::finalize(
             return finalizeDeposit(tx, view, enforce, j);
         case ttAMM_CLAWBACK:
         case ttAMM_WITHDRAW:
-            return finalizeWithdraw(tx, view, enforce, enforceNew, j);
+            return finalizeWithdraw(tx, view, enforce, j);
         case ttAMM_BID:
             return finalizeBid(enforce, j);
         case ttAMM_VOTE:

@@ -1349,21 +1349,12 @@ class Invariants_test : public beast::unit_test::Suite
             !fixEnabled,
             fixEnabled ? "AMMDelete invariant failed: AMM object is deleted on tecINCOMPLETE" : "");
 
-        check(
-            ttAMM_WITHDRAW,
-            tesSUCCESS,
-            nonZeroLP,
-            !fixEnabled,
-            fixEnabled ? "AMMWithdraw invariant failed: AMM deleted with non-zero LP balance" : "");
-        check(
-            ttAMM_CLAWBACK,
-            tesSUCCESS,
-            nonZeroLP,
-            !fixEnabled,
-            fixEnabled ? "AMMWithdraw invariant failed: AMM deleted with non-zero LP balance" : "");
+        check(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        check(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
 
         check(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
         check(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        check(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
     }
 
     static std::shared_ptr<SLE>
