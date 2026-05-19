@@ -25,7 +25,7 @@ class Histogram
     // TODO: Consider logarithmic bins around expected median if this becomes
     // unscalable
     std::map<T, std::size_t, Compare> counts_;
-    std::size_t samples = 0;
+    std::size_t samples_ = 0;
 
 public:
     /** Insert an sample */
@@ -33,14 +33,14 @@ public:
     insert(T const& s)
     {
         ++counts_[s];
-        ++samples;
+        ++samples_;
     }
 
     /** The number of samples */
     [[nodiscard]] std::size_t
     size() const
     {
-        return samples;
+        return samples_;
     }
 
     /** The number of distinct samples (bins) */
@@ -69,7 +69,7 @@ public:
     avg() const
     {
         T tmp{};
-        if (samples == 0)
+        if (samples_ == 0)
             return tmp;
         // Since counts are sorted, shouldn't need to worry much about numerical
         // error
@@ -77,7 +77,7 @@ public:
         {
             tmp += bin * count;
         }
-        return tmp / samples;
+        return tmp / samples_;
     }
 
     /** Calculate the given percentile of the distribution.
@@ -90,7 +90,7 @@ public:
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t const pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples_);
 
         if (counts_.empty())
             return T{};

@@ -9,7 +9,7 @@
 
 namespace beast {
 
-class LexicalCast_test : public unit_test::suite
+class LexicalCast_test : public unit_test::Suite
 {
 public:
     template <class IntType>
@@ -24,7 +24,7 @@ public:
     testInteger(IntType in)
     {
         std::string s;
-        IntType out(in + 1);
+        IntType out = static_cast<IntType>(~in);  // Ensure out != in
 
         expect(lexicalCastChecked(s, in));
         expect(lexicalCastChecked(out, s));

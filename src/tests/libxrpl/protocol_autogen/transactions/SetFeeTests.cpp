@@ -21,7 +21,7 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFee"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFee"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -142,7 +142,7 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFeeFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFeeFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -255,7 +255,7 @@ TEST(TransactionsSetFeeTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -269,7 +269,7 @@ TEST(TransactionsSetFeeTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -283,7 +283,7 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testSetFeeNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testSetFeeNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

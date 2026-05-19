@@ -14,7 +14,7 @@
 
 namespace xrpl::test {
 
-class ManifestRPC_test : public beast::unit_test::suite
+class ManifestRPC_test : public beast::unit_test::Suite
 {
 public:
     void
