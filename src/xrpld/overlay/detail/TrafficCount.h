@@ -226,7 +226,7 @@ public:
     static std::string
     toString(Category cat)
     {
-        static std::unordered_map<Category, std::string> const kCATEGORY_MAP = {
+        static std::unordered_map<Category, std::string> const kCategoryMap = {
             {Category::Base, "overhead"},
             {Category::Cluster, "overhead_cluster"},
             {Category::Overlay, "overhead_overlay"},
@@ -284,7 +284,7 @@ public:
             {Category::RequestedTransactions, "requested_transactions"},
             {Category::Total, "total"}};
 
-        if (auto it = kCATEGORY_MAP.find(cat); it != kCATEGORY_MAP.end())
+        if (auto it = kCategoryMap.find(cat); it != kCategoryMap.end())
             return it->second;
 
         return "unknown";

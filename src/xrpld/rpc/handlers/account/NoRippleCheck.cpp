@@ -75,7 +75,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNO_RIPPLE_CHECK, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNoRippleCheck, context))
         return *err;
 
     bool transactions = false;
@@ -116,7 +116,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     json::Value& problems = (result["problems"] = json::ValueType::Array);
 
-    bool const bDefaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
+    bool const bDefaultRipple = sle->isFlag(lsfDefaultRipple);
 
     if (bDefaultRipple && !roleGateway)
     {
@@ -143,8 +143,7 @@ doNoRippleCheck(RPC::JsonContext& context)
             {
                 bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
-                bool const bNoRipple =
-                    ownedItem->getFieldU32(sfFlags) & (bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                bool const bNoRipple = ownedItem->isFlag(bLow ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;

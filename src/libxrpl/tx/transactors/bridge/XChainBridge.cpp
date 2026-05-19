@@ -131,7 +131,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if ((sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
+            if (sleAttestationSigningAccount->isFlag(lsfDisableMaster))
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -409,7 +409,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
+        if (sleDst->isFlag(lsfRequireDestTag) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -418,7 +418,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
-        if (!canBypassDepositAuth && ((sleDst->getFlags() & lsfDepositAuth) != 0u) &&
+        if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -982,7 +982,7 @@ applyCreateAccountAttestations(
     {
         return tecXCHAIN_ACCOUNT_CREATE_PAST;
     }
-    if (attBegin->createCount >= claimCount + kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS)
+    if (attBegin->createCount >= claimCount + kXbridgeMaxAccountCreateClaims)
     {
         // Limit the number of claims on the account
         return tecXCHAIN_ACCOUNT_CREATE_TOO_MANY;
@@ -1373,9 +1373,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const kROOT_ACCOUNT = calcAccountID(
+        static auto const kRootAccount = calcAccountID(
             generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
+        if (bridgeSpec.issuingChainDoor() != kRootAccount)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }
@@ -1429,7 +1429,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if ((sleIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
+        if (sleIssuer->isFlag(lsfAllowTrustLineClawback))
             return tecNO_PERMISSION;
     }
 
@@ -1515,7 +1515,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx.tx.isFlag(tfClearAccountCreateAmount);
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1573,7 +1573,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
+    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
@@ -1837,7 +1837,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
-        return XRPAmount{beast::kZERO};
+        return XRPAmount{beast::kZero};
     }();
 
     return TxConsequences{ctx.tx, maxSpend};
@@ -1931,7 +1931,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        .account = account_,
+        .account = accountID_,
         .preFeeBalance = preFeeBalance_,
         .postFeeBalance = (*sleAccount)[sfBalance]};
 
@@ -2215,7 +2215,9 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        .account = account_, .preFeeBalance = preFeeBalance_, .postFeeBalance = (*sle)[sfBalance]};
+        .account = accountID_,
+        .preFeeBalance = preFeeBalance_,
+        .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

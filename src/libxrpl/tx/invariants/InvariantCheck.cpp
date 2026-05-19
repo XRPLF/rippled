@@ -89,7 +89,7 @@ TransactionFeeCheck::finalize(
 
     // We should never charge a fee that's greater than or equal to the
     // entire XRP supply.
-    if (fee >= kINITIAL_XRP)
+    if (fee >= kInitialXrp)
     {
         JLOG(j.fatal()) << "Invariant failed: fee paid exceeds system limit: " << fee.drops();
         return false;
@@ -213,7 +213,7 @@ XRPBalanceChecks::visitEntry(
 
         // Can't have more than the number of drops instantiated
         // in the genesis ledger.
-        if (drops > kINITIAL_XRP)
+        if (drops > kInitialXrp)
             return true;
 
         // Can't have a negative balance (0 is OK)
@@ -257,10 +257,10 @@ NoBadOffers::visitEntry(
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
-        if (pays < beast::kZERO)
+        if (pays < beast::kZero)
             return true;
 
-        if (gets < beast::kZERO)
+        if (gets < beast::kZero)
             return true;
 
         // Can't have an XRP to XRP offer:
@@ -306,7 +306,7 @@ NoZeroEscrow::visitEntry(
             if (amount.xrp() <= XRPAmount{0})
                 return true;
 
-            if (amount.xrp() >= kINITIAL_XRP)
+            if (amount.xrp() >= kInitialXrp)
                 return true;
         }
         else
@@ -314,7 +314,7 @@ NoZeroEscrow::visitEntry(
             return amount.asset().visit(
                 [&](Issue const& issue) {
                     // IOU case
-                    if (amount <= beast::kZERO)
+                    if (amount <= beast::kZero)
                         return true;
 
                     if (badCurrency() == issue.currency)
@@ -326,10 +326,10 @@ NoZeroEscrow::visitEntry(
                 // MPT case
                 ,
                 [&](MPTIssue const&) {
-                    if (amount <= beast::kZERO)
+                    if (amount <= beast::kZero)
                         return true;
 
-                    if (amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT})
+                    if (amount.mpt() > MPTAmount{kMaxMpTokenAmount})
                         return true;  // LCOV_EXCL_LINE
 
                     return false;
@@ -345,7 +345,7 @@ NoZeroEscrow::visitEntry(
         bad_ |= isBad((*after)[sfAmount]);
 
     auto checkAmount = [this](std::int64_t amount) {
-        if (amount > kMAX_MP_TOKEN_AMOUNT || amount < 0)
+        if (amount > kMaxMpTokenAmount || amount < 0)
             bad_ |= true;
     };
 
@@ -509,7 +509,7 @@ AccountRootsDeletedClean::finalize(
     {
         auto const accountID = before->getAccountID(sfAccount);
         // An account should not be deleted with a balance
-        if (after->at(sfBalance) != beast::kZERO)
+        if (after->at(sfBalance) != beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: account deletion left "
                                "behind a non-zero balance";
@@ -547,7 +547,7 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
         // Simple types
-        for (auto const& [keyletfunc, _1, _2] : kDIRECT_ACCOUNT_KEYLETS)
+        for (auto const& [keyletfunc, _1, _2] : kDirectAccountKeylets)
         {
             // TODO: use '_' for both unused variables above once we are in C++26
             if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
@@ -697,12 +697,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-        std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
-        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
+        bool const lowFreeze = after->isFlag(lsfLowFreeze);
+        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze);
 
-        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
-        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
+        bool const highFreeze = after->isFlag(lsfHighFreeze);
+        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze);
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)
@@ -1021,9 +1020,7 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const kFIELD_CHANGED = [](auto const& before,
-                                          auto const& after,
-                                          auto const& field) {
+    static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
@@ -1044,17 +1041,17 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
-                    kFIELD_CHANGED(before, after, sfLedgerIndex) ||
-                    kFIELD_CHANGED(before, after, sfSequence) ||
-                    kFIELD_CHANGED(before, after, sfOwnerNode) ||
-                    kFIELD_CHANGED(before, after, sfVaultNode) ||
-                    kFIELD_CHANGED(before, after, sfVaultID) ||
-                    kFIELD_CHANGED(before, after, sfAccount) ||
-                    kFIELD_CHANGED(before, after, sfOwner) ||
-                    kFIELD_CHANGED(before, after, sfManagementFeeRate) ||
-                    kFIELD_CHANGED(before, after, sfCoverRateMinimum) ||
-                    kFIELD_CHANGED(before, after, sfCoverRateLiquidation);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfOwnerNode) ||
+                    kFieldChanged(before, after, sfVaultNode) ||
+                    kFieldChanged(before, after, sfVaultID) ||
+                    kFieldChanged(before, after, sfAccount) ||
+                    kFieldChanged(before, after, sfOwner) ||
+                    kFieldChanged(before, after, sfManagementFeeRate) ||
+                    kFieldChanged(before, after, sfCoverRateMinimum) ||
+                    kFieldChanged(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
                 /*
@@ -1063,26 +1060,26 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
-                    kFIELD_CHANGED(before, after, sfLedgerIndex) ||
-                    kFIELD_CHANGED(before, after, sfSequence) ||
-                    kFIELD_CHANGED(before, after, sfOwnerNode) ||
-                    kFIELD_CHANGED(before, after, sfLoanBrokerNode) ||
-                    kFIELD_CHANGED(before, after, sfLoanBrokerID) ||
-                    kFIELD_CHANGED(before, after, sfBorrower) ||
-                    kFIELD_CHANGED(before, after, sfLoanOriginationFee) ||
-                    kFIELD_CHANGED(before, after, sfLoanServiceFee) ||
-                    kFIELD_CHANGED(before, after, sfLatePaymentFee) ||
-                    kFIELD_CHANGED(before, after, sfClosePaymentFee) ||
-                    kFIELD_CHANGED(before, after, sfOverpaymentFee) ||
-                    kFIELD_CHANGED(before, after, sfInterestRate) ||
-                    kFIELD_CHANGED(before, after, sfLateInterestRate) ||
-                    kFIELD_CHANGED(before, after, sfCloseInterestRate) ||
-                    kFIELD_CHANGED(before, after, sfOverpaymentInterestRate) ||
-                    kFIELD_CHANGED(before, after, sfStartDate) ||
-                    kFIELD_CHANGED(before, after, sfPaymentInterval) ||
-                    kFIELD_CHANGED(before, after, sfGracePeriod) ||
-                    kFIELD_CHANGED(before, after, sfLoanScale);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex) ||
+                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfOwnerNode) ||
+                    kFieldChanged(before, after, sfLoanBrokerNode) ||
+                    kFieldChanged(before, after, sfLoanBrokerID) ||
+                    kFieldChanged(before, after, sfBorrower) ||
+                    kFieldChanged(before, after, sfLoanOriginationFee) ||
+                    kFieldChanged(before, after, sfLoanServiceFee) ||
+                    kFieldChanged(before, after, sfLatePaymentFee) ||
+                    kFieldChanged(before, after, sfClosePaymentFee) ||
+                    kFieldChanged(before, after, sfOverpaymentFee) ||
+                    kFieldChanged(before, after, sfInterestRate) ||
+                    kFieldChanged(before, after, sfLateInterestRate) ||
+                    kFieldChanged(before, after, sfCloseInterestRate) ||
+                    kFieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    kFieldChanged(before, after, sfStartDate) ||
+                    kFieldChanged(before, after, sfPaymentInterval) ||
+                    kFieldChanged(before, after, sfGracePeriod) ||
+                    kFieldChanged(before, after, sfLoanScale);
                 break;
             default:
                 /*
@@ -1095,8 +1092,8 @@ NoModifiedUnmodifiableFields::finalize(
                  * was added.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFIELD_CHANGED(before, after, sfLedgerEntryType) ||
-                    kFIELD_CHANGED(before, after, sfLedgerIndex);
+                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                    kFieldChanged(before, after, sfLedgerIndex);
         }
         XRPL_ASSERT(
             !bad || enforce,

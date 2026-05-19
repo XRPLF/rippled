@@ -246,7 +246,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::kZERO);
+            assert(delta > beast::kZero);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }
@@ -1916,7 +1916,7 @@ struct PayChan_test : public beast::unit_test::Suite
             STAmount const reqAmt = authAmt + drops(1);
             assert(reqAmt <= chanAmt);
             // Note that since claim() returns a tem (neither tec nor tes),
-            // the ticket is not consumed.  So we don't kINCREMENT bobTicket.
+            // the ticket is not consumed.  So we don't kIncrement bobTicket.
             auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()),
                 ticket::Use(bobTicketSeq),
@@ -1951,7 +1951,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::kZERO);
+            assert(delta > beast::kZero);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }

@@ -30,13 +30,13 @@ namespace xrpl {
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZERO)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::kZERO)
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -158,24 +158,24 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), ctx_.tx, mptIssuanceID, account_, preFeeBalance_, j_);
+                ctx_.view(), ctx_.tx, mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
-    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
+    else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
+        if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
                     view(),
                     ctx_.tx,
                     preFeeBalance_,
                     mptIssuanceID->value(),
-                    account_,
+                    accountID_,
                     ctx_.journal);
                 !isTesSuccess(err))
                 return err;
@@ -186,7 +186,7 @@ VaultDeposit::doApply()
         {
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
-                account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+                accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     ctx_.tx,
@@ -194,8 +194,8 @@ VaultDeposit::doApply()
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {},       // flags
-                    account_  // holderID
+                    {},         // flags
+                    accountID_  // holderID
                 );
                 !isTesSuccess(err))
                 return err;
@@ -212,7 +212,7 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::kZERO)
+        if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
@@ -257,7 +257,7 @@ VaultDeposit::doApply()
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
             view(),
-            account_,
+            accountID_,
             vaultAccount,
             assetsDeposited,
             j_,
@@ -269,11 +269,11 @@ VaultDeposit::doApply()
     // Sanity check
     if (accountHolds(
             view(),
-            account_,
+            accountID_,
             assetsDeposited.asset(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            j_) < beast::kZERO)
+            j_) < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
@@ -287,7 +287,7 @@ VaultDeposit::doApply()
 
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
-            view(), vaultAccount, account_, sharesCreated, j_, *sponsorSle, WaiveTransferFee::Yes);
+            view(), vaultAccount, accountID_, sharesCreated, j_, *sponsorSle, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

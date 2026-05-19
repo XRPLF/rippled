@@ -284,7 +284,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         STAmount const startBalance{XRP(1'000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
 
-        auto usdm = MPTTester({.env = env, .issuer = gw1, .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
+        auto usdm = MPTTester({.env = env, .issuer = gw1, .flags = kMptDexFlags | tfMPTCanLock});
         MPT const usd = usdm;
 
         // Bad fee.
@@ -350,7 +350,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Globally frozen asset.
             env.close();
             auto usfm =
-                MPTTester({.env = env, .issuer = gwF, .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
+                MPTTester({.env = env, .issuer = gwF, .flags = kMptDexFlags | tfMPTCanLock});
             MPT const usf = usfm;
             usfm.set({.flags = tfMPTLock});
 
@@ -664,7 +664,7 @@ class CheckMPT_test : public beast::unit_test::Suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
-                 .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth,
+                 .flags = kMptDexFlags | tfMPTRequireAuth,
                  .maxAmt = 20});
             MPT const usd = usdm;
             usdm.authorize({.holder = alice});
@@ -857,7 +857,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             {.env = env,
              .issuer = gw,
              .holders = {alice},
-             .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+             .flags = kMptDexFlags | tfMPTCanLock,
              .maxAmt = maxAmt});
         MPT const usd = usdm;
 
@@ -1423,7 +1423,7 @@ class CheckMPT_test : public beast::unit_test::Suite
                     Throw<std::runtime_error>("AccountOwns: must be issuer");
                 if (auto const& it = mpts.find(s); it != mpts.end())
                     return it->second[s];
-                auto flags = kMPT_DEX_FLAGS | tfMPTCanLock;
+                auto flags = kMptDexFlags | tfMPTCanLock;
                 if (requireAuth)
                     flags |= tfMPTRequireAuth;
                 auto [it, _] =

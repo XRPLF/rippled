@@ -48,7 +48,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     if (!brokerID && !amount)
         return temINVALID;
 
-    if (brokerID && *brokerID == beast::kZERO)
+    if (brokerID && *brokerID == beast::kZero)
         return temINVALID;
 
     if (amount)
@@ -58,7 +58,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
 
         // Zero is OK, and indicates "take it all" (down to the minimum cover)
-        if (*amount < beast::kZERO)
+        if (*amount < beast::kZero)
             return temBAD_AMOUNT;
 
         // This should be redundant
@@ -75,7 +75,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
             // broker's pseudo-account, but we don't know yet whether it is, so
             // use a generic placeholder name.
             auto const holder = amount->getIssuer();
-            if (holder == account || holder == beast::kZERO)
+            if (holder == account || holder == beast::kZero)
                 return temINVALID;
         }
     }
@@ -171,13 +171,13 @@ determineClawAmount(
         NumberRoundModeGuard const mg2(Number::RoundingMode::Downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
-    if (maxClawAmount <= beast::kZERO)
+    if (maxClawAmount <= beast::kZero)
         return Unexpected(tecINSUFFICIENT_FUNDS);
 
     // Use the vaultAsset here, because it will be the right type in all
     // circumstances. The amount may be an IOU indicating the pseudo-account's
     // asset, which is correct, but not what is needed here.
-    if (!amount || *amount == beast::kZERO)
+    if (!amount || *amount == beast::kZero)
         return STAmount{vaultAsset, maxClawAmount};
     Number const magnitude{*amount};
     if (magnitude > maxClawAmount)

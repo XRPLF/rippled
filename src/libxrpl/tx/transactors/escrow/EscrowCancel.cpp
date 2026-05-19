@@ -178,14 +178,14 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == account_;
+        bool const createAsset = account == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         ctx_.tx,
-                        kPARITY_RATE,
-                        slep,
+                        kParityRate,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,
                         amount,
                         issuer,

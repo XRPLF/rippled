@@ -97,7 +97,7 @@ private:
     bool needsUpdate_{false};
 
 public:
-    static constexpr int kSTATIC_VALENCE = 32;
+    static constexpr int kStaticValence = 32;
 
     using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
