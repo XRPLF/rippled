@@ -4,10 +4,16 @@
 # parse macro files and generate C++ wrapper classes.
 
 # C preprocessor for Python - used to preprocess macro files
-pcpp==1.30
+pcpp==1.30 \
+    --hash=sha256:05fe08292b6da57f385001c891a87f40d6aa7f46787b03e8ba326d20a3297c6e \
+    --hash=sha256:5af9fbce55f136d7931ae915fae03c34030a3b36c496e72d9636cedc8e2543a1
 
 # Parser combinator library - used to parse the macro DSL
-pyparsing==3.0.0
+pyparsing==3.3.2 \
+    --hash=sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d \
+    --hash=sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc
 
 # Template engine - used to generate C++ code from templates
-Mako==1.3.12
+Mako==1.3.12 \
+    --hash=sha256:8f61569480282dbf557145ce441e4ba888be453c30989f879f0d652e39f53ea9 \
+    --hash=sha256:9f778e93289bd410bb35daadeb4fc66d95a746f0b75777b942088b7fd7af550a
