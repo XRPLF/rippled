@@ -75,19 +75,19 @@ Results::add(SuiteResults const& r)
 
         if (iter != top.end())
         {
-            if (top.size() == kMAX_TOP && iter == top.end() - 1)
+            if (top.size() == kMaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
                 *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
-                if (top.size() == kMAX_TOP)
+                if (top.size() == kMaxTop)
                     top.resize(top.size() - 1);
                 top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
-        else if (top.size() < kMAX_TOP)
+        else if (top.size() < kMaxTop)
         {
             top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
@@ -103,14 +103,14 @@ Results::merge(Results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * kMAX_TOP> topResult;
+    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
     topResult.resize(top.size() + r.top.size());
     std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
         return t1.second > t2.second;
     });
 
-    if (topResult.size() > kMAX_TOP)
-        topResult.resize(kMAX_TOP);
+    if (topResult.size() > kMaxTop)
+        topResult.resize(kMaxTop);
 
     top = topResult;
 }
@@ -218,8 +218,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
 
         shared_mem_ = boost::interprocess::shared_memory_object{
@@ -227,7 +227,7 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            kSHARED_MEM_NAME,
+            kSharedMemName,
             boost::interprocess::read_write};
 
         if (IsParent)
@@ -235,14 +235,14 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
             shared_mem_.truncate(sizeof(Inner));
             message_queue_ = std::make_unique<boost::interprocess::message_queue>(
                 boost::interprocess::create_only,
-                kMESSAGE_QUEUE_NAME,
+                kMessageQueueName,
                 /*max messages*/ 16,
                 /*max message size*/ 1 << 20);
         }
         else
         {
             message_queue_ = std::make_unique<boost::interprocess::message_queue>(
-                boost::interprocess::open_only, kMESSAGE_QUEUE_NAME);
+                boost::interprocess::open_only, kMessageQueueName);
         }
 
         region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
@@ -259,8 +259,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
         throw;
     }
@@ -272,8 +272,8 @@ MultiRunnerBase<IsParent>::~MultiRunnerBase()
     if (IsParent)
     {
         inner_->~Inner();
-        boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
-        boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
+        boost::interprocess::shared_memory_object::remove(kSharedMemName);
+        boost::interprocess::message_queue::remove(kMessageQueueName);
     }
 }
 

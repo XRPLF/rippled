@@ -43,7 +43,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -73,7 +73,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
+    if (sleCred->isFlag(lsfAccepted))
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -89,7 +89,7 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(account_));
+    auto const sleSubject = view().peek(keylet::account(accountID_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
@@ -103,7 +103,7 @@ CredentialAccept::doApply()
     }
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE

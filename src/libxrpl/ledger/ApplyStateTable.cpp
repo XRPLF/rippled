@@ -169,7 +169,7 @@ ApplyStateTable::apply(
                 {
                     // go through the original node for
                     // modified  fields saved on modification
-                    if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
+                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -181,7 +181,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_DELETE_FINAL))
+                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdDeleteFinal))
                         finals.emplaceBack(obj);
                 }
 
@@ -205,7 +205,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *origNode)
                 {
                     // search the original node for values saved on modify
-                    if (obj.getFName().shouldMeta(SField::kSMD_CHANGE_ORIG) &&
+                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -217,7 +217,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(SField::kSMD_ALWAYS | SField::kSMD_CHANGE_NEW))
+                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdChangeNew))
                         finals.emplaceBack(obj);
                 }
 
@@ -240,7 +240,7 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(SField::kSMD_CREATE | SField::kSMD_ALWAYS))
+                        obj.getFName().shouldMeta(SField::kSmdCreate | SField::kSmdAlways))
                         news.emplaceBack(obj);
                 }
 

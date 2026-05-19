@@ -69,7 +69,7 @@ public:
               ioContext,
               gHttpClientSslContext->context())  // NOLINT(bugprone-unchecked-optional-access)
         , resolver_(ioContext)
-        , header_(kMAX_CLIENT_HEADER_BYTES)
+        , header_(kMaxClientHeaderBytes)
         , port_(port)
         , maxResponseSize_(maxResponseSize)
         , deadline_(ioContext)
@@ -372,14 +372,14 @@ public:
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex const kRE_STATUS{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
-        static boost::regex const kRE_SIZE{
+        static boost::regex const kReStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const kReSize{
             "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex const kRE_BODY{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+        static boost::regex const kReBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch smMatch;
         // Match status code.
-        if (!boost::regex_match(strHeader, smMatch, kRE_STATUS))
+        if (!boost::regex_match(strHeader, smMatch, kReStatus))
         {
             // XXX Use our own error code.
             JLOG(j_.trace()) << "No status code";
@@ -391,11 +391,11 @@ public:
 
         status_ = beast::lexicalCastThrow<int>(std::string(smMatch[1]));
 
-        if (boost::regex_match(strHeader, smMatch, kRE_BODY))  // we got some body
+        if (boost::regex_match(strHeader, smMatch, kReBody))  // we got some body
             body_ = smMatch[1];
 
         std::size_t const responseSize = [&] {
-            if (boost::regex_match(strHeader, smMatch, kRE_SIZE))
+            if (boost::regex_match(strHeader, smMatch, kReSize))
                 return beast::lexicalCast<std::size_t>(std::string(smMatch[1]), maxResponseSize_);
             return maxResponseSize_;
         }();

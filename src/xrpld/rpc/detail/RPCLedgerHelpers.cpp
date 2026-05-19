@@ -36,7 +36,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
     if (standalone)
         return false;
 
-    return ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE;
+    return ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge;
 }
 
 template <class T>
@@ -304,9 +304,9 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
             return {RpcNotSynced, "notSynced"};
         }
 
-        static auto const kMIN_SEQUENCE_GAP = 10;
+        static auto const kMinSequenceGap = 10;
 
-        if (ledger->header().seq + kMIN_SEQUENCE_GAP < context.ledgerMaster.getValidLedgerIndex())
+        if (ledger->header().seq + kMinSequenceGap < context.ledgerMaster.getValidLedgerIndex())
         {
             ledger.reset();
             if (context.apiVersion == 1)
@@ -412,7 +412,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             return Unexpected(RPC::expectedFieldError(jss::ledger_index, "number"));
 
         // We need a validated ledger to get the hash from the sequence
-        if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
+        if (ledgerMaster.getValidatedLedgerAge() > RPC::Tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return Unexpected(rpcError(RpcNoCurrent));
@@ -471,7 +471,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         XRPL_ASSERT(neededHash, "xrpl::RPC::getOrAcquireLedger : nonzero needed hash");
-        ledgerHash = neededHash ? *neededHash : beast::kZERO;  // kludge
+        ledgerHash = neededHash ? *neededHash : beast::kZero;  // kludge
     }
 
     // Try to get the desired ledger

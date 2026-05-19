@@ -55,7 +55,7 @@ struct STNumber_test : public beast::unit_test::Suite
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::kMIN_EXPONENT, -1, 0, 1, Number::kMAX_EXPONENT - 1};
+            Number::kMinExponent, -1, 0, 1, Number::kMaxExponent - 1};
         for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
@@ -128,23 +128,23 @@ struct STNumber_test : public beast::unit_test::Suite
                 }
             }
 
-            constexpr auto kIMIN = std::numeric_limits<int>::min();
-            BEAST_EXPECT(numberFromJson(sfNumber, kIMIN) == STNumber(sfNumber, Number(kIMIN, 0)));
+            constexpr auto kIMin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMin) == STNumber(sfNumber, Number(kIMin, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(kIMIN)) ==
-                STNumber(sfNumber, Number(kIMIN, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMin)) ==
+                STNumber(sfNumber, Number(kIMin, 0)));
 
-            constexpr auto kIMAX = std::numeric_limits<int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, kIMAX) == STNumber(sfNumber, Number(kIMAX, 0)));
+            constexpr auto kIMax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kIMax) == STNumber(sfNumber, Number(kIMax, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(kIMAX)) ==
-                STNumber(sfNumber, Number(kIMAX, 0)));
+                numberFromJson(sfNumber, std::to_string(kIMax)) ==
+                STNumber(sfNumber, Number(kIMax, 0)));
 
-            constexpr auto kUMAX = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(numberFromJson(sfNumber, kUMAX) == STNumber(sfNumber, Number(kUMAX, 0)));
+            constexpr auto kUMax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(numberFromJson(sfNumber, kUMax) == STNumber(sfNumber, Number(kUMax, 0)));
             BEAST_EXPECT(
-                numberFromJson(sfNumber, std::to_string(kUMAX)) ==
-                STNumber(sfNumber, Number(kUMAX, 0)));
+                numberFromJson(sfNumber, std::to_string(kUMax)) ==
+                STNumber(sfNumber, Number(kUMax, 0)));
 
             // Obvious non-numbers tested here
             try

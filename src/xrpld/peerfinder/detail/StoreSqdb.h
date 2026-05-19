@@ -15,7 +15,7 @@ private:
     soci::session sqlDb_;
 
 public:
-    static constexpr auto kCURRENT_SCHEMA_VERSION = 4;  // on-database format version
+    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : journal_(journal)
@@ -68,7 +68,7 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(sqlDb_, kCURRENT_SCHEMA_VERSION, journal_);
+        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
     }
 
 private:
