@@ -46,7 +46,7 @@ jobs:
         # that Github considers any skipped jobs to have passed, and in
         # turn the required checks as well.
         id: changes
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             # These paths are unique to `on-pr.yml`.
@@ -58,20 +58,19 @@ jobs:
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
-            .github/actions/build-test/**
             .github/actions/generate-version/**
             .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
-            .github/workflows/reusable-build.yml
             .github/workflows/reusable-build-test-config.yml
             .github/workflows/reusable-build-test.yml
             .github/workflows/reusable-clang-tidy.yml
-            .github/workflows/reusable-clang-tidy-files.yml
+            .github/workflows/reusable-package.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            cfg/**
             cmake/**
             conan/**
             external/**
@@ -81,6 +80,10 @@ jobs:
             CMakeLists.txt
             conanfile.py
             conan.lock
+            LICENSE.md
+            package/**
+            README.md
+
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
         # run. The rest of the workflow will run if this job runs AND at
@@ -137,6 +140,11 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  package:
+    needs: [should-run, build-test]
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-package.yml
+
   upload-recipe:
     needs:
       - should-run
@@ -171,9 +179,10 @@ jobs:
       - check-rename
       - clang-tidy
       - build-test
+      - package
       - upload-recipe
       - notify-clio
     runs-on: ubuntu-latest
     steps:
       - name: Fail
-        run: false
+        run: exit 1

@@ -19,6 +19,6 @@ namespace xrpl {
     http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html
 */
 void
-secure_erase(void* dest, std::size_t bytes);
+secureErase(void* dest, std::size_t bytes);
 
 }  // namespace xrpl

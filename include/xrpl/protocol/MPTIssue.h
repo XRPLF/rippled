@@ -26,20 +26,20 @@ public:
         return mptID_;
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
-    constexpr MPTID const&
+    [[nodiscard]] constexpr MPTID const&
     getMptID() const
     {
         return mptID_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
     friend constexpr bool
     operator==(MPTIssue const& lhs, MPTIssue const& rhs);
@@ -47,14 +47,14 @@ public:
     friend constexpr std::weak_ordering
     operator<=>(MPTIssue const& lhs, MPTIssue const& rhs);
 
-    bool
-    native() const
+    static bool
+    native()
     {
         return false;
     }
 
-    bool
-    integral() const
+    static bool
+    integral()
     {
         return true;
     }
@@ -94,23 +94,23 @@ getMPTIssuer(MPTID const& mptid)
 }
 
 // Disallow temporary
-inline AccountID const&
+AccountID const&
 getMPTIssuer(MPTID const&&) = delete;
-inline AccountID const&
+AccountID const&
 getMPTIssuer(MPTID&&) = delete;
 
 inline MPTID
 noMPT()
 {
-    static MPTIssue const mpt{0, noAccount()};
-    return mpt.getMptID();
+    static MPTIssue const kMPT{0, noAccount()};
+    return kMPT.getMptID();
 }
 
 inline MPTID
 badMPT()
 {
-    static MPTIssue const mpt{0, xrpAccount()};
-    return mpt.getMptID();
+    static MPTIssue const kMPT{0, xrpAccount()};
+    return kMPT.getMptID();
 }
 
 template <class Hasher>
@@ -121,14 +121,14 @@ hash_append(Hasher& h, MPTIssue const& r)
     hash_append(h, r.getMptID());
 }
 
-Json::Value
-to_json(MPTIssue const& mptIssue);
+json::Value
+toJson(MPTIssue const& mptIssue);
 
 std::string
 to_string(MPTIssue const& mptIssue);
 
 MPTIssue
-mptIssueFromJson(Json::Value const& jv);
+mptIssueFromJson(json::Value const& jv);
 
 std::ostream&
 operator<<(std::ostream& os, MPTIssue const& x);

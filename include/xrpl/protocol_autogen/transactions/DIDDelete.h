@@ -19,9 +19,9 @@ class DIDDeleteBuilder;
  * @brief Transaction: DIDDelete
  *
  * Type: ttDID_DELETE (50)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureDID
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DIDDeleteBuilder to construct new transactions.
@@ -52,7 +52,7 @@ public:
  * @brief Builder for DIDDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class DIDDeleteBuilder : public TransactionBuilderBase<DIDDeleteBuilder>
