@@ -130,7 +130,7 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    AccountID const account_;
+    AccountID const accountID_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
 public:

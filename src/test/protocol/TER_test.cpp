@@ -114,12 +114,12 @@ struct TER_test : public beast::unit_test::Suite
         // are not valid.
 
         // Examples of each kind of enum.
-        static auto const kTER_ENUMS = std::make_tuple(
+        static auto const kTerEnums = std::make_tuple(
             telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
-        static int const kHI_INDEX{std::tuple_size_v<decltype(kTER_ENUMS)> - 1};
+        static int const kHiIndex{std::tuple_size_v<decltype(kTerEnums)> - 1};
 
         // Verify that enums cannot be converted to other enum types.
-        testIterate<kHI_INDEX, kHI_INDEX, NotConvertible>(kTER_ENUMS, *this);
+        testIterate<kHiIndex, kHiIndex, NotConvertible>(kTerEnums, *this);
 
         // Lambda that verifies assignability and convertibility.
         auto isConvertible = [](auto from, auto to) {
@@ -216,7 +216,7 @@ struct TER_test : public beast::unit_test::Suite
         // All of the TER-related types should be comparable.
 
         // Examples of all the types we expect to successfully compare.
-        static auto const kTERS = std::make_tuple(
+        static auto const kTers = std::make_tuple(
             telLOCAL_ERROR,
             temMALFORMED,
             tefFAILURE,
@@ -225,11 +225,11 @@ struct TER_test : public beast::unit_test::Suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const kHI_INDEX{std::tuple_size_v<decltype(kTERS)> - 1};
+        static int const kHiIndex{std::tuple_size_v<decltype(kTers)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.
-        testIterate<kHI_INDEX, kHI_INDEX, CheckComparable>(kTERS, *this);
+        testIterate<kHiIndex, kHiIndex, CheckComparable>(kTers, *this);
     }
 
     void

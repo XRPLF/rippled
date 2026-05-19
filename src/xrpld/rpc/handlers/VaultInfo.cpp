@@ -22,7 +22,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
 
-    uint256 uNodeIndex = beast::kZERO;
+    uint256 uNodeIndex = beast::kZero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
@@ -42,7 +42,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(json::Value::kMAX_UINT))
+            params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
         {
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
@@ -69,8 +69,8 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZERO);
-    if (uNodeIndex == beast::kZERO)
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZero);
+    if (uNodeIndex == beast::kZero)
     {
         jvResult[jss::error] = "malformedRequest";
         return jvResult;

@@ -27,7 +27,7 @@ struct MPTCreateArgs
 class MPTokenIssuanceCreate : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit MPTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
     {

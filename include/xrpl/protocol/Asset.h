@@ -148,10 +148,10 @@ public:
 };
 
 template <ValidIssueType TIss>
-constexpr bool kIS_ISSUE_V = std::is_same_v<TIss, Issue>;
+constexpr bool kIsIssueV = std::is_same_v<TIss, Issue>;
 
 template <ValidIssueType TIss>
-constexpr bool kIS_MPTISSUE_V = std::is_same_v<TIss, MPTIssue>;
+constexpr bool kIsMptissueV = std::is_same_v<TIss, MPTIssue>;
 
 inline json::Value
 toJson(Asset const& asset)
@@ -242,7 +242,7 @@ operator<=>(Asset const& lhs, Asset const& rhs)
             {
                 return std::weak_ordering(lhs <=> rhs);
             }
-            else if constexpr (kIS_ISSUE_V<TLhs> && kIS_MPTISSUE_V<TRhs>)
+            else if constexpr (kIsIssueV<TLhs> && kIsMptissueV<TRhs>)
             {
                 return std::weak_ordering::greater;
             }

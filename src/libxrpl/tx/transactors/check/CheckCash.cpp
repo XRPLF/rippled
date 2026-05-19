@@ -115,8 +115,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if (sleDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -200,7 +199,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (sleIssuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {
@@ -295,7 +294,7 @@ CheckCash::doApply()
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(account_)))
+    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(accountID_)))
     {
         // LCOV_EXCL_START
         JLOG(ctx_.journal.fatal()) << "Precheck did not verify source or destination's existence.";
@@ -318,7 +317,7 @@ CheckCash::doApply()
     auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
-    if (srcId != account_)
+    if (srcId != accountID_)
     {
         STAmount const sendMax = sleCheck->at(sfSendMax);
 
@@ -356,7 +355,7 @@ CheckCash::doApply()
             }
 
             // The source account has enough XRP so make the ledger change.
-            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
+            if (TER const ter{transferXRP(psb, srcId, accountID_, xrpDeliver, viewJ)};
                 !isTesSuccess(ter))
             {
                 // The transfer failed.  Return the error code.
@@ -374,12 +373,10 @@ CheckCash::doApply()
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(),
-                            STAmount::kMAX_VALUE / 2,
-                            STAmount::kMAX_OFFSET);
+                            optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
                     [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), kMAX_MP_TOKEN_AMOUNT / 2);
+                        return STAmount(optDeliverMin->asset(), kMaxMpTokenAmount / 2);
                     });
             };
             STAmount const flowDeliver{
@@ -392,7 +389,7 @@ CheckCash::doApply()
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkReserve = [&]() -> std::shared_ptr<SLE> {
-                auto sleDst = psb.peek(keylet::account(account_));
+                auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
@@ -415,9 +412,9 @@ CheckCash::doApply()
                 [&](Issue const& issue) -> std::optional<TER> {
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
-                    AccountID const truster = deliverIssuer == account_ ? srcId : account_;
+                    AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
                     trustLineKey = keylet::line(truster, trustLineIssue);
-                    destLow = deliverIssuer > account_;
+                    destLow = deliverIssuer > accountID_;
 
                     if (!psb.exists(*trustLineKey))
                     {
@@ -440,22 +437,22 @@ CheckCash::doApply()
                         initialBalance.get<Issue>().account = noAccount();
 
                         if (TER const ter = trustCreate(
-                                psb,                                           // payment sandbox
-                                destLow,                                       // is dest low?
-                                deliverIssuer,                                 // source
-                                account_,                                      // destination
-                                trustLineKey->key,                             // ledger index
-                                sleDst,                                        // Account to add to
-                                false,                                         // authorize account
-                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
-                                false,                                         // freeze trust line
-                                false,                      // deep freeze trust line
-                                initialBalance,             // zero initial balance
-                                Issue(currency, account_),  // limit of zero
-                                0,                          // quality in
-                                0,                          // quality out
-                                *sponsorSle,                // sponsor
-                                viewJ);                     // journal
+                                psb,                                // payment sandbox
+                                destLow,                            // is dest low?
+                                deliverIssuer,                      // source
+                                accountID_,                         // destination
+                                trustLineKey->key,                  // ledger index
+                                sleDst,                             // Account to add to
+                                false,                              // authorize account
+                                !sleDst->isFlag(lsfDefaultRipple),  //
+                                false,                              // freeze trust line
+                                false,                              // deep freeze trust line
+                                initialBalance,                     // zero initial balance
+                                Issue(currency, accountID_),        // limit of zero
+                                0,                                  // quality in
+                                0,                                  // quality out
+                                *sponsorSle,                        // sponsor
+                                viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -484,17 +481,17 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                        trustLineIssue, STAmount::kMaxValue, STAmount::kMaxOffset);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
-                    if (account_ != deliverIssuer)
+                    if (accountID_ != deliverIssuer)
                     {
                         auto const& mptID = issue.getMptID();
                         // Create MPT if it doesn't exist
-                        auto const mptokenKey = keylet::mptoken(mptID, account_);
+                        auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
                             auto sleDst = checkReserve();
@@ -502,7 +499,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, account_, *sponsorSle, j_);
+                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;
@@ -530,7 +527,7 @@ CheckCash::doApply()
                 psb,
                 flowDeliver,
                 srcId,
-                account_,
+                accountID_,
                 STPathSet{},
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
@@ -568,9 +565,9 @@ CheckCash::doApply()
 
     // Check was cashed.  If not a self send (and it shouldn't be), remove
     // check link from destination directory.
-    if (srcId != account_ &&
+    if (srcId != accountID_ &&
         !psb.dirRemove(
-            keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
+            keylet::ownerDir(accountID_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
