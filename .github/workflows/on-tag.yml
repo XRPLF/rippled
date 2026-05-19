@@ -1,5 +1,5 @@
-# This workflow uploads the libxrpl recipe to the Conan remote when a versioned
-# tag is pushed.
+# This workflow uploads the libxrpl recipe to the Conan remote and builds
+# release packages when a versioned tag is pushed.
 name: Tag
 
 on:
@@ -22,3 +22,22 @@ jobs:
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  build-test:
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    uses: ./.github/workflows/reusable-build-test.yml
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [linux]
+    with:
+      ccache_enabled: false
+      os: ${{ matrix.os }}
+      strategy_matrix: minimal
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  package:
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    needs: build-test
+    uses: ./.github/workflows/reusable-package.yml

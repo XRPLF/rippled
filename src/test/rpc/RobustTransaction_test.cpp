@@ -1,14 +1,22 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
 
-class RobustTransaction_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class RobustTransaction_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -23,8 +31,8 @@ public:
 
         {
             // RPC subscribe to transactions stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("subscribe", jv);
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -38,7 +46,7 @@ public:
 
         {
             // Submit past ledger sequence transaction
-            Json::Value payment;
+            json::Value payment;
             payment[jss::secret] = toBase58(generateSeed("alice"));
             payment[jss::tx_json] = pay("alice", "bob", XRP(1));
             payment[jss::tx_json][sfLastLedgerSequence.fieldName] = 1;
@@ -114,8 +122,8 @@ public:
 
         {
             // RPC unsubscribe to transactions stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
@@ -150,7 +158,7 @@ public:
 
         {
             // Submit normal payment
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
@@ -171,7 +179,7 @@ public:
 
         {
             // RPC account_tx
-            Json::Value jv;
+            json::Value jv;
             jv[jss::account] = Account("bob").human();
             jv[jss::ledger_index_min] = -1;
             jv[jss::ledger_index_max] = -1;
@@ -204,7 +212,7 @@ public:
 
         {
             // Submit normal payment
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
@@ -233,8 +241,8 @@ public:
         {
             {
                 // RPC subscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -267,8 +275,8 @@ public:
 
             {
                 // RPC unsubscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -286,8 +294,8 @@ public:
             wsc = makeWSClient(env.app().config());
             {
                 // RPC subscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -320,8 +328,8 @@ public:
 
             {
                 // RPC unsubscribe to ledger stream
-                Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                json::Value jv;
+                jv[jss::streams] = json::ValueType::Array;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -336,7 +344,7 @@ public:
 
         {
             // RPC account_tx
-            Json::Value jv;
+            json::Value jv;
             jv[jss::account] = Account("bob").human();
             jv[jss::ledger_index_min] = -1;
             jv[jss::ledger_index_max] = -1;
@@ -369,8 +377,8 @@ public:
 
         {
             // RPC subscribe to accounts_proposed stream
-            Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("subscribe", jv);
             if (wsc->version() == 2)
@@ -384,7 +392,7 @@ public:
 
         {
             // Submit account_set transaction
-            Json::Value jv;
+            json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = fset("alice", 0);
             jv[jss::tx_json][jss::Fee] = static_cast<int>(env.current()->fees().base.drops());
@@ -407,8 +415,8 @@ public:
 
         {
             // RPC unsubscribe to accounts_proposed stream
-            Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            json::Value jv;
+            jv[jss::accounts_proposed] = json::ValueType::Array;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
@@ -433,5 +441,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RobustTransaction, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

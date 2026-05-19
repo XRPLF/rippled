@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 
 #include <map>
+#include <utility>
 
 namespace xrpl {
 
@@ -20,9 +21,8 @@ private:
     struct ValueIOU
     {
         explicit ValueIOU() = default;
-
-        STAmount lowAcctCredits;
-        STAmount highAcctCredits;
+        STAmount lowAcctDebits;
+        STAmount highAcctDebits;
         STAmount lowAcctOrigBalance;
     };
 
@@ -63,8 +63,8 @@ private:
 public:
     struct AdjustmentIOU
     {
-        AdjustmentIOU(STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits(d), credits(c), origBalance(b)
+        AdjustmentIOU(STAmount d, STAmount c, STAmount b)
+            : debits(std::move(d)), credits(std::move(c)), origBalance(std::move(b))
         {
         }
         STAmount debits;
@@ -74,10 +74,10 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    std::optional<AdjustmentIOU>
+    [[nodiscard]] std::optional<AdjustmentIOU>
     adjustmentsIOU(AccountID const& main, AccountID const& other, Currency const& currency) const;
 
-    std::optional<AdjustmentMPT>
+    [[nodiscard]] std::optional<AdjustmentMPT>
     adjustmentsMPT(MPTID const& mptID) const;
 
     void
@@ -104,7 +104,7 @@ public:
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     ownerCount(AccountID const& id) const;
 
     void
@@ -179,15 +179,15 @@ public:
     }
     /** @} */
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount)
         const override;
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
         const override;
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const override;
 
     void
@@ -212,7 +212,7 @@ public:
     void
     adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
@@ -229,14 +229,7 @@ public:
     apply(PaymentSandbox& to);
     /** @} */
 
-    // Return a map of balance changes on trust lines. The low account is the
-    // first account in the key. If the two accounts are equal, the map contains
-    // the total changes in currency regardless of issuer. This is useful to get
-    // the total change in XRP balances.
-    std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>
-    balanceChanges(ReadView const& view) const;
-
-    XRPAmount
+    [[nodiscard]] XRPAmount
     xrpDestroyed() const;
 
 private:

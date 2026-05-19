@@ -19,12 +19,10 @@ public:
     Asset out;
     std::optional<uint256> domain;
 
-    Book()
-    {
-    }
+    Book() = default;
 
-    Book(Asset const& in_, Asset const& out_, std::optional<uint256> const& domain_)
-        : in(in_), out(out_), domain(domain_)
+    Book(Asset const& in, Asset const& out, std::optional<uint256> const& domain)
+        : in(in), out(out), domain(domain)
     {
     }
 };
@@ -53,7 +51,7 @@ reversed(Book const& book);
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
     return (lhs.in == rhs.in) && (lhs.out == rhs.out) && (lhs.domain == rhs.domain);
@@ -62,7 +60,7 @@ operator==(Book const& lhs, Book const& rhs)
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
@@ -142,8 +140,8 @@ private:
     using issue_hasher = std::hash<xrpl::Issue>;
     using mptissue_hasher = std::hash<xrpl::MPTIssue>;
 
-    issue_hasher m_issue_hasher;
-    mptissue_hasher m_mptissue_hasher;
+    issue_hasher m_issue_hasher_;
+    mptissue_hasher m_mptissue_hasher_;
 
 public:
     explicit hash() = default;
@@ -153,11 +151,11 @@ public:
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(m_issue_hasher(issue));
+                value_type const result(m_issue_hasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(m_mptissue_hasher(issue));
+                value_type const result(m_mptissue_hasher_(issue));
                 return result;
             });
     }
@@ -172,8 +170,8 @@ private:
     using asset_hasher = std::hash<xrpl::Asset>;
     using uint256_hasher = xrpl::uint256::hasher;
 
-    asset_hasher m_asset_hasher;
-    uint256_hasher m_uint256_hasher;
+    asset_hasher issue_hasher_;
+    uint256_hasher uint256_hasher_;
 
 public:
     hash() = default;
@@ -184,11 +182,11 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_asset_hasher(value.in));
-        boost::hash_combine(result, m_asset_hasher(value.out));
+        value_type result(issue_hasher_(value.in));
+        boost::hash_combine(result, issue_hasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, m_uint256_hasher(*value.domain));
+            boost::hash_combine(result, uint256_hasher_(*value.domain));
 
         return result;
     }
