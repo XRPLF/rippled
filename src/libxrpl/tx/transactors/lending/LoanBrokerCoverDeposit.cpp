@@ -1,9 +1,11 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -106,8 +108,6 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto const amount = tx[sfAmount];
-
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -117,9 +117,25 @@ LoanBrokerCoverDeposit::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
-
     auto const brokerPseudoID = broker->at(sfAccount);
 
+    bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    auto const amount = [&]() -> STAmount {
+        if (!fix320Enabled)
+            return tx[sfAmount];
+
+        return roundToScale(
+            tx[sfAmount],
+            scale(broker->at(sfCoverAvailable), vaultAsset),
+            Number::RoundingMode::Downward);
+    }();
+
+    if (fix320Enabled && amount == beast::kZero)
+    {
+        JLOG(ctx_.journal.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
+                                  << " is zero at loan broker scale";
+        return tecPRECISION_LOSS;
+    }
     // Transfer assets from depositor to pseudo-account.
     if (auto ter =
             accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
