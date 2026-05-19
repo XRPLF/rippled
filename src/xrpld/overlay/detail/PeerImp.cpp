@@ -2652,7 +2652,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                     if (auto ledger = app_.getLedgerMaster().getLedgerByHash(hash))
                     {
                         Serializer s(sizeof(LedgerHeader) + 4);
-                        s.add32(HashPrefix::ledgerMaster);
+                        s.add32(HashPrefix::LedgerMaster);
                         addRaw(ledger->header(), s);
                         treeBlob = std::move(s.modData());
                         dataPtr = treeBlob.data();

@@ -7,6 +7,7 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -281,7 +282,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     if (reason_ == Reason::HISTORY)
     {
-        app_.getInboundLedgers().onLedgerFetched();
+        app_.getInboundLedgers().onLedgerFetched(shared_from_this());
         return;
     }
 
@@ -611,7 +612,7 @@ InboundLedger::done()
             switch (reason_)
             {
                 case Reason::HISTORY:
-                    app_.getInboundLedgers().onLedgerFetched();
+                    app_.getInboundLedgers().onLedgerFetched(shared_from_this());
                     break;
                 default:
                     app_.getLedgerMaster().storeLedger(ledger_);

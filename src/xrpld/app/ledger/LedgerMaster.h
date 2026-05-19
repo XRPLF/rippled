@@ -88,6 +88,9 @@ public:
     bool
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
+    std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger);
+
     void
     setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 

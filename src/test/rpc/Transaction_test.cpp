@@ -8,6 +8,8 @@
 #include <test/jtx/ter.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/CTID.h>
 
 #include <xrpl/basics/base_uint.h>

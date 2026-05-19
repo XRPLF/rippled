@@ -20,6 +20,7 @@
 #include <test/jtx/trust.h>
 
 #include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -924,14 +925,14 @@ class AccountTx_test : public beast::unit_test::Suite
             if (txEntry.isMember(jss::tx) && txEntry[jss::tx].isMember(jss::hash) &&
                 txEntry[jss::tx][jss::hash].isString())
                 return txEntry[jss::tx][jss::hash].asString();
-            if (txEntry.isMember(jss::txJson) && txEntry[jss::txJson].isMember(jss::hash) &&
-                txEntry[jss::txJson][jss::hash].isString())
-                return txEntry[jss::txJson][jss::hash].asString();
+            if (txEntry.isMember(jss::tx_json) && txEntry[jss::tx_json].isMember(jss::hash) &&
+                txEntry[jss::tx_json][jss::hash].isString())
+                return txEntry[jss::tx_json][jss::hash].asString();
             return {};
         };
 
         json::Value params;
-        params[jss::apiVersion] = apiVersion;
+        params[jss::api_version] = apiVersion;
         params[jss::account] = a1.human();
         params[jss::limit] = 1;
 
@@ -987,7 +988,7 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         json::Value params;
-        params[jss::apiVersion] = apiVersion;
+        params[jss::api_version] = apiVersion;
         params[jss::account] = a1.human();
         params[jss::binary] = true;
         params[jss::limit] = 10;
@@ -999,13 +1000,13 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(res[jss::result][jss::transactions].size() >= 1);
 
         auto const& tx0 = res[jss::result][jss::transactions][0u];
-        BEAST_EXPECT(tx0.isMember(jss::txBlob));
-        BEAST_EXPECT(tx0[jss::txBlob].isString());
+        BEAST_EXPECT(tx0.isMember(jss::tx_blob));
+        BEAST_EXPECT(tx0[jss::tx_blob].isString());
 
         if (apiVersion > 1)
         {
-            BEAST_EXPECT(tx0.isMember(jss::metaBlob));
-            BEAST_EXPECT(tx0[jss::metaBlob].isString());
+            BEAST_EXPECT(tx0.isMember(jss::meta_blob));
+            BEAST_EXPECT(tx0[jss::meta_blob].isString());
             BEAST_EXPECT(!tx0.isMember(jss::meta));
         }
         else
