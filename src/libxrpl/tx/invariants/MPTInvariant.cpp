@@ -32,36 +32,40 @@ namespace xrpl {
 namespace {
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth = 0);
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal);
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth)
+hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth, beast::Journal j)
 {
     return std::ranges::any_of(
-        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth); });
+        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth, j); });
 }
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth)
+hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth, beast::Journal j)
 {
-    return std::ranges::any_of(
-        array, [&](STObject const& object) { return hasInvalidMPTAmount(rules, object, depth); });
+    return std::ranges::any_of(array, [&](STObject const& object) {
+        return hasInvalidMPTAmount(rules, object, depth, j);
+    });
 }
 
 bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth)
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j)
 {
     if (depth > 10)
-        return false;  // LCOV_EXCL_LINE
+    {
+        JLOG(j.error()) << "hasInvalidMPTAmount: depth exceeds 10";
+        return false;
+    }
 
     if (auto const amount = dynamic_cast<STAmount const*>(&field))
-        return !isLegalMPTAmount(rules, *amount);
+        return !isLegalMPT(rules, *amount);
 
     if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidMPTAmount(rules, *object, depth + 1);
+        return hasInvalidMPTAmount(rules, *object, depth + 1, j);
 
     if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidMPTAmount(rules, *array, depth + 1);
+        return hasInvalidMPTAmount(rules, *array, depth + 1, j);
 
     return false;
 }
@@ -90,9 +94,9 @@ ValidMPTAmounts::finalize(
     if (!rules.enabled(fixCleanup3_2_0))
         return true;
 
-    bool const badTx = hasInvalidMPTAmount(rules, tx);
+    bool const badTx = hasInvalidMPTAmount(rules, tx, 0, j);
     bool const badLedgerEntry = std::ranges::any_of(
-        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(rules, *sle); });
+        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(rules, *sle, 0, j); });
 
     if (badTx)
     {

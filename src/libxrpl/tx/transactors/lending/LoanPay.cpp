@@ -53,7 +53,7 @@ LoanPay::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount <= beast::kZero || !isLegalMPTAmount(ctx.rules, amount))
+    if (amount <= beast::kZero || !isLegalMPT(ctx.rules, amount))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is

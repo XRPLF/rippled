@@ -3973,9 +3973,17 @@ class Invariants_test : public beast::unit_test::Suite
                 false,
                 STAmount::Unchecked{}};
         };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
         auto const nonCanonicalMPTPayment = [&]() {
             return STTx{ttPAYMENT, [&](STObject& tx) {
                             tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+        auto const negativeMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, negativeMPTAmount(sfAmount));
                         }};
         };
 
@@ -4004,6 +4012,27 @@ class Invariants_test : public beast::unit_test::Suite
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setAccountID(sfDestination, a2.id());
                 sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"transaction contains non-canonical MPT amount"}},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            negativeMPTPayment());
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
                 ac.view().insert(sleNew);
                 return true;
             });

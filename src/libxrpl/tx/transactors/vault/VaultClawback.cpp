@@ -49,7 +49,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
         {
             return temBAD_AMOUNT;
         }
-        if (!isLegalMPTAmount(ctx.rules, *amount))
+        if (!isLegalMPT(ctx.rules, *amount))
         {
             return temBAD_AMOUNT;
         }

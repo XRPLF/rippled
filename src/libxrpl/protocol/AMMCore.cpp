@@ -102,7 +102,7 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (!isLegalMPTAmount(rules, amount))
+    if (!isLegalMPT(rules, amount))
         return temBAD_AMOUNT;
     if (amount < beast::kZero || (!validZero && amount == beast::kZero))
         return temBAD_AMOUNT;

@@ -972,8 +972,13 @@ public:
         }
 
         // Offers with negative amounts
+        for (auto const feature : {features, features - fixCleanup3_2_0})
         {
-            env(offer(alice, -usd(1'000), XRP(1'000)), Ter(temBAD_OFFER));
+            Env env1{*this, feature};
+            env1.fund(startBalance, gw, alice);
+            MPT const usd1 = MPTTester({.env = env1, .issuer = gw, .holders = {alice}});
+            auto const err = feature[fixCleanup3_2_0] ? temBAD_AMOUNT : temBAD_OFFER;
+            env1(offer(alice, -usd1(1'000), XRP(1'000)), Ter(err));
             env.require(Owners(alice, 1), offers(alice, 0));
         }
 

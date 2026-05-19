@@ -139,7 +139,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
-        if (!isLegalMPTAmount(ctx.view.rules(), sendMax))
+        if (!isLegalMPT(ctx.view.rules(), sendMax))
             return temBAD_AMOUNT;
 
         if (!equalTokens(value.asset(), sendMax.asset()))

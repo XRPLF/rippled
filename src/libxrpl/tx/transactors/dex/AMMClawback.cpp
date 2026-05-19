@@ -92,7 +92,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && !isLegalMPTAmount(ctx.rules, *clawAmount))
+    if (clawAmount && !isLegalMPT(ctx.rules, *clawAmount))
         return temBAD_AMOUNT;
 
     if (clawAmount && *clawAmount <= beast::kZero)

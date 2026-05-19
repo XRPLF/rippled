@@ -25,6 +25,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 #include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -2645,6 +2646,38 @@ class MPToken_test : public beast::unit_test::Suite
                 tx.ter = temDISABLED;
                 env.submit(tx);
             }
+            {
+                // sfTakerPays is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badTakerPays = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(offer(alice, STAmount{issue, std::uint64_t{1}}, XRP(10))),
+                    sfTakerPays,
+                    badTakerPays,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+            {
+                // sfTakerGets is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badTakerGets = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(offer(alice, XRP(10), STAmount{issue, std::uint64_t{1}})),
+                    sfTakerGets,
+                    badTakerGets,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
 
             testcase("featureMPTokensV2 disabled rejects MPT AMMCreate amounts");
             {
@@ -2680,6 +2713,246 @@ class MPToken_test : public beast::unit_test::Suite
                     badAmount,
                     alice);
                 tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                // sfAmount is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::createJv(alice.id(), STAmount{issue, std::uint64_t{1}}, XRP(1), 0),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("featureMPTokensV2 disabled rejects MPT AMMDeposit amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::depositJv(
+                            {.account = alice,
+                             .asset1In = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::depositJv(
+                            {.account = alice,
+                             .asset1In = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                // sfAmount is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::depositJv(
+                            {.account = alice,
+                             .asset1In = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("featureMPTokensV2 disabled rejects MPT AMMWithdraw amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::withdrawJv(
+                            {.account = alice,
+                             .asset1Out = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::withdrawJv(
+                            {.account = alice,
+                             .asset1Out = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                // sfAmount is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        AMM::withdrawJv(
+                            {.account = alice,
+                             .asset1Out = STAmount{issue, std::uint64_t{1}},
+                             .assets = std::make_pair(Asset{issue}, Asset{xrpIssue()})}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    alice);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("featureMPTokensV2 disabled rejects MPT AMMClawback amounts");
+            {
+                Env env{*this, withoutFixAndV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        amm::ammClawback(
+                            gw,
+                            alice,
+                            Asset{issue},
+                            Asset{xrpIssue()},
+                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                expectRoundTripBadMPT(tx, sfAmount, bad);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                Env env{*this, withFixAndWithoutV2};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        amm::ammClawback(
+                            gw,
+                            alice,
+                            Asset{issue},
+                            Asset{xrpIssue()},
+                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                tx.ter = temDISABLED;
+                env.submit(tx);
+            }
+            {
+                // sfAmount is MPT: both amendments active, expect temBAD_AMOUNT
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        amm::ammClawback(
+                            gw,
+                            alice,
+                            Asset{issue},
+                            Asset{xrpIssue()},
+                            std::make_optional(STAmount{issue, std::uint64_t{1}})),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                tx.ter = temBAD_AMOUNT;
+                env.submit(tx);
+            }
+
+            testcase("fixCleanup3_2_0 rejects non-canonical MPT VaultClawback amounts");
+            {
+                Env env{*this, withFix};
+                env.fund(XRP(100'000), alice, bob, gw);
+                env.close();
+                auto const issue = makeIssue(env);
+
+                auto const badAmount = badMPTAmount(issue, bad);
+                uint256 const fakeVaultId = keylet::vault(gw.id(), 1).key;
+                auto tx = withNonCanonicalMPTAmount(
+                    env.jt(
+                        Vault::clawback(
+                            {.issuer = gw,
+                             .id = fakeVaultId,
+                             .holder = alice,
+                             .amount = STAmount{issue, std::uint64_t{1}}}),
+                        Fee(static_cast<std::uint64_t>(env.current()->fees().increment.drops()))),
+                    sfAmount,
+                    badAmount,
+                    gw);
+                tx.ter = temBAD_AMOUNT;
                 env.submit(tx);
             }
         }

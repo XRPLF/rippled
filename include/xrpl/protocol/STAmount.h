@@ -585,20 +585,19 @@ isLegalNet(STAmount const& value)
 }
 
 inline bool
-isLegalMPTAmount(Rules const& rules, STAmount const& value)
+isLegalMPT(Rules const& rules, STAmount const& value)
 {
     if (!rules.enabled(fixCleanup3_2_0))
         return true;
 
     return !value.holds<MPTIssue>() ||
-        (value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount &&
-         (value.mantissa() != 0 || !value.negative()));
+        (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
 }
 
 inline bool
 isLegalNet(Rules const& rules, STAmount const& value)
 {
-    return isLegalNet(value) && isLegalMPTAmount(rules, value);
+    return isLegalNet(value) && isLegalMPT(rules, value);
 }
 
 //------------------------------------------------------------------------------

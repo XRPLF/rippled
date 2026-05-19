@@ -37,7 +37,7 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     }
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount <= beast::kZero || !isLegalMPTAmount(ctx.rules, amount))
+    if (amount <= beast::kZero || !isLegalMPT(ctx.rules, amount))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])
