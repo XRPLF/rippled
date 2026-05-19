@@ -175,7 +175,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -192,10 +192,10 @@ CheckCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
-    Keylet const checkKeylet = keylet::check(account_, seq);
+    Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
-    sleCheck->setAccountID(sfAccount, account_);
+    sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
     sleCheck->setFieldU32(sfSequence, seq);
@@ -214,7 +214,7 @@ CheckCreate::doApply()
     auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
-    if (dstAccountId != account_)
+    if (dstAccountId != accountID_)
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
@@ -229,8 +229,8 @@ CheckCreate::doApply()
     }
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), checkKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
