@@ -4307,6 +4307,63 @@ class MPToken_test : public beast::unit_test::Suite
     }
 
     void
+    testDirectSendNoFeeMPTOverflow(FeatureBitset features)
+    {
+        testcase("DirectSendNoFee MPT overflow guard");
+
+        using namespace test::jtx;
+
+        Account const issuer("issuer");
+        Account const bob("bob");
+        Env env{*this, features};
+
+        MPTTester mptTester(env, issuer, {.holders = {bob}});
+        mptTester.create();
+        mptTester.authorize({.account = bob});
+
+        auto const mptID = mptTester.issuanceID();
+        MPTIssue const issue{mptID};
+        STAmount const amount{issue, std::uint64_t{2}};
+        auto const max = std::numeric_limits<std::uint64_t>::max();
+
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            auto sleIssuance = av.peek(keylet::mptIssuance(mptID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return;
+
+            sleIssuance->setFieldU64(sfOutstandingAmount, max - 1);
+            av.update(sleIssuance);
+
+            auto const ter = directSendNoFee(
+                av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
+            auto const expectedTer = features[featureMPTokensV2] ? tecPATH_DRY : tecINTERNAL;
+            BEAST_EXPECTS(ter == expectedTer, "OutstandingAmount add overflow");
+
+            sleIssuance = av.peek(keylet::mptIssuance(mptID));
+            if (!BEAST_EXPECT(sleIssuance))
+                return;
+            BEAST_EXPECTS(
+                sleIssuance->getFieldU64(sfOutstandingAmount) == max - 1,
+                "OutstandingAmount unchanged");
+        }
+
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            auto sle = av.peek(keylet::mptoken(mptID, bob.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+
+            sle->setFieldU64(sfMPTAmount, max - 1);
+            av.update(sle);
+
+            auto const ter = directSendNoFee(
+                av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
+            BEAST_EXPECTS(ter == tecINTERNAL, "MPTAmount add overflow");
+        }
+    }
+
+    void
     testOfferCrossing(FeatureBitset features)
     {
         testcase("Offer Crossing");
@@ -7752,6 +7809,8 @@ public:
         FeatureBitset const all{testableAmendments()};
 
         testMultiSendMaximumAmount(all);
+        testDirectSendNoFeeMPTOverflow(all | fixCleanup3_2_0);
+        testDirectSendNoFeeMPTOverflow((all | fixCleanup3_2_0) - featureMPTokensV2);
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);
