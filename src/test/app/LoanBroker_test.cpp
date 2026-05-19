@@ -1869,7 +1869,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         };
 
         // Without any preauth, coverWithdraw to dest fails
-        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), Ter{tecNO_PERMISSION});
+        env(coverWithdrawToDest(), loanBroker::kDestination(dest), Ter{tecNO_PERMISSION});
         env.close();
 
         // Issue and accept a credential for the broker (with expiration)
@@ -1887,18 +1887,18 @@ class LoanBroker_test : public beast::unit_test::Suite
                 .asString();
 
         // dest authorizes deposits from holders of credentials issued by credIssuer
-        env(deposit::authCredentials(dest, {{credIssuer, credType}}));
+        env(deposit::authCredentials(dest, {{.issuer = credIssuer, .credType = credType}}));
         env.close();
 
         // Without supplying credentials, still fails
-        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), Ter{tecNO_PERMISSION});
+        env(coverWithdrawToDest(), loanBroker::kDestination(dest), Ter{tecNO_PERMISSION});
         env.close();
 
         if (!fixEnabled)
         {
             // Pre-fix: sfCredentialIDs in LoanBrokerCoverWithdraw is disabled
             env(coverWithdrawToDest(),
-                loanBroker::kDESTINATION(dest),
+                loanBroker::kDestination(dest),
                 credentials::Ids({credIdx}),
                 Ter{temDISABLED});
             env.close();
@@ -1906,21 +1906,21 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
 
         // With credentials, succeeds
-        env(coverWithdrawToDest(), loanBroker::kDESTINATION(dest), credentials::Ids({credIdx}));
+        env(coverWithdrawToDest(), loanBroker::kDestination(dest), credentials::Ids({credIdx}));
         env.close();
 
         // Bad credential id is rejected
         std::string const invalidIdx =
             "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E01E034";
         env(coverWithdrawToDest(),
-            loanBroker::kDESTINATION(dest),
+            loanBroker::kDestination(dest),
             credentials::Ids({invalidIdx}),
             Ter{tecBAD_CREDENTIALS});
         env.close();
 
         // Malformed credential array (duplicates) is rejected by checkFields
         env(coverWithdrawToDest(),
-            loanBroker::kDESTINATION(dest),
+            loanBroker::kDestination(dest),
             credentials::Ids({credIdx, credIdx}),
             Ter{temMALFORMED});
         env.close();
@@ -1934,7 +1934,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             credentials::ledgerEntry(env, broker, credIssuer, credType2)[jss::result][jss::index]
                 .asString();
         env(coverWithdrawToDest(),
-            loanBroker::kDESTINATION(dest),
+            loanBroker::kDestination(dest),
             credentials::Ids({credIdx2}),
             Ter{tecNO_PERMISSION});
         env.close();
@@ -1943,7 +1943,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close(150s);
         BEAST_EXPECT(env.le(credKeylet));
         env(coverWithdrawToDest(),
-            loanBroker::kDESTINATION(dest),
+            loanBroker::kDestination(dest),
             credentials::Ids({credIdx}),
             Ter{tecEXPIRED});
         env.close();
