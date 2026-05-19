@@ -57,7 +57,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        if (fee > kMAX_TRANSFER_FEE)
+        if (fee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -68,17 +68,17 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZERO)
+        if (*domain == beast::kZero)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
-        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
+        if (!ctx.tx.isFlag(tfMPTRequireAuth))
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -88,7 +88,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        if (maxAmt > kMAX_MP_TOKEN_AMOUNT)
+        if (maxAmt > kMaxMpTokenAmount)
             return temMALFORMED;
     }
     return tesSUCCESS;
@@ -159,7 +159,7 @@ MPTokenIssuanceCreate::doApply()
         j_,
         {
             .priorBalance = preFeeBalance_,
-            .account = account_,
+            .account = accountID_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),
             .maxAmount = tx[~sfMaximumAmount],

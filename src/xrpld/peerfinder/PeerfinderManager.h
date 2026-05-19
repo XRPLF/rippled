@@ -27,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers{Tuning::kDEFAULT_MAX_PEERS};
+    std::size_t maxPeers{Tuning::kDefaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -60,7 +60,7 @@ struct Config
     int ipLimit{0};
 
     /** `true` if we want to verify endpoints in TMEndpoints messages */
-    bool verifyEndpoints = false;
+    bool verifyEndpoints = true;
 
     //--------------------------------------------------------------------------
 

@@ -62,7 +62,7 @@ class ServerImpl : public Server
 private:
     using clock_type = std::chrono::system_clock;
 
-    static constexpr auto kHISTORY_SIZE = 100;
+    static constexpr auto kHistorySize = 100;
 
     Handler& handler_;
     beast::Journal const j_;

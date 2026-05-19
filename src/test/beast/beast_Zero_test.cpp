@@ -55,12 +55,12 @@ public:
     void
     testLhsZero(IntegerWrapper x)
     {
-        expectSame(x >= kZERO, x.signum() >= 0, "lhs greater-than-or-equal-to");
-        expectSame(x > kZERO, x.signum() > 0, "lhs greater than");
-        expectSame(x == kZERO, x.signum() == 0, "lhs equal to");
-        expectSame(x != kZERO, x.signum() != 0, "lhs not equal to");
-        expectSame(x < kZERO, x.signum() < 0, "lhs less than");
-        expectSame(x <= kZERO, x.signum() <= 0, "lhs less-than-or-equal-to");
+        expectSame(x >= kZero, x.signum() >= 0, "lhs greater-than-or-equal-to");
+        expectSame(x > kZero, x.signum() > 0, "lhs greater than");
+        expectSame(x == kZero, x.signum() == 0, "lhs equal to");
+        expectSame(x != kZero, x.signum() != 0, "lhs not equal to");
+        expectSame(x < kZero, x.signum() < 0, "lhs less than");
+        expectSame(x <= kZero, x.signum() <= 0, "lhs less-than-or-equal-to");
     }
 
     void
@@ -76,12 +76,12 @@ public:
     void
     testRhsZero(IntegerWrapper x)
     {
-        expectSame(kZERO >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
-        expectSame(kZERO > x, 0 > x.signum(), "rhs greater than");
-        expectSame(kZERO == x, 0 == x.signum(), "rhs equal to");
-        expectSame(kZERO != x, 0 != x.signum(), "rhs not equal to");
-        expectSame(kZERO < x, 0 < x.signum(), "rhs less than");
-        expectSame(kZERO <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
+        expectSame(kZero >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
+        expectSame(kZero > x, 0 > x.signum(), "rhs greater than");
+        expectSame(kZero == x, 0 == x.signum(), "rhs equal to");
+        expectSame(kZero != x, 0 != x.signum(), "rhs not equal to");
+        expectSame(kZero < x, 0 < x.signum(), "rhs less than");
+        expectSame(kZero <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
     }
 
     void
@@ -97,8 +97,8 @@ public:
     void
     testAdl()
     {
-        expect(AdlTester{} == kZERO, "ADL failure!");
-        expect(inner_adl_test::AdlTester2{} == kZERO, "ADL failure!");
+        expect(AdlTester{} == kZero, "ADL failure!");
+        expect(inner_adl_test::AdlTester2{} == kZero, "ADL failure!");
     }
 
     void

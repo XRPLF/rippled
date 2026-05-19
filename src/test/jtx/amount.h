@@ -55,8 +55,7 @@ struct None
 // This value is also defined in SystemParameters.h. It's
 // duplicated here to catch any possible future errors that
 // could change that value (however unlikely).
-// TODO: rename — clashes with xrpl::kDROPS_PER_XRP
-constexpr XRPAmount kJTX_DROPS_PER_XRP{1'000'000};
+constexpr XRPAmount kJtxDropsPerXrp{1'000'000};
 
 /** Represents an XRP, IOU, or MPT quantity
     This customizes the string conversion and supports
@@ -276,7 +275,7 @@ struct XrpT
     operator()(T v) const
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
-        return {TOut{v} * kJTX_DROPS_PER_XRP};
+        return {TOut{v} * kJtxDropsPerXrp};
     }
 
     /** Returns an amount of XRP as PrettyAmount,
@@ -287,7 +286,7 @@ struct XrpT
     PrettyAmount
     operator()(Number v) const
     {
-        auto const c = kJTX_DROPS_PER_XRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         auto const d = std::int64_t(v * c);
         if (Number(d) / c != v)
             Throw<std::domain_error>("unrepresentable");
@@ -297,7 +296,7 @@ struct XrpT
     PrettyAmount
     operator()(double v) const
     {
-        auto const c = kJTX_DROPS_PER_XRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         if (v >= 0)
         {
             auto const d = std::uint64_t(std::round(v * c));
@@ -371,7 +370,7 @@ struct EpsilonT
     }
 };
 
-static EpsilonT const kEPSILON;
+static EpsilonT const kEpsilon;
 
 /** Converts to IOU Issue or STAmount.
 
@@ -612,7 +611,7 @@ AnyT::operator()(STAmount const& sta) const
 /** Returns an amount representing "any issuer"
     @note With respect to what the recipient will accept
 */
-extern AnyT const kANY;
+extern AnyT const kAny;
 
 }  // namespace test::jtx
 

@@ -1,0 +1,99 @@
+# Build Linux packages (DEB and RPM) from pre-built binary artifacts.
+# Discovers which configurations to package from linux.json (os entries
+# with "package": true) and fans out one job per entry. Today only
+# linux/amd64 is emitted; the architecture is hardcoded both here
+# (runner) and in generate.py.
+name: Package
+
+on:
+  workflow_call:
+    inputs:
+      pkg_release:
+        description: "Package release number. Increment when repackaging the same executable."
+        required: false
+        type: string
+        default: "1"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: build
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Generate packaging matrix
+        id: generate
+        working-directory: .github/scripts/strategy-matrix
+        run: |
+          ./generate.py --packaging --config=linux.json >> "${GITHUB_OUTPUT}"
+
+  generate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/actions/generate-version
+            src/libxrpl/protocol/BuildInfo.cpp
+      - name: Generate version
+        id: version
+        uses: ./.github/actions/generate-version
+
+  package:
+    needs: [generate-matrix, generate-version]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    name: "${{ matrix.artifact_name }}"
+    permissions:
+      contents: read
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: ${{ format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, matrix.os.image_sha) }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download pre-built binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ env.BUILD_DIR }}
+
+      - name: Make binary executable
+        run: chmod +x "${BUILD_DIR}/xrpld"
+
+      - name: Build package
+        env:
+          PKG_VERSION: ${{ needs.generate-version.outputs.version }}
+          PKG_RELEASE: ${{ inputs.pkg_release }}
+        run: ./package/build_pkg.sh
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: ${{ github.event.repository.visibility == 'public' }}
+        with:
+          name: ${{ matrix.artifact_name }}-pkg-${{ needs.generate-version.outputs.version }}
+          path: |
+            ${{ env.BUILD_DIR }}/debbuild/*.deb
+            ${{ env.BUILD_DIR }}/debbuild/*.ddeb
+            ${{ env.BUILD_DIR }}/rpmbuild/RPMS/**/*.rpm
+          if-no-files-found: error
