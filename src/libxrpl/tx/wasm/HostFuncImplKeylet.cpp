@@ -208,7 +208,7 @@ WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
         return Unexpected(HostFunctionError::InvalidAccount);
-    auto const keylet = jss::ticket(account, seq);
+    auto const keylet = keylet::kTicket(account, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 

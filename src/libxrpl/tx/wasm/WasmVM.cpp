@@ -3,6 +3,7 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
 #include <xrpl/tx/wasm/ParamsHelper.h>
 
 #include <cstdint>

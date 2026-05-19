@@ -43,7 +43,7 @@ printWasmError(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
     auto& j = std::cerr;
 #else
     auto j = jlog.warn();
-    if (jlog.active(beast::severities::kWarning))
+    if (jlog.active(beast::Severity::Warning))
 #endif
     {
         wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;

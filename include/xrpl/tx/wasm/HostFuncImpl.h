@@ -48,7 +48,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        if (!getJournal().active(beast::severities::kTrace))
+        if (!getJournal().active(beast::Severity::Trace))
             return;
         auto j = getJournal().trace();
 #endif

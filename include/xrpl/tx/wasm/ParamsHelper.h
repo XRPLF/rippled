@@ -7,13 +7,21 @@
 #include <boost/function_types/result_type.hpp>
 #include <boost/mpl/vector.hpp>
 
+#include <bit>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace bft = boost::function_types;
 
 namespace xrpl {
+
+template <typename>
+inline constexpr bool wasmDependentFalse = false;
 
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
@@ -119,14 +127,11 @@ WasmImpRet(WasmImportFunc& e)
     else if constexpr (std::is_void_v<Rt>)
     {
         e.result.reset();
-#if (defined(__GNUC__) && (__GNUC__ >= 14)) || \
-    ((defined(__clang_major__)) && (__clang_major__ >= 18))
     }
     else
     {
-        static_assert(false, "Unsupported return type");
+        static_assert(wasmDependentFalse<Rt>, "Unsupported return type");
     }
-#endif
 }
 
 template <typename F>

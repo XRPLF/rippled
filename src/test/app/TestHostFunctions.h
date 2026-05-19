@@ -23,7 +23,7 @@ public:
     void
     setRT(void* rt) override
     {
-        rt = rt;
+        this->rt = rt;
     }
 
     [[nodiscard]] void*
@@ -59,7 +59,7 @@ public:
     void
     setRT(void* rt) override
     {
-        rt = rt;
+        this->rt = rt;
     }
 
     [[nodiscard]] void*
@@ -179,7 +179,7 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
                 return Bytes(accountID_.begin(), accountID_.end());
             }
@@ -197,7 +197,7 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
                 return Bytes(accountID_.begin(), accountID_.end());
             }
@@ -215,7 +215,7 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
                 return Bytes(accountID_.begin(), accountID_.end());
             }
@@ -387,7 +387,7 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        if (!getJournal().active(beast::severities::kTrace))
+        if (!getJournal().active(beast::Severity::Trace))
             return;
         auto j = getJournal().trace();
 #endif
@@ -540,7 +540,7 @@ struct TestHostFunctionsSink : public TestHostFunctions
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
-        : TestHostFunctions(env, cd), sink_(beast::severities::kDebug)
+        : TestHostFunctions(env, cd), sink(beast::Severity::Debug)
     {
         j = beast::Journal(sink);
     }

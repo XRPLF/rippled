@@ -59,14 +59,14 @@ public:
     {
         try
         {
-            Number const n;
+            Number n;
             if constexpr (std::is_signed_v<T>)
             {
                 n = Number(static_cast<int64_t>(mantissa), exponent);
             }
             else
             {
-                n = Number(static_cast<uint64_t>(mantissa), exponent, Number::normalized());
+                n = Number(static_cast<uint64_t>(mantissa), exponent, Number::Normalized{});
             }
             *static_cast<Number*>(this) = n;
         }
@@ -118,7 +118,8 @@ struct FloatState
 
     FloatState(int32_t mode) : oldMode(Number::getround())
     {
-        if (mode < Number::RoundingMode::ToNearest || mode > Number::RoundingMode::Upward)
+        if (mode < static_cast<int32_t>(Number::RoundingMode::ToNearest) ||
+            mode > static_cast<int32_t>(Number::RoundingMode::Upward))
             return;
         Number::setround(static_cast<Number::RoundingMode>(mode));
         good = true;
@@ -141,7 +142,7 @@ std::string
 floatToString(Slice const& data)
 {
     // set default mode as we don't expect it will be used here
-    detail::FloatState const rm(Number::RoundingMode::to_nearest);
+    detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
     detail::WasmNumber const num(data);
     if (!num)
     {
@@ -274,7 +275,7 @@ floatToMantExpImpl(Slice const& x)
 {
     try
     {
-        detail::FloatState const rm(Number::RoundingMode::to_nearest);
+        detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
         if (!rm)
             return Unexpected(HostFunctionError::FloatInputMalformed);
 
@@ -317,7 +318,7 @@ floatCompareImpl(Slice const& x, Slice const& y)
     try
     {
         // set default mode as we don't expect it will be used here
-        detail::FloatState const rm(Number::RoundingMode::to_nearest);
+        detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
 
         detail::WasmNumber const xx(x);
         if (!xx)
