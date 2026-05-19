@@ -349,7 +349,7 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], account_);
+    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
@@ -364,7 +364,7 @@ VaultClawback::doApply()
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
-    if (account_ == vault->at(sfOwner) && amount.asset() == share)
+    if (accountID_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
@@ -426,7 +426,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 
