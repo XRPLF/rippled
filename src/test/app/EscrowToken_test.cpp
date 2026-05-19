@@ -887,6 +887,70 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUCancelDoApply(FeatureBitset features)
+    {
+        testcase("IOU Cancel DoApply");
+        using namespace jtx;
+        using namespace std::literals;
+
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            auto const usd = gw["USD"];
+
+            env.fund(XRP(10'000), alice, bob, gw);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(100'000), alice);
+            env.trust(usd(100'000), bob);
+            env.close();
+
+            env(pay(gw, alice, usd(10'000)));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, usd(1'000)),
+                escrow::kFinishTime(env.now() + 1s),
+                escrow::kCancelTime(env.now() + 2s),
+                Fee(baseFee));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, usd) == usd(9'000));
+
+            env(pay(alice, gw, usd(9'000)));
+            env.close();
+
+            env(trust(alice, usd(0)));
+            env.close();
+
+            auto const trustLineKey = keylet::line(alice.id(), gw.id(), usd.currency);
+            BEAST_EXPECT(!env.current()->exists(trustLineKey));
+
+            env.close();
+            env.close();
+
+            auto const expectedResult = env.current()->rules().enabled(fixCleanup3_2_0)
+                ? Ter(tesSUCCESS)
+                : Ter(tefEXCEPTION);
+            env(escrow::cancel(alice, alice, seq), Fee(baseFee), expectedResult);
+            env.close();
+
+            if (env.current()->rules().enabled(fixCleanup3_2_0))
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), seq)));
+                BEAST_EXPECT(env.current()->exists(trustLineKey));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
+            }
+        }
+    }
+
+    void
     testIOUBalances(FeatureBitset features)
     {
         testcase("IOU Balances");
@@ -3887,6 +3951,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         testIOUFinishPreclaim(features);
         testIOUFinishDoApply(features);
         testIOUCancelPreclaim(features);
+        testIOUCancelDoApply(features);
         testIOUBalances(features);
         testIOUMetaAndOwnership(features);
         testIOURippleState(features);
@@ -3928,6 +3993,7 @@ public:
              {all - featureSingleAssetVault - featureLendingProtocol, all})
         {
             testIOUWithFeats(feats);
+            testIOUWithFeats(feats - fixCleanup3_2_0);
             testMPTWithFeats(feats);
             testMPTWithFeats(feats - fixTokenEscrowV1);
         }
