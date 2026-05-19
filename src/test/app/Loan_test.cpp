@@ -68,6 +68,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <map>
 #include <optional>
