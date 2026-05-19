@@ -6140,10 +6140,90 @@ class Vault_test : public beast::unit_test::Suite
         runTest(amendments);
     }
 
+    // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
+    // shFULL_BALANCE), which for an IOU asset adds the counterparty's
+    // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
+    // getTrustLineBalance with includeOppositeLimit=true). When the
+    // depositor's raw balance < deposit amount but raw + opposite limit >=
+    // amount, preclaim is satisfied. doApply then calls
+    // directSendNoFeeIOU, which unconditionally subtracts saAmount from
+    // saBalance — driving the trust line negative — and returns tesSUCCESS.
+    // The post-send sanity check uses the default shSIMPLE_BALANCE (no
+    // opposite-limit add), sees a negative balance, and returns tefINTERNAL.
+    void
+    testVaultDepositNegativeBalanceFromOppositeLimit()
+    {
+        auto runTest = [&](FeatureBitset f, TER expected) {
+            using namespace test::jtx;
+            using namespace std::literals;
+
+            Env env{*this, f};
+            Account const gw{"gateway"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+
+            env.fund(XRP(10000), gw, owner, depositor);
+            env.close();
+
+            // Gateway with DefaultRipple so vault creation on its IOU works.
+            env(fset(gw, asfDefaultRipple));
+            env.close();
+
+            // Depositor opens a trust line to gateway and receives a small
+            // balance.
+            PrettyAsset const usd = gw["USD"];
+            env.trust(usd(1000), depositor);
+            env(pay(gw, depositor, usd(100)));  // raw trust-line balance: 100
+            env.close();
+
+            // Key precondition: gateway sets a non-zero limit on the same
+            // RippleState — the "opposite field" from depositor's perspective.
+            // This is what inflates shFULL_BALANCE in preclaim above the raw
+            // balance.
+            env(trust(gw, depositor["USD"](1000)));
+            env.close();
+
+            // Create the IOU vault.
+            Vault const vault{env};
+            auto [vaultTx, keylet] = vault.create({.owner = owner, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            // Submit a deposit of 500 USD:
+            //   - raw balance:                100 USD
+            //   - opposite limit (gw's side): 1000 USD
+            //   - preclaim sees 100 + 1000 = 1100, passes (>= 500)
+            //   - doApply transfers 500, depositor's trust-line balance
+            //     becomes -400
+            //   - sanity check at VaultDeposit.cpp:256 fires
+            //   - tx returns tefINTERNAL (BUG — should be tesSUCCESS.
+            auto depositTx =
+                vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(500)});
+            env(depositTx, Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "IOU vault deposit exceeding depositor's balance but "
+                "within counterparty's trust limit, pre-fixCleanup3_2_0 "
+                "(tefINTERNAL)");
+            runTest(test::jtx::testableAmendments() - fixCleanup3_2_0, tefINTERNAL);
+        }
+        {
+            testcase(
+                "IOU vault deposit exceeding depositor's balance but "
+                "within counterparty's trust limit, post-fixCleanup3_2_0 "
+                "(tesSUCCESS)");
+            runTest(test::jtx::testableAmendments(), tesSUCCESS);
+        }
+    }
+
 public:
     void
     run() override
     {
+        testVaultDepositNegativeBalanceFromOppositeLimit();
         testSequences();
         testPreflight();
         testCreateFailXRP();
