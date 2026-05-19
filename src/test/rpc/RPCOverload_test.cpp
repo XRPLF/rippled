@@ -1,16 +1,26 @@
-#include <test/jtx.h>
+#include <test/jtx/AbstractClient.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/pay.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <memory>
+#include <utility>
 
-class RPCOverload_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class RPCOverload_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -20,7 +30,7 @@ public:
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    return no_admin(std::move(cfg));
+                    return noAdmin(std::move(cfg));
                 })};
 
         Account const alice{"alice"};
@@ -30,7 +40,7 @@ public:
         std::unique_ptr<AbstractClient> client =
             useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
-        Json::Value tx = Json::objectValue;
+        json::Value tx = json::ValueType::Object;
         tx[jss::tx_json] = pay(alice, bob, XRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 
@@ -72,5 +82,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

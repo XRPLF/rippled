@@ -19,9 +19,9 @@ class PaymentChannelCreateBuilder;
  * @brief Transaction: PaymentChannelCreate
  *
  * Type: ttPAYCHAN_CREATE (13)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelCreateBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfSettleDelay (soeREQUIRED)
+     * @brief Get sfSettleDelay (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfPublicKey (soeREQUIRED)
+     * @brief Get sfPublicKey (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfCancelAfter (soeOPTIONAL)
+     * @brief Get sfCancelAfter (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -118,7 +118,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -148,7 +148,7 @@ public:
  * @brief Builder for PaymentChannelCreate transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class PaymentChannelCreateBuilder : public TransactionBuilderBase<PaymentChannelCreateBuilder>
@@ -193,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -204,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -215,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfSettleDelay (soeREQUIRED)
+     * @brief Set sfSettleDelay (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -226,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfPublicKey (soeREQUIRED)
+     * @brief Set sfPublicKey (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -237,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Set sfCancelAfter (soeOPTIONAL)
+     * @brief Set sfCancelAfter (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&
@@ -248,7 +248,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelCreateBuilder&

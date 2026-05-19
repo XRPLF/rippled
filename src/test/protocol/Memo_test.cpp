@@ -1,10 +1,21 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/rpc.h>
 
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string_view>
 
 namespace xrpl {
 
-class Memo_test : public beast::unit_test::suite
+class Memo_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -23,7 +34,7 @@ public:
         // This is the basis for building tests of invalid states.
         auto makeJtxWithMemo = [&env, &alice]() {
             JTx example = noop(alice);
-            memo const exampleMemo{"tic", "tac", "toe"};
+            Memo const exampleMemo{"tic", "tac", "toe"};
             exampleMemo(env, example);
             return example;
         };
@@ -38,7 +49,7 @@ public:
             memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoData.jsonName] =
                 std::string(2020, '0');
             env(memoSize,
-                rpc("invalidTransaction",
+                Rpc("invalidTransaction",
                     "fails local checks: The memo exceeds the maximum allowed "
                     "size."));
 
@@ -57,7 +68,7 @@ public:
             m[sfMemoData.jsonName] = "3030303030";
 
             env(memoNonMemo,
-                rpc("invalidTransaction",
+                Rpc("invalidTransaction",
                     "fails local checks: A memo array may contain only Memo "
                     "objects."));
         }
@@ -66,7 +77,7 @@ public:
             JTx memoExtra = makeJtxWithMemo();
             memoExtra.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] = 13;
             env(memoExtra,
-                rpc("invalidTransaction",
+                Rpc("invalidTransaction",
                     "fails local checks: A memo may contain only MemoType, "
                     "MemoData or MemoFormat fields."));
         }
@@ -76,7 +87,7 @@ public:
             memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoType.jsonName] =
                 strHex(std::string_view("ONE<INFINITY"));
             env(memoBadChar,
-                rpc("invalidTransaction",
+                Rpc("invalidTransaction",
                     "fails local checks: The MemoType and MemoFormat fields "
                     "may only contain characters that are allowed in URLs "
                     "under RFC 3986."));
@@ -95,7 +106,7 @@ public:
             memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfMemoFormat.jsonName] =
                 strHex(std::string_view("NoBraces{}InURL"));
             env(memoBadChar,
-                rpc("invalidTransaction",
+                Rpc("invalidTransaction",
                     "fails local checks: The MemoType and MemoFormat fields "
                     "may only contain characters that are allowed in URLs "
                     "under RFC 3986."));

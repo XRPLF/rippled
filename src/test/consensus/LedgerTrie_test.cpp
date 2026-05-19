@@ -2,14 +2,15 @@
 
 #include <xrpld/consensus/LedgerTrie.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <cstdint>
+#include <optional>
 #include <random>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class LedgerTrie_test : public beast::unit_test::suite
+class LedgerTrie_test : public beast::unit_test::Suite
 {
     void
     testInsert()
@@ -707,5 +708,4 @@ class LedgerTrie_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,14 +1,36 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
+#include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <vector>
+
 namespace xrpl {
 
 void
 initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
-    DBConfig const m_sociConfig(config, "peerfinder");
-    m_sociConfig.open(session);
+    DBConfig const sociConfig(config, "peerfinder");
+    sociConfig.open(session);
 
-    JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString() << "'";
+    JLOG(j.info()) << "Opening database at '" << sociConfig.connectionString() << "'";
 
     soci::transaction tr(session);
     session << "PRAGMA encoding=\"UTF-8\";";
@@ -104,8 +126,8 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             while (st.fetch())
             {
                 PeerFinder::Store::Entry entry;
-                entry.endpoint = beast::IP::Endpoint::from_string(s);
-                if (!is_unspecified(entry.endpoint))
+                entry.endpoint = beast::IP::Endpoint::fromString(s);
+                if (!isUnspecified(entry.endpoint))
                 {
                     entry.valence = valence;
                     list.push_back(entry);

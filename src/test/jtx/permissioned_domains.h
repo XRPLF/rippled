@@ -4,10 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/deposit.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace pdomain {
+namespace xrpl::test::jtx::pdomain {
 
 // Helpers for PermissionedDomains testing
 using Credential = xrpl::test::jtx::deposit::AuthorizeCredentials;
@@ -15,18 +12,18 @@ using Credentials = std::vector<Credential>;
 
 // helpers
 // Make json for PermissionedDomainSet transaction
-Json::Value
+json::Value
 setTx(
     AccountID const& account,
     Credentials const& credentials,
     std::optional<uint256> domain = std::nullopt);
 
 // Make json for PermissionedDomainDelete transaction
-Json::Value
+json::Value
 deleteTx(AccountID const& account, uint256 const& domain);
 
 // Get PermissionedDomain objects from account_objects rpc call
-std::map<uint256, Json::Value>
+std::map<uint256, json::Value>
 getObjects(Account const& account, Env& env, bool withType = true);
 
 // Check if ledger object is there
@@ -36,7 +33,7 @@ objectExists(uint256 const& objID, Env& env);
 // Extract credentials from account_object object
 Credentials
 credentialsFromJson(
-    Json::Value const& object,
+    json::Value const& object,
     std::unordered_map<std::string, Account> const& human2Acc);
 
 // Sort credentials the same way as PermissionedDomainSet
@@ -47,7 +44,4 @@ sortCredentials(Credentials const& input);
 uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta);
 
-}  // namespace pdomain
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::pdomain
