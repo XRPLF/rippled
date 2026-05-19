@@ -1281,7 +1281,7 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     auto const feeAmountAfter = balance - fee;
-    if (feeAmountAfter == beast::kZERO && feePayer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::kZero && feePayer.balanceField == sfFeeAmount)
     {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         payerSle->makeFieldAbsent(feePayer.balanceField);

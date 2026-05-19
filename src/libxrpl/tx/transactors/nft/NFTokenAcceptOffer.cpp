@@ -401,7 +401,7 @@ NFTokenAcceptOffer::transferNFToken(
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
             SLE::const_pointer buyerSponsorSle;
-            if (account_ == buyer)
+            if (accountID_ == buyer)
                 buyerSponsorSle = *sponsorSle;
             if (auto const ret = checkInsufficientReserve(
                     ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, buyerSponsorSle, 0, 0, j_);

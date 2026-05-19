@@ -32,13 +32,11 @@ SponsorshipSet::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 SponsorshipSet::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-
-    if (((flags & tfSponsorshipSetRequireSignForFee) != 0u) &&
-        ((flags & tfSponsorshipClearRequireSignForFee) != 0u))
+    if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
+        ctx.tx.isFlag(tfSponsorshipClearRequireSignForFee))
         return temINVALID_FLAG;
-    if (((flags & tfSponsorshipSetRequireSignForReserve) != 0u) &&
-        ((flags & tfSponsorshipClearRequireSignForReserve) != 0u))
+    if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForReserve) &&
+        ctx.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
         return temINVALID_FLAG;
 
     auto const account = ctx.tx.getAccountID(sfAccount);
@@ -55,14 +53,14 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (sponsorAccountID == sponseeAccountID)
         return temMALFORMED;
 
-    if ((flags & tfDeleteObject) != 0u)
+    if (ctx.tx.isFlag(tfDeleteObject))
     {
         // can not combine with any modification flags when deleting
-        constexpr std::uint32_t kMODIFY_FLAGS = tfSponsorshipSetRequireSignForFee |
+        constexpr std::uint32_t kModifyFlags = tfSponsorshipSetRequireSignForFee |
             tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
             tfSponsorshipClearRequireSignForReserve;
 
-        if ((flags & kMODIFY_FLAGS) != 0u)
+        if ((ctx.tx.getFlags() & kModifyFlags) != 0u)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
@@ -180,8 +178,8 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 TER
 SponsorshipSet::doApply()
 {
-    auto const sponsorAccountID = ctx_.tx[~sfCounterpartySponsor].value_or(account_);
-    auto const sponseeAccountID = ctx_.tx[~sfSponsee].value_or(account_);
+    auto const sponsorAccountID = ctx_.tx[~sfCounterpartySponsor].value_or(accountID_);
+    auto const sponseeAccountID = ctx_.tx[~sfSponsee].value_or(accountID_);
 
     if (sponseeAccountID == sponsorAccountID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -303,11 +301,11 @@ SponsorshipSet::doApply()
         auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].valueOr(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
-        if (feeAmountDelta > beast::kZERO && feeAmountDelta > (*sponsorAccSle)[sfBalance])
+        if (feeAmountDelta > beast::kZero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
         // transfer feeAmount to ledger entry
-        if (feeAmountDelta != beast::kZERO)
+        if (feeAmountDelta != beast::kZero)
         {
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
 
@@ -347,16 +345,7 @@ SponsorshipSet::doApply()
     }
 
     if (reserveCount)
-    {
-        if (*reserveCount == 0)
-        {
-            (*sponsorObjSle).makeFieldAbsent(sfReserveCount);
-        }
-        else
-        {
-            (*sponsorObjSle)[sfReserveCount] = *reserveCount;
-        }
-    }
+        sponsorObjSle->at(sfReserveCount) = *reserveCount;
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);

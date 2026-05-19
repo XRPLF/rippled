@@ -147,8 +147,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureSponsor))
     {
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if(!sponsorSle)
-            return sponsorSle.error(); // LCOV_EXCL_LINE
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
 
         // Check the reserve for LPToken trustline
         // Insufficient reserve

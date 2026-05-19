@@ -600,7 +600,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = kNEW_DOMAIN;
+            tx[sfDomain.jsonName] = kNewDomain;
             tx[sfSponsor.jsonName] = sponsor.human();
             tx[sfSponsorFlags.jsonName] = spfSponsorFee;
             tx[sfSponsorSignature.jsonName] = json::ValueType::Object;

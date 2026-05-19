@@ -703,7 +703,13 @@ AMMWithdraw::withdraw(
 
     // Withdraw amountWithdraw
     auto res = accountSend(
-        view, ammAccount, account, amountWithdrawActual, journal, sponsorSle, WaiveTransferFee::Yes);
+        view,
+        ammAccount,
+        account,
+        amountWithdrawActual,
+        journal,
+        sponsorSle,
+        WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
