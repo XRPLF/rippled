@@ -191,7 +191,7 @@ public:
 private:
     // Maximum line length for log messages.
     // If the message exceeds this length it will be truncated with ellipses.
-    static constexpr auto kMAXIMUM_MESSAGE_CHARACTERS = 12 * 1024;
+    static constexpr auto kMaximumMessageCharacters = 12 * 1024;
 
     static void
     format(
