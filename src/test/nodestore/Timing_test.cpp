@@ -1,4 +1,3 @@
-#include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Blob.h>
@@ -45,6 +44,16 @@
 #endif
 
 namespace xrpl::NodeStore {
+
+// Inlined from the former test/nodestore/TestBase.h after that header was
+// migrated to the gtest tree at src/tests/libxrpl/nodestore/. Timing_test is
+// the sole remaining beast consumer and only needs this comparator.
+inline bool
+isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
+{
+    return (lhs->getType() == rhs->getType()) && (lhs->getHash() == rhs->getHash()) &&
+        (lhs->getData() == rhs->getData());
+}
 
 std::unique_ptr<Backend>
 makeBackend(Section const& config, Scheduler& scheduler, beast::Journal journal)
