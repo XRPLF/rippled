@@ -4,10 +4,10 @@
 # parse macro files and generate C++ wrapper classes.
 
 # C preprocessor for Python - used to preprocess macro files
-pcpp>=1.30
+pcpp==1.30
 
 # Parser combinator library - used to parse the macro DSL
-pyparsing>=3.0.0
+pyparsing==3.0.0
 
 # Template engine - used to generate C++ code from templates
-Mako>=1.2.2
+Mako==1.2.2
