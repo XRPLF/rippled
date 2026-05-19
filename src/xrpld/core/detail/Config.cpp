@@ -372,8 +372,8 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             }
 
             // As a last resort, check the system config directory.
-            dataDir = "/var/opt/" + systemName();
-            CONFIG_DIR = "/etc/opt/" + systemName();
+            dataDir = "/var/lib/" + systemName();
+            CONFIG_DIR = "/etc/" + systemName();
             CONFIG_FILE_ = CONFIG_DIR / kConfigFileName;
             if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
