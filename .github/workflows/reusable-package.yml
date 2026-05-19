@@ -58,6 +58,7 @@ jobs:
 
   package:
     needs: [generate-matrix, generate-version]
+    if: ${{ github.event.repository.visibility == 'public' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
@@ -89,7 +90,6 @@ jobs:
 
       - name: Upload package artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        if: ${{ github.event.repository.visibility == 'public' }}
         with:
           name: ${{ matrix.artifact_name }}-pkg-${{ needs.generate-version.outputs.version }}
           path: |
