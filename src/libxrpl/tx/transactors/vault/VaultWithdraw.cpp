@@ -91,6 +91,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Validate credentials (if any) before canWithdraw, since canWithdraw may
+    // call credentials::authorizedDepositPreauth which assumes credentials
+    // already exist.
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j); !isTesSuccess(err))
+        return err;
+
     if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
     {
         // Post-fixCleanup3_1_3: if the user specified shares, convert
