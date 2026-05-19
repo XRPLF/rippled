@@ -55,11 +55,11 @@ OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
-    auto const sle = view().read(keylet::account(account_));
+    auto const sle = view().read(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
+    if (auto sleOffer = view().peek(keylet::offer(accountID_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.registry.get().getJournal("View"));

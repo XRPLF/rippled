@@ -100,14 +100,14 @@ singleThreadIo(std::unique_ptr<Config> cfg)
     return cfg;
 }
 
-auto constexpr kDEFAULTSEED = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+constexpr auto kDefaultSeed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config> cfg, std::string const& seed)
 {
     // If the config has valid validation keys then we run as a validator.
     cfg->section(SECTION_VALIDATION_SEED)
-        .append(std::vector<std::string>{seed.empty() ? kDEFAULTSEED : seed});
+        .append(std::vector<std::string>{seed.empty() ? kDefaultSeed : seed});
     return cfg;
 }
 

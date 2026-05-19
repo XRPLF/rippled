@@ -116,7 +116,7 @@ public:
         BEAST_EXPECT(c.size() == 1);
         // verify that advancing to 1 sec before expiration
         // leaves our entry intact
-        clock_.advance(Tuning::kLIVE_CACHE_SECONDS_TO_LIVE - 1s);
+        clock_.advance(Tuning::kLiveCacheSecondsToLive - 1s);
         c.expire();
         BEAST_EXPECT(c.size() == 1);
         // now advance to the point of expiration
@@ -129,9 +129,9 @@ public:
     testHistogram()
     {
         testcase("Histogram");
-        constexpr auto kNUM_EPS = 40;
+        static constexpr auto kNumEps = 40;
         Livecache<> c(clock_, journal_);
-        for (auto i = 0; i < kNUM_EPS; ++i)
+        for (auto i = 0; i < kNumEps; ++i)
             add(beast::IP::randomEP(true), c, xrpl::randInt<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
@@ -145,7 +145,7 @@ public:
             sum += val;
             BEAST_EXPECT(val >= 0);
         }
-        BEAST_EXPECT(sum == kNUM_EPS);
+        BEAST_EXPECT(sum == kNumEps);
     }
 
     void
@@ -154,10 +154,10 @@ public:
         testcase("Shuffle");
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::randInt(Tuning::kMAX_HOPS + 1));
+            add(beast::IP::randomEP(true), c, xrpl::randInt(Tuning::kMaxHops + 1));
 
         using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
-        using all_hops = std::array<at_hop, 1 + Tuning::kMAX_HOPS + 1>;
+        using all_hops = std::array<at_hop, 1 + Tuning::kMaxHops + 1>;
 
         auto cmpEp = [](Endpoint const& a, Endpoint const& b) {
             return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));

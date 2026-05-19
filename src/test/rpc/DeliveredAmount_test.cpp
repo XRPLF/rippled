@@ -40,7 +40,7 @@ class CheckDeliveredAmount
     int numExpectedNotSet_ = 0;
 
     // Increment one of the expected numExpected{Available_, Unavailable_,
-    // NotSet_} values. Which value to kINCREMENT depends on: 1) If the ledger is
+    // NotSet_} values. Which value to kIncrement depends on: 1) If the ledger is
     // before or after the switch time 2) If the tx is a partial payment 3) If
     // the payment is successful or not
     void
