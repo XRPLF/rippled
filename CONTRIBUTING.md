@@ -267,6 +267,26 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for pl
 
 Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
 
+#### Via pre-commit (recommended)
+
+If you have already installed the pre-commit hooks (see above), you can run clang-tidy on your staged files using:
+
+```
+TIDY=1 pre-commit run clang-tidy
+```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
 Then run clang-tidy on your local changes:
 
 ```
@@ -328,8 +348,8 @@ For this reason:
 - Contract description for `UNREACHABLE` should describe the _unexpected_
   situation which caused the line to have been reached.
 - Example good name for an
-  `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
-  good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
+  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
+  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).

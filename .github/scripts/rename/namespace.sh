@@ -6,11 +6,11 @@ set -e
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-  if ! command -v gsed &> /dev/null; then
-      echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
-      exit 1
-  fi
-  SED_COMMAND=gsed
+    if ! command -v gsed &> /dev/null; then
+        echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
+        exit 1
+    fi
+    SED_COMMAND=gsed
 fi
 
 # This script renames the `ripple` namespace to `xrpl` in this project.
@@ -35,15 +35,15 @@ pushd "${DIRECTORY}"
 
 DIRECTORIES=("include" "src" "tests")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
-  echo "Processing directory: ${DIRECTORY}"
+    echo "Processing directory: ${DIRECTORY}"
 
-  find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.macro" \) | while read -r FILE; do
-      echo "Processing file: ${FILE}"
-      ${SED_COMMAND} -i 's/namespace ripple/namespace xrpl/g' "${FILE}"
-      ${SED_COMMAND} -i 's/ripple::/xrpl::/g' "${FILE}"
-      ${SED_COMMAND} -i 's/"ripple:/"xrpl::/g' "${FILE}"
-      ${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' "${FILE}"
-  done
+    find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.macro" \) | while read -r FILE; do
+        echo "Processing file: ${FILE}"
+        ${SED_COMMAND} -i 's/namespace ripple/namespace xrpl/g' "${FILE}"
+        ${SED_COMMAND} -i 's/ripple::/xrpl::/g' "${FILE}"
+        ${SED_COMMAND} -i 's/"ripple:/"xrpl::/g' "${FILE}"
+        ${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' "${FILE}"
+    done
 done
 
 # Special case for NuDBFactory that has ripple twice in the test suite name.

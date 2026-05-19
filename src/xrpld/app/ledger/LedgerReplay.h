@@ -27,7 +27,7 @@ public:
 
     /** @return The parent of the ledger to replay
      */
-    std::shared_ptr<Ledger const> const&
+    [[nodiscard]] std::shared_ptr<Ledger const> const&
     parent() const
     {
         return parent_;
@@ -35,7 +35,7 @@ public:
 
     /** @return The ledger to replay
      */
-    std::shared_ptr<Ledger const> const&
+    [[nodiscard]] std::shared_ptr<Ledger const> const&
     replay() const
     {
         return replay_;
@@ -43,7 +43,7 @@ public:
 
     /** @return Transactions in the order they should be replayed
      */
-    std::map<std::uint32_t, std::shared_ptr<STTx const>> const&
+    [[nodiscard]] std::map<std::uint32_t, std::shared_ptr<STTx const>> const&
     orderedTxns() const
     {
         return orderedTxns_;

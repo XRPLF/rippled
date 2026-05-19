@@ -1,32 +1,40 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/vault/VaultDeposit.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
-#include <xrpl/tx/transactors/vault/VaultDeposit.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <stdexcept>
 
 namespace xrpl {
 
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -117,10 +125,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE) < assets)
+            SpendableHandling::FullBalance) < assets)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -148,20 +156,20 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
+                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
-    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
+    else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
+        if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -171,15 +179,15 @@ VaultDeposit::doApply()
         {
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
-                account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+                accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {},       // flags
-                    account_  // holderID
+                    {},         // flags
+                    accountID_  // holderID
                 );
                 !isTesSuccess(err))
                 return err;
@@ -196,7 +204,7 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
-        if (sharesCreated == beast::zero)
+        if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
@@ -239,19 +247,19 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), accountID_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
-            account_,
+            accountID_,
             assetsDeposited.asset(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_) < beast::zero)
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j_) < beast::kZero)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
@@ -261,13 +269,34 @@ VaultDeposit::doApply()
 
     // Transfer shares from vault to depositor.
     if (auto const ter =
-            accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
+            accountSend(view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultDeposit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultDeposit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

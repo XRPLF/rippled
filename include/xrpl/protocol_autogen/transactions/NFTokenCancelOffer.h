@@ -19,9 +19,9 @@ class NFTokenCancelOfferBuilder;
  * @brief Transaction: NFTokenCancelOffer
  *
  * Type: ttNFTOKEN_CANCEL_OFFER (28)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenCancelOfferBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenOffers (soeREQUIRED)
+     * @brief Get sfNFTokenOffers (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for NFTokenCancelOffer transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class NFTokenCancelOfferBuilder : public TransactionBuilderBase<NFTokenCancelOfferBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenOffers (soeREQUIRED)
+     * @brief Set sfNFTokenOffers (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCancelOfferBuilder&

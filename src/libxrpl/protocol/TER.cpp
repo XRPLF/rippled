@@ -22,7 +22,7 @@ transResults()
     static
     std::unordered_map<
             TERUnderlyingType,
-            std::pair<char const* const, char const* const>> const results
+            std::pair<char const* const, char const* const>> const kResults
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
@@ -216,6 +216,7 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -223,7 +224,7 @@ transResults()
 
 #undef MAKE_ERROR
 
-    return results;
+    return kResults;
 }
 
 bool
@@ -262,7 +263,7 @@ transHuman(TER code)
 std::optional<TER>
 transCode(std::string const& token)
 {
-    static auto const results = [] {
+    static auto const kResults = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(
@@ -272,9 +273,9 @@ transCode(std::string const& token)
         return byToken;
     }();
 
-    auto const r = results.find(token);
+    auto const r = kResults.find(token);
 
-    if (r == results.end())
+    if (r == kResults.end())
         return std::nullopt;
 
     return TER::fromInt(r->second);

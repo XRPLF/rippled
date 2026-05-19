@@ -1,12 +1,16 @@
+#include <xrpl/protocol/MPTIssue.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_errors.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 
@@ -40,15 +44,15 @@ MPTIssue::getText() const
 }
 
 void
-MPTIssue::setJson(Json::Value& jv) const
+MPTIssue::setJson(json::Value& jv) const
 {
     jv[jss::mpt_issuance_id] = to_string(mptID_);
 }
 
-Json::Value
-to_json(MPTIssue const& mptIssue)
+json::Value
+toJson(MPTIssue const& mptIssue)
 {
-    Json::Value jv;
+    json::Value jv;
     mptIssue.setJson(jv);
     return jv;
 }
@@ -60,7 +64,7 @@ to_string(MPTIssue const& mptIssue)
 }
 
 MPTIssue
-mptIssueFromJson(Json::Value const& v)
+mptIssueFromJson(json::Value const& v)
 {
     if (!v.isObject())
     {
@@ -74,17 +78,17 @@ mptIssueFromJson(Json::Value const& v)
         Throw<std::runtime_error>("mptIssueFromJson, MPTIssue should not have currency or issuer");
     }
 
-    Json::Value const& idStr = v[jss::mpt_issuance_id];
+    json::Value const& idStr = v[jss::mpt_issuance_id];
 
     if (!idStr.isString())
     {
-        Throw<Json::error>("mptIssueFromJson MPTID must be a string Json value");
+        Throw<json::Error>("mptIssueFromJson MPTID must be a string Json value");
     }
 
     MPTID id;
     if (!id.parseHex(idStr.asString()))
     {
-        Throw<Json::error>("mptIssueFromJson MPTID is invalid");
+        Throw<json::Error>("mptIssueFromJson MPTID is invalid");
     }
 
     return MPTIssue{id};

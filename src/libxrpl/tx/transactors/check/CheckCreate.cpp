@@ -1,13 +1,32 @@
+#include <xrpl/tx/transactors/check/CheckCreate.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/check/CheckCreate.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -67,10 +86,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
-    auto const flags = sleDst->getFlags();
-
     // Check if the destination has disallowed incoming checks
-    if ((flags & lsfDisallowIncomingCheck) != 0u)
+    if (sleDst->isFlag(lsfDisallowIncomingCheck))
         return tecNO_PERMISSION;
 
     // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
@@ -80,7 +97,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
-    if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -158,7 +175,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -175,10 +192,10 @@ CheckCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
-    Keylet const checkKeylet = keylet::check(account_, seq);
+    Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
-    sleCheck->setAccountID(sfAccount, account_);
+    sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
     sleCheck->setFieldU32(sfSequence, seq);
@@ -197,7 +214,7 @@ CheckCreate::doApply()
     auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
-    if (dstAccountId != account_)
+    if (dstAccountId != accountID_)
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
@@ -212,8 +229,8 @@ CheckCreate::doApply()
     }
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), checkKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
@@ -226,6 +243,22 @@ CheckCreate::doApply()
     // If we succeeded, the new entry counts against the creator's reserve.
     adjustOwnerCount(view(), sle, 1, viewJ);
     return tesSUCCESS;
+}
+
+void
+CheckCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

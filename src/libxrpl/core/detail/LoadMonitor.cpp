@@ -1,6 +1,12 @@
+#include <xrpl/core/LoadMonitor.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
-#include <xrpl/core/LoadMonitor.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/LoadEvent.h>
+
+#include <chrono>
+#include <mutex>
 
 namespace xrpl {
 
@@ -22,11 +28,11 @@ LoadMonitor::Stats::Stats() : latencyAvg(0), latencyPeak(0)
 //------------------------------------------------------------------------------
 
 LoadMonitor::LoadMonitor(beast::Journal j)
-    : mLatencyMSAvg(0)
-    , mLatencyMSPeak(0)
-    , mTargetLatencyAvg(0)
-    , mTargetLatencyPk(0)
-    , mLastUpdate(UptimeClock::now())
+    : latencyMSAvg_(0)
+    , latencyMSPeak_(0)
+    , targetLatencyAvg_(0)
+    , targetLatencyPk_(0)
+    , lastUpdate_(UptimeClock::now())
     , j_(j)
 {
 }
@@ -42,18 +48,18 @@ LoadMonitor::update()
 {
     using namespace std::chrono_literals;
     auto now = UptimeClock::now();
-    if (now == mLastUpdate)  // current
+    if (now == lastUpdate_)  // current
         return;
 
     // VFALCO TODO Why 8?
-    if ((now < mLastUpdate) || (now > (mLastUpdate + 8s)))
+    if ((now < lastUpdate_) || (now > (lastUpdate_ + 8s)))
     {
         // way out of date
-        mCounts = 0;
-        mLatencyEvents = 0;
-        mLatencyMSAvg = 0ms;
-        mLatencyMSPeak = 0ms;
-        mLastUpdate = now;
+        counts_ = 0;
+        latencyEvents_ = 0;
+        latencyMSAvg_ = 0ms;
+        latencyMSPeak_ = 0ms;
+        lastUpdate_ = now;
         return;
     }
 
@@ -67,12 +73,12 @@ LoadMonitor::update()
     */
     do
     {
-        mLastUpdate += 1s;
-        mCounts -= ((mCounts + 3) / 4);
-        mLatencyEvents -= ((mLatencyEvents + 3) / 4);
-        mLatencyMSAvg -= (mLatencyMSAvg / 4);
-        mLatencyMSPeak -= (mLatencyMSPeak / 4);
-    } while (mLastUpdate < now);
+        lastUpdate_ += 1s;
+        counts_ -= ((counts_ + 3) / 4);
+        latencyEvents_ -= ((latencyEvents_ + 3) / 4);
+        latencyMSAvg_ -= (latencyMSAvg_ / 4);
+        latencyMSPeak_ -= (latencyMSPeak_ / 4);
+    } while (lastUpdate_ < now);
 }
 
 void
@@ -102,47 +108,47 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {
-    std::lock_guard const sl(mutex_);
+    std::scoped_lock const sl(mutex_);
 
     update();
-    mCounts += count;
-    mLatencyEvents += count;
-    mLatencyMSAvg += latency;
-    mLatencyMSPeak += latency;
+    counts_ += count;
+    latencyEvents_ += count;
+    latencyMSAvg_ += latency;
+    latencyMSPeak_ += latency;
 
-    auto const latencyPeak = mLatencyEvents * latency * 4 / count;
+    auto const latencyPeak = latencyEvents_ * latency * 4 / count;
 
-    if (mLatencyMSPeak < latencyPeak)
-        mLatencyMSPeak = latencyPeak;
+    if (latencyMSPeak_ < latencyPeak)
+        latencyMSPeak_ = latencyPeak;
 }
 
 void
 LoadMonitor::setTargetLatency(std::chrono::milliseconds avg, std::chrono::milliseconds pk)
 {
-    mTargetLatencyAvg = avg;
-    mTargetLatencyPk = pk;
+    targetLatencyAvg_ = avg;
+    targetLatencyPk_ = pk;
 }
 
 bool
 LoadMonitor::isOverTarget(std::chrono::milliseconds avg, std::chrono::milliseconds peak)
 {
     using namespace std::chrono_literals;
-    return (mTargetLatencyPk > 0ms && (peak > mTargetLatencyPk)) ||
-        (mTargetLatencyAvg > 0ms && (avg > mTargetLatencyAvg));
+    return (targetLatencyPk_ > 0ms && (peak > targetLatencyPk_)) ||
+        (targetLatencyAvg_ > 0ms && (avg > targetLatencyAvg_));
 }
 
 bool
 LoadMonitor::isOver()
 {
-    std::lock_guard const sl(mutex_);
+    std::scoped_lock const sl(mutex_);
 
     update();
 
-    if (mLatencyEvents == 0)
+    if (latencyEvents_ == 0)
         return false;
 
     return isOverTarget(
-        mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
+        latencyMSAvg_ / (latencyEvents_ * 4), latencyMSPeak_ / (latencyEvents_ * 4));
 }
 
 LoadMonitor::Stats
@@ -151,21 +157,21 @@ LoadMonitor::getStats()
     using namespace std::chrono_literals;
     Stats stats;
 
-    std::lock_guard const sl(mutex_);
+    std::scoped_lock const sl(mutex_);
 
     update();
 
-    stats.count = mCounts / 4;
+    stats.count = counts_ / 4;
 
-    if (mLatencyEvents == 0)
+    if (latencyEvents_ == 0)
     {
         stats.latencyAvg = 0ms;
         stats.latencyPeak = 0ms;
     }
     else
     {
-        stats.latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
-        stats.latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
+        stats.latencyAvg = latencyMSAvg_ / (latencyEvents_ * 4);
+        stats.latencyPeak = latencyMSPeak_ / (latencyEvents_ * 4);
     }
 
     stats.isOverloaded = isOverTarget(stats.latencyAvg, stats.latencyPeak);

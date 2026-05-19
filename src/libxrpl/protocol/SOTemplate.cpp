@@ -1,12 +1,14 @@
+#include <xrpl/protocol/SOTemplate.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/SOTemplate.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
