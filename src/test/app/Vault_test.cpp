@@ -6284,8 +6284,13 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfterBob = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterBob))
             return f;
-        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) > beast::kZero);
-        BEAST_EXPECT(vaultAfterBob->at(sfAssetsAvailable) < vaultAfterBob->at(sfAssetsTotal));
+        // After Bob's exit: loss is unchanged (3,333 receivable), and the
+        // gap between assetsTotal and assetsAvailable equals exactly that
+        // receivable.
+        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) == (*f.asset)(kStuckPrincipal).value());
+        BEAST_EXPECT(
+            vaultAfterBob->at(sfAssetsTotal) - vaultAfterBob->at(sfAssetsAvailable) ==
+            vaultAfterBob->at(sfLossUnrealized));
 
         return f;
     }
@@ -6374,25 +6379,29 @@ class Vault_test : public beast::unit_test::Suite
             return;
         }
 
-        // Post-fix: vault is NOT empty — sharesOutstanding > 0 and
-        // AssetsTotal > 0 jointly satisfy the zero-sized-vault invariant.
-        BEAST_EXPECT(sharesAfter > 0);
-        BEAST_EXPECT(sharesAfter < f.sharesLender);
-        BEAST_EXPECT(totalAfter > beast::kZero);
+        // Post-fix exact-value derivation (fixture: sharesLender=5e9,
+        // totalBefore=6666.5, request=1000):
+        //   sharesRedeemed = round(sharesLender * request / totalBefore)
+        //                  = round(750,018,750.469) = 750,018,750
+        //   received       = totalBefore * sharesRedeemed / sharesLender
+        //                  = 999.999999375  (slightly under 1,000 due to
+        //                                    integer-share rounding)
+        constexpr std::uint64_t kExpectedSharesRedeemed = 750'018'750;
+        Number const expectedReceived =
+            totalBefore * Number(kExpectedSharesRedeemed) / Number(f.sharesLender);
+
+        BEAST_EXPECT(sharesAfter == f.sharesLender - kExpectedSharesRedeemed);
 
         // LossUnrealized is unchanged: the loan-protocol side is untouched.
         BEAST_EXPECT(lossAfter == lossBefore);
 
-        // Vault invariant: loss <= total - available.
-        BEAST_EXPECT(lossAfter <= totalAfter - availableAfter);
+        // The entire (total - available) gap is the impaired receivable,
+        // i.e. equal to lossUnrealized.
+        BEAST_EXPECT(totalAfter - availableAfter == lossAfter);
 
-        // The user asked for `requestAssets`. Due to share rounding the
-        // actual payout may be slightly less; it must never exceed the
-        // requested amount.
         STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
         Number const received{lenderBalanceAfter - lenderBalanceBefore};
-        BEAST_EXPECT(received > beast::kZero);
-        BEAST_EXPECT(received <= Number{requestAssets});
+        BEAST_EXPECT(received == expectedReceived);
 
         // Conservation: assets removed from the vault equal what the
         // depositor received.
@@ -6489,13 +6498,14 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // Confirm the "dormant-but-alive" state from the design doc.
+        // Confirm the "dormant-but-alive" state from the design doc. The
+        // partial exit burned exactly 750,018,750 shares (see derivation
+        // in testWithdrawSoleShareholderFixedAssetExit).
         auto const tokenAfterExit = env.le(keylet::mptoken(f.shareAsset, f.lender.id()));
         if (!BEAST_EXPECT(tokenAfterExit))
             return;
         std::uint64_t const retainedShares = tokenAfterExit->getFieldU64(sfMPTAmount);
-        BEAST_EXPECT(retainedShares > 0);
-        BEAST_EXPECT(retainedShares < f.sharesLender);
+        BEAST_EXPECT(retainedShares == f.sharesLender - 750'018'750);
 
         // Borrower repays the loan in full (pays more than the outstanding
         // total; the loan transactor caps the receivable).
@@ -6506,9 +6516,11 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfterRepay = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterRepay))
             return;
+        // Repayment converts the 3,333 receivable back to cash; assetsTotal
+        // is unchanged but assetsAvailable jumps by exactly the same amount,
+        // and lossUnrealized clears to zero.
         BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZero);
         BEAST_EXPECT(vaultAfterRepay->at(sfAssetsAvailable) == vaultAfterRepay->at(sfAssetsTotal));
-        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsTotal) > beast::kZero);
 
         STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, *f.asset);
         Number const availableBeforeFinal = vaultAfterRepay->at(sfAssetsAvailable);
@@ -6676,13 +6688,13 @@ class Vault_test : public beast::unit_test::Suite
         Number const expected = totalBefore * Number(halfShares) / Number(f.sharesLender);
         BEAST_EXPECT(received == expected);
 
-        // The full-price payout strictly exceeds what the discounted
-        // formula would have produced — that's the whole point of the
-        // waive. Discounted would have been:
-        //   (totalBefore - lossBefore) * halfShares / sharesLender
+        // The full-price payout exceeds the discounted formula by exactly
+        // lossBefore * halfShares / sharesLender — that's the whole point
+        // of the waive.
         Number const discounted =
             (totalBefore - lossBefore) * Number(halfShares) / Number(f.sharesLender);
-        BEAST_EXPECT(received > discounted);
+        Number const expectedDelta = lossBefore * Number(halfShares) / Number(f.sharesLender);
+        BEAST_EXPECT(received - discounted == expectedDelta);
 
         auto const vaultAfter = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfter))
@@ -6691,13 +6703,16 @@ class Vault_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
-        // Vault remains valid: shares > 0, total > 0, invariant holds.
-        BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) > 0);
-        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) > beast::kZero);
+        // Vault remains valid: half the shares remain, lossUnrealized
+        // is untouched, and the entire (total - available) gap is still
+        // the impaired receivable.
+        BEAST_EXPECT(
+            issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender - halfShares);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore - received);
         BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
         BEAST_EXPECT(
-            vaultAfter->at(sfLossUnrealized) <=
-            vaultAfter->at(sfAssetsTotal) - vaultAfter->at(sfAssetsAvailable));
+            vaultAfter->at(sfAssetsTotal) - vaultAfter->at(sfAssetsAvailable) ==
+            vaultAfter->at(sfLossUnrealized));
 
         // Conservation: vault delta matches the depositor's gain.
         BEAST_EXPECT(totalBefore - vaultAfter->at(sfAssetsTotal) == received);
