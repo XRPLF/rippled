@@ -1952,6 +1952,113 @@ class LoanBroker_test : public beast::unit_test::Suite
         runTestCases(all_);
         runTestCases(all_ - fixCleanup3_2_0);
 
+        // ============================================================
+        // Asymmetry exploit (TER verdict): Deposit uses Downward rounding
+        // in doApply (rejects when amount rounds to zero); Withdraw and
+        // Clawback use ToNearest via canApplyToBrokerCover in preclaim
+        // (rejects when amount is closer to zero than to one ULP).
+        //
+        // With sfCoverAvailable = 10 IOU, cover scale = -14:
+        //   half-ULP = 5e-15, one ULP = 1e-14.
+        //
+        // Probe = 6e-15 (above half-ULP, below one ULP):
+        //   Deposit  Downward(6e-15, -14)  = 0       → tecPRECISION_LOSS
+        //   Withdraw isZeroAtScale → ToNearest → 1e-14 ≠ 0 → tesSUCCESS
+        //   Clawback isZeroAtScale → ToNearest → 1e-14 ≠ 0 → tesSUCCESS
+        //
+        // Same amendment, same input, opposite TER across transactors.
+        // Note: production doApply for Withdraw/Clawback consumes the
+        // ORIGINAL 6e-15 (no roundToScale); the actual on-ledger delta is
+        // 6e-15 because STAmount IOU has 16-digit mantissa precision and
+        // 10 - 6e-15 = 9.999999999999994 fits exactly without rounding.
+        // ============================================================
+        {
+            testcase("Cover precision asymmetry: Deposit rejects but Withdraw/Clawback accept");
+            Env env{*this, all_};
+            auto const [brokerKeylet, iou] = setup(env);
+
+            // 6e-15: above half-ULP, below one ULP at cover scale -14.
+            PrettyAmount const probe = iou(Number{6, -15});
+
+            auto const coverInitial = env.le(brokerKeylet)->at(sfCoverAvailable);
+            auto const aliceBalInitial = env.balance(alice, iou);
+
+            // (1) Deposit rejects under amendment ON.
+            env(coverDeposit(alice, brokerKeylet.key, probe), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet)->at(sfCoverAvailable) == coverInitial);
+
+            // (2) Withdraw on identical input under same amendment: accepts.
+            //     Asymmetry: Deposit rejected this exact input, Withdraw
+            //     passes the guard and mutates state.
+            env(coverWithdraw(alice, brokerKeylet.key, probe), Ter(tesSUCCESS));
+            env.close();
+            auto const coverAfterWithdraw = env.le(brokerKeylet)->at(sfCoverAvailable);
+            // doApply does `sfCoverAvailable -= amount` on the ORIGINAL
+            // 6e-15. STAmount subtraction at 16-digit mantissa is exact
+            // here, so the delta equals the input.
+            BEAST_EXPECT((coverInitial - coverAfterWithdraw == Number{6, -15}));
+
+            // (3) Clawback on identical input under same amendment: accepts.
+            env(coverClawback(issuer),
+                kLoanBrokerId(brokerKeylet.key),
+                kAmount(probe),
+                Ter(tesSUCCESS));
+            env.close();
+            auto const coverAfterClawback = env.le(brokerKeylet)->at(sfCoverAvailable);
+            BEAST_EXPECT((coverAfterWithdraw - coverAfterClawback == Number{6, -15}));
+            // Cumulative drift after Withdraw + Clawback.
+            BEAST_EXPECT((coverInitial - coverAfterClawback == Number{12, -15}));
+
+            // Alice's IOU balance starts at ~990 (1000 minted - 10 deposited
+            // as cover). Withdraw transfers 6e-15 from broker pseudo to
+            // alice; Clawback transfers 6e-15 from broker pseudo to issuer
+            // (NOT from alice). Adding 6e-15 to a 990 STAmount underflows
+            // 16-digit precision (990 + 6e-15 → renormalizes back to 990),
+            // so alice's stored balance is unchanged.
+            BEAST_EXPECT(env.balance(alice, iou) == aliceBalInitial);
+        }
+
+        // ============================================================
+        // Asymmetry exploit (on-ledger delta): identical 1.8e-14 input
+        // under amendment ON.
+        //
+        // Deposit:  Downward pre-rounds 1.8e-14 → 1e-14 in doApply, then
+        //           sfCoverAvailable += 1e-14. delta = +1e-14.
+        // Withdraw: guard passes (ToNearest(1.8e-14) = 2e-14 ≠ 0); doApply
+        //           does `sfCoverAvailable -= 1.8e-14` on the ORIGINAL.
+        //           STAmount IOU 16-digit mantissa: 10 - 1.8e-14 =
+        //           9.999999999999982 (exact). delta = 1.8e-14.
+        //
+        // Same input, same amendment, 1.8x difference in effective
+        // magnitude (1e-14 vs 1.8e-14). Trust-line vs sfCoverAvailable
+        // invariant cannot be guaranteed under non-symmetric rounding.
+        // ============================================================
+        {
+            testcase("Cover precision asymmetry: Deposit and Withdraw deltas diverge");
+            Env env{*this, all_};
+            auto const [brokerKeylet, iou] = setup(env);
+
+            PrettyAmount const probe = iou(Number{18, -15});
+
+            auto const coverPreDeposit = env.le(brokerKeylet)->at(sfCoverAvailable);
+            env(coverDeposit(alice, brokerKeylet.key, probe), Ter(tesSUCCESS));
+            env.close();
+            auto const coverPostDeposit = env.le(brokerKeylet)->at(sfCoverAvailable);
+            Number const depositDelta = coverPostDeposit - coverPreDeposit;
+
+            env(coverWithdraw(alice, brokerKeylet.key, probe), Ter(tesSUCCESS));
+            env.close();
+            auto const coverPostWithdraw = env.le(brokerKeylet)->at(sfCoverAvailable);
+            Number const withdrawDelta = coverPostDeposit - coverPostWithdraw;
+
+            //   Deposit  Downward pre-round         → +1e-14
+            //   Withdraw original amount, no round  → -1.8e-14
+            BEAST_EXPECT((depositDelta == Number{1, -14}));
+            BEAST_EXPECT((withdrawDelta == Number{18, -15}));
+            BEAST_EXPECT(depositDelta != withdrawDelta);
+        }
+
         // MPT amounts are integers; scale is 0; the guard never rejects a
         // positive integer amount. Verify all three callsites pass with amendment on.
         {
