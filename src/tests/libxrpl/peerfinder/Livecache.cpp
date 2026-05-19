@@ -28,148 +28,131 @@
 namespace xrpl::PeerFinder {
 namespace {
 
-beast::Journal
-journal()
+class LivecacheTest : public ::testing::Test
 {
-    return beast::Journal{TestSink::instance()};
-}
-
-beast::IP::Endpoint
-endpoint(std::uint16_t index, bool v4 = true)
-{
-    auto const port = static_cast<std::uint16_t>(10000 + index);
-
-    if (v4)
+protected:
+    static beast::Journal
+    journal()
     {
-        auto bytes = beast::IP::AddressV4::bytes_type{
-            {54,
+        return beast::Journal{TestSink::instance()};
+    }
+
+    static beast::IP::Endpoint
+    endpoint(std::uint16_t index, bool v4 = true)
+    {
+        auto const port = static_cast<std::uint16_t>(10000 + index);
+
+        if (v4)
+        {
+            auto bytes = beast::IP::AddressV4::bytes_type{
+                {54,
+                 static_cast<std::uint8_t>((index / 256) % 256),
+                 static_cast<std::uint8_t>(index % 256),
+                 1}};
+            return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV4{bytes}}, port};
+        }
+
+        auto bytes = beast::IP::AddressV6::bytes_type{
+            {0x20,
+             0x01,
+             0x0d,
+             0xb8,
+             0,
+             0,
+             0,
+             0,
+             0,
+             0,
+             0,
+             0,
+             0,
              static_cast<std::uint8_t>((index / 256) % 256),
              static_cast<std::uint8_t>(index % 256),
              1}};
-        return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV4{bytes}}, port};
+        return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV6{bytes}}, port};
     }
 
-    auto bytes = beast::IP::AddressV6::bytes_type{
-        {0x20,
-         0x01,
-         0x0d,
-         0xb8,
-         0,
-         0,
-         0,
-         0,
-         0,
-         0,
-         0,
-         0,
-         0,
-         static_cast<std::uint8_t>((index / 256) % 256),
-         static_cast<std::uint8_t>(index % 256),
-         1}};
-    return beast::IP::Endpoint{beast::IP::Address{beast::IP::AddressV6{bytes}}, port};
-}
+    void
+    addEndpoint(beast::IP::Endpoint const& ep, std::uint32_t hops = 0)
+    {
+        cache_.insert(Endpoint{ep, hops});
+    }
 
-template <class Cache>
-void
-addEndpoint(beast::IP::Endpoint const& ep, Cache& cache, std::uint32_t hops = 0)
-{
-    cache.insert(Endpoint{ep, hops});
-}
-
-bool
-sameEndpoint(Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.hops == rhs.hops && lhs.address == rhs.address;
-}
-
-bool
-sameEndpoints(std::vector<Endpoint> const& lhs, std::vector<Endpoint> const& rhs)
-{
-    return lhs.size() == rhs.size() &&
-        std::equal(lhs.begin(), lhs.end(), rhs.begin(), sameEndpoint);
-}
+    TestStopwatch clock_;
+    Livecache<> cache_{clock_, journal()};
+};
 
 }  // namespace
 
-TEST(Livecache, basic_insert)
+TEST_F(LivecacheTest, basic_insert)
 {
-    TestStopwatch clock;
-    Livecache<> cache(clock, journal());
-    EXPECT_TRUE(cache.empty());
+    EXPECT_TRUE(cache_.empty());
 
     for (auto i = 0; i < 10; ++i)
-        addEndpoint(endpoint(i, true), cache);
+        addEndpoint(endpoint(i, true));
 
-    EXPECT_FALSE(cache.empty());
-    EXPECT_EQ(cache.size(), 10u);
+    EXPECT_FALSE(cache_.empty());
+    EXPECT_EQ(cache_.size(), 10u);
 
     for (auto i = 10; i < 20; ++i)
-        addEndpoint(endpoint(i, false), cache);
+        addEndpoint(endpoint(i, false));
 
-    EXPECT_FALSE(cache.empty());
-    EXPECT_EQ(cache.size(), 20u);
+    EXPECT_FALSE(cache_.empty());
+    EXPECT_EQ(cache_.size(), 20u);
 }
 
-TEST(Livecache, insert_update_keeps_lowest_hop_count)
+TEST_F(LivecacheTest, insert_update_keeps_lowest_hop_count)
 {
-    TestStopwatch clock;
-    Livecache<> cache(clock, journal());
-
     auto const ep1 = Endpoint{endpoint(1), 2};
-    cache.insert(ep1);
-    ASSERT_EQ(cache.size(), 1u);
-    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+    cache_.insert(ep1);
+    ASSERT_EQ(cache_.size(), 1u);
+    EXPECT_EQ((cache_.hops.begin() + 2)->begin()->hops, 2u);
 
     auto const ep2 = Endpoint{ep1.address, 4};
-    cache.insert(ep2);
-    EXPECT_EQ(cache.size(), 1u);
-    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+    cache_.insert(ep2);
+    EXPECT_EQ(cache_.size(), 1u);
+    EXPECT_EQ((cache_.hops.begin() + 2)->begin()->hops, 2u);
 
     auto const ep3 = Endpoint{ep1.address, 2};
-    cache.insert(ep3);
-    EXPECT_EQ(cache.size(), 1u);
-    EXPECT_EQ((cache.hops.begin() + 2)->begin()->hops, 2u);
+    cache_.insert(ep3);
+    EXPECT_EQ(cache_.size(), 1u);
+    EXPECT_EQ((cache_.hops.begin() + 2)->begin()->hops, 2u);
 
     auto const ep4 = Endpoint{ep1.address, 1};
-    cache.insert(ep4);
-    EXPECT_EQ(cache.size(), 1u);
-    EXPECT_EQ((cache.hops.begin() + 1)->begin()->hops, 1u);
+    cache_.insert(ep4);
+    EXPECT_EQ(cache_.size(), 1u);
+    EXPECT_EQ((cache_.hops.begin() + 1)->begin()->hops, 1u);
 }
 
-TEST(Livecache, expire_removes_entries_after_ttl)
+TEST_F(LivecacheTest, expire_removes_entries_after_ttl)
 {
     using namespace std::chrono_literals;
 
-    TestStopwatch clock;
-    Livecache<> cache(clock, journal());
+    cache_.insert(Endpoint{endpoint(1), 1});
+    ASSERT_EQ(cache_.size(), 1u);
 
-    cache.insert(Endpoint{endpoint(1), 1});
-    ASSERT_EQ(cache.size(), 1u);
+    cache_.expire();
+    EXPECT_EQ(cache_.size(), 1u);
 
-    cache.expire();
-    EXPECT_EQ(cache.size(), 1u);
+    clock_.advance(Tuning::kLiveCacheSecondsToLive - 1s);
+    cache_.expire();
+    EXPECT_EQ(cache_.size(), 1u);
 
-    clock.advance(Tuning::kLiveCacheSecondsToLive - 1s);
-    cache.expire();
-    EXPECT_EQ(cache.size(), 1u);
-
-    clock.advance(1s);
-    cache.expire();
-    EXPECT_TRUE(cache.empty());
+    clock_.advance(1s);
+    cache_.expire();
+    EXPECT_TRUE(cache_.empty());
 }
 
-TEST(Livecache, histogram_counts_all_entries)
+TEST_F(LivecacheTest, histogram_counts_all_entries)
 {
     constexpr auto kNumEndpoints = 40;
 
-    TestStopwatch clock;
-    Livecache<> cache(clock, journal());
     for (auto i = 0; i < kNumEndpoints; ++i)
     {
-        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt<std::uint32_t>());
+        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), xrpl::randInt<std::uint32_t>());
     }
 
-    auto const histogram = cache.hops.histogram();
+    auto const histogram = cache_.hops.histogram();
     ASSERT_FALSE(histogram.empty());
 
     std::vector<std::string> values;
@@ -185,14 +168,11 @@ TEST(Livecache, histogram_counts_all_entries)
     EXPECT_EQ(sum, kNumEndpoints);
 }
 
-TEST(Livecache, shuffle_preserves_bucket_contents)
+TEST_F(LivecacheTest, shuffle_preserves_bucket_contents)
 {
-    TestStopwatch clock;
-    Livecache<> cache(clock, journal());
     for (auto i = 0; i < 100; ++i)
     {
-        addEndpoint(
-            endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt(Tuning::kMaxHops + 1));
+        addEndpoint(endpoint(static_cast<std::uint16_t>(i)), xrpl::randInt(Tuning::kMaxHops + 1));
     }
 
     using AtHop = std::vector<Endpoint>;
@@ -201,10 +181,18 @@ TEST(Livecache, shuffle_preserves_bucket_contents)
     auto const compareEndpoint = [](Endpoint const& lhs, Endpoint const& rhs) {
         return rhs.hops < lhs.hops || (rhs.hops == lhs.hops && rhs.address < lhs.address);
     };
+    auto const sameEndpoint = [](Endpoint const& lhs, Endpoint const& rhs) {
+        return lhs.hops == rhs.hops && lhs.address == rhs.address;
+    };
+    auto const sameEndpoints =
+        [&sameEndpoint](std::vector<Endpoint> const& lhs, std::vector<Endpoint> const& rhs) {
+            return lhs.size() == rhs.size() &&
+                std::equal(lhs.begin(), lhs.end(), rhs.begin(), sameEndpoint);
+        };
 
     AllHops before;
     AllHops beforeSorted;
-    for (auto i = std::make_pair(0, cache.hops.begin()); i.second != cache.hops.end();
+    for (auto i = std::make_pair(0, cache_.hops.begin()); i.second != cache_.hops.end();
          ++i.first, ++i.second)
     {
         std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
@@ -213,11 +201,11 @@ TEST(Livecache, shuffle_preserves_bucket_contents)
         std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), compareEndpoint);
     }
 
-    cache.hops.shuffle();
+    cache_.hops.shuffle();
 
     AllHops after;
     AllHops afterSorted;
-    for (auto i = std::make_pair(0, cache.hops.begin()); i.second != cache.hops.end();
+    for (auto i = std::make_pair(0, cache_.hops.begin()); i.second != cache_.hops.end();
          ++i.first, ++i.second)
     {
         std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
