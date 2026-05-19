@@ -260,9 +260,6 @@ VaultWithdraw::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
-    bool const isFinalWithdrawal =
-        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
-
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
     {
@@ -278,9 +275,13 @@ VaultWithdraw::doApply()
     // When the rule applies, the payout is the remaining sfAssetsAvailable; in a clean vault
     // the helper result should already equal that value, and any mismatch is a rounding artifact
     // worth logging.
+    bool const isFinalWithdrawal =
+        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
     if (fix320Enabled && isFinalWithdrawal)
     {
-        // This should be impossible.
+        // Unreachable: a final withdrawal with lossUnrealized > 0 has
+        // assetsWithdrawn == assetsTotal > assetsAvailable, which the
+        // insufficient-funds guard above already rejected.
         if (*lossUnrealized != beast::kZero)
         {
             // LCOV_EXCL_START
