@@ -32,11 +32,11 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::zero)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -44,7 +44,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::zero)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -133,7 +133,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const minimumCover = [&]() {
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
-        NumberRoundModeGuard const mg(Number::rounding_mode::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
@@ -148,8 +148,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             ctx.view,
             pseudoAccountID,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j) < amount)
         return tecINSUFFICIENT_FUNDS;
 
@@ -163,7 +163,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
-    auto const dstAcct = tx[~sfDestination].value_or(account_);
+    auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
@@ -183,7 +183,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return doWithdraw(view(), tx, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
 void
@@ -192,6 +192,7 @@ LoanBrokerCoverWithdraw::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -202,6 +203,7 @@ LoanBrokerCoverWithdraw::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

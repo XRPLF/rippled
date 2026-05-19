@@ -48,7 +48,7 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 {
     if (env.enabled(fixDirectoryLimit))
         return std::numeric_limits<std::uint64_t>::max();
-    return dirNodeMaxPages - 1;
+    return kDirNodeMaxPages - 1;
 }
 
 }  // namespace xrpl::test::jtx::directory

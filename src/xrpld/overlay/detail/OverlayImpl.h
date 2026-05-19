@@ -64,8 +64,8 @@ private:
 
     struct Timer : Child, std::enable_shared_from_this<Timer>
     {
-        boost::asio::basic_waitable_timer<clock_type> timer_;
-        bool stopping_{false};
+        boost::asio::basic_waitable_timer<clock_type> timer;
+        bool stopping{false};
 
         explicit Timer(OverlayImpl& overlay);
 
@@ -73,10 +73,10 @@ private:
         stop() override;
 
         void
-        async_wait();
+        asyncWait();
 
         void
-        on_timer(error_code ec);
+        onTimer(error_code ec);
     };
 
     Application& app_;
@@ -90,12 +90,12 @@ private:
     Setup setup_;
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
-    Resource::Manager& m_resourceManager;
-    std::unique_ptr<PeerFinder::Manager> m_peerFinder;
-    TrafficCount m_traffic;
-    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> m_peers;
+    Resource::Manager& resourceManager_;
+    std::unique_ptr<PeerFinder::Manager> peerFinder_;
+    TrafficCount traffic_;
+    hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
-    Resolver& m_resolver;
+    Resolver& resolver_;
     std::atomic<Peer::id_t> next_id_;
     int timer_count_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
@@ -123,7 +123,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
@@ -140,13 +140,13 @@ public:
     PeerFinder::Manager&
     peerFinder()
     {
-        return *m_peerFinder;
+        return *peerFinder_;
     }
 
     Resource::Manager&
     resourceManager()
     {
-        return m_resourceManager;
+        return resourceManager_;
     }
 
     Setup const&
@@ -159,10 +159,10 @@ public:
     onHandoff(
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        endpoint_type remote_endpoint) override;
+        endpoint_type remoteEndpoint) override;
 
     void
-    connect(beast::IP::Endpoint const& remote_endpoint) override;
+    connect(beast::IP::Endpoint const& remoteEndpoint) override;
 
     int
     limit() override;
@@ -170,7 +170,7 @@ public:
     std::size_t
     size() const override;
 
-    Json::Value
+    json::Value
     json() override;
 
     PeerSequence
@@ -228,7 +228,7 @@ public:
     //
 
     void
-    add_active(std::shared_ptr<PeerImp> const& peer);
+    addActive(std::shared_ptr<PeerImp> const& peer);
 
     void
     remove(std::shared_ptr<PeerFinder::Slot> const& slot);
@@ -250,7 +250,7 @@ public:
     //
     template <class UnaryFunc>
     void
-    for_each(UnaryFunc&& f) const
+    forEach(UnaryFunc&& f) const
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
@@ -284,14 +284,14 @@ public:
     static bool
     isPeerUpgrade(boost::beast::http::response<Body> const& response)
     {
-        if (!is_upgrade(response))
+        if (!isUpgrade(response))
             return false;
         return response.result() == boost::beast::http::status::switching_protocols;
     }
 
     template <class Fields>
     static bool
-    is_upgrade(boost::beast::http::header<true, Fields> const& req)
+    isUpgrade(boost::beast::http::header<true, Fields> const& req)
     {
         if (req.version() < 11)
             return false;
@@ -304,7 +304,7 @@ public:
 
     template <class Fields>
     static bool
-    is_upgrade(boost::beast::http::header<false, Fields> const& req)
+    isUpgrade(boost::beast::http::header<false, Fields> const& req)
     {
         if (req.version() < 11)
             return false;
@@ -317,10 +317,10 @@ public:
     makePrefix(std::uint32_t id);
 
     void
-    reportInboundTraffic(TrafficCount::category cat, int bytes);
+    reportInboundTraffic(TrafficCount::Category cat, int bytes);
 
     void
-    reportOutboundTraffic(TrafficCount::category cat, int bytes);
+    reportOutboundTraffic(TrafficCount::Category cat, int bytes);
 
     void
     incJqTransOverflow() override
@@ -397,7 +397,7 @@ public:
     void
     deletePeer(Peer::id_t id);
 
-    Json::Value
+    json::Value
     txMetrics() const override
     {
         return txMetrics_.json();
@@ -426,13 +426,13 @@ private:
     makeRedirectResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
-        address_type remote_address);
+        address_type remoteAddress);
 
     static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
-        address_type remote_address,
+        address_type remoteAddress,
         std::string msg);
 
     /** Handles crawl requests. Crawl returns information about the
@@ -472,28 +472,28 @@ private:
         Reported through the /crawl API
         Controlled through the config section [crawl] overlay=[0|1]
     */
-    Json::Value
+    json::Value
     getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
         Controlled through the config section [crawl] server=[0|1]
     */
-    Json::Value
+    json::Value
     getServerInfo();
 
     /** Returns information about the local server's performance counters.
         Reported through the /crawl API
         Controlled through the config section [crawl] counts=[0|1]
     */
-    Json::Value
+    json::Value
     getServerCounts();
 
     /** Returns information about the local server's UNL.
         Reported through the /crawl API
         Controlled through the config section [crawl] unl=[0|1]
     */
-    Json::Value
+    json::Value
     getUnlInfo();
 
     //--------------------------------------------------------------------------
@@ -533,10 +533,10 @@ private:
     {
         TrafficGauges(std::string const& name, beast::insight::Collector::ptr const& collector)
             : name(name)
-            , bytesIn(collector->make_gauge(name, "Bytes_In"))
-            , bytesOut(collector->make_gauge(name, "Bytes_Out"))
-            , messagesIn(collector->make_gauge(name, "Messages_In"))
-            , messagesOut(collector->make_gauge(name, "Messages_Out"))
+            , bytesIn(collector->makeGauge(name, "Bytes_In"))
+            , bytesOut(collector->makeGauge(name, "Bytes_Out"))
+            , messagesIn(collector->makeGauge(name, "Messages_In"))
+            , messagesOut(collector->makeGauge(name, "Messages_Out"))
         {
         }
         std::string const name;
@@ -552,35 +552,35 @@ private:
         Stats(
             Handler const& handler,
             beast::insight::Collector::ptr const& collector,
-            std::unordered_map<TrafficCount::category, TrafficGauges>&& trafficGauges_)
-            : peerDisconnects(collector->make_gauge("Overlay", "Peer_Disconnects"))
-            , trafficGauges(std::move(trafficGauges_))
-            , hook(collector->make_hook(handler))
+            std::unordered_map<TrafficCount::Category, TrafficGauges>&& trafficGauges)
+            : peerDisconnects(collector->makeGauge("Overlay", "Peer_Disconnects"))
+            , trafficGauges(std::move(trafficGauges))
+            , hook(collector->makeHook(handler))
         {
         }
 
         beast::insight::Gauge peerDisconnects;
-        std::unordered_map<TrafficCount::category, TrafficGauges> trafficGauges;
+        std::unordered_map<TrafficCount::Category, TrafficGauges> trafficGauges;
         beast::insight::Hook hook;
     };
 
-    Stats m_stats;
-    std::mutex m_statsMutex;
+    Stats stats_;
+    std::mutex statsMutex_;
 
 private:
     void
-    collect_metrics()
+    collectMetrics()
     {
-        auto counts = m_traffic.getCounts();
-        std::scoped_lock const lock(m_statsMutex);
+        auto counts = traffic_.getCounts();
+        std::scoped_lock const lock(statsMutex_);
         XRPL_ASSERT(
-            counts.size() == m_stats.trafficGauges.size(),
+            counts.size() == stats_.trafficGauges.size(),
             "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {
-            auto it = m_stats.trafficGauges.find(key);
-            if (it == m_stats.trafficGauges.end())
+            auto it = stats_.trafficGauges.find(key);
+            if (it == stats_.trafficGauges.end())
                 continue;
 
             auto& gauge = it->second;
@@ -596,7 +596,7 @@ private:
             gauge.messagesOut = value.messagesOut;
         }
 
-        m_stats.peerDisconnects = getPeerDisconnect();
+        stats_.peerDisconnects = getPeerDisconnect();
     }
 };
 

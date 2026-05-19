@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-struct Transaction_ordering_test : public beast::unit_test::suite
+struct Transaction_ordering_test : public beast::unit_test::Suite
 {
     void
     testCorrectOrder()
@@ -34,8 +34,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
         env(tx1);
         env.close();
@@ -73,10 +73,10 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
-        env(tx2, ter(terPRE_SEQ));
+        env(tx2, Ter(terPRE_SEQ));
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
         env.app().getJobQueue().rendezvous();
@@ -110,28 +110,28 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
-        static constexpr auto kSIZE = 5;
+        static constexpr auto kSize = 5;
 
         std::vector<JTx> tx;
-        tx.reserve(kSIZE);
-        for (auto i = 0; i < kSIZE; ++i)
+        tx.reserve(kSize);
+        for (auto i = 0; i < kSize; ++i)
         {
-            tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
+            tx.emplace_back(env.jt(noop(alice), Seq(aliceSequence + i), LastLedgerSeq(7)));
         }
 
-        for (auto i = 1; i < kSIZE; ++i)
+        for (auto i = 1; i < kSize; ++i)
         {
-            env(tx[i], ter(terPRE_SEQ));
+            env(tx[i], Ter(terPRE_SEQ));
             BEAST_EXPECT(env.seq(alice) == aliceSequence);
         }
 
         env(tx[0]);
         env.app().getJobQueue().rendezvous();
-        BEAST_EXPECT(env.seq(alice) == aliceSequence + kSIZE);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + kSize);
 
         env.close();
 
-        for (auto i = 0; i < kSIZE; ++i)
+        for (auto i = 0; i < kSize; ++i)
         {
             auto const result = env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
             BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");

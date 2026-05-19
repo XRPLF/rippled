@@ -21,7 +21,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdraw"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdraw"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -98,7 +98,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdrawFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdrawFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -173,7 +173,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -187,7 +187,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -201,7 +201,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerCoverWithdrawNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerCoverWithdrawNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

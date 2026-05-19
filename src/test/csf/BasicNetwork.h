@@ -31,11 +31,11 @@ namespace xrpl::test::csf {
     When creating the Peer set, the caller needs to provide a
     Scheduler object for managing the timing and delivery
     of messages. After constructing the network, and establishing
-    connections, the caller uses the scheduler's step_* functions
+    connections, the caller uses the scheduler's step* functions
     to drive messages through the network.
 
     The graph of peers and connections is internally represented
-    using Digraph<Peer,BasicNetwork::link_type>. Clients have
+    using Digraph<Peer,BasicNetwork::LinkType>. Clients have
     const access to that graph to perform additional operations not
     directly provided by BasicNetwork.
 
@@ -68,20 +68,20 @@ class BasicNetwork
 
     using time_point = typename clock_type::time_point;
 
-    struct link_type
+    struct LinkType
     {
         bool inbound = false;
         duration delay{};
         time_point established;
-        link_type() = default;
-        link_type(bool inbound_, duration delay_, time_point established_)
-            : inbound(inbound_), delay(delay_), established(established_)
+        LinkType() = default;
+        LinkType(bool inbound, duration delay, time_point established)
+            : inbound(inbound), delay(delay), established(established)
         {
         }
     };
 
-    Scheduler& scheduler;
-    Digraph<Peer, link_type> links_;
+    Scheduler& scheduler_;
+    Digraph<Peer, LinkType> links_;
 
 public:
     BasicNetwork(BasicNetwork const&) = delete;
@@ -164,7 +164,7 @@ public:
 
     /** Return the underlying digraph
      */
-    [[nodiscard]] Digraph<Peer, link_type> const&
+    [[nodiscard]] Digraph<Peer, LinkType> const&
     graph() const
     {
         return links_;
@@ -172,7 +172,7 @@ public:
 };
 //------------------------------------------------------------------------------
 template <class Peer>
-BasicNetwork<Peer>::BasicNetwork(Scheduler& s) : scheduler(s)
+BasicNetwork<Peer>::BasicNetwork(Scheduler& s) : scheduler_(s)
 {
 }
 
@@ -182,10 +182,10 @@ BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, duration const& de
 {
     if (to == from)
         return false;
-    time_point const now = scheduler.now();
-    if (!links_.connect(from, to, link_type{false, delay, now}))
+    time_point const now = scheduler_.now();
+    if (!links_.connect(from, to, LinkType{false, delay, now}))
         return false;
-    auto const result = links_.connect(to, from, link_type{true, delay, now});
+    auto const result = links_.connect(to, from, LinkType{true, delay, now});
     (void)result;
     assert(result);
     return true;
@@ -211,8 +211,8 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     auto link = links_.edge(from, to);
     if (!link)
         return;
-    time_point const sent = scheduler.now();
-    scheduler.in(link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
+    time_point const sent = scheduler_.now();
+    scheduler_.in(link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
         // only process if still connected and connection was
         // not broken since the message was sent
         if (auto l = links_.edge(from, to); l && l->established <= sent)

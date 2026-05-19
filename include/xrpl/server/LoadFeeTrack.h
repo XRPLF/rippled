@@ -63,7 +63,7 @@ public:
     static std::uint32_t
     getLoadBase()
     {
-        return lftNormalFee;
+        return kLftNormalFee;
     }
 
     std::uint32_t
@@ -100,29 +100,29 @@ public:
     isLoadedLocal() const
     {
         std::scoped_lock const sl(lock_);
-        return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee);
+        return (raiseCount_ != 0) || (localTxnLoadFee_ != kLftNormalFee);
     }
 
     bool
     isLoadedCluster() const
     {
         std::scoped_lock const sl(lock_);
-        return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) ||
-            (clusterTxnLoadFee_ != lftNormalFee);
+        return (raiseCount_ != 0) || (localTxnLoadFee_ != kLftNormalFee) ||
+            (clusterTxnLoadFee_ != kLftNormalFee);
     }
 
 private:
-    static std::uint32_t constexpr lftNormalFee = 256;     // 256 is the minimum/normal load factor
-    static std::uint32_t constexpr lftFeeIncFraction = 4;  // increase fee by 1/4
-    static std::uint32_t constexpr lftFeeDecFraction = 4;  // decrease fee by 1/4
-    static std::uint32_t constexpr lftFeeMax = lftNormalFee * 1000000;
+    static constexpr std::uint32_t kLftNormalFee = 256;     // 256 is the minimum/normal load factor
+    static constexpr std::uint32_t kLftFeeIncFraction = 4;  // increase fee by 1/4
+    static constexpr std::uint32_t kLftFeeDecFraction = 4;  // decrease fee by 1/4
+    static constexpr std::uint32_t kLftFeeMax = kLftNormalFee * 1000000;
 
     beast::Journal const j_;
     std::mutex mutable lock_;
 
-    std::uint32_t localTxnLoadFee_{lftNormalFee};    // Scale factor, lftNormalFee = normal fee
-    std::uint32_t remoteTxnLoadFee_{lftNormalFee};   // Scale factor, lftNormalFee = normal fee
-    std::uint32_t clusterTxnLoadFee_{lftNormalFee};  // Scale factor, lftNormalFee = normal fee
+    std::uint32_t localTxnLoadFee_{kLftNormalFee};    // Scale factor, lftNormalFee = normal fee
+    std::uint32_t remoteTxnLoadFee_{kLftNormalFee};   // Scale factor, lftNormalFee = normal fee
+    std::uint32_t clusterTxnLoadFee_{kLftNormalFee};  // Scale factor, lftNormalFee = normal fee
     std::uint32_t raiseCount_{0};
 };
 
