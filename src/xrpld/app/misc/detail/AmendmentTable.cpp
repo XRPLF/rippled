@@ -49,7 +49,7 @@ namespace xrpl {
 static std::vector<std::pair<uint256, std::string>>
 parseSection(Section const& section)
 {
-    static boost::regex const kRE1(
+    static boost::regex const kRe1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([abcdefABCDEF0-9]{64})"  // <hexadecimal amendment ID>
@@ -64,7 +64,7 @@ parseSection(Section const& section)
     {
         boost::smatch match;
 
-        if (!boost::regex_match(line, match, kRE1))
+        if (!boost::regex_match(line, match, kRe1))
             Throw<std::runtime_error>("Invalid entry '" + line + "' in [" + section.name() + "]");
 
         uint256 id;
@@ -176,9 +176,9 @@ public:
         // from that validator.  So flapping due to that validator being off
         // line will happen less frequently than every 24 hours.
         using namespace std::chrono_literals;
-        static constexpr NetClock::duration kEXPIRES_AFTER = 24h;
+        static constexpr NetClock::duration kExpiresAfter = 24h;
 
-        auto const newTimeout = closeTime + kEXPIRES_AFTER;
+        auto const newTimeout = closeTime + kExpiresAfter;
 
         // Walk all validations and replace previous votes from trusted
         // validators with these newest votes.
@@ -330,8 +330,8 @@ public:
         threshold_ = std::max(
             1L,
             static_cast<long>(
-                (trustedValidations_ * kAMENDMENT_MAJORITY_CALC_THRESHOLD.num) /
-                kAMENDMENT_MAJORITY_CALC_THRESHOLD.den));
+                (trustedValidations_ * kAmendmentMajorityCalcThreshold.num) /
+                kAmendmentMajorityCalcThreshold.den));
     }
 
     [[nodiscard]] bool

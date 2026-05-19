@@ -1,0 +1,22 @@
+[Unit]
+Description=XRP Ledger Daemon
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/xrpld --net --silent --conf /etc/xrpld/xrpld.cfg
+Restart=always
+RestartSec=5s
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+User=xrpld
+Group=xrpld
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

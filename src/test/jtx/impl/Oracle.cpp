@@ -39,7 +39,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
     // on testStartTime since XRPL epoch.
     auto const now = env_.timeKeeper().now();
     if (now.time_since_epoch().count() == 0 || arg.close)
-        env_.close(now + kTEST_START_TIME - kEPOCH_OFFSET);
+        env_.close(now + kTestStartTime - kEpochOffset);
     if (arg.owner)
         owner_ = *arg.owner;
     if (arg.documentID && validDocumentID(*arg.documentID))
@@ -191,7 +191,7 @@ Oracle::aggregatePrice(
         toJson(jv[jss::time_threshold], *timeThreshold);
     // Convert "%None%" to None
     auto str = to_string(jv);
-    str = boost::regex_replace(str, boost::regex(kNONE_PATTERN), kUNQUOTED_NONE);
+    str = boost::regex_replace(str, boost::regex(kNonePattern), kUnquotedNone);
     auto jr = env.rpc("json", "get_aggregate_price", str);
 
     if (jr.isObject())
@@ -256,7 +256,7 @@ Oracle::set(UpdateArg const& arg)
         if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
         {
             jv[jss::LastUpdateTime] =
-                to_string(kTEST_START_TIME.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
+                to_string(kTestStartTime.count() + std::get<std::uint32_t>(*arg.lastUpdateTime));
         }
         else
         {
@@ -267,7 +267,7 @@ Oracle::set(UpdateArg const& arg)
     {
         jv[jss::LastUpdateTime] = to_string(
             duration_cast<seconds>(env_.current()->header().closeTime.time_since_epoch()).count() +
-            kEPOCH_OFFSET.count());
+            kEpochOffset.count());
     }
     json::Value dataSeries(json::ValueType::Array);
     auto assetToStr = [](std::string const& s) {
@@ -351,7 +351,7 @@ Oracle::ledgerEntry(
     }
     // Convert "%None%" to None
     auto str = to_string(jvParams);
-    str = boost::regex_replace(str, boost::regex(kNONE_PATTERN), kUNQUOTED_NONE);
+    str = boost::regex_replace(str, boost::regex(kNonePattern), kUnquotedNone);
     auto jr = env.rpc("json", "ledger_entry", str);
 
     if (jr.isObject())
