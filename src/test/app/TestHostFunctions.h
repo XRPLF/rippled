@@ -1,5 +1,6 @@
 #include <test/app/wasm_fixtures/fixtures.h>
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
@@ -7,6 +8,13 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmVM.h>
+
+#include <boost/algorithm/hex.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <string>
+#include <string_view>
 
 namespace xrpl::test {
 
