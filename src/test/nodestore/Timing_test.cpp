@@ -144,7 +144,7 @@ public:
 #ifndef NDEBUG
     std::size_t const defaultItems = 10000;
 #else
-    std::size_t const default_items = 100000;  // release
+    std::size_t const defaultItems = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
