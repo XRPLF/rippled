@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultDeposit.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -51,9 +52,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     auto const& account = ctx.tx[sfAccount];
-    auto const assets = ctx.tx[sfAmount];
+    auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
-    if (assets.asset() != vaultAsset)
+    if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -65,7 +66,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     auto const vaultShare = MPTIssue(mptIssuanceID);
-    if (vaultShare == assets.asset())
+    if (vaultShare == amount.asset())
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: vault shares and assets cannot be same.";
@@ -124,15 +125,32 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    if (accountHolds(
-            ctx.view,
-            account,
-            vaultAsset,
-            FreezeHandling::ZeroIfFrozen,
-            AuthHandling::ZeroIfUnauthorized,
-            ctx.j,
-            SpendableHandling::FullBalance) < assets)
+    auto const accountBalance = accountHolds(
+        ctx.view,
+        account,
+        vaultAsset,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
+        ctx.j,
+        SpendableHandling::FullBalance);
+
+    if (accountBalance < amount)
         return tecINSUFFICIENT_FUNDS;
+
+    // IOU precision checks
+    if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.holds<Issue>())
+    {
+        // reject deposits that would canonicalize to a no-op at the depositor's trustline scale.
+        // Skipped for issuer-as-depositor: accountHolds returns (kMaxValue @ kMaxOffset) which
+        // would always trip the predicate.
+        if (account != amount.getIssuer() &&
+            amount.isZeroAtScale(scale(accountBalance, vaultAsset)))
+        {
+            JLOG(ctx.j.warn()) << "VaultDeposit: amount " << amount.getFullText()
+                               << " rounds to zero at counterparty trust-line scale";
+            return tecPRECISION_LOSS;
+        }
+    }
 
     return tesSUCCESS;
 }
@@ -145,7 +163,26 @@ VaultDeposit::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
 
-    auto const amount = ctx_.tx[sfAmount];
+    // Post-amendment IOU only: round Downward to the AssetsTotal precision so
+    // a sub-ULP tail can't be silently absorbed by one rail and not the other.
+    auto const amount = [&]() -> STAmount {
+        if (!view().rules().enabled(fixCleanup3_2_0) || !ctx_.tx[sfAmount].holds<Issue>())
+            return ctx_.tx[sfAmount];
+
+        STAmount const amt = ctx_.tx[sfAmount];
+        return roundToScale(
+            amt,
+            scale(vault->at(sfAssetsTotal) + amt, vault->at(sfAsset)),
+            Number::RoundingMode::Downward);
+    }();
+
+    if (amount == beast::kZero)
+    {
+        JLOG(j_.warn()) << "VaultDeposit: amount " << ctx_.tx[sfAmount]
+                        << " rounds to zero at vault scale";
+        return tecPRECISION_LOSS;
+    }
+
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
