@@ -1212,10 +1212,10 @@ public:
 
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
 
-        // IOU: 10 IOU — mantissa = kMIN_VALUE (10^15), exponent = -14.
+        // IOU: 10 IOU — mantissa = kMinValue (10^15), exponent = -14.
         // One ULP at this scale is 10^-14; half-ULP is 5*10^-15.
         {
-            STAmount const ref{usd, STAmount::kMIN_VALUE, -14};
+            STAmount const ref{usd, STAmount::kMinValue, -14};
             int const refScale = ref.exponent();  // -14
             BEAST_EXPECT(refScale == -14);
 
@@ -1223,14 +1223,14 @@ public:
             STAmount const iouZero{usd, 0};
             BEAST_EXPECT(iouZero.isZeroAtScale(refScale));
 
-            // Sub-ULP: 1e-16 IOU (mantissa = kMIN_VALUE, exponent = -31).
+            // Sub-ULP: 1e-16 IOU (mantissa = kMinValue, exponent = -31).
             // Far below half-ULP → rounds to zero.
-            STAmount const subUlp{usd, STAmount::kMIN_VALUE, -31};
+            STAmount const subUlp{usd, STAmount::kMinValue, -31};
             BEAST_EXPECT(subUlp.isZeroAtScale(refScale));
 
-            // One ULP: 1e-14 IOU (mantissa = kMIN_VALUE, exponent = -29).
+            // One ULP: 1e-14 IOU (mantissa = kMinValue, exponent = -29).
             // Exactly the smallest representable unit at refScale → not zero.
-            STAmount const oneUlp{usd, STAmount::kMIN_VALUE, -29};
+            STAmount const oneUlp{usd, STAmount::kMinValue, -29};
             BEAST_EXPECT(!oneUlp.isZeroAtScale(refScale));
 
             // The reference value itself: exponent == scale → returned
@@ -1238,13 +1238,41 @@ public:
             BEAST_EXPECT(!ref.isZeroAtScale(refScale));
 
             // A much larger value: certainly not zero at this scale.
-            STAmount const large{usd, STAmount::kMIN_VALUE, 0};  // 1e15 IOU
+            STAmount const large{usd, STAmount::kMinValue, 0};  // 1e15 IOU
             BEAST_EXPECT(!large.isZeroAtScale(refScale));
 
             // When scale equals the value's own exponent, roundToScale
             // short-circuits and returns the value unchanged.
             BEAST_EXPECT(!subUlp.isZeroAtScale(subUlp.exponent()));
             BEAST_EXPECT(!oneUlp.isZeroAtScale(oneUlp.exponent()));
+
+            // Half-ULP boundary. roundToScale forms (value + ref) - ref
+            // where ref = 10 IOU has mantissa 1e15 (LSB 0, even).
+            // Number's default rounding is to-nearest-even, so an exact
+            // half-ULP tie rounds toward the even-LSB neighbour — the
+            // reference itself — and the round-trip result is zero.
+            // Just below half-ULP rounds the same way; just above
+            // clears half-ULP and bumps the mantissa to 1e15 + 1.
+            STAmount const justBelowHalf{usd, STAmount::kMinValue * 4, -30};
+            BEAST_EXPECT(justBelowHalf.isZeroAtScale(refScale));
+
+            STAmount const halfUlp{usd, STAmount::kMinValue * 5, -30};
+            BEAST_EXPECT(halfUlp.isZeroAtScale(refScale));
+
+            STAmount const justAboveHalf{usd, STAmount::kMinValue * 6, -30};
+            BEAST_EXPECT(!justAboveHalf.isZeroAtScale(refScale));
+
+            // Large magnitude gap: dust value far below an enormous scale.
+            // 1e-80 with scale +15 — the value vanishes utterly.
+            STAmount const dust{usd, STAmount::kMinValue, -95};
+            BEAST_EXPECT(dust.isZeroAtScale(15));
+
+            // Negative values mirror positive behaviour.
+            STAmount const negSubUlp{usd, STAmount::kMinValue, -31, true};
+            BEAST_EXPECT(negSubUlp.isZeroAtScale(refScale));
+
+            STAmount const negOneUlp{usd, STAmount::kMinValue, -29, true};
+            BEAST_EXPECT(!negOneUlp.isZeroAtScale(refScale));
         }
 
         // XRP is integral — roundToScale short-circuits, value is preserved.

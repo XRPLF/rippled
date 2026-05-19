@@ -1876,7 +1876,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 features[fixCleanup3_2_0] ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS};
 
             {
-                testcase("Cover precision guard: Deposit");
+                testcase("Cover precision guard: Deposit zero-at-scale");
                 Env env{*this, features};
                 auto const [brokerKeylet, iou] = setup(env);
                 PrettyAmount const subUlpAmt = iou(Number{1, -16});
@@ -1891,7 +1891,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             {
-                testcase("Cover precision guard: Deposit");
+                testcase("Cover precision guard: Deposit rounds down");
                 // Both cases succeed; post-fix the amount is rounded DOWN to
                 // cover scale first, so the delta differs from pre-fix
                 // Input: 1.8e-14 IOU (sub-scale at cover scale -14)
