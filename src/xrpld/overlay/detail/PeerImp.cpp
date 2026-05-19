@@ -74,7 +74,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/ostream.hpp>
-#include <boost/beast/core/stream_traits.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <google/protobuf/message.h>
 
@@ -687,7 +687,7 @@ PeerImp::gracefulClose()
     XRPL_ASSERT(socket_.is_open(), "xrpl::PeerImp::gracefulClose : socket is open");
     XRPL_ASSERT(!gracefulClose_, "xrpl::PeerImp::gracefulClose : socket is not closing");
     gracefulClose_ = true;
-    if (sendQueue_.size() > 0)
+    if (!sendQueue_.empty())
         return;
     setTimer();
     stream_.async_shutdown(bind_executor(

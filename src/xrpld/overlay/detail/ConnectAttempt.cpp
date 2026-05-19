@@ -28,7 +28,6 @@
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/asio/strand.hpp>
-#include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/impl/read.hpp>
 #include <boost/beast/http/impl/write.hpp>
 #include <boost/beast/http/status.hpp>
@@ -40,6 +39,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
