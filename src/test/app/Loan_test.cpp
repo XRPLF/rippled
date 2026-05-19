@@ -7800,8 +7800,8 @@ protected:
         {
             using namespace loanBroker;
             env(set(vaultOwner, vaultKeylet.key),
-                kMANAGEMENT_FEE_RATE(TenthBips16{1000}),
-                kDEBT_MAXIMUM(Number{5000}),
+                kManagementFeeRate(TenthBips16{1000}),
+                kDebtMaximum(Number{5000}),
                 Fee(env.current()->fees().base * 2));
         }
         env.close();
@@ -7880,8 +7880,8 @@ protected:
         {
             using namespace loanBroker;
             env(set(vaultOwner, vaultKeylet.key),
-                kMANAGEMENT_FEE_RATE(TenthBips16{1000}),
-                kDEBT_MAXIMUM(Number{5000}),
+                kManagementFeeRate(TenthBips16{1000}),
+                kDebtMaximum(Number{5000}),
                 Fee(env.current()->fees().base * 2));
         }
         env.close();
