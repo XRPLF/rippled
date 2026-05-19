@@ -141,7 +141,7 @@ Alternatively, you can pull our recipes from the repository and export them loca
 
 ```bash
 # Define which recipes to export.
-recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
+recipes=('abseil' 'ed25519' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -459,6 +459,21 @@ install ccache --version 4.11.3 --allow-downgrade`.
    The location of `xrpld` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
+## Code generation
+
+The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
+from macro definition files in `include/xrpl/protocol/detail/`. If you modify
+the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the
+generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the
+files:
+
+```
+cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
+cmake --build . --target code_gen        # regenerate code
+```
+
+The regenerated files should be committed alongside your changes.
+
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
@@ -515,15 +530,15 @@ stored inside the build directory, as either of:
 ## Sanitizers
 
 To build dependencies and xrpld with sanitizer instrumentation, set the
-`SANITIZERS` environment variable (only once before running conan and cmake) and use the `sanitizers` profile in conan:
+`SANITIZERS` environment variable when running `conan install` and use the `sanitizers` profile:
 
 ```bash
 export SANITIZERS=address,undefinedbehavior
 
 conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
-
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -Dxrpld=ON -Dtests=ON ..
 ```
+
+You can then build and test as usual, with the generated `xrpld` binary containing the sanitizer instrumentation. When you run it, it will report any sanitizer errors it detects in the console output.
 
 See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 

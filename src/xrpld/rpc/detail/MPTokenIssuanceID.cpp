@@ -1,8 +1,22 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-namespace xrpl {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
-namespace RPC {
+#include <memory>
+#include <optional>
+
+namespace xrpl::RPC {
 
 bool
 canHaveMPTokenIssuanceID(
@@ -41,7 +55,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 
 void
 insertMPTokenIssuanceID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -53,5 +67,4 @@ insertMPTokenIssuanceID(
         response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

@@ -1,22 +1,24 @@
 #include <xrpl/core/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace xrpl {
 
 auto
-PeerReservation::toJson() const -> Json::Value
+PeerReservation::toJson() const -> json::Value
 {
-    Json::Value result{Json::objectValue};
+    json::Value result{json::ValueType::Object};
     result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
     if (!description.empty())
     {
@@ -30,11 +32,11 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
     std::vector<PeerReservation> list;
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         list.reserve(table_.size());
-        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+        std::ranges::copy(table_, std::back_inserter(list));
     }
-    std::sort(list.begin(), list.end());
+    std::sort(list.begin(), list.end());  // NOLINT(modernize-use-ranges)
     return list;
 }
 
@@ -47,7 +49,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     connection_ = &connection;
     auto db = connection.checkoutDb();
@@ -58,17 +60,17 @@ PeerReservationTable::load(DatabaseCon& connection)
 }
 
 std::optional<PeerReservation>
-PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
+PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto hint = table_.find(reservation);
     if (hint != table_.end())
     {
         // The node already has a reservation. Remove it.
-        // `std::unordered_set` does not have an `insert_or_assign` method,
+        // `std::unordered_set` does not have an `insertOrAssign` method,
         // and sadly makes it impossible for us to implement one efficiently:
         // https://stackoverflow.com/q/49651835/618906
         // Regardless, we don't expect this function to be called often, or
@@ -96,9 +98,9 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
-    auto const it = table_.find({nodeId});
+    auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
         previous = *it;

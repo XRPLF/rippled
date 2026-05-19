@@ -1,4 +1,7 @@
+#include <xrpl/protocol/TxMeta.h>
+
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -10,13 +13,12 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
-#include <string>
 
 namespace xrpl {
 
@@ -71,7 +73,7 @@ TxMeta::setAffectedNode(uint256 const& node, SField const& type, std::uint16_t n
         }
     }
 
-    nodes_.push_back(STObject(type));
+    nodes_.pushBack(STObject(type));
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(obj.getFName() == type, "xrpl::TxMeta::setAffectedNode : field type match");
@@ -152,7 +154,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
         if (n.getFieldH256(sfLedgerIndex) == index)
             return n;
     }
-    nodes_.push_back(STObject(type));
+    nodes_.pushBack(STObject(type));
     STObject& obj = nodes_.back();
 
     XRPL_ASSERT(
@@ -185,7 +187,7 @@ TxMeta::getAsObject() const
     XRPL_ASSERT(result_ != 255, "xrpl::TxMeta::getAsObject : result_ is set");
     metaData.setFieldU8(sfTransactionResult, result_);
     metaData.setFieldU32(sfTransactionIndex, index_);
-    metaData.emplace_back(nodes_);
+    metaData.emplaceBack(nodes_);
     if (deliveredAmount_.has_value())
         metaData.setFieldAmount(sfDeliveredAmount, *deliveredAmount_);
 
