@@ -99,7 +99,7 @@ TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
-    Keylet const didKeylet = keylet::did(account_);
+    Keylet const didKeylet = keylet::did(accountID_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
         auto update = [&](auto const& sField) {
@@ -130,7 +130,7 @@ DIDSet::doApply()
 
     // Create new ledger object otherwise
     auto const sleDID = std::make_shared<SLE>(didKeylet);
-    (*sleDID)[sfAccount] = account_;
+    (*sleDID)[sfAccount] = accountID_;
 
     auto set = [&](auto const& sField) {
         if (auto const field = ctx_.tx[~sField]; field && !field->empty())
@@ -146,7 +146,7 @@ DIDSet::doApply()
         return tecEMPTY_DID;
     }
 
-    return addSLE(ctx_, sleDID, account_);
+    return addSLE(ctx_, sleDID, accountID_);
 }
 
 void
