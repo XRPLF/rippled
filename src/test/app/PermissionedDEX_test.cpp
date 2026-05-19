@@ -140,7 +140,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     static uint256
     getBookDirKey(Book const& book, STAmount const& takerPays, STAmount const& takerGets)
     {
-        return keylet::quality(keylet::kBOOK(book), getRate(takerGets, takerPays)).key;
+        return keylet::quality(keylet::kBook(book), getRate(takerGets, takerPays)).key;
     }
 
     static std::optional<uint256>

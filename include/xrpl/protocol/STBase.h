@@ -65,7 +65,7 @@ struct JsonOptions
     }
 
     /// Returns JsonOptions binary negation, can be used with & (above) for set
-    /// difference e.g. `(options & ~JsonOptions::kINCLUDE_DATE)`
+    /// difference e.g. `(options & ~JsonOptions::kIncludeDate)`
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {

@@ -20,12 +20,12 @@ namespace xrpl::RPC {
 
 class LedgerRequest_test : public beast::unit_test::Suite
 {
-    static constexpr char const* kHASH1 =
+    static constexpr char const* kHash1 =
         "3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489";
-    static constexpr char const* kACCOUNTHASH1 =
+    static constexpr char const* kAccountHash1 =
         "BD8A3D72CA73DDE887AD63666EC2BAD07875CBA997A102579B5B95ECDFFEAED8";
 
-    static constexpr char const* kZEROHASH =
+    static constexpr char const* kZeroHASH =
         "0000000000000000000000000000000000000000000000000000000000000000";
 
 public:
@@ -173,32 +173,32 @@ public:
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "1");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH1);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kZEROHASH);
-        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == kACCOUNTHASH1);
-        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZEROHASH);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash1);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kZeroHASH);
+        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == kAccountHash1);
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZeroHASH);
 
         result = env.rpc("ledger_request", "2")[jss::result];
-        constexpr char const* kHASH2 =
+        static constexpr char const* kHash2 =
             "CCC3B3E88CCAC17F1BE6B4A648A55999411F19E3FE55EB721960EB0DF28EDDA5";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "2");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH2);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHASH1);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash2);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHash1);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
             "3C834285F7F464FBE99AFEB84D354A968EB2CAA24523FF26797A973D906A3D29");
-        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZEROHASH);
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZeroHASH);
 
         result = env.rpc("ledger_request", "3")[jss::result];
-        constexpr char const* kHASH3 =
+        static constexpr char const* kHash3 =
             "9FFD8AE09190D5002FE4252A1B29EABCF40DABBCE3B42619C6BD0BE381D51103";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "3");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999980");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH3);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHASH2);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash3);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHash2);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
             "35738B8517F37D08983AF6BC7DA483CCA9CF6B41B1FECB31A20028D78FE0BB22");
@@ -207,13 +207,13 @@ public:
             "CBD7F0948EBFA2241DE4EA627939A0FFEE6B80A90FE09C42C825DA546E9B73FF");
 
         result = env.rpc("ledger_request", "4")[jss::result];
-        constexpr char const* kHASH4 =
+        static constexpr char const* kHash4 =
             "7C9B614445517B8C6477E0AB10A35FFC1A23A34FEA41A91ECBDE884CC097C6E1";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "4");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999960");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH4);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHASH3);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash4);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHash3);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
             "1EE701DD2A150205173E1EDE8D474DF6803EC95253DAAEE965B9D896CFC32A04");
@@ -222,13 +222,13 @@ public:
             "9BBDDBF926100DFFF364E16268F544B19F5B9BC6ECCBBC104F98D13FA9F3BC35");
 
         result = env.rpc("ledger_request", "5")[jss::result];
-        constexpr char const* kHASH5 =
+        static constexpr char const* kHash5 =
             "98885D02145CCE4AD2605F1809F17188DB2053B14ED399CAC985DD8E03DCA8C0";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "5");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "99999999999999940");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH5);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHASH4);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash5);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kHash4);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
             "41D64D64796468DEA7AE2A7282C0BB525D6FD7ABC29453C5E5BC6406E947CBCE");
@@ -322,10 +322,10 @@ public:
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "1");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHASH1);
-        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kZEROHASH);
-        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == kACCOUNTHASH1);
-        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZEROHASH);
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == kHash1);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == kZeroHASH);
+        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == kAccountHash1);
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == kZeroHASH);
     }
 
     void
