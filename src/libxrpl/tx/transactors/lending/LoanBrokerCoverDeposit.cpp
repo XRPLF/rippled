@@ -121,7 +121,8 @@ LoanBrokerCoverDeposit::doApply()
     auto const brokerPseudoID = broker->at(sfAccount);
 
     // Transfer assets from depositor to pseudo-account.
-    if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
+    if (auto ter =
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
