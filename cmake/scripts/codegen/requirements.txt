@@ -3,7 +3,8 @@
 # These packages are required to run the code generation scripts that
 # parse macro files and generate C++ wrapper classes.
 #
-# After updating a package version, regenerate its hashes by running:
+# To update a package to the latest version (hashin will update the
+# version and hashes in this file automatically):
 #   pip install hashin
 #   hashin <package> cmake/scripts/codegen/requirements.txt
 # Or to pin a specific version:
