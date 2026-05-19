@@ -10,7 +10,6 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/make_Manager.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
@@ -38,6 +37,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>

@@ -418,11 +418,11 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
 TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
 {
     std::vector<PeerLimitConfig> const configs{
-        {.inPeers = 100},
-        {.outPeers = 100},
-        {.inPeers = 100, .outPeers = 5},
-        {.inPeers = 1001, .outPeers = 10},
-        {.inPeers = 10, .outPeers = 1001}};
+        {.maxPeers = {}, .inPeers = 100},
+        {.maxPeers = {}, .inPeers = {}, .outPeers = 100},
+        {.maxPeers = {}, .inPeers = 100, .outPeers = 5},
+        {.maxPeers = {}, .inPeers = 1001, .outPeers = 10},
+        {.maxPeers = {}, .inPeers = 10, .outPeers = 1001}};
 
     for (auto const& limits : configs)
     {
