@@ -6199,7 +6199,7 @@ class Vault_test : public beast::unit_test::Suite
 
         // Vault: Lender creates and seeds it; Bob matches the deposit for a
         // clean 50/50 split.
-        Vault v{env};
+        Vault const v{env};
         auto [createTx, vaultKeylet] = v.create({.owner = f.lender, .asset = *f.asset});
         env(createTx);
         env.close();
@@ -6348,7 +6348,7 @@ class Vault_test : public beast::unit_test::Suite
         //   by the loan-repayment test.
         STAmount const requestAssets =
             withFix ? (*f.asset)(1000).value() : STAmount{f.asset->raw(), availableBefore};
-        Vault v{env};
+        Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
                 .id = f.vaultKeylet->key,
@@ -6440,7 +6440,7 @@ class Vault_test : public beast::unit_test::Suite
 
         // Fixed-shares input: ask for ALL outstanding shares.
         STAmount const shareAmt{MPTIssue{f.shareAsset}, Number(f.sharesLender)};
-        Vault v{env};
+        Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
                 .id = f.vaultKeylet->key,
@@ -6482,7 +6482,7 @@ class Vault_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
             return;
 
-        Vault v{env};
+        Vault const v{env};
 
         // Sole-shareholder partial exit (see comment in
         // testWithdrawSoleShareholderFixedAssetExit for why we request
@@ -6586,7 +6586,7 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Sole shareholder of a clean vault — no loan broker needed.
-        Vault v{env};
+        Vault const v{env};
         auto [createTx, vaultKeylet] = v.create({.owner = lender, .asset = asset});
         env(createTx);
         env.close();
@@ -6670,7 +6670,7 @@ class Vault_test : public beast::unit_test::Suite
 
         STAmount const lenderBalanceBefore = env.balance(f.lender, *f.asset);
 
-        Vault v{env};
+        Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
                 .id = f.vaultKeylet->key,
