@@ -3,15 +3,23 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
+#include <exception>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBFactory_test : public TestBase
 {
@@ -38,7 +46,7 @@ private:
             test::SuiteJournal journal("NuDBFactory_test", *this);
 
             auto backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
             if (!BEAST_EXPECT(backend))
                 return false;
@@ -70,16 +78,13 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(
-        Section const& params,
-        beast::severities::Severity level,
-        std::string const& expectedMessage)
+    testLogMessage(Section const& params, beast::Severity level, std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
-        auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
         BEAST_EXPECT(logOutput.find(expectedMessage) != std::string::npos);
@@ -89,14 +94,14 @@ private:
     void
     testPowerOfTwoValidation(std::string const& size, bool shouldWork)
     {
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         auto params = createSection(tempDir.path(), size);
 
-        test::StreamSink sink(beast::severities::kWarning);
+        test::StreamSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
-        auto backend = Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
         bool const hasWarning = logOutput.find("Invalid nudb_block_size") != std::string::npos;
@@ -110,7 +115,7 @@ public:
     {
         testcase("Default block size (no nudb_block_size specified)");
 
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         auto params = createSection(tempDir.path());
 
         // Should work with default 4096 block size
@@ -126,14 +131,14 @@ public:
 
         for (auto const& size : validSizes)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), to_string(size));
 
             BEAST_EXPECT(testBackendFunctionality(params, size));
         }
         // Empty value is ignored by the config parser, so uses the
         // default
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         auto params = createSection(tempDir.path(), "");
 
         BEAST_EXPECT(testBackendFunctionality(params, 4096));
@@ -161,7 +166,7 @@ public:
 
         for (auto const& size : invalidSizes)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), size);
 
             // Fails
@@ -176,7 +181,7 @@ public:
 
         for (auto const& size : whitespaceInvalidSizes)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), size);
 
             // Fails
@@ -191,25 +196,25 @@ public:
 
         // Test valid custom block size logging
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "8192");
 
-            testLogMessage(params, beast::severities::kInfo, "Using custom NuDB block size: 8192");
+            testLogMessage(params, beast::Severity::Info, "Using custom NuDB block size: 8192");
         }
 
         // Test invalid block size failure
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "5000");
 
-            test::StreamSink sink(beast::severities::kWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (std::exception const& e)
@@ -224,17 +229,17 @@ public:
 
         // Test non-numeric value failure
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "invalid");
 
-            test::StreamSink sink(beast::severities::kWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
                 fail();
             }
@@ -267,19 +272,19 @@ public:
 
         for (auto const& [size, shouldWork] : testCases)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), size);
 
             // We test the validation logic by catching exceptions for invalid
             // values
-            test::StreamSink sink(beast::severities::kWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 BEAST_EXPECT(shouldWork);
             }
             catch (std::exception const& e)
@@ -295,7 +300,7 @@ public:
     {
         testcase("Both constructor variants work with custom block size");
 
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         auto params = createSection(tempDir.path(), "16384");
 
         DummyScheduler scheduler;
@@ -304,7 +309,7 @@ public:
         // Test first constructor (without nudb::context)
         {
             auto backend1 =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             BEAST_EXPECT(backend1 != nullptr);
             BEAST_EXPECT(testBackendFunctionality(params, 16384));
         }
@@ -337,15 +342,15 @@ public:
         // Test basic valid format
         for (auto const& format : validFormats)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), format);
 
-            test::StreamSink sink(beast::severities::kInfo);
+            test::StreamSink sink(beast::Severity::Info);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
             auto backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
             // Should log success message for valid values
             std::string const logOutput = sink.messages().str();
@@ -358,18 +363,18 @@ public:
         // them
         for (auto const& format : whitespaceFormats)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), format);
 
             // Use a lower threshold to capture both info and warning messages
-            test::StreamSink sink(beast::severities::kDebug);
+            test::StreamSink sink(beast::Severity::Debug);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
             try
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 fail();
             }
             catch (...)
@@ -389,7 +394,7 @@ public:
 
         for (auto const& size : blockSizes)
         {
-            beast::temp_dir const tempDir;
+            beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), size);
 
             DummyScheduler scheduler;
@@ -401,7 +406,7 @@ public:
             // Store data
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 backend->open();
                 storeBatch(*backend, batch);
                 backend->close();
@@ -410,7 +415,7 @@ public:
             // Retrieve data in new backend instance
             {
                 auto backend =
-                    Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                    Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
                 backend->open();
 
                 Batch copy;
@@ -438,5 +443,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NuDBFactory, xrpl_core, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

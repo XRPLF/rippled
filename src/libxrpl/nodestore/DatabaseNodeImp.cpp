@@ -1,7 +1,26 @@
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <utility>
+#include <vector>
+
+namespace xrpl::NodeStore {
 
 void
 DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
@@ -29,7 +48,7 @@ DatabaseNodeImp::fetchNodeObject(
     bool duplicate)
 {
     std::shared_ptr<NodeObject> nodeObject = nullptr;
-    Status status = ok;
+    Status status = Status::Ok;
 
     try
     {
@@ -39,20 +58,20 @@ DatabaseNodeImp::fetchNodeObject(
     {
         JLOG(j_.fatal()) << "fetchNodeObject " << hash
                          << ": Exception fetching from backend: " << e.what();
-        Rethrow();
+        rethrow();
     }
 
     switch (status)
     {
-        case ok:
-        case notFound:
+        case Status::Ok:
+        case Status::NotFound:
             break;
-        case dataCorrupt:
+        case Status::DataCorrupt:
             JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": nodestore data is corrupted";
             break;
         default:
             JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
-                            << status;
+                            << static_cast<int>(status);
             break;
     }
 
@@ -91,5 +110,4 @@ DatabaseNodeImp::fetchBatch(std::vector<uint256> const& hashes)
     return results;
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

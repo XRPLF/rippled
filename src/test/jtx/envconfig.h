@@ -2,20 +2,19 @@
 
 #include <xrpld/core/Config.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // frequently used macros defined here for convenience.
 #define PORT_WS "port_ws"
 #define PORT_RPC "port_rpc"
 #define PORT_PEER "port_peer"
 
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 
 inline char const*
 getEnvLocalhostAddr()
 {
-    return envUseIPv4 ? "127.0.0.1" : "::1";
+    return gEnvUseIPv4 ? "127.0.0.1" : "::1";
 }
 
 /// @brief initializes a config object for use with jtx::Env
@@ -60,20 +59,20 @@ envconfig(F&& modfunc, Args&&... args)
 /// @brief adjust config so no admin ports are enabled
 ///
 /// this is intended for use with envconfig, as in
-/// envconfig(no_admin)
+/// envconfig(noAdmin)
 ///
 /// @param cfg config instance to be modified
 ///
 /// @return unique_ptr to Config instance
-std::unique_ptr<Config> no_admin(std::unique_ptr<Config>);
+std::unique_ptr<Config> noAdmin(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> secure_gateway(std::unique_ptr<Config>);
+std::unique_ptr<Config> secureGateway(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> admin_localnet(std::unique_ptr<Config>);
+std::unique_ptr<Config> adminLocalnet(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
+std::unique_ptr<Config> secureGatewayLocalnet(std::unique_ptr<Config>);
 
-std::unique_ptr<Config> single_thread_io(std::unique_ptr<Config>);
+std::unique_ptr<Config> singleThreadIo(std::unique_ptr<Config>);
 
 /// @brief adjust configuration with params needed to be a validator
 ///
@@ -97,7 +96,7 @@ validator(std::unique_ptr<Config>, std::string const&);
 /// @param cfg config instance to be modified
 std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 
-/// @brief add a grpc address, port and secure_gateway to config
+/// @brief add a grpc address, port and secureGateway to config
 ///
 /// This is intended for use with envconfig, for tests that require a grpc
 /// server. If this function is not called, grpc server will not start
@@ -107,11 +106,56 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
+/// @brief add a grpc address, port and TLS certificate/key paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath);
+
+/// @brief add a grpc address, port and TLS certificate/key/client CA paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with mutual TLS (client certificate verification) enabled.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+/// @param clientCAPath path to SSL client CA certificate file for mTLS
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath);
+
+/// @brief add a grpc address, port and TLS with server cert chain to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled and intermediate CA certificates.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+/// @param certChainPath path to SSL intermediate CA certificate(s) file
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath);
+
 std::unique_ptr<Config>
 makeConfig(
     std::map<std::string, std::string> extraTxQ = {},
     std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
