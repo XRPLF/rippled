@@ -125,8 +125,8 @@ private:
     InboundLedgers& inboundLedgers_;
     std::uint32_t const ledgerSeq_;
     std::unique_ptr<PeerSet> peerSet_;
-    std::shared_ptr<Ledger const> replayTemp_ = {};
-    std::shared_ptr<Ledger const> fullLedger_ = {};
+    std::shared_ptr<Ledger const> replayTemp_;
+    std::shared_ptr<Ledger const> fullLedger_;
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns_;
     std::vector<OnDeltaDataCB> dataReadyCallbacks_;
     std::set<InboundLedger::Reason> reasons_;

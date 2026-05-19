@@ -1,12 +1,13 @@
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
+#include <xrpl.pb.h>
 
-namespace test {
+#include <algorithm>
+#include <cstdint>
+
+namespace xrpl::test {
 
 class traffic_count_test : public beast::unit_test::suite
 {
@@ -50,13 +51,13 @@ public:
             TrafficCount m_traffic;
 
             auto const counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
+            std::ranges::for_each(counts, [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
                     m_traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
             auto const counts_new = m_traffic.getCounts();
-            std::for_each(counts_new.begin(), counts_new.end(), [&](auto const& pair) {
+            std::ranges::for_each(counts_new, [&](auto const& pair) {
                 BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
                 BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
                 BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);
@@ -125,5 +126,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

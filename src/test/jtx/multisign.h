@@ -10,9 +10,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** A signer in a SignerList */
 struct signer
@@ -100,6 +98,4 @@ public:
 /** The number of signer lists matches. */
 using siglists = owner_count<ltSIGNER_LIST>;
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

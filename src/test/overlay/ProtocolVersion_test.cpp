@@ -1,6 +1,9 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 

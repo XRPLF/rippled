@@ -4,12 +4,8 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** DID operations. */
-namespace did {
+namespace xrpl::test::jtx::did {
 
 Json::Value
 set(jtx::Account const& account);
@@ -74,9 +70,4 @@ public:
 Json::Value
 del(jtx::Account const& account);
 
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::did

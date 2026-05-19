@@ -9,7 +9,7 @@ namespace beast {
 
 /** Expire aged container items past the specified age. */
 template <class AgedContainer, class Rep, class Period>
-typename std::enable_if<is_aged_container<AgedContainer>::value, std::size_t>::type
+std::enable_if_t<is_aged_container<AgedContainer>::value, std::size_t>
 expire(AgedContainer& c, std::chrono::duration<Rep, Period> const& age)
 {
     std::size_t n(0);

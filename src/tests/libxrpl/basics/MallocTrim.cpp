@@ -1,8 +1,12 @@
 #include <xrpl/basics/MallocTrim.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
 #include <boost/predef.h>
 
 #include <gtest/gtest.h>
+
+#include <string>
 
 using namespace xrpl;
 

@@ -2,13 +2,11 @@
 
 #include <chrono>
 
-namespace xrpl {
-
 // Blog post explaining the rationale behind reduction of flooding gossip
 // protocol:
 // https://xrpl.org/blog/2021/message-routing-optimizations-pt-1-proposal-validation-relaying.html
 
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 // Peer's squelch is limited in time to
 // rand{MIN_UNSQUELCH_EXPIRE, max_squelch},
@@ -38,6 +36,4 @@ static constexpr auto WAIT_ON_BOOTUP = std::chrono::minutes{10};
 // size limit of 64MB.
 static constexpr std::size_t MAX_TX_QUEUE_SIZE = 10000;
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay

@@ -56,7 +56,7 @@ public:
 
         operator bool() const
         {
-            return messagesIn || messagesOut;
+            return (messagesIn != 0u) || (messagesOut != 0u);
         }
     };
 

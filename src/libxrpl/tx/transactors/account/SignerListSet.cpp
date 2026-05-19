@@ -1,16 +1,36 @@
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
+#include <xrpl/tx/Transactor.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -238,10 +258,10 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure there are no duplicate signers.
     XRPL_ASSERT(
-        std::is_sorted(signers.begin(), signers.end()),
+        std::ranges::is_sorted(signers),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
-    if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
+    if (std::ranges::adjacent_find(signers) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;
@@ -383,6 +403,25 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 
     // Assign the SignerEntries.
     ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
+}
+
+void
+SignerListSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SignerListSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

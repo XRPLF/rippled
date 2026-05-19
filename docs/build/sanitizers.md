@@ -1,9 +1,9 @@
-# Sanitizer Configuration for Rippled
+# Sanitizer Configuration for Xrpld
 
 This document explains how to properly configure and run sanitizers (AddressSanitizer, undefinedbehaviorSanitizer, ThreadSanitizer) with the xrpld project.
 Corresponding suppression files are located in the `sanitizers/suppressions` directory.
 
-- [Sanitizer Configuration for Rippled](#sanitizer-configuration-for-rippled)
+- [Sanitizer Configuration for Xrpld](#sanitizer-configuration-for-xrpld)
   - [Building with Sanitizers](#building-with-sanitizers)
     - [Summary](#summary)
     - [Build steps:](#build-steps)
@@ -100,7 +100,7 @@ export LSAN_OPTIONS="include=sanitizers/suppressions/runtime-lsan-options.txt:su
 
 - Boost intrusive containers (used in `aged_unordered_container`) trigger false positives
 - Boost context switching (used in `Workers.cpp`) confuses ASAN's stack tracking
-- Since we usually don't build Boost (because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented rippled code, it generates false positives.
+- Since we usually don't build Boost (because we don't want to instrument Boost and detect issues in Boost code) with ASAN but use Boost containers in ASAN instrumented xrpld code, it generates false positives.
 - Building dependencies with ASAN instrumentation reduces false positives. But we don't want to instrument dependencies like Boost with ASAN because it is slow (to compile as well as run tests) and not necessary.
 - See: https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
 - More such flags are detailed [here](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags)

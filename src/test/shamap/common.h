@@ -5,8 +5,7 @@
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class TestNodeFamily : public Family
 {
@@ -103,5 +102,4 @@ public:
     }
 };
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

@@ -13,8 +13,7 @@ class SecretKey;
 class STXChainBridge;
 class STAmount;
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 Buffer
 sign_claim_attestation(
@@ -40,6 +39,6 @@ sign_create_account_attestation(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     AccountID const& dst);
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

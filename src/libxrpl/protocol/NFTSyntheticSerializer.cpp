@@ -1,5 +1,6 @@
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
+
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/NFTokenID.h>
 #include <xrpl/protocol/NFTokenOfferID.h>
 #include <xrpl/protocol/STTx.h>
@@ -8,8 +9,7 @@
 
 #include <memory>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 void
 insertNFTSyntheticInJson(
@@ -21,5 +21,4 @@ insertNFTSyntheticInJson(
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

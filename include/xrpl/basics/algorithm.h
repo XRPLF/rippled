@@ -23,8 +23,10 @@ generalized_set_intersection(
 {
     while (first1 != last1 && first2 != last2)
     {
-        if (comp(*first1, *first2))  // if *first1 < *first2
-            ++first1;                //     then reduce first range
+        if (comp(*first1, *first2))
+        {              // if *first1 < *first2
+            ++first1;  //     then reduce first range
+        }
         else
         {
             if (!comp(*first2, *first1))   // if *first1 == *first2

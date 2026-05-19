@@ -1,13 +1,17 @@
+#include <xrpl/json/json_value.h>
+
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
 #include <xrpl/json/json_forwards.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -18,7 +22,7 @@ Value const Value::null;
 class DefaultValueAllocator : public ValueAllocator
 {
 public:
-    virtual ~DefaultValueAllocator() = default;
+    ~DefaultValueAllocator() override = default;
 
     char*
     makeMemberName(char const* memberName) override
@@ -1050,7 +1054,7 @@ Value::getMemberNames() const
     ObjectValues::const_iterator const itEnd = value_.map_->end();
 
     for (; it != itEnd; ++it)
-        members.push_back(std::string((*it).first.c_str()));
+        members.emplace_back((*it).first.c_str());
 
     return members;
 }

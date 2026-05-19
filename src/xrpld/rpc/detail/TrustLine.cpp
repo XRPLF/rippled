@@ -1,9 +1,17 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <memory>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 

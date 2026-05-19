@@ -2,16 +2,13 @@
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 
-#include <algorithm>
 #include <chrono>
-#include <functional>
 
-namespace xrpl {
-
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 /** Maintains squelching of relaying messages from validators */
 template <typename clock_type>
@@ -89,7 +86,7 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())
         return true;
-    else if (it->second > now)
+    if (it->second > now)
         return false;
 
     // squelch expired
@@ -98,6 +95,4 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
     return true;
 }
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 
 namespace xrpl {
 

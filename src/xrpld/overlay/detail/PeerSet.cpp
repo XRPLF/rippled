@@ -1,8 +1,24 @@
-#include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -59,9 +75,8 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(pairs.begin(), pairs.end(), [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-        return lhs.first > rhs.first;
-    });
+    std::ranges::sort(
+        pairs, [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -108,7 +123,7 @@ public:
     {
     }
 
-    virtual std::unique_ptr<PeerSet>
+    std::unique_ptr<PeerSet>
     build() override
     {
         return std::make_unique<PeerSetImpl>(app_);

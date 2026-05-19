@@ -4,10 +4,14 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
+
+#include <string>
 
 namespace xrpl {
 

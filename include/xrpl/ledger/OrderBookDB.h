@@ -3,8 +3,8 @@
 #include <xrpl/ledger/AcceptedLedgerTx.h>
 #include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -53,30 +53,30 @@ public:
         issue. This is useful for pathfinding to find all possible next hops
         from a given currency.
 
-        @param issue The issue to search for
+        @param asset The asset to search for
         @param domain Optional domain restriction for the order book
         @return Vector of books that want this issue
     */
     virtual std::vector<Book>
-    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
+    getBooksByTakerPays(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) = 0;
 
     /** Get the count of order books that want a specific issue.
 
-        @param issue The issue to search for
+        @param asset The asset to search for
         @param domain Optional domain restriction for the order book
         @return Number of books that want this issue
     */
     virtual int
-    getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
+    getBookSize(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) = 0;
 
     /** Check if an order book to XRP exists for the given issue.
 
-        @param issue The issue to check
+        @param asset The asset to check
         @param domain Optional domain restriction for the order book
         @return true if a book from this issue to XRP exists
     */
     virtual bool
-    isBookToXRP(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) = 0;
+    isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) = 0;
 
     /**
      * Process a transaction for order book tracking.

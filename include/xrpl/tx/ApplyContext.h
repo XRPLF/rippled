@@ -46,20 +46,20 @@ public:
     ApplyView&
     view()
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     ApplyView const&
     view() const
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     // VFALCO Unfortunately this is necessary
     RawView&
     rawView()
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     ApplyFlags const&
@@ -72,6 +72,7 @@ public:
     void
     deliver(STAmount const& amount)
     {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->deliver(amount);
     }
 
@@ -98,6 +99,7 @@ public:
     void
     destroyXRP(XRPAmount const& fee)
     {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->rawDestroyXRP(fee);
     }
 

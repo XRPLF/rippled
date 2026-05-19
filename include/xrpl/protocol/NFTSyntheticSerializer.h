@@ -6,9 +6,7 @@
 
 #include <memory>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 /**
    Adds common synthetic fields to transaction-related JSON responses
@@ -19,5 +17,4 @@ void
 insertNFTSyntheticInJson(Json::Value&, std::shared_ptr<STTx const> const&, TxMeta const&);
 /** @} */
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

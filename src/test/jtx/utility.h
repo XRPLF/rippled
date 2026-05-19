@@ -8,9 +8,7 @@
 
 #include <stdexcept>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Thrown when parse fails. */
 struct parse_error : std::logic_error
@@ -49,10 +47,8 @@ fill_fee(Json::Value& jv, ReadView const& view);
 void
 fill_seq(Json::Value& jv, ReadView const& view);
 
-/** Given a rippled unit test rpc command, return the corresponding JSON. */
+/** Given an xrpld unit test rpc command, return the corresponding JSON. */
 Json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

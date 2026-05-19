@@ -1,14 +1,27 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
-#include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
 

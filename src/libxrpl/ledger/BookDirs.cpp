@@ -1,7 +1,14 @@
 #include <xrpl/ledger/BookDirs.h>
-#include <xrpl/ledger/View.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
+
+#include <optional>
 
 namespace xrpl {
 

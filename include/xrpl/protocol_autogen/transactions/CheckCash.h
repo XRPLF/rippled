@@ -21,7 +21,7 @@ class CheckCashBuilder;
  * Type: ttCHECK_CASH (17)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: mayCreateMPT
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CheckCashBuilder to construct new transactions.
@@ -60,6 +60,7 @@ public:
 
     /**
      * @brief Get sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -86,6 +87,7 @@ public:
 
     /**
      * @brief Get sfDeliverMin (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -166,6 +168,7 @@ public:
 
     /**
      * @brief Set sfAmount (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
@@ -177,6 +180,7 @@ public:
 
     /**
      * @brief Set sfDeliverMin (soeOPTIONAL)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&

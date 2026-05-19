@@ -1,16 +1,7 @@
-#include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <array>
-#include <cstdint>
-#include <limits>
-#include <optional>
-#include <type_traits>
-#include <utility>
-
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 struct ApiVersion_test : beast::unit_test::suite
 {
     void
@@ -47,5 +38,4 @@ struct ApiVersion_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

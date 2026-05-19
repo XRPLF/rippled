@@ -11,7 +11,7 @@ namespace xrpl {
 class STCurrency final : public STBase
 {
 private:
-    Currency currency_{};
+    Currency currency_;
 
 public:
     using value_type = Currency;

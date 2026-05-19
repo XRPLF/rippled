@@ -1,3 +1,5 @@
+#include <xrpl/protocol/Indexes.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
@@ -5,8 +7,10 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -23,6 +27,7 @@
 #include <cstring>
 #include <set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl {
@@ -99,19 +104,36 @@ getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
 
-    auto const index = book.domain ? indexHash(
-                                         LedgerNameSpace::BOOK_DIR,
-                                         book.in.currency,
-                                         book.out.currency,
-                                         book.in.account,
-                                         book.out.account,
-                                         *(book.domain))
-                                   : indexHash(
-                                         LedgerNameSpace::BOOK_DIR,
-                                         book.in.currency,
-                                         book.out.currency,
-                                         book.in.account,
-                                         book.out.account);
+    auto getIndexHash = [&book]<typename... Args>(Args... args) {
+        if (book.domain)
+            return indexHash(std::forward<Args>(args)..., *book.domain);
+        return indexHash(std::forward<Args>(args)...);
+    };
+
+    auto const index = std::visit(
+        [&]<ValidIssueType TIn, ValidIssueType TOut>(TIn const& in, TOut const& out) {
+            if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, Issue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.currency, out.currency, in.account, out.account);
+            }
+            else if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.currency, out.getMptID(), in.account);
+            }
+            else if constexpr (std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.getMptID(), out.currency, out.account);
+            }
+            else
+            {
+                return getIndexHash(LedgerNameSpace::BOOK_DIR, in.getMptID(), out.getMptID());
+            }
+        },
+        book.in.value(),
+        book.out.value());
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -401,11 +423,37 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Asset const& issue1, Asset const& issue2) noexcept
+amm(Asset const& asset1, Asset const& asset2) noexcept
 {
-    auto const& [minI, maxI] = std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
-    return amm(
-        indexHash(LedgerNameSpace::AMM, minI.account, minI.currency, maxI.account, maxI.currency));
+    auto const& [minA, maxA] = std::minmax(asset1, asset2);
+    return std::visit(
+        []<ValidIssueType TIss1, ValidIssueType TIss2>(TIss1 const& issue1, TIss2 const& issue2) {
+            if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, Issue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.account,
+                    issue1.currency,
+                    issue2.account,
+                    issue2.currency));
+            }
+            else if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, MPTIssue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM, issue1.account, issue1.currency, issue2.getMptID()));
+            }
+            else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, Issue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM, issue1.getMptID(), issue2.account, issue2.currency));
+            }
+            else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
+            {
+                return amm(indexHash(LedgerNameSpace::AMM, issue1.getMptID(), issue2.getMptID()));
+            }
+        },
+        minA.value(),
+        maxA.value());
 }
 
 Keylet

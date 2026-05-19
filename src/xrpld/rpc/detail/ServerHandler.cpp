@@ -1,38 +1,74 @@
+#include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
-#include <xrpld/rpc/json_body.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
 #include <xrpl/server/SimpleWriter.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/websocket/impl/rfc6455.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <exception>
+#include <map>
 #include <memory>
-#include <stdexcept>
+#include <mutex>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -74,7 +110,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return true;
 
     auto const it = h.find("authorization");
-    if ((it == h.end()) || (it->second.substr(0, 6) != "Basic "))
+    if ((it == h.end()) || (!it->second.starts_with("Basic ")))
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
@@ -241,9 +277,8 @@ build_map(boost::beast::http::fields const& h)
         // key cannot be a std::string_view because it needs to be used in
         // map and along with iterators
         std::string key(e.name_string());
-        std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
-            return std::tolower(static_cast<unsigned char>(kc));
-        });
+        std::ranges::transform(
+            key, key.begin(), [](auto kc) { return std::tolower(static_cast<unsigned char>(kc)); });
         c[key] = e.value();
     }
     return c;
@@ -439,18 +474,18 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.getJournal("RPCHandler"),
-                 app_,
-                 loadType,
-                 app_.getOPs(),
-                 app_.getLedgerMaster(),
-                 is->getConsumer(),
-                 role,
-                 coro,
-                 is,
-                 apiVersion},
+                {.j = app_.getJournal("RPCHandler"),
+                 .app = app_,
+                 .loadType = loadType,
+                 .netOps = app_.getOPs(),
+                 .ledgerMaster = app_.getLedgerMaster(),
+                 .consumer = is->getConsumer(),
+                 .role = role,
+                 .coro = coro,
+                 .infoSub = is,
+                 .apiVersion = apiVersion},
                 jv,
-                {is->user(), is->forwarded_for()}};
+                {.user = is->user(), .forwardedFor = is->forwarded_for()}};
 
             auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
@@ -822,18 +857,18 @@ ServerHandler::processRequest(
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::JsonContext context{
-            {m_journal,
-             app_,
-             loadType,
-             m_networkOPs,
-             app_.getLedgerMaster(),
-             usage,
-             role,
-             coro,
-             InfoSub::pointer(),
-             apiVersion},
+            {.j = m_journal,
+             .app = app_,
+             .loadType = loadType,
+             .netOps = m_networkOPs,
+             .ledgerMaster = app_.getLedgerMaster(),
+             .consumer = usage,
+             .role = role,
+             .coro = coro,
+             .infoSub = InfoSub::pointer(),
+             .apiVersion = apiVersion},
             params,
-            {user, forwardedFor}};
+            {.user = user, .forwardedFor = forwardedFor}};
         Json::Value result;
 
         auto start = std::chrono::system_clock::now();
@@ -1196,9 +1231,8 @@ setup_Client(ServerHandler::Setup& setup)
 static void
 setup_Overlay(ServerHandler::Setup& setup)
 {
-    auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
-        return port.protocol.count("peer") != 0;
-    });
+    auto const iter = std::ranges::find_if(
+        setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};

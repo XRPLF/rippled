@@ -1,5 +1,6 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <cstdlib>

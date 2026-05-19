@@ -1,13 +1,15 @@
 #include <test/jtx/rate.h>
 
+#include <test/jtx/Account.h>
+
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <stdexcept>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 rate(Account const& account, double multiplier)
@@ -21,6 +23,4 @@ rate(Account const& account, double multiplier)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

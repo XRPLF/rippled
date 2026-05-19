@@ -2,8 +2,7 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace jss {
+namespace xrpl::jss {
 
 // JSON static strings
 
@@ -401,6 +400,8 @@ JSS(min_ledger);                  // in: LedgerCleaner
 JSS(minimum_fee);                 // out: TxQ
 JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
+JSS(mpt_issuance_id_a);           // out: BookChanges
+JSS(mpt_issuance_id_b);           // out: BookChanges
 JSS(name);                        // out: AmendmentTableImpl, PeerImp
 JSS(needed_state_hashes);         // out: InboundLedger
 JSS(needed_transaction_hashes);   // out: InboundLedger
@@ -511,7 +512,7 @@ JSS(response);                    // websocket
 JSS(result);                      // RPC
 JSS(ripple_lines);                // out: NetworkOPs
 JSS(ripple_state);                // in: LedgerEntr
-JSS(ripplerpc);                   // ripple RPC version
+JSS(ripplerpc);                   // XRPL RPC version
 JSS(role);                        // out: Ping.cpp
 JSS(rpc);                         //
 JSS(rt_accounts);                 // in: Subscribe, Unsubscribe
@@ -706,5 +707,4 @@ JSS(write_load);                  // out: GetCounts
 
 #undef JSS
 
-}  // namespace jss
-}  // namespace xrpl
+}  // namespace xrpl::jss

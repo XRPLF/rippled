@@ -1,5 +1,10 @@
 #include <xrpl/protocol/STTakesAsset.h>
-// Do not remove. Force STTakesAsset.h first
+
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {

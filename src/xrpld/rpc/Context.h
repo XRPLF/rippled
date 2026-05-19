@@ -24,8 +24,8 @@ struct Context
     LedgerMaster& ledgerMaster;
     Resource::Consumer& consumer;
     Role role;
-    std::shared_ptr<JobQueue::Coro> coro{};
-    InfoSub::pointer infoSub{};
+    std::shared_ptr<JobQueue::Coro> coro;
+    InfoSub::pointer infoSub;
     unsigned int apiVersion;
 };
 

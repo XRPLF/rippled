@@ -48,7 +48,7 @@ public:
         std::vector<boost::asio::const_buffer> result;
         result.reserve(std::distance(buf.begin(), buf.end()));
         for (auto const b : buf)
-            result.push_back(b);
+            result.emplace_back(b);
         return result;
     }
 };

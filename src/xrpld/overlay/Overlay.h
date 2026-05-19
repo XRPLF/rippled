@@ -14,13 +14,9 @@
 #include <functional>
 #include <optional>
 
-namespace boost {
-namespace asio {
-namespace ssl {
+namespace boost::asio::ssl {
 class context;
-}  // namespace ssl
-}  // namespace asio
-}  // namespace boost
+}  // namespace boost::asio::ssl
 
 namespace xrpl {
 
@@ -55,7 +51,7 @@ public:
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
 
-    virtual ~Overlay() = default;
+    ~Overlay() override = default;
 
     virtual void
     start()

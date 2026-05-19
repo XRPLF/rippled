@@ -1,8 +1,11 @@
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
+#include <xrpld/rpc/Context.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -11,9 +14,14 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <set>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -363,7 +371,20 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 }
 
+ServerDefinitions const&
+getDefinitions()
+{
+    static ServerDefinitions const defs{};
+    return defs;
+}
+
 }  // namespace detail
+
+Json::Value const&
+getServerDefinitionsJson()
+{
+    return detail::getDefinitions().get();
+}
 
 Json::Value
 doServerDefinitions(RPC::JsonContext& context)
@@ -377,7 +398,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static detail::ServerDefinitions const defs{};
+    auto const& defs = detail::getDefinitions();
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;

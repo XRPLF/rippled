@@ -13,8 +13,7 @@
 #include <typeindex>
 #include <unordered_set>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /// A container of test suites.
 class suite_list : public detail::const_container<std::set<suite_info>>
@@ -62,5 +61,4 @@ suite_list::insert(
     cont().emplace(make_suite_info<Suite>(name, module, library, manual, priority));
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

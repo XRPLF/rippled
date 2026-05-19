@@ -1,3 +1,5 @@
+#include <xrpl/protocol/Serializer.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -5,7 +7,6 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/endian/conversion.hpp>
@@ -442,7 +443,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
+    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);

@@ -132,7 +132,7 @@ template <class Base>
 class CachedView : public detail::CachedViewImpl
 {
 private:
-    static_assert(std::is_base_of<DigestAwareReadView, Base>::value, "");
+    static_assert(std::is_base_of_v<DigestAwareReadView, Base>, "");
 
     std::shared_ptr<Base const> sp_;
 

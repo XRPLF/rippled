@@ -1,12 +1,25 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
+
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>  // IWYU pragma: keep
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 

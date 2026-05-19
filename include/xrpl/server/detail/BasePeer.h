@@ -11,6 +11,7 @@
 #include <atomic>
 #include <functional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -34,6 +35,7 @@ protected:
     boost::asio::strand<boost::asio::executor> strand_;
 
 public:
+    // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
     BasePeer(
         Port const& port,
         Handler& handler,
@@ -63,7 +65,7 @@ BasePeer<Handler, Impl>::BasePeer(
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , sink_(
           journal.sink(),
           [] {

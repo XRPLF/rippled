@@ -1,14 +1,25 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <exception>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 

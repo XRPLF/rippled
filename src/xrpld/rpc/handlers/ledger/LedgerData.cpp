@@ -6,10 +6,21 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/serialize.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 

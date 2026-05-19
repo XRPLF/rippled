@@ -14,9 +14,7 @@
 #include <optional>
 #include <set>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** A ledger is a set of observed transactions and a sequence number
     identifying the ledger.
@@ -59,9 +57,7 @@ private:
     // ID by the oracle
     struct Instance
     {
-        Instance()
-        {
-        }
+        Instance() = default;
 
         // Sequence number
         Seq seq{0};
@@ -332,6 +328,4 @@ struct LedgerHistoryHelper
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+
 using namespace xrpl;
 
 TEST(csprng, get_values)

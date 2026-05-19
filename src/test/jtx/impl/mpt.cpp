@@ -1,12 +1,44 @@
-#include <test/jtx.h>
 
+#include <test/jtx/mpt.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 void
 mptflags::operator()(Env& env) const
@@ -39,8 +71,8 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
-    : env_(env), issuer_(issuer), holders_(makeHolders(arg.holders)), close_(arg.close)
+MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
+    : env_(env), issuer_(std::move(issuer)), holders_(makeHolders(arg.holders)), close_(arg.close)
 {
     if (arg.fund)
     {
@@ -66,11 +98,11 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 
 MPTTester::MPTTester(
     Env& env,
-    Account const& issuer,
+    Account issuer,
     MPTID const& id,
     std::vector<Account> const& holders,
     bool close)
-    : env_(env), issuer_(issuer), holders_(makeHolders(holders)), id_(id), close_(close)
+    : env_(env), issuer_(std::move(issuer)), holders_(makeHolders(holders)), id_(id), close_(close)
 {
 }
 
@@ -84,6 +116,7 @@ makeMPTCreate(MPTInitDef const& arg)
             .transferFee = arg.transferFee,
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
+            .mutableFlags = arg.mutableFlags,
             .authHolder = arg.authHolder};
     }
     return {
@@ -91,6 +124,7 @@ makeMPTCreate(MPTInitDef const& arg)
         .transferFee = arg.transferFee,
         .authorize = arg.holders,
         .flags = arg.flags,
+        .mutableFlags = arg.mutableFlags,
         .authHolder = arg.authHolder};
 }
 
@@ -663,6 +697,4 @@ MPTTester::operator()(std::int64_t amount) const
     return MPT("", issuanceID())(amount);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

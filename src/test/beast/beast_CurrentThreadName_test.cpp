@@ -1,12 +1,17 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/predef/os.h>
 
+#if BOOST_OS_LINUX
+#include <pthread.h>
+#endif
+
+#include <atomic>
+#include <string>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class CurrentThreadName_test : public beast::unit_test::suite
 {
@@ -100,5 +105,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

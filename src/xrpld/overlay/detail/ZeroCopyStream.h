@@ -124,7 +124,7 @@ private:
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
-    ~ZeroCopyOutputStream();
+    ~ZeroCopyOutputStream() override;
 
     bool
     Next(void** data, int* size) override;

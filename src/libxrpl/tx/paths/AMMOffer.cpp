@@ -1,10 +1,28 @@
-#include <xrpl/protocol/QualityFunction.h>
-#include <xrpl/tx/paths/AMMLiquidity.h>
 #include <xrpl/tx/paths/AMMOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+
+#include <stdexcept>
 
 namespace xrpl {
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 AMMOffer<TIn, TOut>::AMMOffer(
     AMMLiquidity<TIn, TOut> const& ammLiquidity,
     TAmounts<TIn, TOut> const& amounts,
@@ -15,28 +33,35 @@ AMMOffer<TIn, TOut>::AMMOffer(
 {
 }
 
-template <typename TIn, typename TOut>
-Issue const&
-AMMOffer<TIn, TOut>::issueIn() const
+template <StepAmount TIn, StepAmount TOut>
+Asset const&
+AMMOffer<TIn, TOut>::assetIn() const
 {
-    return ammLiquidity_.issueIn();
+    return ammLiquidity_.assetIn();
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
+Asset const&
+AMMOffer<TIn, TOut>::assetOut() const
+{
+    return ammLiquidity_.assetOut();
+}
+
+template <StepAmount TIn, StepAmount TOut>
 AccountID const&
 AMMOffer<TIn, TOut>::owner() const
 {
     return ammLiquidity_.ammAccount();
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut> const&
 AMMOffer<TIn, TOut>::amount() const
 {
     return amounts_;
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 void
 AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
 {
@@ -52,7 +77,7 @@ AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consume
     ammLiquidity_.context().setAMMUsed();
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offerAmount,
@@ -77,7 +102,7 @@ AMMOffer<TIn, TOut>::limitOut(
     return {swapAssetOut(balances_, limit, ammLiquidity_.tradingFee()), limit};
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp)
     const
@@ -94,7 +119,7 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 QualityFunction
 AMMOffer<TIn, TOut>::getQualityFunc() const
 {
@@ -103,7 +128,7 @@ AMMOffer<TIn, TOut>::getQualityFunc() const
     return QualityFunction{balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
 }
 
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 bool
 AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
 {
@@ -133,9 +158,13 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
     return false;
 }
 
-template class AMMOffer<STAmount, STAmount>;
 template class AMMOffer<IOUAmount, IOUAmount>;
 template class AMMOffer<XRPAmount, IOUAmount>;
 template class AMMOffer<IOUAmount, XRPAmount>;
+template class AMMOffer<MPTAmount, MPTAmount>;
+template class AMMOffer<XRPAmount, MPTAmount>;
+template class AMMOffer<MPTAmount, XRPAmount>;
+template class AMMOffer<IOUAmount, MPTAmount>;
+template class AMMOffer<MPTAmount, IOUAmount>;
 
 }  // namespace xrpl

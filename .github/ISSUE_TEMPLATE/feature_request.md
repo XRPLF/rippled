@@ -1,7 +1,7 @@
 ---
 name: Feature Request
-about: Suggest a new feature for the rippled project
-title: "[Title with short description] (Version: [rippled version])"
+about: Suggest a new feature for the xrpld project
+title: "[Title with short description] (Version: [xrpld version])"
 labels: Feature Request
 assignees: ""
 ---

@@ -1,15 +1,20 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/vault.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
+#include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 std::tuple<Json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
@@ -79,6 +84,4 @@ Vault::clawback(ClawbackArgs const& args)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

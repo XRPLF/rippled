@@ -2,8 +2,7 @@
 
 #include <system_error>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 enum class error {
     generic = 1,
@@ -28,8 +27,7 @@ enum class error {
 std::error_code
 make_error_code(error ev);
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions
 
 namespace std {
 

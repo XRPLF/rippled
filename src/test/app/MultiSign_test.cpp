@@ -1,12 +1,51 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+namespace xrpl::test {
 
 class MultiSign_test : public beast::unit_test::suite
 {
@@ -323,7 +362,7 @@ public:
         env.require(owners(alice, 1));
 
         msig phantoms{bogie, demon};
-        std::reverse(phantoms.signers.begin(), phantoms.signers.end());
+        std::ranges::reverse(phantoms.signers);
         std::uint32_t const aliceSeq = env.seq(alice);
         env(noop(alice),
             phantoms,
@@ -1162,7 +1201,7 @@ public:
             STTx local = *(tx.stx);
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
-            std::reverse(signers.begin(), signers.end());
+            std::ranges::reverse(signers);
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1524,5 +1563,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(MultiSign, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

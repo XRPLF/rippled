@@ -1,5 +1,6 @@
-#include <xrpl/json/json_writer.h>
 #include <xrpl/json/to_string.h>
+
+#include <xrpl/json/json_writer.h>
 
 #include <string>
 

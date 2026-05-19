@@ -93,7 +93,7 @@ public:
     explicit Workers(
         Callback& callback,
         perf::PerfLog* perfLog,
-        std::string const& threadNames = "Worker",
+        std::string threadNames = "Worker",
         int numberOfThreads = static_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers();
@@ -164,7 +164,7 @@ private:
                    public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
-        Worker(Workers& workers, std::string const& threadName, int const instance);
+        Worker(Workers& workers, std::string threadName, int const instance);
 
         ~Worker();
 

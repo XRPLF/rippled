@@ -1,5 +1,8 @@
 #include <xrpl/basics/RangeSet.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
+#include <boost/icl/concept/interval_set.hpp>
+
 #include <gtest/gtest.h>
 
 #include <cstdint>

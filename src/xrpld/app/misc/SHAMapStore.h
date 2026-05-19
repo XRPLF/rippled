@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Manager.h>
 

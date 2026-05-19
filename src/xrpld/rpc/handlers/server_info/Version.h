@@ -2,8 +2,7 @@
 
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 class VersionHandler
 {
@@ -13,14 +12,14 @@ public:
     {
     }
 
-    Status
+    static Status
     check()
     {
         return Status::OK;
     }
 
     void
-    writeResult(Json::Value& obj)
+    writeResult(Json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }
@@ -40,5 +39,4 @@ private:
     bool betaEnabled_;
 };
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

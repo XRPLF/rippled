@@ -3,10 +3,12 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
 
 namespace xrpl {
 

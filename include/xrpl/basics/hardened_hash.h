@@ -72,14 +72,12 @@ template <class HashAlgorithm = beast::xxhasher>
 class hardened_hash
 {
 private:
-    detail::seed_pair m_seeds;
+    detail::seed_pair m_seeds{detail::make_seed_pair<>()};
 
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash() : m_seeds(detail::make_seed_pair<>())
-    {
-    }
+    hardened_hash() = default;
 
     template <class T>
     result_type

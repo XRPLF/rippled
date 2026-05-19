@@ -1,11 +1,12 @@
 #include <xrpl/basics/Number.h>
-// Keep Number.h first to ensure it can build without hidden dependencies
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <numeric>

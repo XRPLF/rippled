@@ -1,7 +1,16 @@
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

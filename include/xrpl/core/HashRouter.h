@@ -109,9 +109,7 @@ private:
     class Entry : public CountedObject<Entry>
     {
     public:
-        Entry()
-        {
-        }
+        Entry() = default;
 
         void
         addPeer(PeerShortID peer)

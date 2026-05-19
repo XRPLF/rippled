@@ -1,10 +1,17 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class STIssue_test : public beast::unit_test::suite
 {
@@ -141,5 +148,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

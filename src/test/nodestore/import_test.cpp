@@ -1,23 +1,46 @@
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/rocksdb.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/detail/codec.h>
 
 #include <boost/beast/core/string.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
-#include <nudb/create.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/bucket.hpp>
+#include <nudb/detail/buffer.hpp>
+#include <nudb/detail/bulkio.hpp>
+#include <nudb/detail/field.hpp>
 #include <nudb/detail/format.hpp>
+#include <nudb/detail/stream.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/native_file.hpp>
 #include <nudb/xxhasher.hpp>
+#include <rocksdb/db.h>
+#include <rocksdb/iterator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/status.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <iomanip>
+#include <ios>
 #include <map>
+#include <memory>
+#include <ostream>
+#include <ratio>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 /*
 

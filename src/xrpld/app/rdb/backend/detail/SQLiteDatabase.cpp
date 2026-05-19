@@ -1,12 +1,36 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/app/rdb/backend/detail/Node.h>
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/detail/AccountTxPaging.h>
+#include <xrpld/app/rdb/backend/detail/Node.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -170,7 +194,7 @@ SQLiteDatabase::getLedgerCountMinMax()
         return detail::getRowsMinMax(*db, detail::TableType::Ledgers);
     }
 
-    return {0, 0, 0};
+    return {.numberOfRows = 0, .minLedgerSequence = 0, .maxLedgerSequence = 0};
 }
 
 bool
@@ -612,7 +636,10 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , j_(registry.getJournal("SQLiteDatabase"))
 {
     DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, registry_}))
+    if (!makeLedgerDBs(
+            config,
+            setup,
+            DatabaseCon::CheckpointerSetup{.jobQueue = &jobQueue, .registry = registry_}))
     {
         std::string_view constexpr error = "Failed to create ledger databases";
 

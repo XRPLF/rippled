@@ -1,5 +1,20 @@
 #include <xrpl/server/State.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>
+
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/use.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+
 namespace xrpl {
 
 void

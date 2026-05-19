@@ -1,11 +1,21 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -94,7 +104,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // Both of these failure modes are hard to recreate in a unit test
         // because they are so dependent on inter-thread timing.  However
         // the failure modes can be observed by synchronously (inside the
-        // rippled source code) shutting down the application.  The code to
+        // xrpld source code) shutting down the application.  The code to
         // do so looks like this:
         //
         //   context.app.signalStop();

@@ -15,6 +15,7 @@
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -45,7 +46,7 @@ struct AttestationBase
         PublicKey const& publicKey_,
         Buffer signature_,
         AccountID const& sendingAccount_,
-        STAmount const& sendingAmount_,
+        STAmount sendingAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_);
 
@@ -169,7 +170,7 @@ struct AttestationCreateAccount : AttestationBase
         Buffer signature_,
         AccountID const& sendingAccount_,
         STAmount const& sendingAmount_,
-        STAmount const& rewardAmount_,
+        STAmount rewardAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_,
         std::uint64_t createCount_,
@@ -256,8 +257,8 @@ struct XChainClaimAttestation
         bool wasLockingChainSend;
         std::optional<AccountID> dst;
         MatchFields(TSignedAttestation const& att);
-        MatchFields(STAmount const& a, bool b, std::optional<AccountID> const& d)
-            : amount{a}, wasLockingChainSend{b}, dst{d}
+        MatchFields(STAmount a, bool b, std::optional<AccountID> const& d)
+            : amount{std::move(a)}, wasLockingChainSend{b}, dst{d}
         {
         }
     };

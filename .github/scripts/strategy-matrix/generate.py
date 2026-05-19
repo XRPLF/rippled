@@ -235,7 +235,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
         # so that they are easier to identify in the GitHub Actions UI, as long
         # names get truncated.
         # Add Address and Thread (both coupled with UB) sanitizers for specific bookworm distros.
-        # GCC-Asan rippled-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
+        # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
         if (
             os["distro_version"] == "bookworm"
             and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"

@@ -9,6 +9,10 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace xrpl {
 
 Json::Value

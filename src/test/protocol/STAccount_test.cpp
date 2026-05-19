@@ -1,5 +1,12 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstdint>
+#include <stdexcept>
 
 namespace xrpl {
 

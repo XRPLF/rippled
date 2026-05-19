@@ -1,5 +1,7 @@
 #include <xrpl/beast/hash/xxhasher.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <cstdint>
 
 namespace beast {
 

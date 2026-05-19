@@ -44,6 +44,7 @@ enum Privilege {
     mayDeleteMPT = 0x0400,        // The transaction MAY delete an MPT object. May not create.
     mustModifyVault = 0x0800,     // The transaction must modify, delete or create, a vault
     mayModifyVault = 0x1000,      // The transaction MAY modify, delete or create, a vault
+    mayCreateMPT = 0x2000,        // The transaction MAY create an MPT object, except for issuer.
 };
 
 constexpr Privilege

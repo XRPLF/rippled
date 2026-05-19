@@ -74,7 +74,7 @@ vptr:boost
 # Google protobuf
 undefined:protobuf
 
-# Suppress UBSan errors in rippled code by source file path
+# Suppress UBSan errors in xrpld code by source file path
 undefined:src/libxrpl/basics/base64.cpp
 undefined:src/libxrpl/basics/Number.cpp
 undefined:src/libxrpl/beast/utility/beast_Journal.cpp
@@ -165,7 +165,7 @@ unsigned-integer-overflow:xrpl/nodestore/detail/varint.h
 unsigned-integer-overflow:xrpl/peerfinder/detail/Counts.h
 unsigned-integer-overflow:xrpl/protocol/nft.h
 
-# Rippled intentional overflows and operations
+# Xrpld intentional overflows and operations
 # STAmount uses intentional negation of INT64_MIN and overflow in arithmetic
 signed-integer-overflow:src/libxrpl/protocol/STAmount.cpp
 unsigned-integer-overflow:src/libxrpl/protocol/STAmount.cpp

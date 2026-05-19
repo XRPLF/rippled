@@ -1,24 +1,29 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/net/HTTPClient.h>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio/co_spawn.hpp>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>  // IWYU pragma: keep
 #include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/socket_base.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
+#include <boost/asio/use_future.hpp>  // IWYU pragma: keep
+#include <boost/beast/core.hpp>       // IWYU pragma: keep
+#include <boost/beast/http.hpp>       // IWYU pragma: keep
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
-#include <atomic>
+#include <chrono>
+#include <exception>
 #include <map>
-#include <memory>
-#include <semaphore>
-#include <thread>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace xrpl;
 

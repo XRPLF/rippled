@@ -13,9 +13,7 @@
 #include <iostream>
 #include <random>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Sink that prepends simulation time to messages */
 class BasicSink : public beast::Journal::Sink
@@ -151,6 +149,4 @@ public:
     branches() const;
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

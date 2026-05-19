@@ -149,7 +149,9 @@ public:
     constexpr int
     signum() const noexcept
     {
-        return (drops_ < 0) ? -1 : (drops_ ? 1 : 0);
+        if (drops_ < 0)
+            return -1;
+        return (drops_ != 0) ? 1 : 0;
     }
 
     /** Returns the number of drops */
@@ -262,7 +264,7 @@ mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     int128_t const amt128(amt.drops());

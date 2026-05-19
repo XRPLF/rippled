@@ -8,8 +8,7 @@
 
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** Interface for a manager that allows collection of metrics.
 
@@ -117,5 +116,4 @@ public:
     /** @} */
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

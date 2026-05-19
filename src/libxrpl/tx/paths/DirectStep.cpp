@@ -1,17 +1,36 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
-#include <numeric>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -519,7 +538,7 @@ DirectStepI<TDerived>::revImp(
     {
         IOUAmount const in = mulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         cache_.emplace(in, srcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,
@@ -536,7 +555,7 @@ DirectStepI<TDerived>::revImp(
     IOUAmount const in = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
     IOUAmount const actualOut = mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
     cache_.emplace(in, maxSrcToDst, actualOut, srcDebtDir);
-    rippleCredit(
+    directSendNoFee(
         sb,
         src_,
         dst_,
@@ -561,6 +580,8 @@ DirectStepI<TDerived>::setCacheLimiting(
     IOUAmount const& fwdOut,
     DebtDirection srcDebtDir)
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) cache_ always set before setCacheLimiting is
+    // called
     if (cache_->in < fwdIn)
     {
         IOUAmount const smallDiff(1, -9);
@@ -590,6 +611,7 @@ DirectStepI<TDerived>::setCacheLimiting(
     if (fwdOut < cache_->out)
         cache_->out = fwdOut;
     cache_->srcDebtDir = srcDebtDir;
+    // NOLINTEND(bugprone-unchecked-optional-access)
 };
 
 template <class TDerived>
@@ -601,6 +623,7 @@ DirectStepI<TDerived>::fwdImp(
     IOUAmount const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::DirectStepI::fwdImp : cache is set");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -628,7 +651,7 @@ DirectStepI<TDerived>::fwdImp(
     {
         IOUAmount const out = mulRatio(srcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
         setCacheLimiting(in, srcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,
@@ -645,7 +668,7 @@ DirectStepI<TDerived>::fwdImp(
         IOUAmount const actualIn = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         IOUAmount const out = mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
         setCacheLimiting(actualIn, maxSrcToDst, out, srcDebtDir);
-        rippleCredit(
+        directSendNoFee(
             sb,
             src_,
             dst_,
@@ -657,6 +680,7 @@ DirectStepI<TDerived>::fwdImp(
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
     }
     return {cache_->in, cache_->out};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class TDerived>
@@ -671,7 +695,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native, "xrpl::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(in.holds<IOUAmount>(), "xrpl::DirectStepI::validFwd : input is IOU");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -680,13 +704,14 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     try
     {
         boost::container::flat_set<uint256> dummy;
-        fwdImp(sb, afView, dummy, in.iou);  // changes cache
+        fwdImp(sb, afView, dummy, in.get<IOUAmount>());  // changes cache
     }
     catch (FlowException const&)
     {
         return {false, EitherAmount(IOUAmount(beast::zero))};
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
     if (maxSrcToDst < cache_->srcToDst)
     {
         JLOG(j_.warn()) << "DirectStepI: Strand re-execute check failed."
@@ -706,6 +731,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 // Returns srcQOut, dstQIn
@@ -857,13 +883,13 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             // issue
             if (auto book = ctx.prevStep->bookStepBook())
             {
-                if (book->out != srcIssue)
+                if (book->out.get<Issue>() != srcIssue)
                     return temBAD_PATH_LOOP;
             }
         }
 
-        if (!ctx.seenDirectIssues[0].insert(srcIssue).second ||
-            !ctx.seenDirectIssues[1].insert(dstIssue).second)
+        if (!ctx.seenDirectAssets[0].insert(srcIssue).second ||
+            !ctx.seenDirectAssets[1].insert(dstIssue).second)
         {
             JLOG(j_.debug()) << "DirectStepI: loop detected: Index: " << ctx.strandSize << ' '
                              << *this;

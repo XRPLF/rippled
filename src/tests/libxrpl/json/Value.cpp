@@ -1,5 +1,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -7,10 +8,15 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <limits>
+#include <numbers>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -1099,7 +1105,7 @@ TEST(json_value, access_members)
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
-    val = 3.14159;
+    val = std::numbers::pi;
     EXPECT_EQ(val.type(), Json::realValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));

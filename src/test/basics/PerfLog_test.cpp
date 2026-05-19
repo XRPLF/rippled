@@ -1,20 +1,39 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <atomic>
+#include <boost/filesystem/file_status.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <algorithm>
 #include <chrono>
-#include <cmath>
+#include <cstdint>
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <ostream>
+#include <random>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
@@ -86,7 +105,7 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
+                .perfLog = withFile == WithFile::no ? "" : logFile(), .logInterval = logInterval()};
             return perf::make_PerfLog(setup, app_, j_, [this]() {
                 signalStop();
                 return;
@@ -159,7 +178,7 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
             if (lhs.dur != rhs.dur)
                 return (rhs.dur < lhs.dur);
             return (lhs.name < rhs.name);

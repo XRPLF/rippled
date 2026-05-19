@@ -4,6 +4,9 @@
 
 #include <boost/asio/executor_work_guard.hpp>
 
+#include <cstddef>
+#include <string>
+
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
     work_.emplace(boost::asio::make_work_guard(io_context_));

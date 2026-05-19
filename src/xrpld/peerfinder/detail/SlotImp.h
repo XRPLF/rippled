@@ -8,8 +8,7 @@
 #include <atomic>
 #include <optional>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class SlotImp : public Slot
 {
@@ -19,12 +18,12 @@ public:
     // inbound
     SlotImp(
         beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint,
+        beast::IP::Endpoint remote_endpoint,
         bool fixed,
         clock_type& clock);
 
     // outbound
-    SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock);
+    SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
@@ -190,5 +189,4 @@ public:
     clock_type::time_point whenAcceptEndpoints;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

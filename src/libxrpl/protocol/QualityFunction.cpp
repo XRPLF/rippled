@@ -1,8 +1,9 @@
+#include <xrpl/protocol/QualityFunction.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/QualityFunction.h>
 
 #include <optional>
 #include <stdexcept>

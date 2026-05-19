@@ -1,9 +1,9 @@
 #include <xrpl/basics/BasicConfig.h>
+
 #include <xrpl/basics/StringUtilities.h>
 
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <ostream>
@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-Section::Section(std::string const& name) : name_(name)
+Section::Section(std::string name) : name_(std::move(name))
 {
 }
 

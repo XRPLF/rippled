@@ -44,8 +44,7 @@ public:
 
     template <
         class OtherInt,
-        class = typename std::enable_if<
-            std::is_integral<OtherInt>::value && sizeof(OtherInt) <= sizeof(Int)>::type>
+        class = std::enable_if_t<std::is_integral_v<OtherInt> && sizeof(OtherInt) <= sizeof(Int)>>
     explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
     {
         static_assert(sizeof(tagged_integer) == sizeof(Int), "tagged_integer is adding padding");

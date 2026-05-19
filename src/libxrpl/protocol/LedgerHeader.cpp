@@ -1,9 +1,12 @@
+#include <xrpl/protocol/LedgerHeader.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

@@ -3,10 +3,9 @@
 #include <test/jtx/Env.h>
 
 #include <tuple>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the expected result code for a JTx
     The test will fail if the code doesn't match.
@@ -22,13 +21,13 @@ private:
 public:
     /// If there's an error code, we expect an error message
     explicit rpc(error_code_i code, std::optional<std::string> m = {})
-        : code_(code), errorMessage_(m)
+        : code_(code), errorMessage_(std::move(m))
     {
     }
 
     ///  If there is not a code, we expect an exception message
     explicit rpc(std::string error, std::optional<std::string> exceptionMessage = {})
-        : error_(error), errorException_(exceptionMessage)
+        : error_(error), errorException_(std::move(exceptionMessage))
     {
     }
 
@@ -56,6 +55,4 @@ public:
     }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

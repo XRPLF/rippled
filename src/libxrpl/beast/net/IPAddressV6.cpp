@@ -1,10 +1,10 @@
-#include <xrpl/beast/net/IPAddressV4.h>
 #include <xrpl/beast/net/IPAddressV6.h>
 
-#include <boost/asio/ip/address_v4.hpp>
+#include <xrpl/beast/net/IPAddressV4.h>
 
-namespace beast {
-namespace IP {
+#include <boost/asio/ip/address_v6.hpp>
+
+namespace beast::IP {
 
 bool
 is_private(AddressV6 const& addr)
@@ -22,5 +22,4 @@ is_public(AddressV6 const& addr)
     return !is_private(addr) && !addr.is_multicast();
 }
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

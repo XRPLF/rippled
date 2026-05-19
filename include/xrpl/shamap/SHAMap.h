@@ -94,10 +94,10 @@ private:
 public:
     /** Number of children each non-leaf node has (the 'radix tree' part of the
      * map) */
-    static inline constexpr unsigned int branchFactor = SHAMapInnerNode::branchFactor;
+    static constexpr unsigned int branchFactor = SHAMapInnerNode::branchFactor;
 
     /** The depth of the hash map: data is only present in the leaves */
-    static inline constexpr unsigned int leafDepth = 64;
+    static constexpr unsigned int leafDepth = 64;
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
@@ -658,9 +658,13 @@ inline SHAMap::const_iterator&
 SHAMap::const_iterator::operator++()
 {
     if (auto temp = map_->peekNextItem(item_->key(), stack_))
+    {
         item_ = temp->peekItem().get();
+    }
     else
+    {
         item_ = nullptr;
+    }
     return *this;
 }
 

@@ -135,7 +135,7 @@ public:
     OpenView(
         open_ledger_t,
         ReadView const* base,
-        Rules const& rules,
+        Rules rules,
         std::shared_ptr<void const> hold = nullptr);
 
     OpenView(open_ledger_t, Rules const& rules, std::shared_ptr<ReadView const> const& base)

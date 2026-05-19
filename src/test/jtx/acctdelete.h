@@ -5,9 +5,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Delete account.  If successful transfer remaining XRP to dest. */
 Json::Value
@@ -19,7 +17,4 @@ acctdelete(Account const& account, Account const& dest);
 void
 incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin = 0);
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

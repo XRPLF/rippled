@@ -43,15 +43,15 @@ private:
     murmurhash3(result_type x);
 };
 
-template <class _>
-xor_shift_engine<_>::xor_shift_engine(result_type val)
+template <class Unused>
+xor_shift_engine<Unused>::xor_shift_engine(result_type val)
 {
     seed(val);
 }
 
-template <class _>
+template <class Unused>
 void
-xor_shift_engine<_>::seed(result_type seed)
+xor_shift_engine<Unused>::seed(result_type seed)
 {
     if (seed == 0)
         throw std::domain_error("invalid seed");
@@ -59,9 +59,9 @@ xor_shift_engine<_>::seed(result_type seed)
     s_[1] = murmurhash3(s_[0]);
 }
 
-template <class _>
+template <class Unused>
 auto
-xor_shift_engine<_>::operator()() -> result_type
+xor_shift_engine<Unused>::operator()() -> result_type
 {
     result_type s1 = s_[0];
     result_type const s0 = s_[1];
@@ -70,9 +70,9 @@ xor_shift_engine<_>::operator()() -> result_type
     return (s_[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0;
 }
 
-template <class _>
+template <class Unused>
 auto
-xor_shift_engine<_>::murmurhash3(result_type x) -> result_type
+xor_shift_engine<Unused>::murmurhash3(result_type x) -> result_type
 {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;

@@ -1,6 +1,7 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/TxFormats.h>
 

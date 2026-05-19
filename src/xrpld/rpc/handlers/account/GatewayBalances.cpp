@@ -3,13 +3,29 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
+#include <map>
+#include <memory>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -136,7 +152,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 if (escrow.holds<MPTIssue>())
                     return;
 
-                auto& bal = locked[escrow.getCurrency()];
+                auto& bal = locked[escrow.get<Issue>().currency];
                 if (bal == beast::zero)
                 {
                     // This is needed to set the currency code correctly
@@ -154,7 +170,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal = STAmount(bal.get<Issue>(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
             }
@@ -192,7 +208,7 @@ doGatewayBalances(RPC::JsonContext& context)
             else
             {
                 // normal negative balance, obligation to customer
-                auto& bal = sums[rs->getBalance().getCurrency()];
+                auto& bal = sums[rs->getBalance().get<Issue>().currency];
                 if (bal == beast::zero)
                 {
                     // This is needed to set the currency code correctly
@@ -210,7 +226,7 @@ doGatewayBalances(RPC::JsonContext& context)
                         // On overflow return the largest valid STAmount.
                         // Very large sums of STAmount are approximations
                         // anyway.
-                        bal = STAmount(bal.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+                        bal = STAmount(bal.asset(), STAmount::cMaxValue, STAmount::cMaxOffset);
                     }
                 }
             }
@@ -239,7 +255,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 for (auto const& balance : accBalances)
                 {
                     Json::Value entry;
-                    entry[jss::currency] = to_string(balance.issue().currency);
+                    entry[jss::currency] = to_string(balance.get<Issue>().currency);
                     entry[jss::value] = balance.getText();
                     balanceArray.append(std::move(entry));
                 }

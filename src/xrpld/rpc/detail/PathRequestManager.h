@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 
@@ -34,8 +35,8 @@ public:
     bool
     requestsPending() const;
 
-    std::shared_ptr<RippleLineCache>
-    getLineCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative);
+    std::shared_ptr<AssetCache>
+    getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative);
 
     // Create a new-style path request that pushes
     // updates to a subscriber
@@ -89,8 +90,8 @@ private:
     // Track all requests
     std::vector<PathRequest::wptr> requests_;
 
-    // Use a RippleLineCache
-    std::weak_ptr<RippleLineCache> lineCache_;
+    // Use a AssetCache
+    std::weak_ptr<AssetCache> assetCache_;
 
     std::atomic<int> mLastIdentifier;
 

@@ -3,11 +3,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
-namespace delegate {
+namespace xrpl::test::jtx::delegate {
 
 Json::Value
 set(jtx::Account const& account,
@@ -23,7 +21,7 @@ private:
     jtx::Account delegate_;
 
 public:
-    explicit as(jtx::Account const& account) : delegate_(account)
+    explicit as(jtx::Account account) : delegate_(std::move(account))
     {
     }
 
@@ -34,7 +32,4 @@ public:
     }
 };
 
-}  // namespace delegate
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::delegate

@@ -3,11 +3,17 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/rpc/Context.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
+
+#include <cstdint>
+#include <limits>
+#include <string>
 
 namespace xrpl {
 

@@ -11,12 +11,11 @@
 #include <type_traits>
 #include <utility>
 
-namespace beast {
-namespace detail {
+namespace beast::detail {
 
 template <class T>
 struct is_empty_base_optimization_derived
-    : std::integral_constant<bool, std::is_empty<T>::value && !boost::is_final<T>::value>
+    : std::integral_constant<bool, std::is_empty_v<T> && !boost::is_final<T>::value>
 {
 };
 
@@ -86,5 +85,4 @@ public:
     }
 };
 
-}  // namespace detail
-}  // namespace beast
+}  // namespace beast::detail

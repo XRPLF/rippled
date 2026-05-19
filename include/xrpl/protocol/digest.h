@@ -100,7 +100,7 @@ using sha512_hasher = openssl_sha512_hasher;
 /** Returns the RIPEMD-160 digest of the SHA256 hash of the message.
 
     This operation is used to compute the 160-bit identifier
-    representing a Ripple account, from a message. Typically the
+    representing an XRPL account, from a message. Typically the
     message is the public key of the account - which is not
     stored in the account root.
 
@@ -177,12 +177,12 @@ public:
     }
 
 private:
-    inline void
+    void
     erase(std::false_type)
     {
     }
 
-    inline void
+    void
     erase(std::true_type)
     {
         secure_erase(&h_, sizeof(h_));

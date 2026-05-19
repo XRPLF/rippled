@@ -6,7 +6,9 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 namespace xrpl {
 Json::Value

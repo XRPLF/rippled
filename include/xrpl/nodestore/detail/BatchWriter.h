@@ -7,8 +7,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Batch-writing assist logic.
 
@@ -41,7 +40,7 @@ public:
 
         Anything pending in the batch is written out before this returns.
     */
-    ~BatchWriter();
+    ~BatchWriter() override;
 
     /** Store the object.
 
@@ -76,5 +75,4 @@ private:
     Batch mWriteSet;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

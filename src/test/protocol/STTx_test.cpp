@@ -1,15 +1,34 @@
 #include <xrpl/basics/Slice.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/messages.h>
 
+#include <xrpl.pb.h>
+
+#include <cstring>
+#include <exception>
+#include <memory>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 

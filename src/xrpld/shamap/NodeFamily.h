@@ -1,5 +1,8 @@
 #pragma once
 
+#include <xrpld/app/main/CollectorManager.h>
+
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
 
 namespace xrpl {

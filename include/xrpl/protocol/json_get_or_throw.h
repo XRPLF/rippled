@@ -146,7 +146,7 @@ getOptional(Json::Value const& v, xrpl::SField const& field)
     {
         return getOrThrow<T>(v, field);
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
     return {};

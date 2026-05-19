@@ -2,11 +2,17 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/HashRouter.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <set>
+#include <type_traits>
+
+namespace xrpl::test {
 
 class HashRouter_test : public beast::unit_test::suite
 {
@@ -405,5 +411,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(HashRouter, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

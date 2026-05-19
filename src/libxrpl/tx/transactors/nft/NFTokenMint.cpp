@@ -1,14 +1,34 @@
-#include <xrpl/basics/Expected.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstdint>
+#include <cstring>
+#include <iterator>  // IWYU pragma: keep
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -321,6 +341,20 @@ NFTokenMint::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
+}
+
+void
+NFTokenMint::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

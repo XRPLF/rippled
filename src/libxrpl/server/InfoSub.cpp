@@ -1,5 +1,13 @@
 #include <xrpl/server/InfoSub.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/resource/Consumer.h>
+
+#include <cstdint>
+#include <memory>
+#include <mutex>
+
 namespace xrpl {
 
 // This is the primary interface into the "client" portion of the program.

@@ -1,13 +1,22 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <cstdint>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 

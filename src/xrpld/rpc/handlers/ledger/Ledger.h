@@ -16,8 +16,7 @@ namespace Json {
 class Object;
 }  // namespace Json
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 struct JsonContext;
 
@@ -56,5 +55,4 @@ private:
     int options_ = 0;
 };
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

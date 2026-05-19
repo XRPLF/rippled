@@ -84,7 +84,7 @@ class STCurrency;
 #pragma push_macro("TO_MAP")
 #undef TO_MAP
 
-#define TO_ENUM(name, value) name = value,
+#define TO_ENUM(name, value) name = (value),
 #define TO_MAP(name, value) {#name, value},
 
 enum SerializedTypeID { XMACRO(TO_ENUM) };

@@ -187,7 +187,8 @@ enum LedgerEntryType : std::uint16_t {
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \
-        LSF_FLAG(lsfMPTAuthorized, 0x00000002))                                                                                    \
+        LSF_FLAG(lsfMPTAuthorized, 0x00000002)                                                                                     \
+        LSF_FLAG(lsfMPTAMM, 0x00000004))                                                                                           \
                                                                                                                                    \
     LEDGER_OBJECT(Credential,                                                                                                      \
         LSF_FLAG(lsfAccepted, 0x00010000))                                                                                         \
@@ -210,7 +211,7 @@ enum LedgerEntryType : std::uint16_t {
 //     lsfRequireDestTag = 0x00020000,
 //     ...
 // };
-#define TO_VALUE(name, value) name = value,
+#define TO_VALUE(name, value) name = (value),
 #define NULL_NAME(name, values) values
 #define NULL_OUTPUT(name, value)
 enum LedgerSpecificFlags : std::uint32_t { XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT) };

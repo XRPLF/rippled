@@ -27,7 +27,9 @@ doPing(RPC::JsonContext& context)
             break;
         case Role::PROXY:
             ret[jss::role] = "proxied";
-            ret[jss::ip] = std::string{context.headers.forwardedFor};
+            if (!context.headers.forwardedFor.empty())
+                ret[jss::ip] = std::string{context.headers.forwardedFor};
+            break;
         default:;
     }
 

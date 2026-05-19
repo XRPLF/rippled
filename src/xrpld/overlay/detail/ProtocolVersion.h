@@ -17,7 +17,7 @@ namespace xrpl {
  * */
 using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
-inline constexpr ProtocolVersion
+constexpr ProtocolVersion
 make_protocol(std::uint16_t major, std::uint16_t minor)
 {
     return {major, minor};

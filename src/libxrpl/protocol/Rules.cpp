@@ -1,6 +1,5 @@
 #include <xrpl/protocol/Rules.h>
-// Do not remove. Forces Rules.h to stay first, to verify it can compile
-// without any hidden dependencies
+
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>

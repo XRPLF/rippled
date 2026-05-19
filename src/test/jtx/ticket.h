@@ -6,9 +6,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /*
     This shows how the jtx system may be extended to other
@@ -43,7 +41,4 @@ public:
 /** Match the number of tickets on the account. */
 using tickets = owner_count<ltTICKET>;
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

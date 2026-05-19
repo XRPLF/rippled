@@ -3,7 +3,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
 
-#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 

@@ -8,8 +8,7 @@
 #include <ostream>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Utility for producing nicely composed output of amounts with units. */
 class amount
@@ -42,5 +41,4 @@ operator<<(std::ostream& s, amount const& t)
     return s;
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

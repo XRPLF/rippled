@@ -4,8 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/Condition.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 struct Fulfillment
 {
@@ -119,5 +118,4 @@ validate(Fulfillment const& f, Condition const& c, Slice m);
 bool
 validate(Fulfillment const& f, Condition const& c);
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

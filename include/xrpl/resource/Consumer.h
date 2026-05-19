@@ -5,8 +5,7 @@
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Disposition.h>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 struct Entry;
 class Logic;
@@ -79,5 +78,4 @@ private:
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v);
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

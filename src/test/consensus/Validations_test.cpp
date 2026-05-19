@@ -1,17 +1,25 @@
 #include <test/csf/Validation.h>
+#include <test/csf/ledgers.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/tagged_integer.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/clock/manual_clock.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 class Validations_test : public beast::unit_test::suite
 {
     using clock_type = beast::abstract_clock<std::chrono::steady_clock> const;
@@ -1047,6 +1055,4 @@ class Validations_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(Validations, consensus, xrpl);
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

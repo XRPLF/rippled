@@ -1,7 +1,20 @@
 #include <xrpld/overlay/Message.h>
+
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 

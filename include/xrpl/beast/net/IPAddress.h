@@ -70,9 +70,13 @@ hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
 {
     using beast::hash_append;
     if (addr.is_v4())
+    {
         hash_append(h, addr.to_v4().to_bytes());
+    }
     else if (addr.is_v6())
+    {
         hash_append(h, addr.to_v6().to_bytes());
+    }
     else
     {
         // LCOV_EXCL_START

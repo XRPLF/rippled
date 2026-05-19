@@ -1,7 +1,17 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <algorithm>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : m_callback(callback), m_scheduler(scheduler)
@@ -97,5 +107,4 @@ BatchWriter::waitForWriting()
         mWriteCondition.wait(sl);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
