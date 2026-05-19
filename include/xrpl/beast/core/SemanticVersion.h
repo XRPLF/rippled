@@ -37,15 +37,15 @@ public:
     parse(std::string_view input);
 
     /** Produce a string from semantic version components. */
-    std::string
+    [[nodiscard]] std::string
     print() const;
 
-    bool
+    [[nodiscard]] bool
     isRelease() const noexcept
     {
         return preReleaseIdentifiers.empty();
     }
-    bool
+    [[nodiscard]] bool
     isPreRelease() const noexcept
     {
         return !isRelease();

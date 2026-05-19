@@ -28,22 +28,22 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
-    bool
+    [[nodiscard]] bool
     finalizeBid(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeVote(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeCreate(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeDelete(bool enforce, TER res, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeDeposit(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     // Includes clawback
-    bool
+    [[nodiscard]] bool
     finalizeWithdraw(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     finalizeDEX(bool enforce, beast::Journal const&) const;
-    bool
+    [[nodiscard]] bool
     generalInvariant(STTx const&, ReadView const&, ZeroAllowed zeroAllowed, beast::Journal const&)
         const;
 };

@@ -35,7 +35,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
 
-        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
+        return !credentials::checkExpired(*sleCred, view.header().parentCloseTime);
     });
 
     return inDomain;
@@ -60,9 +60,10 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (view.rules().enabled(fixSecurity3_1_3))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
-        // post-fixSecurity3_1_3: also catches empty sfAdditionalBooks (size == 0)
+        // post-fixCleanup3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present with exactly 1 entry
         if (sleOffer->isFlag(lsfHybrid) &&
             (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
              sleOffer->getFieldArray(sfAdditionalBooks).size() != 1))
@@ -74,7 +75,8 @@ offerInDomain(
     }
     else
     {
-        // pre-fixSecurity3_1_3: only check for missing sfAdditionalBooks
+        // pre-fixCleanup3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present (size is not checked)
         if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
         {
             JLOG(j.error()) << "Hybrid offer " << offerID << " missing AdditionalBooks field";

@@ -101,13 +101,13 @@ public:
     }
 
     /** Returns the number of bytes in the buffer. */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return size_;
     }
 
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return 0 == size_;
@@ -125,7 +125,7 @@ public:
               to a single byte, to facilitate pointer arithmetic.
     */
     /** @{ */
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return p_.get();
@@ -169,25 +169,25 @@ public:
         return alloc(n);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return p_.get();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return p_.get();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return p_.get() + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return p_.get() + size_;

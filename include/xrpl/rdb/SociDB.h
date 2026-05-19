@@ -43,7 +43,7 @@ class DBConfig
 
 public:
     DBConfig(BasicConfig const& config, std::string const& dbName);
-    std::string
+    [[nodiscard]] std::string
     connectionString() const;
     void
     open(soci::session& s) const;

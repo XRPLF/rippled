@@ -39,7 +39,7 @@ public:
             count_++;
             return true;
         }
-        std::uint32_t
+        [[nodiscard]] std::uint32_t
         count() const
         {
             return count_;
@@ -66,7 +66,7 @@ protected:
 
     template <class TTakerPays, class TTakerGets>
         requires ValidTaker<TTakerPays, TTakerGets>
-    bool
+    [[nodiscard]] bool
     shouldRmSmallIncreasedQOffer() const;
 
 public:
@@ -84,7 +84,7 @@ public:
         Offers are always presented in decreasing quality.
         Only valid if step() returned `true`.
     */
-    TOffer<TIn, TOut>&
+    [[nodiscard]] TOffer<TIn, TOut>&
     tip() const
     {
         return const_cast<TOfferStreamBase*>(this)->offer_;
@@ -100,7 +100,7 @@ public:
     bool
     step();
 
-    TOut
+    [[nodiscard]] TOut
     ownerFunds() const
     {
         return *ownerFunds_;  // NOLINT(bugprone-unchecked-optional-access) always set after step()
@@ -141,7 +141,7 @@ public:
     void
     permRmOffer(uint256 const& offerIndex) override;
 
-    boost::container::flat_set<uint256> const&
+    [[nodiscard]] boost::container::flat_set<uint256> const&
     permToRemove() const
     {
         return permToRemove_;

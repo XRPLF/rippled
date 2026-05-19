@@ -18,7 +18,7 @@ struct Rate
     std::size_t count;
     SimDuration duration;
 
-    double
+    [[nodiscard]] double
     inv() const
     {
         return duration.count() / double(count);

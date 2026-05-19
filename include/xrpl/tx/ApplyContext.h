@@ -34,7 +34,7 @@ public:
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : ApplyContext(registry, base, std::nullopt, tx, preclaimResult, baseFee, flags, journal)
     {
-        XRPL_ASSERT((flags & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     std::reference_wrapper<ServiceRegistry> registry;
@@ -49,7 +49,7 @@ public:
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
-    ApplyView const&
+    [[nodiscard]] ApplyView const&
     view() const
     {
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
@@ -62,7 +62,7 @@ public:
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
-    ApplyFlags const&
+    [[nodiscard]] ApplyFlags const&
     flags() const
     {
         return flags_;

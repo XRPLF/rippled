@@ -15,7 +15,7 @@ public:
     instance();
 
     static void
-    missing_backend();
+    missingBackend();
 
     ManagerImp();
 
@@ -31,14 +31,14 @@ public:
     erase(Factory& factory) override;
 
     std::unique_ptr<Backend>
-    make_Backend(
+    makeBackend(
         Section const& parameters,
         std::size_t burstSize,
         Scheduler& scheduler,
         beast::Journal journal) override;
 
     std::unique_ptr<Database>
-    make_Database(
+    makeDatabase(
         std::size_t burstSize,
         Scheduler& scheduler,
         int readThreads,
