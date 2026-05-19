@@ -25,7 +25,7 @@ create(AccountID const& account, AccountID const& to, STAmount const& amount)
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     return jv;
 }
 

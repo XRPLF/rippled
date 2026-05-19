@@ -31,9 +31,9 @@ makeSeedPair() noexcept
         // state_t(state_t const&) = delete;
         // state_t& operator=(state_t const&) = delete;
     };
-    static StateT kSTATE;
-    std::scoped_lock const lock(kSTATE.mutex);
-    return {kSTATE.dist(kSTATE.gen), kSTATE.dist(kSTATE.gen)};
+    static StateT kState;
+    std::scoped_lock const lock(kState.mutex);
+    return {kState.dist(kState.gen), kState.dist(kState.gen)};
 }
 
 }  // namespace detail

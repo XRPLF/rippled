@@ -96,11 +96,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
         sle && sle->isFieldPresent(sfTransferFee))
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
-        XRPL_ASSERT(fee <= kMAX_TRANSFER_FEE, "xrpl::transferRate : fee is too large");
+        XRPL_ASSERT(fee <= kMaxTransferFee, "xrpl::transferRate : fee is too large");
         return Rate{1'000'000'000u + (10'000 * fee)};
     }
 
-    return kPARITY_RATE;
+    return kParityRate;
 }
 
 [[nodiscard]] TER
@@ -169,7 +169,7 @@ authorizeMPToken(
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(fixSecurity3_1_3) &&
+                (view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -194,7 +194,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::kZERO)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
@@ -284,7 +284,7 @@ removeEmptyHolding(
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
@@ -320,7 +320,7 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= kMAX_ASSET_CHECK_DEPTH)
+        if (depth >= kMaxAssetCheckDepth)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
@@ -358,7 +358,7 @@ requireAuth(
     if (maybeDomainID)
     {
         XRPL_ASSERT(
-            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+            sleIssuance->isFlag(lsfMPTRequireAuth),
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
@@ -839,7 +839,7 @@ checkCreateMPT(
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
-    return sleIssuance[~sfMaximumAmount].value_or(kMAX_MP_TOKEN_AMOUNT);
+    return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
 }
 
 std::int64_t

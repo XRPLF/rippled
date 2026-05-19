@@ -17,7 +17,7 @@ namespace xrpl::LedgerEntryHelpers {
 inline Unexpected<json::Value>
 missingFieldError(json::StaticString const field, std::optional<std::string> err = std::nullopt)
 {
-    json::Value json = json::ObjectValue;
+    json::Value json = json::ValueType::Object;
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = RPC::missingFieldMessage(std::string(field.cStr()));
@@ -27,7 +27,7 @@ missingFieldError(json::StaticString const field, std::optional<std::string> err
 inline Unexpected<json::Value>
 invalidFieldError(std::string const& err, json::StaticString const field, std::string const& type)
 {
-    json::Value json = json::ObjectValue;
+    json::Value json = json::ValueType::Object;
     json[jss::error] = err;
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = RPC::expectedFieldMessage(field, type);
@@ -37,7 +37,7 @@ invalidFieldError(std::string const& err, json::StaticString const field, std::s
 inline Unexpected<json::Value>
 malformedError(std::string const& err, std::string const& message)
 {
-    json::Value json = json::ObjectValue;
+    json::Value json = json::ValueType::Object;
     json[jss::error] = err;
     json[jss::error_code] = RpcInvalidParams;
     json[jss::error_message] = message;

@@ -46,7 +46,7 @@ Workers::getNumberOfThreads() const noexcept
 void
 Workers::setNumberOfThreads(int numberOfThreads)
 {
-    static int kINSTANCE{0};
+    static int kInstance{0};
     if (numberOfThreads_ == numberOfThreads)
         return;
 
@@ -72,7 +72,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
             }
             else
             {
-                worker = new Worker(*this, threadNames_, kINSTANCE++);
+                worker = new Worker(*this, threadNames_, kInstance++);
                 everyone_.pushFront(worker);
             }
         }
