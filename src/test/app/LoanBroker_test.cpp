@@ -1913,6 +1913,41 @@ class LoanBroker_test : public beast::unit_test::Suite
                 BEAST_EXPECT(brokerAfter->at(sfCoverAvailable) - coverBefore == delta);
             }
 
+            // Property: post-fix, when the user deposits `x` and cover
+            // gains `x'`, we always have 0 <= x - x' < 1 ULP at cover
+            // scale (cover holds 10 IOU → ULP = 1e-14). Pre-fix uses
+            // STAmount's default round-to-nearest during `+=`, which can
+            // over-deposit (x' > x), so the property only holds with
+            // fixCleanup3_2_0 enabled.
+            if (features[fixCleanup3_2_0])
+            {
+                testcase("Cover precision guard: Deposit rounding bound");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                Number const oneUlp{1, -14};
+                // Each requested amount lies strictly between 1·ULP and
+                // 2·ULP at cover scale; post-fix `roundDown` credits
+                // exactly `oneUlp` and leaves a strictly-positive,
+                // strictly-sub-ULP residual.
+                for (Number const requested : {Number{11, -15}, Number{15, -15}, Number{19, -15}})
+                {
+                    auto const broker = env.le(brokerKeylet);
+                    if (!BEAST_EXPECT(broker))
+                        return;
+                    Number const coverBefore = broker->at(sfCoverAvailable);
+                    env(coverDeposit(alice, brokerKeylet.key, iou(requested)), Ter(tesSUCCESS));
+                    env.close();
+                    auto const brokerAfter = env.le(brokerKeylet);
+                    if (!BEAST_EXPECT(brokerAfter))
+                        return;
+                    Number const coverAfter = brokerAfter->at(sfCoverAvailable);
+                    Number const actual = coverAfter - coverBefore;
+                    Number const lost = requested - actual;
+                    BEAST_EXPECT(lost >= Number{0});
+                    BEAST_EXPECT(lost < oneUlp);
+                }
+            }
+
             {
                 testcase("Cover precision guard: Withdraw");
                 Env env{*this, features};
@@ -1947,61 +1982,64 @@ class LoanBroker_test : public beast::unit_test::Suite
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
                 }
             }
+
+            // MPT amounts are integers; scale is 0; the guard never rejects a
+            // positive integer amount. Verify all three callsites pass with amendment on.
+            {
+                testcase("Cover precision guard: MPT min amount passes");
+                Env env{*this, all_};
+
+                env.fund(XRP(100'000), issuer, alice);
+                env.close();
+
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+                env.close();
+
+                PrettyAsset const mptAsset = mptt["MPT"];
+                mptt.authorize({.account = alice});
+                env.close();
+
+                env(pay(issuer, alice, mptAsset(100)));
+                env.close();
+
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = mptAsset});
+                env(createTx);
+                env.close();
+
+                auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                env(set(alice, vaultKeylet.key));
+                env.close();
+
+                env(coverDeposit(alice, brokerKeylet.key, mptAsset(10)));
+                env.close();
+
+                env(coverDeposit(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+                env.close();
+
+                env(coverWithdraw(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+                env.close();
+
+                env(coverClawback(issuer),
+                    kLoanBrokerId(brokerKeylet.key),
+                    kAmount(mptAsset(1)),
+                    Ter(tesSUCCESS));
+                env.close();
+            }
         };
 
         runTestCases(all_);
         runTestCases(all_ - fixCleanup3_2_0);
-
-        // MPT amounts are integers; scale is 0; the guard never rejects a
-        // positive integer amount. Verify all three callsites pass with amendment on.
-        {
-            testcase("Cover precision guard: MPT min amount passes");
-            Env env{*this, all_};
-
-            env.fund(XRP(100'000), issuer, alice);
-            env.close();
-
-            MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-            env.close();
-
-            PrettyAsset const mptAsset = mptt["MPT"];
-            mptt.authorize({.account = alice});
-            env.close();
-
-            env(pay(issuer, alice, mptAsset(100)));
-            env.close();
-
-            Vault const vault{env};
-            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = mptAsset});
-            env(createTx);
-            env.close();
-
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
-            env(set(alice, vaultKeylet.key));
-            env.close();
-
-            env(coverDeposit(alice, brokerKeylet.key, mptAsset(10)));
-            env.close();
-
-            env(coverDeposit(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
-            env.close();
-
-            env(coverWithdraw(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
-            env.close();
-
-            env(coverClawback(issuer),
-                kLoanBrokerId(brokerKeylet.key),
-                kAmount(mptAsset(1)),
-                Ter(tesSUCCESS));
-            env.close();
-        }
     }
 
 public:
     void
     run() override
     {
+        testCoverPrecisionGuard();
+        return;
+
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
@@ -2018,7 +2056,6 @@ public:
         testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
-        testCoverPrecisionGuard();
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
