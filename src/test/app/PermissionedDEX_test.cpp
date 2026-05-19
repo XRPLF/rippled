@@ -1006,11 +1006,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         // direct book is ranked by its domain LOB quality, so the 2:1
         // XRP->EUR->USD path executes first.
         env(pay(alice, carol, USD(100)),
-            path(~USD),
-            path(~eur, ~USD),
-            sendmax(XRP(10)),
-            txflags(tfPartialPayment | tfNoRippleDirect),
-            domain(domainID));
+            Path(~USD),
+            Path(~eur, ~USD),
+            Sendmax(XRP(10)),
+            Txflags(tfPartialPayment | tfNoRippleDirect),
+            Domain(domainID));
         env.close();
 
         auto const delivered = env.balance(carol, USD) - carolBalBefore;
