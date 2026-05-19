@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily xrpld update check
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+RandomizedDelaySec=24h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

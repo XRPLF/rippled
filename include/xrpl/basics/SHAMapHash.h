@@ -21,12 +21,12 @@ public:
     }
 
     [[nodiscard]] uint256 const&
-    as_uint256() const
+    asUInt256() const
     {
         return hash_;
     }
     uint256&
-    as_uint256()
+    asUInt256()
     {
         return hash_;
     }
@@ -93,7 +93,7 @@ template <>
 inline std::size_t
 extract(SHAMapHash const& key)
 {
-    return *reinterpret_cast<std::size_t const*>(key.as_uint256().data());
+    return *reinterpret_cast<std::size_t const*>(key.asUInt256().data());
 }
 
 }  // namespace xrpl

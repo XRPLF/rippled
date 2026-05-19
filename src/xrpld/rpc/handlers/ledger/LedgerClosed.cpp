@@ -9,13 +9,13 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doLedgerClosed(RPC::JsonContext& context)
 {
     auto ledger = context.ledgerMaster.getClosedLedger();
     XRPL_ASSERT(ledger, "xrpl::doLedgerClosed : non-null closed ledger");
 
-    Json::Value jvResult;
+    json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->header().seq;
     jvResult[jss::ledger_hash] = to_string(ledger->header().hash);
 

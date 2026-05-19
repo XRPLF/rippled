@@ -42,10 +42,10 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     AccountKey key(accountID, direction, hash);
     AccountKey otherkey(
         accountID,
-        direction == LineDirection::outgoing ? LineDirection::incoming : LineDirection::outgoing,
+        direction == LineDirection::Outgoing ? LineDirection::Incoming : LineDirection::Outgoing,
         hash);
 
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     auto [it, inserted] = [&]() {
         if (auto otheriter = lines_.find(otherkey); otheriter != lines_.end())
@@ -56,14 +56,14 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
             auto const size = otheriter->second ? otheriter->second->size() : 0;
             JLOG(journal_.info())
                 << "Request for "
-                << (direction == LineDirection::outgoing ? "outgoing" : "incoming")
+                << (direction == LineDirection::Outgoing ? "outgoing" : "incoming")
                 << " trust lines for account " << accountID << " found " << size
-                << (direction == LineDirection::outgoing ? " incoming" : " outgoing")
+                << (direction == LineDirection::Outgoing ? " incoming" : " outgoing")
                 << " trust lines. "
-                << (direction == LineDirection::outgoing ? "Deleting the subset of incoming"
+                << (direction == LineDirection::Outgoing ? "Deleting the subset of incoming"
                                                          : "Returning the superset of outgoing")
                 << " trust lines. ";
-            if (direction == LineDirection::outgoing)
+            if (direction == LineDirection::Outgoing)
             {
                 // This request is for the outgoing set, but there is already a
                 // subset of incoming lines in the cache. Erase that subset
@@ -106,8 +106,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger " << ledger_->header().seq << " found "
                            << size
-                           << (key.direction_ == LineDirection::outgoing ? " outgoing"
-                                                                         : " incoming")
+                           << (key.direction == LineDirection::Outgoing ? " outgoing" : " incoming")
                            << " lines for " << (inserted ? "new " : "existing ") << accountID
                            << " out of a total of " << lines_.size() << " accounts and "
                            << totalLineCount_ << " trust lines";
@@ -118,7 +117,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 std::shared_ptr<std::vector<PathFindMPT>> const&
 AssetCache::getMPTs(xrpl::AccountID const& account)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     if (auto it = mpts_.find(account); it != mpts_.end())
         return it->second;

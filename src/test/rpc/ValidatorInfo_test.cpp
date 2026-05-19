@@ -15,7 +15,7 @@
 
 namespace xrpl::test {
 
-class ValidatorInfo_test : public beast::unit_test::suite
+class ValidatorInfo_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -35,8 +35,8 @@ public:
     testPrivileges()
     {
         using namespace test::jtx;
-        Env env{*this, envconfig(no_admin)};
-        env.set_retries(0);
+        Env env{*this, envconfig(noAdmin)};
+        env.setRetries(0);
         auto const info = env.rpc("validator_info")[jss::result];
         BEAST_EXPECT(info.isNull());
     }
@@ -58,8 +58,8 @@ public:
             "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n",
         };
 
-        std::string const master_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
-        std::string const ephemeral_key = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
+        std::string const masterKey = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
+        std::string const ephemeralKey = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
         std::string const manifest =
             "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/"
             "vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQI"
@@ -75,9 +75,9 @@ public:
             auto const info = env.rpc("validator_info");
             BEAST_EXPECT(info[jss::result][jss::status] == "success");
             BEAST_EXPECT(info[jss::result][jss::seq] == 1);
-            BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);
+            BEAST_EXPECT(info[jss::result][jss::master_key] == masterKey);
             BEAST_EXPECT(info[jss::result][jss::manifest] == manifest);
-            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeral_key);
+            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeralKey);
         }
     }
 
