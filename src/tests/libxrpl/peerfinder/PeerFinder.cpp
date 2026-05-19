@@ -418,7 +418,7 @@ TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
 TEST(PeerFinderConfig, rejects_incomplete_or_out_of_range_peer_limits)
 {
     std::vector<PeerLimitConfig> const configs{
-        {.maxPeers = {}, .inPeers = 100},
+        {.maxPeers = {}, .inPeers = 100, .outPeers = {}},
         {.maxPeers = {}, .inPeers = {}, .outPeers = 100},
         {.maxPeers = {}, .inPeers = 100, .outPeers = 5},
         {.maxPeers = {}, .inPeers = 1001, .outPeers = 10},
