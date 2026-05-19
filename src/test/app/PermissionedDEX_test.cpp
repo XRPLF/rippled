@@ -969,7 +969,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
         auto const eur = gw["EUR"];
-        auto const withDomain = [&](::Json::Value jv) {
+        auto const withDomain = [&](auto jv) {
             jv[sfDomainID.jsonName] = to_string(domainID);
             return jv;
         };
@@ -1007,10 +1007,19 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // direct book is ranked by its domain LOB quality, so the 2:1
         // XRP->EUR->USD path executes first.
         auto payment = withDomain(pay(alice, carol, USD(100)));
-        auto const pathSet = ::xrpl::test::PathSet{
-            ::xrpl::test::Path{USD.issue()}, ::xrpl::test::Path{eur.issue(), USD.issue()}};
-        payment[sfPaths.jsonName] = pathSet.paths.getJson(::xrpl::JsonOptions::none);
-        payment[sfSendMax.jsonName] = XRP(10).value().getJson(::xrpl::JsonOptions::none);
+        auto const pathElement = [](Issue const& issue) {
+            return STPathElement(
+                STPathElement::typeCurrency | STPathElement::typeIssuer,
+                beast::zero,
+                issue.currency,
+                issue.account);
+        };
+
+        STPathSet pathSet;
+        pathSet.push_back(STPath{{pathElement(USD.issue())}});
+        pathSet.push_back(STPath{{pathElement(eur.issue()), pathElement(USD.issue())}});
+        payment[sfPaths.jsonName] = pathSet.getJson(JsonOptions{0});
+        payment[sfSendMax.jsonName] = XRP(10).value().getJson(JsonOptions{0});
         payment[sfFlags.jsonName] = tfPartialPayment | tfNoRippleDirect;
         env(payment);
         env.close();
