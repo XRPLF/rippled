@@ -29,6 +29,7 @@ set(test_modules
     json
     tx
     protocol_autogen
+    nodestore
 )
 if(NOT WIN32)
     list(APPEND test_modules net)
