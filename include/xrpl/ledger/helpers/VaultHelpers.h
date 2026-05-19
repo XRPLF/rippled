@@ -45,10 +45,11 @@ sharesToAssetsDeposit(
 /** Controls whether to truncate shares instead of rounding. */
 enum class TruncateShares : bool { No = false, Yes = true };
 
-/** Controls whether sharesToAssetsWithdraw subtracts sfLossUnrealized from
-    sfAssetsTotal before computing the exchange rate. The default (No)
-    applies the standard discounted rate; Yes is used when the redeemer is
-    the sole remaining shareholder.
+/** Controls whether the withdraw conversion helpers
+    (assetsToSharesWithdraw and sharesToAssetsWithdraw) subtract
+    sfLossUnrealized from sfAssetsTotal before computing the exchange rate.
+    The default (No) applies the standard discounted rate; Yes is used when
+    the redeemer is the sole remaining shareholder.
 */
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 

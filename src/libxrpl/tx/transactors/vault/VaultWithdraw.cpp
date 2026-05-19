@@ -192,8 +192,9 @@ VaultWithdraw::doApply()
     // shares but keep future value in the vault.
 
     auto const waiveUnrealizedLoss =
-        fix320Enabled && isSoleShareholder(view(), account_, sleIssuance) ? WaiveUnrealizedLoss::Yes
-                                                                          : WaiveUnrealizedLoss::No;
+        fix320Enabled && isSoleShareholder(view(), accountID_, sleIssuance)
+        ? WaiveUnrealizedLoss::Yes
+        : WaiveUnrealizedLoss::No;
 
     try
     {
@@ -279,7 +280,8 @@ VaultWithdraw::doApply()
     // worth logging.
     if (fix320Enabled && isFinalWithdrawal)
     {
-        if (*lossUnrealized != beast::kZERO)
+        // This should be impossible.
+        if (*lossUnrealized != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal())

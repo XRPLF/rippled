@@ -6168,13 +6168,13 @@ class Vault_test : public beast::unit_test::Suite
         std::uint64_t sharesLender = 0;
     };
 
-    static constexpr std::int64_t kSTUCK_FUNDING = 1'000'000;
-    static constexpr std::int64_t kSTUCK_DEPOSITOR_IOU = 1'000'000;
-    static constexpr std::int64_t kSTUCK_BORROWER_IOU = 100'000;
-    static constexpr std::int64_t kSTUCK_DEPOSIT = 5'000;
-    static constexpr std::int64_t kSTUCK_PRINCIPAL = 3'333;
-    static constexpr std::uint32_t kSTUCK_PAY_INTERVAL = 600;
-    static constexpr std::uint32_t kSTUCK_PAY_TOTAL = 2;
+    static constexpr std::int64_t kStuckFunding = 1'000'000;
+    static constexpr std::int64_t kStuckDepositorIOU = 1'000'000;
+    static constexpr std::int64_t kStuckBorrowerIOU = 100'000;
+    static constexpr std::int64_t kStuckDeposit = 5'000;
+    static constexpr std::int64_t kStuckPrincipal = 3'333;
+    static constexpr std::uint32_t kStuckPayInterval = 600;
+    static constexpr std::uint32_t kStuckPayTotal = 2;
 
     [[nodiscard]] StuckDepositorFixture
     setupStuckDepositor(test::jtx::Env& env)
@@ -6184,7 +6184,7 @@ class Vault_test : public beast::unit_test::Suite
         StuckDepositorFixture f;
         f.asset = f.issuer[iouCurrency_];
 
-        env.fund(XRP(kSTUCK_FUNDING), f.issuer, f.lender, f.bob, f.borrower);
+        env.fund(XRP(kStuckFunding), f.issuer, f.lender, f.bob, f.borrower);
         env.close();
 
         env(trust(f.lender, (*f.asset)(10'000'000)));
@@ -6192,9 +6192,9 @@ class Vault_test : public beast::unit_test::Suite
         env(trust(f.borrower, (*f.asset)(10'000'000)));
         env.close();
 
-        env(pay(f.issuer, f.lender, (*f.asset)(kSTUCK_DEPOSITOR_IOU)));
-        env(pay(f.issuer, f.bob, (*f.asset)(kSTUCK_DEPOSITOR_IOU)));
-        env(pay(f.issuer, f.borrower, (*f.asset)(kSTUCK_BORROWER_IOU)));
+        env(pay(f.issuer, f.lender, (*f.asset)(kStuckDepositorIOU)));
+        env(pay(f.issuer, f.bob, (*f.asset)(kStuckDepositorIOU)));
+        env(pay(f.issuer, f.borrower, (*f.asset)(kStuckBorrowerIOU)));
         env.close();
 
         // Vault: Lender creates and seeds it; Bob matches the deposit for a
@@ -6210,13 +6210,13 @@ class Vault_test : public beast::unit_test::Suite
         env(v.deposit({
                 .depositor = f.lender,
                 .id = vaultKeylet.key,
-                .amount = (*f.asset)(kSTUCK_DEPOSIT),
+                .amount = (*f.asset)(kStuckDeposit),
             }),
             Ter(tesSUCCESS));
         env(v.deposit({
                 .depositor = f.bob,
                 .id = vaultKeylet.key,
-                .amount = (*f.asset)(kSTUCK_DEPOSIT),
+                .amount = (*f.asset)(kStuckDeposit),
             }),
             Ter(tesSUCCESS));
         env.close();
@@ -6226,10 +6226,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             using namespace loanBroker;
             env(set(f.lender, vaultKeylet.key),
-                kMANAGEMENT_FEE_RATE(TenthBips16{0}),
-                kDEBT_MAXIMUM((*f.asset)(kSTUCK_PRINCIPAL * 10).value()),
-                kCOVER_RATE_MINIMUM(TenthBips32{0}),
-                kCOVER_RATE_LIQUIDATION(TenthBips32{0}));
+                kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
             env.close();
         }
 
@@ -6241,10 +6238,10 @@ class Vault_test : public beast::unit_test::Suite
 
         {
             using namespace loan;
-            env(set(f.borrower, f.brokerID, kSTUCK_PRINCIPAL),
+            env(set(f.borrower, f.brokerID, kStuckPrincipal),
                 Sig(sfCounterpartySignature, f.lender),
-                kPAYMENT_TOTAL(kSTUCK_PAY_TOTAL),
-                kPAYMENT_INTERVAL(kSTUCK_PAY_INTERVAL),
+                kPaymentTotal(kStuckPayTotal),
+                kPaymentInterval(kStuckPayInterval),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
             env.close();
@@ -6255,7 +6252,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultSle = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return f;
-        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == (*f.asset)(kSTUCK_PRINCIPAL).value());
+        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == (*f.asset)(kStuckPrincipal).value());
 
         f.shareAsset = vaultSle->at(sfShareMPTID);
 
@@ -6287,7 +6284,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfterBob = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterBob))
             return f;
-        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) > beast::kZERO);
+        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) > beast::kZero);
         BEAST_EXPECT(vaultAfterBob->at(sfAssetsAvailable) < vaultAfterBob->at(sfAssetsTotal));
 
         return f;
@@ -6381,7 +6378,7 @@ class Vault_test : public beast::unit_test::Suite
         // AssetsTotal > 0 jointly satisfy the zero-sized-vault invariant.
         BEAST_EXPECT(sharesAfter > 0);
         BEAST_EXPECT(sharesAfter < f.sharesLender);
-        BEAST_EXPECT(totalAfter > beast::kZERO);
+        BEAST_EXPECT(totalAfter > beast::kZero);
 
         // LossUnrealized is unchanged: the loan-protocol side is untouched.
         BEAST_EXPECT(lossAfter == lossBefore);
@@ -6394,7 +6391,7 @@ class Vault_test : public beast::unit_test::Suite
         // requested amount.
         STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
         Number const received{lenderBalanceAfter - lenderBalanceBefore};
-        BEAST_EXPECT(received > beast::kZERO);
+        BEAST_EXPECT(received > beast::kZero);
         BEAST_EXPECT(received <= Number{requestAssets});
 
         // Conservation: assets removed from the vault equal what the
@@ -6503,15 +6500,15 @@ class Vault_test : public beast::unit_test::Suite
         // Borrower repays the loan in full (pays more than the outstanding
         // total; the loan transactor caps the receivable).
         PrettyAsset const repayAsset = *f.asset;
-        env(pay(f.borrower, f.loanKeylet->key, repayAsset(kSTUCK_PRINCIPAL * 2)), Ter(tesSUCCESS));
+        env(pay(f.borrower, f.loanKeylet->key, repayAsset(kStuckPrincipal * 2)), Ter(tesSUCCESS));
         env.close();
 
         auto const vaultAfterRepay = env.le(*f.vaultKeylet);
         if (!BEAST_EXPECT(vaultAfterRepay))
             return;
-        BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZERO);
+        BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZero);
         BEAST_EXPECT(vaultAfterRepay->at(sfAssetsAvailable) == vaultAfterRepay->at(sfAssetsTotal));
-        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsTotal) > beast::kZERO);
+        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsTotal) > beast::kZero);
 
         STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, *f.asset);
         Number const availableBeforeFinal = vaultAfterRepay->at(sfAssetsAvailable);
@@ -6536,9 +6533,9 @@ class Vault_test : public beast::unit_test::Suite
 
         // Zero-sized vault invariant satisfied: 0 shares, 0 assets.
         BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
-        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZERO);
-        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZERO);
-        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZero);
 
         // The final payout equals exactly the AssetsAvailable that
         // existed before the call (the "force payout" branch).
@@ -6567,13 +6564,13 @@ class Vault_test : public beast::unit_test::Suite
         Account const issuer{"issuer"};
         Account const lender{"lender"};
 
-        env.fund(XRP(kSTUCK_FUNDING), issuer, lender);
+        env.fund(XRP(kStuckFunding), issuer, lender);
         env.close();
 
         PrettyAsset const asset = issuer[iouCurrency_];
         env(trust(lender, asset(10'000'000)));
         env.close();
-        env(pay(issuer, lender, asset(kSTUCK_DEPOSITOR_IOU)));
+        env(pay(issuer, lender, asset(kStuckDepositorIOU)));
         env.close();
 
         // Sole shareholder of a clean vault — no loan broker needed.
@@ -6585,7 +6582,7 @@ class Vault_test : public beast::unit_test::Suite
         env(v.deposit({
                 .depositor = lender,
                 .id = vaultKeylet.key,
-                .amount = asset(kSTUCK_DEPOSIT),
+                .amount = asset(kStuckDeposit),
             }),
             Ter(tesSUCCESS));
         env.close();
@@ -6616,9 +6613,9 @@ class Vault_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(issuanceFinal))
             return;
         BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
-        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZERO);
-        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZERO);
-        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZERO);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZero);
 
         // (Pre-fix path takes the regular code path; post-fix path enters
         // the new final-withdrawal guard, which forces payout to exactly
@@ -6696,7 +6693,7 @@ class Vault_test : public beast::unit_test::Suite
 
         // Vault remains valid: shares > 0, total > 0, invariant holds.
         BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) > 0);
-        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) > beast::kZERO);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) > beast::kZero);
         BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
         BEAST_EXPECT(
             vaultAfter->at(sfLossUnrealized) <=
