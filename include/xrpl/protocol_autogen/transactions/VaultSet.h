@@ -19,9 +19,9 @@ class VaultSetBuilder;
  * @brief Transaction: VaultSet
  *
  * Type: ttVAULT_SET (66)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mustModifyVault
+ * Privileges: MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAssetsMaximum (soeOPTIONAL)
+     * @brief Get sfAssetsMaximum (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     * @brief Get sfData (soeOPTIONAL)
+     * @brief Get sfData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -141,7 +141,7 @@ public:
  * @brief Builder for VaultSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultSetBuilder : public TransactionBuilderBase<VaultSetBuilder>
@@ -180,7 +180,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -191,7 +191,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetsMaximum (soeOPTIONAL)
+     * @brief Set sfAssetsMaximum (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -202,7 +202,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
@@ -213,7 +213,7 @@ public:
     }
 
     /**
-     * @brief Set sfData (soeOPTIONAL)
+     * @brief Set sfData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&

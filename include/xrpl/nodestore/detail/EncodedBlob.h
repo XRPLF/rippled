@@ -9,8 +9,7 @@
 #include <array>
 #include <cstdint>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Convert a NodeObject from in-memory to database format.
 
@@ -105,5 +104,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
