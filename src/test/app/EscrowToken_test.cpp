@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -572,8 +573,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = useRulesGuards(env.current()->rules());
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),
@@ -2200,8 +2200,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(pay(gw, bob, usd(1)));
             env.close();
 
-            bool const largeMantissa =
-                features[featureSingleAssetVault] || features[featureLendingProtocol];
+            bool const largeMantissa = useRulesGuards(env.current()->rules());
 
             // alice cannot create escrow for 1/10 iou - precision loss
             env(escrow::create(alice, bob, usd(1)),

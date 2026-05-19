@@ -1829,7 +1829,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testLastHolderLPTokenBalance(all - fixAMMv1_3 - fixAMMClawbackRounding);
         testLastHolderLPTokenBalance(
             all - fixAMMv1_3 - fixAMMClawbackRounding - featureSingleAssetVault -
-            featureLendingProtocol);
+            featureLendingProtocol - fixCleanup3_2_0);
         testLastHolderLPTokenBalance(all - fixAMMClawbackRounding);
         testClawAssetCheck(all);
     }

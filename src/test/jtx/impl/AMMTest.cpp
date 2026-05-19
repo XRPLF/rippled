@@ -143,7 +143,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         // mantissas
         Env env{
             *this,
-            features - featureSingleAssetVault - featureLendingProtocol,
+            features - featureSingleAssetVault - featureLendingProtocol - fixCleanup3_2_0,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
         auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
