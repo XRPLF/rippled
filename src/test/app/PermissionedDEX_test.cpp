@@ -2,7 +2,6 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
@@ -1006,22 +1005,12 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // but crossing can only consume the 1:1 LOB offer. With the fix, the
         // direct book is ranked by its domain LOB quality, so the 2:1
         // XRP->EUR->USD path executes first.
-        auto payment = withDomain(pay(alice, carol, USD(100)));
-        auto const pathElement = [](Issue const& issue) {
-            return STPathElement(
-                STPathElement::typeCurrency | STPathElement::typeIssuer,
-                beast::zero,
-                issue.currency,
-                issue.account);
-        };
-
-        STPathSet pathSet;
-        pathSet.push_back(STPath{{pathElement(USD.issue())}});
-        pathSet.push_back(STPath{{pathElement(eur.issue()), pathElement(USD.issue())}});
-        payment[sfPaths.jsonName] = pathSet.getJson(JsonOptions{0});
-        payment[sfSendMax.jsonName] = XRP(10).value().getJson(JsonOptions{0});
-        payment[sfFlags.jsonName] = tfPartialPayment | tfNoRippleDirect;
-        env(payment);
+        env(pay(alice, carol, USD(100)),
+            path(~USD),
+            path(~eur, ~USD),
+            sendmax(XRP(10)),
+            txflags(tfPartialPayment | tfNoRippleDirect),
+            domain(domainID));
         env.close();
 
         auto const delivered = env.balance(carol, USD) - carolBalBefore;
