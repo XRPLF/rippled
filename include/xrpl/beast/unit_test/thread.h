@@ -10,31 +10,30 @@
 #include <thread>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Replacement for std::thread that handles exceptions in unit tests. */
-class thread
+class Thread
 {
 private:
-    suite* s_ = nullptr;
+    Suite* s_ = nullptr;
     std::thread t_;
 
 public:
     using id = std::thread::id;
     using native_handle_type = std::thread::native_handle_type;
 
-    thread() = default;
-    thread(thread const&) = delete;
-    thread&
-    operator=(thread const&) = delete;
+    Thread() = default;
+    Thread(Thread const&) = delete;
+    Thread&
+    operator=(Thread const&) = delete;
 
-    thread(thread&& other) : s_(other.s_), t_(std::move(other.t_))
+    Thread(Thread&& other) : s_(other.s_), t_(std::move(other.t_))
     {
     }
 
-    thread&
-    operator=(thread&& other)
+    Thread&
+    operator=(Thread&& other)
     {
         s_ = other.s_;
         t_ = std::move(other.t_);
@@ -42,26 +41,26 @@ public:
     }
 
     template <class F, class... Args>
-    explicit thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
         std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-        t_ = std::thread(&thread::run, this, std::move(b));
+        t_ = std::thread(&Thread::run, this, std::move(b));
     }
 
-    bool
+    [[nodiscard]] bool
     joinable() const
     {
         return t_.joinable();
     }
 
-    std::thread::id
-    get_id() const
+    [[nodiscard]] std::thread::id
+    getId() const
     {
         return t_.get_id();
     }
 
     static unsigned
-    hardware_concurrency() noexcept
+    hardwareConcurrency() noexcept
     {
         return std::thread::hardware_concurrency();
     }
@@ -70,7 +69,7 @@ public:
     join()
     {
         t_.join();
-        s_->propagate_abort();
+        s_->propagateAbort();
     }
 
     void
@@ -80,7 +79,7 @@ public:
     }
 
     void
-    swap(thread& other)
+    swap(Thread& other)
     {
         std::swap(s_, other.s_);
         std::swap(t_, other.t_);
@@ -94,7 +93,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)
+        catch (Suite::AbortException const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)
@@ -108,5 +107,4 @@ private:
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

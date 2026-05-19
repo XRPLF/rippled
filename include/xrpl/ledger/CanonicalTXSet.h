@@ -29,43 +29,43 @@ private:
         friend bool
         operator<(Key const& lhs, Key const& rhs);
 
-        inline friend bool
+        friend bool
         operator>(Key const& lhs, Key const& rhs)
         {
             return rhs < lhs;
         }
 
-        inline friend bool
+        friend bool
         operator<=(Key const& lhs, Key const& rhs)
         {
             return !(lhs > rhs);
         }
 
-        inline friend bool
+        friend bool
         operator>=(Key const& lhs, Key const& rhs)
         {
             return !(lhs < rhs);
         }
 
-        inline friend bool
+        friend bool
         operator==(Key const& lhs, Key const& rhs)
         {
             return lhs.txId_ == rhs.txId_;
         }
 
-        inline friend bool
+        friend bool
         operator!=(Key const& lhs, Key const& rhs)
         {
             return !(lhs == rhs);
         }
 
-        uint256 const&
+        [[nodiscard]] uint256 const&
         getAccount() const
         {
             return account_;
         }
 
-        uint256 const&
+        [[nodiscard]] uint256 const&
         getTXID() const
         {
             return txId_;
@@ -118,30 +118,30 @@ public:
         return map_.erase(it);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return map_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return map_.end();
     }
 
-    size_t
+    [[nodiscard]] size_t
     size() const
     {
         return map_.size();
     }
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return map_.empty();
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     key() const
     {
         return salt_;

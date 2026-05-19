@@ -2,12 +2,28 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/use.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <iterator>
+#include <limits>
+#include <stdexcept>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 class SociDB_test final : public TestSuite
@@ -64,7 +80,7 @@ public:
         {
         }
     }
-    ~SociDB_test()
+    ~SociDB_test() override
     {
         try
         {
@@ -113,10 +129,8 @@ public:
             for (int i = 0; i < stringResult.size(); ++i)
             {
                 auto si = std::distance(
-                    stringData.begin(),
-                    std::find(stringData.begin(), stringData.end(), stringResult[i]));
-                auto ii = std::distance(
-                    intData.begin(), std::find(intData.begin(), intData.end(), intResult[i]));
+                    stringData.begin(), std::ranges::find(stringData, stringResult[i]));
+                auto ii = std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };

@@ -1,17 +1,29 @@
 #include <test/jtx/paths.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
-paths::operator()(Env& env, JTx& jt) const
+Paths::operator()(Env& env, JTx& jt) const
 {
     auto& jv = jt.jv;
     auto const from = env.lookup(jv[jss::Account].asString());
@@ -49,37 +61,37 @@ paths::operator()(Env& env, JTx& jt) const
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
     if (!found.isDefault())
-        jv[jss::Paths] = found.getJson(JsonOptions::none);
+        jv[jss::Paths] = found.getJson(JsonOptions::Values::None);
 }
 
 //------------------------------------------------------------------------------
 
-path::path(STPath const& p)
+Path::Path(STPath const& p)
 {
-    jv_ = p.getJson(JsonOptions::none);
+    jv_ = p.getJson(JsonOptions::Values::None);
 }
 
-Json::Value&
-path::create()
+json::Value&
+Path::create()
 {
-    return jv_.append(Json::objectValue);
-}
-
-void
-path::append_one(Account const& account)
-{
-    append_one(account.id());
+    return jv_.append(json::ValueType::Object);
 }
 
 void
-path::append_one(AccountID const& account)
+Path::appendOne(Account const& account)
+{
+    appendOne(account.id());
+}
+
+void
+Path::appendOne(AccountID const& account)
 {
     auto& jv = create();
     jv["account"] = toBase58(account);
 }
 
 void
-path::append_one(IOU const& iou)
+Path::appendOne(IOU const& iou)
 {
     auto& jv = create();
     jv["currency"] = to_string(iou.currency);
@@ -87,7 +99,7 @@ path::append_one(IOU const& iou)
 }
 
 void
-path::append_one(BookSpec const& book)
+Path::appendOne(BookSpec const& book)
 {
     auto& jv = create();
     book.asset.visit(
@@ -99,11 +111,9 @@ path::append_one(BookSpec const& book)
 }
 
 void
-path::operator()(Env& env, JTx& jt) const
+Path::operator()(Env& env, JTx& jt) const
 {
     jt.jv["Paths"].append(jv_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx
