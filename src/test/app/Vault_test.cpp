@@ -6315,17 +6315,22 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, features);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
             return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        PrettyAsset const& asset = *f.asset;
 
-        auto const vaultBefore = env.le(*f.vaultKeylet);
+        auto const vaultBefore = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
         Number const totalBefore = vaultBefore->at(sfAssetsTotal);
         Number const lossBefore = vaultBefore->at(sfLossUnrealized);
 
-        STAmount const lenderBalanceBefore = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceBefore = env.balance(f.lender, asset);
 
         // The requested amount differs between feature regimes because
         // the two regimes are testing different behaviors:
@@ -6347,17 +6352,17 @@ class Vault_test : public beast::unit_test::Suite
         //   only triggers when every share is burned, which is covered
         //   by the loan-repayment test.
         STAmount const requestAssets =
-            withFix ? (*f.asset)(1000).value() : STAmount{f.asset->raw(), availableBefore};
+            withFix ? asset(1000).value() : STAmount{asset.raw(), availableBefore};
         Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.vaultKeylet->key,
+                .id = vaultKey.key,
                 .amount = requestAssets,
             }),
             Ter(withFix ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}));
         env.close();
 
-        auto const vaultAfter = env.le(*f.vaultKeylet);
+        auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6399,7 +6404,7 @@ class Vault_test : public beast::unit_test::Suite
         // i.e. equal to lossUnrealized.
         BEAST_EXPECT(totalAfter - availableAfter == lossAfter);
 
-        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
         Number const received{lenderBalanceAfter - lenderBalanceBefore};
         BEAST_EXPECT(received == expectedReceived);
 
@@ -6428,10 +6433,14 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, features);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.vaultKeylet.has_value()) || f.sharesLender == 0)
+        if (!f.vaultKeylet || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
             return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
 
-        auto const vaultBefore = env.le(*f.vaultKeylet);
+        auto const vaultBefore = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
@@ -6443,14 +6452,14 @@ class Vault_test : public beast::unit_test::Suite
         Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.vaultKeylet->key,
+                .id = vaultKey.key,
                 .amount = shareAmt,
             }),
             Ter(withFix ? TER{tecINSUFFICIENT_FUNDS} : TER{tecINVARIANT_FAILED}));
         env.close();
 
         // Either way the transaction was rejected; vault state unchanged.
-        auto const vaultAfter = env.le(*f.vaultKeylet);
+        auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6479,8 +6488,14 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, all_ | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!f.vaultKeylet || !f.asset || !f.loanKeylet || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
             return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        Keylet const& loanKey = *f.loanKeylet;
+        PrettyAsset const& asset = *f.asset;
 
         Vault const v{env};
 
@@ -6488,10 +6503,10 @@ class Vault_test : public beast::unit_test::Suite
         // testWithdrawSoleShareholderFixedAssetExit for why we request
         // less than full AssetsAvailable).
         {
-            STAmount const requestAssets = (*f.asset)(1000).value();
+            STAmount const requestAssets = asset(1000).value();
             env(v.withdraw({
                     .depositor = f.lender,
-                    .id = f.vaultKeylet->key,
+                    .id = vaultKey.key,
                     .amount = requestAssets,
                 }),
                 Ter(tesSUCCESS));
@@ -6509,11 +6524,10 @@ class Vault_test : public beast::unit_test::Suite
 
         // Borrower repays the loan in full (pays more than the outstanding
         // total; the loan transactor caps the receivable).
-        PrettyAsset const repayAsset = *f.asset;
-        env(pay(f.borrower, f.loanKeylet->key, repayAsset(kStuckPrincipal * 2)), Ter(tesSUCCESS));
+        env(pay(f.borrower, loanKey.key, asset(kStuckPrincipal * 2)), Ter(tesSUCCESS));
         env.close();
 
-        auto const vaultAfterRepay = env.le(*f.vaultKeylet);
+        auto const vaultAfterRepay = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfterRepay))
             return;
         // Repayment converts the 3,333 receivable back to cash; assetsTotal
@@ -6522,7 +6536,7 @@ class Vault_test : public beast::unit_test::Suite
         BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZero);
         BEAST_EXPECT(vaultAfterRepay->at(sfAssetsAvailable) == vaultAfterRepay->at(sfAssetsTotal));
 
-        STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, asset);
         Number const availableBeforeFinal = vaultAfterRepay->at(sfAssetsAvailable);
 
         // Burn all remaining shares — the clean-state preconditions of
@@ -6530,13 +6544,13 @@ class Vault_test : public beast::unit_test::Suite
         STAmount const allShares{MPTIssue{f.shareAsset}, Number(retainedShares)};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.vaultKeylet->key,
+                .id = vaultKey.key,
                 .amount = allShares,
             }),
             Ter(tesSUCCESS));
         env.close();
 
-        auto const vaultFinal = env.le(*f.vaultKeylet);
+        auto const vaultFinal = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultFinal))
             return;
         auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
@@ -6551,7 +6565,7 @@ class Vault_test : public beast::unit_test::Suite
 
         // The final payout equals exactly the AssetsAvailable that
         // existed before the call (the "force payout" branch).
-        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
         Number const finalReceived{lenderBalanceAfter - lenderBalanceBeforeFinal};
         BEAST_EXPECT(finalReceived == availableBeforeFinal);
     }
@@ -6654,10 +6668,15 @@ class Vault_test : public beast::unit_test::Suite
 
         Env env(*this, all_ | fixCleanup3_2_0);
         auto const f = setupStuckDepositor(env);
-        if (!BEAST_EXPECT(f.vaultKeylet.has_value() && f.asset.has_value()) || f.sharesLender == 0)
+        if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
             return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        PrettyAsset const& asset = *f.asset;
 
-        auto const vaultBefore = env.le(*f.vaultKeylet);
+        auto const vaultBefore = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultBefore))
             return;
         Number const totalBefore = vaultBefore->at(sfAssetsTotal);
@@ -6668,12 +6687,12 @@ class Vault_test : public beast::unit_test::Suite
         std::uint64_t const halfShares = f.sharesLender / 2;
         STAmount const halfAmt{MPTIssue{f.shareAsset}, Number(halfShares)};
 
-        STAmount const lenderBalanceBefore = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceBefore = env.balance(f.lender, asset);
 
         Vault const v{env};
         env(v.withdraw({
                 .depositor = f.lender,
-                .id = f.vaultKeylet->key,
+                .id = vaultKey.key,
                 .amount = halfAmt,
             }),
             Ter(tesSUCCESS));
@@ -6683,7 +6702,7 @@ class Vault_test : public beast::unit_test::Suite
         //   assets = totalBefore * halfShares / sharesLender
         // which (with halfShares == sharesLender/2) is roughly
         //   totalBefore / 2.
-        STAmount const lenderBalanceAfter = env.balance(f.lender, *f.asset);
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
         Number const received{lenderBalanceAfter - lenderBalanceBefore};
         Number const expected = totalBefore * Number(halfShares) / Number(f.sharesLender);
         BEAST_EXPECT(received == expected);
@@ -6696,7 +6715,7 @@ class Vault_test : public beast::unit_test::Suite
         Number const expectedDelta = lossBefore * Number(halfShares) / Number(f.sharesLender);
         BEAST_EXPECT(received - discounted == expectedDelta);
 
-        auto const vaultAfter = env.le(*f.vaultKeylet);
+        auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
         auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
