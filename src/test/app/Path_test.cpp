@@ -687,65 +687,65 @@ public:
         BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
-    Json::Value
-    six_path_append_request_result()
+    json::Value
+    sixPathAppendRequestResult()
     {
         using namespace jtx;
         Env env = pathTestEnv();
 
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account M1{"M1"};
-        Account M2{"M2"};
-        Account M3{"M3"};
-        Account M4{"M4"};
-        Account M5{"M5"};
-        Account M6{"M6"};
-        Account MM{"MM"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const g1{"G1"};
+        Account const g2{"G2"};
+        Account const m1{"M1"};
+        Account const m2{"M2"};
+        Account const m3{"M3"};
+        Account const m4{"M4"};
+        Account const m5{"M5"};
+        Account const m6{"M6"};
+        Account const mm{"MM"};
 
-        env.fund(XRP(1000), A1, A2, G1, G2, M1, M2, M3, M4, M5, M6, MM);
+        env.fund(XRP(1000), a1, a2, g1, g2, m1, m2, m3, m4, m5, m6, mm);
         env.close();
 
-        env.trust(G1["HKD"](2000), A1);
-        env.trust(G2["HKD"](2000), A2);
+        env.trust(g1["HKD"](2000), a1);
+        env.trust(g2["HKD"](2000), a2);
 
-        env.trust(G1["HKD"](100000), M1, M2, M3, M4, M5, M6, MM);
-        env.trust(G2["HKD"](100000), M1, M2, M3, M4, M5, M6, MM);
+        env.trust(g1["HKD"](100000), m1, m2, m3, m4, m5, m6, mm);
+        env.trust(g2["HKD"](100000), m1, m2, m3, m4, m5, m6, mm);
         env.close();
 
-        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(g1, a1, g1["HKD"](1000)));
 
-        env(pay(G1, M1, G1["HKD"](10)));
-        env(pay(G1, M2, G1["HKD"](10)));
-        env(pay(G1, M3, G1["HKD"](10)));
-        env(pay(G1, M4, G1["HKD"](10)));
-        env(pay(G1, M5, G1["HKD"](10)));
-        env(pay(G1, M6, G1["HKD"](10)));
-        env(pay(G1, MM, G1["HKD"](1000)));
+        env(pay(g1, m1, g1["HKD"](10)));
+        env(pay(g1, m2, g1["HKD"](10)));
+        env(pay(g1, m3, g1["HKD"](10)));
+        env(pay(g1, m4, g1["HKD"](10)));
+        env(pay(g1, m5, g1["HKD"](10)));
+        env(pay(g1, m6, g1["HKD"](10)));
+        env(pay(g1, mm, g1["HKD"](1000)));
 
-        env(pay(G2, M1, G2["HKD"](10)));
-        env(pay(G2, M2, G2["HKD"](10)));
-        env(pay(G2, M3, G2["HKD"](10)));
-        env(pay(G2, M4, G2["HKD"](10)));
-        env(pay(G2, M5, G2["HKD"](10)));
-        env(pay(G2, M6, G2["HKD"](10)));
-        env(pay(G2, MM, G2["HKD"](1000)));
+        env(pay(g2, m1, g2["HKD"](10)));
+        env(pay(g2, m2, g2["HKD"](10)));
+        env(pay(g2, m3, g2["HKD"](10)));
+        env(pay(g2, m4, g2["HKD"](10)));
+        env(pay(g2, m5, g2["HKD"](10)));
+        env(pay(g2, m6, g2["HKD"](10)));
+        env(pay(g2, mm, g2["HKD"](1000)));
         env.close();
 
-        env(offer(MM, G1["HKD"](1000), G2["HKD"](100)));
+        env(offer(mm, g1["HKD"](1000), g2["HKD"](100)));
         env.close();
 
-        return find_paths_request(env, A1, A2, A2["HKD"](60), std::nullopt, G1["HKD"].currency);
+        return findPathsRequest(env, a1, a2, a2["HKD"](60), std::nullopt, g1["HKD"].currency);
     }
 
     void
-    pathfind_paths_computed_never_exceeds_six()
+    pathfindPathsComputedNeverExceedsSix()
     {
         testcase("pathfind paths_computed never exceeds six");
 
-        auto const result = six_path_append_request_result();
+        auto const result = sixPathAppendRequestResult();
         BEAST_EXPECT(result.isMember(jss::alternatives));
         if (!result.isMember(jss::alternatives))
             return;
@@ -768,65 +768,65 @@ public:
     }
 
     void
-    pathfind_can_return_six_paths_with_append()
+    pathfindCanReturnSixPathsWithAppend()
     {
         testcase("pathfind can return six paths with append");
         using namespace jtx;
         Env env = pathTestEnv();
 
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account G1{"G1"};
-        Account G2{"G2"};
-        Account M1{"M1"};
-        Account M2{"M2"};
-        Account M3{"M3"};
-        Account M4{"M4"};
-        Account M5{"M5"};
-        Account M6{"M6"};
-        Account MM{"MM"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const g1{"G1"};
+        Account const g2{"G2"};
+        Account const m1{"M1"};
+        Account const m2{"M2"};
+        Account const m3{"M3"};
+        Account const m4{"M4"};
+        Account const m5{"M5"};
+        Account const m6{"M6"};
+        Account const mm{"MM"};
 
-        env.fund(XRP(1000), A1, A2, G1, G2, M1, M2, M3, M4, M5, M6, MM);
+        env.fund(XRP(1000), a1, a2, g1, g2, m1, m2, m3, m4, m5, m6, mm);
         env.close();
 
-        env.trust(G1["HKD"](2000), A1);
-        env.trust(G2["HKD"](2000), A2);
+        env.trust(g1["HKD"](2000), a1);
+        env.trust(g2["HKD"](2000), a2);
 
-        env.trust(G1["HKD"](100000), M1, M2, M3, M4, M5, M6, MM);
-        env.trust(G2["HKD"](100000), M1, M2, M3, M4, M5, M6, MM);
+        env.trust(g1["HKD"](100000), m1, m2, m3, m4, m5, m6, mm);
+        env.trust(g2["HKD"](100000), m1, m2, m3, m4, m5, m6, mm);
         env.close();
 
-        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(g1, a1, g1["HKD"](1000)));
 
-        env(pay(G1, M1, G1["HKD"](10)));
-        env(pay(G1, M2, G1["HKD"](10)));
-        env(pay(G1, M3, G1["HKD"](10)));
-        env(pay(G1, M4, G1["HKD"](10)));
-        env(pay(G1, M5, G1["HKD"](10)));
-        env(pay(G1, M6, G1["HKD"](10)));
-        env(pay(G1, MM, G1["HKD"](1000)));
+        env(pay(g1, m1, g1["HKD"](10)));
+        env(pay(g1, m2, g1["HKD"](10)));
+        env(pay(g1, m3, g1["HKD"](10)));
+        env(pay(g1, m4, g1["HKD"](10)));
+        env(pay(g1, m5, g1["HKD"](10)));
+        env(pay(g1, m6, g1["HKD"](10)));
+        env(pay(g1, mm, g1["HKD"](1000)));
 
-        env(pay(G2, M1, G2["HKD"](10)));
-        env(pay(G2, M2, G2["HKD"](10)));
-        env(pay(G2, M3, G2["HKD"](10)));
-        env(pay(G2, M4, G2["HKD"](10)));
-        env(pay(G2, M5, G2["HKD"](10)));
-        env(pay(G2, M6, G2["HKD"](10)));
-        env(pay(G2, MM, G2["HKD"](1000)));
+        env(pay(g2, m1, g2["HKD"](10)));
+        env(pay(g2, m2, g2["HKD"](10)));
+        env(pay(g2, m3, g2["HKD"](10)));
+        env(pay(g2, m4, g2["HKD"](10)));
+        env(pay(g2, m5, g2["HKD"](10)));
+        env(pay(g2, m6, g2["HKD"](10)));
+        env(pay(g2, mm, g2["HKD"](1000)));
         env.close();
 
-        env(offer(MM, G1["HKD"](1000), G2["HKD"](100)));
+        env(offer(mm, g1["HKD"](1000), g2["HKD"](100)));
         env.close();
 
         auto cache =
             std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
         Pathfinder pf(
             cache,
-            A1.id(),
-            A2.id(),
-            G1["HKD"].currency,
+            a1.id(),
+            a2.id(),
+            g1["HKD"].currency,
             std::nullopt,
-            A2["HKD"](60),
+            a2["HKD"](60),
             std::nullopt,
             std::nullopt,
             env.app());
@@ -835,12 +835,12 @@ public:
         pf.computePathRanks(5);
 
         STPath fullLiquidityPath;
-        auto bestPaths = pf.getBestPaths(5, fullLiquidityPath, STPathSet{}, A1.id());
+        auto bestPaths = pf.getBestPaths(5, fullLiquidityPath, STPathSet{}, a1.id());
         BEAST_EXPECT(bestPaths.size() == 5);
         BEAST_EXPECT(!fullLiquidityPath.empty());
 
         if (!fullLiquidityPath.empty())
-            bestPaths.push_back(fullLiquidityPath);
+            bestPaths.pushBack(fullLiquidityPath);
         BEAST_EXPECT(bestPaths.size() == 6);
     }
 
@@ -2064,10 +2064,10 @@ public:
             path_find_06(domainEnabled);
         }
 
-        hybrid_offer_path();
-        amm_domain_path();
-        pathfind_paths_computed_never_exceeds_six();
-        pathfind_can_return_six_paths_with_append();
+        hybridOfferPath();
+        ammDomainPath();
+        pathfindPathsComputedNeverExceedsSix();
+        pathfindCanReturnSixPathsWithAppend();
     }
 };
 
