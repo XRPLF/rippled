@@ -7478,7 +7478,7 @@ protected:
         env.fund(XRP(100'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
         PrettyAsset const asset{mptt.issuanceID()};
 
@@ -7499,7 +7499,7 @@ protected:
 
         auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
         env(loanBroker::set(lender, vaultKeylet.key),
-            loanBroker::kDEBT_MAXIMUM(Number{100}),
+            loanBroker::kDebtMaximum(Number{100}),
             Fee(env.current()->fees().base * 2));
         env.close();
 
@@ -7511,9 +7511,9 @@ protected:
 
         env(loan::set(borrower, brokerKeylet.key, Number{1}),
             Sig(sfCounterpartySignature, lender),
-            loan::kINTEREST_RATE(TenthBips32{50'000}),
-            loan::kPAYMENT_TOTAL(3),
-            loan::kPAYMENT_INTERVAL(31'536'000),
+            loan::kInterestRate(TenthBips32{50'000}),
+            loan::kPaymentTotal(3),
+            loan::kPaymentInterval(31'536'000),
             Fee(env.current()->fees().base * 2));
         env.close();
 
