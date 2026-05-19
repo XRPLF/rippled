@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/peerfinder/detail/Tuning.h>
 
@@ -12,6 +13,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
+#include <ios>
 #include <vector>
 
 namespace xrpl::PeerFinder {

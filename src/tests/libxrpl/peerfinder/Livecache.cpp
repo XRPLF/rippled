@@ -160,11 +160,11 @@ TEST(Livecache, expire_removes_entries_after_ttl)
 
 TEST(Livecache, histogram_counts_all_entries)
 {
-    constexpr auto kNUM_ENDPOINTS = 40;
+    constexpr auto kNumEndpoints = 40;
 
     TestStopwatch clock;
     Livecache<> cache(clock, journal());
-    for (auto i = 0; i < kNUM_ENDPOINTS; ++i)
+    for (auto i = 0; i < kNumEndpoints; ++i)
     {
         addEndpoint(endpoint(static_cast<std::uint16_t>(i)), cache, xrpl::randInt<std::uint32_t>());
     }
@@ -182,7 +182,7 @@ TEST(Livecache, histogram_counts_all_entries)
         sum += count;
         EXPECT_GE(count, 0);
     }
-    EXPECT_EQ(sum, kNUM_ENDPOINTS);
+    EXPECT_EQ(sum, kNumEndpoints);
 }
 
 TEST(Livecache, shuffle_preserves_bucket_contents)

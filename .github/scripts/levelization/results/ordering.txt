@@ -20,6 +20,8 @@ libxrpl.nodestore > xrpl.basics
 libxrpl.nodestore > xrpl.json
 libxrpl.nodestore > xrpl.nodestore
 libxrpl.nodestore > xrpl.protocol
+libxrpl.peerfinder > xrpl.basics
+libxrpl.peerfinder > xrpl.peerfinder
 libxrpl.protocol > xrpl.basics
 libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
@@ -183,12 +185,11 @@ test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.core
-tests.libxrpl > xrpld.core
-tests.libxrpl > xrpld.peerfinder
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.nodestore
+tests.libxrpl > xrpl.peerfinder
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
 tests.libxrpl > xrpl.server
@@ -207,6 +208,8 @@ xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
 xrpl.nodestore > xrpl.basics
 xrpl.nodestore > xrpl.protocol
+xrpl.peerfinder > xrpl.basics
+xrpl.peerfinder > xrpl.protocol
 xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
 xrpl.protocol_autogen > xrpl.json
@@ -269,6 +272,7 @@ xrpld.overlay > xrpl.shamap
 xrpld.overlay > xrpl.tx
 xrpld.peerfinder > xrpl.basics
 xrpld.peerfinder > xrpld.core
+xrpld.peerfinder > xrpl.peerfinder
 xrpld.peerfinder > xrpl.protocol
 xrpld.peerfinder > xrpl.rdb
 xrpld.perflog > xrpl.basics

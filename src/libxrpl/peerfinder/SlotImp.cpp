@@ -3,6 +3,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <cstdint>

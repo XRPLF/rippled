@@ -1,6 +1,10 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
+#include <xrpl/peerfinder/Config.h>
+
+#include <cstdint>
+
 namespace xrpl::PeerFinder {
 
 Config

@@ -27,7 +27,8 @@ operator==(Config const& lhs, Config const& rhs)
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::max((maxPeers * Tuning::kOutPercent + 50) / 100, std::size_t(Tuning::kMinOutCount));
+    return std::max(
+        ((maxPeers * Tuning::kOutPercent) + 50) / 100, std::size_t(Tuning::kMinOutCount));
 }
 
 void

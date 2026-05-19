@@ -1,6 +1,8 @@
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/peerfinder/Types.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 
 namespace xrpl::PeerFinder {

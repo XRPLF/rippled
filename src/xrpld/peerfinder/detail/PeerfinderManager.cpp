@@ -1,6 +1,5 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
-#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Checker.h>
 #include <xrpld/peerfinder/detail/Logic.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
@@ -14,6 +13,10 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <boost/asio/executor_work_guard.hpp>
