@@ -39,7 +39,7 @@ public:
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
-    virtual ~LedgerMaster() = default;
+    ~LedgerMaster() override = default;
 
     LedgerIndex
     getCurrentLedgerIndex();
@@ -60,7 +60,7 @@ public:
     std::shared_ptr<Ledger const>
     getClosedLedger()
     {
-        return mClosedLedger.get();
+        return mClosedLedger_.get();
     }
 
     // The validated ledger is the last fully validated ledger.
@@ -246,7 +246,7 @@ public:
     bool
     haveValidated()
     {
-        return !mValidLedger.empty();
+        return !mValidLedger_.empty();
     }
 
     // Returns the minimum ledger sequence in SQL database, if any.
@@ -297,61 +297,61 @@ private:
     newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&);
 
     Application& app_;
-    beast::Journal m_journal;
+    beast::Journal m_journal_;
 
-    std::recursive_mutex mutable m_mutex;
+    std::recursive_mutex mutable m_mutex_;
 
     // The ledger that most recently closed.
-    LedgerHolder mClosedLedger;
+    LedgerHolder mClosedLedger_;
 
     // The highest-sequence ledger we have fully accepted.
-    LedgerHolder mValidLedger;
+    LedgerHolder mValidLedger_;
 
     // The last ledger we have published.
-    std::shared_ptr<Ledger const> mPubLedger;
+    std::shared_ptr<Ledger const> mPubLedger_;
 
     // The last ledger we did pathfinding against.
-    std::shared_ptr<Ledger const> mPathLedger;
+    std::shared_ptr<Ledger const> mPathLedger_;
 
     // The last ledger we handled fetching history
-    std::shared_ptr<Ledger const> mHistLedger;
+    std::shared_ptr<Ledger const> mHistLedger_;
 
     // Sliding window of recently validated ledgers pinned in memory so their
     // SHAMap state trees remain reachable via shared_ptr. Required when the
     // node store does not persist state nodes (e.g. RWDB null mode).
     // Guarded by m_mutex.
-    std::deque<std::shared_ptr<Ledger const>> mRetainedLedgers;
+    std::deque<std::shared_ptr<Ledger const>> mRetainedLedgers_;
 
     // Fully validated ledger, whether or not we have the ledger resident.
-    std::pair<uint256, LedgerIndex> mLastValidLedger{uint256(), 0};
+    std::pair<uint256, LedgerIndex> mLastValidLedger_{uint256(), 0};
 
-    LedgerHistory mLedgerHistory;
+    LedgerHistory mLedgerHistory_;
 
-    CanonicalTXSet mHeldTransactions{uint256()};
+    CanonicalTXSet mHeldTransactions_{uint256()};
 
     // A set of transactions to replay during the next close
-    std::unique_ptr<LedgerReplay> replayData;
+    std::unique_ptr<LedgerReplay> replayData_;
 
-    std::recursive_mutex mCompleteLock;
-    RangeSet<std::uint32_t> mCompleteLedgers;
+    std::recursive_mutex mCompleteLock_;
+    RangeSet<std::uint32_t> mCompleteLedgers_;
 
     // Publish thread is running.
-    bool mAdvanceThread{false};
+    bool mAdvanceThread_{false};
 
     // Publish thread has work to do.
-    bool mAdvanceWork{false};
-    int mFillInProgress{0};
+    bool mAdvanceWork_{false};
+    int mFillInProgress_{0};
 
-    int mPathFindThread{0};  // Pathfinder jobs dispatched
-    bool mPathFindNewRequest{false};
+    int mPathFindThread_{0};  // Pathfinder jobs dispatched
+    bool mPathFindNewRequest_{false};
 
-    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag mGotFetchPackThread_ = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
-    std::atomic<std::uint32_t> mPubLedgerClose{0};
-    std::atomic<LedgerIndex> mPubLedgerSeq{0};
-    std::atomic<std::uint32_t> mValidLedgerSign{0};
-    std::atomic<LedgerIndex> mValidLedgerSeq{0};
-    std::atomic<LedgerIndex> mBuildingLedgerSeq{0};
+    std::atomic<std::uint32_t> mPubLedgerClose_{0};
+    std::atomic<LedgerIndex> mPubLedgerSeq_{0};
+    std::atomic<std::uint32_t> mValidLedgerSign_{0};
+    std::atomic<LedgerIndex> mValidLedgerSeq_{0};
+    std::atomic<LedgerIndex> mBuildingLedgerSeq_{0};
 
     // The server is in standalone mode
     bool const standalone_;
@@ -373,16 +373,16 @@ private:
     LedgerIndex const max_ledger_difference_{1000000};
 
     // Time that the previous upgrade warning was issued.
-    TimeKeeper::time_point upgradeWarningPrevTime_{};
+    TimeKeeper::time_point upgradeWarningPrevTime_;
 
 private:
     struct Stats
     {
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook(collector->make_hook(handler))
-            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            : hook(collector->makeHook(handler))
+            , validatedLedgerAge(collector->makeGauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->makeGauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -391,15 +391,15 @@ private:
         beast::insight::Gauge publishedLedgerAge;
     };
 
-    Stats m_stats;
+    Stats m_stats_;
 
 private:
     void
-    collect_metrics()
+    collectMetrics()
     {
-        std::lock_guard const lock(m_mutex);
-        m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
-        m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
+        std::scoped_lock const lock(m_mutex_);
+        m_stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());
+        m_stats_.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }
 };
 

@@ -1,9 +1,28 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include "xrpl/basics/BasicConfig.h"
+#include "xrpl/basics/Blob.h"
+#include "xrpl/basics/Log.h"
+#include "xrpl/basics/base_uint.h"
+#include "xrpl/basics/contract.h"
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/nodestore/Backend.h"
+#include "xrpl/nodestore/Database.h"
+#include "xrpl/nodestore/DatabaseRotating.h"
+#include "xrpl/nodestore/NodeObject.h"
+#include "xrpl/nodestore/Scheduler.h"
+#include "xrpl/nodestore/Types.h"
 
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <shared_mutex>
+#include <string>
+#include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+
+namespace xrpl::NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
@@ -110,7 +129,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status = ok;
+        Status status = Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
@@ -124,10 +143,10 @@ DatabaseRotatingImp::fetchNodeObject(
 
         switch (status)
         {
-            case ok:
-            case notFound:
+            case Ok:
+            case NotFound:
                 break;
-            case dataCorrupt:
+            case DataCorrupt:
                 JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
                 break;
             default:
@@ -181,11 +200,11 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     }();
 
     // Iterate the writable backend
-    writable->for_each(f);
+    writable->forEach(f);
 
     // Iterate the archive backend
-    archive->for_each(f);
+    archive->forEach(f);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+} // namespace xrpl::NodeStore
+

@@ -3,9 +3,32 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include "xrpl/basics/Blob.h"
+#include "xrpl/basics/IntrusivePointer.h"
+#include "xrpl/basics/Log.h"
+#include "xrpl/basics/Slice.h"
+#include "xrpl/basics/base_uint.h"
+#include "xrpl/beast/utility/instrumentation.h"
+#include "xrpl/protocol/Serializer.h"
+#include "xrpl/shamap/SHAMapAddNode.h"
+#include "xrpl/shamap/SHAMapInnerNode.h"
+#include "xrpl/shamap/SHAMapItem.h"
+#include "xrpl/shamap/SHAMapNodeID.h"
+#include "xrpl/shamap/SHAMapTreeNode.h"
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <cstdint>
 #include <cstdlib>
+#include <exception>
+#include <functional>
+#include <iterator>
+#include <mutex>
+#include <optional>
+#include <stack>
 #include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -21,11 +44,11 @@ namespace {
 bool
 useFullBelowCache()
 {
-    static bool const use = [] {
+    static bool const kUse = [] {
         char const* e = std::getenv("XRPL_RWDB_NULL");
         return !(e && *e && std::string_view{e} != "0");
     }();
-    return use;
+    return kUse;
 }
 
 }  // namespace
@@ -82,7 +105,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                     if (pos != 15)
                     {
                         // save next position to resume at
-                        stack.push(std::make_pair(pos + 1, std::move(node)));
+                        stack.emplace(pos + 1, std::move(node));
                     }
 
                     // descend to the child's first position
@@ -131,7 +154,7 @@ SHAMap::visitDifferences(
     using StackEntry = std::pair<SHAMapInnerNode*, SHAMapNodeID>;
     std::stack<StackEntry, std::vector<StackEntry>> stack;
 
-    stack.push({safe_downcast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID{}});
+    stack.emplace(safe_downcast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID{});
 
     while (!stack.empty())
     {
@@ -154,7 +177,7 @@ SHAMap::visitDifferences(
                 if (next->isInner())
                 {
                     if ((have == nullptr) || !have->hasInnerNode(childID, childHash))
-                        stack.push({safe_downcast<SHAMapInnerNode*>(next), childID});
+                        stack.emplace(safe_downcast<SHAMapInnerNode*>(next), childID);
                 }
                 else if (
                     (have == nullptr) ||
@@ -174,7 +197,7 @@ SHAMap::visitDifferences(
 // children, descending the SHAMap until we complete the
 // processing of a node.
 void
-SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
+SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 {
     SHAMapInnerNode*& node = std::get<0>(se);
     SHAMapNodeID& nodeID = std::get<1>(se);
@@ -190,50 +213,50 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
         auto const& childHash = node->getChildHash(branch);
 
-        if (mn.missingHashes_.contains(childHash))
+        if (mn.missingHashes.contains(childHash))
         {
             // we already know this child node is missing
             fullBelow = false;
         }
         else if (
             !backed_ || !useFullBelowCache() ||
-            !f_.getFullBelowCache()->touch_if_exists(childHash.as_uint256()))
+            !f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
         {
             bool pending = false;
             auto d = descendAsync(
                 node,
                 branch,
-                mn.filter_,
+                mn.filter,
                 pending,
                 [node, nodeID, branch, &mn](
                     intr_ptr::SharedPtr<SHAMapTreeNode> found, SHAMapHash const&) {
                     // a read completed asynchronously
-                    std::unique_lock<std::mutex> const lock{mn.deferLock_};
-                    mn.finishedReads_.emplace_back(node, nodeID, branch, std::move(found));
-                    mn.deferCondVar_.notify_one();
+                    std::unique_lock<std::mutex> const lock{mn.deferLock};
+                    mn.finishedReads.emplace_back(node, nodeID, branch, std::move(found));
+                    mn.deferCondVar.notify_one();
                 });
 
             if (pending)
             {
                 fullBelow = false;
-                ++mn.deferred_;
+                ++mn.deferred;
             }
             else if (d == nullptr)
             {
                 // node is not in database
 
                 fullBelow = false;  // for now, not known full below
-                mn.missingHashes_.insert(childHash);
-                mn.missingNodes_.emplace_back(
-                    nodeID.getChildNodeID(branch), childHash.as_uint256());
+                mn.missingHashes.insert(childHash);
+                mn.missingNodes.emplace_back(
+                    nodeID.getChildNodeID(branch), childHash.asUint256());
 
-                if (--mn.max_ <= 0)
+                if (--mn.max <= 0)
                     return;
             }
             else if (
-                d->isInner() && !safe_downcast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation_))
+                d->isInner() && !safe_downcast<SHAMapInnerNode*>(d)->isFullBelow(mn.generation))
             {
-                mn.stack_.push(se);
+                mn.stack.push(se);
 
                 // Switch to processing the child node
                 node = safe_downcast<SHAMapInnerNode*>(d);
@@ -250,10 +273,10 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
     if (fullBelow)
     {  // No partial node encountered below this node
-        node->setFullBelowGen(mn.generation_);
+        node->setFullBelowGen(mn.generation);
         if (backed_ && useFullBelowCache())
         {
-            f_.getFullBelowCache()->insert(node->getHash().as_uint256());
+            f_.getFullBelowCache()->insert(node->getHash().asUint256());
         }
     }
 
@@ -263,20 +286,20 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 // Wait for deferred reads to finish and
 // process their results
 void
-SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
+SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 {
     // Process all deferred reads
     int complete = 0;
-    while (complete != mn.deferred_)
+    while (complete != mn.deferred)
     {
         std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, intr_ptr::SharedPtr<SHAMapTreeNode>>
             deferredNode;
         {
-            std::unique_lock<std::mutex> lock{mn.deferLock_};
+            std::unique_lock<std::mutex> lock{mn.deferLock};
 
-            while (mn.finishedReads_.size() <= complete)
-                mn.deferCondVar_.wait(lock);
-            deferredNode = std::move(mn.finishedReads_[complete++]);
+            while (mn.finishedReads.size() <= complete)
+                mn.deferCondVar.wait(lock);
+            deferredNode = std::move(mn.finishedReads[complete++]);
         }
 
         auto parent = std::get<0>(deferredNode);
@@ -291,18 +314,18 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 
             // When we finish this stack, we need to restart
             // with the parent of this node
-            mn.resumes_[parent] = parentID;
+            mn.resumes[parent] = parentID;
         }
-        else if ((mn.max_ > 0) && (mn.missingHashes_.insert(nodeHash).second))
+        else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
         {
-            mn.missingNodes_.emplace_back(parentID.getChildNodeID(branch), nodeHash.as_uint256());
-            --mn.max_;
+            mn.missingNodes.emplace_back(parentID.getChildNodeID(branch), nodeHash.asUint256());
+            --mn.max;
         }
     }
 
-    mn.finishedReads_.clear();
-    mn.finishedReads_.reserve(mn.maxDefer_);
-    mn.deferred_ = 0;
+    mn.finishedReads.clear();
+    mn.finishedReads.reserve(mn.maxDefer);
+    mn.deferred = 0;
 }
 
 /** Get a list of node IDs and hashes for nodes that are part of this SHAMap
@@ -322,10 +345,10 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         f_.getFullBelowCache()->getGeneration());
 
     if (!root_->isInner() ||
-        intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(mn.generation_))
+        intr_ptr::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(mn.generation))
     {
         clearSynching();
-        return std::move(mn.missingNodes_);
+        return std::move(mn.missingNodes);
     }
 
     // Start at the root.
@@ -343,20 +366,20 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     // Traverse the map without blocking
     do
     {
-        while ((node != nullptr) && (mn.deferred_ <= mn.maxDefer_))
+        while ((node != nullptr) && (mn.deferred <= mn.maxDefer))
         {
-            gmn_ProcessNodes(mn, pos);
+            gmnProcessNodes(mn, pos);
 
-            if (mn.max_ <= 0)
+            if (mn.max <= 0)
                 break;
 
-            if ((node == nullptr) && !mn.stack_.empty())
+            if ((node == nullptr) && !mn.stack.empty())
             {
                 // Pick up where we left off with this node's parent
                 bool const was = fullBelow;  // was full below
 
-                pos = mn.stack_.top();
-                mn.stack_.pop();
+                pos = mn.stack.top();
+                mn.stack.pop();
                 if (nextChild == 0)
                 {
                     // This is a node we are processing for the first time
@@ -373,32 +396,32 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 
         // We have either emptied the stack or
         // posted as many deferred reads as we can
-        if (mn.deferred_ != 0)
-            gmn_ProcessDeferredReads(mn);
+        if (mn.deferred != 0)
+            gmnProcessDeferredReads(mn);
 
-        if (mn.max_ <= 0)
-            return std::move(mn.missingNodes_);
+        if (mn.max <= 0)
+            return std::move(mn.missingNodes);
 
         if (node == nullptr)
         {  // We weren't in the middle of processing a node
 
-            if (mn.stack_.empty() && !mn.resumes_.empty())
+            if (mn.stack.empty() && !mn.resumes.empty())
             {
                 // Recheck nodes we could not finish before
-                for (auto const& [innerNode, nodeId] : mn.resumes_)
+                for (auto const& [innerNode, nodeId] : mn.resumes)
                 {
-                    if (!innerNode->isFullBelow(mn.generation_))
-                        mn.stack_.push(std::make_tuple(innerNode, nodeId, rand_int(255), 0, true));
+                    if (!innerNode->isFullBelow(mn.generation))
+                        mn.stack.emplace(innerNode, nodeId, rand_int(255), 0, true);
                 }
 
-                mn.resumes_.clear();
+                mn.resumes.clear();
             }
 
-            if (!mn.stack_.empty())
+            if (!mn.stack.empty())
             {
                 // Resume at the top of the stack
-                pos = mn.stack_.top();
-                mn.stack_.pop();
+                pos = mn.stack.top();
+                mn.stack.pop();
                 XRPL_ASSERT(node, "xrpl::SHAMap::getMissingNodes : second non-null node");
             }
         }
@@ -409,10 +432,10 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 
     } while (node != nullptr);
 
-    if (mn.missingNodes_.empty())
+    if (mn.missingNodes.empty())
         clearSynching();
 
-    return std::move(mn.missingNodes_);
+    return std::move(mn.missingNodes);
 }
 
 bool
@@ -464,7 +487,7 @@ SHAMap::getNodeFat(
         // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
-        data.emplace_back(std::make_pair(nodeID, s.getData()));
+        data.emplace_back(nodeID, s.getData());
 
         if (node->isInner())
         {
@@ -494,7 +517,7 @@ SHAMap::getNodeFat(
                             // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
-                            data.emplace_back(std::make_pair(childID, s.getData()));
+                            data.emplace_back(childID, s.getData());
                         }
                     }
                 }
@@ -575,7 +598,7 @@ SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncF
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (useFullBelowCache() && f_.getFullBelowCache()->touch_if_exists(childHash.as_uint256()))
+        if (useFullBelowCache() && f_.getFullBelowCache()->touchIfExists(childHash.asUint256()))
         {
             return SHAMapAddNode::duplicate();
         }
@@ -662,7 +685,7 @@ SHAMap::deepCompare(SHAMap& other) const
     // Intended for debug/test only
     std::stack<std::pair<SHAMapTreeNode*, SHAMapTreeNode*>> stack;
 
-    stack.push({root_.get(), other.root_.get()});
+    stack.emplace(root_.get(), other.root_.get());
 
     while (!stack.empty())
     {
@@ -695,28 +718,28 @@ SHAMap::deepCompare(SHAMap& other) const
         {
             if (!otherNode->isInner())
                 return false;
-            auto node_inner = safe_downcast<SHAMapInnerNode*>(node);
-            auto other_inner = safe_downcast<SHAMapInnerNode*>(otherNode);
+            auto nodeInner = safe_downcast<SHAMapInnerNode*>(node);
+            auto otherInner = safe_downcast<SHAMapInnerNode*>(otherNode);
             for (int i = 0; i < 16; ++i)
             {
-                if (node_inner->isEmptyBranch(i))
+                if (nodeInner->isEmptyBranch(i))
                 {
-                    if (!other_inner->isEmptyBranch(i))
+                    if (!otherInner->isEmptyBranch(i))
                         return false;
                 }
                 else
                 {
-                    if (other_inner->isEmptyBranch(i))
+                    if (otherInner->isEmptyBranch(i))
                         return false;
 
-                    auto next = descend(node_inner, i);
-                    auto otherNext = other.descend(other_inner, i);
+                    auto next = descend(nodeInner, i);
+                    auto otherNext = other.descend(otherInner, i);
                     if ((next == nullptr) || (otherNext == nullptr))
                     {
                         JLOG(journal_.warn()) << "unable to fetch inner node";
                         return false;
                     }
-                    stack.push({next, otherNext});
+                    stack.emplace(next, otherNext);
                 }
             }
         }

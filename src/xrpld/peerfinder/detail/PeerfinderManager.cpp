@@ -7,37 +7,52 @@
 
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
+#include "xrpl/basics/BasicConfig.h"
+#include "xrpl/beast/insight/Collector.h"
+#include "xrpl/beast/insight/Gauge.h"
+#include "xrpl/beast/insight/Hook.h"
+#include "xrpl/beast/net/IPEndpoint.h"
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/beast/utility/PropertyStream.h"
+#include "xrpl/protocol/PublicKey.h"
+#include "xrpld/peerfinder/Slot.h"
+#include <boost/asio/ip/tcp.hpp>
 
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+
+namespace xrpl::PeerFinder {
 
 class ManagerImp : public Manager
 {
 public:
-    boost::asio::io_context& io_context_;
-    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+    boost::asio::io_context& io_context;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work;
     clock_type& m_clock;
     beast::Journal m_journal;
     std::unique_ptr<Store> m_store;
-    Checker<boost::asio::ip::tcp> checker_;
-    Logic<decltype(checker_)> m_logic;
+    Checker<boost::asio::ip::tcp> checker;
+    Logic<decltype(checker)> m_logic;
     BasicConfig const& m_config;
 
     //--------------------------------------------------------------------------
 
     ManagerImp(
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector,
         bool useSqliteStore)
-        : Manager()
-        , io_context_(io_context)
-        , work_(std::in_place, boost::asio::make_work_guard(io_context_))
+        : 
+         io_context(ioContext)
+        , work(std::in_place, boost::asio::make_work_guard(io_context))
         , m_clock(clock)
         , m_journal(journal)
         , m_store([&]() -> std::unique_ptr<Store> {
@@ -46,10 +61,10 @@ public:
 
             return std::make_unique<InMemoryStore>();
         }())
-        , checker_(io_context_)
-        , m_logic(clock, *m_store, checker_, journal)
+        , checker(io_context)
+        , m_logic(clock, *m_store, checker, journal)
         , m_config(config)
-        , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
+        , m_stats_(std::bind(&ManagerImp::collectMetrics, this), collector)
     {
     }
 
@@ -61,10 +76,10 @@ public:
     void
     stop() override
     {
-        if (work_)
+        if (work)
         {
-            work_.reset();
-            checker_.stop();
+            work.reset();
+            checker.stop();
             m_logic.stop();
         }
     }
@@ -109,56 +124,56 @@ public:
     //--------------------------------------------------------------------------
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint) override
+    newInboundSlot(
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return m_logic.new_inbound_slot(local_endpoint, remote_endpoint);
+        return m_logic.newInboundSlot(localEndpoint, remoteEndpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) override
+    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return m_logic.new_outbound_slot(remote_endpoint);
+        return m_logic.newOutboundSlot(remoteEndpoint);
     }
 
     void
-    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
+    onEndpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_endpoints(impl, endpoints);
+        m_logic.onEndpoints(impl, endpoints);
     }
 
     void
-    on_closed(std::shared_ptr<Slot> const& slot) override
+    onClosed(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_closed(impl);
+        m_logic.onClosed(impl);
     }
 
     void
-    on_failure(std::shared_ptr<Slot> const& slot) override
+    onFailure(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        m_logic.on_failure(impl);
+        m_logic.onFailure(impl);
     }
 
     void
     onRedirects(
-        boost::asio::ip::tcp::endpoint const& remote_address,
+        boost::asio::ip::tcp::endpoint const& remoteAddress,
         std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
     {
-        m_logic.onRedirects(eps.begin(), eps.end(), remote_address);
+        m_logic.onRedirects(eps.begin(), eps.end(), remoteAddress);
     }
 
     //--------------------------------------------------------------------------
 
     bool
-    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint)
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& localEndpoint)
         override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        return m_logic.onConnected(impl, local_endpoint);
+        return m_logic.onConnected(impl, localEndpoint);
     }
 
     Result
@@ -182,9 +197,9 @@ public:
     }
 
     void
-    once_per_second() override
+    oncePerSecond() override
     {
-        m_logic.once_per_second();
+        m_logic.oncePerSecond();
     }
 
     std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
@@ -219,9 +234,9 @@ private:
     {
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook(collector->make_hook(handler))
-            , activeInboundPeers(collector->make_gauge("Peer_Finder", "Active_Inbound_Peers"))
-            , activeOutboundPeers(collector->make_gauge("Peer_Finder", "Active_Outbound_Peers"))
+            : hook(collector->makeHook(handler))
+            , activeInboundPeers(collector->makeGauge("Peer_Finder", "Active_Inbound_Peers"))
+            , activeOutboundPeers(collector->makeGauge("Peer_Finder", "Active_Outbound_Peers"))
         {
         }
 
@@ -230,15 +245,15 @@ private:
         beast::insight::Gauge activeOutboundPeers;
     };
 
-    std::mutex m_statsMutex;
-    Stats m_stats;
+    std::mutex m_statsMutex_;
+    Stats m_stats_;
 
     void
-    collect_metrics()
+    collectMetrics()
     {
-        std::lock_guard const lock(m_statsMutex);
-        m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
-        m_stats.activeOutboundPeers = m_logic.counts_.out_active();
+        std::scoped_lock const lock(m_statsMutex_);
+        m_stats_.activeInboundPeers = m_logic.counts_.inboundActive();
+        m_stats_.activeOutboundPeers = m_logic.counts_.outActive();
     }
 };
 
@@ -250,7 +265,7 @@ Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 
 std::unique_ptr<Manager>
 make_Manager(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
@@ -258,8 +273,8 @@ make_Manager(
     bool useSqliteStore)
 {
     return std::make_unique<ManagerImp>(
-        io_context, clock, journal, config, collector, useSqliteStore);
+        ioContext, clock, journal, config, collector, useSqliteStore);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+} // namespace xrpl::PeerFinder
+

@@ -11,51 +11,78 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include "xrpl/basics/BasicConfig.h"
+#include "xrpl/basics/ByteUtilities.h"
+#include "xrpl/basics/Log.h"
+#include "xrpl/basics/contract.h"
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/beast/utility/instrumentation.h"
+#include "xrpl/ledger/Ledger.h"
+#include "xrpl/nodestore/Database.h"
+#include "xrpl/protocol/Protocol.h"
+#include "xrpl/shamap/SHAMapTreeNode.h"
+#include "xrpld/app/misc/SHAMapStore.h"
+#include "xrpld/core/Config.h"
+#include <algorithm>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
-    std::lock_guard const lock(mutex_);
-    initStateDB(sqlDb_, config, dbName);
+    std::scoped_lock const lock(mutex);
+    initStateDB(sqlDb, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex);
 
-    return xrpl::getCanDelete(sqlDb_);
+    return xrpl::getCanDelete(sqlDb);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex);
 
-    return xrpl::setCanDelete(sqlDb_, canDelete);
+    return xrpl::setCanDelete(sqlDb, canDelete);
 }
 
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex);
 
-    return xrpl::getSavedState(sqlDb_);
+    return xrpl::getSavedState(sqlDb);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
-    std::lock_guard const lock(mutex_);
-    xrpl::setSavedState(sqlDb_, state);
+    std::scoped_lock const lock(mutex);
+    xrpl::setSavedState(sqlDb, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
-    xrpl::setLastRotated(sqlDb_, seq);
+    std::scoped_lock const lock(mutex);
+    xrpl::setLastRotated(sqlDb, seq);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +111,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     {
         if (!section.exists("cache_mb"))
         {
-            section.set("cache_mb", std::to_string(config.getValueFor(SizedItem::hashNodeDBCache)));
+            section.set("cache_mb", std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
         if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))
@@ -116,7 +143,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     if (isNullBackend_ && deleteInterval_ == 0)
     {
         auto const minInterval =
-            config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
         deleteInterval_ = std::max(config.LEDGER_HISTORY, minInterval);
     }
 
@@ -139,7 +166,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         get_if_exists(section, "advisory_delete", advisoryDelete_);
 
         auto const minInterval =
-            config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
         if (deleteInterval_ < minInterval)
         {
             Throw<std::runtime_error>(
@@ -171,12 +198,12 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
         // Null mode: create a plain (non-rotating) Database with a
         // single NullBackend.  No DatabaseRotatingImp, no rotation
         // thread artifacts.  dbRotating_ stays nullptr.
-        db = NodeStore::Manager::instance().make_Database(
-            megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+        db = NodeStore::Manager::instance().makeDatabase(
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(nodeStoreName_));
+            app_.getJournal(nodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     else if (deleteInterval_ != 0u)
@@ -199,19 +226,19 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            app_.getJournal(nodeStoreName_));
+            app_.getJournal(nodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
     }
     else
     {
-        db = NodeStore::Manager::instance().make_Database(
-            megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+        db = NodeStore::Manager::instance().makeDatabase(
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(nodeStoreName_));
+            app_.getJournal(nodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     return db;
@@ -221,7 +248,7 @@ void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -249,10 +276,10 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
-        node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
+        node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
-        if (healthWait() == stopping)
+        if (healthWait() == Stopping)
             return false;
     }
 
@@ -302,7 +329,7 @@ SHAMapStoreImp::run()
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
+            canDelete_ >= lastRotated - 1 && healthWait() == KeepGoing;
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
@@ -314,7 +341,7 @@ SHAMapStoreImp::run()
                                   << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
-            if (healthWait() == stopping)
+            if (healthWait() == Stopping)
                 return;
 
             if (isNullBackend_)
@@ -354,14 +381,14 @@ SHAMapStoreImp::run()
                     continue;
                 }
 
-                if (healthWait() == stopping)
+                if (healthWait() == Stopping)
                     return;
                 JLOG(journal_.debug())
                     << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
 
                 JLOG(journal_.debug()) << "freshening caches";
                 freshenCaches();
-                if (healthWait() == stopping)
+                if (healthWait() == Stopping)
                     return;
                 JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
@@ -370,7 +397,7 @@ SHAMapStoreImp::run()
                 JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
                 clearCaches(validatedSeq);
-                if (healthWait() == stopping)
+                if (healthWait() == Stopping)
                     return;
 
                 lastRotated = validatedSeq;
@@ -506,11 +533,11 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     section.set("path", newPath.string());
 
-    auto backend{NodeStore::Manager::instance().make_Backend(
+    auto backend{NodeStore::Manager::instance().makeBackend(
         section,
-        megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+        megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
-        app_.getJournal(nodeStoreName_))};
+        app_.getJournal(nodeStoreName))};
     backend->open();
     return backend;
 }
@@ -518,7 +545,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 void
 SHAMapStoreImp::clearSql(
     LedgerIndex lastRotated,
-    std::string const& TableName,
+    std::string const& tableName,
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
@@ -526,41 +553,41 @@ SHAMapStoreImp::clearSql(
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
-        JLOG(journal_.trace()) << "Begin: Look up lowest value of: " << TableName;
+        JLOG(journal_.trace()) << "Begin: Look up lowest value of: " << tableName;
         auto m = getMinSeq();
-        JLOG(journal_.trace()) << "End: Look up lowest value of: " << TableName;
+        JLOG(journal_.trace()) << "End: Look up lowest value of: " << tableName;
         if (!m)
             return;
         min = *m;
     }
 
-    if (min > lastRotated || healthWait() == stopping)
+    if (min > lastRotated || healthWait() == Stopping)
         return;
     if (min == lastRotated)
     {
         // Micro-optimization mainly to clarify logs
-        JLOG(journal_.trace()) << "Nothing to delete from " << TableName;
+        JLOG(journal_.trace()) << "Nothing to delete from " << tableName;
         return;
     }
 
-    JLOG(journal_.debug()) << "start deleting in: " << TableName << " from " << min << " to "
+    JLOG(journal_.debug()) << "start deleting in: " << tableName << " from " << min << " to "
                            << lastRotated;
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
         JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
-                               << " rows with LedgerSeq < " << min << " from: " << TableName;
+                               << " rows with LedgerSeq < " << min << " from: " << tableName;
         deleteBeforeSeq(min);
         JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
-                               << min << " from: " << TableName;
-        if (healthWait() == stopping)
+                               << min << " from: " << tableName;
+        if (healthWait() == Stopping)
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
-        if (healthWait() == stopping)
+        if (healthWait() == Stopping)
             return;
     }
-    JLOG(journal_.debug()) << "finished deleting from: " << TableName;
+    JLOG(journal_.debug()) << "finished deleting from: " << tableName;
 }
 
 void
@@ -600,7 +627,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     JLOG(journal_.trace()) << "Begin: Clear internal ledgers up to " << lastRotated;
     ledgerMaster_->clearPriorLedgers(lastRotated);
     JLOG(journal_.trace()) << "End: Clear internal ledgers up to " << lastRotated;
-    if (healthWait() == stopping)
+    if (healthWait() == Stopping)
         return;
 
     auto& db = app_.getRelationalDatabase();
@@ -610,7 +637,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Ledgers",
         [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == Stopping)
         return;
 
     if (!app_.config().useTxTables())
@@ -621,7 +648,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Transactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == Stopping)
         return;
 
     clearSql(
@@ -629,7 +656,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "AccountTransactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == Stopping)
         return;
 }
 
@@ -652,7 +679,7 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
-    return stop_ ? stopping : keepGoing;
+    return stop_ ? Stopping : KeepGoing;
 }
 
 void
@@ -661,7 +688,7 @@ SHAMapStoreImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

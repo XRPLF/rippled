@@ -5,7 +5,6 @@
 #ifndef BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 #endif
-#include <boost/stacktrace.hpp>
 
 #include <cstdlib>
 #include <iostream>

@@ -6,8 +6,8 @@
 #include <mutex>
 #include <shared_mutex>
 
-namespace xrpl {
-namespace NodeStore {
+
+namespace xrpl::NodeStore {
 
 class DatabaseRotatingImp : public DatabaseRotating
 {
@@ -25,7 +25,7 @@ public:
         Section const& config,
         beast::Journal j);
 
-    ~DatabaseRotatingImp()
+    ~DatabaseRotatingImp() override
     {
         stop();
     }
@@ -68,8 +68,8 @@ private:
         override;
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+} // namespace xrpl::NodeStore
+
