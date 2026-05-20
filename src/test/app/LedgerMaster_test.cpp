@@ -206,22 +206,26 @@ class LedgerMaster_test : public beast::unit_test::Suite
         for (int i = 0; i < 4; ++i)
             env.close();
 
-        auto published = asLedger(env.closed());
+        auto published = asLedger(ledgerMaster.getPublishedLedger());
         BEAST_EXPECT(published);
-        ledgerMaster.setLedgerRangePresent(1, published->seq());
+        if (!published)
+            return;
+
+        auto const publishedSeq = published->seq();
+        ledgerMaster.setLedgerRangePresent(1, publishedSeq);
 
         BEAST_EXPECT(ledgerMaster.getFullValidatedRange(minVal, maxVal));
         BEAST_EXPECT(minVal == 1);
-        BEAST_EXPECT(maxVal == published->seq());
+        BEAST_EXPECT(maxVal == publishedSeq);
 
         BEAST_EXPECT(ledgerMaster.getValidatedRange(minVal, maxVal));
         BEAST_EXPECT(minVal == 1);
-        BEAST_EXPECT(maxVal == published->seq());
+        BEAST_EXPECT(maxVal == publishedSeq);
 
-        ledgerMaster.clearLedger(published->seq() - 1);
+        ledgerMaster.clearLedger(publishedSeq - 1);
         BEAST_EXPECT(ledgerMaster.getFullValidatedRange(minVal, maxVal));
-        BEAST_EXPECT(minVal == published->seq());
-        BEAST_EXPECT(maxVal == published->seq());
+        BEAST_EXPECT(minVal == publishedSeq);
+        BEAST_EXPECT(maxVal == publishedSeq);
     }
 
     void
