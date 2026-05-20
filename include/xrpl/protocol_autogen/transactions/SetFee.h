@@ -19,9 +19,9 @@ class SetFeeBuilder;
  * @brief Transaction: SetFee
  *
  * Type: ttFEE (101)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SetFeeBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLedgerSequence (soeOPTIONAL)
+     * @brief Get sfLedgerSequence (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfBaseFee (soeOPTIONAL)
+     * @brief Get sfBaseFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Get sfReferenceFeeUnits (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveBase (soeOPTIONAL)
+     * @brief Get sfReserveBase (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveIncrement (soeOPTIONAL)
+     * @brief Get sfReserveIncrement (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -178,7 +178,7 @@ public:
     }
 
     /**
-     * @brief Get sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Get sfBaseFeeDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -204,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Get sfReserveBaseDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -230,7 +230,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Get sfReserveIncrementDrops (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionComputeLimit (soeOPTIONAL)
+     * @brief Get sfExtensionComputeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionSizeLimit (soeOPTIONAL)
+     * @brief Get sfExtensionSizeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -308,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Get sfGasPrice (soeOPTIONAL)
+     * @brief Get sfGasPrice (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -338,7 +338,7 @@ public:
  * @brief Builder for SetFee transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class SetFeeBuilder : public TransactionBuilderBase<SetFeeBuilder>
@@ -375,7 +375,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfLedgerSequence (soeOPTIONAL)
+     * @brief Set sfLedgerSequence (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -386,7 +386,7 @@ public:
     }
 
     /**
-     * @brief Set sfBaseFee (soeOPTIONAL)
+     * @brief Set sfBaseFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -397,7 +397,7 @@ public:
     }
 
     /**
-     * @brief Set sfReferenceFeeUnits (soeOPTIONAL)
+     * @brief Set sfReferenceFeeUnits (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -408,7 +408,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveBase (soeOPTIONAL)
+     * @brief Set sfReserveBase (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -419,7 +419,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveIncrement (soeOPTIONAL)
+     * @brief Set sfReserveIncrement (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -430,7 +430,7 @@ public:
     }
 
     /**
-     * @brief Set sfBaseFeeDrops (soeOPTIONAL)
+     * @brief Set sfBaseFeeDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -441,7 +441,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveBaseDrops (soeOPTIONAL)
+     * @brief Set sfReserveBaseDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -452,7 +452,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveIncrementDrops (soeOPTIONAL)
+     * @brief Set sfReserveIncrementDrops (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -463,7 +463,7 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionComputeLimit (soeOPTIONAL)
+     * @brief Set sfExtensionComputeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -474,7 +474,7 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionSizeLimit (soeOPTIONAL)
+     * @brief Set sfExtensionSizeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -485,7 +485,7 @@ public:
     }
 
     /**
-     * @brief Set sfGasPrice (soeOPTIONAL)
+     * @brief Set sfGasPrice (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&

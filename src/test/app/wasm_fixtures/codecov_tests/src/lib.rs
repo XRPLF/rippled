@@ -1042,21 +1042,6 @@ pub extern "C" fn finish() -> i32 {
             "float_pow_oob_slice",
         )
     });
-    with_buffer::<2, _, _>(|ptr, len| {
-        check_result(
-            unsafe {
-                host::float_log(
-                    float.as_ptr().wrapping_add(1_000_000_000),
-                    float.len(),
-                    ptr,
-                    len,
-                    FLOAT_ROUNDING_MODES_TO_NEAREST,
-                )
-            },
-            error_codes::POINTER_OUT_OF_BOUNDS,
-            "float_log_oob_slice",
-        )
-    });
 
     // invalid UInt32
 

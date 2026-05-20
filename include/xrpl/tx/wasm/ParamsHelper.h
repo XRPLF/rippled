@@ -7,18 +7,26 @@
 #include <boost/function_types/result_type.hpp>
 #include <boost/mpl/vector.hpp>
 
+#include <bit>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace bft = boost::function_types;
 
 namespace xrpl {
 
+template <typename>
+inline constexpr bool wasmDependentFalse = false;
+
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 
-struct wmem
+struct Wmem
 {
     std::uint8_t* p = nullptr;
     std::size_t s = 0;
@@ -30,13 +38,13 @@ struct WasmResult
     T result;
     int64_t cost;
 };
-typedef WasmResult<int32_t> EscrowResult;
+using EscrowResult = WasmResult<int32_t>;
 
 struct WasmRuntimeWrapper
 {
     virtual ~WasmRuntimeWrapper() = default;
 
-    virtual wmem
+    virtual Wmem
     getMem() = 0;
 
     virtual std::int64_t
@@ -48,11 +56,11 @@ struct WasmRuntimeWrapper
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WT_I32, WT_I64, WT_U8V };
+enum class WasmTypes { WtI32, WtI64 };
 
 struct WasmImportFunc
 {
-    std::string name;
+    std::string_view name;
     std::optional<WasmTypes> result;
     std::vector<WasmTypes> params;
     // void* udata = nullptr;
@@ -61,53 +69,69 @@ struct WasmImportFunc
     uint32_t gas = 0;
 };
 
-typedef std::pair<void*, WasmImportFunc> WasmUserData;
-typedef std::vector<WasmUserData> ImportVec;
+using WasmUserData = std::pair<void*, WasmImportFunc>;
+using ImportVec = std::unordered_map<std::string_view, WasmUserData>;
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
     WasmImpFunc<f##_proto>(v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
+// n - string literal name, must have static lifetime
 #define WASM_IMPORT_FUNC2(v, f, n, ...) \
     WasmImpFunc<f##_proto>(v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
-template <int N, int C, typename mpl>
+template <int N, int C, typename Mpl>
 void
 WasmImpArgs(WasmImportFunc& e)
 {
     if constexpr (N < C)
     {
-        using at = typename boost::mpl::at_c<mpl, N>::type;
+        using at = typename boost::mpl::at_c<Mpl, N>::type;
         if constexpr (std::is_pointer_v<at>)
-            e.params.push_back(WT_I32);
+        {
+            e.params.push_back(WasmTypes::WtI32);
+        }
         else if constexpr (std::is_same_v<at, std::int32_t>)
-            e.params.push_back(WT_I32);
+        {
+            e.params.push_back(WasmTypes::WtI32);
+        }
         else if constexpr (std::is_same_v<at, std::int64_t>)
-            e.params.push_back(WT_I64);
+        {
+            e.params.push_back(WasmTypes::WtI64);
+        }
         else
+        {
             static_assert(std::is_pointer_v<at>, "Unsupported argument type");
+        }
 
-        return WasmImpArgs<N + 1, C, mpl>(e);
+        return WasmImpArgs<N + 1, C, Mpl>(e);
     }
     return;
 }
 
-template <typename rt>
+template <typename Rt>
 void
 WasmImpRet(WasmImportFunc& e)
 {
-    if constexpr (std::is_pointer_v<rt>)
-        e.result = WT_I32;
-    else if constexpr (std::is_same_v<rt, std::int32_t>)
-        e.result = WT_I32;
-    else if constexpr (std::is_same_v<rt, std::int64_t>)
-        e.result = WT_I64;
-    else if constexpr (std::is_void_v<rt>)
+    if constexpr (std::is_pointer_v<Rt>)
+    {
+        e.result = WasmTypes::WtI32;
+    }
+    else if constexpr (std::is_same_v<Rt, std::int32_t>)
+    {
+        e.result = WasmTypes::WtI32;
+    }
+    else if constexpr (std::is_same_v<Rt, std::int64_t>)
+    {
+        e.result = WasmTypes::WtI64;
+    }
+    else if constexpr (std::is_void_v<Rt>)
+    {
         e.result.reset();
-#if (defined(__GNUC__) && (__GNUC__ >= 14)) || \
-    ((defined(__clang_major__)) && (__clang_major__ >= 18))
+    }
     else
-        static_assert(false, "Unsupported return type");
-#endif
+    {
+        static_assert(wasmDependentFalse<Rt>, "Unsupported return type");
+    }
 }
 
 template <typename F>
@@ -123,41 +147,35 @@ WasmImpFuncHelper(WasmImportFunc& e)
     // WasmImpWrap(e, std::forward<F>(f));
 }
 
+// imp_name - string literal, must have static lifetime
 template <typename F>
 void
 WasmImpFunc(
     ImportVec& v,
-    std::string_view imp_name,
-    void* f_wrap,
+    std::string_view impName,
+    void* fWrap,
     void* data = nullptr,
     uint32_t gas = 0)
 {
     WasmImportFunc e;
-    e.name = imp_name;
-    e.wrap = f_wrap;
+    e.name = impName;
+    e.wrap = fWrap;
     e.gas = gas;
     WasmImpFuncHelper<F>(e);
-    v.push_back(std::make_pair(data, std::move(e)));
+    v.emplace(impName, std::make_pair(data, std::move(e)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct WasmParamVec
-{
-    std::uint8_t const* d = nullptr;
-    std::int32_t sz = 0;
-};
-
 struct WasmParam
 {
-    WasmTypes type = WT_I32;
+    // We are not supporting float/double
+
+    WasmTypes type = WasmTypes::WtI32;
     union
     {
         std::int32_t i32;
         std::int64_t i64 = 0;
-        float f32;
-        double f64;
-        WasmParamVec u8v;
     } of;
 };
 
@@ -165,7 +183,7 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int32_t p, Types&&... args)
 {
-    v.push_back({.type = WT_I32, .of = {.i32 = p}});
+    v.push_back({.type = WasmTypes::WtI32, .of = {.i32 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 
@@ -173,27 +191,9 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 {
-    v.push_back({.type = WT_I64, .of = {.i64 = p}});
+    v.push_back({.type = WasmTypes::WtI64, .of = {.i64 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
-
-// We are not supporting float/double for now
-// Leaving this code here so that it is easier to add later if needed
-// template <class... Types>
-// inline void
-// wasmParamsHlp(std::vector<WasmParam>& v, float p, Types&&... args)
-// {
-//     v.push_back({.type = WT_F32, .of = {.f32 = p}});
-//     wasmParamsHlp(v, std::forward<Types>(args)...);
-// }
-
-// template <class... Types>
-// inline void
-// wasmParamsHlp(std::vector<WasmParam>& v, double p, Types&&... args)
-// {
-//     v.push_back({.type = WT_F64, .of = {.f64 = p}});
-//     wasmParamsHlp(v, std::forward<Types>(args)...);
-// }
 
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)
@@ -211,29 +211,29 @@ wasmParams(Types&&... args)
     return v;
 }
 
-template <typename T, size_t size = sizeof(T)>
-inline constexpr T
+template <typename T, size_t Size = sizeof(T)>
+constexpr T
 adjustWasmEndianessHlp(T x)
 {
-    static_assert(std::is_integral<T>::value, "Only integral types");
-    if constexpr (size > 1)
+    static_assert(std::is_integral_v<T>, "Only integral types");
+    if constexpr (Size > 1)
     {
-        using U = std::make_unsigned<T>::type;
+        using U = std::make_unsigned_t<T>;
         U u = static_cast<U>(x);
-        U const low = (u & 0xFF) << ((size - 1) << 3);
-        u = adjustWasmEndianessHlp<U, size - 1>(u >> 8);
+        U const low = (u & 0xFF) << ((Size - 1) << 3);
+        u = adjustWasmEndianessHlp<U, Size - 1>(u >> 8);
         return static_cast<T>(low | u);
     }
 
     return x;
 }
 
-template <typename T, size_t size = sizeof(T)>
-inline constexpr T
+template <typename T, size_t Size = sizeof(T)>
+constexpr T
 adjustWasmEndianess(T x)
 {
     // LCOV_EXCL_START
-    static_assert(std::is_integral<T>::value, "Only integral types");
+    static_assert(std::is_integral_v<T>, "Only integral types");
     if constexpr (std::endian::native == std::endian::big)
     {
         return adjustWasmEndianessHlp(x);

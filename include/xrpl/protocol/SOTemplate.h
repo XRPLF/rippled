@@ -11,17 +11,21 @@
 namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
-    soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
-    soeDEFAULT = 2,   // optional, if present, must not have default value
+    SoeInvalid = -1,
+    SoeRequired = 0,  // required
+    SoeOptional = 1,  // optional, may be present with default value
+    SoeDefault = 2,   // optional, if present, must not have default value
                       // inner object with the default fields has to be
                       // constructed with STObject::makeInnerObject()
 };
 
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
 /** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -31,7 +35,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
     void
@@ -57,25 +61,25 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
     }
 
-    SField const&
+    [[nodiscard]] SField const&
     sField() const
     {
         return sField_.get();
     }
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style() const
     {
         return style_;
     }
 
-    SOETxMPTIssue
+    [[nodiscard]] SOETxMPTIssue
     supportMPT() const
     {
         return supportMpt_;
@@ -110,42 +114,42 @@ public:
         std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     begin() const
     {
         return elements_.cbegin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cbegin() const
     {
         return begin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     end() const
     {
         return elements_.cend();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cend() const
     {
         return end();
     }
 
     /** The number of entries in this template */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return elements_.size();
     }
 
     /** Retrieve the position of a named field. */
-    int
+    [[nodiscard]] int
     getIndex(SField const&) const;
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style(SField const& sf) const
     {
         return elements_[indices_[sf.getNum()]].style();

@@ -23,14 +23,14 @@ rm -f conan.lock
 # first create command will create a new lockfile, while the subsequent create
 # commands will merge any additional dependencies into the created lockfile.
 conan lock create . \
-  --options '&:jemalloc=True' \
-  --options '&:rocksdb=True' \
-  --profile:all=conan/lockfile/linux.profile
+    --options '&:jemalloc=True' \
+    --options '&:rocksdb=True' \
+    --profile:all=conan/lockfile/linux.profile
 conan lock create . \
-  --options '&:jemalloc=True' \
-  --options '&:rocksdb=True' \
-  --profile:all=conan/lockfile/macos.profile
+    --options '&:jemalloc=True' \
+    --options '&:rocksdb=True' \
+    --profile:all=conan/lockfile/macos.profile
 conan lock create . \
-  --options '&:jemalloc=True' \
-  --options '&:rocksdb=True' \
-  --profile:all=conan/lockfile/windows.profile
+    --options '&:jemalloc=True' \
+    --options '&:rocksdb=True' \
+    --profile:all=conan/lockfile/windows.profile

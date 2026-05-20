@@ -65,6 +65,7 @@ words:
   - Bougalis
   - Britto
   - Btrfs
+  - Buildx
   - canonicality
   - cdylib
   - changespq
@@ -74,6 +75,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -100,12 +102,15 @@ words:
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
   - enabled
+  - enablerepo
   - endmacro
   - exceptioned
+  - EXPECT_STREQ
   - Falco
   - fcontext
   - finalizers
@@ -117,6 +122,7 @@ words:
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
@@ -154,6 +160,7 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
   - MPTAMM
@@ -161,6 +168,7 @@ words:
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
@@ -192,7 +200,9 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
+  - notifempty
   - nudb
   - nullptr
   - nunl
@@ -212,6 +222,7 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
@@ -246,12 +257,14 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -280,8 +293,8 @@ words:
   - txn
   - txns
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
   - umant
   - unacquired
   - unambiguity
@@ -318,7 +331,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -326,3 +338,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - CGNAT

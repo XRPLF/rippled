@@ -2,17 +2,15 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-struct last_ledger_seq
+struct LastLedgerSeq
 {
 private:
     std::uint32_t num_;
 
 public:
-    explicit last_ledger_seq(std::uint32_t num) : num_(num)
+    explicit LastLedgerSeq(std::uint32_t num) : num_(num)
     {
     }
 
@@ -20,6 +18,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

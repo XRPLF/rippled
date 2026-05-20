@@ -1,11 +1,21 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -48,7 +58,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
+        if (ctx.tx.isFlag(tfMPTUnauthorize))
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -102,8 +112,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
-
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
     // 1. authorize an account
@@ -116,7 +124,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
+    if (!sleMptIssuance->isFlag(lsfMPTRequireAuth))
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
@@ -140,10 +148,31 @@ MPTokenAuthorize::doApply()
         ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
-        account_,
+        accountID_,
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
+}
+
+void
+MPTokenAuthorize::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+MPTokenAuthorize::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

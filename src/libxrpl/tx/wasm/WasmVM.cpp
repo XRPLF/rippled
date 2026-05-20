@@ -1,19 +1,31 @@
+#include <xrpl/tx/wasm/WasmVM.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
+#include <xrpl/tx/wasm/ParamsHelper.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/tx/wasm/HostFunc.h>
-#include <xrpl/tx/wasm/HostFuncWrapper.h>
 #include <xrpl/tx/wasm/WasmiVM.h>
 
 #include <memory>
 
 namespace xrpl {
-
+// WARNING: Per XLS-0102, the host functions registered here form a stable
+// ABI. Their name, semantics, parameters, and return types must NEVER be
+// changed, as there may always be a program that uses it. New host functions
+// may be added and existing gas costs may be adjusted, but every such change
+// must be gated by an amendment.
+// See XLS-0102 §6.5 (Future-Proofing):
+// https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0102-wasm-vm#65-future-proofing
 static void
 setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
 {
@@ -61,7 +73,7 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_keylet", hfs,                                                   350);
     WASM_IMPORT_FUNC2(i, vaultKeylet, "vault_keylet", hfs,                                                     350);
 
-    WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
+    WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                             5'000);
     WASM_IMPORT_FUNC2(i, getNFTIssuer, "get_nft_issuer", hfs,                                                   70);
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "get_nft_taxon", hfs,                                                     60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "get_nft_flags", hfs,                                                     60);
@@ -79,10 +91,8 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, floatFromSTAmount, "float_from_stamount", hfs,                                        150);
     WASM_IMPORT_FUNC2(i, floatFromSTNumber, "float_from_stnumber", hfs,                                        150);
     WASM_IMPORT_FUNC2(i, floatToInt, "float_to_int", hfs,                                                      130);
-    WASM_IMPORT_FUNC2(i, floatToMantissaAndExponent, "float_to_mantissa_and_exponent", hfs,                    130);
-    WASM_IMPORT_FUNC2(i, floatNegate, "float_negate", hfs,                                                     150);
-    WASM_IMPORT_FUNC2(i, floatAbs, "float_abs", hfs,                                                           150);
-    WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                           100);
+    WASM_IMPORT_FUNC2(i, floatToMantExp, "float_to_mant_exp", hfs,                                             130);
+    WASM_IMPORT_FUNC2(i, floatFromMantExp, "float_from_mant_exp", hfs,                                         100);
     WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                    80);
     WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                           160);
     WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                 160);
@@ -90,7 +100,6 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                     300);
     WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                       5'500);
     WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                       5'500);
-    WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                        12'000);
     // clang-format on
 }
 
@@ -119,9 +128,6 @@ runEscrowWasm(
 
     auto const ret =
         vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
-
-    // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
-    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
     if (!ret)
     {
