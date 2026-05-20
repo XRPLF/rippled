@@ -57,7 +57,7 @@ class BookStep : public StepImp<TIn, TOut, BookStep<TIn, TOut, TDerived>>
 protected:
     enum class OfferType { Amm, Clob };
 
-    static constexpr uint32_t kMAX_OFFERS_TO_CONSUME{1000};
+    static constexpr uint32_t kMaxOffersToConsume{1000};
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
@@ -104,7 +104,7 @@ private:
         , strandDeliver_(ctx.strandDeliver)
     {
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
-            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZERO)
+            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZero)
         {
             ammLiquidity_.emplace(
                 ctx.view,
@@ -350,12 +350,12 @@ public:
         // Calculate amount that goes to the taker and the amount charged the
         // offer owner
         auto const trIn =
-            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kPARITY_RATE;
+            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kParityRate;
         // Always charge the transfer fee, even if the owner is the issuer,
         // unless the fee is waived
         auto const trOut = (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
             ? this->rate(v, this->book_.out, this->strandDst_)
-            : kPARITY_RATE;
+            : kParityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
         return composedQuality(q1, ofrQ);
@@ -537,9 +537,9 @@ public:
         }
 
         auto const trIn =
-            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kPARITY_RATE;
+            redeems(prevStepDir) ? this->rate(v, this->book_.in, this->strandDst_) : kParityRate;
         // AMM doesn't pay the transfer fee on the out amount
-        auto const trOut = kPARITY_RATE;
+        auto const trOut = kParityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
         return composedQuality(q1, ofrQ);
@@ -598,10 +598,10 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // AMM
     if (!res->isConst())
     {
-        auto static const kQ_ONE = Quality{STAmount::kU_RATE_ONE};
+        auto static const kQOne = Quality{STAmount::kURateOne};
         auto const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-            v, kQ_ONE, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
-        if (q == kQ_ONE)
+            v, kQOne, prevStepDir, WaiveTransferFee::Yes, OfferType::Amm, v.rules());
+        if (q == kQOne)
             return {res, dir};
         QualityFunction qf{q, QualityFunction::CLOBLikeTag{}};
         qf.combine(*res);
@@ -700,7 +700,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     std::uint32_t const trOut =
         ownerPaysTransferFee_ ? rate(sb, book_.out, this->strandDst_).value : QUALITY_ONE;
 
-    typename FlowOfferStream<TIn, TOut>::StepCounter counter(kMAX_OFFERS_TO_CONSUME, j_);
+    typename FlowOfferStream<TIn, TOut>::StepCounter counter(kMaxOffersToConsume, j_);
 
     FlowOfferStream<TIn, TOut> offers(sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
@@ -989,7 +989,7 @@ sum(TCollection const& col)
 {
     using TResult = std::decay_t<decltype(*col.begin())>;
     if (col.empty())
-        return TResult{beast::kZERO};
+        return TResult{beast::kZero};
     return std::accumulate(col.begin() + 1, col.end(), *col.begin());
 };
 
@@ -1003,7 +1003,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
 {
     cache_.reset();
 
-    TAmounts<TIn, TOut> result(beast::kZERO, beast::kZERO);
+    TAmounts<TIn, TOut> result(beast::kZero, beast::kZero);
 
     auto remainingOut = out;
 
@@ -1022,7 +1022,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
-        if (remainingOut <= beast::kZERO)
+        if (remainingOut <= beast::kZero)
             return false;
 
         if (stpAmt.out <= remainingOut)
@@ -1048,7 +1048,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             transferRateIn,
             transferRateOut,
             remainingOut);
-        remainingOut = beast::kZERO;
+        remainingOut = beast::kZero;
         savedIns.insert(stpAdjAmt.in);
         savedOuts.insert(remainingOut);
         result.in = sum(savedIns);
@@ -1076,7 +1076,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         setUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive
-        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
+        if (offersConsumed >= kMaxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1089,8 +1089,8 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // LCOV_EXCL_START
             JLOG(j_.error()) << "BookStep remainingOut < 0 " << to_string(remainingOut);
             UNREACHABLE("xrpl::BookStep::revImp : remaining less than zero");
-            cache_.emplace(beast::kZERO, beast::kZERO);
-            return {beast::kZERO, beast::kZERO};
+            cache_.emplace(beast::kZero, beast::kZero);
+            return {beast::kZero, beast::kZero};
             // LCOV_EXCL_STOP
         }
         case 0: {
@@ -1114,7 +1114,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
 {
     XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
 
-    TAmounts<TIn, TOut> result(beast::kZERO, beast::kZERO);
+    TAmounts<TIn, TOut> result(beast::kZero, beast::kZero);
 
     auto remainingIn = in;
 
@@ -1133,7 +1133,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          std::uint32_t transferRateOut) mutable -> bool {
         XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp::eachOffer : cache is set");
 
-        if (remainingIn <= beast::kZERO)
+        if (remainingIn <= beast::kZero)
             return false;
 
         bool processMore = true;
@@ -1238,7 +1238,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         setUnion(ofrsToRm, toRm);
 
         // Too many iterations, mark this strand as inactive (dry)
-        if (offersConsumed >= kMAX_OFFERS_TO_CONSUME)
+        if (offersConsumed >= kMaxOffersToConsume)
         {
             inactive_ = true;
         }
@@ -1251,8 +1251,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             // something went very wrong
             JLOG(j_.error()) << "BookStep remainingIn < 0 " << to_string(remainingIn);
             UNREACHABLE("xrpl::BookStep::fwdImp : remaining less than zero");
-            cache_.emplace(beast::kZERO, beast::kZERO);
-            return {beast::kZERO, beast::kZERO};
+            cache_.emplace(beast::kZero, beast::kZero);
+            return {beast::kZero, beast::kZero};
             // LCOV_EXCL_STOP
         }
         case 0: {
@@ -1276,7 +1276,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(TOut(beast::kZERO))};
+        return {false, EitherAmount(TOut(beast::kZero))};
     }
 
     auto const savCache = *cache_;
@@ -1288,7 +1288,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
     }
     catch (FlowException const&)
     {
-        return {false, EitherAmount(TOut(beast::kZERO))};
+        return {false, EitherAmount(TOut(beast::kZero))};
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
@@ -1386,7 +1386,7 @@ BookStep<TIn, TOut, TDerived>::rate(
 {
     auto const& issuer = asset.getIssuer();
     if (isXRP(issuer) || issuer == dstAccount)
-        return kPARITY_RATE;
+        return kParityRate;
     return asset.visit(
         [&](Issue const&) { return transferRate(view, issuer); },
         [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });

@@ -301,23 +301,23 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::Seq(jtx::kAUTOFILL),
-            Fee(jtx::kAUTOFILL),
-            Sig(jtx::kAUTOFILL));
+            jtx::Seq(jtx::kAutofill),
+            Fee(jtx::kAutofill),
+            Sig(jtx::kAutofill));
         require(Nflags(account, asfDefaultRipple));
     }
     require(jtx::Balance(account, amount));
@@ -331,14 +331,14 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::Seq(jtx::kAUTOFILL),
-        Fee(jtx::kAUTOFILL),
-        Sig(jtx::kAUTOFILL));
+        jtx::Seq(jtx::kAutofill),
+        Fee(jtx::kAutofill),
+        Sig(jtx::kAutofill));
     test.expect(balance(account) == start);
 }
 

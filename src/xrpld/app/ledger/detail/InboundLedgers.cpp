@@ -53,7 +53,7 @@ private:
 
 public:
     // How long before we try again to acquire the same ledger
-    static constexpr std::chrono::minutes const kREACQUIRE_INTERVAL{5};
+    static constexpr std::chrono::minutes kReacquireInterval{5};
 
     InboundLedgersImp(
         Application& app,
@@ -232,7 +232,7 @@ public:
     {
         ScopedLockType const sl(lock_);
 
-        beast::expire(recentFailures_, kREACQUIRE_INTERVAL);
+        beast::expire(recentFailures_, kReacquireInterval);
         return recentFailures_.find(h) != recentFailures_.end();
     }
 
@@ -405,7 +405,7 @@ public:
                 }
             }
 
-            beast::expire(recentFailures_, kREACQUIRE_INTERVAL);
+            beast::expire(recentFailures_, kReacquireInterval);
         }
 
         JLOG(j_.debug())

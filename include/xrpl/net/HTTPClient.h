@@ -20,7 +20,7 @@ class HTTPClient
 public:
     explicit HTTPClient() = default;
 
-    static constexpr auto kMAX_CLIENT_HEADER_BYTES = kilobytes(32);
+    static constexpr auto kMaxClientHeaderBytes = kilobytes(32);
 
     static void
     initializeSSLContext(

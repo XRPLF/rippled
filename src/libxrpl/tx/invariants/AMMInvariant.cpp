@@ -69,11 +69,11 @@ validBalances(
     ValidAMM::ZeroAllowed zeroAllowed)
 {
     bool const positive =
-        amount > beast::kZERO && amount2 > beast::kZERO && lptAMMBalance > beast::kZERO;
+        amount > beast::kZero && amount2 > beast::kZero && lptAMMBalance > beast::kZero;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
     {
         return positive ||
-            (amount == beast::kZERO && amount2 == beast::kZERO && lptAMMBalance == beast::kZERO);
+            (amount == beast::kZero && amount2 == beast::kZero && lptAMMBalance == beast::kZero);
     }
     return positive;
 }
@@ -111,7 +111,7 @@ ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
     // LPTokens are burnt, therefore there should be fewer LPTokens
     else if (
         lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
-        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZERO))
+        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZero))
     {
         // LCOV_EXCL_START
         JLOG(j.error()) << "AMMBid invariant failed: " << *lptAMMBalanceBefore_ << " "
@@ -227,7 +227,7 @@ ValidAMM::generalInvariant(
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
     // Allow for a small relative error if strongInvariantCheck fails
     auto weakInvariantCheck = [&]() {
-        return *lptAMMBalanceAfter_ != beast::kZERO &&
+        return *lptAMMBalanceAfter_ != beast::kZero &&
             withinRelativeDistance(poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});
     };
     if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
@@ -236,7 +236,7 @@ ValidAMM::generalInvariant(
                         << " invariant failed: " << tx.getHash(HashPrefix::TransactionId) << " "
                         << ammPoolChanged_ << " " << amount << " " << amount2 << " "
                         << poolProductMean << " " << lptAMMBalanceAfter_->getText() << " "
-                        << ((*lptAMMBalanceAfter_ == beast::kZERO)
+                        << ((*lptAMMBalanceAfter_ == beast::kZero)
                                 ? Number{1}
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;

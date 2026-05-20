@@ -52,7 +52,7 @@ struct MPTMutabilityFlags
     std::uint32_t canMutateFlag;
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
+static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
       .clearFlag = tmfMPTClearCanLock,
       .canMutateFlag = lsmfMPTCanMutateCanLock},
@@ -112,10 +112,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (isMutate && ((ctx.tx.getFlags() & tfUniversalMask) != 0u))
             return temMALFORMED;
 
-        if (transferFee && *transferFee > kMAX_TRANSFER_FEE)
+        if (transferFee && *transferFee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
-        if (metadata && metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
 
         if (mutableFlags)
@@ -124,7 +124,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::ranges::any_of(kMPT_MUTABILITY_FLAGS, [mutableFlags](auto const& f) {
+            if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags](auto const& f) {
                     return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
                 }))
                 return temINVALID_FLAG;
@@ -214,7 +214,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
             return tecNO_PERMISSION;
 
-        if (*domain != beast::kZERO)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -232,11 +232,10 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
-        if (std::ranges::any_of(
-                kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) &&
-                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
-                }))
+        if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                return !isMutableFlag(f.canMutateFlag) &&
+                    ((*mutableFlags & (f.setFlag | f.clearFlag)));
+            }))
             return tecNO_PERMISSION;
 
         // Clearing lsfMPTRequireAuth is invalid when the issuance already has
@@ -299,7 +298,7 @@ MPTokenIssuanceSet::doApply()
 
     if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
-        for (auto const& f : kMPT_MUTABILITY_FLAGS)
+        for (auto const& f : kMptMutabilityFlags)
         {
             if ((mutableFlags & f.setFlag) != 0u)
             {
@@ -357,7 +356,7 @@ MPTokenIssuanceSet::doApply()
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        if (*domainID != beast::kZERO)
+        if (*domainID != beast::kZero)
         {
             sle->setFieldH256(sfDomainID, *domainID);
         }

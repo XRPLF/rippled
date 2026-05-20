@@ -34,7 +34,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
+        context.loadType = Resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);

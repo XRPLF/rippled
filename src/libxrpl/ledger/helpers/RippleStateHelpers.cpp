@@ -183,15 +183,15 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    bool const bAuth,           // --> authorize account.
-    bool const bNoRipple,       // --> others cannot ripple through
-    bool const bFreeze,         // --> funds cannot leave
-    bool bDeepFreeze,           // --> can neither receive nor send funds
-    STAmount const& saBalance,  // --> balance of account being set.
+    uint256 const& uIndex,      // ripple state entry
+    SLE::ref sleAccount,        // the account being set.
+    bool const bAuth,           // authorize account.
+    bool const bNoRipple,       // others cannot ripple through
+    bool const bFreeze,         // funds cannot leave
+    bool bDeepFreeze,           // can neither receive nor send funds
+    STAmount const& saBalance,  // balance of account being set.
                                 // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
+    STAmount const& saLimit,    // limit for account being set.
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
@@ -352,9 +352,9 @@ updateTrustLine(
     auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::kZERO
+    if (before > beast::kZero
         // Sender balance was positive.
-        && after <= beast::kZERO
+        && after <= beast::kZero
         // Sender is zero or negative.
         && state->isFlag(senderReserveFlag)
         // Sender reserve is set.
@@ -699,7 +699,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)

@@ -62,7 +62,7 @@ badCurrency();
 inline bool
 isXRP(Currency const& c)
 {
-    return c == beast::kZERO;
+    return c == beast::kZero;
 }
 
 /** Returns "", "XRP", or three letter ISO code. */

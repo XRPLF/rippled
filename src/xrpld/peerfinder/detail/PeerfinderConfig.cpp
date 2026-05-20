@@ -18,8 +18,7 @@ Config::Config() : outPeers(calcOutPeers())
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::max(
-        (maxPeers * Tuning::kOUT_PERCENT + 50) / 100, std::size_t(Tuning::kMIN_OUT_COUNT));
+    return std::max((maxPeers * Tuning::kOutPercent + 50) / 100, std::size_t(Tuning::kMinOutCount));
 }
 
 void
@@ -32,8 +31,8 @@ Config::applyTuning()
         // IP addresses.
         ipLimit = 2;
 
-        if (inPeers > Tuning::kDEFAULT_MAX_PEERS)
-            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDEFAULT_MAX_PEERS));
+        if (inPeers > Tuning::kDefaultMaxPeers)
+            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDefaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
@@ -74,7 +73,7 @@ Config::makeConfig(
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
 
-        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMIN_OUT_COUNT);
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
