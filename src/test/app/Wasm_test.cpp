@@ -279,7 +279,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         Env env{*this};
         TestLedgerDataProvider hfs(env);
-        ImportVec const imports;
+        ImportVec imports;
         WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
         auto& engine = WasmEngine::instance();
 
@@ -569,7 +569,7 @@ struct Wasm_test : public beast::unit_test::Suite
             // expected import not provided
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
-            ImportVec const imports;
+            ImportVec imports;
             WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
 
             auto& engine = WasmEngine::instance();
@@ -600,7 +600,7 @@ struct Wasm_test : public beast::unit_test::Suite
             // bad function name
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
-            ImportVec const imports;
+            ImportVec imports;
             WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
 
             auto& engine = WasmEngine::instance();
