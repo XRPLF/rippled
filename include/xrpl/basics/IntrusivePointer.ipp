@@ -567,14 +567,14 @@ template <class T>
 bool
 SharedWeakUnion<T>::isStrong() const
 {
-    return (tp_ & kTAG_MASK) == 0u;
+    return (tp_ & kTagMask) == 0u;
 }
 
 template <class T>
 bool
 SharedWeakUnion<T>::isWeak() const
 {
-    return (tp_ & kTAG_MASK) != 0u;
+    return (tp_ & kTagMask) != 0u;
 }
 
 template <class T>
@@ -641,7 +641,7 @@ template <class T>
 T*
 SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
-    return reinterpret_cast<T*>(tp_ & kPTR_MASK);
+    return reinterpret_cast<T*>(tp_ & kPtrMask);
 }
 
 template <class T>
@@ -650,7 +650,7 @@ SharedWeakUnion<T>::unsafeSetRawPtr(T* p, RefStrength rs)
 {
     tp_ = reinterpret_cast<std::uintptr_t>(p);
     if (tp_ && rs == RefStrength::Weak)
-        tp_ |= kTAG_MASK;
+        tp_ |= kTagMask;
 }
 
 template <class T>

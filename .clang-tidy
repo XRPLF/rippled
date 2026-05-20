@@ -171,7 +171,7 @@ CheckOptions:
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
-  readability-identifier-naming.GlobalConstantCase: UPPER_CASE
+  readability-identifier-naming.GlobalConstantCase: CamelCase
   readability-identifier-naming.GlobalConstantPrefix: "k"
   readability-identifier-naming.GlobalVariableCase: CamelCase
   readability-identifier-naming.GlobalVariablePrefix: "g"
@@ -179,14 +179,12 @@ CheckOptions:
   readability-identifier-naming.ConstexprMethodCase: camelBack
   readability-identifier-naming.ClassMethodCase: camelBack
   readability-identifier-naming.ClassMemberCase: camelBack
-  readability-identifier-naming.ClassConstantCase: UPPER_CASE
+  readability-identifier-naming.ClassConstantCase: CamelCase
   readability-identifier-naming.ClassConstantPrefix: "k"
-  readability-identifier-naming.StaticConstantCase: UPPER_CASE
+  readability-identifier-naming.StaticConstantCase: CamelCase
   readability-identifier-naming.StaticConstantPrefix: "k"
-  readability-identifier-naming.StaticVariableCase: UPPER_CASE
-  readability-identifier-naming.StaticVariablePrefix: "k"
-  readability-identifier-naming.ConstexprVariableCase: UPPER_CASE
-  readability-identifier-naming.ConstexprVariablePrefix: "k"
+  readability-identifier-naming.StaticVariableCase: camelBack
+  readability-identifier-naming.ConstexprVariableCase: camelBack
   readability-identifier-naming.LocalConstantCase: camelBack
   readability-identifier-naming.LocalVariableCase: camelBack
   readability-identifier-naming.TemplateParameterCase: CamelCase

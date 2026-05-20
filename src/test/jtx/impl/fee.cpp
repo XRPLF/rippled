@@ -22,7 +22,7 @@ Fee::operator()(Env& env, JTx& jt) const
     }
     else if (amount_)
     {
-        jt[sfFee] = amount_->getJson(JsonOptions::KNone);
+        jt[sfFee] = amount_->getJson(JsonOptions::Values::None);
     }
 }
 

@@ -12,7 +12,7 @@ public:
         BookExchangeRate = 2,
     };
 
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {

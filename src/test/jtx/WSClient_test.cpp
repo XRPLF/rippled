@@ -20,7 +20,7 @@ public:
         auto wsc = makeWSClient(env.app().config());
         {
             json::Value jv;
-            jv["streams"] = json::ArrayValue;
+            jv["streams"] = json::ValueType::Array;
             jv["streams"].append("ledger");
         }
         env.fund(XRP(10000), "alice");
