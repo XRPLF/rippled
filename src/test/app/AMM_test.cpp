@@ -7189,14 +7189,14 @@ private:
         env.fund(XRP(1'000'000), issuer, owner, trader);
         env.close();
 
-        // Underlying MPT supports lock + clawback. kMPT_DEX_FLAGS adds
+        // Underlying MPT supports lock + clawback. kMptDexFlags adds
         // CanTransfer + CanTrade so the vault and AMM can route it.
         MPTTester mpt(
             {.env = env,
              .issuer = issuer,
              .holders = {owner},
              .pay = 100'000,
-             .flags = tfMPTCanLock | tfMPTCanClawback | kMPT_DEX_FLAGS});
+             .flags = tfMPTCanLock | tfMPTCanClawback | kMptDexFlags});
         PrettyAsset const asset = MPT(mpt);
 
         // Create the vault.
