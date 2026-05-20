@@ -135,10 +135,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixCleanup3_2_0))
         {
             return minimumBrokerCover(
-                vaultAsset,
-                currentDebtTotal,
-                TenthBips32{sleBroker->at(sfCoverRateMinimum)},
-                vault);
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
         }
 
         // Always round the minimum required up.

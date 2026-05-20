@@ -177,15 +177,13 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 // DebtTotal is a broker-level aggregate maintained at vault scale, so the
 // rounding must also use vault scale — never an individual loan's scale.
 inline Number
-minimumBrokerCover(
-    Asset const& asset,
-    Number const& debtTotal,
-    TenthBips32 coverRateMinimum,
-    SLE::const_ref vaultSle)
+minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
 {
     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
     return roundToAsset(
-        asset, tenthBipsOfValue(debtTotal, coverRateMinimum), getAssetsTotalScale(vaultSle));
+        vaultSle->at(sfAsset),
+        tenthBipsOfValue(debtTotal, coverRateMinimum),
+        getAssetsTotalScale(vaultSle));
 }
 
 TER

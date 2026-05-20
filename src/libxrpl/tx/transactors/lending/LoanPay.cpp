@@ -328,8 +328,7 @@ LoanPay::doApply()
         auto const minCover = [&]() {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
-                return minimumBrokerCover(
-                    asset, debtTotalProxy.value(), coverRateMinimum, vaultSle);
+                return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
             }
             // Round the minimum required cover up to be conservative. This ensures
             // CoverAvailable never drops below the theoretical minimum, protecting

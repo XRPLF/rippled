@@ -7889,7 +7889,7 @@ protected:
                 debtScale);
         }();
         auto const newMin =
-            minimumBrokerCover(asset, debtTotal, TenthBips32{brokerParams.coverRateMin}, vaultSle);
+            minimumBrokerCover(debtTotal, TenthBips32{brokerParams.coverRateMin}, vaultSle);
 
         // The new (vaultScale) minimum must be strictly larger than the
         // old (debtScale) minimum — that is the gap the amendment closes.

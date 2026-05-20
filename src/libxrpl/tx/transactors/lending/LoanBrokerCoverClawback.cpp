@@ -170,10 +170,7 @@ determineClawAmount(
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
-                    vaultAsset,
-                    sleBroker[sfDebtTotal],
-                    TenthBips32(sleBroker[sfCoverRateMinimum]),
-                    vaultSle);
+                    sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]), vaultSle);
             }
 
             // Always round the minimum required up
