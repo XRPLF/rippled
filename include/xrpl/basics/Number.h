@@ -262,7 +262,7 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
  *
  * The internal mantissa is an unsigned integer in the range defined by the
  * current MantissaRange. The exponent is an integer in the range
- * [kMIN_EXPONENT, kMAX_EXPONENT].
+ * [kMinExponent, kMaxExponent].
  *
  * See the description of MantissaRange for more details on the ranges.
  *
@@ -288,7 +288,7 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
  *
  * The external interface of Number consists of a std::int64_t mantissa, which
  * is restricted to 63-bits, and an int exponent, which must be in the range
- * [kMIN_EXPONENT, kMAX_EXPONENT]. The range of the mantissa depends on which
+ * [kMinExponent, kMaxExponent]. The range of the mantissa depends on which
  * MantissaRange is currently active. For the "short" range, the mantissa will
  * be between 10^15 and 10^16-1. For the "large" range, the mantissa will be
  * between -(2^63-1) and 2^63-1. As noted above, the "large" range is needed to
@@ -360,8 +360,8 @@ class Number final
 
 public:
     // The range for the exponent when normalized
-    constexpr static int kMIN_EXPONENT = -32768;
-    constexpr static int kMAX_EXPONENT = 32768;
+    static constexpr int kMinExponent = -32768;
+    static constexpr int kMaxExponent = 32768;
 
     // May need to make unchecked private
     struct Unchecked
@@ -555,19 +555,19 @@ public:
     static internalrep
     minMantissa()
     {
-        return kRANGE.get().min;
+        return kRange.get().min;
     }
 
     static internalrep
     maxMantissa()
     {
-        return kRANGE.get().max;
+        return kRange.get().max;
     }
 
     static int
     mantissaLog()
     {
-        return kRANGE.get().log;
+        return kRange.get().log;
     }
 
     static Number
@@ -601,7 +601,7 @@ private:
     // The range for the mantissa when normalized.
     // Use reference_wrapper to avoid making copies, and prevent accidentally
     // changing the values inside the range.
-    static thread_local std::reference_wrapper<MantissaRange const> kRANGE;
+    static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
     // And one is needed because it needs to choose between oneSmall and
     // oneLarge based on the current range
@@ -617,7 +617,7 @@ private:
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from kRANGE, and by normalizeToRange,
+     * normalize(), which reads from kRange, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>
@@ -659,7 +659,7 @@ private:
 
     /** Breaks down the number into components, potentially de-normalizing it.
      *
-     * Ensures that the mantissa always has kRANGE.log + 1 digits.
+     * Ensures that the mantissa always has kRange.log + 1 digits.
      *
      */
     template <detail::UnsignedMantissa Rep = internalrep>
@@ -668,7 +668,7 @@ private:
 
     /** Breaks down the number into components, potentially de-normalizing it.
      *
-     * Ensures that the mantissa always has kRANGE.log + 1 digits.
+     * Ensures that the mantissa always has kRange.log + 1 digits.
      *
      */
     template <detail::UnsignedMantissa Rep = internalrep>
@@ -706,7 +706,7 @@ private:
     class Guard;
 
 public:
-    constexpr static internalrep kLARGEST_MANTISSA =
+    constexpr static internalrep kLargestMantissa =
         MantissaRange{MantissaRange::MantissaScale::Large}.max;
 };
 
@@ -721,7 +721,7 @@ constexpr Number::Number(internalrep mantissa, int exponent, Unchecked) noexcept
 {
 }
 
-constexpr static Number kNUM_ZERO{};
+static constexpr Number kNumZero{};
 
 inline Number::Number(internalrep mantissa, int exponent, Normalized)
     : Number(false, mantissa, exponent, Normalized{})
@@ -846,19 +846,19 @@ operator/(Number const& x, Number const& y)
 inline Number
 Number::min() noexcept
 {
-    return Number{false, kRANGE.get().min, kMIN_EXPONENT, Unchecked{}};
+    return Number{false, kRange.get().min, kMinExponent, Unchecked{}};
 }
 
 inline Number
 Number::max() noexcept
 {
-    return Number{false, kRANGE.get().max, kMAX_EXPONENT, Unchecked{}};
+    return Number{false, kRange.get().max, kMaxExponent, Unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{true, kRANGE.get().max, kMAX_EXPONENT, Unchecked{}};
+    return Number{true, kRange.get().max, kMaxExponent, Unchecked{}};
 }
 
 inline bool
@@ -868,13 +868,13 @@ Number::isnormal(MantissaRange const& range) const noexcept
 
     return *this == Number{} ||
         (range.min <= absM && absM <= range.max &&  //
-         kMIN_EXPONENT <= exponent_ && exponent_ <= kMAX_EXPONENT);
+         kMinExponent <= exponent_ && exponent_ <= kMaxExponent);
 }
 
 inline bool
 Number::isnormal() const noexcept
 {
-    return isnormal(kRANGE);
+    return isnormal(kRange);
 }
 
 template <auto MinMantissa, auto MaxMantissa, Integral64 T, Integral64 TMax>

@@ -201,9 +201,9 @@ public:
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kLARGEST_MANTISSA - 1},
+                {Number{Number::kLargestMantissa - 1},
                  Number{1, 0},
-                 Number{Number::kLARGEST_MANTISSA}},
+                 Number{Number::kLargestMantissa}},
                 // Test extremes
                 {
                     // Each Number operand rounds up, so the actual mantissa is
@@ -218,9 +218,9 @@ public:
                     // result will overflow. With addition using uint128_t,
                     // there's no problem. After normalizing, the resulting
                     // mantissa ends up less than largestMantissa.
-                    Number{false, Number::kLARGEST_MANTISSA, 0, Number::Normalized{}},
-                    Number{false, Number::kLARGEST_MANTISSA, 0, Number::Normalized{}},
-                    Number{false, Number::kLARGEST_MANTISSA * 2, 0, Number::Normalized{}},
+                    Number{false, Number::kLargestMantissa, 0, Number::Normalized{}},
+                    Number{false, Number::kLargestMantissa, 0, Number::Normalized{}},
+                    Number{false, Number::kLargestMantissa * 2, 0, Number::Normalized{}},
                 },
                 {
                     // These mantissas round down, so adding them together won't
@@ -231,14 +231,14 @@ public:
                 },
             });
         auto const cLargeLegacy = std::to_array<Case>({
-            {Number{Number::kLARGEST_MANTISSA},
+            {Number{Number::kLargestMantissa},
              Number{6, -1},
-             Number{Number::kLARGEST_MANTISSA / 10, 1}},
+             Number{Number::kLargestMantissa / 10, 1}},
         });
         auto const cLargeCorrected = std::to_array<Case>({
-            {Number{Number::kLARGEST_MANTISSA},
+            {Number{Number::kLargestMantissa},
              Number{6, -1},
-             Number{(Number::kLARGEST_MANTISSA / 10) + 1, 1}},
+             Number{(Number::kLargestMantissa / 10) + 1, 1}},
         });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -335,16 +335,16 @@ public:
                 {Number{1'000'000'000'000'000'001, -18},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{1'000'000'000'000'000'000, -36}},
-                {Number{Number::kLARGEST_MANTISSA},
+                {Number{Number::kLargestMantissa},
                  Number{6, -1},
-                 Number{Number::kLARGEST_MANTISSA - 1}},
-                {Number{false, Number::kLARGEST_MANTISSA + 1, 0, Number::Normalized{}},
+                 Number{Number::kLargestMantissa - 1}},
+                {Number{false, Number::kLargestMantissa + 1, 0, Number::Normalized{}},
                  Number{1, 0},
-                 Number{(Number::kLARGEST_MANTISSA / 10) + 1, 1}},
-                {Number{false, Number::kLARGEST_MANTISSA + 1, 0, Number::Normalized{}},
+                 Number{(Number::kLargestMantissa / 10) + 1, 1}},
+                {Number{false, Number::kLargestMantissa + 1, 0, Number::Normalized{}},
                  Number{3, 0},
-                 Number{Number::kLARGEST_MANTISSA}},
-                {power(2, 63), Number{3, 0}, Number{Number::kLARGEST_MANTISSA}},
+                 Number{Number::kLargestMantissa}},
+                {power(2, 63), Number{3, 0}, Number{Number::kLargestMantissa}},
             });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -489,8 +489,8 @@ public:
                  Number{85'070'591'730'234'615'85, 19},
                  __LINE__},
                 // Maximum int64 range
-                {Number{Number::kLARGEST_MANTISSA, 0},
-                 Number{Number::kLARGEST_MANTISSA, 0},
+                {Number{Number::kLargestMantissa, 0},
+                 Number{Number::kLargestMantissa, 0},
                  Number{85'070'591'730'234'615'85, 19},
                  __LINE__},
             });
@@ -580,8 +580,8 @@ public:
                      __LINE__},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kLARGEST_MANTISSA, 0},
-                     Number{Number::kLARGEST_MANTISSA, 0},
+                    {Number{Number::kLargestMantissa, 0},
+                     Number{Number::kLargestMantissa, 0},
                      Number{85'070'591'730'234'615'84, 19},
                      __LINE__},
                 });
@@ -671,8 +671,8 @@ public:
                      __LINE__},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kLARGEST_MANTISSA, 0},
-                     Number{Number::kLARGEST_MANTISSA, 0},
+                    {Number{Number::kLargestMantissa, 0},
+                     Number{Number::kLargestMantissa, 0},
                      Number{85'070'591'730'234'615'84, 19},
                      __LINE__},
                 });
@@ -761,8 +761,8 @@ public:
                      __LINE__},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kLARGEST_MANTISSA, 0},
-                     Number{Number::kLARGEST_MANTISSA, 0},
+                    {Number{Number::kLargestMantissa, 0},
+                     Number{Number::kLargestMantissa, 0},
                      Number{85'070'591'730'234'615'85, 19},
                      __LINE__},
                 });
@@ -1018,10 +1018,10 @@ public:
             {Number{false, maxInternalMantissa - 9, 0, Number::Normalized{}},
              2,
              Number{false, 3'162'277'660'168'379'330, -9, Number::Normalized{}}},
-            {Number{Number::kLARGEST_MANTISSA},
+            {Number{Number::kLargestMantissa},
              2,
              Number{false, 3'037'000'499'976049692, -9, Number::Normalized{}}},
-            {Number{Number::kLARGEST_MANTISSA},
+            {Number{Number::kLargestMantissa},
              4,
              Number{false, 55'108'98747006743627, -14, Number::Normalized{}}},
         });
@@ -1081,7 +1081,7 @@ public:
             Number{5, -1},
             Number{0},
             Number{5625, -4},
-            Number{Number::kLARGEST_MANTISSA},
+            Number{Number::kLargestMantissa},
             maxInternalMantissa,
             Number{Number::minMantissa(), 0, Number::Unchecked{}},
             Number{Number::maxMantissa(), 0, Number::Unchecked{}},
@@ -1678,12 +1678,12 @@ public:
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() < kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() < kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() > 0);
 
-            Number const maxInt64{Number::kLARGEST_MANTISSA};
+            Number const maxInt64{Number::kLargestMantissa};
             BEAST_EXPECT(maxInt64.exponent() > 0);
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
@@ -1695,12 +1695,12 @@ public:
         }
         else
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() > kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() > kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() <= 0);
 
-            Number const maxInt64{Number::kLARGEST_MANTISSA};
+            Number const maxInt64{Number::kLargestMantissa};
             BEAST_EXPECT(maxInt64.exponent() <= 0);
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));
@@ -1832,7 +1832,7 @@ public:
         }
         {
             // Biggest valid mantissa
-            Number const n{Number::kLARGEST_MANTISSA, 0, Number::Normalized{}};
+            Number const n{Number::kLargestMantissa, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
             {
@@ -1844,12 +1844,12 @@ public:
             }
             else
             {
-                testSuite(n, 922, 16, Number::kLARGEST_MANTISSA, 0, __LINE__);
+                testSuite(n, 922, 16, Number::kLargestMantissa, 0, __LINE__);
             }
         }
         {
             // Biggest valid mantissa + 1
-            Number const n{Number::kLARGEST_MANTISSA + 1, 0, Number::Normalized{}};
+            Number const n{Number::kLargestMantissa + 1, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
             {
@@ -1861,12 +1861,12 @@ public:
             }
             else
             {
-                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+                testSuite(n, 922, 16, (Number::kLargestMantissa / 10) + 1, 1, __LINE__);
             }
         }
         {
             // Biggest valid mantissa + 2
-            Number const n{Number::kLARGEST_MANTISSA + 2, 0, Number::Normalized{}};
+            Number const n{Number::kLargestMantissa + 2, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
             {
@@ -1878,12 +1878,12 @@ public:
             }
             else
             {
-                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+                testSuite(n, 922, 16, (Number::kLargestMantissa / 10) + 1, 1, __LINE__);
             }
         }
         {
             // Biggest valid mantissa + 3
-            Number const n{Number::kLARGEST_MANTISSA + 3, 0, Number::Normalized{}};
+            Number const n{Number::kLargestMantissa + 3, 0, Number::Normalized{}};
 
             if (scale == MantissaRange::MantissaScale::Small)
             {
@@ -1895,7 +1895,7 @@ public:
             }
             else
             {
-                testSuite(n, 922, 16, (Number::kLARGEST_MANTISSA / 10) + 1, 1, __LINE__);
+                testSuite(n, 922, 16, (Number::kLargestMantissa / 10) + 1, 1, __LINE__);
             }
         }
         {
@@ -1908,7 +1908,7 @@ public:
             }
             else
             {
-                testSuite(n, -922, 16, -((Number::kLARGEST_MANTISSA / 10) + 1), 1, __LINE__);
+                testSuite(n, -922, 16, -((Number::kLargestMantissa / 10) + 1), 1, __LINE__);
             }
         }
         {
@@ -1921,7 +1921,7 @@ public:
             }
             else
             {
-                testSuite(n, -922, 16, -Number::kLARGEST_MANTISSA, 0, __LINE__);
+                testSuite(n, -922, 16, -Number::kLargestMantissa, 0, __LINE__);
             }
         }
         {
@@ -1940,7 +1940,7 @@ public:
             }
             else
             {
-                testSuite(n, -922, 16, -((Number::kLARGEST_MANTISSA / 10) + 1), 1, __LINE__);
+                testSuite(n, -922, 16, -((Number::kLargestMantissa / 10) + 1), 1, __LINE__);
             }
         }
     }
@@ -1948,21 +1948,21 @@ public:
     void
     testUpwardRoundsDown()
     {
-        testcase << "upward rounding produces a value below exact at kLARGEST_MANTISSA cusp";
+        testcase << "upward rounding produces a value below exact at kLargestMantissa cusp";
 
         NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
         NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
-        constexpr std::int64_t kA_VALUE = 1'000'000'000'000'049'863LL;
-        constexpr std::int64_t kB_VALUE = 9'223'372'036'854'315'903LL;
+        constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+        constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
 
         // Public conversion operator: STAmount::operator Number() const.
-        Number const a = kA_VALUE;
-        Number const b = kB_VALUE;
+        Number const a = kAValue;
+        Number const b = kBValue;
         Number const product = a * b;
 
         // Exact reference in BigInt.
-        BigInt const exactProduct = BigInt(kA_VALUE) * BigInt(kB_VALUE);
+        BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
 
         // What Number actually stored.
         BigInt storedValue = BigInt(product.mantissa());
@@ -1972,8 +1972,8 @@ public:
         BigInt const signedDifference = storedValue - exactProduct;
 
         log << "\n"
-            << "  a              = " << fmt(BigInt(kA_VALUE)) << "\n"
-            << "  b              = " << fmt(BigInt(kB_VALUE)) << "\n"
+            << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+            << "  b              = " << fmt(BigInt(kBValue)) << "\n"
             << "  exact a*b      = " << fmt(exactProduct) << "\n"
             << "  stored         = " << fmt(storedValue) << "\n"
             << "  stored - exact = " << fmt(signedDifference) << "\n"

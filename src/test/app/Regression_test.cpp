@@ -85,12 +85,12 @@ struct Regression_test : public beast::unit_test::Suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
-        auto expectedDrops = kINITIAL_XRP;
+        auto expectedDrops = kInitialXrp;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
@@ -138,7 +138,7 @@ struct Regression_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(balance == XRP(0));
         }
-        expectedDrops -= aliceXRP * kDROPS_PER_XRP;
+        expectedDrops -= aliceXRP * kDropsPerXrp;
         BEAST_EXPECT(next->header().drops == expectedDrops);
     }
 
@@ -211,7 +211,7 @@ struct Regression_test : public beast::unit_test::Suite
         // our fee limit.
         for (int i = 0; i < 5; ++i)
         {
-            envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
+            envs(noop(alice), Fee(kNone), Seq(kNone))(params);
 
             auto tx = env.tx();
             if (BEAST_EXPECT(tx))
