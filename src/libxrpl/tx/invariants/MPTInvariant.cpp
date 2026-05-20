@@ -564,9 +564,14 @@ ValidMPTTransfer::finalize(
             continue;
         }
 
-        // Allow AMMWithdraw if MPTCanTransfer is not set
-        auto const canTransfer =
-            sleIssuance->isFlag(lsfMPTCanTransfer) || txnType == ttAMM_WITHDRAW;
+        // These transactions are recovery/settlement paths. They may move an
+        // existing MPT position even after the issuer clears CanTransfer, so
+        // holders are not trapped in AMM, vault, or loan protocol accounts.
+        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
+            (view.rules().enabled(fixCleanup3_2_0) &&
+             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
+              txnType == ttLOAN_PAY));
+        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
         auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
         auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 
