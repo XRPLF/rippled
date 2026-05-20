@@ -30,10 +30,10 @@ using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::
     = seconds(946684800)
 */
 
-constexpr static std::chrono::seconds kEPOCH_OFFSET =
+static constexpr std::chrono::seconds kEpochOffset =
     date::sys_days{date::year{2000} / 1 / 1} - date::sys_days{date::year{1970} / 1 / 1};
 
-static_assert(kEPOCH_OFFSET.count() == 946684800);
+static_assert(kEpochOffset.count() == 946684800);
 
 class NetClock
 {
@@ -60,7 +60,7 @@ to_string(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
-    return to_string(system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET});
+    return to_string(system_clock::time_point{tp.time_since_epoch() + kEpochOffset});
 }
 
 template <class Duration>
@@ -77,7 +77,7 @@ toStringIso(NetClock::time_point tp)
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     // Note, NetClock::duration is seconds, as checked by static_assert
     static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
-    return toStringIso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEPOCH_OFFSET});
+    return toStringIso(date::sys_time<NetClock::duration>{tp.time_since_epoch() + kEpochOffset});
 }
 
 /** A clock for measuring elapsed time.

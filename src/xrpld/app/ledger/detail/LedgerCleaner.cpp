@@ -257,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::kZERO;  // kludge
+        return hash ? *hash : beast::kZero;  // kludge
     }
 
     /** Process a single ledger

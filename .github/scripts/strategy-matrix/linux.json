@@ -127,7 +127,8 @@
       "distro_version": "9",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "4c086b9"
+      "image_sha": "4c086b9",
+      "package": true
     },
     {
       "distro_name": "rhel",
@@ -169,7 +170,8 @@
       "distro_version": "jammy",
       "compiler_name": "gcc",
       "compiler_version": "12",
-      "image_sha": "4c086b9"
+      "image_sha": "4c086b9",
+      "package": true
     },
     {
       "distro_name": "ubuntu",

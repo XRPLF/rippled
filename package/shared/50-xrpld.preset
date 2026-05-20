@@ -1,0 +1,4 @@
+# /usr/lib/systemd/system-preset/50-xrpld.preset
+enable xrpld.service
+# Don't enable automatic updates
+disable update-xrpld.timer
