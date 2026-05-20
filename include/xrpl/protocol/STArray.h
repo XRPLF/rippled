@@ -53,18 +53,33 @@ public:
     STObject&
     back();
 
-    STObject const&
+    [[nodiscard]] STObject const&
     back() const;
 
     template <class... Args>
     void
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
     void
-    push_back(STObject const& object);
+    pushBack(STObject const& object);
 
     void
-    push_back(STObject&& object);
+    pushBack(STObject&& object);
+
+    // STL-compatible alias required by std::back_insert_iterator
+    void
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    push_back(STObject const& object)
+    {
+        pushBack(object);
+    }
+
+    void
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    push_back(STObject&& object)
+    {
+        pushBack(std::move(object));
+    }
 
     iterator
     begin();
@@ -72,16 +87,16 @@ public:
     iterator
     end();
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 
-    size_type
+    [[nodiscard]] size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     void
@@ -93,13 +108,13 @@ public:
     void
     swap(STArray& a) noexcept;
 
-    std::string
+    [[nodiscard]] std::string
     getFullText() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions index) const override;
 
     void
@@ -126,13 +141,13 @@ public:
     iterator
     erase(const_iterator first, const_iterator last);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
 private:
@@ -180,19 +195,19 @@ STArray::back() const
 
 template <class... Args>
 inline void
-STArray::emplace_back(Args&&... args)
+STArray::emplaceBack(Args&&... args)
 {
     v_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline void
-STArray::push_back(STObject const& object)
+STArray::pushBack(STObject const& object)
 {
     v_.push_back(object);
 }
 
 inline void
-STArray::push_back(STObject&& object)
+STArray::pushBack(STObject&& object)
 {
     v_.push_back(std::move(object));
 }

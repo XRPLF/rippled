@@ -19,9 +19,9 @@ class EscrowCancelBuilder;
  * @brief Transaction: EscrowCancel
  *
  * Type: ttESCROW_CANCEL (4)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use EscrowCancelBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfOfferSequence (soeREQUIRED)
+     * @brief Get sfOfferSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
  * @brief Builder for EscrowCancel transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class EscrowCancelBuilder : public TransactionBuilderBase<EscrowCancelBuilder>
@@ -115,7 +115,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Set sfOfferSequence (soeREQUIRED)
+     * @brief Set sfOfferSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     EscrowCancelBuilder&

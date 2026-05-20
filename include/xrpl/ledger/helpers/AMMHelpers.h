@@ -1,8 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
@@ -11,6 +16,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
 
@@ -19,11 +25,11 @@ namespace detail {
 Number
 reduceOffer(auto const& amount)
 {
-    static Number const reducedOfferPct(9999, -4);
+    static Number const kReducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
-    NumberRoundModeGuard const mg(Number::towards_zero);
-    return amount * reducedOfferPct;
+    NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+    return amount * kReducedOfferPct;
 }
 
 }  // namespace detail
@@ -171,10 +177,10 @@ getAMMOfferStartWithTakerGets(
     Quality const& targetQuality,
     std::uint16_t const& tfee)
 {
-    if (targetQuality.rate() == beast::zero)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
-    NumberRoundModeGuard const mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
     auto const f = feeMult(tfee);
     auto const a = 1;
     auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
@@ -196,16 +202,16 @@ getAMMOfferStartWithTakerGets(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
         auto const takerGets =
-            toAmount<TOut>(getAsset(pool.out), nTakerGetsProposed, Number::downward);
+            toAmount<TOut>(getAsset(pool.out), nTakerGetsProposed, Number::RoundingMode::Downward);
         return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
     };
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto amounts = getAmounts(*nTakerGets); Quality{amounts} < targetQuality)
+    auto amounts = getAmounts(*nTakerGets);
+    if (Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.out));
-    else
-        return amounts;
+    return amounts;
 }
 
 /** Generate AMM offer starting with takerPays when AMM pool
@@ -238,10 +244,10 @@ getAMMOfferStartWithTakerPays(
     Quality const& targetQuality,
     std::uint16_t tfee)
 {
-    if (targetQuality.rate() == beast::zero)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
-    NumberRoundModeGuard const mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
     auto const f = feeMult(tfee);
     auto const& a = f;
     auto const b = pool.in * (1 + f);
@@ -263,16 +269,16 @@ getAMMOfferStartWithTakerPays(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
         auto const takerPays =
-            toAmount<TIn>(getAsset(pool.in), nTakerPaysProposed, Number::downward);
+            toAmount<TIn>(getAsset(pool.in), nTakerPaysProposed, Number::RoundingMode::Downward);
         return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto amounts = getAmounts(*nTakerPays); Quality{amounts} < targetQuality)
+    auto amounts = getAmounts(*nTakerPays);
+    if (Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.in));
-    else
-        return amounts;
+    return amounts;
 }
 
 /**   Generate AMM offer so that either updated Spot Price Quality (SPQ)
@@ -312,9 +318,12 @@ changeSpotPriceQuality(
         auto const& a = f;
         auto const b = pool.in * (1 + f);
         Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
-        if (auto const res = b * b - 4 * a * c; res < 0)
+        auto const res = b * b - 4 * a * c;
+        if (res < 0)
+        {
             return std::nullopt;  // LCOV_EXCL_LINE
-        else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
+        }
+        if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
         {
             auto const nTakerPays = [&]() {
                 // The fee might make the AMM offer quality less than CLOB
@@ -332,7 +341,8 @@ changeSpotPriceQuality(
                                 << " " << to_string(pool.out) << " " << quality << " " << tfee;
                 return std::nullopt;
             }
-            auto const takerPays = toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::upward);
+            auto const takerPays =
+                toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::RoundingMode::Upward);
             // should not fail
             if (auto amounts = TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
                 Quality{amounts} < quality &&
@@ -436,36 +446,34 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
         // 1-fee
         // maximize:
         // fee
-        saveNumberRoundMode const _{Number::getround()};
+        SaveNumberRoundMode const _{Number::getround()};
 
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Upward);
         auto const numerator = pool.in * pool.out;
         auto const fee = getFee(tfee);
 
-        Number::setround(Number::downward);
+        Number::setround(Number::RoundingMode::Downward);
         auto const denom = pool.in + assetIn * (1 - fee);
 
         if (denom.signum() <= 0)
             return toAmount<TOut>(getAsset(pool.out), 0);
 
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Upward);
         auto const ratio = numerator / denom;
 
-        Number::setround(Number::downward);
+        Number::setround(Number::RoundingMode::Downward);
         auto const swapOut = pool.out - ratio;
 
         if (swapOut.signum() < 0)
             return toAmount<TOut>(getAsset(pool.out), 0);
 
-        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::downward);
+        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::RoundingMode::Downward);
     }
-    else
-    {
-        return toAmount<TOut>(
-            getAsset(pool.out),
-            pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-            Number::downward);
-    }
+
+    return toAmount<TOut>(
+        getAsset(pool.out),
+        pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+        Number::RoundingMode::Downward);
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
@@ -500,40 +508,38 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
         // maximize:
         // tfee/100000
 
-        saveNumberRoundMode const _{Number::getround()};
+        SaveNumberRoundMode const _{Number::getround()};
 
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Upward);
         auto const numerator = pool.in * pool.out;
 
-        Number::setround(Number::downward);
+        Number::setround(Number::RoundingMode::Downward);
         auto const denom = pool.out - assetOut;
         if (denom.signum() <= 0)
         {
             return toMaxAmount<TIn>(getAsset(pool.in));
         }
 
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Upward);
         auto const ratio = numerator / denom;
         auto const numerator2 = ratio - pool.in;
         auto const fee = getFee(tfee);
 
-        Number::setround(Number::downward);
+        Number::setround(Number::RoundingMode::Downward);
         auto const feeMult = 1 - fee;
 
-        Number::setround(Number::upward);
+        Number::setround(Number::RoundingMode::Upward);
         auto const swapIn = numerator2 / feeMult;
         if (swapIn.signum() < 0)
             return toAmount<TIn>(getAsset(pool.in), 0);
 
-        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::upward);
+        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::RoundingMode::Upward);
     }
-    else
-    {
-        return toAmount<TIn>(
-            getAsset(pool.in),
-            ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
-            Number::upward);
-    }
+
+    return toAmount<TIn>(
+        getAsset(pool.in),
+        ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
+        Number::RoundingMode::Upward);
 }
 
 /** Return square of n.
@@ -583,24 +589,26 @@ Number
 solveQuadraticEq(Number const& a, Number const& b, Number const& c);
 
 STAmount
-multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm);
+multiply(STAmount const& amount, Number const& frac, Number::RoundingMode rm);
 
 namespace detail {
 
-inline Number::rounding_mode
+inline Number::RoundingMode
 getLPTokenRounding(IsDeposit isDeposit)
 {
     // Minimize on deposit, maximize on withdraw to ensure
     // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
-    return isDeposit == IsDeposit::Yes ? Number::downward : Number::upward;
+    return isDeposit == IsDeposit::Yes ? Number::RoundingMode::Downward
+                                       : Number::RoundingMode::Upward;
 }
 
-inline Number::rounding_mode
+inline Number::RoundingMode
 getAssetRounding(IsDeposit isDeposit)
 {
     // Maximize on deposit, minimize on withdraw to ensure
     // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
-    return isDeposit == IsDeposit::Yes ? Number::upward : Number::downward;
+    return isDeposit == IsDeposit::Yes ? Number::RoundingMode::Upward
+                                       : Number::RoundingMode::Downward;
 }
 
 }  // namespace detail
@@ -617,9 +625,13 @@ getRoundedAsset(Rules const& rules, STAmount const& balance, A const& frac, IsDe
     if (!rules.enabled(fixAMMv1_3))
     {
         if constexpr (std::is_same_v<A, STAmount>)
+        {
             return multiply(balance, frac, balance.asset());
+        }
         else
+        {
             return toSTAmount(balance.asset(), balance * frac);
+        }
     }
     auto const rm = detail::getAssetRounding(isDeposit);
     return multiply(balance, frac, rm);
@@ -712,5 +724,95 @@ adjustFracByTokens(
     STAmount const& lptAMMBalance,
     STAmount const& tokens,
     Number const& frac);
+
+/** Get AMM pool balances.
+ */
+std::pair<STAmount, STAmount>
+ammPoolHolds(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
+    beast::Journal const j);
+
+/** Get AMM pool and LP token balances. If both optIssue are
+ * provided then they are used as the AMM token pair issues.
+ * Otherwise the missing issues are fetched from ammSle.
+ */
+Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+ammHolds(
+    ReadView const& view,
+    SLE const& ammSle,
+    std::optional<Asset> const& optAsset1,
+    std::optional<Asset> const& optAsset2,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
+    beast::Journal const j);
+
+/** Get the balance of LP tokens.
+ */
+STAmount
+ammLPHolds(
+    ReadView const& view,
+    Asset const& asset1,
+    Asset const& asset2,
+    AccountID const& ammAccount,
+    AccountID const& lpAccount,
+    beast::Journal const j);
+
+STAmount
+ammLPHolds(
+    ReadView const& view,
+    SLE const& ammSle,
+    AccountID const& lpAccount,
+    beast::Journal const j);
+
+/** Get AMM trading fee for the given account. The fee is discounted
+ * if the account is the auction slot owner or one of the slot's authorized
+ * accounts.
+ */
+std::uint16_t
+getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account);
+
+/** Returns total amount held by AMM for the given token.
+ */
+STAmount
+ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const& asset);
+
+/** Delete trustlines to AMM. If all trustlines are deleted then
+ * AMM object and account are deleted. Otherwise tecINCOMPLETE is returned.
+ */
+TER
+deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
+
+/** Initialize Auction and Voting slots and set the trading/discounted fee.
+ */
+void
+initializeFeeAuctionVote(
+    ApplyView& view,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account,
+    Asset const& lptAsset,
+    std::uint16_t tfee);
+
+/** Return true if the Liquidity Provider is the only AMM provider, false
+ * otherwise. Return tecINTERNAL if encountered an unexpected condition,
+ * for instance Liquidity Provider has more than one LPToken trustline.
+ */
+Expected<bool, TER>
+isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount);
+
+/** Due to rounding, the LPTokenBalance of the last LP might
+ * not match the LP's trustline balance. If it's within the tolerance,
+ * update LPTokenBalance to match the LP's trustline balance.
+ */
+Expected<bool, TER>
+verifyAndAdjustLPTokenBalance(
+    Sandbox& sb,
+    STAmount const& lpTokens,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account);
 
 }  // namespace xrpl

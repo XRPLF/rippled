@@ -77,7 +77,7 @@ public:
               within the callback.
     */
     void
-    for_each(std::function<void(ClusterNode const&)> func) const;
+    forEach(std::function<void(ClusterNode const&)> func) const;
 
     /** Load the list of cluster nodes.
 

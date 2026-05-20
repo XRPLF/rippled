@@ -1,14 +1,15 @@
 #include <test/csf/Digraph.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class Digraph_test : public beast::unit_test::suite
+class Digraph_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -77,5 +78,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Digraph, csf, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

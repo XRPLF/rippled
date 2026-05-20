@@ -6,7 +6,7 @@ namespace xrpl {
 
 // Deprecated constant for backwards compatibility with pre-XRPFees amendment.
 // This was the reference fee units used in the old fee calculation.
-inline constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
+inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 // Number of micro-drops in one drop.
 constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
@@ -41,8 +41,8 @@ struct Fees
     Fees&
     operator=(Fees const&) = default;
 
-    Fees(XRPAmount base_, XRPAmount reserve_, XRPAmount increment_)
-        : base(base_), reserve(reserve_), increment(increment_)
+    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
+        : base(base), reserve(reserve), increment(increment)
     {
     }
 
@@ -51,7 +51,7 @@ struct Fees
         The reserve is calculated as the reserve base plus
         the reserve increment times the number of increments.
     */
-    XRPAmount
+    [[nodiscard]] XRPAmount
     accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;

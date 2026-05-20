@@ -1,7 +1,15 @@
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -13,18 +21,18 @@ Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) const
 {
     if (!account)
-        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        return Unexpected(HostFunctionError::InvalidAccount);
 
     if (!nftId)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
 
     auto obj = nft::findToken(ctx_.view(), account, nftId);
     if (!obj)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        return Unexpected(HostFunctionError::LedgerObjNotFound);
 
     auto objUri = obj->at(~sfURI);
     if (!objUri)
-        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+        return Unexpected(HostFunctionError::FieldNotFound);
 
     Slice const s = objUri->value();
     return Bytes(s.begin(), s.end());
@@ -35,7 +43,7 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId) const
 {
     auto const issuer = nft::getIssuer(nftId);
     if (!issuer)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
 
     return Bytes{issuer.begin(), issuer.end()};
 }

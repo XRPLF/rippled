@@ -1,14 +1,38 @@
+#include <xrpl/tx/wasm/HostFuncWrapper.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFunc.h>
-#include <xrpl/tx/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/ParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
+
+#include <wasm.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <functional>
+#include <optional>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
@@ -26,21 +50,21 @@ setData(
         return 0;  // LCOV_EXCL_LINE
 
     if (dst < 0 || dstSize < 0 || (src == nullptr) || srcSize < 0)
-        return HfErrorToInt(HostFunctionError::INVALID_PARAMS);
+        return HfErrorToInt(HostFunctionError::InvalidParams);
 
     if (srcSize > maxWasmDataLength)
-        return HfErrorToInt(HostFunctionError::DATA_FIELD_TOO_LARGE);
+        return HfErrorToInt(HostFunctionError::DataFieldTooLarge);
 
-    auto const memory = (runtime != nullptr) ? runtime->getMem() : wmem();
+    auto const memory = (runtime != nullptr) ? runtime->getMem() : Wmem();
 
     // LCOV_EXCL_START
     if (memory.s == 0u)
-        return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
+        return HfErrorToInt(HostFunctionError::NoMemExported);
     // LCOV_EXCL_STOP
     if ((int64_t)dst + dstSize > memory.s)
-        return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
+        return HfErrorToInt(HostFunctionError::PointerOutOfBounds);
     if (srcSize > dstSize)
-        return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
+        return HfErrorToInt(HostFunctionError::BufferTooSmall);
 
     memcpy(memory.p + dst, src, srcSize);
 
@@ -74,7 +98,7 @@ getDataUnsigned(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
     if (!r)
         return Unexpected(r.error());
     if (r->size() != sizeof(T))
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
 
     T x;
     uintptr_t const p = reinterpret_cast<uintptr_t>(r->data());
@@ -114,7 +138,7 @@ getDataSField(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
     i++;
     if (it == m.end())
     {
-        return Unexpected(HostFunctionError::INVALID_FIELD);
+        return Unexpected(HostFunctionError::InvalidField);
     }
     return *it->second;
 }
@@ -127,22 +151,22 @@ getDataSlice(IW* runtime, wasm_val_vec_t const* params, int32_t& i, bool isUpdat
     int64_t const size = params->data[i + 1].of.i32;
     i += 2;
     if (ptr < 0 || size < 0)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
 
     if (!size)
         return Slice();
 
     if (size > (isUpdate ? maxWasmDataLength : maxWasmParamLength))
-        return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
+        return Unexpected(HostFunctionError::DataFieldTooLarge);
 
-    auto const memory = runtime ? runtime->getMem() : wmem();
+    auto const memory = runtime ? runtime->getMem() : Wmem();
     // LCOV_EXCL_START
     if (!memory.s)
-        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
+        return Unexpected(HostFunctionError::NoMemExported);
     // LCOV_EXCL_STOP
 
     if (ptr + size > memory.s)
-        return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
+        return Unexpected(HostFunctionError::PointerOutOfBounds);
 
     Slice data(memory.p + ptr, size);
     return data;
@@ -158,9 +182,9 @@ getDataUInt256(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != uint256::bytes)
+    if (slice->size() != uint256::size())
     {
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
     }
     return uint256::fromVoid(slice->data());
 }
@@ -175,9 +199,9 @@ getDataAccountID(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != AccountID::bytes)
+    if (slice->size() != AccountID::size())
     {
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
     }
 
     return AccountID::fromVoid(slice->data());
@@ -193,9 +217,9 @@ getDataCurrency(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != Currency::bytes)
+    if (slice->size() != Currency::size())
     {
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Unexpected(HostFunctionError::InvalidParams);
     }
 
     return Currency::fromVoid(slice->data());
@@ -211,33 +235,33 @@ getDataAsset(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() == MPTID::bytes)
+    if (slice->size() == MPTID::size())
     {
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }
 
-    if (slice->size() == Currency::bytes)
+    if (slice->size() == Currency::size())
     {
         auto const currency = Currency::fromVoid(slice->data());
         auto const issue = Issue{currency, xrpAccount()};
         if (!issue.native())
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return Unexpected(HostFunctionError::InvalidParams);
         return Asset{issue};
     }
 
-    if (slice->size() == (AccountID::bytes + Currency::bytes))
+    if (slice->size() == (Currency::size() + AccountID::size()))
     {
         auto const issue = Issue(
             Currency::fromVoid(slice->data()),
-            AccountID::fromVoid(slice->data() + Currency::bytes));
+            AccountID::fromVoid(slice->data() + Currency::size()));
 
         if (issue.native())
-            return Unexpected(HostFunctionError::INVALID_PARAMS);
+            return Unexpected(HostFunctionError::InvalidParams);
         return Asset{issue};
     }
 
-    return Unexpected(HostFunctionError::INVALID_PARAMS);
+    return Unexpected(HostFunctionError::InvalidParams);
 }
 
 template <class IW>
@@ -484,17 +508,17 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
         return hfResult(results, slice.error());
     }
 
-    if (slice->size() == uint256::bytes)
+    if (slice->size() == uint256::size())
     {
-        if (auto ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data())); *ret == 1)
-        {
+        if (auto const ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
+            ret && *ret == 1)
             return returnResult(runtime, params, results, ret, index);
-        }
+        // Fall through to string lookup — the 32 bytes may be an amendment name
     }
 
     if (slice->size() > 64)
     {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
     }
 
     auto const str = std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
@@ -1102,9 +1126,9 @@ mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, slice.error());
     }
 
-    if (slice->size() != MPTID::bytes)
+    if (slice->size() != MPTID::size())
     {
-        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+        return hfResult(results, HostFunctionError::InvalidParams);
     }
     auto const mptid = MPTID::fromVoid(slice->data());
 
@@ -1435,9 +1459,15 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
     int index = 0;
 
-    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmParamLength)
+    int64_t const len = (int64_t)params->data[1].of.i32 + params->data[3].of.i32;
+    if (len < 0)
     {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
+
+    if (std::cmp_greater(len, maxWasmParamLength))
+    {
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
     }
 
     auto const msg = getDataString(runtime, params, index);
@@ -1457,9 +1487,10 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     {
         return hfResult(results, asHex.error());  // LCOV_EXCL_LINE
     }
+
     if (*asHex != 0 && *asHex != 1)
     {
-        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+        return hfResult(results, HostFunctionError::InvalidParams);
     }
 
     return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex != 0), index);
@@ -1473,9 +1504,16 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmParamLength)
+
+    int32_t const len = params->data[1].of.i32;
+    if (len < 0)
     {
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
+
+    if (std::cmp_greater(len, maxWasmParamLength))
+    {
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
     }
 
     auto const msg = getDataString(runtime, params, index);
@@ -1501,17 +1539,29 @@ traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    int32_t const len = params->data[1].of.i32;
+    if (len < 0)
+    {
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
+
+    if (std::cmp_greater(len, maxWasmParamLength))
+    {
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const account = getDataAccountID(runtime, params, i);
     if (!account)
+    {
         return hfResult(results, account.error());
+    }
 
     return returnResult(runtime, params, results, hf->traceAccount(*msg, *account), i);
 }
@@ -1524,17 +1574,29 @@ traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    int32_t const len = params->data[1].of.i32;
+    if (len < 0)
+    {
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
+
+    if (std::cmp_greater(len, maxWasmParamLength))
+    {
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const number = getDataSlice(runtime, params, i);
     if (!number)
+    {
         return hfResult(results, number.error());
+    }
 
     return returnResult(runtime, params, results, hf->traceFloat(*msg, *number), i);
 }
@@ -1547,17 +1609,29 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     auto* hf = getHF(env);
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmParamLength)
-        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    int32_t const len = params->data[1].of.i32;
+    if (len < 0)
+    {
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
+
+    if (std::cmp_greater(len, maxWasmParamLength))
+    {
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+    }
 
     int i = 0;
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
+    {
         return hfResult(results, msg.error());
+    }
 
     auto const amountSliceOpt = getDataSlice(runtime, params, i);
     if (!amountSliceOpt)
+    {
         return hfResult(results, amountSliceOpt.error());
+    }
 
     auto const amountSlice = amountSliceOpt.value();
     auto serialIter = SerialIter(amountSlice);
@@ -1565,14 +1639,17 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, sfGeneric);
+        amount = STAmount(serialIter, kSfGeneric);
     }
     catch (std::exception const&)
     {
         amount = std::nullopt;
     }
+
     if (!amount)
-        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    {
+        return hfResult(results, HostFunctionError::InvalidParams);
+    }
 
     return returnResult(runtime, params, results, hf->traceAmount(*msg, *amount), i);
 }
@@ -1638,14 +1715,14 @@ floatFromSTAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, sfGeneric);
+        amount = STAmount(serialIter, kSfGeneric);
     }
     catch (std::exception const&)
     {
         amount = std::nullopt;
     }
     if (!amount)
-        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+        return hfResult(results, HostFunctionError::InvalidParams);
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
@@ -1673,14 +1750,14 @@ floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
     std::optional<STNumber> num;
     try
     {
-        num = STNumber(serialIter, sfGeneric);
+        num = STNumber(serialIter, kSfGeneric);
     }
     catch (std::exception const&)
     {
         num = std::nullopt;
     }
     if (!num)
-        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+        return hfResult(results, HostFunctionError::InvalidParams);
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
@@ -1714,7 +1791,7 @@ floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
 }
 
 wasm_trap_t*
-floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatToMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)
         return g.error();  // LCOV_EXCL_LINE
@@ -1727,11 +1804,11 @@ floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_va
         return hfResult(results, x.error());
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatToMantissaAndExponent(*x), i);
+    return returnResult(runtime, params, results, hf->floatToMantExp(*x), i);
 }
 
 wasm_trap_t*
-floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)
         return g.error();  // LCOV_EXCL_LINE
@@ -1739,47 +1816,14 @@ floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatNegate(*x), i);
-}
-
-wasm_trap_t*
-floatAbs_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatAbs(*x), i);
-}
-
-wasm_trap_t*
-floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const exp = getDataInt32(runtime, params, i);
-    if (!exp)
-        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
         return hfResult(results, mant.error());  // LCOV_EXCL_LINE
+
+    auto const exp = getDataInt32(runtime, params, i);
+    if (!exp)
+        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
@@ -1787,7 +1831,7 @@ floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatSet(*mant, *exp, *rounding), i);
+    return returnResult(runtime, params, results, hf->floatFromMantExp(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1966,42 +2010,20 @@ floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     return returnResult(runtime, params, results, hf->floatPower(*x, *n, *rounding), i);
 }
 
-wasm_trap_t*
-floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 4;
-    auto const rounding = getDataInt32(runtime, params, i);
-    if (!rounding)
-        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatLog(*x, *rounding), i);
-}
-
 // LCOV_EXCL_START
 namespace test {
 
 class MockWasmRuntimeWrapper
 {
-    wmem mem_;
+    Wmem mem_;
 
 public:
-    MockWasmRuntimeWrapper(wmem memory) : mem_(memory)
+    MockWasmRuntimeWrapper(Wmem memory) : mem_(memory)
     {
     }
 
     // Mock methods to simulate the behavior of WasmRuntimeWrapper
-    wmem
+    [[nodiscard]] Wmem
     getMem() const
     {
         return mem_;
@@ -2014,7 +2036,7 @@ testGetDataIncrement()
     wasm_val_t values[4];
 
     std::array<std::uint8_t, 128> buffer = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-    MockWasmRuntimeWrapper runtime(wmem{buffer.data(), buffer.size()});
+    MockWasmRuntimeWrapper runtime(Wmem{.p = buffer.data(), .s = buffer.size()});
 
     {
         // test int32_t
@@ -2044,7 +2066,7 @@ testGetDataIncrement()
         // test SFieldCRef
         wasm_val_vec_t const params = {1, &values[0]};
 
-        values[0] = WASM_I32_VAL(sfAccount.fieldCode);
+        values[0] = WASM_I32_VAL(sfAccount.getCode());
 
         int index = 0;
         auto const result = getDataSField(&runtime, &params, index);
@@ -2083,13 +2105,13 @@ testGetDataIncrement()
     {
         // test account
         AccountID const id(
-            calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("alice")).first));
+            calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("alice")).first));
 
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(id.bytes);
-        memcpy(&buffer[0], id.data(), id.bytes);
+        values[1] = WASM_I32_VAL(AccountID::size());
+        memcpy(&buffer[0], id.data(), AccountID::size());
 
         int index = 0;
         auto const result = getDataAccountID(&runtime, &params, index);
@@ -2104,8 +2126,8 @@ testGetDataIncrement()
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(h1.bytes);
-        memcpy(&buffer[0], h1.data(), h1.bytes);
+        values[1] = WASM_I32_VAL(Hash::size());
+        memcpy(&buffer[0], h1.data(), Hash::size());
 
         int index = 0;
         auto const result = getDataUInt256(&runtime, &params, index);
@@ -2120,8 +2142,8 @@ testGetDataIncrement()
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(c.bytes);
-        memcpy(&buffer[0], c.data(), c.bytes);
+        values[1] = WASM_I32_VAL(Currency::size());
+        memcpy(&buffer[0], c.data(), Currency::size());
 
         int index = 0;
         auto const result = getDataCurrency(&runtime, &params, index);
