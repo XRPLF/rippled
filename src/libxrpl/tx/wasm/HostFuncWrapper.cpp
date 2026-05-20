@@ -182,7 +182,7 @@ getDataUInt256(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != Bytes)
+    if (slice->size() != uint256::size())
     {
         return Unexpected(HostFunctionError::InvalidParams);
     }
@@ -199,7 +199,7 @@ getDataAccountID(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != Bytes)
+    if (slice->size() != AccountID::size())
     {
         return Unexpected(HostFunctionError::InvalidParams);
     }
@@ -217,7 +217,7 @@ getDataCurrency(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() != Bytes)
+    if (slice->size() != Currency::size())
     {
         return Unexpected(HostFunctionError::InvalidParams);
     }
@@ -235,13 +235,13 @@ getDataAsset(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(slice.error());
     }
 
-    if (slice->size() == Bytes)
+    if (slice->size() == MPTID::size())
     {
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }
 
-    if (slice->size() == Bytes)
+    if (slice->size() == Currency::size())
     {
         auto const currency = Currency::fromVoid(slice->data());
         auto const issue = Issue{currency, xrpAccount()};
@@ -250,10 +250,11 @@ getDataAsset(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
         return Asset{issue};
     }
 
-    if (slice->size() == (Bytes + Bytes))
+    if (slice->size() == (Currency::size() + AccountID::size()))
     {
-        auto const issue =
-            Issue(Currency::fromVoid(slice->data()), AccountID::fromVoid(slice->data() + Bytes));
+        auto const issue = Issue(
+            Currency::fromVoid(slice->data()),
+            AccountID::fromVoid(slice->data() + Currency::size()));
 
         if (issue.native())
             return Unexpected(HostFunctionError::InvalidParams);
@@ -507,7 +508,7 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
         return hfResult(results, slice.error());
     }
 
-    if (slice->size() == Bytes)
+    if (slice->size() == uint256::size())
     {
         if (auto const ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
             ret && *ret == 1)
@@ -1125,7 +1126,7 @@ mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, slice.error());
     }
 
-    if (slice->size() != Bytes)
+    if (slice->size() != MPTID::size())
     {
         return hfResult(results, HostFunctionError::InvalidParams);
     }
@@ -2065,7 +2066,7 @@ testGetDataIncrement()
         // test SFieldCRef
         wasm_val_vec_t const params = {1, &values[0]};
 
-        values[0] = WASM_I32_VAL(sfAccount.fieldCode);
+        values[0] = WASM_I32_VAL(sfAccount.getCode());
 
         int index = 0;
         auto const result = getDataSField(&runtime, &params, index);
@@ -2109,8 +2110,8 @@ testGetDataIncrement()
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(id.bytes);
-        memcpy(&buffer[0], id.data(), id.bytes);
+        values[1] = WASM_I32_VAL(AccountID::size());
+        memcpy(&buffer[0], id.data(), AccountID::size());
 
         int index = 0;
         auto const result = getDataAccountID(&runtime, &params, index);
@@ -2125,8 +2126,8 @@ testGetDataIncrement()
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(h1.bytes);
-        memcpy(&buffer[0], h1.data(), h1.bytes);
+        values[1] = WASM_I32_VAL(Hash::size());
+        memcpy(&buffer[0], h1.data(), Hash::size());
 
         int index = 0;
         auto const result = getDataUInt256(&runtime, &params, index);
@@ -2141,10 +2142,10 @@ testGetDataIncrement()
         wasm_val_vec_t const params = {2, &values[0]};
 
         values[0] = WASM_I32_VAL(0);
-        values[1] = WASM_I32_VAL(c.bytes);
-        memcpy(&buffer[0], c.data(), c.bytes);
+        values[1] = WASM_I32_VAL(Currency::size());
+        memcpy(&buffer[0], c.data(), Currency::size());
 
-        int const index = 0;
+        int index = 0;
         auto const result = getDataCurrency(&runtime, &params, index);
         if (!result || result.value() != c || index != 2)
             return false;

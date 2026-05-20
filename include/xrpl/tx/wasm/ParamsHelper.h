@@ -7,13 +7,21 @@
 #include <boost/function_types/result_type.hpp>
 #include <boost/mpl/vector.hpp>
 
+#include <bit>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace bft = boost::function_types;
 
 namespace xrpl {
+
+template <typename>
+inline constexpr bool wasmDependentFalse = false;
 
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
@@ -48,7 +56,7 @@ struct WasmRuntimeWrapper
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WtI32, WtI64 };
+enum class WasmTypes { WtI32, WtI64 };
 
 struct WasmImportFunc
 {
@@ -80,15 +88,15 @@ WasmImpArgs(WasmImportFunc& e)
         using at = typename boost::mpl::at_c<Mpl, N>::type;
         if constexpr (std::is_pointer_v<at>)
         {
-            e.params.push_back(WtI32);
+            e.params.push_back(WasmTypes::WtI32);
         }
         else if constexpr (std::is_same_v<at, std::int32_t>)
         {
-            e.params.push_back(WtI32);
+            e.params.push_back(WasmTypes::WtI32);
         }
         else if constexpr (std::is_same_v<at, std::int64_t>)
         {
-            e.params.push_back(WtI64);
+            e.params.push_back(WasmTypes::WtI64);
         }
         else
         {
@@ -106,27 +114,24 @@ WasmImpRet(WasmImportFunc& e)
 {
     if constexpr (std::is_pointer_v<Rt>)
     {
-        e.result = WtI32;
+        e.result = WasmTypes::WtI32;
     }
     else if constexpr (std::is_same_v<Rt, std::int32_t>)
     {
-        e.result = WtI32;
+        e.result = WasmTypes::WtI32;
     }
     else if constexpr (std::is_same_v<Rt, std::int64_t>)
     {
-        e.result = WtI64;
+        e.result = WasmTypes::WtI64;
     }
     else if constexpr (std::is_void_v<Rt>)
     {
         e.result.reset();
-#if (defined(__GNUC__) && (__GNUC__ >= 14)) || \
-    ((defined(__clang_major__)) && (__clang_major__ >= 18))
     }
     else
     {
-        static_assert(false, "Unsupported return type");
+        static_assert(wasmDependentFalse<Rt>, "Unsupported return type");
     }
-#endif
 }
 
 template <typename F>
@@ -166,7 +171,7 @@ struct WasmParam
 {
     // We are not supporting float/double
 
-    WasmTypes type = WtI32;
+    WasmTypes type = WasmTypes::WtI32;
     union
     {
         std::int32_t i32;
@@ -178,7 +183,7 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int32_t p, Types&&... args)
 {
-    v.push_back({.type = WtI32, .of = {.i32 = p}});
+    v.push_back({.type = WasmTypes::WtI32, .of = {.i32 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 
@@ -186,7 +191,7 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 {
-    v.push_back({.type = WtI64, .of = {.i64 = p}});
+    v.push_back({.type = WasmTypes::WtI64, .of = {.i64 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 

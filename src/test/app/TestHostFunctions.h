@@ -1,5 +1,6 @@
 #include <test/app/wasm_fixtures/fixtures.h>
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
@@ -7,6 +8,13 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmVM.h>
+
+#include <boost/algorithm/hex.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <string>
+#include <string_view>
 
 namespace xrpl::test {
 
@@ -23,7 +31,7 @@ public:
     void
     setRT(void* rt) override
     {
-        rt = rt;
+        this->rt = rt;
     }
 
     [[nodiscard]] void*
@@ -41,25 +49,25 @@ public:
 
 struct TestHostFunctions : public HostFunctions
 {
-    test::jtx::Env& env_;
-    AccountID accountID_;
-    Bytes data_;
+    test::jtx::Env& env;
+    AccountID accountID;
+    Bytes data;
     int clock_drift = 0;
     void* rt = nullptr;
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : HostFunctions(env.journal), env_(env), clock_drift(cd)
+        : HostFunctions(env.journal), env(env), clock_drift(cd)
     {
-        accountID_ = env_.master.id();
+        accountID = env.master.id();
         std::string t = "10000";
-        data_ = Bytes{t.begin(), t.end()};
+        data = Bytes{t.begin(), t.end()};
     }
 
     void
     setRT(void* rt) override
     {
-        rt = rt;
+        this->rt = rt;
     }
 
     [[nodiscard]] void*
@@ -83,7 +91,7 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() const override
     {
-        return env_.current()->header().parentHash;
+        return env.current()->header().parentHash;
     }
 
     Expected<std::uint32_t, HostFunctionError>
@@ -115,7 +123,7 @@ public:
     {
         if (fname == sfAccount)
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
         if (fname == sfFee)
         {
@@ -123,7 +131,7 @@ public:
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
         }
-        else if (fname == sfSequence)
+        if (fname == sfSequence)
         {
             auto const x = getLedgerSqn();
             if (!x)
@@ -142,13 +150,15 @@ public:
         auto const& sn = fname.getName();
         if (sn == "Destination" || sn == "Account")
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
         if (sn == "Data")
-            return data_;
-        else if (sn == "FinishAfter")
         {
-            auto t = env_.current()->parentCloseTime().time_since_epoch().count();
+            return data;
+        }
+        if (sn == "FinishAfter")
+        {
+            auto t = env.current()->parentCloseTime().time_since_epoch().count();
             std::string s = std::to_string(t);
             return Bytes{s.begin(), s.end()};
         }
@@ -167,9 +177,9 @@ public:
         }
         if (fname == sfAccount)
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
-        return data_;
+        return data;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -179,9 +189,9 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -197,9 +207,9 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -215,9 +225,9 @@ public:
         {
             int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
             int32_t const sfield = l[0];
-            if (sfield == sfAccount.fieldCode)
+            if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -277,7 +287,7 @@ public:
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) const override
     {
-        return env_.current()->header().parentHash;
+        return env.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -353,7 +363,7 @@ public:
     Expected<Bytes, HostFunctionError>
     getNFTIssuer(uint256 const& nftId) const override
     {
-        return Bytes(accountID_.begin(), accountID_.end());
+        return Bytes(accountID.begin(), accountID.end());
     }
 
     Expected<std::uint32_t, HostFunctionError>
@@ -387,7 +397,7 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        if (!getJournal().active(beast::severities::kTrace))
+        if (!getJournal().active(beast::Severity::Trace))
             return;
         auto j = getJournal().trace();
 #endif
@@ -540,7 +550,7 @@ struct TestHostFunctionsSink : public TestHostFunctions
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
-        : TestHostFunctions(env, cd), sink_(beast::severities::kDebug)
+        : TestHostFunctions(env, cd), sink(beast::Severity::Debug)
     {
         j = beast::Journal(sink);
     }

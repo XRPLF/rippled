@@ -28,6 +28,7 @@ class WasmEngine
 
     WasmEngine();
 
+public:
     WasmEngine(WasmEngine const&) = delete;
     WasmEngine(WasmEngine&&) = delete;
     WasmEngine&
@@ -35,7 +36,6 @@ class WasmEngine
     WasmEngine&
     operator=(WasmEngine&&) = delete;
 
-public:
     static WasmEngine&
     instance();
 
