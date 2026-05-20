@@ -740,11 +740,11 @@ public:
                 return scEnv.rpc("json", "account_objects", to_string(params));
             };
 
-            json::Value const resp = scEnvAcctObjs(Account::kMASTER, jss::bridge);
+            json::Value const resp = scEnvAcctObjs(Account::kMaster, jss::bridge);
 
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
             auto const& acctBridge = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMASTER.human());
+            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMaster.human());
             BEAST_EXPECT(acctBridge[sfLedgerEntryType.getJsonName()] == "Bridge");
             BEAST_EXPECT(acctBridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
             BEAST_EXPECT(acctBridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
@@ -800,7 +800,7 @@ public:
 
             // send first batch of account create attestations, so the
             // xchain_create_account_claim_id_ should be present on the door
-            // account (Account::kMASTER) to collect the signatures until a
+            // account (Account::kMaster) to collect the signatures until a
             // quorum is reached
             scEnv(
                 test::jtx::createAccountAttestation(
@@ -827,13 +827,13 @@ public:
             {
                 // Find the xchain_create_account_claim_id_
                 json::Value const resp =
-                    scEnvAcctObjs(Account::kMASTER, jss::xchain_owned_create_account_claim_id);
+                    scEnvAcctObjs(Account::kMaster, jss::xchain_owned_create_account_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& xchainCreateAccountClaimId =
                     resp[jss::result][jss::account_objects][0u];
                 BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMASTER.human());
+                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMaster.human());
                 BEAST_EXPECT(
                     xchainCreateAccountClaimId[sfXChainAccountCreateCount.getJsonName()].asUInt() ==
                     1);
@@ -1061,8 +1061,8 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
 
-        static constexpr unsigned kNFTS_SIZE = 10;
-        for (unsigned i = 0; i < kNFTS_SIZE; i++)
+        static constexpr unsigned kNftsSize = 10;
+        for (unsigned i = 0; i < kNftsSize; i++)
         {
             env(token::mint(bob, 0));
         }

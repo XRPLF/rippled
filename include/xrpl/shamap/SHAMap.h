@@ -94,10 +94,10 @@ private:
 public:
     /** Number of children each non-leaf node has (the 'radix tree' part of the
      * map) */
-    static constexpr unsigned int kBRANCH_FACTOR = SHAMapInnerNode::kBRANCH_FACTOR;
+    static constexpr unsigned int kBranchFactor = SHAMapInnerNode::kBranchFactor;
 
     /** The depth of the hash map: data is only present in the leaves */
-    static constexpr unsigned int kLEAF_DEPTH = 64;
+    static constexpr unsigned int kLeafDepth = 64;
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
@@ -390,7 +390,7 @@ private:
     lastBelow(
         intr_ptr::SharedPtr<SHAMapTreeNode> node,
         SharedPtrNodeStack& stack,
-        int branch = kBRANCH_FACTOR) const;
+        int branch = kBranchFactor) const;
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*

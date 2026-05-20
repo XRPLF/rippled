@@ -26,18 +26,18 @@ std::map<char, char const*> gJsonSpecialCharacterEscape = {
     {'\r', "\\r"},
     {'\t', "\\t"}};
 
-size_t const kJSON_ESCAPE_LENGTH = 2;
+size_t const kJsonEscapeLength = 2;
 
 // All other JSON punctuation.
-char const kCLOSE_BRACE = '}';
-char const kCLOSE_BRACKET = ']';
-char const kCOLON = ':';
-char const kCOMMA = ',';
-char const kOPEN_BRACE = '{';
-char const kOPEN_BRACKET = '[';
-char const kQUOTE = '"';
+char const kCloseBrace = '}';
+char const kCloseBracket = ']';
+char const kColon = ':';
+char const kComma = ',';
+char const kOpenBrace = '{';
+char const kOpenBracket = '[';
+char const kQuote = '"';
 
-auto const kINTEGRAL_FLOATS_BECOME_INTS = false;
+auto const kIntegralFloatsBecomeInts = false;
 
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
@@ -52,7 +52,7 @@ lengthWithoutTrailingZeros(std::string const& s)
     if (hasDecimals)
         return lastNonZero + 1;
 
-    if (kINTEGRAL_FLOATS_BECOME_INTS || lastNonZero + 2 > s.size())
+    if (kIntegralFloatsBecomeInts || lastNonZero + 2 > s.size())
         return lastNonZero;
 
     return lastNonZero + 2;
@@ -81,7 +81,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char const ch = (ct == CollectionType::Array) ? kOPEN_BRACKET : kOPEN_BRACE;
+        char const ch = (ct == CollectionType::Array) ? kOpenBracket : kOpenBrace;
         output({&ch, 1});
         stack_.emplace(Collection{.type = ct});
     }
@@ -99,7 +99,7 @@ public:
         markStarted();
         std::size_t position = 0, writtenUntil = 0;
 
-        output_({&kQUOTE, 1});
+        output_({&kQuote, 1});
         auto data = bytes.data();
         for (; position < bytes.size(); ++position)
         {
@@ -110,13 +110,13 @@ public:
                 {
                     output_({data + writtenUntil, position - writtenUntil});
                 }
-                output_({i->second, kJSON_ESCAPE_LENGTH});
+                output_({i->second, kJsonEscapeLength});
                 writtenUntil = position + 1;
             };
         }
         if (writtenUntil < position)
             output_({data + writtenUntil, position - writtenUntil});
-        output_({&kQUOTE, 1});
+        output_({&kQuote, 1});
     }
 
     void
@@ -144,7 +144,7 @@ public:
         }
         else
         {
-            output_({&kCOMMA, 1});
+            output_({&kComma, 1});
         }
     }
 
@@ -159,7 +159,7 @@ public:
 #endif
 
         stringOutput(tag);
-        output_({&kCOLON, 1});
+        output_({&kColon, 1});
     }
 
     [[nodiscard]] bool
@@ -174,7 +174,7 @@ public:
         check(!empty(), "Empty stack in finish()");
 
         auto isArray = stack_.top().type == CollectionType::Array;
-        auto ch = isArray ? kCLOSE_BRACKET : kCLOSE_BRACE;
+        auto ch = isArray ? kCloseBracket : kCloseBrace;
         output_({&ch, 1});
         stack_.pop();
     }

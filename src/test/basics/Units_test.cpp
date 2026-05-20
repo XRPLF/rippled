@@ -166,10 +166,10 @@ private:
             FeeLevel64 test{0};
             BEAST_EXPECT(test.fee() == 0);
 
-            test = explicitmake(beast::kZERO);
+            test = explicitmake(beast::kZero);
             BEAST_EXPECT(test.fee() == 0);
 
-            test = beast::kZERO;
+            test = beast::kZero;
             BEAST_EXPECT(test.fee() == 0);
 
             test = explicitmake(100u);
@@ -251,10 +251,10 @@ private:
             FeeLevelDouble test{0};
             BEAST_EXPECT(test.fee() == 0);
 
-            test = explicitmake(beast::kZERO);
+            test = explicitmake(beast::kZero);
             BEAST_EXPECT(test.fee() == 0);
 
-            test = beast::kZERO;
+            test = beast::kZero;
             BEAST_EXPECT(test.fee() == 0);
 
             test = explicitmake(100.0);
@@ -330,8 +330,8 @@ public:
     void
     run() override
     {
-        BEAST_EXPECT(kINITIAL_XRP.drops() == 100'000'000'000'000'000);
-        BEAST_EXPECT(kINITIAL_XRP == XRPAmount{100'000'000'000'000'000});
+        BEAST_EXPECT(kInitialXrp.drops() == 100'000'000'000'000'000);
+        BEAST_EXPECT(kInitialXrp == XRPAmount{100'000'000'000'000'000});
 
         testTypes();
         testJson();

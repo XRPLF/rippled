@@ -46,7 +46,7 @@
 
 namespace xrpl {
 
-CreateGenesisT const kCREATE_GENESIS{};
+CreateGenesisT const kCreateGenesis{};
 
 //------------------------------------------------------------------------------
 
@@ -159,8 +159,8 @@ Ledger::Ledger(
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
-    header_.drops = kINITIAL_XRP;
-    header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
+    header_.drops = kInitialXrp;
+    header_.closeTimeResolution = kLedgerGenesisTimeResolution;
 
     static auto const kID =
         calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -196,7 +196,7 @@ Ledger::Ledger(
                 sle->at(sfReserveBase) = *f;
             if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFEE_UNITS_DEPRECATED;
+            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
         }
         rawInsert(sle);
     }
@@ -304,7 +304,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
+    header_.closeTimeResolution = kLedgerDefaultTimeResolution;
     setup();
 }
 
@@ -339,7 +339,7 @@ Ledger::setAccepted(
 
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
-    header_.closeFlags = correctCloseTime ? 0 : kS_LCF_NO_CONSENSUS_TIME;
+    header_.closeFlags = correctCloseTime ? 0 : kSLcfNoConsensusTime;
     setImmutable();
 }
 
@@ -404,7 +404,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
-    if (k.key == beast::kZERO)
+    if (k.key == beast::kZero)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::Ledger::read : zero key");

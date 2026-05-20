@@ -62,7 +62,7 @@ private:
     {
         using run_time = std::pair<std::string, typename clock_type::duration>;
 
-        static constexpr auto kMAX_TOP = 10;
+        static constexpr auto kMaxTop = 10;
 
         std::size_t suites = 0;
         std::size_t cases = 0;
@@ -146,11 +146,11 @@ Reporter<Unused>::Results::add(SuiteResults const& r)
             });
         if (iter != top.end())
         {
-            if (top.size() == kMAX_TOP)
+            if (top.size() == kMaxTop)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < kMAX_TOP)
+        else if (top.size() < kMaxTop)
         {
             top.emplace_back(r.name, elapsed);
         }
