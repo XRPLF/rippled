@@ -6,6 +6,10 @@
 #include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/json/JsonPropertyStream.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/peerfinder/Types.h>
 #include <xrpl/peerfinder/detail/Tuning.h>
 
@@ -124,6 +128,58 @@ TEST_F(LivecacheTest, insert_update_keeps_lowest_hop_count)
     EXPECT_EQ((cache_.hops.begin() + 1)->begin()->hops, 1u);
 }
 
+TEST_F(LivecacheTest, hop_iterators_support_const_reverse_and_move_back)
+{
+    auto const ep1 = Endpoint{endpoint(1), 1};
+    auto const ep2 = Endpoint{endpoint(2), 1};
+    cache_.insert(ep1);
+    cache_.insert(ep2);
+
+    auto hop = *(cache_.hops.begin() + 1);
+    ASSERT_NE(hop.begin(), hop.end());
+    ASSERT_NE(hop.cbegin(), hop.cend());
+    ASSERT_NE(hop.rbegin(), hop.rend());
+    ASSERT_NE(hop.crbegin(), hop.crend());
+
+    auto const firstAddress = hop.begin()->address;
+    hop.moveBack(hop.begin());
+    EXPECT_EQ(hop.rbegin()->address, firstAddress);
+
+    auto const& constHops = cache_.hops;
+    EXPECT_NE(constHops.begin(), constHops.end());
+    EXPECT_NE(constHops.cbegin(), constHops.cend());
+    EXPECT_NE(constHops.rbegin(), constHops.rend());
+    EXPECT_NE(constHops.crbegin(), constHops.crend());
+
+    auto const constHop = *(constHops.cbegin() + 1);
+    EXPECT_EQ(std::distance(constHop.begin(), constHop.end()), 2);
+    EXPECT_EQ(std::distance(constHop.cbegin(), constHop.cend()), 2);
+    EXPECT_EQ(std::distance(constHop.rbegin(), constHop.rend()), 2);
+    EXPECT_EQ(std::distance(constHop.crbegin(), constHop.crend()), 2);
+}
+
+TEST_F(LivecacheTest, on_write_reports_entries_and_expiration)
+{
+    cache_.insert(Endpoint{endpoint(1), 1});
+    cache_.insert(Endpoint{endpoint(2), Tuning::kMaxHops + 1});
+
+    JsonPropertyStream stream;
+    {
+        beast::PropertyStream::Map map(stream);
+        cache_.onWrite(map);
+    }
+
+    auto const& top = stream.top();
+    EXPECT_EQ(top["size"].asUInt(), 2u);
+    EXPECT_FALSE(top["hist"].asString().empty());
+    ASSERT_TRUE(top.isMember("entries"));
+    ASSERT_EQ(top["entries"].size(), 2u);
+    auto const& entry = top["entries"][json::UInt{0}];
+    EXPECT_TRUE(entry.isMember("hops"));
+    EXPECT_TRUE(entry.isMember("address"));
+    EXPECT_TRUE(entry.isMember("expires"));
+}
+
 TEST_F(LivecacheTest, expire_removes_entries_after_ttl)
 {
     using namespace std::chrono_literals;
@@ -139,6 +195,18 @@ TEST_F(LivecacheTest, expire_removes_entries_after_ttl)
     EXPECT_EQ(cache_.size(), 1u);
 
     clock_.advance(1s);
+    cache_.expire();
+    EXPECT_TRUE(cache_.empty());
+}
+
+TEST_F(LivecacheTest, expire_removes_multiple_entries_after_ttl)
+{
+    using namespace std::chrono_literals;
+
+    cache_.insert(Endpoint{endpoint(1), 1});
+    cache_.insert(Endpoint{endpoint(2), 2});
+
+    clock_.advance(Tuning::kLiveCacheSecondsToLive);
     cache_.expire();
     EXPECT_TRUE(cache_.empty());
 }
