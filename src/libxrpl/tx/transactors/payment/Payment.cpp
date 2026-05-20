@@ -444,8 +444,8 @@ Payment::doApply()
         };
 
         auto const destination = ctx_.tx[sfDestination];
-        auto const senderErr = cleanupFor(account_);
-        auto const destinationErr = account_ == destination ? senderErr : cleanupFor(destination);
+        auto const senderErr = cleanupFor(accountID_);
+        auto const destinationErr = accountID_ == destination ? senderErr : cleanupFor(destination);
 
         if (!isTesSuccess(senderErr))
             return senderErr;

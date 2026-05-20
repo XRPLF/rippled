@@ -980,9 +980,9 @@ OfferCreate::doApply()
         if (!sleDomain)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        if (sleDomain->getAccountID(sfOwner) != account_)
+        if (sleDomain->getAccountID(sfOwner) != accountID_)
         {
-            if (auto const err = verifyValidDomain(ctx_.view(), account_, domainID, j_);
+            if (auto const err = verifyValidDomain(ctx_.view(), accountID_, domainID, j_);
                 !isTesSuccess(err))
                 return err;
         }
