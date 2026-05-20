@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -156,20 +157,20 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
+                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
-    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
+    else  // !vault->isFlag(lsfVaultPrivate) || accountID_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
-        if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
+        if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -179,15 +180,15 @@ VaultDeposit::doApply()
         {
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
-                account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+                accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {},       // flags
-                    account_  // holderID
+                    {},         // flags
+                    accountID_  // holderID
                 );
                 !isTesSuccess(err))
                 return err;
@@ -247,29 +248,36 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), accountID_, vaultAccount, assetsDeposited, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
-    // Sanity check
-    if (accountHolds(
-            view(),
-            account_,
-            assetsDeposited.asset(),
-            FreezeHandling::IgnoreFreeze,
-            AuthHandling::IgnoreAuth,
-            j_) < beast::kZero)
+    // This check is wrong. Disable it with fixCleanup3_2_0.
+    // For XRP and MPT the predicate is structurally unsatisfiable: xrpLiquid clamps at zero, and
+    // MPT balances are unsigned. For IOUs it only fires when the deposit drove the depositor's
+    // trust line into debt the exact case preclaim authorizes via SpendableHandling::FullBalance.
+    // The check thus converts a preclaim- authorized deposit into tefINTERNAL after the asset
+    // transfer.
+    if (!view().rules().enabled(fixCleanup3_2_0))
     {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
+        // Sanity check
+        if (accountHolds(
+                view(),
+                accountID_,
+                assetsDeposited.asset(),
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
+                j_) < beast::kZero)
+        {
+            JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
+            return tefINTERNAL;
+        }
     }
 
     // Transfer shares from vault to depositor.
     if (auto const ter =
-            accountSend(view(), vaultAccount, account_, sharesCreated, j_, WaiveTransferFee::Yes);
+            accountSend(view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
