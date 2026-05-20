@@ -311,8 +311,9 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    // We should use vaultScale for vault-related fields (e.g. DebtTotal), not
-    // loanScale, and vice versa.
+    // In the fixCleanup3_2_0 path, vault-related values (for example,
+    // DebtTotal) use vaultScale. The legacy path below intentionally retains
+    // its pre-amendment loanScale behavior.
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Send the broker fee to the owner if they have sufficient cover available,
