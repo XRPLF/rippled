@@ -35,9 +35,9 @@ class STVar
 {
 private:
     // The largest "small object" we can accommodate
-    static std::size_t constexpr kMAX_SIZE = 72;
+    static constexpr std::size_t kMaxSize = 72;
 
-    std::aligned_storage<kMAX_SIZE>::type d_ = {};
+    std::aligned_storage<kMaxSize>::type d_ = {};
     STBase* p_ = nullptr;
 
 public:
@@ -51,12 +51,12 @@ public:
 
     STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
-        p_ = t.move(kMAX_SIZE, &d_);
+        p_ = t.move(kMaxSize, &d_);
     }
 
     STVar(STBase const& t)
     {
-        p_ = t.copy(kMAX_SIZE, &d_);
+        p_ = t.copy(kMaxSize, &d_);
     }
 
     STVar(DefaultObjectT, SField const& name);
@@ -110,7 +110,7 @@ private:
     void
     construct(Args&&... args)
     {
-        if constexpr (sizeof(T) > kMAX_SIZE)
+        if constexpr (sizeof(T) > kMaxSize)
         {
             p_ = new T(std::forward<Args>(args)...);
         }

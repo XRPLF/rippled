@@ -40,7 +40,7 @@ class TxQ
 {
 public:
     /// Fee level for single-signed reference transaction.
-    static constexpr FeeLevel64 kBASE_LEVEL{256};
+    static constexpr FeeLevel64 kBaseLevel{256};
 
     /**
         Structure used to customize @ref TxQ behavior.
@@ -76,7 +76,7 @@ public:
         std::uint32_t retrySequencePercent = 25;
         /// Minimum value of the escalation multiplier, regardless
         /// of the prior ledger's median fee level.
-        FeeLevel64 minimumEscalationMultiplier = kBASE_LEVEL * 500;
+        FeeLevel64 minimumEscalationMultiplier = kBaseLevel * 500;
         /// Minimum number of transactions to allow into the ledger
         /// before escalation, regardless of the prior ledger's size.
         std::uint32_t minimumTxnInLedger = 32;
@@ -512,7 +512,7 @@ private:
             their `retriesRemaining` forced down as part of the
             penalty.
         */
-        int retriesRemaining{kRETRIES_ALLOWED};
+        int retriesRemaining{kRetriesAllowed};
         /// Flags provided to `apply`. If the transaction is later
         /// attempted with different flags, it will need to be
         /// `preflight`ed again.
@@ -548,7 +548,7 @@ private:
             that the queue doesn't fill up with stale transactions
             which prevent lower fee level transactions from queuing.
         */
-        static constexpr int kRETRIES_ALLOWED = 10;
+        static constexpr int kRetriesAllowed = 10;
 
         /** The hash of the parent ledger.
 
@@ -761,7 +761,7 @@ private:
     /**
         parentHash_ used for logging only
     */
-    LedgerHash parentHash_{beast::kZERO};
+    LedgerHash parentHash_{beast::kZero};
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
@@ -831,13 +831,13 @@ template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kMAX_NATIVE_N));
+    return mulDiv(level, baseFee, TxQ::kBaseLevel).value_or(XRPAmount(STAmount::kMaxNativeN));
 }
 
 inline FeeLevel64
 toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 {
-    return mulDiv(drops, TxQ::kBASE_LEVEL, baseFee)
+    return mulDiv(drops, TxQ::kBaseLevel, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 

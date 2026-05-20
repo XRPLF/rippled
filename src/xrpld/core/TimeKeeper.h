@@ -18,7 +18,7 @@ private:
     adjust(std::chrono::system_clock::time_point when)
     {
         return time_point(
-            std::chrono::duration_cast<duration>(when.time_since_epoch() - kEPOCH_OFFSET));
+            std::chrono::duration_cast<duration>(when.time_since_epoch() - kEpochOffset));
     }
 
 public:

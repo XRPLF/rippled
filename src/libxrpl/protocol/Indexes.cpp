@@ -143,9 +143,9 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 kNEXT_QUALITY(
+    static constexpr uint256 kNextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + kNEXT_QUALITY;
+    return uBase + kNextQuality;
 }
 
 std::uint64_t
@@ -197,8 +197,8 @@ child(uint256 const& key) noexcept
 Keylet const&
 skip() noexcept
 {
-    static Keylet const kRET{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
-    return kRET;
+    static Keylet const kRet{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
+    return kRet;
 }
 
 Keylet
@@ -213,22 +213,22 @@ skip(LedgerIndex ledger) noexcept
 Keylet const&
 amendments() noexcept
 {
-    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
-    return kRET;
+    static Keylet const kRet{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
+    return kRet;
 }
 
 Keylet const&
 fees() noexcept
 {
-    static Keylet const kRET{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
-    return kRET;
+    static Keylet const kRet{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
+    return kRet;
 }
 
 Keylet const&
 negativeUNL() noexcept
 {
-    static Keylet const kRET{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
-    return kRET;
+    static Keylet const kRet{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
+    return kRet;
 }
 
 Keylet
@@ -391,7 +391,7 @@ nftpageMin(AccountID const& owner)
 Keylet
 nftpageMax(AccountID const& owner)
 {
-    uint256 id = nft::kPAGE_MASK;
+    uint256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
@@ -400,7 +400,7 @@ Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
     XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
-    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPAGE_MASK) + (token & nft::kPAGE_MASK)};
+    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
 }
 
 Keylet

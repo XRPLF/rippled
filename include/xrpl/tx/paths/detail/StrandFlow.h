@@ -28,8 +28,8 @@ template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
     bool success = false;                          ///< Strand succeeded
-    TInAmt in = beast::kZERO;                      ///< Currency amount in
-    TOutAmt out = beast::kZERO;                    ///< Currency amount out
+    TInAmt in = beast::kZero;                      ///< Currency amount in
+    TOutAmt out = beast::kZero;                    ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
     boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
     // Num offers consumed or partially consumed (includes expired and unfunded
@@ -284,8 +284,8 @@ flow(
 template <class TInAmt, class TOutAmt>
 struct FlowResult
 {
-    TInAmt in = beast::kZERO;
-    TOutAmt out = beast::kZERO;
+    TInAmt in = beast::kZero;
+    TOutAmt out = beast::kZero;
     std::optional<PaymentSandbox> sandbox;
     boost::container::flat_set<uint256> removableOffers;
     TER ter = temUNKNOWN;
@@ -325,7 +325,7 @@ struct FlowResult
 inline std::optional<Quality>
 qualityUpperBound(ReadView const& v, Strand const& strand)
 {
-    Quality q{STAmount::kU_RATE_ONE};
+    Quality q{STAmount::kURateOne};
     std::optional<Quality> stepQ;
     DebtDirection dir = DebtDirection::Issues;
     for (auto const& step : strand)
@@ -595,9 +595,9 @@ flow(
     // values if `remainingIn` is initialized through a copy constructor. We can
     // get similar warnings for `sendMax` if it is initialized in the most
     // natural way. Using `make_optional`, allows us to work around this bug.
-    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::kZERO};
+    TInAmt const sendMaxInit = sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::kZero};
     std::optional<TInAmt> const sendMax =
-        (sendMaxST && sendMaxInit >= beast::kZERO) ? std::make_optional(sendMaxInit) : std::nullopt;
+        (sendMaxST && sendMaxInit >= beast::kZero) ? std::make_optional(sendMaxInit) : std::nullopt;
     std::optional<TInAmt> remainingIn = !!sendMax ? std::make_optional(sendMaxInit) : std::nullopt;
     // std::optional<TInAmt> remainingIn{sendMax};
 
@@ -619,7 +619,7 @@ flow(
     auto sum = [](auto const& col) {
         using TResult = std::decay_t<decltype(*col.begin())>;
         if (col.empty())
-            return TResult{beast::kZERO};
+            return TResult{beast::kZero};
         return std::accumulate(col.begin() + 1, col.end(), *col.begin());
     };
 
@@ -627,7 +627,7 @@ flow(
     // successful
     boost::container::flat_set<uint256> ofrsToRmOnFail;
 
-    while (remainingOut > beast::kZERO && (!remainingIn || *remainingIn > beast::kZERO))
+    while (remainingOut > beast::kZero && (!remainingIn || *remainingIn > beast::kZero))
     {
         ++curTry;
         if (curTry >= maxTries)
@@ -679,7 +679,7 @@ flow(
 
             offersConsidered += f.ofrsUsed;
 
-            if (!f.success || f.out == beast::kZERO)
+            if (!f.success || f.out == beast::kZero)
                 continue;
 
             if (flowDebugInfo)
@@ -800,7 +800,7 @@ flow(
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
         }
-        else if (actualOut == beast::kZERO)
+        else if (actualOut == beast::kZero)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
@@ -816,7 +816,7 @@ flow(
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
-        if (remainingIn && *remainingIn != beast::kZERO)
+        if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
     }
 

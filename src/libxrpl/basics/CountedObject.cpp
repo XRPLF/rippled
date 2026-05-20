@@ -7,9 +7,9 @@ namespace xrpl {
 CountedObjects&
 CountedObjects::getInstance() noexcept
 {
-    static CountedObjects kINSTANCE;
+    static CountedObjects kInstance;
 
-    return kINSTANCE;
+    return kInstance;
 }
 
 CountedObjects::CountedObjects() noexcept : count_(0), head_(nullptr)

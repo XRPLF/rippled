@@ -1120,14 +1120,14 @@ private:
             env(pay(ann, cam, dBux(60)), Path(localBob, dan), Sendmax(aBux(200)));
             env.close();
 
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, ann, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, ann, dBux(kNone)));
             BEAST_EXPECT(expectHolding(env, localBob, aBux(72)));
             BEAST_EXPECT(expectHolding(env, localBob, dBux(40)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
-            BEAST_EXPECT(expectHolding(env, dan, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
 
             AMM const ammBob(env, localBob, aBux(30), dBux(30));
 
@@ -1139,12 +1139,12 @@ private:
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(aBux(30), dBux(30), ammBob.tokens()));
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, ann, dBux(0)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
             BEAST_EXPECT(expectHolding(env, dan, aBux(0)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
         }
     }
 
@@ -2714,7 +2714,7 @@ private:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer(carol_, USD(1'000), XRP(1'000)));
-        env.require(Balance(carol_, USD(kNONE)));
+        env.require(Balance(carol_, USD(kNone)));
         env.require(Owners(carol_, 1));
         env.require(Balance(bob_, USD(0)));
         env.require(Owners(bob_, 1));

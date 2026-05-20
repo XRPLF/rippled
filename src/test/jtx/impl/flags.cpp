@@ -34,7 +34,7 @@ Flags::operator()(Env& env) const
     }
     else if (sle->isFieldPresent(sfFlags))
     {
-        env.test.expect((sle->getFieldU32(sfFlags) & mask_) == mask_);
+        env.test.expect(sle->isFlag(mask_));
     }
     else
     {
