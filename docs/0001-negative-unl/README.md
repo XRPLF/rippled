@@ -558,7 +558,7 @@ network delay. A test case specifies:
 1. a UNL with different number of validators for different test cases,
 1. a network with zero or more non-validator nodes,
 1. a sequence of validator reliability change events (by killing/restarting
-   nodes, or by running modified rippled that does not send all validation
+   nodes, or by running modified xrpld that does not send all validation
    messages),
 1. the correct outcomes.
 
@@ -566,7 +566,7 @@ For all the test cases, the correct outcomes are verified by examining logs. We
 will grep the log to see if the correct negative UNLs are generated, and whether
 or not the network is making progress when it should be. The ripdtop tool will
 be helpful for monitoring validators' states and ledger progress. Some of the
-timing parameters of rippled will be changed to have faster ledger time. Most if
+timing parameters of xrpld will be changed to have faster ledger time. Most if
 not all test cases do not need client transactions.
 
 For example, the test cases for the prototype:
@@ -583,7 +583,7 @@ For example, the test cases for the prototype:
 
 We considered testing with the current unit test framework, specifically the
 [Consensus Simulation
-Framework](https://github.com/ripple/rippled/blob/develop/src/test/csf/README.md)
+Framework](https://github.com/XRPLF/rippled/blob/develop/src/test/csf/README.md)
 (CSF). However, the CSF currently can only test the generic consensus algorithm
 as in the paper: [Analysis of the XRP Ledger Consensus
 Protocol](https://arxiv.org/abs/1802.07242).

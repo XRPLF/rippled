@@ -15,7 +15,7 @@ serializeBatch(
     std::uint32_t const& flags,
     std::vector<uint256> const& txids)
 {
-    msg.add32(HashPrefix::batch);
+    msg.add32(HashPrefix::Batch);
     msg.addBitString(outerAccount);
     msg.add32(outerSeqValue);
     msg.add32(flags);

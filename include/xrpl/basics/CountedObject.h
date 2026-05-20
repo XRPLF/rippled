@@ -19,7 +19,7 @@ public:
     using Entry = std::pair<std::string, int>;
     using List = std::vector<Entry>;
 
-    List
+    [[nodiscard]] List
     getCounts(int minimumThreshold) const;
 
 public:
@@ -38,11 +38,11 @@ public:
 
             do
             {
-                head = instance.m_head.load();
+                head = instance.head_.load();
                 next_ = head;
-            } while (instance.m_head.exchange(this) != head);
+            } while (instance.head_.exchange(this) != head);
 
-            ++instance.m_count;
+            ++instance.count_;
         }
 
         ~Counter() noexcept = default;
@@ -59,19 +59,19 @@ public:
             return --count_;
         }
 
-        int
+        [[nodiscard]] int
         getCount() const noexcept
         {
             return count_.load();
         }
 
-        Counter*
+        [[nodiscard]] Counter*
         getNext() const noexcept
         {
             return next_;
         }
 
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const noexcept
         {
             return name_;
@@ -88,8 +88,8 @@ private:
     ~CountedObjects() noexcept = default;
 
 private:
-    std::atomic<int> m_count;
-    std::atomic<Counter*> m_head;
+    std::atomic<int> count_;
+    std::atomic<Counter*> head_;
 };
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ private:
     Derived classes have their instances counted automatically. This is used
     for reporting purposes.
 
-    @ingroup ripple_basics
+    @ingroup basics
 */
 template <class Object>
 class CountedObject
@@ -108,11 +108,10 @@ private:
     static auto&
     getCounter() noexcept
     {
-        static CountedObjects::Counter c{beast::type_name<Object>()};
-        return c;
+        static CountedObjects::Counter kC{beast::typeName<Object>()};
+        return kC;
     }
 
-public:
     CountedObject() noexcept
     {
         getCounter().increment();
@@ -126,10 +125,13 @@ public:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
+public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
     }
+
+    friend Object;
 };
 
 }  // namespace xrpl

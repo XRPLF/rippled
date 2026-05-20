@@ -41,7 +41,8 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Keylet const trustLineKey = keylet::line(receiver, amount.issue());
+    Issue const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::line(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -64,26 +65,26 @@ escrowUnlockApplyHelper<Issue>(
             return tecNO_LINE_INSUF_RESERVE;
         }
 
-        Currency const currency = amount.getCurrency();
-        STAmount initialBalance(amount.issue());
-        initialBalance.setIssuer(noAccount());
+        Currency const currency = issue.currency;
+        STAmount initialBalance(issue);
+        initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                view,                                           // payment sandbox
-                recvLow,                                        // is dest low?
-                issuer,                                         // source
-                receiver,                                       // destination
-                trustLineKey.key,                               // ledger index
-                sleDest,                                        // Account to add to
-                false,                                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
-                false,                                          // freeze trust line
-                false,                                          // deep freeze trust line
-                initialBalance,                                 // zero initial balance
-                Issue(currency, receiver),                      // limit of zero
-                0,                                              // quality in
-                0,                                              // quality out
-                journal);                                       // journal
+                view,                                // payment sandbox
+                recvLow,                             // is dest low?
+                issuer,                              // source
+                receiver,                            // destination
+                trustLineKey.key,                    // ledger index
+                sleDest,                             // Account to add to
+                false,                               // authorize account
+                !sleDest->isFlag(lsfDefaultRipple),  //
+                false,                               // freeze trust line
+                false,                               // deep freeze trust line
+                initialBalance,                      // zero initial balance
+                Issue(currency, receiver),           // limit of zero
+                0,                                   // quality in
+                0,                                   // quality out
+                journal);                            // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -110,10 +111,11 @@ escrowUnlockApplyHelper<Issue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
-        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.issue(), true);
+        auto const xferFee =
+            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
@@ -148,7 +150,7 @@ escrowUnlockApplyHelper<Issue>(
     // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
-        auto const ter = rippleCredit(view, issuer, receiver, finalAmt, true, journal);
+        auto const ter = directSendNoFee(view, issuer, receiver, finalAmt, true, journal);
         if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
@@ -209,14 +211,14 @@ escrowUnlockApplyHelper<MPTIssue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-    return rippleUnlockEscrowMPT(
+    return unlockEscrowMPT(
         view,
         sender,
         receiver,

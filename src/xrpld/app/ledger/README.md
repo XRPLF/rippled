@@ -63,7 +63,7 @@ that the validator sends its proposals and validations to the network.
 
 ## Ledger Priorities
 
-There are two ledgers that are the most important for a rippled server to have:
+There are two ledgers that are the most important for an xrpld server to have:
 
 - The consensus ledger and
 - The last validated ledger.
@@ -224,7 +224,7 @@ conclusion about which last closed ledger is authoritative.
 
 ## Consensus
 
-A distributed agreement protocol. Ripple uses the consensus process to solve
+A distributed agreement protocol. XRPL uses the consensus process to solve
 the problem of double-spending.
 
 ## Validation
@@ -402,7 +402,7 @@ are occupied by the exchange rate.
 
 ## Overview
 
-The Ripple server permits clients to subscribe to a continuous stream of
+The XRPL server permits clients to subscribe to a continuous stream of
 fully-validated ledgers. The publication code maintains this stream.
 
 The server attempts to maintain this continuous stream unless it falls

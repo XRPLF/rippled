@@ -12,35 +12,32 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
-
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
 /** Batch operations */
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 /** Calculate Batch Fee. */
 XRPAmount
 calcBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
 
 /** Batch. */
-Json::Value
+json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
 /** Adds a new Batch Txn on a JTx and autofills. */
-class inner
+class Inner
 {
 private:
-    Json::Value txn_;
+    json::Value txn_;
     std::optional<std::uint32_t> ticket_;
 
 public:
-    inner(
-        Json::Value const& txn,
+    Inner(
+        json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(txn), ticket_(ticket)
+        : txn_(std::move(txn)), ticket_(ticket)
     {
         txn_[jss::SigningPubKey] = "";
         txn_[jss::Sequence] = sequence;
@@ -58,19 +55,19 @@ public:
     void
     operator()(Env&, JTx& jtx) const;
 
-    Json::Value&
-    operator[](Json::StaticString const& key)
+    json::Value&
+    operator[](json::StaticString const& key)
     {
         return txn_[key];
     }
 
     void
-    removeMember(Json::StaticString const& key)
+    removeMember(json::StaticString const& key)
     {
         txn_.removeMember(key);
     }
 
-    Json::Value const&
+    [[nodiscard]] json::Value const&
     getTxn() const
     {
         return txn_;
@@ -78,19 +75,19 @@ public:
 };
 
 /** Set a batch signature on a JTx. */
-class sig
+class Sig
 {
 public:
     std::vector<Reg> signers;
 
-    sig(std::vector<Reg> signers_) : signers(std::move(signers_))
+    Sig(std::vector<Reg> s) : signers(std::move(s))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit sig(AccountType&& a0, Accounts&&... aN)
+    explicit Sig(AccountType&& a0, Accounts&&... aN)
         : signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);
@@ -101,22 +98,22 @@ public:
 };
 
 /** Set a batch nested multi-signature on a JTx. */
-class msig
+class Msig
 {
 public:
     Account master;
     std::vector<Reg> signers;
 
-    msig(Account const& masterAccount, std::vector<Reg> signers_)
-        : master(masterAccount), signers(std::move(signers_))
+    Msig(Account masterAccount, std::vector<Reg> s)
+        : master(std::move(masterAccount)), signers(std::move(s))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit msig(Account const& masterAccount, AccountType&& a0, Accounts&&... aN)
-        : master(masterAccount)
+    explicit Msig(Account masterAccount, AccountType&& a0, Accounts&&... aN)
+        : master(std::move(masterAccount))
         , signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);
@@ -126,9 +123,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace batch
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch
