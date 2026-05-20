@@ -460,8 +460,8 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::fromString("198.51.100.2:51235");
-        auto const remote = beast::IP::Endpoint::fromString("198.51.100.1:1234");
+        auto const local = beast::IP::Endpoint::fromString("65.0.0.2:51235");
+        auto const remote = beast::IP::Endpoint::fromString("65.0.0.1:1234");
         auto const [slot, result] = logic.newInboundSlot(local, remote);
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(result == Result::Success);
@@ -471,24 +471,24 @@ public:
 
         Endpoints endpoints{
             {beast::IP::Endpoint::fromString("0.0.0.0:51235"), 0},
-            {beast::IP::Endpoint::fromString("198.51.100.3:51235"), 2},
-            {beast::IP::Endpoint::fromString("198.51.100.3:51235"), 2},
+            {beast::IP::Endpoint::fromString("65.0.0.3:51235"), 2},
+            {beast::IP::Endpoint::fromString("65.0.0.3:51235"), 2},
             {beast::IP::Endpoint::fromString("10.0.0.1:51235"), 2},
-            {beast::IP::Endpoint::fromString("198.51.100.4:51235"), Tuning::kMaxHops + 1},
+            {beast::IP::Endpoint::fromString("65.0.0.4:51235"), Tuning::kMaxHops + 1},
         };
 
         logic.preprocess(slot, endpoints);
 
         BEAST_EXPECT(endpoints.size() == 2);
-        BEAST_EXPECT(endpoints[0].address == beast::IP::Endpoint::fromString("198.51.100.1:51235"));
+        BEAST_EXPECT(endpoints[0].address == beast::IP::Endpoint::fromString("65.0.0.1:51235"));
         BEAST_EXPECT(endpoints[0].hops == 1);
-        BEAST_EXPECT(endpoints[1].address == beast::IP::Endpoint::fromString("198.51.100.3:51235"));
+        BEAST_EXPECT(endpoints[1].address == beast::IP::Endpoint::fromString("65.0.0.3:51235"));
         BEAST_EXPECT(endpoints[1].hops == 3);
 
         logic.onEndpoints(
             slot,
-            {{beast::IP::Endpoint::fromString("198.51.100.5:51235"), 2},
-             {beast::IP::Endpoint::fromString("198.51.100.6:51235"), 2}});
+            {{beast::IP::Endpoint::fromString("65.0.0.5:51235"), 2},
+             {beast::IP::Endpoint::fromString("65.0.0.6:51235"), 2}});
 
         auto const broadcast = logic.buildEndpointsForPeers();
         BEAST_EXPECT(broadcast.size() == 1);
