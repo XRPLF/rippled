@@ -34,6 +34,15 @@ enum class WaiveTransferFee : bool { No = false, Yes };
 /** Controls whether accountSend is allowed to overflow OutstandingAmount **/
 enum class AllowMPTOverflow : bool { No = false, Yes };
 
+/** Controls whether canTransfer enforces lsfMPTCanTransfer on MPTs.
+ *
+ *  Default is No (enforce). Use Yes at call sites that must remain available
+ *  even when an MPT issuer has cleared lsfMPTCanTransfer - for example,
+ *  unwinding existing positions in SAV or the Lending Protocol. Has no
+ *  effect on the IOU branch of canTransfer.
+ */
+enum class WaiveMPTCanTransfer : bool { No = false, Yes };
+
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
  * - WeakAuth
@@ -63,7 +72,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue);
@@ -85,14 +98,14 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
@@ -100,7 +113,11 @@ isDeepFrozen(
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
@@ -234,7 +251,13 @@ requireAuth(
     AuthType authType = AuthType::Legacy);
 
 [[nodiscard]] TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to);
+canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //

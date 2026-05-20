@@ -1783,7 +1783,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (std::size_t n = 0; n < numCreds; ++n)
         {
             auto credType = "cred_type" + std::to_string(n);
-            credentials.push_back({a2, credType});
+            credentials.push_back({.issuer = a2, .credType = credType});
         }
 
         std::uint32_t const seq = env.seq(a1);
@@ -4100,6 +4100,114 @@ class Invariants_test : public beast::unit_test::Suite
                     env.fund(XRP(1'000), gw, a3);
                     MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2, a3}});
                     id = mpt.issuanceID();
+                    return true;
+                });
+        }
+
+        // sfReferenceHolding can only be set on creation by VaultCreate. A
+        // non-VaultCreate transaction that creates an MPTokenIssuance with
+        // sfReferenceHolding present must trip the invariant.
+        doInvariantCheck(
+            {{"sfReferenceHolding set on a new MPTokenIssuance by a "
+              "non-VaultCreate transaction"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
+                if (!sleAcct)
+                    return false;
+                MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}});
+
+        // sfReferenceHolding is immutable: changing the field on an
+        // existing MPTokenIssuance must trip the invariant. Set up a real
+        // vault via preclose (so the share issuance carries
+        // sfReferenceHolding), then mutate it in precheck to produce a
+        // before/after pair.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"sfReferenceHolding was modified on an existing "
+                  "MPTokenIssuance"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto sleIssuance =
+                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    ac.view().update(sleIssuance);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
+                    return true;
+                });
+        }
+
+        // A vault pseudo-account's MPToken cannot be deleted by anything
+        // other than a VaultDelete transaction. Set up a vault, then have
+        // an arbitrary tx erase the pseudo's MPToken in precheck.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"vault pseudo-account holding deleted by a "
+                  "non-VaultDelete transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto const sleIssuance =
+                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                        return false;
+                    auto sleHolding = ac.view().peek(
+                        keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                    if (!sleHolding)
+                        return false;
+                    ac.view().erase(sleHolding);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
                     return true;
                 });
         }

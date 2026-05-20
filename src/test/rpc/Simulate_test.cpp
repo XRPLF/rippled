@@ -66,7 +66,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            txJson = STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
         BEAST_EXPECT(txJson[jss::TransactionType] == tx[jss::TransactionType]);
         BEAST_EXPECT(txJson[jss::Account] == tx[jss::Account]);
@@ -162,7 +162,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            return STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
+            return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
 
         return txResult[jss::meta];

@@ -1256,7 +1256,9 @@ transactionSignFor(
         signers.emplaceBack(std::move(signer));
 
         // The array must be sorted and validated.
-        auto err = sortAndValidateSigners(signers, (*sttx)[sfAccount]);
+        // For delegated transactions, the delegate account is
+        // the one forbidden from appearing in its own Signers array.
+        auto err = sortAndValidateSigners(signers, sttx->getFeePayer());
         if (RPC::containsError(err))
             return err;
     }
@@ -1423,7 +1425,9 @@ transactionSubmitMultiSigned(
     }
 
     // The array must be sorted and validated.
-    auto err = sortAndValidateSigners(signers, srcAddressID);
+    // For delegated transactions, getFeePayer() returns sfDelegate,
+    // that account is the one forbidden from appearing in its own Signers array.
+    auto err = sortAndValidateSigners(signers, stTx->getFeePayer());
     if (RPC::containsError(err))
         return err;
 
