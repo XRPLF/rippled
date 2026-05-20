@@ -258,7 +258,7 @@ parseUInt16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             TxFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSfGeneric)
+                    if (*name == sfGeneric)
                         name = &sfTransaction;
                 }
                 else if (field == sfLedgerEntryType)
@@ -268,7 +268,7 @@ parseUInt16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             LedgerFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSfGeneric)
+                    if (*name == sfGeneric)
                         name = &sfLedgerEntry;
                 }
                 else
@@ -1189,7 +1189,7 @@ parseArray(
 STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    object = parseObject(name, json, kSfGeneric, 0, error);
+    object = parseObject(name, json, sfGeneric, 0, error);
 }
 
 }  // namespace xrpl

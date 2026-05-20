@@ -54,7 +54,7 @@ TypedField<T>::TypedField(PrivateAccessTagT pat, Args&&... args)
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1, "");
-SField const kSfGeneric(access, 0, "Generic");
+SField const sfGeneric(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
 SField const kSfHash(access, STI_UINT256, 257, "hash");
