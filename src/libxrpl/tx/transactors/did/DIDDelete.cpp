@@ -67,7 +67,7 @@ DIDDelete::deleteSLE(
 TER
 DIDDelete::doApply()
 {
-    return deleteSLE(ctx_, keylet::did(account_), account_);
+    return deleteSLE(ctx_, keylet::did(accountID_), accountID_);
 }
 
 void
@@ -76,11 +76,13 @@ DIDDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DIDDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

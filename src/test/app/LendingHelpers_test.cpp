@@ -7,6 +7,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
@@ -18,62 +19,12 @@ namespace xrpl::test {
 class LendingHelpers_test : public beast::unit_test::Suite
 {
     void
-    testComputeRaisedRate()
-    {
-        using namespace jtx;
-        using namespace xrpl::detail;
-        struct TestCase
-        {
-            std::string name;
-            Number periodicRate;
-            std::uint32_t paymentsRemaining;
-            Number expectedRaisedRate;
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "Zero payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 0,
-                .expectedRaisedRate = Number{1},  // (1 + r)^0 = 1
-            },
-            {
-                .name = "One payment remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 1,
-                .expectedRaisedRate = Number{105, -2},
-            },  // 1.05^1
-            {
-                .name = "Multiple payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 3,
-                .expectedRaisedRate = Number{1157625, -6},
-            },  // 1.05^3
-            {
-                .name = "Zero periodic rate",
-                .periodicRate = Number{0},
-                .paymentsRemaining = 5,
-                .expectedRaisedRate = Number{1},  // (1 + 0)^5 = 1
-            }};
-
-        for (auto const& tc : testCases)
-        {
-            testcase("computeRaisedRate: " + tc.name);
-
-            auto const computedRaisedRate =
-                computeRaisedRate(tc.periodicRate, tc.paymentsRemaining);
-            BEAST_EXPECTS(
-                computedRaisedRate == tc.expectedRaisedRate,
-                "Raised rate mismatch: expected " + to_string(tc.expectedRaisedRate) + ", got " +
-                    to_string(computedRaisedRate));
-        }
-    }
-
-    void
     testComputePaymentFactor()
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
         struct TestCase
         {
             std::string name;
@@ -114,7 +65,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             testcase("computePaymentFactor: " + tc.name);
 
             auto const computedPaymentFactor =
-                computePaymentFactor(tc.periodicRate, tc.paymentsRemaining);
+                computePaymentFactor(rules, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPaymentFactor == tc.expectedPaymentFactor,
                 "Payment factor mismatch: expected " + to_string(tc.expectedPaymentFactor) +
@@ -127,6 +78,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -172,8 +125,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
         {
             testcase("loanPeriodicPayment: " + tc.name);
 
-            auto const computedPeriodicPayment =
-                loanPeriodicPayment(tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
+            auto const computedPeriodicPayment = loanPeriodicPayment(
+                rules, tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPeriodicPayment == tc.expectedPeriodicPayment,
                 "Periodic payment mismatch: expected " + to_string(tc.expectedPeriodicPayment) +
@@ -186,6 +139,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -232,13 +187,301 @@ class LendingHelpers_test : public beast::unit_test::Suite
             testcase("loanPrincipalFromPeriodicPayment: " + tc.name);
 
             auto const computedPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
-                tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
+                rules, tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPrincipalOutstanding == tc.expectedPrincipalOutstanding,
                 "Principal outstanding mismatch: expected " +
                     to_string(tc.expectedPrincipalOutstanding) + ", got " +
                     to_string(computedPrincipalOutstanding));
         }
+    }
+
+    void
+    testComputePowerMinusOne()
+    {
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        // Edge cases.
+        {
+            testcase("computePowerMinusOne: zero rate returns zero");
+            BEAST_EXPECT(computePowerMinusOne(0, 5) == 0);
+        }
+        {
+            testcase("computePowerMinusOne: zero paymentsRemaining returns zero");
+            Number const fivePercent{5, -2};
+            BEAST_EXPECT(computePowerMinusOne(fivePercent, 0) == 0);
+        }
+        // (1.05)^3 - 1 = 0.157625, computed independently by hand.
+        {
+            testcase("computePowerMinusOne: standard case (1.05)^3 - 1 = 0.157625");
+            Number const r{5, -2};
+            Number const expected{157625, -6};
+            BEAST_EXPECT(computePowerMinusOne(r, 3) == expected);
+        }
+        // (1+1)^1 - 1 = 1.
+        {
+            testcase("computePowerMinusOne: r=1, n=1");
+            BEAST_EXPECT(computePowerMinusOne(1, 1) == 1);
+        }
+
+        // Property check at near-zero rate (the bug regime): for n=2 the
+        // mathematical identity is `(1+r)^2 - 1 = 2r + r^2`. We compute
+        // `2r + r^2` by direct multiplication in Number arithmetic — a
+        // path that doesn't share any code with the binomial loop — and
+        // assert the two paths agree.
+        {
+            testcase("computePowerMinusOne: near-zero rate matches independent 2r + r^2");
+            // r = 1 TenthBips32 over 600s payment interval, computed
+            // independently below using xrpl::detail::loanPeriodicRate.
+            Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+            Number const independentExpected = 2 * r + r * r;  // (1+r)^2 - 1
+            BEAST_EXPECT(computePowerMinusOne(r, 2) == independentExpected);
+        }
+        // Same property at n=3: (1+r)^3 - 1 = 3r + 3r^2 + r^3.
+        {
+            testcase("computePowerMinusOne: near-zero rate matches independent 3r + 3r^2 + r^3");
+            Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+            Number const independentExpected = 3 * r + 3 * r * r + r * r * r;
+            BEAST_EXPECT(computePowerMinusOne(r, 3) == independentExpected);
+        }
+
+        // Larger-n stress test for the loop's early-termination logic.
+        // At very small r the binomial terms decrease by a factor of
+        // ~r*(n-k)/(k+1) per step, so even at n=1000 the loop should
+        // terminate in a small handful of iterations. Cross-check the
+        // result against the hybrid (which dispatches to this same
+        // binomial path when r*n < 1e-9).
+        {
+            testcase("computePowerMinusOne: large n, early termination matches hybrid output");
+            // r*n = 1e-10 and 1e-12 — both clearly below the 1e-9 threshold.
+            Number const r1{1, -13};
+            std::uint32_t const n1 = 1'000;
+            Number const r2{1, -15};
+            std::uint32_t const n2 = 1'000;
+            BEAST_EXPECT(computePowerMinusOne(r1, n1) == computePowerMinusOneHybrid(r1, n1));
+            BEAST_EXPECT(computePowerMinusOne(r2, n2) == computePowerMinusOneHybrid(r2, n2));
+            BEAST_EXPECT(computePowerMinusOne(r1, n1) > 0);
+            BEAST_EXPECT(computePowerMinusOne(r2, n2) > 0);
+        }
+    }
+
+    // Direct tests of `computePowerMinusOneHybrid`. Verifies the dispatcher
+    // picks the right branch and produces the right result on each side
+    // of the threshold.
+    void
+    testComputePowerMinusOneHybrid()
+    {
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        // Above threshold (r * n >= 1e-9): hybrid must agree with the closed
+        // form `power(1+r, n) - 1` exactly (it is the closed form).
+        {
+            testcase("computePowerMinusOneHybrid: r*n >= 1e-9 uses closed form (bit-exact match)");
+
+            struct AboveThreshold
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<AboveThreshold>{
+                {"r=5%, n=3", Number{5, -2}, 3},
+                {"r=0.1%, n=1000", Number{1, -3}, 1'000},
+                {"r=1e-7, n=100 (above threshold by 10x)", Number{1, -7}, 100},
+            };
+            for (auto const& tc : cases)
+            {
+                Number const closed = power(1 + tc.r, tc.n) - 1;
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                BEAST_EXPECTS(
+                    hybrid == closed,
+                    tc.name + ": closed=" + to_string(closed) + ", hybrid=" + to_string(hybrid));
+            }
+        }
+
+        // Below threshold (r * n < 1e-9): hybrid must agree with
+        // `computePowerMinusOne` (the binomial expansion). At this regime
+        // the closed form is provably wrong (cancellation); we verify the
+        // dispatcher routes to the binomial path.
+        {
+            testcase(
+                "computePowerMinusOneHybrid: r*n < 1e-9 uses binomial expansion (bit-exact match)");
+
+            struct BelowThreshold
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<BelowThreshold>{
+                // bug regime: r = 1 TenthBips32 over 600s payment interval
+                // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
+                {"bug regime: r~1.9e-10, n=2", loanPeriodicRate(TenthBips32{1}, 600), 2},
+                {"r=1e-12, n=100", Number{1, -12}, 100},
+            };
+            for (auto const& tc : cases)
+            {
+                Number const binom = computePowerMinusOne(tc.r, tc.n);
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                BEAST_EXPECTS(
+                    hybrid == binom,
+                    tc.name + ": binom=" + to_string(binom) + ", hybrid=" + to_string(hybrid));
+            }
+        }
+
+        // Edge cases.
+        {
+            testcase("computePowerMinusOneHybrid: edge cases");
+            Number const fivePercent{5, -2};
+            BEAST_EXPECT(computePowerMinusOneHybrid(0, 100) == 0);
+            BEAST_EXPECT(computePowerMinusOneHybrid(fivePercent, 0) == 0);
+            BEAST_EXPECT(computePowerMinusOneHybrid(0, 0) == 0);
+        }
+
+        // Threshold boundary: r*n = 1e-9 exactly. Hybrid uses `>=` against
+        // the threshold, so this case must take the closed-form branch.
+        // We also verify that the binomial path agrees with the closed
+        // form to high precision at this crossover — confirming the
+        // threshold is placed where both paths give "adequate" answers.
+        {
+            testcase("computePowerMinusOneHybrid: threshold boundary r*n = 1e-9");
+
+            // Construct exactly r*n = 1e-9 with two distinct (r, n) pairs.
+            struct Boundary
+            {
+                std::string name;
+                Number r;
+                std::uint32_t n;
+            };
+            auto const cases = std::vector<Boundary>{
+                {"r=1e-9, n=1", Number{1, -9}, 1},
+                {"r=1e-12, n=1000", Number{1, -12}, 1'000},
+            };
+
+            for (auto const& tc : cases)
+            {
+                Number const closed = power(1 + tc.r, tc.n) - 1;
+                Number const hybrid = computePowerMinusOneHybrid(tc.r, tc.n);
+                Number const binom = computePowerMinusOne(tc.r, tc.n);
+
+                // At exact threshold, hybrid must take closed-form path:
+                // bit-exact match with closed.
+                BEAST_EXPECTS(
+                    hybrid == closed,
+                    tc.name + ": hybrid should equal closed at threshold; got hybrid=" +
+                        to_string(hybrid) + ", closed=" + to_string(closed));
+
+                // Closed-form and binomial must agree at the threshold to
+                // within Number's post-subtraction precision (~10 sig
+                // digits of `r*n = 1e-9`, i.e. ~1e-19 absolute error).
+                Number const tolerance{1, -18};
+                Number const diff = abs(closed - binom);
+                BEAST_EXPECTS(
+                    diff < tolerance,
+                    tc.name + ": closed and binomial diverge at threshold by " + to_string(diff));
+            }
+        }
+    }
+
+    // Regression: at near-zero rate, `loanPrincipalFromPeriodicPayment`
+    // must satisfy `principal <= periodicPayment * paymentsRemaining` for
+    // any non-negative rate. The naive closed-form path violated this
+    // bound due to catastrophic cancellation in `(1+r)^n - 1`.
+    void
+    testLoanPrincipalFromPeriodicPaymentNearZeroRate()
+    {
+        testcase("loanPrincipalFromPeriodicPayment: principal <= payment*n at near-zero rate");
+        using namespace jtx;
+        using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
+
+        // Inputs from the bug reproduction in Loan_test.cpp:
+        //   InterestRate = 1 TenthBips32 (0.001 % per year),
+        //   PaymentInterval = 600 s, principal = 100, 3 payments.
+        // periodicRate is ~1.9e-10.
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
+
+        for (auto const n : {3u, 2u, 1u})
+        {
+            auto const computed =
+                loanPrincipalFromPeriodicPayment(rules, periodicPayment, periodicRate, n);
+            auto const upperBound = periodicPayment * Number{n};
+            BEAST_EXPECTS(
+                computed <= upperBound,
+                "n=" + std::to_string(n) + ": payment*n=" + to_string(upperBound) +
+                    ", principal=" + to_string(computed));
+        }
+    }
+
+    // Regression: `computeTheoreticalLoanState` must produce a non-negative
+    // `interestDue` for any non-negative rate. Pre-fix, near-zero rates
+    // produced a negative `interestDue` because `(1+r)^n - 1` lost most of
+    // its precision to cancellation.
+    void
+    testComputeTheoreticalLoanStateNearZeroRate()
+    {
+        testcase("computeTheoreticalLoanState: non-negative interestDue at near-zero rate");
+        using namespace jtx;
+        using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
+
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
+
+        auto const state =
+            computeTheoreticalLoanState(rules, periodicPayment, periodicRate, 2, TenthBips32{0});
+
+        BEAST_EXPECT(state.principalOutstanding <= state.valueOutstanding);
+        BEAST_EXPECT(state.interestDue >= 0);
+        BEAST_EXPECT(state.managementFeeDue == 0);
+    }
+
+    // Direct gating proof: at near-zero rate, `computePaymentFactor` must
+    // return different values with `fixCleanup3_2_0` disabled vs enabled.
+    // The enabled path agrees with an independent polynomial reference;
+    // the disabled path diverges by a measurable amount due to the
+    // catastrophic cancellation in `(1+r)^n - 1`.
+    void
+    testComputePaymentFactorNearZeroRate()
+    {
+        testcase("computePaymentFactor: near-zero rate, amendment disabled vs enabled");
+        using namespace jtx;
+        using namespace xrpl::detail;
+
+        Number const r = loanPeriodicRate(TenthBips32{1}, 600);
+        std::uint32_t const n = 3;
+
+        // Independent reference: expand F(r,3) = r*(1+r)^3/((1+r)^3-1)
+        // algebraically for n=3, dividing numerator and denominator by r:
+        //   F(r,3) = (1 + 3r + 3r^2 + r^3) / (3 + 3r + r^2)
+        // No power(), no binomial series — pure polynomial arithmetic in
+        // Number.
+        Number const reference = (1 + 3 * r + 3 * r * r + r * r * r) / (3 + 3 * r + r * r);
+
+        // Pre-fix: closed form power(1+r, n) - 1 suffers catastrophic
+        // cancellation when r*n ~ 5.7e-10.
+        Env const envBug{*this, testableAmendments() - fixCleanup3_2_0};
+        Number const buggyFactor = computePaymentFactor(envBug.current()->rules(), r, n);
+
+        // Post-fix: hybrid binomial path avoids cancellation.
+        Env const envFix{*this};
+        Number const correctFactor = computePaymentFactor(envFix.current()->rules(), r, n);
+
+        // The amendment must change the computed factor in this regime.
+        BEAST_EXPECT(buggyFactor != correctFactor);
+
+        // The fixed factor must agree with the polynomial reference to
+        // within a few ULPs of Number's 19-digit precision.
+        BEAST_EXPECT(abs(correctFactor - reference) < Number(1, -15));
+
+        // The buggy factor must diverge from the reference by a measurable
+        // amount — empirically ~1e-10 in this regime.
+        BEAST_EXPECT(abs(buggyFactor - reference) > Number(1, -12));
     }
 
     void
@@ -606,6 +849,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -615,6 +859,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -697,6 +942,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -706,6 +952,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -790,6 +1037,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -799,6 +1047,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -889,6 +1138,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -898,6 +1148,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -996,6 +1247,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1005,6 +1257,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1103,6 +1356,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1112,6 +1366,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1199,8 +1454,12 @@ public:
         testLoanLatePaymentInterest();
         testLoanPeriodicPayment();
         testLoanPrincipalFromPeriodicPayment();
-        testComputeRaisedRate();
+        testLoanPrincipalFromPeriodicPaymentNearZeroRate();
         testComputePaymentFactor();
+        testComputePowerMinusOne();
+        testComputePowerMinusOneHybrid();
+        testComputeTheoreticalLoanStateNearZeroRate();
+        testComputePaymentFactorNearZeroRate();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
     }
