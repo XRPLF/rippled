@@ -17,10 +17,8 @@
 #include <xrpl/server/InfoSub.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <future>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -94,139 +92,84 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     {
         JLOG(journal_.trace()) << "updateAll looping";
 
-        struct WorkItem
+        for (auto const& wr : requests)
         {
-            PathRequest::pointer request;
-            bool isOneShot;
-        };
-        std::vector<WorkItem> workItems;
-        std::vector<PathRequest::pointer> toRemove;
-        bool hasExpired = false;
+            if (app_.getJobQueue().isStopping())
+                break;
 
-        if (!app_.getJobQueue().isStopping())
-        {
-            for (auto const& wr : requests)
+            auto request = wr.lock();
+            bool remove = true;
+            JLOG(journal_.trace()) << "updateAll request " << (request ? "" : "not ") << "found";
+
+            if (request)
             {
-                auto request = wr.lock();
-                JLOG(journal_.trace())
-                    << "updateAll request " << (request ? "" : "not ") << "found";
-
-                if (!request)
-                {
-                    hasExpired = true;
-                    continue;
-                }
-
+                auto continueCallback = [&getSubscriber, &request]() {
+                    // This callback is used by doUpdate to determine whether to
+                    // continue working. If getSubscriber returns null, that
+                    // indicates that this request is no longer relevant.
+                    return (bool)getSubscriber(request);
+                };
                 if (!request->needsUpdate(newRequests, cache->getLedger()->seq()))
-                    continue;
-
-                if (auto ipSub = getSubscriber(request))
                 {
-                    if (!ipSub->getConsumer().warn()) {
-                        workItems.push_back({request, false});
-                    } else {
-                        toRemove.push_back(request);
-}
-                }
-                else if (request->hasCompletion())
-                {
-                    workItems.push_back({request, true});
+                    remove = false;
                 }
                 else
                 {
-                    toRemove.push_back(request);
-                }
-            }
-        }
-
-        struct WorkResult
-        {
-            PathRequest::pointer request;
-            json::Value update;
-            bool isOneShot;
-        };
-
-        // Use PATH_WORKERS config to cap parallel pathfinding threads.
-        std::size_t const maxParallel = std::max(2, app_.config().PATH_WORKERS);
-
-        JLOG(journal_.trace()) << "updateAll processing " << workItems.size()
-                               << " requests, parallelism=" << maxParallel;
-
-        std::vector<WorkResult> allResults;
-        allResults.reserve(workItems.size());
-
-        for (std::size_t batchStart = 0; batchStart < workItems.size(); batchStart += maxParallel)
-        {
-            std::size_t const batchEnd = std::min(batchStart + maxParallel, workItems.size());
-
-            std::vector<std::future<WorkResult>> futures;
-            futures.reserve(batchEnd - batchStart);
-
-            for (std::size_t i = batchStart; i < batchEnd; ++i)
-            {
-                auto& item = workItems[i];
-                futures.push_back(
-                    std::async(
-                        std::launch::async,
-                        [req = item.request, oneShot = item.isOneShot, &cache, &getSubscriber]()
-                            -> WorkResult {
-                            std::function<bool(void)> cb;
-                            if (!oneShot)
+                    if (auto ipSub = getSubscriber(request))
+                    {
+                        if (!ipSub->getConsumer().warn())
+                        {
+                            // Release the shared ptr to the subscriber so that
+                            // it can be freed if the client disconnects, and
+                            // thus fail to lock later.
+                            ipSub.reset();
+                            json::Value update = request->doUpdate(cache, false, continueCallback);
+                            request->updateComplete();
+                            update[jss::type] = "path_find";
+                            if ((ipSub = getSubscriber(request)))
                             {
-                                cb = [&getSubscriber, req]() { return (bool)getSubscriber(req); };
+                                ipSub->send(update, false);
+                                remove = false;
+                                ++processed;
                             }
-                            json::Value update = req->doUpdate(cache, false, cb);
-                            req->updateComplete();
-                            return {.request=req, .update=std::move(update), .isOneShot=oneShot};
-                        }));
-            }
-
-            for (auto& f : futures)
-                allResults.push_back(f.get());
-        }
-
-        for (auto& result : allResults)
-        {
-            if (result.isOneShot)
-            {
-                ++processed;
-            }
-            else
-            {
-                result.update[jss::type] = "path_find";
-                if (auto ipSub = getSubscriber(result.request))
-                {
-                    ipSub->send(result.update, false);
-                    ++processed;
-                }
-                else
-                {
-                    toRemove.push_back(result.request);
+                        }
+                    }
+                    else if (request->hasCompletion())
+                    {
+                        // One-shot request with completion function
+                        request->doUpdate(cache, false);
+                        request->updateComplete();
+                        ++processed;
+                    }
                 }
             }
-        }
 
-        if (!toRemove.empty() || hasExpired)
-        {
-            std::scoped_lock const sl(lock_);
+            if (remove)
+            {
+                std::scoped_lock const sl(lock_);
 
-            auto ret = std::ranges::remove_if(
-                requests_, [&removed, &toRemove](auto const& wl) {
-                    auto r = wl.lock();
-                    if (!r)
-                    {
+                // Remove any dangling weak pointers or weak
+                // pointers that refer to this path request.
+                auto ret = std::remove_if(
+                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
+                        auto r = wl.lock();
+
+                        if (r && r != request)
+                            return false;
+
                         ++removed;
                         return true;
-                    }
-                    if (std::find(toRemove.begin(), toRemove.end(), r) != toRemove.end())
-                    {
-                        ++removed;
-                        return true;
-                    }
-                    return false;
-                });
+                    });
 
-            requests_.erase(ret.begin(), ret.end());
+                requests_.erase(ret, requests_.end());
+            }
+
+            mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
+
+            // We weren't handling new requests and then
+            // there was a new request
+            if (mustBreak)
+                break;
         }
 
         mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
