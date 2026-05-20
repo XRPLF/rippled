@@ -984,8 +984,8 @@ NoModifiedUnmodifiableFields::visitEntry(
 }
 
 // Check whether any constant (or unannotated) fields in the given template
-// have been modified between before and after.  Recurses into STObject and
-// STArray fields using InnerObjectFormats.
+// have been modified between before and after.
+// TODO(future): recurse into STObject and STArray fields using InnerObjectFormats
 static bool
 hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplate const& tmpl)
 {
@@ -1001,21 +1001,10 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
 
         if (constant == SoeImmutable)
         {
-            if (elem.style() == SoeOptional)
-            {
-                // Optional constant fields may be added or removed,
-                // but their value must not change once present.
-                if (bPresent && aPresent && *bField != *aField)
-                    return true;
-            }
-            else
-            {
-                // Required and default constant fields must not
-                // change at all — including transitions between
-                // default (not-present) and explicit values.
-                if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
-                    return true;
-            }
+            // Field must not change at all — including transitions between
+            // default (not-present) and explicit values.
+            if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+                return true;
         }
         // SoeMutable fields may change freely — no recursion
         // into inner objects/arrays is needed because the parent
@@ -1038,7 +1027,7 @@ NoModifiedUnmodifiableFields::finalize(
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
     };
 
-    bool const useTemplate = view.rules().enabled(featureInvariantsV1_1);
+    bool const useTemplate = view.rules().enabled(fixConstantInvariant);
 
     for (auto const& slePair : changedEntries_)
     {
@@ -1057,12 +1046,12 @@ NoModifiedUnmodifiableFields::finalize(
             // that is not reliably present via peekAtPField, so we
             // check it explicitly.
             if (!bad)
-                bad = kFIELD_CHANGED(before, after, sfLedgerIndex);
+                bad = kFieldChanged(before, after, sfLedgerIndex);
         }
 
         // Old hardcoded check
         bool badOld = false;
-        [[maybe_unused]] bool enforceOld = false;
+        [[maybe_unused]] bool enforceOld = view.rules().enabled(featureLendingProtocol);
         switch (type)
         {
             case ltLOAN_BROKER:
@@ -1071,7 +1060,6 @@ NoModifiedUnmodifiableFields::finalize(
                  * amendment status, allowing for detection and logging of
                  * potential issues even when the amendment is disabled.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
                 bad = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
                     kFieldChanged(before, after, sfSequence) ||
@@ -1090,7 +1078,6 @@ NoModifiedUnmodifiableFields::finalize(
                  * amendment status, allowing for detection and logging of
                  * potential issues even when the amendment is disabled.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
                 bad = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
                     kFieldChanged(before, after, sfSequence) ||
@@ -1122,7 +1109,6 @@ NoModifiedUnmodifiableFields::finalize(
                  * all transactions are affected because that's when it
                  * was added.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
                 bad = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex);
         }
@@ -1143,7 +1129,12 @@ NoModifiedUnmodifiableFields::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
                             << tx.getTransactionID();
-            if (!useTemplate && enforceOld)
+            // If the new check passes when the old check fails, it's a bug in the new check.
+            XRPL_ASSERT(
+                !useTemplate,
+                "xrpl::NoModifiedUnmodifiableFields::finalize : new invariant version "
+                "passes when old version fails");
+            if (enforceOld)
                 return false;
         }
     }

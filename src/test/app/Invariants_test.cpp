@@ -2154,7 +2154,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tesSUCCESS, tesSUCCESS});
         }
 
-        // Without featureInvariantsV1_1, old hardcoded path should
+        // Without fixConstantInvariant, old hardcoded path should
         // still catch sfLedgerEntryType/sfLedgerIndex changes
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
@@ -2165,7 +2165,7 @@ class Invariants_test : public beast::unit_test::Suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    Env(*this, defaultAmendments() - featureInvariantsV1_1),
+                    Env(*this, defaultAmendments() - fixConstantInvariant),
                     {{"changed an unchangeable field"}},
                     [&](Account const& a1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(keylet::account(a1.id()));
@@ -2178,12 +2178,12 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Without featureInvariantsV1_1, modifying a SoeImmutable field
+        // Without fixConstantInvariant, modifying a SoeImmutable field
         // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
         // type should NOT fail (old code doesn't check it)
         {
             doInvariantCheck(
-                Env(*this, defaultAmendments() - featureInvariantsV1_1),
+                Env(*this, defaultAmendments() - fixConstantInvariant),
                 {},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto sle = ac.view().peek(keylet::account(a1.id()));
