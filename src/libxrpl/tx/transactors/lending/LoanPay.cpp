@@ -581,13 +581,13 @@ LoanPay::doApply()
     // These three values are used to check that funds are conserved after the transfers
     auto const accountBalanceBefore = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j_,
         SpendableHandling::FullBalance);
-    auto const vaultBalanceBefore = account_ == vaultPseudoAccount
+    auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -597,15 +597,16 @@ LoanPay::doApply()
               AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
-    auto const brokerBalanceBefore = account_ == brokerPayee ? STAmount{asset, 0}
-                                                             : accountHolds(
-                                                                   view,
-                                                                   brokerPayee,
-                                                                   asset,
-                                                                   FreezeHandling::IgnoreFreeze,
-                                                                   AuthHandling::IgnoreAuth,
-                                                                   j_,
-                                                                   SpendableHandling::FullBalance);
+    auto const brokerBalanceBefore = accountID_ == brokerPayee
+        ? STAmount{asset, 0}
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
+              j_,
+              SpendableHandling::FullBalance);
 
     if (totalPaidToVaultRounded != beast::kZero)
     {
@@ -615,7 +616,7 @@ LoanPay::doApply()
 
     if (totalPaidToBroker != beast::kZero)
     {
-        if (brokerPayee == account_)
+        if (brokerPayee == accountID_)
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
@@ -633,7 +634,7 @@ LoanPay::doApply()
 
     if (auto const ter = accountSendMulti(
             view,
-            account_,
+            accountID_,
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
@@ -659,13 +660,13 @@ LoanPay::doApply()
     // Check that funds are conserved
     auto const accountBalanceAfter = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j_,
         SpendableHandling::FullBalance);
-    auto const vaultBalanceAfter = account_ == vaultPseudoAccount
+    auto const vaultBalanceAfter = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -675,15 +676,15 @@ LoanPay::doApply()
               AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
-    auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
-                                                            : accountHolds(
-                                                                  view,
-                                                                  brokerPayee,
-                                                                  asset,
-                                                                  FreezeHandling::IgnoreFreeze,
-                                                                  AuthHandling::IgnoreAuth,
-                                                                  j_,
-                                                                  SpendableHandling::FullBalance);
+    auto const brokerBalanceAfter = accountID_ == brokerPayee ? STAmount{asset, 0}
+                                                              : accountHolds(
+                                                                    view,
+                                                                    brokerPayee,
+                                                                    asset,
+                                                                    FreezeHandling::IgnoreFreeze,
+                                                                    AuthHandling::IgnoreAuth,
+                                                                    j_,
+                                                                    SpendableHandling::FullBalance);
     auto const balanceScale = [&]() {
         // Find a reasonable scale to use for the balance comparisons.
         //
@@ -800,7 +801,7 @@ LoanPay::doApply()
         goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),
+        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(

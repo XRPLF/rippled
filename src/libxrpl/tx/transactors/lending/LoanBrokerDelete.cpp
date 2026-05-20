@@ -130,7 +130,7 @@ LoanBrokerDelete::doApply()
     auto const brokerPseudoID = broker->at(sfAccount);
 
     if (!view().dirRemove(
-            keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
+            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -143,7 +143,7 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, WaiveTransferFee::Yes))
             return ter;
     }
 
@@ -177,7 +177,7 @@ LoanBrokerDelete::doApply()
     view().erase(broker);
 
     {
-        auto owner = view().peek(keylet::account(account_));
+        auto owner = view().peek(keylet::account(accountID_));
         if (!owner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
