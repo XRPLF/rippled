@@ -6144,8 +6144,7 @@ class Vault_test : public beast::unit_test::Suite
     // flags after holders have already deposited into a vault. Demonstrates:
     //
     //   - VaultDeposit and VaultWithdraw both go through `canTransfer`,
-    //     so clearing lsfMPTCanTransfer freezes every holder's funds in
-    //     the vault until the issuer re-enables the flag (`tecNO_AUTH`).
+    //     so clearing lsfMPTCanTransfer causes (`tecNO_AUTH`).
     //
     //   - The issuer is exempt: `canTransfer` short-circuits when either
     //     side of the transfer is the issuer, so the issuer can still
