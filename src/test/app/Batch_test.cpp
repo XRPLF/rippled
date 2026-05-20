@@ -994,8 +994,7 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // Invalid: inner txn with MPT amount on tx type that doesn't
-        // support MPT (OfferCreate TakerPays)
+        // Inner OfferCreate with MPT TakerPays. Valid under featureMPTokensV2.
         {
             MPTIssue issue(makeMptID(1, alice));
             STAmount mptAmt{issue, UINT64_C(100)};
@@ -1012,7 +1011,7 @@ class Batch_test : public beast::unit_test::Suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(tx1, seq + 1),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
-                Ter(telENV_RPC_FAILED));
+                Ter(tesSUCCESS));
             env.close();
         }
 
