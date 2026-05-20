@@ -7550,81 +7550,6 @@ protected:
         BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
     }
 
-    // Tests that don't depend on lending amendments. Run once.
-    void
-    runAmendmentIndependent()
-    {
-        testDisabled();
-        testInvalidLoanSet();
-        testInvalidLoanDelete();
-        testInvalidLoanManage();
-        testInvalidLoanPay();
-        testIssuerLoan();
-        testServiceFeeOnBrokerDeepFreeze();
-        testRequireAuth();
-        testRIPD3901();
-        testBorrowerIsBroker();
-        testLimitExceeded();
-
-        for (auto const flags : {0u, tfLoanOverpayment})
-            testYieldTheftRounding(flags);
-        testBugInterestDueDeltaCrash();
-        testFullLifecycleVaultPnLNearZeroRate();
-    }
-
-    // Tests run under each entry in amendmentCombinations().
-    void
-    runAmendmentSensitive(FeatureBitset features)
-    {
-#if LOAN_TODO
-        testLoanPayLateFullPaymentBypassesPenalties(features);
-        testLoanCoverMinimumRoundingExploit(features);
-#endif
-
-        // Lifecycle
-        testSelfLoan(features);
-        testLoanSet(features);
-        testLifecycle(features);
-
-        // Payment paths
-        testWithdrawReflectsUnrealizedLoss(features);
-        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
-        testBatchBypassCounterparty(features);
-        testLoanNextPaymentDueDateOverflow(features);
-        testCoverDepositWithdrawNonTransferableMPT(features);
-        testSequentialFLCDepletion(features);
-
-        // Invariants
-        testLoanPayComputePeriodicPaymentValidRateInvariant(features);
-        testAccountSendMptMinAmountInvariant(features);
-        testLoanPayDebtDecreaseInvariant(features);
-        testWrongMaxDebtBehavior(features);
-        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(features);
-        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(features);
-        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(features);
-
-        // RPC
-        testRPC(features);
-
-        // Edge / rounding
-        testDustManipulation(features);
-        testRoundingAllowsUndercoverage(features);
-        testOverpaymentManagementFee(features);
-        testIssuerIsBorrower(features);
-        testIntegerScalePrincipalSticks(features);
-
-        // RIPD regressions
-        testRIPD3831(features);
-        testRIPD3459(features);
-        testRIPD3902(features);
-
-        // Broker-owner permissions
-        testLoanPayBrokerOwnerMissingTrustline(features);
-        testLoanPayBrokerOwnerUnauthorizedMPT(features);
-        testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
-        testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
-    }
-
     // A near-zero interest rate on a 100 USD loan
     // produces total interest of ~6 units at loanScale -9. Numerical error
     // in the amortization formula pushes the theoretical principal above
@@ -7805,6 +7730,81 @@ protected:
             "vault gain " + to_string(vaultGain) + " differs from Decimal reference " +
                 to_string(decimalReference) + " by " + to_string(error) + " — exceeds tolerance " +
                 to_string(tolerance));
+    }
+
+    // Tests that don't depend on lending amendments. Run once.
+    void
+    runAmendmentIndependent()
+    {
+        testDisabled();
+        testInvalidLoanSet();
+        testInvalidLoanDelete();
+        testInvalidLoanManage();
+        testInvalidLoanPay();
+        testIssuerLoan();
+        testServiceFeeOnBrokerDeepFreeze();
+        testRequireAuth();
+        testRIPD3901();
+        testBorrowerIsBroker();
+        testLimitExceeded();
+
+        for (auto const flags : {0u, tfLoanOverpayment})
+            testYieldTheftRounding(flags);
+        testBugInterestDueDeltaCrash();
+        testFullLifecycleVaultPnLNearZeroRate();
+    }
+
+    // Tests run under each entry in amendmentCombinations().
+    void
+    runAmendmentSensitive(FeatureBitset features)
+    {
+#if LOAN_TODO
+        testLoanPayLateFullPaymentBypassesPenalties(features);
+        testLoanCoverMinimumRoundingExploit(features);
+#endif
+
+        // Lifecycle
+        testSelfLoan(features);
+        testLoanSet(features);
+        testLifecycle(features);
+
+        // Payment paths
+        testWithdrawReflectsUnrealizedLoss(features);
+        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
+        testBatchBypassCounterparty(features);
+        testLoanNextPaymentDueDateOverflow(features);
+        testCoverDepositWithdrawNonTransferableMPT(features);
+        testSequentialFLCDepletion(features);
+
+        // Invariants
+        testLoanPayComputePeriodicPaymentValidRateInvariant(features);
+        testAccountSendMptMinAmountInvariant(features);
+        testLoanPayDebtDecreaseInvariant(features);
+        testWrongMaxDebtBehavior(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(features);
+
+        // RPC
+        testRPC(features);
+
+        // Edge / rounding
+        testDustManipulation(features);
+        testRoundingAllowsUndercoverage(features);
+        testOverpaymentManagementFee(features);
+        testIssuerIsBorrower(features);
+        testIntegerScalePrincipalSticks(features);
+
+        // RIPD regressions
+        testRIPD3831(features);
+        testRIPD3459(features);
+        testRIPD3902(features);
+
+        // Broker-owner permissions
+        testLoanPayBrokerOwnerMissingTrustline(features);
+        testLoanPayBrokerOwnerUnauthorizedMPT(features);
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
     }
 
 public:
