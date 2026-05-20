@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1865,6 +1866,119 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         }
     }
 
+    // Test that AMMClawback succeeds when the LP has previously deleted both
+    // zero-balance MPToken objects in an MPT/MPT pool.  The fix changes the
+    // ValidMPTIssuance invariant threshold from > 1 to > 2 so that the two
+    // MPToken creations triggered by the internal AMMWithdraw are permitted.
+    void
+    testClawbackAfterDeletingMPTokens(FeatureBitset features)
+    {
+        testcase("test AMMClawback after holder deletes zero-balance MPTokens");
+        using namespace jtx;
+
+        // Partial clawback (one asset): verify both MPTokens are recreated and
+        // the non-claw asset is returned to alice.
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            // Alice deposits everything into the MPT/MPT pool; her MPT
+            // balances drop to zero.
+            AMM amm(env, alice, btc(10'000), eth(10'000));
+            env.close();
+            BEAST_EXPECT(amm.expectBalances(btc(10'000), eth(10'000), IOUAmount{10'000}));
+
+            auto aliceBTC = env.balance(alice, btc);
+            auto aliceETH = env.balance(alice, eth);
+            BEAST_EXPECT(aliceBTC == btc(0));
+            BEAST_EXPECT(aliceETH == eth(0));
+
+            // Alice deletes both zero-balance MPTokens to reclaim reserves.
+            btc.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // gw claws back some BTC from alice's share in the pool.
+            // AMMWithdraw internally creates both missing MPTokens
+            // (mptokensCreated_ == 2); the invariant (> 2) allows this.
+            env(amm::ammClawback(gw, alice, btc, eth, btc(1'000)));
+            env.close();
+
+            // Both MPToken objects must have been recreated.
+            BEAST_EXPECT(env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // The non-claw asset (eth) was returned to alice.
+            BEAST_EXPECT(env.balance(alice, eth) > aliceETH);
+            // The claw asset (btc) was burned; alice's btc balance stays 0.
+            env.require(Balance(alice, aliceBTC));
+            BEAST_EXPECT(amm.ammExists());
+        }
+
+        // Full clawback (two assets, tfClawTwoAssets): verify both MPTokens
+        // are recreated and the AMM is deleted when fully drained.
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 10'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+
+            AMM amm(env, alice, btc(10'000), eth(10'000));
+            env.close();
+
+            auto aliceBTC = env.balance(alice, btc);
+            auto aliceETH = env.balance(alice, eth);
+
+            btc.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice.id())));
+
+            // Full two-asset clawback: both assets are clawed and alice
+            // receives nothing back.  The AMM should be empty and deleted.
+            env(amm::ammClawback(gw, alice, btc, eth, std::nullopt), Txflags(tfClawTwoAssets));
+            env.close();
+
+            BEAST_EXPECT(!amm.ammExists());
+            // Both assets were clawed; alice's balances remain at zero.
+            env.require(Balance(alice, aliceBTC));
+            env.require(Balance(alice, aliceETH));
+        }
+    }
+
     void
     run() override
     {
@@ -1879,6 +1993,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testAMMClawbackIssuesEachOther(all);
         testAssetFrozenOrLocked(all);
         testClawbackCreatesMissingMPToken(all);
+        testClawbackAfterDeletingMPTokens(all);
         testSingleDepositAndClawback(all);
         testLastHolderLPTokenBalance(all);
         testLastHolderLPTokenBalance(all - fixAMMv1_3 - fixAMMClawbackRounding);

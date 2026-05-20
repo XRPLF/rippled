@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
@@ -38,6 +39,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
@@ -3241,6 +3243,48 @@ private:
                     ammAlice.expectBalances(MPT(ammAlice[1])(1), XRP(10'000), IOUAmount{100000}));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
+
+        // MPT/MPT equal withdrawal after LP deletes both zero-balance MPTokens.
+        // AMMWithdraw must recreate both missing MPTokens; the invariant allows
+        // up to two MPToken creations per AMMWithdraw/AMMClawback (threshold > 2).
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            MPTTester btc(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 10'000,
+                 .flags = kMptDexFlags});
+            MPTTester eth(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 10'000,
+                 .flags = kMptDexFlags});
+
+            // Alice deposits everything into the MPT/MPT pool; her MPT
+            // balances drop to zero.
+            AMM ammAlice(env, alice_, btc(10'000), eth(10'000));
+            BEAST_EXPECT(expectMPT(env, alice_, btc(0)));
+            BEAST_EXPECT(expectMPT(env, alice_, eth(0)));
+
+            // Alice deletes both zero-balance MPTokens to reclaim reserve.
+            btc.authorize({.account = alice_, .flags = tfMPTUnauthorize});
+            eth.authorize({.account = alice_, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), alice_.id())));
+            BEAST_EXPECT(!env.le(keylet::mptoken(eth.issuanceID(), alice_.id())));
+
+            // Equal withdrawal succeeds: both missing MPTokens are recreated
+            // (mptokensCreated_ == 2, which satisfies the > 2 invariant check).
+            ammAlice.withdrawAll(alice_);
+            BEAST_EXPECT(env.le(keylet::mptoken(btc.issuanceID(), alice_.id())));
+            BEAST_EXPECT(env.le(keylet::mptoken(eth.issuanceID(), alice_.id())));
+            BEAST_EXPECT(expectMPT(env, alice_, btc(10'000)));
+            BEAST_EXPECT(expectMPT(env, alice_, eth(10'000)));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
     }
 
     void
