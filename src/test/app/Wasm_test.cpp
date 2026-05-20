@@ -6,6 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
 #include <xrpl/tx/wasm/ParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
