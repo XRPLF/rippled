@@ -82,8 +82,7 @@ private:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
-            fixCleanup3_2_0;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
     void
