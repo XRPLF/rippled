@@ -321,8 +321,8 @@ public:
  */
 class ValidClawback
 {
-    std::uint32_t trustlinesChanged = 0;
-    std::uint32_t mptokensChanged = 0;
+    std::uint32_t trustlinesChanged_ = 0;
+    std::uint32_t mptokensChanged_ = 0;
 
 public:
     void

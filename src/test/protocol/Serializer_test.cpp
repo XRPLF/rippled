@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-struct Serializer_test : public beast::unit_test::suite
+struct Serializer_test : public beast::unit_test::Suite
 {
     void
     run() override

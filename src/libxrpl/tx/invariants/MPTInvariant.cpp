@@ -5,11 +5,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -18,6 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -29,6 +32,13 @@ ValidMPTIssuance::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    // The sfReferenceHolding tracking and the deleted-holding capture are
+    // only meaningful post-fixCleanup3_2_0 (the field is never set
+    // pre-amendment, and the holding-deletion rule does not apply).
+    // Skip both blocks when the amendment is off so we avoid wasted work
+    // on the hot path.
+    bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
+
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
         if (isDelete)
@@ -38,6 +48,21 @@ ValidMPTIssuance::visitEntry(
         else if (!before)
         {
             mptIssuancesCreated_++;
+            if (fix320Enabled && after->isFieldPresent(sfReferenceHolding))
+                referenceHoldingSetOnCreate_ = true;
+        }
+        else if (fix320Enabled)
+        {
+            // Modified issuance: detect any change to sfReferenceHolding.
+            bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
+            bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
+            if (beforePresent != afterPresent ||
+                (afterPresent &&
+                 before->getFieldH256(sfReferenceHolding) !=
+                     after->getFieldH256(sfReferenceHolding)))
+            {
+                referenceHoldingMutated_ = true;
+            }
         }
     }
 
@@ -46,6 +71,8 @@ ValidMPTIssuance::visitEntry(
         if (isDelete)
         {
             mptokensDeleted_++;
+            if (fix320Enabled)
+                deletedHoldings_.push_back(after);
         }
         else if (!before)
         {
@@ -55,18 +82,80 @@ ValidMPTIssuance::visitEntry(
                 mptCreatedByIssuer_ = true;
         }
     }
+
+    // Capture deleted RippleState SLEs so finalize() can verify none of
+    // them were owned by a vault pseudo-account outside VaultDelete.
+    if (fix320Enabled && isDelete && after && after->getType() == ltRIPPLE_STATE)
+        deletedHoldings_.push_back(after);
 }
 
 bool
 ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
-    XRPAmount const _fee,
+    XRPAmount const fee,
     ReadView const& view,
     beast::Journal const& j) const
 {
     auto const& rules = view.rules();
     bool const mptV2Enabled = rules.enabled(featureMPTokensV2);
+
+    // Post-fixCleanup3_2_0:
+    //   - sfReferenceHolding is set only by VaultCreate at share-issuance
+    //     creation, and is immutable thereafter.
+    //   - A vault pseudo-account's MPToken or RippleState may only be
+    //     deleted by VaultDelete; the share's sfReferenceHolding pointer
+    //     must not dangle outside that controlled lifecycle.
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        bool invariantPasses = true;
+        if (referenceHoldingMutated_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding was modified "
+                               "on an existing MPTokenIssuance";
+            invariantPasses = false;
+        }
+        if (referenceHoldingSetOnCreate_ && tx.getTxnType() != ttVAULT_CREATE)
+        {
+            JLOG(j.fatal()) << "Invariant failed: sfReferenceHolding set on a new "
+                               "MPTokenIssuance by a non-VaultCreate transaction";
+            invariantPasses = false;
+        }
+        if (!deletedHoldings_.empty() && tx.getTxnType() != ttVAULT_DELETE)
+        {
+            auto const isVaultPseudo = [&](AccountID const& acct) {
+                auto const sle = view.read(keylet::account(acct));
+                return sle && sle->isFieldPresent(sfVaultID);
+            };
+            for (auto const& sleHolding : deletedHoldings_)
+            {
+                bool offending = false;
+                if (sleHolding->getType() == ltMPTOKEN)
+                {
+                    offending = isVaultPseudo(sleHolding->at(sfAccount));
+                }
+                else  // ltRIPPLE_STATE
+                {
+                    auto const lowLimit = sleHolding->getFieldAmount(sfLowLimit);
+                    auto const highLimit = sleHolding->getFieldAmount(sfHighLimit);
+                    // Each limit's STAmount.issuer is the COUNTERPARTY of
+                    // that side's owner: lowLimit's issuer is the high
+                    // account, highLimit's issuer is the low account.
+                    offending =
+                        isVaultPseudo(lowLimit.getIssuer()) || isVaultPseudo(highLimit.getIssuer());
+                }
+                if (offending)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: vault pseudo-account holding "
+                                       "deleted by a non-VaultDelete transaction";
+                    invariantPasses = false;
+                }
+            }
+        }
+        if (!invariantPasses)
+            return false;
+    }
+
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))
     {
         [[maybe_unused]]
@@ -84,7 +173,7 @@ ValidMPTIssuance::finalize(
         }
 
         auto const txnType = tx.getTxnType();
-        if (hasPrivilege(tx, createMPTIssuance))
+        if (hasPrivilege(tx, CreateMptIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -105,7 +194,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (hasPrivilege(tx, destroyMPTIssuance))
+        if (hasPrivilege(tx, DestroyMptIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -132,7 +221,7 @@ ValidMPTIssuance::finalize(
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (txnType == ttESCROW_FINISH) &&
             (rules.enabled(featureSingleAssetVault) || lendingProtocolEnabled);
-        if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) || enforceEscrowFinish)
+        if (hasPrivilege(tx, MustAuthorizeMpt | MayAuthorizeMpt) || enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -148,7 +237,7 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            if (mptV2Enabled && hasPrivilege(tx, mayAuthorizeMPT) &&
+            if (mptV2Enabled && hasPrivilege(tx, MayAuthorizeMpt) &&
                 (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK))
             {
                 if (submittedByIssuer && txnType == ttAMM_WITHDRAW && mptokensCreated_ > 0)
@@ -183,7 +272,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
+                !submittedByIssuer && hasPrivilege(tx, MustAuthorizeMpt) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -196,7 +285,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, mayCreateMPT))
+        if (hasPrivilege(tx, MayCreateMpt))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -251,7 +340,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (hasPrivilege(tx, mayDeleteMPT) &&
+        if (hasPrivilege(tx, MayDeleteMpt) &&
             ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
             mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
             return true;
@@ -298,26 +387,26 @@ ValidMPTPayment::visitEntry(
         if (type == ltMPTOKEN_ISSUANCE)
         {
             auto const outstanding = sle[sfOutstandingAmount];
-            if (outstanding > maxMPTokenAmount)
+            if (outstanding > kMaxMpTokenAmount)
             {
                 overflow_ = true;
                 return false;
             }
-            data_[makeKey(sle)].outstanding[order] = outstanding;
+            data_[makeKey(sle)].outstanding[static_cast<std::size_t>(order)] = outstanding;
         }
         else if (type == ltMPTOKEN)
         {
             auto const mptAmt = sle[sfMPTAmount];
             auto const lockedAmt = sle[~sfLockedAmount].value_or(0);
-            if (mptAmt > maxMPTokenAmount || lockedAmt > maxMPTokenAmount ||
-                lockedAmt > (maxMPTokenAmount - mptAmt))
+            if (mptAmt > kMaxMpTokenAmount || lockedAmt > kMaxMpTokenAmount ||
+                lockedAmt > (kMaxMpTokenAmount - mptAmt))
             {
                 overflow_ = true;
                 return false;
             }
             auto const res = static_cast<std::int64_t>(mptAmt + lockedAmt);
             // subtract before from after
-            if (order == Before)
+            if (order == Order::Before)
             {
                 data_[makeKey(sle)].mptAmount -= res;
             }
@@ -329,7 +418,7 @@ ValidMPTPayment::visitEntry(
         return true;
     };
 
-    if (before && !update(*before, Before))
+    if (before && !update(*before, Order::Before))
         return;
 
     if (after)
@@ -338,7 +427,7 @@ ValidMPTPayment::visitEntry(
         {
             overflow_ = (*after)[sfOutstandingAmount] > maxMPTAmount(*after);
         }
-        if (!update(*after, After))
+        if (!update(*after, Order::After))
             return;
     }
 }
@@ -360,19 +449,21 @@ ValidMPTPayment::finalize(
             return !enforce;
         }
 
-        auto const signedMax = static_cast<std::int64_t>(maxMPTokenAmount);
+        auto const signedMax = static_cast<std::int64_t>(kMaxMpTokenAmount);
         for (auto const& [id, data] : data_)
         {
             (void)id;
+            static constexpr auto kIBefore = static_cast<std::size_t>(Order::Before);
+            static constexpr auto kIAfter = static_cast<std::size_t>(Order::After);
             bool const addOverflows =
-                (data.mptAmount > 0 && data.outstanding[Before] > (signedMax - data.mptAmount)) ||
-                (data.mptAmount < 0 && data.outstanding[Before] < (-signedMax - data.mptAmount));
+                (data.mptAmount > 0 && data.outstanding[kIBefore] > (signedMax - data.mptAmount)) ||
+                (data.mptAmount < 0 && data.outstanding[kIBefore] < (-signedMax - data.mptAmount));
             if (addOverflows ||
-                data.outstanding[After] != (data.outstanding[Before] + data.mptAmount))
+                data.outstanding[kIAfter] != (data.outstanding[kIBefore] + data.mptAmount))
             {
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
-                                << data.outstanding[Before] << " " << data.outstanding[After] << " "
-                                << data.mptAmount;
+                                << data.outstanding[kIBefore] << " " << data.outstanding[kIAfter]
+                                << " " << data.mptAmount;
                 return !enforce;
             }
         }

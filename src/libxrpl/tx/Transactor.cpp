@@ -91,7 +91,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     auto const txID = ctx.tx.getTransactionID();
 
-    if (txID == beast::zero)
+    if (txID == beast::kZero)
     {
         JLOG(ctx.j.warn()) << "applyTransaction: transaction id may not be zero";
         return temINVALID;
@@ -128,7 +128,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
-    if ((flags & tapDRY_RUN) != 0u)  // simulation
+    if ((flags & TapDryRun) != 0u)  // simulation
     {
         std::optional<Slice> const signature = sigObject[~sfTxnSignature];
         if (signature && !signature->empty())
@@ -184,7 +184,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    if (id == beast::zero)
+    if (id == beast::kZero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
         return temBAD_SRC_ACCOUNT;
@@ -262,9 +262,9 @@ Transactor::preflight2(PreflightContext const& ctx)
 
 Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx)
-    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()) + " ")
+    , sink_(ctx.journal, toShortString(ctx.tx.getTransactionID()) + " ")
     , j_(sink_)
-    , account_(ctx.tx.getAccountID(sfAccount))
+    , accountID_(ctx.tx.getAccountID(sfAccount))
 {
 }
 
@@ -350,7 +350,7 @@ Transactor::minimumFee(
     Fees const& fees,
     ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & tapUNLIMITED) != 0u);
+    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
 }
 
 TER
@@ -361,16 +361,16 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if ((ctx.flags & tapBATCH) != 0u)
+    if ((ctx.flags & TapBatch) != 0u)
     {
-        if (feePaid == beast::zero)
+        if (feePaid == beast::kZero)
             return tesSUCCESS;
 
         JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
         return temBAD_FEE;  // LCOV_EXCL_LINE
     }
 
-    if (!isLegalAmount(feePaid) || feePaid < beast::zero)
+    if (!isLegalAmount(feePaid) || feePaid < beast::kZero)
         return temBAD_FEE;
 
     // Only check fee is sufficient when the ledger is open.
@@ -386,7 +386,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         }
     }
 
-    if (feePaid == beast::zero)
+    if (feePaid == beast::kZero)
         return tesSUCCESS;
 
     auto const id = ctx.tx.getFeePayer();
@@ -408,7 +408,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
                             << " paid=" << to_string(feePaid);
 
-        if ((balance > beast::zero) && !ctx.view.open())
+        if ((balance > beast::kZero) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
             return tecINSUFF_FEE;
@@ -433,7 +433,7 @@ Transactor::payFee()
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-    if (feePayer != account_)
+    if (feePayer != accountID_)
         view().update(sle);  // done in `apply()` for the account
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
@@ -454,10 +454,10 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         return terNO_ACCOUNT;
     }
 
-    SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const tSeqProx = tx.getSeqProxy();
+    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
 
-    if (t_seqProx.isSeq())
+    if (tSeqProx.isSeq())
     {
         if (tx.isFieldPresent(sfTicketSequence))
         {
@@ -465,39 +465,39 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
                                "and a non-zero Sequence number";
             return temSEQ_AND_TICKET;
         }
-        if (t_seqProx != a_seq)
+        if (tSeqProx != aSeq)
         {
-            if (a_seq < t_seqProx)
+            if (aSeq < tSeqProx)
             {
                 JLOG(j.trace()) << "applyTransaction: has future sequence number "
-                                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                                << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
                 return terPRE_SEQ;
             }
             // It's an already-used sequence number.
             JLOG(j.trace()) << "applyTransaction: has past sequence number "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefPAST_SEQ;
         }
     }
-    else if (t_seqProx.isTicket())
+    else if (tSeqProx.isTicket())
     {
         // Bypass the type comparison. Apples and oranges.
-        if (a_seq.value() <= t_seqProx.value())
+        if (aSeq.value() <= tSeqProx.value())
         {
             // If the Ticket number is greater than or equal to the
             // account sequence there's the possibility that the
             // transaction to create the Ticket has not hit the ledger
             // yet.  Allow a retry.
             JLOG(j.trace()) << "applyTransaction: has future ticket id "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return terPRE_TICKET;
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::ticket(id, t_seqProx)))
+        if (!view.exists(keylet::kTicket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
             return tefNO_TICKET;
         }
     }
@@ -546,7 +546,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
+    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -559,7 +559,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -619,7 +619,7 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(account_ != beast::zero, "xrpl::Transactor::preCompute : nonzero account");
+    XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -629,12 +629,12 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
 
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::zero,
+        sle != nullptr || accountID_ == beast::kZero,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
@@ -692,7 +692,7 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    if (((flags & tapDRY_RUN) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
+    if (((flags & TapDryRun) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
     {
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
@@ -883,7 +883,7 @@ Transactor::checkMultiSign(
         }
 
         XRPL_ASSERT(
-            (flags & tapDRY_RUN) || !spk.empty(),
+            (flags & TapDryRun) || !spk.empty(),
             "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey =
@@ -981,7 +981,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
         {
             // offer is unfunded
             offerDelete(view, sleOffer, viewJ);
-            if (++removed == unfundedOfferRemoveLimit)
+            if (++removed == kUnfundedOfferRemoveLimit)
                 return;
         }
     }
@@ -1000,7 +1000,7 @@ removeExpiredNFTokenOffers(
         if (auto const offer = view.peek(keylet::nftoffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
-            if (++removed == expiredOfferRemoveLimit)
+            if (++removed == kExpiredOfferRemoveLimit)
                 return;
         }
     }
@@ -1012,7 +1012,14 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
-            credentials::deleteSLE(view, sle, viewJ);
+        {
+            if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error())
+                    << "removeExpiredCredentials: failed to delete expired credential. Err: "
+                    << transToken(ter);
+            }
+        }
     }
 }
 
@@ -1022,7 +1029,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    if (trustLines.size() > maxDeletableAMMTrustLines)
+    if (trustLines.size() > kMaxDeletableAmmTrustLines)
     {
         JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
                             << trustLines.size();
@@ -1074,17 +1081,17 @@ Transactor::reset(XRPAmount fee)
     // The account should never be missing from the ledger.  But if it
     // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
-        return {tefINTERNAL, beast::zero};
+        return {tefINTERNAL, beast::kZero};
 
     auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
-        return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
+        return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
 
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::zero && (!view().open() || balance >= fee),
+        balance != beast::kZero && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
@@ -1247,7 +1254,7 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
         {
             JLOG(ctx_.journal.fatal()) <<                                             //
                 "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::none));
+                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
             return tecINVARIANT_FAILED;
         }
     }
@@ -1257,7 +1264,7 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
             "Exception while checking transaction invariants: " <<  //
             ex.what() <<                                            //
             ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::none));
+            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
 
         return tecINVARIANT_FAILED;
     }
@@ -1311,8 +1318,8 @@ Transactor::operator()()
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
-            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::none);
-            JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
+            JLOG(j_.fatal()) << ctx_.tx.getJson(JsonOptions::Values::None);
+            JLOG(j_.fatal()) << s2.getJson(JsonOptions::Values::None);
             UNREACHABLE("xrpl::Transactor::operator() : transaction serdes mismatch");
             // LCOV_EXCL_STOP
         }
@@ -1339,12 +1346,12 @@ Transactor::operator()()
     bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
-    if (ctx_.size() > oversizeMetaDataCap)
+    if (ctx_.size() > kOversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && ((view().flags() & tapFAIL_HARD) != 0u))
+    if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
     {
-        // If the tapFAIL_HARD flag is set, a tec result
+        // If the TapFailHard flag is set, a tec result
         // must not do anything
         ctx_.discard();
         applied = false;
@@ -1393,21 +1400,21 @@ Transactor::operator()()
         // The transactor and invariant checkers guarantee that this will
         // *never* trigger but if it, somehow, happens, don't allow a tx
         // that charges a negative fee.
-        if (fee < beast::zero)
+        if (fee < beast::kZero)
             Throw<std::logic_error>("fee charged is negative!");
 
         // Charge whatever fee they specified. The fee has already been
         // deducted from the balance of the account that issued the
         // transaction. We just need to account for it in the ledger
         // header.
-        if (!view().open() && fee != beast::zero)
+        if (!view().open() && fee != beast::kZero)
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
         metadata = ctx_.apply(result);
     }
 
-    if ((ctx_.flags() & tapDRY_RUN) != 0u)
+    if ((ctx_.flags() & TapDryRun) != 0u)
     {
         applied = false;
     }

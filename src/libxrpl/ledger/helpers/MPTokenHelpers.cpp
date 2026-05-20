@@ -55,7 +55,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth)
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
@@ -66,7 +70,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth)
+    std::uint8_t depth)
 {
     if (isGlobalFrozen(view, mptIssue))
         return true;
@@ -96,11 +100,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
         sle && sle->isFieldPresent(sfTransferFee))
     {
         auto const fee = sle->getFieldU16(sfTransferFee);
-        XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
+        XRPL_ASSERT(fee <= kMaxTransferFee, "xrpl::transferRate : fee is too large");
         return Rate{1'000'000'000u + (10'000 * fee)};
     }
 
-    return parityRate;
+    return kParityRate;
 }
 
 [[nodiscard]] TER
@@ -169,8 +173,8 @@ authorizeMPToken(
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(fixSecurity3_1_3) &&
-                 (*sleMpt)[~sfLockedAmount].value_or(0) != 0))
+                (view.rules().enabled(fixCleanup3_1_3) &&
+                 (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
@@ -194,7 +198,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
@@ -284,7 +288,7 @@ removeEmptyHolding(
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixSecurity3_1_3) && (*mptoken)[~sfLockedAmount].value_or(0) != 0))
+        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
@@ -303,7 +307,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType,
-    int depth)
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -320,8 +324,13 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= maxAssetCheckDepth)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::requireAuth : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
         auto const sleIssuer = view.read(keylet::account(mptIssuer));
@@ -358,7 +367,7 @@ requireAuth(
     if (maybeDomainID)
     {
         XRPL_ASSERT(
-            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+            sleIssuance->isFlag(lsfMPTRequireAuth),
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
@@ -489,28 +498,88 @@ enforceMPTokenAuthorization(
     // LCOV_EXCL_STOP
 }
 
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
+{
+    XRPL_ASSERT_PARTS(
+        sleHolding.getType() == ltRIPPLE_STATE || sleHolding.getType() == ltMPTOKEN,
+        "xrpl::assetOfHolding",
+        "unexpected holding type");
+    XRPL_ASSERT_PARTS(
+        sleShareIssuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetOfHolding",
+        "not SLE MPTokenIssuance");
+
+    if (sleHolding.getType() == ltMPTOKEN)
+        return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
+
+    auto const vaultPseudo = sleShareIssuance.at(sfIssuer);
+    auto const lowLimit = sleHolding.getFieldAmount(sfLowLimit);
+    auto const highLimit = sleHolding.getFieldAmount(sfHighLimit);
+    auto const& iouIssuer =
+        (lowLimit.getIssuer() != vaultPseudo) ? lowLimit.getIssuer() : highLimit.getIssuer();
+    return Issue{lowLimit.get<Issue>().currency, iouIssuer};
+}
+
 TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to)
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    auto const issuer = (*sleIssuance)[sfIssuer];
+    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
+        return tesSUCCESS;
+
     if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying asset.
+    // Third-party transfers inherit the underlying's transferability.
+    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
+    //
+    // The recursive call always passes WaiveMPTCanTransfer::No so that
+    // a waived outer caller does not transitively unlock the underlying.
+    if (view.rules().enabled(fixCleanup3_2_0) && sleIssuance->isFieldPresent(sfReferenceHolding))
     {
-        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
-            return TER{tecNO_AUTH};
+        // Defensive depth bound on the inheritance recursion. Unreachable
+        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const sleHolding =
+            view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        return canTransfer(
+            view,
+            assetOfHolding(*sleIssuance, *sleHolding),
+            from,
+            to,
+            WaiveMPTCanTransfer::No,
+            depth + 1);
     }
+
     return tesSUCCESS;
 }
 
 TER
-canTrade(ReadView const& view, Asset const& asset)
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth)
 {
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
@@ -520,6 +589,31 @@ canTrade(ReadView const& view, Asset const& asset)
                 return tecOBJECT_NOT_FOUND;
             if (!sleIssuance->isFlag(lsfMPTCanTrade))
                 return tecNO_PERMISSION;
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying
+            // asset's tradability. A share whose underlying has been
+            // removed from trading cannot itself be placed on the DEX.
+            if (view.rules().enabled(fixCleanup3_2_0) &&
+                sleIssuance->isFieldPresent(sfReferenceHolding))
+            {
+                // Defensive depth bound on the inheritance recursion.
+                // Unreachable in practice (vault-of-vault-shares
+                // forbidden at VaultCreate).
+                if (depth >= kMaxAssetCheckDepth)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::MPTokenHelpers::canTrade : reached asset check depth");
+                    return tecINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
+                auto const sleHolding =
+                    view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                if (!sleHolding)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return canTrade(view, assetOfHolding(*sleIssuance, *sleHolding), depth + 1);
+            }
+
             return tesSUCCESS;
         });
 }
@@ -567,7 +661,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
         (*sle)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
+        uint64_t const locked = (*sle)[~sfLockedAmount].valueOr(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
@@ -591,7 +685,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
     // 1. Increase the Issuance EscrowedAmount
     // 2. DO NOT change the Issuance OutstandingAmount
     {
-        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].value_or(0);
+        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].valueOr(0);
         auto const pay = amount.mpt().value();
 
         // Overflow check for addition
@@ -839,7 +933,7 @@ checkCreateMPT(
 std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
-    return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
+    return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
 }
 
 std::int64_t
@@ -892,7 +986,12 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 }
 
 static TER
-checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, AccountID const& accountID)
+checkMPTAllowed(
+    ReadView const& view,
+    TxType txType,
+    Asset const& asset,
+    AccountID const& accountID,
+    std::uint8_t depth = 0)
 {
     if (!asset.holds<MPTIssue>())
         return tesSUCCESS;
@@ -914,17 +1013,15 @@ checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, Account
     if (!issuanceSle)
         return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
-    auto const flags = issuanceSle->getFlags();
-
-    if ((flags & lsfMPTLocked) != 0u)
+    if (issuanceSle->isFlag(lsfMPTLocked))
         return tecLOCKED;  // LCOV_EXCL_LINE
     // Offer crossing and Payment
-    if ((flags & lsfMPTCanTrade) == 0)
+    if (!issuanceSle->isFlag(lsfMPTCanTrade))
         return tecNO_PERMISSION;
 
     if (accountID != issuer)
     {
-        if ((flags & lsfMPTCanTransfer) == 0)
+        if (!issuanceSle->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
         auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
@@ -935,6 +1032,34 @@ checkMPTAllowed(ReadView const& view, TxType txType, Asset const& asset, Account
 
         if (mptSle->isFlag(lsfMPTLocked))
             return tecLOCKED;
+
+        // Post-fixCleanup3_2_0: vault shares inherit the underlying
+        // asset's checks here too. Without this, a share could be
+        // placed on the AMM, in an Offer, or in a Check even after
+        // the issuer has restricted the underlying. Mirrors the
+        // canTransfer / canTrade inheritance for path-find-adjacent
+        // operations that don't go through canTransfer directly.
+        if (view.rules().enabled(fixCleanup3_2_0) &&
+            issuanceSle->isFieldPresent(sfReferenceHolding))
+        {
+            // Defensive depth bound on the inheritance recursion.
+            // Reachable only post-fixCleanup3_2_0 and unreachable in
+            // practice (vault-of-vault-shares forbidden at VaultCreate).
+            if (depth >= kMaxAssetCheckDepth)
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::MPTokenHelpers::checkMPTAllowed : reached asset check depth");
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+            auto const sleHolding =
+                view.read(keylet::unchecked(issuanceSle->getFieldH256(sfReferenceHolding)));
+            if (!sleHolding)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            return checkMPTAllowed(
+                view, txType, assetOfHolding(*issuanceSle, *sleHolding), accountID, depth + 1);
+        }
     }
 
     return tesSUCCESS;

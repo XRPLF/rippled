@@ -134,7 +134,7 @@ private:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app)
+makePeerSetBuilder(Application& app)
 {
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
@@ -167,9 +167,9 @@ public:
     [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const emptyPeers;
+        static std::set<Peer::id_t> const kEmptyPeers;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
-        return emptyPeers;
+        return kEmptyPeers;
     }
 
 private:
@@ -177,7 +177,7 @@ private:
 };
 
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app)
+makeDummyPeerSet(Application& app)
 {
     return std::make_unique<DummyPeerSet>(app);
 }

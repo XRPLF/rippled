@@ -14,7 +14,7 @@ namespace xrpl {
 
 class Application;
 
-enum class BypassAccept : bool { no = false, yes };
+enum class BypassAccept : bool { No = false, Yes };
 
 /** Wrapper over STValidation for generic Validation code
 
@@ -232,7 +232,7 @@ handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
     std::string const& source,
-    BypassAccept const bypassAccept = BypassAccept::no,
+    BypassAccept const bypassAccept = BypassAccept::No,
     std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace xrpl

@@ -37,7 +37,7 @@ public:
         Handler& handler,
         boost::asio::io_context& ioc,
         beast::Journal journal,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         ConstBufferSequence const& buffers,
         middle_type&& stream);
 
@@ -49,16 +49,16 @@ public:
 
 private:
     void
-    do_handshake(yield_context do_yield);
+    doHandshake(yield_context doYield);
 
     void
-    do_request() override;
+    doRequest() override;
 
     void
-    do_close() override;
+    doClose() override;
 
     void
-    on_shutdown(error_code ec);
+    onShutdown(error_code ec);
 };
 
 //------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
     Handler& handler,
     boost::asio::io_context& ioc,
     beast::Journal journal,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     ConstBufferSequence const& buffers,
     middle_type&& stream)
     : BaseHTTPPeer<Handler, SSLHTTPPeer>(
@@ -78,7 +78,7 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           handler,
           ioc.get_executor(),
           journal,
-          remote_address,
+          remoteAddress,
           buffers)
     , stream_ptr_(std::make_unique<stream_type>(middle_type(std::move(stream)), *port.context))
     , stream_(*stream_ptr_)
@@ -93,14 +93,14 @@ SSLHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::do_close, this->shared_from_this()));
+        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::doClose, this->shared_from_this()));
         return;
     }
     if (!socket_.is_open())
         return;
     util::spawn(
         this->strand_,
-        std::bind(&SSLHTTPPeer::do_handshake, this->shared_from_this(), std::placeholders::_1));
+        std::bind(&SSLHTTPPeer::doHandshake, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -119,16 +119,16 @@ SSLHTTPPeer<Handler>::websocketUpgrade()
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
+SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
 {
     boost::system::error_code ec;
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
-    this->start_timer();
+    this->startTimer();
     this->read_buf_.consume(
-        stream_.async_handshake(stream_type::server, this->read_buf_.data(), do_yield[ec]));
-    this->cancel_timer();
+        stream_.async_handshake(stream_type::server, this->read_buf_.data(), doYield[ec]));
+    this->cancelTimer();
     if (ec == boost::beast::error::timeout)
-        return this->on_timer();
+        return this->onTimer();
     if (ec)
         return this->fail(ec, "handshake");
     bool const http = this->port().protocol.count("peer") > 0 ||
@@ -138,7 +138,7 @@ SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
     {
         util::spawn(
             this->strand_,
-            std::bind(&SSLHTTPPeer::do_read, this->shared_from_this(), std::placeholders::_1));
+            std::bind(&SSLHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
         return;
     }
     // `this` will be destroyed
@@ -146,7 +146,7 @@ SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::do_request()
+SSLHTTPPeer<Handler>::doRequest()
 {
     ++this->request_count_;
     auto const what = this->handler_.onHandoff(
@@ -161,19 +161,19 @@ SSLHTTPPeer<Handler>::do_request()
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::do_close()
+SSLHTTPPeer<Handler>::doClose()
 {
-    this->start_timer();
+    this->startTimer();
     stream_.async_shutdown(bind_executor(
         this->strand_,
-        std::bind(&SSLHTTPPeer::on_shutdown, this->shared_from_this(), std::placeholders::_1)));
+        std::bind(&SSLHTTPPeer::onShutdown, this->shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Handler>
 void
-SSLHTTPPeer<Handler>::on_shutdown(error_code ec)
+SSLHTTPPeer<Handler>::onShutdown(error_code ec)
 {
-    this->cancel_timer();
+    this->cancelTimer();
 
     if (ec == boost::asio::error::operation_aborted)
         return;
