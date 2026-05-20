@@ -6,7 +6,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/ParamsHelper.h>

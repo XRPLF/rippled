@@ -50,8 +50,8 @@ public:
 struct TestHostFunctions : public HostFunctions
 {
     test::jtx::Env& env_;
-    AccountID accountID_;
-    Bytes data_;
+    AccountID accountID;
+    Bytes data;
     int clock_drift = 0;
     void* rt = nullptr;
 
@@ -59,9 +59,9 @@ public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
         : HostFunctions(env.journal), env_(env), clock_drift(cd)
     {
-        accountID_ = env_.master.id();
+        accountID = env_.master.id();
         std::string t = "10000";
-        data_ = Bytes{t.begin(), t.end()};
+        data = Bytes{t.begin(), t.end()};
     }
 
     void
@@ -123,7 +123,7 @@ public:
     {
         if (fname == sfAccount)
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
         if (fname == sfFee)
         {
@@ -131,7 +131,7 @@ public:
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
         }
-        else if (fname == sfSequence)
+        if (fname == sfSequence)
         {
             auto const x = getLedgerSqn();
             if (!x)
@@ -150,11 +150,13 @@ public:
         auto const& sn = fname.getName();
         if (sn == "Destination" || sn == "Account")
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
         if (sn == "Data")
-            return data_;
-        else if (sn == "FinishAfter")
+        {
+            return data;
+        }
+        if (sn == "FinishAfter")
         {
             auto t = env_.current()->parentCloseTime().time_since_epoch().count();
             std::string s = std::to_string(t);
@@ -175,9 +177,9 @@ public:
         }
         if (fname == sfAccount)
         {
-            return Bytes(accountID_.begin(), accountID_.end());
+            return Bytes(accountID.begin(), accountID.end());
         }
-        return data_;
+        return data;
     }
 
     Expected<Bytes, HostFunctionError>
@@ -189,7 +191,7 @@ public:
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -207,7 +209,7 @@ public:
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -225,7 +227,7 @@ public:
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
             {
-                return Bytes(accountID_.begin(), accountID_.end());
+                return Bytes(accountID.begin(), accountID.end());
             }
         }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
@@ -361,7 +363,7 @@ public:
     Expected<Bytes, HostFunctionError>
     getNFTIssuer(uint256 const& nftId) const override
     {
-        return Bytes(accountID_.begin(), accountID_.end());
+        return Bytes(accountID.begin(), accountID.end());
     }
 
     Expected<std::uint32_t, HostFunctionError>
