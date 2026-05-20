@@ -1,0 +1,16 @@
+[Unit]
+Description=Check for and install xrpld package updates
+Documentation=man:systemd.service(5)
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/usr/libexec/xrpld/update-xrpld
+ConditionPathExists=/usr/bin/xrpld
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock -n /run/lock/xrpld-update.lock /usr/libexec/xrpld/update-xrpld
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=update-xrpld
+TimeoutStartSec=30min
+PrivateTmp=true

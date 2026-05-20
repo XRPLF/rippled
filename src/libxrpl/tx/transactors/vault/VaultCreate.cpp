@@ -52,23 +52,23 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
+    if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+        if (*withdrawalPolicy != kVaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZERO)
+        if (*domain == beast::kZero)
         {
             return temMALFORMED;
         }
-        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if (!ctx.tx.isFlag(tfVaultPrivate))
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }
@@ -76,13 +76,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::kZERO)
+        if (*assetMax < beast::kZero)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -92,7 +92,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVAULT_MAXIMUM_IOU_SCALE)
+        if (scale > kVaultMaximumIouScale)
             return temMALFORMED;
     }
 
@@ -130,7 +130,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::kZERO)
+        accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -145,13 +145,13 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    auto const owner = view().peek(keylet::account(account_));
+    auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
+    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
-    if (auto ter = dirLink(view(), account_, vault))
+    if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     adjustOwnerCount(view(), owner, 2, j_);
@@ -171,13 +171,12 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
-    auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if ((txFlags & tfVaultShareNonTransferable) == 0)
+    if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
@@ -203,9 +202,9 @@ VaultCreate::doApply()
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = txFlags & tfVaultPrivate;
+    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
-    vault->at(sfOwner) = account_;
+    vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
@@ -223,7 +222,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+        vault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
@@ -231,15 +230,15 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

@@ -5,7 +5,7 @@
 #include <optional>
 
 namespace xrpl {
-auto constexpr kMULDIV_MAX = std::numeric_limits<std::uint64_t>::max();
+constexpr auto kMuldivMax = std::numeric_limits<std::uint64_t>::max();
 
 /** Return value*mul/div accurately.
     Computes the result of the multiplication and division in

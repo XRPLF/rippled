@@ -66,7 +66,7 @@ private:
         TxSetType txs;
 
         // Resolution used to determine close time
-        NetClock::duration closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
+        NetClock::duration closeTimeResolution = kLedgerDefaultTimeResolution;
 
         //! When the ledger closed (up to closeTimeResolution)
         NetClock::time_point closeTime;
@@ -128,14 +128,14 @@ private:
     };
 
     // Single common genesis instance
-    static Instance const kGENESIS;
+    static Instance const kGenesis;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {
     }
 
 public:
-    Ledger(MakeGenesis) : instance_(&kGENESIS)
+    Ledger(MakeGenesis) : instance_(&kGenesis)
     {
     }
 

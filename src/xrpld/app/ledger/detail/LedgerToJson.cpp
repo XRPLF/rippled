@@ -297,13 +297,24 @@ fillJsonQueue(json::Value& json, LedgerFill const& fill)
             txJson["last_result"] = transToken(*tx.lastResult);
 
         auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
-        if (fill.context->apiVersion > 1)
+        if (temp.isObject())
         {
-            copyFrom(txJson, temp);
+            if (fill.context->apiVersion > 1)
+            {
+                copyFrom(txJson, temp);
+            }
+            else
+            {
+                copyFrom(txJson[jss::tx], temp);
+            }
+        }
+        else if (fill.context->apiVersion > 1)
+        {
+            txJson[jss::hash] = temp;
         }
         else
         {
-            copyFrom(txJson[jss::tx], temp);
+            txJson[jss::tx] = temp;
         }
     }
 }
@@ -326,7 +337,7 @@ fillJson(json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION));
+                                       : RPC::kApiMaximumSupportedVersion));
     }
 
     if (bFull || ((fill.options & static_cast<int>(LedgerFill::Options::DumpTxrp)) != 0))

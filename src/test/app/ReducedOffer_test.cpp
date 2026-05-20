@@ -560,8 +560,8 @@ public:
                                          Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
-                static Amounts const kALICE_INITIAL_OFFER(usd(2), drops(3382562));
-                env(offer(alice, kALICE_INITIAL_OFFER.in, kALICE_INITIAL_OFFER.out));
+                static Amounts const kAliceInitialOffer(usd(2), drops(3382562));
+                env(offer(alice, kAliceInitialOffer.in, kAliceInitialOffer.out));
                 env.close();
                 STAmount const initialRate = Quality(jsonOfferToAmounts(ledgerEntryOffer(
                                                          env, alice, aliceOfferSeq)[jss::node]))
@@ -598,8 +598,8 @@ public:
 
                     Amounts const aliceReducedOffer = jsonOfferToAmounts(aliceOffer[jss::node]);
 
-                    BEAST_EXPECT(aliceReducedOffer.in < kALICE_INITIAL_OFFER.in);
-                    BEAST_EXPECT(aliceReducedOffer.out < kALICE_INITIAL_OFFER.out);
+                    BEAST_EXPECT(aliceReducedOffer.in < kAliceInitialOffer.in);
+                    BEAST_EXPECT(aliceReducedOffer.out < kAliceInitialOffer.out);
                     STAmount const inLedgerRate = Quality(aliceReducedOffer).rate();
                     badRate = inLedgerRate > initialRate ? 1 : 0;
 
@@ -641,12 +641,12 @@ public:
                 return badRate;
             };
 
-            constexpr int kLOOP_COUNT = 100;
+            static constexpr int kLoopCount = 100;
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = usd(0);
                 STAmount const step(increaseGets.asset(), 1, -8);
-                for (unsigned int i = 0; i < kLOOP_COUNT; ++i)
+                for (unsigned int i = 0; i < kLoopCount; ++i)
                 {
                     blockedCount +=
                         exerciseOfferTrio(Amounts(drops(1642020), usd(1) + increaseGets));
