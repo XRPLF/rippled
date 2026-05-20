@@ -23,18 +23,18 @@ public:
         BEAST_EXPECT(z.exponent() == -100);
         BEAST_EXPECT(!z);
         BEAST_EXPECT(z.signum() == 0);
-        BEAST_EXPECT(z == beast::kZERO);
+        BEAST_EXPECT(z == beast::kZero);
 
         BEAST_EXPECT((z + z) == z);
         BEAST_EXPECT((z - z) == z);
         BEAST_EXPECT(z == -z);
 
-        IOUAmount const zz(beast::kZERO);
+        IOUAmount const zz(beast::kZero);
         BEAST_EXPECT(z == zz);
 
         // https://github.com/XRPLF/rippled/issues/5170
         IOUAmount const zzz{};
-        BEAST_EXPECT(zzz == beast::kZERO);
+        BEAST_EXPECT(zzz == beast::kZero);
         // BEAST_EXPECT(zzz == zz);
     }
 
@@ -58,32 +58,32 @@ public:
     {
         testcase("beast::Zero Comparisons");
 
-        using beast::kZERO;
+        using beast::kZero;
 
         {
-            IOUAmount const z(kZERO);
-            BEAST_EXPECT(z == kZERO);
-            BEAST_EXPECT(z >= kZERO);
-            BEAST_EXPECT(z <= kZERO);
-            unexpected(z != kZERO);
-            unexpected(z > kZERO);
-            unexpected(z < kZERO);
+            IOUAmount const z(kZero);
+            BEAST_EXPECT(z == kZero);
+            BEAST_EXPECT(z >= kZero);
+            BEAST_EXPECT(z <= kZero);
+            unexpected(z != kZero);
+            unexpected(z > kZero);
+            unexpected(z < kZero);
         }
 
         {
             IOUAmount const neg(-2, 0);
-            BEAST_EXPECT(neg < kZERO);
-            BEAST_EXPECT(neg <= kZERO);
-            BEAST_EXPECT(neg != kZERO);
-            unexpected(neg == kZERO);
+            BEAST_EXPECT(neg < kZero);
+            BEAST_EXPECT(neg <= kZero);
+            BEAST_EXPECT(neg != kZero);
+            unexpected(neg == kZero);
         }
 
         {
             IOUAmount const pos(2, 0);
-            BEAST_EXPECT(pos > kZERO);
-            BEAST_EXPECT(pos >= kZERO);
-            BEAST_EXPECT(pos != kZERO);
-            unexpected(pos == kZERO);
+            BEAST_EXPECT(pos > kZero);
+            BEAST_EXPECT(pos >= kZero);
+            BEAST_EXPECT(pos != kZero);
+            unexpected(pos == kZero);
         }
     }
 
@@ -179,68 +179,68 @@ public:
         testcase("mulRatio");
 
         /* The range for the mantissa when normalized */
-        constexpr std::int64_t kMIN_MANTISSA = 1000000000000000ull;
-        constexpr std::int64_t kMAX_MANTISSA = 9999999999999999ull;
+        static constexpr std::int64_t kMinMantissa = 1000000000000000ull;
+        static constexpr std::int64_t kMaxMantissa = 9999999999999999ull;
         // log(2,maxMantissa) ~ 53.15
         /* The range for the exponent when normalized */
-        constexpr int kMIN_EXPONENT = -96;
-        constexpr int kMAX_EXPONENT = 80;
-        constexpr auto kMAX_UINT = std::numeric_limits<std::uint32_t>::max();
+        static constexpr int kMinExponent = -96;
+        static constexpr int kMaxExponent = 80;
+        constexpr auto kMaxUInt = std::numeric_limits<std::uint32_t>::max();
 
         {
             // multiply by a number that would overflow the mantissa, then
             // divide by the same number, and check we didn't lose any value
-            IOUAmount const bigMan(kMAX_MANTISSA, 0);
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            IOUAmount const bigMan(kMaxMantissa, 0);
+            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMaxUInt, kMaxUInt, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMaxUInt, kMaxUInt, false));
         }
         {
             // Similar test as above, but for negative values
-            IOUAmount const bigMan(-kMAX_MANTISSA, 0);
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, true));
+            IOUAmount const bigMan(-kMaxMantissa, 0);
+            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMaxUInt, kMaxUInt, true));
             // rounding mode shouldn't matter as the result is exact
-            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMAX_UINT, kMAX_UINT, false));
+            BEAST_EXPECT(bigMan == mulRatio(bigMan, kMaxUInt, kMaxUInt, false));
         }
 
         {
             // small amounts
-            IOUAmount const tiny(kMIN_MANTISSA, kMIN_EXPONENT);
+            IOUAmount const tiny(kMinMantissa, kMinExponent);
             // Round up should give the smallest allowable number
-            BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMAX_UINT, true));
-            BEAST_EXPECT(tiny == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, true));
+            BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMaxUInt, true));
+            BEAST_EXPECT(tiny == mulRatio(tiny, kMaxUInt - 1, kMaxUInt, true));
             // rounding down should be zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, 1, kMAX_UINT, false));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, kMAX_UINT - 1, kMAX_UINT, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, 1, kMaxUInt, false));
+            BEAST_EXPECT(beast::kZero == mulRatio(tiny, kMaxUInt - 1, kMaxUInt, false));
 
             // tiny negative numbers
-            IOUAmount const tinyNeg(-kMIN_MANTISSA, kMIN_EXPONENT);
+            IOUAmount const tinyNeg(-kMinMantissa, kMinExponent);
             // Round up should give zero
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, 1, kMAX_UINT, true));
-            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, 1, kMaxUInt, true));
+            BEAST_EXPECT(beast::kZero == mulRatio(tinyNeg, kMaxUInt - 1, kMaxUInt, true));
             // rounding down should be tiny
-            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, kMAX_UINT, false));
-            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMAX_UINT - 1, kMAX_UINT, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, 1, kMaxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMaxUInt - 1, kMaxUInt, false));
         }
 
         {  // rounding
             {
                 IOUAmount const one(1, 0);
-                auto const rup = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, true);
-                auto const rdown = mulRatio(one, kMAX_UINT - 1, kMAX_UINT, false);
+                auto const rup = mulRatio(one, kMaxUInt - 1, kMaxUInt, true);
+                auto const rdown = mulRatio(one, kMaxUInt - 1, kMaxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
             {
-                IOUAmount const big(kMAX_MANTISSA, kMAX_EXPONENT);
-                auto const rup = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, true);
-                auto const rdown = mulRatio(big, kMAX_UINT - 1, kMAX_UINT, false);
+                IOUAmount const big(kMaxMantissa, kMaxExponent);
+                auto const rup = mulRatio(big, kMaxUInt - 1, kMaxUInt, true);
+                auto const rdown = mulRatio(big, kMaxUInt - 1, kMaxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
 
             {
                 IOUAmount const negOne(-1, 0);
-                auto const rup = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, true);
-                auto const rdown = mulRatio(negOne, kMAX_UINT - 1, kMAX_UINT, false);
+                auto const rup = mulRatio(negOne, kMaxUInt - 1, kMaxUInt, true);
+                auto const rdown = mulRatio(negOne, kMaxUInt - 1, kMaxUInt, false);
                 BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
             }
         }
@@ -253,7 +253,7 @@ public:
 
         {
             // overflow
-            IOUAmount big(kMAX_MANTISSA, kMAX_EXPONENT);
+            IOUAmount big(kMaxMantissa, kMaxExponent);
             except([&] { mulRatio(big, 2, 0, true); });
         }
     }  // namespace xrpl

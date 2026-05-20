@@ -67,7 +67,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         using namespace test::jtx;
         uint256 const nftokenID = token::getNextID(env, owner, 0, tfTransferable);
         env(token::mint(owner, 0),
-            token::Uri(std::string(kMAX_TOKEN_URI_LENGTH, 'u')),
+            token::Uri(std::string(kMaxTokenUriLength, 'u')),
             Txflags(tfTransferable));
         env.close();
 
@@ -200,7 +200,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         // way each time.
         std::mt19937 engine;
         std::uniform_int_distribution<std::size_t> feeDist(
-            decltype(kMAX_TRANSFER_FEE){}, kMAX_TRANSFER_FEE);
+            decltype(kMaxTransferFee){}, kMaxTransferFee);
 
         alice.nfts.reserve(105);
         while (alice.nfts.size() < 105)
@@ -337,7 +337,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         BEAST_EXPECT(nftCount(env, becky.acct) == 0);
         BEAST_EXPECT(nftCount(env, minter.acct) == 0);
 
-        // When all nfts are burned kNONE of the accounts should have
+        // When all nfts are burned kNone of the accounts should have
         // an ownerCount.
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, becky) == 0);
@@ -861,8 +861,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // When the token is burned, 498 sell offers and 1 buy offer are
             // removed. In total, 499 offers are removed
             std::vector<uint256> offerIndexes;
-            auto const nftokenID = createNftAndOffers(
-                env, alice, offerIndexes, kMAX_DELETABLE_TOKEN_OFFER_ENTRIES - 2);
+            auto const nftokenID =
+                createNftAndOffers(env, alice, offerIndexes, kMaxDeletableTokenOfferEntries - 2);
 
             // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)
@@ -908,8 +908,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // After we burn the token, 500 of the sell offers should be
             // removed, and one is left over
             std::vector<uint256> offerIndexes;
-            auto const nftokenID = createNftAndOffers(
-                env, alice, offerIndexes, kMAX_DELETABLE_TOKEN_OFFER_ENTRIES + 1);
+            auto const nftokenID =
+                createNftAndOffers(env, alice, offerIndexes, kMaxDeletableTokenOfferEntries + 1);
 
             // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)
@@ -929,10 +929,10 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     offerDeletedCount++;
             }
 
-            BEAST_EXPECT(offerIndexes.size() == kMAX_TOKEN_OFFER_CANCEL_COUNT + 1);
+            BEAST_EXPECT(offerIndexes.size() == kMaxTokenOfferCancelCount + 1);
 
             // 500 sell offers should be removed
-            BEAST_EXPECT(offerDeletedCount == kMAX_TOKEN_OFFER_CANCEL_COUNT);
+            BEAST_EXPECT(offerDeletedCount == kMaxTokenOfferCancelCount);
 
             // alice should have ownerCounts of one for the orphaned sell offer
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -952,8 +952,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             // are removed.
             // In total, 500 offers are removed
             std::vector<uint256> offerIndexes;
-            auto const nftokenID = createNftAndOffers(
-                env, alice, offerIndexes, kMAX_DELETABLE_TOKEN_OFFER_ENTRIES - 1);
+            auto const nftokenID =
+                createNftAndOffers(env, alice, offerIndexes, kMaxDeletableTokenOfferEntries - 1);
 
             // Verify all sell offers are present in the ledger.
             for (uint256 const& offerIndex : offerIndexes)

@@ -66,7 +66,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::Values::None);
+            txJson = STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
         }
         BEAST_EXPECT(txJson[jss::TransactionType] == tx[jss::TransactionType]);
         BEAST_EXPECT(txJson[jss::Account] == tx[jss::Account]);
@@ -162,7 +162,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
-            return STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::Values::None);
+            return STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
         }
 
         return txResult[jss::meta];
@@ -495,7 +495,7 @@ class Simulate_test : public beast::unit_test::Suite
                     cfg->NETWORK_ID = 0;
                     return cfg;
                 })};
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
 
         {
             auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
@@ -521,7 +521,7 @@ class Simulate_test : public beast::unit_test::Suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNewDomain);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -533,7 +533,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
 
             // test with autofill
             testTx(env, tx, validateOutput);
@@ -666,7 +666,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -706,7 +706,7 @@ class Simulate_test : public beast::unit_test::Suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNewDomain);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -718,7 +718,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
 
             // test with autofill
             testTx(env, tx, validateOutput, false);
@@ -755,7 +755,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
         Account const alice{"alice"};
         env(regkey(env.master, alice));
         env(fset(env.master, asfDisableMaster), Sig(env.master));
@@ -779,7 +779,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
 
@@ -804,7 +804,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -834,7 +834,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
             // master key is disabled, so this is invalid
             tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
             tx[sfSigners] = json::ValueType::Array;
@@ -867,7 +867,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
         Account const alice("alice");
         Account const becky("becky");
         Account const carol("carol");
@@ -899,7 +899,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
             tx[sfSigners] = json::ValueType::Array;
             {
                 json::Value signer;
@@ -1035,7 +1035,7 @@ class Simulate_test : public beast::unit_test::Suite
                     cfg->NETWORK_ID = 1025;
                     return cfg;
                 })};
-        static auto const kNEW_DOMAIN = "123ABC";
+        static auto const kNewDomain = "123ABC";
 
         {
             auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
@@ -1061,7 +1061,7 @@ class Simulate_test : public beast::unit_test::Suite
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfDomain] == kNEW_DOMAIN);
+                            BEAST_EXPECT(finalFields[sfDomain] == kNewDomain);
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
@@ -1073,7 +1073,7 @@ class Simulate_test : public beast::unit_test::Suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain] = kNEW_DOMAIN;
+            tx[sfDomain] = kNewDomain;
 
             // test with autofill
             testTx(env, tx, validateOutput);

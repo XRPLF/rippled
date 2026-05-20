@@ -17,7 +17,7 @@
 
 namespace json {
 
-Value const Value::kNULL;
+Value const Value::kNull;
 
 class DefaultValueAllocator : public ValueAllocator
 {
@@ -37,13 +37,13 @@ public:
     }
 
     char*
-    duplicateStringValue(char const* value, unsigned int length = kUNKNOWN) override
+    duplicateStringValue(char const* value, unsigned int length = kUnknown) override
     {
         //@todo investigate this old optimization
         // if ( !value  ||  value[0] == 0 )
         //   return 0;
 
-        if (length == kUNKNOWN)
+        if (length == kUnknown)
             length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
         char* newString = static_cast<char*>(malloc(length + 1));
@@ -64,8 +64,8 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
-    static ValueAllocator* kVALUE_ALLOCATOR = new DefaultValueAllocator;  // NOLINT TODO
-    return kVALUE_ALLOCATOR;
+    static ValueAllocator* kValueAllocator = new DefaultValueAllocator;  // NOLINT TODO
+    return kValueAllocator;
 }
 
 static struct DummyValueAllocatorInitializer
@@ -528,12 +528,12 @@ Value::asInt() const
 
         case ValueType::UInt:
             JSON_ASSERT_MESSAGE(
-                value_.uintVal < (unsigned)kMAX_INT, "integer out of signed integer range");
+                value_.uintVal < (unsigned)kMaxInt, "integer out of signed integer range");
             return value_.uintVal;
 
         case ValueType::Real:
             JSON_ASSERT_MESSAGE(
-                (value_.realVal >= kMIN_INT && value_.realVal <= kMAX_INT),
+                (value_.realVal >= kMinInt && value_.realVal <= kMaxInt),
                 "Real out of signed integer range");
             return Int(value_.realVal);
 
@@ -581,10 +581,10 @@ Value::asAbsUInt() const
             if (value_.realVal < 0)
             {
                 JSON_ASSERT_MESSAGE(
-                    -1 * value_.realVal <= kMAX_UINT, "Real out of unsigned integer range");
+                    -1 * value_.realVal <= kMaxUInt, "Real out of unsigned integer range");
                 return UInt(-1 * value_.realVal);
             }
-            JSON_ASSERT_MESSAGE(value_.realVal <= kMAX_UINT, "Real out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(value_.realVal <= kMaxUInt, "Real out of unsigned integer range");
             return UInt(value_.realVal);
         }
 
@@ -596,10 +596,10 @@ Value::asAbsUInt() const
             auto const temp = beast::lexicalCastThrow<std::int64_t>(str);
             if (temp < 0)
             {
-                JSON_ASSERT_MESSAGE(-1 * temp <= kMAX_UINT, "String out of unsigned integer range");
+                JSON_ASSERT_MESSAGE(-1 * temp <= kMaxUInt, "String out of unsigned integer range");
                 return -1 * temp;
             }
-            JSON_ASSERT_MESSAGE(temp <= kMAX_UINT, "String out of unsigned integer range");
+            JSON_ASSERT_MESSAGE(temp <= kMaxUInt, "String out of unsigned integer range");
             return temp;
         }
 
@@ -634,7 +634,7 @@ Value::asUInt() const
 
         case ValueType::Real:
             JSON_ASSERT_MESSAGE(
-                (value_.realVal >= 0 && value_.realVal <= kMAX_UINT),
+                (value_.realVal >= 0 && value_.realVal <= kMaxUInt),
                 "Real out of unsigned integer range");
             return UInt(value_.realVal);
 
@@ -742,15 +742,15 @@ Value::isConvertibleTo(ValueType other) const
 
         case ValueType::UInt:
             return (other == ValueType::Null && value_.uintVal == 0) ||
-                (other == ValueType::Int && value_.uintVal <= (unsigned)kMAX_INT) ||
+                (other == ValueType::Int && value_.uintVal <= (unsigned)kMaxInt) ||
                 other == ValueType::UInt || other == ValueType::Real ||
                 other == ValueType::String || other == ValueType::Boolean;
 
         case ValueType::Real:
             return (other == ValueType::Null && value_.realVal == 0.0) ||
-                (other == ValueType::Int && value_.realVal >= kMIN_INT &&
-                 value_.realVal <= kMAX_INT) ||
-                (other == ValueType::UInt && value_.realVal >= 0 && value_.realVal <= kMAX_UINT &&
+                (other == ValueType::Int && value_.realVal >= kMinInt &&
+                 value_.realVal <= kMaxInt) ||
+                (other == ValueType::UInt && value_.realVal >= 0 && value_.realVal <= kMaxUInt &&
                  std::fabs(round(value_.realVal) - value_.realVal) <
                      std::numeric_limits<double>::epsilon()) ||
                 other == ValueType::Real || other == ValueType::String ||
@@ -869,7 +869,7 @@ Value::operator[](UInt index)
     if (it != value_.mapVal->end() && (*it).first == key)
         return (*it).second;
 
-    ObjectValues::value_type const defaultValue(key, kNULL);
+    ObjectValues::value_type const defaultValue(key, kNull);
     it = value_.mapVal->insert(it, defaultValue);
     return (*it).second;
 }
@@ -882,13 +882,13 @@ Value::operator[](UInt index) const
         "json::Value::operator[](UInt) const : valid type");
 
     if (type_ == ValueType::Null)
-        return kNULL;
+        return kNull;
 
     CZString const key(index);
     ObjectValues::const_iterator const it = value_.mapVal->find(key);
 
     if (it == value_.mapVal->end())
-        return kNULL;
+        return kNull;
 
     return (*it).second;
 }
@@ -918,7 +918,7 @@ Value::resolveReference(char const* key, bool isStatic)
     if (it != value_.mapVal->end() && (*it).first == actualKey)
         return (*it).second;
 
-    ObjectValues::value_type const defaultValue(actualKey, kNULL);
+    ObjectValues::value_type const defaultValue(actualKey, kNull);
     it = value_.mapVal->insert(it, defaultValue);
     Value& value = (*it).second;
     return value;
@@ -928,7 +928,7 @@ Value
 Value::get(UInt index, Value const& defaultValue) const
 {
     Value const* value = &((*this)[index]);
-    return value == &kNULL ? defaultValue : *value;
+    return value == &kNull ? defaultValue : *value;
 }
 
 bool
@@ -945,13 +945,13 @@ Value::operator[](char const* key) const
         "json::Value::operator[](const char*) const : valid type");
 
     if (type_ == ValueType::Null)
-        return kNULL;
+        return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
     ObjectValues::const_iterator const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
-        return kNULL;
+        return kNull;
 
     return (*it).second;
 }
@@ -996,7 +996,7 @@ Value
 Value::get(char const* key, Value const& defaultValue) const
 {
     Value const* value = &((*this)[key]);
-    return value == &kNULL ? defaultValue : *value;
+    return value == &kNull ? defaultValue : *value;
 }
 
 Value
@@ -1013,13 +1013,13 @@ Value::removeMember(char const* key)
         "json::Value::removeMember : valid type");
 
     if (type_ == ValueType::Null)
-        return kNULL;
+        return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
     ObjectValues::iterator const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
-        return kNULL;
+        return kNull;
 
     Value old(it->second);
     value_.mapVal->erase(it);
@@ -1039,7 +1039,7 @@ Value::isMember(char const* key) const
         return false;
 
     Value const* value = &((*this)[key]);
-    return value != &kNULL;
+    return value != &kNull;
 }
 
 bool

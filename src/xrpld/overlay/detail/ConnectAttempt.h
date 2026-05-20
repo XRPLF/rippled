@@ -69,7 +69,7 @@ private:
     };
 
     // A timeout for connection process, greater than all step timeouts
-    static constexpr std::chrono::seconds kCONNECT_TIMEOUT{25};
+    static constexpr std::chrono::seconds kConnectTimeout{25};
 
     /**
      * @struct StepTimeouts
@@ -81,15 +81,15 @@ private:
     struct StepTimeouts
     {
         // TCP connection timeout
-        static constexpr std::chrono::seconds kTCP_CONNECT{8};
+        static constexpr std::chrono::seconds kTcpConnect{8};
         // SSL handshake timeout
-        static constexpr std::chrono::seconds kTLS_HANDSHAKE{8};
+        static constexpr std::chrono::seconds kTlsHandshake{8};
         // HTTP write timeout
-        static constexpr std::chrono::seconds kHTTP_WRITE{3};
+        static constexpr std::chrono::seconds kHttpWrite{3};
         // HTTP read timeout
-        static constexpr std::chrono::seconds kHTTP_READ{3};
+        static constexpr std::chrono::seconds kHttpRead{3};
         // SSL shutdown timeout
-        static constexpr std::chrono::seconds kTLS_SHUTDOWN{2};
+        static constexpr std::chrono::seconds kTlsShutdown{2};
     };
 
     // Core application and networking components

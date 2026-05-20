@@ -15,7 +15,7 @@ class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMap
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
-    static constexpr unsigned int kBRANCH_FACTOR = 16;
+    static constexpr unsigned int kBranchFactor = 16;
 
 private:
     /** Opaque type that contains the `hashes` array (array of type

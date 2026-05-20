@@ -552,27 +552,27 @@ class Delegate_test : public beast::unit_test::Suite
 
         for (auto i = 0; i < 20; ++i)
         {
-            // bob is the delegated account, his sequence won't kINCREMENT
+            // bob is the delegated account, his sequence won't kIncrement
             env(pay(alice, carol, XRP(10)), Fee(XRP(10)), delegate::As(bob));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
             BEAST_EXPECT(env.seq(bob) == bobSeq);
             aliceSeq = env.seq(alice);
 
-            // bob sends payment for himself, his sequence will kINCREMENT
+            // bob sends payment for himself, his sequence will kIncrement
             env(pay(bob, carol, XRP(10)), Fee(XRP(10)));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
             bobSeq = env.seq(bob);
 
-            // alice is the delegated account, her sequence won't kINCREMENT
+            // alice is the delegated account, her sequence won't kIncrement
             env(pay(bob, carol, XRP(10)), Fee(XRP(10)), delegate::As(alice));
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
             BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
             bobSeq = env.seq(bob);
 
-            // alice sends payment for herself, her sequence will kINCREMENT
+            // alice sends payment for herself, her sequence will kIncrement
             env(pay(alice, carol, XRP(10)), Fee(XRP(10)));
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
             BEAST_EXPECT(env.seq(bob) == bobSeq);
