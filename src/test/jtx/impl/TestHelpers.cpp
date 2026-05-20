@@ -262,7 +262,7 @@ findPaths(
 
     STAmount da;
     if (result.isMember(jss::destination_amount))
-        da = amountFromJson(kSfGeneric, result[jss::destination_amount]);
+        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
 
     STAmount sa;
     STPathSet paths;
@@ -274,10 +274,10 @@ findPaths(
             auto const& path = alts[0u];
 
             if (path.isMember(jss::source_amount))
-                sa = amountFromJson(kSfGeneric, path[jss::source_amount]);
+                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
 
             if (path.isMember(jss::destination_amount))
-                da = amountFromJson(kSfGeneric, path[jss::destination_amount]);
+                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
 
             if (path.isMember(jss::paths_computed))
             {

@@ -63,7 +63,7 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
+isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, std::uint8_t depth)
 {
     return std::visit(
         [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
@@ -107,7 +107,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth)
+    std::uint8_t depth)
 {
     return asset.visit(
         [&](Issue const& issue) { return isAnyFrozen(view, accounts, issue); },
@@ -115,7 +115,11 @@ isAnyFrozen(
 }
 
 bool
-isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth)
 {
     // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
     // funds, so checking "deep frozen" is the same as checking "frozen".
@@ -123,7 +127,7 @@ isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt
 }
 
 bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
+isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, std::uint8_t depth)
 {
     return std::visit(
         [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
@@ -500,13 +504,19 @@ requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, 
 }
 
 TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to)
+canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    std::uint8_t depth)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return canTransfer(view, issue, from, to);
+    return asset.visit(
+        [&](MPTIssue const& issue) -> TER {
+            return canTransfer(view, issue, from, to, waive, depth);
         },
-        asset.value());
+        [&](Issue const& issue) -> TER { return canTransfer(view, issue, from, to); });
 }
 
 //------------------------------------------------------------------------------

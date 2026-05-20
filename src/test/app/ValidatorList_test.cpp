@@ -81,7 +81,7 @@ private:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
 
@@ -104,7 +104,7 @@ private:
     static std::string
     makeRevocationString(PublicKey const& pk, SecretKey const& sk)
     {
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 

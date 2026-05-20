@@ -142,7 +142,7 @@ public:
         {
             auto master = randomKeyPair(KeyType::Ed25519);
             auto signing = randomKeyPair(KeyType::Ed25519);
-            STObject st(kSfGeneric);
+            STObject st(sfGeneric);
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
@@ -299,7 +299,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
@@ -326,7 +326,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
