@@ -430,7 +430,7 @@ private:
     setTimer();
 
     void
-    cancelTimer();
+    cancelTimer() noexcept;
 
     static std::string
     makePrefix(std::string const& fingerprint);

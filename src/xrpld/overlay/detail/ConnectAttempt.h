@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 namespace xrpl {
@@ -10,11 +11,8 @@ class ConnectAttempt : public OverlayImpl::Child,
 {
 private:
     using error_code = boost::system::error_code;
-
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-
     using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
-
     using response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
     using socket_type = boost::asio::ip::tcp::socket;
@@ -45,7 +43,7 @@ public:
         endpoint_type remoteEndpoint,
         Resource::Consumer usage,
         shared_context const& context,
-        std::uint32_t id,
+        Peer::id_t id,
         std::shared_ptr<PeerFinder::Slot> const& slot,
         beast::Journal journal,
         OverlayImpl& overlay);

@@ -2,6 +2,7 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
@@ -34,7 +35,6 @@
 #include <boost/system/system_error.hpp>
 
 #include <chrono>
-#include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -51,7 +51,7 @@ ConnectAttempt::ConnectAttempt(
     endpoint_type remoteEndpoint,
     Resource::Consumer usage,
     shared_context const& context,
-    std::uint32_t id,
+    Peer::id_t id,
     std::shared_ptr<PeerFinder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)

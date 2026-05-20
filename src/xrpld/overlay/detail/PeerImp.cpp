@@ -265,22 +265,16 @@ PeerImp::stop()
         post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
         return;
     }
-    if (socket_.is_open())
-    {
-        // The rationale for using different severity levels is that
-        // outbound connections are under our control and may be logged
-        // at a higher level, but inbound connections are more numerous and
-        // uncontrolled so to prevent log flooding the severity is reduced.
-        //
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Stop";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Stop";
-        }
-    }
+
+    if (!socket_.is_open())
+        return;
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    //
+    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
     close();
 }
 
@@ -297,6 +291,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (gracefulClose_)
         return;
     if (detaching_)
+        return;
+    if (!socket_.is_open())
         return;
 
     auto validator = m->getValidatorKey();
@@ -622,29 +618,17 @@ void
 PeerImp::close()
 {
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::close : strand in this thread");
-    if (socket_.is_open())
-    {
-        detaching_ = true;  // DEPRECATED
-        try
-        {
-            timer_.cancel();
-            socket_.close();
-        }
-        catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
-        {
-            // ignored
-        }
+    if (!socket_.is_open())
+        return;
 
-        overlay_.incPeerDisconnect();
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Closed";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Closed";
-        }
-    }
+    detaching_ = true;  // DEPRECATED
+
+    cancelTimer();
+    error_code ec;
+    socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
+
+    overlay_.incPeerDisconnect();
+    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
 }
 
 void
@@ -661,8 +645,7 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::Severity::Warning) && socket_.is_open())
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? remoteAddress_.toString() : n)
-                              << " failed: " << reason;
+        JLOG(journal_.warn()) << n << " failed: " << reason;
     }
     close();
 }
@@ -671,11 +654,11 @@ void
 PeerImp::fail(std::string const& name, error_code ec)
 {
     XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::fail : strand in this thread");
-    if (socket_.is_open())
-    {
-        JLOG(journal_.warn()) << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-                              << " at " << remoteAddress_.toString() << ": " << ec.message();
-    }
+    if (!socket_.is_open())
+        return;
+
+    JLOG(journal_.warn()) << name << ": " << ec.message();
+
     close();
 }
 
@@ -712,7 +695,7 @@ PeerImp::setTimer()
 
 // convenience for ignoring the error code
 void
-PeerImp::cancelTimer()
+PeerImp::cancelTimer() noexcept
 {
     try
     {
@@ -740,11 +723,11 @@ PeerImp::onTimer(error_code const& ec)
     if (!socket_.is_open())
         return;
 
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
         close();
@@ -798,18 +781,24 @@ void
 PeerImp::onShutdown(error_code ec)
 {
     cancelTimer();
-    // If we don't get eof then something went wrong
-    if (!ec)
+
+    if (ec)
     {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
-        close();
-        return;
+        // - eof: the stream was cleanly closed
+        // - operation_aborted: an expired timer (slow shutdown)
+        // - stream_truncated: the tcp connection closed (no handshake) it could
+        // occur if a peer does not perform a graceful disconnect
+        // - broken_pipe: the peer is gone
+        bool const shouldLog =
+            (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
+             ec.message().find("application data after close notify") == std::string::npos);
+
+        if (shouldLog)
+        {
+            JLOG(journal_.debug()) << "onShutdown: " << ec.message();
+        }
     }
-    if (ec != boost::asio::error::eof)
-    {
-        fail("onShutdown", ec);
-        return;
-    }
+
     close();
 }
 
@@ -818,8 +807,6 @@ void
 PeerImp::doAccept()
 {
     XRPL_ASSERT(readBuffer_.size() == 0, "xrpl::PeerImp::doAccept : empty read buffer");
-
-    JLOG(journal_.debug()) << "doAccept: " << remoteAddress_;
 
     auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
 
@@ -832,7 +819,6 @@ PeerImp::doAccept()
     }
 
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
-    JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey_);
 
     if (auto member = app_.getCluster().member(publicKey_))
     {
@@ -872,13 +858,15 @@ PeerImp::doAccept()
                 error_code ec, std::size_t bytesTransferred) {
                 if (!socket_.is_open())
                     return;
-                if (ec == boost::asio::error::operation_aborted)
-                    return;
                 if (ec)
                 {
+                    if (ec == boost::asio::error::operation_aborted)
+                        return;
+
                     fail("onWriteResponse", ec);
                     return;
                 }
+
                 if (writeBuffer->size() == bytesTransferred)
                 {
                     doProtocolStart();
@@ -949,29 +937,27 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        gracefulClose();
-        return;
-    }
+
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.info()) << "EOF";
+            gracefulClose();
+            return;
+        }
+
         fail("onReadMessage", ec);
         return;
     }
+
     if (auto stream = journal_.trace())
     {
-        if (bytesTransferred > 0)
-        {
-            stream << "onReadMessage: " << bytesTransferred << " bytes";
-        }
-        else
-        {
-            stream << "onReadMessage";
-        }
+        stream << "onReadMessage: "
+               << (bytesTransferred > 0 ? to_string(bytesTransferred) + " bytes" : "");
     }
 
     metrics_.recv.addMessage(bytesTransferred);
@@ -996,10 +982,13 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
             fail("onReadMessage", ec);
             return;
         }
+
         if (!socket_.is_open())
             return;
+
         if (gracefulClose_)
             return;
+
         if (bytesConsumed == 0)
             break;
         readBuffer_.consume(bytesConsumed);
@@ -1022,23 +1011,19 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         fail("onWriteMessage", ec);
         return;
     }
     if (auto stream = journal_.trace())
     {
-        if (bytesTransferred > 0)
-        {
-            stream << "onWriteMessage: " << bytesTransferred << " bytes";
-        }
-        else
-        {
-            stream << "onWriteMessage";
-        }
+        stream << "onWriteMessage: "
+               << (bytesTransferred > 0 ? to_string(bytesTransferred) + " bytes" : "");
     }
 
     metrics_.sent.addMessage(bytesTransferred);
