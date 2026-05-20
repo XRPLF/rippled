@@ -42,7 +42,7 @@ public:
     ConnectAttempt(
         Application& app,
         boost::asio::io_context& ioContext,
-        endpoint_type const& remoteEndpoint,
+        endpoint_type remoteEndpoint,
         Resource::Consumer usage,
         shared_context const& context,
         std::uint32_t id,

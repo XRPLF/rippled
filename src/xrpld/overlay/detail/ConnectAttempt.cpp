@@ -48,7 +48,7 @@ namespace xrpl {
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
-    endpoint_type const& remoteEndpoint,
+    endpoint_type remoteEndpoint,
     Resource::Consumer usage,
     shared_context const& context,
     std::uint32_t id,
@@ -60,7 +60,7 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remoteEndpoint_(remoteEndpoint)
+    , remoteEndpoint_(std::move(remoteEndpoint))
     , usage_(usage)
     , strand_(boost::asio::make_strand(ioContext))
     , timer_(ioContext)
@@ -72,7 +72,6 @@ ConnectAttempt::ConnectAttempt(
     , stream_(*streamPtr_)
     , slot_(slot)
 {
-    JLOG(journal_.debug()) << "Connect " << remoteEndpoint;
 }
 
 ConnectAttempt::~ConnectAttempt()
@@ -181,10 +180,13 @@ ConnectAttempt::onTimer(error_code ec)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
         close();
@@ -198,21 +200,28 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
-    if (ec == boost::asio::error::operation_aborted)
+    if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        fail("onConnect", ec);
         return;
-    endpoint_type localEndpoint;
-    if (!ec)
-        localEndpoint = socket_.local_endpoint(ec);
+    }
+
+    if (!socket_.is_open())
+        return;
+
+    // check if connection has really been established
+    socket_.local_endpoint(ec);
     if (ec)
     {
         fail("onConnect", ec);
         return;
     }
-    if (!socket_.is_open())
-        return;
-    JLOG(journal_.trace()) << "onConnect";
 
     setTimer();
+
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
@@ -227,17 +236,17 @@ ConnectAttempt::onHandshake(error_code ec)
     cancelTimer();
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    endpoint_type localEndpoint;
-    if (!ec)
-        localEndpoint = socket_.local_endpoint(ec);
+
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         fail("onHandshake", ec);
         return;
     }
-    JLOG(journal_.trace()) << "onHandshake";
+
+    auto const localEndpoint = socket_.local_endpoint(ec);
 
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
@@ -283,13 +292,16 @@ ConnectAttempt::onWrite(error_code ec)
     cancelTimer();
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         fail("onWrite", ec);
         return;
     }
+
     boost::beast::http::async_read(
         stream_,
         readBuf_,
@@ -306,23 +318,28 @@ ConnectAttempt::onRead(error_code ec)
 
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        setTimer();
-        stream_.async_shutdown(
-            boost::asio::bind_executor(
-                strand_,
-                std::bind(&ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
-        return;
-    }
+
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.debug()) << "EOF";
+            setTimer();
+            stream_.async_shutdown(
+                boost::asio::bind_executor(
+                    strand_,
+                    std::bind(
+                        &ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
+            return;
+        }
+
         fail("onRead", ec);
         return;
     }
+
     processResponse();
 }
 
@@ -336,6 +353,7 @@ ConnectAttempt::onShutdown(error_code ec)
         close();
         return;
     }
+
     if (ec != boost::asio::error::eof)
     {
         fail("onShutdown", ec);
