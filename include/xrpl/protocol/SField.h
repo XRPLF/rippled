@@ -365,7 +365,7 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const kSfInvalid;
+extern SField const sfInvalid;  // NOLINT(readability-identifier-naming)
 extern SField const kSfGeneric;
 
 #include <xrpl/protocol/detail/sfields.macro>

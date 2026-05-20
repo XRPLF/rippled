@@ -53,7 +53,7 @@ TypedField<T>::TypedField(PrivateAccessTagT pat, Args&&... args)
         ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const kSfInvalid(access, -1, "");
+SField const sfInvalid(access, -1, "");
 SField const kSfGeneric(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
@@ -121,7 +121,7 @@ SField::getField(int code)
     {
         return *(it->second);
     }
-    return kSfInvalid;
+    return sfInvalid;
 }
 
 int
@@ -149,7 +149,7 @@ SField::getField(std::string const& fieldName)
     {
         return *(it->second);
     }
-    return kSfInvalid;
+    return sfInvalid;
 }
 
 }  // namespace xrpl

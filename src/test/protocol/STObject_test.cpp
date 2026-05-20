@@ -43,12 +43,12 @@ public:
                 [&]() { SOTemplate const elements{{kSfGeneric, SoeRequired}}; });
         }
 
-        unexpected(kSfInvalid.isUseful(), "sfInvalid must not be useful");
+        unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
         {
             // Test return of sfInvalid.
             auto testInvalid = [this](SerializedTypeID tid, int fv) {
                 SField const& shouldBeInvalid{SField::getField(tid, fv)};
-                BEAST_EXPECT(shouldBeInvalid == kSfInvalid);
+                BEAST_EXPECT(shouldBeInvalid == sfInvalid);
             };
             testInvalid(STI_VL, 255);
             testInvalid(STI_UINT256, 255);
@@ -59,7 +59,7 @@ public:
         {
             // Try to put sfInvalid in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate const elements{{kSfInvalid, SoeRequired}}; });
+                [&]() { SOTemplate const elements{{sfInvalid, SoeRequired}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
