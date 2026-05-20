@@ -56,7 +56,7 @@ struct WasmRuntimeWrapper
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WtI32, WtI64 };
+enum class WasmTypes { WtI32, WtI64 };
 
 struct WasmImportFunc
 {
@@ -88,15 +88,15 @@ WasmImpArgs(WasmImportFunc& e)
         using at = typename boost::mpl::at_c<Mpl, N>::type;
         if constexpr (std::is_pointer_v<at>)
         {
-            e.params.push_back(WtI32);
+            e.params.push_back(WasmTypes::WtI32);
         }
         else if constexpr (std::is_same_v<at, std::int32_t>)
         {
-            e.params.push_back(WtI32);
+            e.params.push_back(WasmTypes::WtI32);
         }
         else if constexpr (std::is_same_v<at, std::int64_t>)
         {
-            e.params.push_back(WtI64);
+            e.params.push_back(WasmTypes::WtI64);
         }
         else
         {
@@ -114,15 +114,15 @@ WasmImpRet(WasmImportFunc& e)
 {
     if constexpr (std::is_pointer_v<Rt>)
     {
-        e.result = WtI32;
+        e.result = WasmTypes::WtI32;
     }
     else if constexpr (std::is_same_v<Rt, std::int32_t>)
     {
-        e.result = WtI32;
+        e.result = WasmTypes::WtI32;
     }
     else if constexpr (std::is_same_v<Rt, std::int64_t>)
     {
-        e.result = WtI64;
+        e.result = WasmTypes::WtI64;
     }
     else if constexpr (std::is_void_v<Rt>)
     {
@@ -171,7 +171,7 @@ struct WasmParam
 {
     // We are not supporting float/double
 
-    WasmTypes type = WtI32;
+    WasmTypes type = WasmTypes::WtI32;
     union
     {
         std::int32_t i32;
@@ -183,7 +183,7 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int32_t p, Types&&... args)
 {
-    v.push_back({.type = WtI32, .of = {.i32 = p}});
+    v.push_back({.type = WasmTypes::WtI32, .of = {.i32 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 
@@ -191,7 +191,7 @@ template <class... Types>
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 {
-    v.push_back({.type = WtI64, .of = {.i64 = p}});
+    v.push_back({.type = WasmTypes::WtI64, .of = {.i64 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 

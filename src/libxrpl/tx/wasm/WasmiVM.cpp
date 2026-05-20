@@ -349,10 +349,10 @@ makeImpParams(WasmImportFunc const& imp)
         auto const vt = imp.params[i];
         switch (vt)
         {
-            case WtI32:
+            case WasmTypes::WtI32:
                 v[i] = wasm_valtype_new_i32();
                 break;
-            case WtI64:
+            case WasmTypes::WtI64:
                 v[i] = wasm_valtype_new_i64();
                 break;
                 // LCOV_EXCL_START
@@ -373,11 +373,11 @@ makeImpReturn(WasmImportFunc const& imp)
     WasmValtypeVec v(1);
     switch (*imp.result)
     {
-        case WtI32:
+        case WasmTypes::WtI32:
             v[0] = wasm_valtype_new_i32();
             break;
             // LCOV_EXCL_START
-        case WtI64:
+        case WasmTypes::WtI64:
             v[0] = wasm_valtype_new_i64();
             break;
         default:
@@ -623,15 +623,16 @@ WasmiEngine::convertParams(std::vector<WasmParam> const& params)
     {
         switch (p.type)
         {
-            case WtI32:
+            case WasmTypes::WtI32:
                 v.push_back(WASM_I32_VAL(p.of.i32));
                 break;
             // LCOV_EXCL_START
-            case WtI64:
+            case WasmTypes::WtI64:
                 v.push_back(WASM_I64_VAL(p.of.i64));
                 break;
             default:
-                throw std::runtime_error("unknown parameter type: " + std::to_string(p.type));
+                throw std::runtime_error(
+                    "unknown parameter type: " + std::to_string(static_cast<int>(p.type)));
                 break;
                 // LCOV_EXCL_STOP
         }

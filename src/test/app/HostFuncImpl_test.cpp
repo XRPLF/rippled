@@ -321,8 +321,7 @@ wasm_trap_t*
 ww(F&& f, E&& e, P&& params, P&& result, Args... args)
 {
     size_t idx = 0;
-    (ww_hlp(idx, std::forward<E>(e), std::forward<P>(params), std::forward<Args>(args)),
-     ...);                                                     // NOLINT
+    (ww_hlp(idx, e, params, std::forward<Args>(args)), ...);   // NOLINT
     return f(std::forward<E>(e), params.get(), result.get());  // NOLINT
 }
 
