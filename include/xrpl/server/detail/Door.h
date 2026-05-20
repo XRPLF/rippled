@@ -99,7 +99,7 @@ private:
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
     std::chrono::milliseconds accept_delay_{kInitialAcceptDelay};
     boost::asio::steady_timer backoff_timer_;
-    static constexpr double kFreeFdThreshold = 0.70;
+    static constexpr std::uint64_t kMaxUsedFdPercent = 70;
 
     struct FDStats
     {
@@ -433,9 +433,7 @@ Door<Handler>::shouldThrottleForFds()
         return false;
 
     auto const& s = *stats;
-    auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const freeRatio = static_cast<double>(free) / static_cast<double>(s.limit);
-    return freeRatio < kFreeFdThreshold;
+    return s.used * 100 > s.limit * kMaxUsedFdPercent;
 #endif
 }
 
