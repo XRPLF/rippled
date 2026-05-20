@@ -448,10 +448,11 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
     }
 
     {
-        auto const owed = creditBalance(ctx.view, dst_, src_, currency_);
+        auto const iou = IOUIssuance(ctx.view, src_, currency_);
+        auto const owed = iou.creditBalance(dst_);
         if (owed <= beast::kZero)
         {
-            auto const limit = creditLimit(ctx.view, dst_, src_, currency_);
+            auto const limit = iou.creditLimit(dst_);
             if (-owed >= limit)
             {
                 JLOG(j_.debug()) << "DirectStepI: dry: owed: " << owed << " limit: " << limit;
@@ -484,7 +485,7 @@ DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
         return {srcOwed, DebtDirection::Redeems};
 
     // srcOwed is negative or zero
-    return {creditLimit2(sb, dst_, src_, currency_) + srcOwed, DebtDirection::Issues};
+    return {IOUIssuance(sb, src_, currency_).creditLimit2(dst_) + srcOwed, DebtDirection::Issues};
 }
 
 template <class TDerived>

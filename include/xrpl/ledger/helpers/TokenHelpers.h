@@ -47,6 +47,50 @@ enum class AuthType { StrongAuth, WeakAuth, Legacy };
 
 //------------------------------------------------------------------------------
 //
+// TokenBase<ViewT>: abstract interface shared by MPTokenIssuance and IOUIssuance.
+//
+// This is a pure-interface base (no data members), used as a second base class
+// alongside SLEBase<V> (for MPT) or AccountRoot<V> (for IOU) so callers can hold
+// a polymorphic reference and dispatch without knowing the token kind. Methods
+// whose semantics differ slightly between IOU and MPT are unified here with the
+// MPT signature (e.g. `int depth`); IOU implementations ignore depth.
+//
+//------------------------------------------------------------------------------
+
+template <typename ViewT>
+class TokenBase
+{
+public:
+    virtual ~TokenBase() = default;
+
+    [[nodiscard]] virtual bool
+    isGlobalFrozen() const = 0;
+
+    [[nodiscard]] virtual bool
+    isIndividualFrozen(AccountID const& account) const = 0;
+
+    [[nodiscard]] virtual bool
+    isFrozen(AccountID const& account, int depth = 0) const = 0;
+
+    [[nodiscard]] virtual Rate
+    transferRate() const = 0;
+
+    [[nodiscard]] virtual TER
+    requireAuth(AccountID const& account, AuthType authType = AuthType::Legacy, int depth = 0)
+        const = 0;
+
+    [[nodiscard]] virtual TER
+    canTransfer(AccountID const& from, AccountID const& to) const = 0;
+
+    [[nodiscard]] virtual bool
+    canClawback() const = 0;
+
+    [[nodiscard]] virtual bool
+    requiresAuth() const = 0;
+};
+
+//------------------------------------------------------------------------------
+//
 // Freeze checking (Asset-based dispatchers)
 //
 //------------------------------------------------------------------------------

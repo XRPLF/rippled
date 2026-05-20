@@ -320,7 +320,7 @@ OfferCreate::checkAcceptAsset(
         [&](MPTIssue const& issue) -> TER {
             // WeakAuth - don't check if MPToken exists since it's created
             // if needed.
-            return requireAuth(view, issue, id, AuthType::WeakAuth);
+            return MPTokenIssuance(view, issue).requireAuth(id, AuthType::WeakAuth);
         });
 }
 

@@ -348,11 +348,11 @@ withdrawToDestExceedsLimit(
 
     return amount.asset().visit(
         [&](Issue const& issue) -> TER {
-            auto const& currency = issue.currency;
-            auto const owed = creditBalance(view, to, issuer, currency);
+            auto const iou = IOUIssuance(view, issue);
+            auto const owed = iou.creditBalance(to);
             if (owed <= beast::kZero)
             {
-                auto const limit = creditLimit(view, to, issuer, currency);
+                auto const limit = iou.creditLimit(to);
                 if (-owed >= limit || amount > (limit + owed))
                     return tecNO_LINE;
             }

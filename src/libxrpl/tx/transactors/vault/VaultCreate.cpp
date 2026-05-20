@@ -230,16 +230,16 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    auto issuance = WMPTokenIssuance(view(), mptIssuanceID, ctx_.journal);
+    if (auto const err = issuance.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
     if (tx.isFlag(tfVaultPrivate))
     {
-        if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
+        if (auto const err =
+                issuance.authorizeMPToken(preFeeBalance_, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

@@ -649,11 +649,13 @@ AMMWithdraw::withdraw(
         if (mptokenKey && account != asset.getIssuer())
         {
             auto const& mptIssue = asset.get<MPTIssue>();
-            if (auto const err = requireAuth(view, mptIssue, account, AuthType::WeakAuth);
+            if (auto const err =
+                    MPTokenIssuance(view, mptIssue).requireAuth(account, AuthType::WeakAuth);
                 !isTesSuccess(err))
                 return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, journal);
+            if (auto const err =
+                    WMPTokenIssuance(view, mptIssue, journal).checkCreateMPT(account, journal);
                 !isTesSuccess(err))
             {
                 return err;
@@ -700,8 +702,8 @@ AMMWithdraw::withdraw(
     }
 
     // Withdraw LP tokens
-    res = redeemIOU(
-        view, account, lpTokensWithdrawActual, lpTokensWithdrawActual.get<Issue>(), journal);
+    res = WIOUIssuance(view, lpTokensWithdrawActual.get<Issue>(), journal)
+              .redeem(account, lpTokensWithdrawActual, journal);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START

@@ -54,7 +54,8 @@ escrowCancelPreclaimHelper<Issue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account); !isTesSuccess(ter))
+    if (auto const ter = IOUIssuance(ctx.view, amount.get<Issue>()).requireAuth(account);
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -81,7 +82,8 @@ escrowCancelPreclaimHelper<MPTIssue>(
     // If the issuer has requireAuth set, check if the account is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
+    if (auto const ter =
+            MPTokenIssuance(ctx.view, mptIssue).requireAuth(account, AuthType::WeakAuth);
         !isTesSuccess(ter))
         return ter;
 

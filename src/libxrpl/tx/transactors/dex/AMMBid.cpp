@@ -252,7 +252,8 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        auto res = redeemIOU(sb, accountId, saBurn, lpTokens.get<Issue>(), ctx.journal);
+        auto res = WIOUIssuance(sb, lpTokens.get<Issue>(), ctx.journal)
+                       .redeem(accountId, saBurn, ctx.journal);
         if (!isTesSuccess(res))
         {
             JLOG(ctx.journal.debug()) << "AMM Bid: failed to redeem.";

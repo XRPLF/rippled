@@ -13,6 +13,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -528,7 +529,7 @@ ammLPHolds(
                         << " lpAccount=" << to_string(lpAccount)
                         << " amount=" << amount.getFullText();
     }
-    else if (isFrozen(view, lpAccount, currency, ammAccount))
+    else if (IOUIssuance(view, ammAccount, currency).isFrozen(lpAccount))
     {
         amount.clear(Issue{currency, ammAccount});
         JLOG(j.trace()) << "ammLPHolds: frozen currency "
@@ -600,7 +601,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     return asset.visit(
         [&](MPTIssue const& issue) {
             if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
-                sle && !isFrozen(view, ammAccountID, issue))
+                sle && !MPTokenIssuance(view, issue).isFrozen(ammAccountID))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
         },
@@ -613,7 +614,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             else if (
                 auto const sle =
                     view.read(keylet::line(ammAccountID, issue.account, issue.currency));
-                sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
+                sle && !IOUIssuance(view, issue).isFrozen(ammAccountID))
             {
                 STAmount amount = (*sle)[sfBalance];
                 if (ammAccountID > issue.account)

@@ -52,21 +52,27 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
 {
     return asset.visit(
         [&](Issue const& issue) { return AccountRoot(issue.getIssuer(), view).isGlobalFrozen(); },
-        [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
+        [&](MPTIssue const& issue) { return MPTokenIssuance(view, issue).isGlobalFrozen(); });
 }
 
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
-    return std::visit(
-        [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
+    return asset.visit(
+        [&](Issue const& issue) { return IOUIssuance(view, issue).isIndividualFrozen(account); },
+        [&](MPTIssue const& issue) {
+            return MPTokenIssuance(view, issue).isIndividualFrozen(account);
+        });
 }
 
 bool
 isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
 {
-    return std::visit(
-        [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
+    return asset.visit(
+        [&](Issue const& issue) { return IOUIssuance(view, issue).isFrozen(account); },
+        [&](MPTIssue const& issue) {
+            return MPTokenIssuance(view, issue).isFrozen(account, depth);
+        });
 }
 
 TER
@@ -94,9 +100,10 @@ isAnyFrozen(
     std::initializer_list<AccountID> const& accounts,
     Issue const& issue)
 {
+    auto const iou = IOUIssuance(view, issue);
     for (auto const& account : accounts)
     {
-        if (isFrozen(view, account, issue.currency, issue.account))
+        if (iou.isFrozen(account))
             return true;
     }
     return false;
@@ -111,7 +118,9 @@ isAnyFrozen(
 {
     return asset.visit(
         [&](Issue const& issue) { return isAnyFrozen(view, accounts, issue); },
-        [&](MPTIssue const& issue) { return isAnyFrozen(view, accounts, issue, depth); });
+        [&](MPTIssue const& issue) {
+            return MPTokenIssuance(view, issue).isAnyFrozen(accounts, depth);
+        });
 }
 
 bool
@@ -119,7 +128,7 @@ isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt
 {
     // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
     // funds, so checking "deep frozen" is the same as checking "frozen".
-    return isFrozen(view, account, mptIssue, depth);
+    return MPTokenIssuance(view, mptIssue).isFrozen(account, depth);
 }
 
 bool
@@ -167,8 +176,8 @@ getLineIfUsable(
 
     if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen)
     {
-        if (isFrozen(view, account, currency, issuer) ||
-            isDeepFrozen(view, account, currency, issuer))
+        auto const iou = IOUIssuance(view, issuer, currency);
+        if (iou.isFrozen(account) || iou.isDeepFrozen(account))
         {
             return nullptr;
         }
@@ -318,7 +327,9 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue))
+    else if (
+        zeroIfFrozen == FreezeHandling::ZeroIfFrozen &&
+        MPTokenIssuance(view, mptIssue).isFrozen(account))
     {
         amount.clear(mptIssue);
     }
@@ -331,7 +342,8 @@ accountHolds(
         if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
             view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
+            if (auto const err =
+                    MPTokenIssuance(view, mptIssue).requireAuth(account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
@@ -416,8 +428,8 @@ Rate
 transferRate(ReadView const& view, STAmount const& amount)
 {
     return amount.asset().visit(
-        [&](Issue const& issue) { return AccountRoot(issue.getIssuer(), view).transferRate(); },
-        [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
+        [&](Issue const& issue) { return IOUIssuance(view, issue).transferRate(); },
+        [&](MPTIssue const& issue) { return MPTokenIssuance(view, issue).transferRate(); });
 }
 
 //------------------------------------------------------------------------------
@@ -464,11 +476,18 @@ addEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(view, accountID, priorBalance, issue, journal);
+    // Every account can hold XRP.
+    if (asset.native())
+        return tesSUCCESS;
+    return asset.visit(
+        [&](Issue const& issue) {
+            return WIOUIssuance(view, issue, journal)
+                .addEmptyHolding(accountID, priorBalance, journal);
         },
-        asset.value());
+        [&](MPTIssue const& issue) {
+            return WMPTokenIssuance(view, issue, journal)
+                .addEmptyHolding(accountID, priorBalance, journal);
+        });
 }
 
 TER
@@ -478,11 +497,25 @@ removeEmptyHolding(
     Asset const& asset,
     beast::Journal journal)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, accountID, issue, journal);
+    if (asset.native())
+    {
+        auto const account = AccountRoot(accountID, view, journal);
+        if (!account.exists())
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const balance = account->getFieldAmount(sfBalance);
+        if (balance.xrp() != 0)
+            return tecHAS_OBLIGATIONS;
+
+        return tesSUCCESS;
+    }
+    return asset.visit(
+        [&](Issue const& issue) {
+            return WIOUIssuance(view, issue, journal).removeEmptyHolding(accountID, journal);
         },
-        asset.value());
+        [&](MPTIssue const& issue) {
+            return WMPTokenIssuance(view, issue, journal).removeEmptyHolding(accountID, journal);
+        });
 }
 
 //------------------------------------------------------------------------------
@@ -494,21 +527,19 @@ removeEmptyHolding(
 TER
 requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, AuthType authType)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            return requireAuth(view, issue, account, authType);
-        },
-        asset.value());
+    return asset.visit(
+        [&](Issue const& issue) { return IOUIssuance(view, issue).requireAuth(account, authType); },
+        [&](MPTIssue const& issue) {
+            return MPTokenIssuance(view, issue).requireAuth(account, authType);
+        });
 }
 
 TER
 canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to)
 {
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return canTransfer(view, issue, from, to);
-        },
-        asset.value());
+    return asset.visit(
+        [&](Issue const& issue) { return IOUIssuance(view, issue).canTransfer(from, to); },
+        [&](MPTIssue const& issue) { return MPTokenIssuance(view, issue).canTransfer(from, to); });
 }
 
 //------------------------------------------------------------------------------
@@ -647,22 +678,22 @@ directSendNoFeeIOU(
 
     bool const noRipple = !wrappedAccount->isFlag(lsfDefaultRipple);
 
-    return trustCreate(
-        view,
-        bSenderHigh,
-        uSenderID,
-        uReceiverID,
-        index.key,
-        wrappedAccount,
-        false,
-        noRipple,
-        false,
-        false,
-        saBalance,
-        saReceiverLimit,
-        0,
-        0,
-        j);
+    return WIOUIssuance(view, saAmount.get<Issue>(), j)
+        .trustCreate(
+            bSenderHigh,
+            uSenderID,
+            uReceiverID,
+            index.key,
+            wrappedAccount,
+            false,
+            noRipple,
+            false,
+            false,
+            saBalance,
+            saReceiverLimit,
+            0,
+            0,
+            j);
 }
 
 // Send regardless of limits.
@@ -1158,7 +1189,7 @@ directSendNoLimitMPT(
     // Sending 3rd party MPTs: transit.
     saActual = (waiveFee == WaiveTransferFee::Yes)
         ? saAmount
-        : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+        : multiply(saAmount, MPTokenIssuance(view, saAmount.get<MPTIssue>()).transferRate());
 
     JLOG(j.debug()) << "directSendNoLimitMPT> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
@@ -1269,7 +1300,7 @@ directSendNoLimitMultiMPT(
         // Sending 3rd party MPTs: transit.
         STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
             ? amount
-            : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
+            : multiply(amount, MPTokenIssuance(view, amount.get<MPTIssue>()).transferRate());
         actual += actualSend;
         takeFromSender += actualSend;
 

@@ -731,7 +731,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Create MPToken for the offer's owner. No need to check
             // for the reserve since the offer is removed if it is consumed.
             // Therefore, the owner count remains the same.
-            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, j_);
+            if (auto const err =
+                    WMPTokenIssuance(sb, assetIn.get<MPTIssue>(), j_).checkCreateMPT(owner, j_);
                 !isTesSuccess(err))
             {
                 return true;
@@ -892,7 +893,8 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         if constexpr (std::is_same_v<TOut, MPTAmount>)
         {
             if (offer.owner() == issuer)
-                issuerSelfDebitHookMPT(sb, book_.out.get<MPTIssue>(), ofrAmt.out.value());
+                WMPTokenIssuance(sb, book_.out.get<MPTIssue>())
+                    .issuerSelfDebitHook(ofrAmt.out.value());
         }
     }
 
@@ -1389,7 +1391,7 @@ BookStep<TIn, TOut, TDerived>::rate(
         return kParityRate;
     return asset.visit(
         [&](Issue const&) { return AccountRoot(issuer, view).transferRate(); },
-        [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
+        [&](MPTIssue const& issue) { return MPTokenIssuance(view, issue).transferRate(); });
 };
 
 template <class TIn, class TOut, class TDerived>
@@ -1413,7 +1415,7 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
             // BookStep. Fail both if in asset is locked. In the former case it is holder
             // to locked holder transfer. In the latter case it is not possible to tell if
             // it is issuer to holder or holder to holder transfer.
-            if (isFrozen(view, owner, book_.in.get<MPTIssue>()))
+            if (MPTokenIssuance(view, book_.in.get<MPTIssue>()).isFrozen(owner))
                 return false;
             // Previous step is BookStep. BookStep only sends if CanTransfer is
             // set and not locked or the offer is owned by an issuer

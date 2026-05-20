@@ -213,19 +213,20 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, account); !isTesSuccess(ter))
+    auto const iouIssuance = IOUIssuance(ctx.view, issue);
+    if (auto const ter = iouIssuance.requireAuth(account); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, issue, dest); !isTesSuccess(ter))
+    if (auto const ter = iouIssuance.requireAuth(dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, issue))
+    if (iouIssuance.isFrozen(account))
         return tecFROZEN;
 
     // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, issue))
+    if (iouIssuance.isFrozen(dest))
         return tecFROZEN;
 
     STAmount const spendableAmount = accountHolds(
@@ -282,26 +283,25 @@ escrowCreatePreclaimHelper<MPTIssue>(
     // If the issuer has requireAuth set, check if the account is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    auto const issuance = MPTokenIssuance(ctx.view, mptIssue);
+    if (auto const ter = issuance.requireAuth(account, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    if (auto const ter = issuance.requireAuth(dest, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the account, return tecLOCKED
-    if (isFrozen(ctx.view, account, mptIssue))
+    if (issuance.isFrozen(account))
         return tecLOCKED;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (issuance.isFrozen(dest))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
-    if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest); !isTesSuccess(ter))
+    if (auto const ter = issuance.canTransfer(account, dest); !isTesSuccess(ter))
         return ter;
 
     STAmount const spendableAmount = accountHolds(
@@ -400,7 +400,8 @@ escrowLockApplyHelper<MPTIssue>(
     if (issuer == sender)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const ter = lockEscrowMPT(view, sender, amount, journal);
+    auto const ter =
+        WMPTokenIssuance(view, amount.get<MPTIssue>(), journal).lockEscrow(sender, amount, journal);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;

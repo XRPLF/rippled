@@ -136,10 +136,9 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
             auto const mptID = sle->getFieldH192(sfMPTokenIssuanceID);
             bool const zeroBalance = sle->at(sfMPTAmount) == 0;
             bool const maxedOut = [&] {
-                if (auto const sleIssuance = ledger_->read(keylet::mptIssuance(mptID)))
-                {
-                    return sleIssuance->at(sfOutstandingAmount) == maxMPTAmount(*sleIssuance);
-                }
+                auto const issuance = MPTokenIssuance(*ledger_, mptID);
+                if (issuance)
+                    return (*issuance)[sfOutstandingAmount] == issuance.maxAmount();
                 return true;
             }();
 

@@ -336,15 +336,16 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, AccountRoot<ReadView> co
     // requireAuth checks if MPTIssuance exist. Note that issuer to issuer
     // payment is invalid
     auto const& issuer = mptIssue_.getIssuer();
+    auto const issuance = MPTokenIssuance(ctx.view, mptIssue_);
     if (src_ != issuer)
     {
-        if (auto const ter = requireAuth(ctx.view, mptIssue_, src_); !isTesSuccess(ter))
+        if (auto const ter = issuance.requireAuth(src_); !isTesSuccess(ter))
             return ter;
     }
 
     if (dst_ != issuer)
     {
-        if (auto const ter = requireAuth(ctx.view, mptIssue_, dst_); !isTesSuccess(ter))
+        if (auto const ter = issuance.requireAuth(dst_); !isTesSuccess(ter))
             return ter;
     }
 
@@ -357,11 +358,10 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, AccountRoot<ReadView> co
         {
             auto const& holder = ctx.isFirst ? src_ : dst_;
             // Payment between the holders
-            if (isFrozen(ctx.view, holder, mptIssue_))
+            if (issuance.isFrozen(holder))
                 return tecLOCKED;
 
-            if (auto const ter = canTransfer(ctx.view, mptIssue_, holder, ctx.strandDst);
-                !isTesSuccess(ter))
+            if (auto const ter = issuance.canTransfer(holder, ctx.strandDst); !isTesSuccess(ter))
                 return ter;
         }
         // Don't need to check if a payment is between issuer and holder
@@ -407,7 +407,8 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirectio
         // for the reserve since the offer doesn't go on the books
         // if crossed. Insufficient reserve is allowed if the offer
         // crossed. See CreateOffer::applyGuts() for reserve check.
-        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, j_); !isTesSuccess(err))
+        if (auto const err = xrpl::WMPTokenIssuance(view, mptIssue_, j_).checkCreateMPT(dst_, j_);
+            !isTesSuccess(err))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
             resetCache(srcDebtDir);
@@ -756,8 +757,9 @@ MPTEndpointStep<TDerived>::qualitiesSrcIssues(
         "MPTEndpointStep<TDerived>::qualitiesSrcIssues : verify prev step debt "
         "direction");
 
-    std::uint32_t const srcQOut =
-        redeems(prevStepDebtDirection) ? transferRate(sb, mptIssue_.getMptID()).value : QUALITY_ONE;
+    std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
+        ? MPTokenIssuance(sb, mptIssue_).transferRate().value
+        : QUALITY_ONE;
 
     // Unlike trustline, MPT doesn't have line quality field
     return {srcQOut, QUALITY_ONE};
@@ -840,7 +842,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const& account = ctx.isFirst ? src_ : dst_;
-        if (isFrozen(ctx.view, account, mptIssue_))
+        if (MPTokenIssuance(ctx.view, mptIssue_).isFrozen(account))
             return terLOCKED;
     }
 

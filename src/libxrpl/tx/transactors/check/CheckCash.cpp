@@ -233,7 +233,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                     // However, the trustline from destination to issuer may
                     // not be frozen.
-                    if (isFrozen(ctx.view, dstId, currency, issuerId))
+                    if (IOUIssuance(ctx.view, issuerId, currency).isFrozen(dstId))
                     {
                         JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
                         return tecFROZEN;
@@ -251,14 +251,15 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if (auto const err = requireAuth(ctx.view, issue, dstId, AuthType::WeakAuth);
+                    auto const issuance = MPTokenIssuance(ctx.view, issue);
+                    if (auto const err = issuance.requireAuth(dstId, AuthType::WeakAuth);
                         !isTesSuccess(err))
                     {
                         JLOG(ctx.j.warn()) << "Cashing a check to a MPT requiring auth.";
                         return err;
                     }
 
-                    if (isFrozen(ctx.view, dstId, issue))
+                    if (issuance.isFrozen(dstId))
                     {
                         JLOG(ctx.j.warn()) << "Cashing a check to a frozen MPT.";
                         return tecLOCKED;
@@ -431,22 +432,22 @@ CheckCash::doApply()
                         STAmount initialBalance(flowDeliver.asset());
                         initialBalance.get<Issue>().account = noAccount();
 
-                        if (TER const ter = trustCreate(
-                                psb,                             // payment sandbox
-                                destLow,                         // is dest low?
-                                deliverIssuer,                   // source
-                                accountID_,                      // destination
-                                trustLineKey->key,               // ledger index
-                                dst,                             // Account to add to
-                                false,                           // authorize account
-                                !dst->isFlag(lsfDefaultRipple),  //
-                                false,                           // freeze trust line
-                                false,                           // deep freeze trust line
-                                initialBalance,                  // zero initial balance
-                                Issue(currency, accountID_),     // limit of zero
-                                0,                               // quality in
-                                0,                               // quality out
-                                viewJ);                          // journal
+                        if (TER const ter = WIOUIssuance(psb, deliverIssuer, currency, viewJ)
+                                                .trustCreate(
+                                                    destLow,            // is dest low?
+                                                    deliverIssuer,      // source
+                                                    accountID_,         // destination
+                                                    trustLineKey->key,  // ledger index
+                                                    dst,                // Account to add to
+                                                    false,              // authorize account
+                                                    !dst->isFlag(lsfDefaultRipple),  //
+                                                    false,           // freeze trust line
+                                                    false,           // deep freeze trust line
+                                                    initialBalance,  // zero initial balance
+                                                    Issue(currency, accountID_),  // limit of zero
+                                                    0,                            // quality in
+                                                    0,                            // quality out
+                                                    viewJ);                       // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -492,7 +493,8 @@ CheckCash::doApply()
                             if (!dst.has_value())
                                 return tecINSUFFICIENT_RESERVE;
 
-                            if (auto const err = checkCreateMPT(psb, mptID, accountID_, j_);
+                            if (auto const err =
+                                    WMPTokenIssuance(psb, mptID, j_).checkCreateMPT(accountID_, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

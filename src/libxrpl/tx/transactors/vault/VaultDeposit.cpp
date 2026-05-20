@@ -92,7 +92,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, vaultShare))
+    if (MPTokenIssuance(ctx.view, vaultShare).isFrozen(account))
         return tecLOCKED;
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
@@ -155,11 +155,11 @@ VaultDeposit::doApply()
     }
 
     auto const& vaultAccount = vault->at(sfAccount);
+    auto issuance = WMPTokenIssuance(view(), mptIssuanceID->value(), ctx_.journal);
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
-        if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, accountID_, preFeeBalance_, j_);
+        if (auto const err = issuance.enforceMPTokenAuthorization(accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -168,8 +168,8 @@ VaultDeposit::doApply()
         // No authorization needed, but must ensure there is MPToken
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
-            if (auto const err = authorizeMPToken(
-                    view(), preFeeBalance_, mptIssuanceID->value(), accountID_, ctx_.journal);
+            if (auto const err =
+                    issuance.authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -180,10 +180,8 @@ VaultDeposit::doApply()
             // This follows from the reverse of the outer enclosing if condition
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
-            if (auto const err = authorizeMPToken(
-                    view(),
+            if (auto const err = issuance.authorizeMPToken(
                     preFeeBalance_,             // priorBalance
-                    mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
                     {},         // flags
