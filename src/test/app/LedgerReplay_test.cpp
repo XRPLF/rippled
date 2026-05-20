@@ -1,12 +1,15 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/InboundLedger.h>
@@ -99,7 +102,7 @@ struct LedgerReplay_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
-        Env env(*this, testable_amendments());
+        Env env(*this, testableAmendments());
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -109,10 +112,9 @@ struct LedgerReplay_test : public beast::unit_test::Suite
         auto const seq = env.seq(alice);
         auto const batchFee = batch::calcBatchFee(env, 0, 2);
         env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-            batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-            batch::sig(alice),
-            ter(tesSUCCESS));
+            batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+            batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+            Ter(tesSUCCESS));
         env.close();
 
         LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
@@ -120,7 +122,7 @@ struct LedgerReplay_test : public beast::unit_test::Suite
         auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
 
         auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent, lastClosed), tapNONE, env.app(), env.journal);
+            LedgerReplay(lastClosedParent, lastClosed), TapNone, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
     }

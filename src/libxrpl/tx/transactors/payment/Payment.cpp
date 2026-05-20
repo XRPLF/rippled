@@ -330,7 +330,11 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (partialPaymentAllowed)
+        // Prior to featureBatchV1_1 this check was skipped on closed views,
+        // which let inner batch payments slip through. Gate the broadened
+        // check on the amendment so behavior is preserved pre-amendment.
+        if (partialPaymentAllowed &&
+            (ctx.view.open() || ctx.view.rules().enabled(featureBatchV1_1)))
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -367,7 +371,11 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if (hasPaths || sendMax || !dstAmount.native())
+    // Prior to featureBatchV1_1 the path size check below was only enforced on
+    // open views; gate the broadened enforcement on the amendment so
+    // pre-amendment behavior is preserved.
+    if ((hasPaths || sendMax || !dstAmount.native()) &&
+        (ctx.view.open() || ctx.view.rules().enabled(featureBatchV1_1)))
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 

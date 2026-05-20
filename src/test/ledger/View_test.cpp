@@ -1046,6 +1046,44 @@ class View_test : public beast::unit_test::Suite
         }
     }
 
+    // Verifies that OpenView::txExists() walks its parent chain so a tx that
+    // was applied in a previous ledger is still reported as existing from a
+    // fresh OpenView built over that ledger. This is what lets
+    // Transactor::checkSeq return tefALREADY for a replay against the closed
+    // ledger.
+    void
+    testTxExistsRecurses()
+    {
+        testcase("OpenView::txExists walks parent chain");
+
+        using namespace jtx;
+
+        Env env(*this);
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Build the noop tx so we know its txid up-front.
+        auto const jt = env.jt(noop(alice));
+        auto const txid = jt.stx->getTransactionID();
+
+        // Before submission, no view knows about this tx.
+        BEAST_EXPECT(!env.current()->txExists(txid));
+        BEAST_EXPECT(!env.closed()->txExists(txid));
+
+        // Submit and close so the tx ends up in the closed ledger but no
+        // longer in the open view's local txs_.
+        env(jt.jv);
+        env.close();
+
+        BEAST_EXPECT(env.closed()->txExists(txid));
+
+        // A fresh OpenView built over the closed ledger has an empty txs_
+        // map, but must still report the tx as existing via its base.
+        auto const ov = env.current();
+        BEAST_EXPECT(ov->txExists(txid));
+    }
+
     void
     run() override
     {
@@ -1063,6 +1101,7 @@ class View_test : public beast::unit_test::Suite
         testTransferRate();
         testAreCompatible();
         testRegressions();
+        testTxExistsRecurses();
     }
 };
 

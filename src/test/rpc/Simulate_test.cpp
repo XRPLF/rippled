@@ -421,8 +421,8 @@ class Simulate_test : public beast::unit_test::Suite
         }
         {
             // tfInnerBatchTxn flag on top-level transaction
-            Json::Value params;
-            Json::Value tx_json = Json::objectValue;
+            json::Value params;
+            json::Value tx_json{json::ValueType::Object};
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
             tx_json[jss::Flags] = tfInnerBatchTxn;

@@ -51,6 +51,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -429,9 +430,9 @@ class Batch_test : public beast::unit_test::Suite
 
         // temINVALID_INNER_BATCH: tfInnerBatchTxn set but no parentBatchId.
         {
-            auto jtx = env.jt(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn));
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
             PreflightContext pfCtx(
-                env.app(), *jtx.stx, env.current()->rules(), tapNONE, env.journal);
+                env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -441,7 +442,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
             PreflightContext pfCtx(
-                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), tapBATCH, env.journal);
+                env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
@@ -1002,16 +1003,16 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const seq = env.seq(alice);
 
-            Json::Value tx1;
+            json::Value tx1;
             tx1[jss::TransactionType] = jss::OfferCreate;
             tx1[jss::Account] = alice.human();
-            tx1[jss::TakerPays] = mptAmt.getJson(JsonOptions::none);
-            tx1[jss::TakerGets] = XRP(10).value().getJson(JsonOptions::none);
+            tx1[jss::TakerPays] = mptAmt.getJson(JsonOptions::Values::None);
+            tx1[jss::TakerGets] = XRP(10).value().getJson(JsonOptions::Values::None);
 
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(telENV_RPC_FAILED));
+                batch::Inner(tx1, seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -1028,9 +1029,9 @@ class Batch_test : public beast::unit_test::Suite
             m["MemoData"] = strHex(std::string("test"));
 
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(telENV_RPC_FAILED));
+                batch::Inner(tx1, seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2),
+                Ter(telENV_RPC_FAILED));
             env.close();
         }
     }
@@ -2566,11 +2567,11 @@ class Batch_test : public beast::unit_test::Suite
         // checkBatchSign must validate all signers regardless of order.
         // This must fail with tefBAD_AUTH.
         env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, unfunded, XRP(100)), seq + 1),
-            batch::inner(noop(unfunded), ledSeq),
-            batch::inner(pay(carol, alice, XRP(1000)), env.seq(carol)),
-            batch::sig(unfunded, Reg{carol, alice}),
-            ter(tefBAD_AUTH));
+            batch::Inner(pay(alice, unfunded, XRP(100)), seq + 1),
+            batch::Inner(noop(unfunded), ledSeq),
+            batch::Inner(pay(carol, alice, XRP(1000)), env.seq(carol)),
+            batch::Sig(unfunded, Reg{carol, alice}),
+            Ter(tefBAD_AUTH));
         env.close();
     }
 
@@ -4497,7 +4498,7 @@ class Batch_test : public beast::unit_test::Suite
             // Submit a normal Payment with tfInnerBatchTxn flag.
             // preflight1 must reject with temINVALID_INNER_BATCH because
             // the flag is set but no parentBatchId exists.
-            env(pay(alice, bob, XRP(1)), txflags(tfInnerBatchTxn), ter(telENV_RPC_FAILED));
+            env(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn), Ter(telENV_RPC_FAILED));
             env.close();
 
             // Verify via direct apply path (bypassing RPC layer)
@@ -4514,7 +4515,7 @@ class Batch_test : public beast::unit_test::Suite
                     obj.setFieldU32(sfFlags, tfInnerBatchTxn);
                 });
 
-                auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
+                auto const result = xrpl::apply(env.app(), view, stx, TapNone, j);
                 // Must NOT be applied — signature was never checked
                 BEAST_EXPECT(!result.applied);
                 return false;
@@ -4549,13 +4550,13 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee1 = batch::calcBatchFee(env, 2, 2);
             auto jt1 = env.jt(
                 batch::outer(alice, aliceSeq, batchFee1, tfOnlyOne),
-                batch::inner(pay(bob, alice, XRP(100)), bobSeq),
-                batch::inner(pay(carol, alice, XRP(50)), carolSeq),
-                batch::sig(bob, carol));
+                batch::Inner(pay(bob, alice, XRP(100)), bobSeq),
+                batch::Inner(pay(carol, alice, XRP(50)), carolSeq),
+                batch::Sig(bob, carol));
 
             auto const capturedSigners = jt1.jv[sfBatchSigners.jsonName];
 
-            env(jt1, ter(tesSUCCESS));
+            env(jt1, Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
             BEAST_EXPECT(env.seq(carol) == carolSeq);
@@ -4563,11 +4564,11 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee2 = batch::calcBatchFee(env, 2, 2);
             auto jt2 = env.jtnofill(
                 batch::outer(eve, env.seq(eve), batchFee2, tfOnlyOne),
-                batch::inner(pay(bob, alice, XRP(100)), bobSeq),
-                batch::inner(pay(carol, alice, XRP(50)), carolSeq));
+                batch::Inner(pay(bob, alice, XRP(100)), bobSeq),
+                batch::Inner(pay(carol, alice, XRP(50)), carolSeq));
 
             jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
-            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(temBAD_SIGNATURE));
             env.close();
 
             BEAST_EXPECT(env.seq(carol) == carolSeq);
@@ -4593,13 +4594,13 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee1 = batch::calcBatchFee(env, 2, 2);
             auto jt1 = env.jt(
                 batch::outer(alice, aliceSeq1, batchFee1, tfOnlyOne),
-                batch::inner(pay(bob, alice, XRP(500)), bobSeq),
-                batch::inner(pay(carol, alice, XRP(500)), carolSeq),
-                batch::sig(bob, carol));
+                batch::Inner(pay(bob, alice, XRP(500)), bobSeq),
+                batch::Inner(pay(carol, alice, XRP(500)), carolSeq),
+                batch::Sig(bob, carol));
 
             auto const capturedSigners = jt1.jv[sfBatchSigners.jsonName];
 
-            env(jt1, ter(tesSUCCESS));
+            env(jt1, Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
             BEAST_EXPECT(env.seq(carol) == carolSeq);
@@ -4607,11 +4608,11 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee2 = batch::calcBatchFee(env, 2, 2);
             auto jt2 = env.jtnofill(
                 batch::outer(alice, env.seq(alice), batchFee2, tfOnlyOne),
-                batch::inner(pay(bob, alice, XRP(500)), bobSeq),
-                batch::inner(pay(carol, alice, XRP(500)), carolSeq));
+                batch::Inner(pay(bob, alice, XRP(500)), bobSeq),
+                batch::Inner(pay(carol, alice, XRP(500)), carolSeq));
 
             jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
-            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(temBAD_SIGNATURE));
             env.close();
 
             BEAST_EXPECT(env.balance(carol) == preCarol);
@@ -4640,31 +4641,31 @@ class Batch_test : public beast::unit_test::Suite
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             auto jt1 = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {dave, elsa}),
-                ter(tesSUCCESS));
+                batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::Inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::Msig(bob, {dave, elsa}),
+                Ter(tesSUCCESS));
 
             auto const bobSignerEntry = jt1.jv[sfBatchSigners.jsonName][0u];
 
-            env(jt1, ter(tesSUCCESS));
+            env(jt1, Ter(tesSUCCESS));
             env.close();
 
             auto const seq2 = env.seq(alice);
             auto const batchFee2 = batch::calcBatchFee(env, 3, 2);
             auto jt2 = env.jtnofill(
                 batch::outer(alice, seq2, batchFee2, tfAllOrNothing),
-                batch::inner(pay(alice, carol, XRP(10)), seq2 + 1),
-                batch::inner(pay(carol, alice, XRP(5)), env.seq(carol)));
+                batch::Inner(pay(alice, carol, XRP(10)), seq2 + 1),
+                batch::Inner(pay(carol, alice, XRP(5)), env.seq(carol)));
 
-            Json::Value carolSigner;
+            json::Value carolSigner;
             carolSigner[sfBatchSigner.jsonName][jss::Account] = carol.human();
             carolSigner[sfBatchSigner.jsonName][jss::SigningPubKey] = "";
             carolSigner[sfBatchSigner.jsonName][sfSigners.jsonName] =
                 bobSignerEntry[sfBatchSigner.jsonName][sfSigners.jsonName];
 
             jt2.jv[sfBatchSigners.jsonName][0u] = carolSigner;
-            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(temBAD_SIGNATURE));
             env.close();
         }
     }
@@ -4691,16 +4692,16 @@ class Batch_test : public beast::unit_test::Suite
 
         auto jt = env.jt(
             batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(bob, alice, XRP(10)), bobSeq),
-            batch::inner(pay(carol, alice, XRP(5)), carolSeq),
-            batch::sig(bob, carol));
+            batch::Inner(pay(bob, alice, XRP(10)), bobSeq),
+            batch::Inner(pay(carol, alice, XRP(5)), carolSeq),
+            batch::Sig(bob, carol));
 
         auto const s0 = jt.jv[sfBatchSigners.jsonName][0u];
         auto const s1 = jt.jv[sfBatchSigners.jsonName][1u];
         jt.jv[sfBatchSigners.jsonName][0u] = s1;
         jt.jv[sfBatchSigners.jsonName][1u] = s0;
 
-        env(jt.jv, ter(temBAD_SIGNER));
+        env(jt.jv, Ter(temBAD_SIGNER));
         env.close();
     }
 
@@ -4750,7 +4751,6 @@ public:
         using namespace test::jtx;
 
         auto const sa = testableAmendments();
-        testWithFeats(sa - featureBatchV1_1);
         testWithFeats(sa);
     }
 };

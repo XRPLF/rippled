@@ -570,7 +570,7 @@ STTx::buildBatchTxnIds()
 
     auto const& raw = getFieldArray(sfRawTransactions);
 
-    if (raw.size() > maxBatchTxCount)
+    if (raw.size() > kMaxBatchTxCount)
         return;
 
     batchTxnIds_.reserve(raw.size());

@@ -136,11 +136,11 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             {
                 auto const& nestedSigners = signer.getFieldArray(sfSigners);
                 // LCOV_EXCL_START
-                if (nestedSigners.size() > STTx::maxMultiSigners)
+                if (nestedSigners.size() > STTx::kMaxMultiSigners)
                 {
                     JLOG(debugLog().error())
                         << "BatchTrace: Nested Signers array exceeds max entries.";
-                    return XRPAmount{INITIAL_XRP};
+                    return kInitialXrp;
                 }
                 // LCOV_EXCL_STOP
                 signerCount += nestedSigners.size();
@@ -243,7 +243,7 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfBatchSigners) &&
-        ctx.tx.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
+        ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchTxCount)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "signers array exceeds 8 entries.";
@@ -442,7 +442,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         }
 
         // Batch signers must be in strictly ascending order by AccountID.
-        AccountID lastBatchSigner(beast::zero);
+        AccountID lastBatchSigner{beast::kZero};
         for (auto const& signer : signers)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
