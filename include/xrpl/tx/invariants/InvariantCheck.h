@@ -132,7 +132,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -152,7 +152,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -198,7 +198,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -215,7 +215,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -233,7 +233,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -252,7 +252,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -271,7 +271,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -287,7 +287,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -307,7 +307,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -321,14 +321,14 @@ public:
  */
 class ValidClawback
 {
-    std::uint32_t trustlinesChanged = 0;
-    std::uint32_t mptokensChanged = 0;
+    std::uint32_t trustlinesChanged_ = 0;
+    std::uint32_t mptokensChanged_ = 0;
 
 public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
