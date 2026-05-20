@@ -96,7 +96,7 @@ uleb128(IT&& it)
     return {val, count};
 }
 
-std::pair<unsigned, unsigned>
+static std::pair<unsigned, unsigned>
 getSection(Bytes const& module, std::uint8_t n)
 {
     static std::uint8_t const kHdr[] = {0x00, 0x61, 0x73, 0x6D};
@@ -135,7 +135,7 @@ getSection(Bytes const& module, std::uint8_t n)
     return {0, 0};
 }
 
-std::optional<int32_t>
+static std::optional<int32_t>
 runFinishFunction(std::string const& code)
 {
     auto& engine = WasmEngine::instance();
@@ -150,7 +150,7 @@ runFinishFunction(std::string const& code)
     return std::nullopt;
 }
 
-bool
+static bool
 finishFunctionReturns(std::string const& code, int32_t expected)
 {
     auto const result = runFinishFunction(code);

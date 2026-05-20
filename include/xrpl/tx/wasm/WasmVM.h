@@ -24,6 +24,10 @@ class WasmiEngine;
 
 class WasmEngine
 {
+    std::unique_ptr<WasmiEngine> const impl_;
+
+    WasmEngine();
+
 public:
     WasmEngine(WasmEngine const&) = delete;
     WasmEngine(WasmEngine&&) = delete;
@@ -59,11 +63,6 @@ public:
 
     [[nodiscard]] beast::Journal
     getJournal() const;
-
-private:
-    std::unique_ptr<WasmiEngine> const impl_;
-
-    WasmEngine();
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
