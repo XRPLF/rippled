@@ -535,8 +535,10 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
+    // For delegated transactions sfDelegate is the account whose signer list is checked,
+    // the delegate account itself can not be among the signers.
     auto const txnAccountID =
-        &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getFeePayer());
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer

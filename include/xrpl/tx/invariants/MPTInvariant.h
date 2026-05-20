@@ -2,10 +2,13 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -19,6 +22,18 @@ class ValidMPTIssuance
     // non-MPT transactions may attempt to create
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;
+
+    /// sfReferenceHolding is intended to be set exactly once at vault
+    /// creation and immutable thereafter; true when that rule was violated.
+    bool referenceHoldingSetOnCreate_ = false;
+
+    /// True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+    bool referenceHoldingMutated_ = false;
+
+    /// MPTokens and RippleStates deleted during apply. finalize() checks each
+    /// holder's AccountRoot to detect vault pseudo-account holdings deleted
+    /// outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+    std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
     void

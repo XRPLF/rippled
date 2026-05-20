@@ -54,7 +54,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth)
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
@@ -65,7 +69,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth)
+    std::uint8_t depth)
 {
     if (isGlobalFrozen(view, mptIssue))
         return true;
@@ -302,7 +306,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType,
-    int depth)
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -320,7 +324,12 @@ requireAuth(
     if (featureSAVEnabled)
     {
         if (depth >= kMaxAssetCheckDepth)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::requireAuth : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
         auto const sleIssuer = view.read(keylet::account(mptIssuer));
@@ -489,28 +498,88 @@ enforceMPTokenAuthorization(
     // LCOV_EXCL_STOP
 }
 
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
+{
+    XRPL_ASSERT_PARTS(
+        sleHolding.getType() == ltRIPPLE_STATE || sleHolding.getType() == ltMPTOKEN,
+        "xrpl::assetOfHolding",
+        "unexpected holding type");
+    XRPL_ASSERT_PARTS(
+        sleShareIssuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetOfHolding",
+        "not SLE MPTokenIssuance");
+
+    if (sleHolding.getType() == ltMPTOKEN)
+        return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
+
+    auto const vaultPseudo = sleShareIssuance.at(sfIssuer);
+    auto const lowLimit = sleHolding.getFieldAmount(sfLowLimit);
+    auto const highLimit = sleHolding.getFieldAmount(sfHighLimit);
+    auto const& iouIssuer =
+        (lowLimit.getIssuer() != vaultPseudo) ? lowLimit.getIssuer() : highLimit.getIssuer();
+    return Issue{lowLimit.get<Issue>().currency, iouIssuer};
+}
+
 TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to)
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    auto const issuer = (*sleIssuance)[sfIssuer];
+    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
+        return tesSUCCESS;
+
     if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying asset.
+    // Third-party transfers inherit the underlying's transferability.
+    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
+    //
+    // The recursive call always passes WaiveMPTCanTransfer::No so that
+    // a waived outer caller does not transitively unlock the underlying.
+    if (view.rules().enabled(fixCleanup3_2_0) && sleIssuance->isFieldPresent(sfReferenceHolding))
     {
-        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
-            return TER{tecNO_AUTH};
+        // Defensive depth bound on the inheritance recursion. Unreachable
+        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const sleHolding =
+            view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        return canTransfer(
+            view,
+            assetOfHolding(*sleIssuance, *sleHolding),
+            from,
+            to,
+            WaiveMPTCanTransfer::No,
+            depth + 1);
     }
+
     return tesSUCCESS;
 }
 
 TER
-canTrade(ReadView const& view, Asset const& asset)
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth)
 {
     return asset.visit(
         [&](Issue const&) -> TER { return tesSUCCESS; },
@@ -520,6 +589,31 @@ canTrade(ReadView const& view, Asset const& asset)
                 return tecOBJECT_NOT_FOUND;
             if (!sleIssuance->isFlag(lsfMPTCanTrade))
                 return tecNO_PERMISSION;
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying
+            // asset's tradability. A share whose underlying has been
+            // removed from trading cannot itself be placed on the DEX.
+            if (view.rules().enabled(fixCleanup3_2_0) &&
+                sleIssuance->isFieldPresent(sfReferenceHolding))
+            {
+                // Defensive depth bound on the inheritance recursion.
+                // Unreachable in practice (vault-of-vault-shares
+                // forbidden at VaultCreate).
+                if (depth >= kMaxAssetCheckDepth)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::MPTokenHelpers::canTrade : reached asset check depth");
+                    return tecINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
+                auto const sleHolding =
+                    view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                if (!sleHolding)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return canTrade(view, assetOfHolding(*sleIssuance, *sleHolding), depth + 1);
+            }
+
             return tesSUCCESS;
         });
 }
