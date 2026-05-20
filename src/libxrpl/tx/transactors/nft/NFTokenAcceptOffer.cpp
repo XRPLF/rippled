@@ -407,8 +407,8 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
-    AccountID const& seller = isSell ? owner : account_;
-    AccountID const& buyer = isSell ? account_ : owner;
+    AccountID const& seller = isSell ? owner : accountID_;
+    AccountID const& buyer = isSell ? accountID_ : owner;
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
@@ -528,7 +528,7 @@ NFTokenAcceptOffer::doApply()
         // Send the broker the amount they requested.
         if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::kZero)
         {
-            if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
+            if (auto const r = pay(buyer, accountID_, cut.value()); !isTesSuccess(r))
                 return r;
 
             amount -= cut.value();

@@ -21,7 +21,7 @@ class TOffer
 private:
     SLE::pointer entry_;
     Quality quality_{};
-    AccountID account_;
+    AccountID accountID_;
     Asset assetIn_;
     Asset assetOut_;
 
@@ -53,7 +53,7 @@ public:
     [[nodiscard]] AccountID const&
     owner() const
     {
-        return account_;
+        return accountID_;
     }
 
     /** Returns the in and out amounts.
@@ -122,7 +122,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
-        return account_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
+        return accountID_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -159,7 +159,7 @@ public:
 
 template <StepAmount TIn, StepAmount TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
-    : entry_(std::move(entry)), quality_(quality), account_(entry_->getAccountID(sfAccount))
+    : entry_(std::move(entry)), quality_(quality), accountID_(entry_->getAccountID(sfAccount))
 {
     auto const tp = entry_->getFieldAmount(sfTakerPays);
     auto const tg = entry_->getFieldAmount(sfTakerGets);

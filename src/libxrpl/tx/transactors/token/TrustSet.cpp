@@ -336,9 +336,9 @@ TrustSet::doApply()
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
-    bool const bHigh = account_ > uDstAccountID;
+    bool const bHigh = accountID_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -391,10 +391,10 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.get<Issue>().account = account_;
+    saLimitAllow.get<Issue>().account = accountID_;
 
     SLE::pointer const sleRippleState =
-        view().peek(keylet::line(account_, uDstAccountID, currency));
+        view().peek(keylet::line(accountID_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -406,8 +406,8 @@ TrustSet::doApply()
         std::uint32_t uLowQualityOut = 0;
         std::uint32_t uHighQualityIn = 0;
         std::uint32_t uHighQualityOut = 0;
-        auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
-        auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
+        auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
+        auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
         SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
         SLE::ref sleHighAccount = bHigh ? sle : sleDst;
 
@@ -642,7 +642,7 @@ TrustSet::doApply()
         // Zero balance in currency.
         STAmount const saBalance(Issue{currency, noAccount()});
 
-        auto const k = keylet::line(account_, uDstAccountID, currency);
+        auto const k = keylet::line(accountID_, uDstAccountID, currency);
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
@@ -650,7 +650,7 @@ TrustSet::doApply()
         terResult = trustCreate(
             view(),
             bHigh,
-            account_,
+            accountID_,
             uDstAccountID,
             k.key,
             sle,

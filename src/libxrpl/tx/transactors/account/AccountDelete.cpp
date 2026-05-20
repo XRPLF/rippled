@@ -344,7 +344,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(account_));
+    auto src = view().peek(keylet::account(accountID_));
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
@@ -357,12 +357,12 @@ AccountDelete::doApply()
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dstID, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
 
-    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    Keylet const ownerDirKeylet{keylet::ownerDir(accountID_)};
     auto const ter = cleanupOnAccountDelete(
         view(),
         ownerDirKeylet,
@@ -371,7 +371,7 @@ AccountDelete::doApply()
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{deleter(ctx_.registry, view(), account_, dirEntry, sleItem, j_)};
+                TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};
 
                 return {result, SkipEntry::No};
             }
@@ -402,7 +402,7 @@ AccountDelete::doApply()
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(account_);
+        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(accountID_);
         return tecHAS_OBLIGATIONS;
     }
 
