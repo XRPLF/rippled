@@ -214,12 +214,12 @@ class Number
 
 public:
     // The range for the exponent when normalized
-    constexpr static int kMIN_EXPONENT = -32768;
-    constexpr static int kMAX_EXPONENT = 32768;
+    static constexpr int kMinExponent = -32768;
+    static constexpr int kMaxExponent = 32768;
 
-    constexpr static internalrep kMAX_REP = std::numeric_limits<rep>::max();
-    static_assert(kMAX_REP == 9'223'372'036'854'775'807);
-    static_assert(-kMAX_REP == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
+    static_assert(kMaxRep == 9'223'372'036'854'775'807);
+    static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
 
     // May need to make unchecked private
     struct Unchecked
@@ -409,26 +409,26 @@ public:
     static internalrep
     minMantissa()
     {
-        return kRANGE.get().min;
+        return kRange.get().min;
     }
 
     static internalrep
     maxMantissa()
     {
-        return kRANGE.get().max;
+        return kRange.get().max;
     }
 
     static int
     mantissaLog()
     {
-        return kRANGE.get().log;
+        return kRange.get().log;
     }
 
     /// oneSmall is needed because the ranges are private
-    constexpr static Number
+    static constexpr Number
     oneSmall();
     /// oneLarge is needed because the ranges are private
-    constexpr static Number
+    static constexpr Number
     oneLarge();
 
     // And one is needed because it needs to choose between oneSmall and
@@ -445,25 +445,25 @@ private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::MantissaScale::Small};
-    static_assert(isPowerOfTen(kSMALL_RANGE.min));
-    static_assert(kSMALL_RANGE.min == 1'000'000'000'000'000LL);
-    static_assert(kSMALL_RANGE.max == 9'999'999'999'999'999LL);
-    static_assert(kSMALL_RANGE.log == 15);
-    static_assert(kSMALL_RANGE.min < kMAX_REP);
-    static_assert(kSMALL_RANGE.max < kMAX_REP);
-    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaScale::Large};
-    static_assert(isPowerOfTen(kLARGE_RANGE.min));
-    static_assert(kLARGE_RANGE.min == 1'000'000'000'000'000'000ULL);
-    static_assert(kLARGE_RANGE.max == internalrep(9'999'999'999'999'999'999ULL));
-    static_assert(kLARGE_RANGE.log == 18);
-    static_assert(kLARGE_RANGE.min < kMAX_REP);
-    static_assert(kLARGE_RANGE.max > kMAX_REP);
+    static constexpr MantissaRange kSmallRange{MantissaRange::MantissaScale::Small};
+    static_assert(isPowerOfTen(kSmallRange.min));
+    static_assert(kSmallRange.min == 1'000'000'000'000'000LL);
+    static_assert(kSmallRange.max == 9'999'999'999'999'999LL);
+    static_assert(kSmallRange.log == 15);
+    static_assert(kSmallRange.min < kMaxRep);
+    static_assert(kSmallRange.max < kMaxRep);
+    static constexpr MantissaRange kLargeRange{MantissaRange::MantissaScale::Large};
+    static_assert(isPowerOfTen(kLargeRange.min));
+    static_assert(kLargeRange.min == 1'000'000'000'000'000'000ULL);
+    static_assert(kLargeRange.max == internalrep(9'999'999'999'999'999'999ULL));
+    static_assert(kLargeRange.log == 18);
+    static_assert(kLargeRange.min < kMaxRep);
+    static_assert(kLargeRange.max > kMaxRep);
 
     // The range for the mantissa when normalized.
     // Use reference_wrapper to avoid making copies, and prevent accidentally
     // changing the values inside the range.
-    static thread_local std::reference_wrapper<MantissaRange const> kRANGE;
+    static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
     void
     normalize();
@@ -471,7 +471,7 @@ private:
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from kRANGE, and by normalizeToRange,
+     * normalize(), which reads from kRange, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>
@@ -521,7 +521,7 @@ constexpr Number::Number(internalrep mantissa, int exponent, Unchecked) noexcept
 {
 }
 
-constexpr static Number kNUM_ZERO{};
+static constexpr Number kNumZero{};
 
 inline Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
     : Number(negative, mantissa, exponent, Unchecked{})
@@ -552,10 +552,10 @@ constexpr Number::rep
 Number::mantissa() const noexcept
 {
     auto m = mantissa_;
-    if (m > kMAX_REP)
+    if (m > kMaxRep)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (m % 10 == 0 && m / 10 <= kMAX_REP),
+            !isnormal() || (m % 10 == 0 && m / 10 <= kMaxRep),
             "xrpl::Number::mantissa",
             "large normalized mantissa has no remainder");
         m /= 10;
@@ -573,10 +573,10 @@ constexpr int
 Number::exponent() const noexcept
 {
     auto e = exponent_;
-    if (mantissa_ > kMAX_REP)
+    if (mantissa_ > kMaxRep)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= kMAX_REP),
+            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= kMaxRep),
             "xrpl::Number::exponent",
             "large normalized mantissa has no remainder");
         ++e;
@@ -671,29 +671,29 @@ operator/(Number const& x, Number const& y)
 inline Number
 Number::min() noexcept
 {
-    return Number{false, kRANGE.get().min, kMIN_EXPONENT, Unchecked{}};
+    return Number{false, kRange.get().min, kMinExponent, Unchecked{}};
 }
 
 inline Number
 Number::max() noexcept
 {
-    return Number{false, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{false, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{true, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{true, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline bool
 Number::isnormal() const noexcept
 {
-    MantissaRange const& range = kRANGE;
+    MantissaRange const& range = kRange;
     auto const absM = mantissa_;
     return *this == Number{} ||
-        (range.min <= absM && absM <= range.max && (absM <= kMAX_REP || absM % 10 == 0) &&
-         kMIN_EXPONENT <= exponent_ && exponent_ <= kMAX_EXPONENT);
+        (range.min <= absM && absM <= range.max && (absM <= kMaxRep || absM % 10 == 0) &&
+         kMinExponent <= exponent_ && exponent_ <= kMaxExponent);
 }
 
 template <Integral64 T>

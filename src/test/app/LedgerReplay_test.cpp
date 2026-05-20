@@ -291,8 +291,8 @@ public:
     [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 const kHASH{};
-        return kHASH;
+        static uint256 const kHash{};
+        return kHash;
     }
     [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
@@ -445,8 +445,8 @@ struct TestPeerSet : public PeerSet
     [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const kEMPTY_PEERS;
-        return kEMPTY_PEERS;
+        static std::set<Peer::id_t> const kEmptyPeers;
+        return kEmptyPeers;
     }
 
     LedgerReplayMsgHandler& local;
@@ -561,9 +561,9 @@ struct LedgerServer
                     accounts[toIdx],
                     jtx::drops(ledgerMaster.getClosedLedger()->fees().base) +
                         jtx::XRP(param.txAmount)),
-                jtx::Seq(jtx::kAUTOFILL),
-                jtx::Fee(jtx::kAUTOFILL),
-                jtx::Sig(jtx::kAUTOFILL));
+                jtx::Seq(jtx::kAutofill),
+                jtx::Fee(jtx::kAutofill),
+                jtx::Sig(jtx::kAutofill));
         }
         env.close();
     }
@@ -1095,8 +1095,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
-            bool const serverResult =
-                peerFeatureEnabled(httpRequest, kFEATURE_LEDGER_REPLAY, server);
+            bool const serverResult = peerFeatureEnabled(httpRequest, kFeatureLedgerReplay, server);
             if (serverResult != expecting)
                 return false;
 
@@ -1105,7 +1104,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             serverEnv.app().config().LEDGER_REPLAY = server;
             auto httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
-            auto const clientResult = peerFeatureEnabled(httpResp, kFEATURE_LEDGER_REPLAY, client);
+            auto const clientResult = peerFeatureEnabled(httpResp, kFeatureLedgerReplay, client);
             return clientResult == expecting;
         };
 

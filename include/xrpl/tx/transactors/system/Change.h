@@ -7,7 +7,7 @@ namespace xrpl {
 class Change : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit Change(ApplyContext& ctx) : Transactor(ctx)
     {

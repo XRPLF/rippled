@@ -67,7 +67,7 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<kDECAY_WINDOW_SECONDS, clock_type> local_balance;
+    DecayingSample<kDecayWindowSeconds, clock_type> local_balance;
 
     // Normalized balance contribution from imports
     int remote_balance;
