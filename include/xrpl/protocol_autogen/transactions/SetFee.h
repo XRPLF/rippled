@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionComputeLimit (soeOPTIONAL)
+     * @brief Get sfExtensionComputeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Get sfExtensionSizeLimit (soeOPTIONAL)
+     * @brief Get sfExtensionSizeLimit (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -308,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Get sfGasPrice (soeOPTIONAL)
+     * @brief Get sfGasPrice (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -463,7 +463,7 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionComputeLimit (soeOPTIONAL)
+     * @brief Set sfExtensionComputeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -474,7 +474,7 @@ public:
     }
 
     /**
-     * @brief Set sfExtensionSizeLimit (soeOPTIONAL)
+     * @brief Set sfExtensionSizeLimit (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
@@ -485,7 +485,7 @@ public:
     }
 
     /**
-     * @brief Set sfGasPrice (soeOPTIONAL)
+     * @brief Set sfGasPrice (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
