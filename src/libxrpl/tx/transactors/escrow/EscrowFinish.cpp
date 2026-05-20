@@ -167,8 +167,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
-        uint64_t const allowanceFee =
-            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1 = 0;
+        uint64_t const allowanceFee = ((*allowance) * view.fees().gasPrice) / microDropsPerDrop + 1;
         extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
@@ -408,7 +407,7 @@ EscrowFinish::doApply()
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
-        WasmHostFunctionsImpl const ledgerDataProvider(ctx_, k);
+        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
         if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
         {
@@ -416,7 +415,7 @@ EscrowFinish::doApply()
             return tecINTERNAL;
         }
         std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
-        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, ESCROW_FUNCTION_NAME);
+        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())

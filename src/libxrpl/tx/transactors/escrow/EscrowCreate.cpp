@@ -242,8 +242,8 @@ EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         // basic checks happen in `preflight`
 
-        HostFunctions const mock(ctx.j);
-        auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
+        HostFunctions mock(ctx.j);
+        auto const re = preflightEscrowWasm(code, mock, escrowFunctionName);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";

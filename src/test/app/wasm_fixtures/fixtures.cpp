@@ -4,6 +4,104 @@
 
 #include <string>
 
+namespace wasm_constants {
+
+namespace {
+
+void
+appendU32Leb(std::vector<uint8_t>& out, uint32_t value)
+{
+    do
+    {
+        auto byte = static_cast<uint8_t>(value & 0x7f);
+        value >>= 7;
+        if (value)
+            byte |= 0x80;
+        out.push_back(byte);
+    } while (value);
+}
+
+void
+appendSection(std::vector<uint8_t>& out, uint8_t section, std::vector<uint8_t> const& payload)
+{
+    out.push_back(section);
+    appendU32Leb(out, payload.size());
+    out.insert(out.end(), payload.begin(), payload.end());
+}
+
+void
+appendBytes(std::vector<uint8_t>& out, auto const& bytes)
+{
+    out.insert(out.end(), std::begin(bytes), std::end(bytes));
+}
+
+std::vector<uint8_t>
+baseModule()
+{
+    std::vector<uint8_t> out;
+    appendBytes(out, kWasmHeader);
+    appendBytes(out, kTypeEmptyFunc);
+    appendBytes(out, kFuncTypE0);
+    appendBytes(out, kExportFinish);
+    return out;
+}
+
+}  // namespace
+
+std::vector<uint8_t>
+generateCodeBlob(uint32_t numInstructions)
+{
+    auto out = baseModule();
+
+    std::vector<uint8_t> body;
+    body.push_back(0x00);
+    body.insert(body.end(), numInstructions, kInstrNop);
+    body.push_back(kInstrEnd);
+
+    std::vector<uint8_t> codePayload;
+    codePayload.push_back(0x01);
+    appendU32Leb(codePayload, body.size());
+    codePayload.insert(codePayload.end(), body.begin(), body.end());
+
+    appendSection(out, kSectionCode, codePayload);
+    return out;
+}
+
+std::vector<uint8_t>
+generateDataBlob(uint32_t dataSize)
+{
+    std::vector<uint8_t> out;
+    appendBytes(out, kWasmHeader);
+    appendBytes(out, kTypeEmptyFunc);
+    appendBytes(out, kFuncTypE0);
+
+    std::vector<uint8_t> memoryPayload;
+    memoryPayload.push_back(0x01);
+    memoryPayload.push_back(0x00);
+    appendU32Leb(memoryPayload, (dataSize + 65'535) / 65'536);
+    appendSection(out, kSectionMemory, memoryPayload);
+
+    appendBytes(out, kExportFinish);
+
+    std::vector<uint8_t> codePayload;
+    codePayload.push_back(0x01);
+    appendU32Leb(codePayload, sizeof(kEmptyBody));
+    appendBytes(codePayload, kEmptyBody);
+    appendSection(out, kSectionCode, codePayload);
+
+    std::vector<uint8_t> dataPayload;
+    dataPayload.push_back(0x01);
+    dataPayload.push_back(0x00);
+    appendBytes(dataPayload, kDataOffsetZero);
+    appendU32Leb(dataPayload, dataSize);
+    dataPayload.insert(dataPayload.end(), dataSize, kDataFillByte);
+    appendSection(out, kSectionData, dataPayload);
+
+    return out;
+}
+
+}  // namespace wasm_constants
+
 extern std::string const kFibWasmHex =
     "0061736d0100000001090260000060017f017f0303020001071b02115f5f7761736d5f63616c6c5f63746f72730000"
     "0366696200010a440202000b3f01017f200045044041000f0b2000410348044041010f0b200041026a210003402000"
