@@ -813,7 +813,7 @@ public:
             env.close();
 
             // alice create DepositPreauth Object
-            env(deposit::authCredentials(alice, {{carol, credType}}));
+            env(deposit::authCredentials(alice, {{.issuer = carol, .credType = credType}}));
             env.close();
 
             // becky attempts to delete her account, but alice won't take her

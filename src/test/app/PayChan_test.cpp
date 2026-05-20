@@ -869,7 +869,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.close();
 
             // Setup deposit authorization
-            env(deposit::authCredentials(bob, {{carol, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = carol, .credType = credType}}));
             env.close();
 
             // Fail, credentials doesn’t belong to root account

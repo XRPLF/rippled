@@ -1228,7 +1228,7 @@ public:
         // Try to replace a middle item in the queue
         // with enough fee to bankrupt bob and make the
         // later transactions unable to pay their fees
-        std::int64_t bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10 - 1);
+        std::int64_t bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - ((9 * 10) - 1);
         env(noop(bob), Seq(bobSeq + 5), Fee(bobFee), Ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 10, 12, 7, 6);
 

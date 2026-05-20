@@ -287,9 +287,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<AboveThreshold>{
-                {"r=5%, n=3", Number{5, -2}, 3},
-                {"r=0.1%, n=1000", Number{1, -3}, 1'000},
-                {"r=1e-7, n=100 (above threshold by 10x)", Number{1, -7}, 100},
+                {.name = "r=5%, n=3", .r = Number{5, -2}, .n = 3},
+                {.name = "r=0.1%, n=1000", .r = Number{1, -3}, .n = 1'000},
+                {.name = "r=1e-7, n=100 (above threshold by 10x)", .r = Number{1, -7}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -318,8 +318,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const cases = std::vector<BelowThreshold>{
                 // bug regime: r = 1 TenthBips32 over 600s payment interval
                 // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
-                {"bug regime: r~1.9e-10, n=2", loanPeriodicRate(TenthBips32{1}, 600), 2},
-                {"r=1e-12, n=100", Number{1, -12}, 100},
+                {.name = "bug regime: r~1.9e-10, n=2",
+                 .r = loanPeriodicRate(TenthBips32{1}, 600),
+                 .n = 2},
+                {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -356,8 +358,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<Boundary>{
-                {"r=1e-9, n=1", Number{1, -9}, 1},
-                {"r=1e-12, n=1000", Number{1, -12}, 1'000},
+                {.name = "r=1e-9, n=1", .r = Number{1, -9}, .n = 1},
+                {.name = "r=1e-12, n=1000", .r = Number{1, -12}, .n = 1'000},
             };
 
             for (auto const& tc : cases)
