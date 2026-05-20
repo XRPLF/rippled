@@ -286,7 +286,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
+        weight = ((yays_ * 100) + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         newPosition = weight > requiredPct;
     }

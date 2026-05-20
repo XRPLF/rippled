@@ -1457,14 +1457,14 @@ r.ripple.com:51235
         };
 
         std::vector<ConfigUnit> const units = {
-            {"seconds", 1, 15 * 60, false},
-            {"minutes", 60, 14, false},
-            {"minutes", 60, 15, true},
-            {"hours", 3600, 10, true},
-            {"days", 86400, 10, true},
-            {"weeks", 604800, 2, true},
-            {"months", 2592000, 1, false},
-            {"years", 31536000, 1, false}};
+            {.unit = "seconds", .numSeconds = 1, .configVal = 15 * 60, .shouldPass = false},
+            {.unit = "minutes", .numSeconds = 60, .configVal = 14, .shouldPass = false},
+            {.unit = "minutes", .numSeconds = 60, .configVal = 15, .shouldPass = true},
+            {.unit = "hours", .numSeconds = 3600, .configVal = 10, .shouldPass = true},
+            {.unit = "days", .numSeconds = 86400, .configVal = 10, .shouldPass = true},
+            {.unit = "weeks", .numSeconds = 604800, .configVal = 2, .shouldPass = true},
+            {.unit = "months", .numSeconds = 2592000, .configVal = 1, .shouldPass = false},
+            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false}};
 
         std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
