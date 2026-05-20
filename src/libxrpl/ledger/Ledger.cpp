@@ -198,7 +198,7 @@ Ledger::Ledger(
                 sle->at(sfReserveIncrement) = *f;
             sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
         }
-        if (std::find(amendments.begin(), amendments.end(), featureSmartEscrow) != amendments.end())
+        if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
         {
             sle->at(sfExtensionComputeLimit) = fees.extensionComputeLimit;
             sle->at(sfExtensionSizeLimit) = fees.extensionSizeLimit;

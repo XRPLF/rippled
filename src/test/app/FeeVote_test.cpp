@@ -33,6 +33,7 @@
 #include <optional>
 #include <source_location>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {

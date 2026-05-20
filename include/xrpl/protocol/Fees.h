@@ -9,7 +9,7 @@ namespace xrpl {
 inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 // Number of micro-drops in one drop.
-constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
+constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
 /** Reflects the fee settings for a particular ledger.
 
