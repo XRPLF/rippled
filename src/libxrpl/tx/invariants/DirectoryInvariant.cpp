@@ -45,11 +45,11 @@ ValidBookDirectory::visitEntry(
 
     // Only validate newly-created directories; LedgerStateFix handles legacy
     // bad exchange-rate metadata.
-    if (before || !after || after->getType() != ltDIR_NODE)
+    if (badBookDirectory_ || before || !after || after->getType() != ltDIR_NODE)
         return;
 
     auto const rootIndex = after->getFieldH256(sfRootIndex);
-    if (after->key() == rootIndex)
+    if (after->key() == rootIndex && !badBookDirectory_)
     {
         badBookDirectory_ = badBookDirectory_ || badExchangeRate(*after);
         return;
