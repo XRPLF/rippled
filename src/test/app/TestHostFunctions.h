@@ -49,7 +49,7 @@ public:
 
 struct TestHostFunctions : public HostFunctions
 {
-    test::jtx::Env& env_;
+    test::jtx::Env& env;
     AccountID accountID;
     Bytes data;
     int clock_drift = 0;
@@ -57,9 +57,9 @@ struct TestHostFunctions : public HostFunctions
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : HostFunctions(env.journal), env_(env), clock_drift(cd)
+        : HostFunctions(env.journal), env(env), clock_drift(cd)
     {
-        accountID = env_.master.id();
+        accountID = env.master.id();
         std::string t = "10000";
         data = Bytes{t.begin(), t.end()};
     }
@@ -91,7 +91,7 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() const override
     {
-        return env_.current()->header().parentHash;
+        return env.current()->header().parentHash;
     }
 
     Expected<std::uint32_t, HostFunctionError>
@@ -158,7 +158,7 @@ public:
         }
         if (sn == "FinishAfter")
         {
-            auto t = env_.current()->parentCloseTime().time_since_epoch().count();
+            auto t = env.current()->parentCloseTime().time_since_epoch().count();
             std::string s = std::to_string(t);
             return Bytes{s.begin(), s.end()};
         }
@@ -287,7 +287,7 @@ public:
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) const override
     {
-        return env_.current()->header().parentHash;
+        return env.current()->header().parentHash;
     }
 
     Expected<Bytes, HostFunctionError>
