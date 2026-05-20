@@ -65,7 +65,7 @@ isPowerOfTen(T value)
  * by an STAmount - IOUs, XRP, and MPTs. It has a min value of 10^18, and a max
  * value of 10^19-1. "LargeLegacy" is like "Large", but preserves
  * a rounding error when a computation results in a mantissa of
- * Number::kMAX_REP that needs to be rounded up, but rounds down
+ * Number::kMaxRep that needs to be rounded up, but rounds down
  * instead. It will maintain consistent behavior until the fixCleanup3_2_0
  * amendment is enabled.
  *

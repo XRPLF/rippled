@@ -49,7 +49,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // mantissas even in the absence of the other two amendments.
     //
     // If any new conditions with new amendments are added, those amendments must also be added to
-    // createGuards.
+    // useRulesGuards.
     bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
     bool const enableVaultNumbers = enableCuspRoundingFix ||
         (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
