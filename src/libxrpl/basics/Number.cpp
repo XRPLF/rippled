@@ -380,11 +380,14 @@ Number::Guard::doRoundUp(
     auto r = round();
     if (r == 1 || (r == 0 && (mantissa & 1) == 1))
     {
+        auto const safeToIncrement = [&maxMantissa](auto const& mantissa) {
+            return mantissa < maxMantissa && mantissa < kMaxRep;
+        };
         if (cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
         {
             // Ensure mantissa after incrementing fits within both the
             // min/maxMantissa range and is a valid "rep".
-            if (mantissa < maxMantissa && mantissa < kMaxRep)
+            if (safeToIncrement(mantissa))
             {
                 // Nothing unusual here, just increment the mantissa
                 ++mantissa;
@@ -398,7 +401,7 @@ Number::Guard::doRoundUp(
                 // change of bringing it back over.
                 doDropDigit(mantissa, exponent);
                 XRPL_ASSERT_PARTS(
-                    mantissa < maxMantissa && mantissa < kMaxRep,
+                    safeToIncrement(mantissa),
                     "xrpl::Number::Guard::doRoundUp",
                     "can't recurse more than once");
                 // Here be dragons
