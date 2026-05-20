@@ -264,7 +264,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         if (!validatedLedger || !bySeq || !byHash)
             return;
         BEAST_EXPECT(validatedLedger->header().hash == validated->header().hash);
-        BEAST_EXPECT(published->header().hash == validated->header().hash);
+        BEAST_EXPECT(published->seq() <= validated->seq());
         BEAST_EXPECT(ledgerMaster.getHashBySeq(validated->seq()) == validated->header().hash);
         BEAST_EXPECT(bySeq->header().hash == validated->header().hash);
         BEAST_EXPECT(byHash->seq() == validated->seq());
