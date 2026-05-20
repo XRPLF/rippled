@@ -61,7 +61,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             when, publicKey, secretKey, nodeID, [ledgerHash, ledgerSeq, cookie](STValidation& v) {
                 v.setFieldH256(sfLedgerHash, ledgerHash);
                 v.setFieldU32(sfLedgerSequence, ledgerSeq);
-                v.setFlag(kVF_FULL_VALIDATION);
+                v.setFlag(kVfFullValidation);
                 if (cookie != 0)
                     v.setFieldU64(sfCookie, cookie);
             });

@@ -98,7 +98,7 @@ class NetworkOPs_test : public beast::unit_test::Suite
         auto const master = randomKeyPair(KeyType::Ed25519);
         auto const signing = randomKeyPair(KeyType::Secp256k1);
 
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = 7;
         st[sfPublicKey] = master.first;
         st[sfSigningPubKey] = signing.first;
@@ -128,7 +128,7 @@ class NetworkOPs_test : public beast::unit_test::Suite
             [](STValidation& v) {
                 v.setFieldH256(sfLedgerHash, digest("ledger"));
                 v.setFieldU32(sfLedgerSequence, 77);
-                v.setFlag(kVF_FULL_VALIDATION);
+                v.setFlag(kVfFullValidation);
                 v.setFieldU64(sfServerVersion, 1234);
                 v.setFieldU64(sfCookie, 99);
                 v.setFieldH256(sfValidatedHash, digest("validated"));

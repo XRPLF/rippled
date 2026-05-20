@@ -134,10 +134,9 @@ class PeerImp_test : public beast::unit_test::Suite
     {
         MessageType parsed;
         auto const& buffer = message->getBuffer(compression::Compressed::Off);
-        BEAST_EXPECT(buffer.size() >= compression::kHEADER_BYTES);
+        BEAST_EXPECT(buffer.size() >= compression::kHeaderBytes);
         BEAST_EXPECT(parsed.ParseFromArray(
-            buffer.data() + compression::kHEADER_BYTES,
-            buffer.size() - compression::kHEADER_BYTES));
+            buffer.data() + compression::kHeaderBytes, buffer.size() - compression::kHeaderBytes));
         return parsed;
     }
 

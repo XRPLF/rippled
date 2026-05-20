@@ -474,7 +474,7 @@ public:
             {beast::IP::Endpoint::fromString("198.51.100.3:51235"), 2},
             {beast::IP::Endpoint::fromString("198.51.100.3:51235"), 2},
             {beast::IP::Endpoint::fromString("10.0.0.1:51235"), 2},
-            {beast::IP::Endpoint::fromString("198.51.100.4:51235"), Tuning::kMAX_HOPS + 1},
+            {beast::IP::Endpoint::fromString("198.51.100.4:51235"), Tuning::kMaxHops + 1},
         };
 
         logic.preprocess(slot, endpoints);
@@ -577,7 +577,7 @@ public:
         BEAST_EXPECT(
             !slotHandouts.tryInsert({beast::IP::Endpoint::fromString("198.51.100.83:60000"), 2}));
         BEAST_EXPECT(!slotHandouts.tryInsert(
-            {beast::IP::Endpoint::fromString("198.51.100.84:51235"), Tuning::kMAX_HOPS + 1}));
+            {beast::IP::Endpoint::fromString("198.51.100.84:51235"), Tuning::kMaxHops + 1}));
 
         slot->recent.insert(beast::IP::Endpoint::fromString("198.51.100.85:51235"), 1);
         BEAST_EXPECT(
@@ -593,7 +593,7 @@ public:
         BEAST_EXPECT(!redirectHandouts.tryInsert(
             {beast::IP::Endpoint::fromString("198.51.100.86:60000"), 2}));
         BEAST_EXPECT(!redirectHandouts.tryInsert(
-            {beast::IP::Endpoint::fromString("198.51.100.87:51235"), Tuning::kMAX_HOPS + 1}));
+            {beast::IP::Endpoint::fromString("198.51.100.87:51235"), Tuning::kMaxHops + 1}));
 
         ConnectHandouts::Squelches squelches(clock);
         ConnectHandouts connectHandouts(2, squelches);
@@ -637,15 +637,15 @@ public:
             cache.onSuccess(beast::IP::Endpoint::fromString("198.51.100.123:51235"));
             cache.onFailure(beast::IP::Endpoint::fromString("198.51.100.124:51235"));
 
-            for (std::size_t i = 0; i <= Tuning::kBOOTCACHE_SIZE + 5; ++i)
+            for (std::size_t i = 0; i <= Tuning::kBootcacheSize + 5; ++i)
             {
                 auto const address = "198.51.100." + std::to_string((i % 250) + 1) + ":" +
                     std::to_string(51235 + (i / 250));
                 cache.insert(beast::IP::Endpoint::fromString(address));
             }
-            BEAST_EXPECT(cache.size() <= Tuning::kBOOTCACHE_SIZE);
+            BEAST_EXPECT(cache.size() <= Tuning::kBootcacheSize);
 
-            clock.advance(Tuning::kBOOTCACHE_COOLDOWN_TIME + std::chrono::seconds(1));
+            clock.advance(Tuning::kBootcacheCooldownTime + std::chrono::seconds(1));
             cache.periodicActivity();
             BEAST_EXPECT(store.saveCount == 1);
             BEAST_EXPECT(!store.savedEntries.empty());
