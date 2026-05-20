@@ -90,7 +90,7 @@ deserializeManifest(Slice s, beast::Journal journal)
     try
     {
         SerialIter sit{s};
-        STObject st{sit, kSfGeneric};
+        STObject st{sit, sfGeneric};
 
         st.applyTemplate(kManifestFormat);
 
@@ -193,7 +193,7 @@ logMftAct(
 bool
 Manifest::verify() const
 {
-    STObject st(kSfGeneric);
+    STObject st(sfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
@@ -213,7 +213,7 @@ Manifest::verify() const
 uint256
 Manifest::hash() const
 {
-    STObject st(kSfGeneric);
+    STObject st(sfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getHash(HashPrefix::Manifest);
@@ -240,7 +240,7 @@ Manifest::revoked(std::uint32_t sequence)
 std::optional<Blob>
 Manifest::getSignature() const
 {
-    STObject st(kSfGeneric);
+    STObject st(sfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     if (!get(st, sfSignature))
@@ -251,7 +251,7 @@ Manifest::getSignature() const
 Blob
 Manifest::getMasterSignature() const
 {
-    STObject st(kSfGeneric);
+    STObject st(sfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     return st.getFieldVL(sfMasterSignature);

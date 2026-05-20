@@ -1151,7 +1151,7 @@ amountFromJsonNoThrow(STAmount& result, json::Value const& jvSource)
 {
     try
     {
-        result = amountFromJson(kSfGeneric, jvSource);
+        result = amountFromJson(sfGeneric, jvSource);
         return true;
     }
     catch (std::exception const& e)
