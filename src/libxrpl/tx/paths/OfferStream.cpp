@@ -122,7 +122,8 @@ accountFundsHelper(
     {
         if (id == asset.getIssuer())
         {
-            return toAmount<T>(issuerFundsToSelfIssue(view, asset.get<MPTIssue>()));
+            return toAmount<T>(
+                MPTokenIssuance(view, asset.get<MPTIssue>()).issuerFundsToSelfIssue());
         }
     }
 

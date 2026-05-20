@@ -287,7 +287,7 @@ credential(uint256 const& key) noexcept
 }
 
 Keylet
-mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
+mptIssuance(std::uint32_t const seq, AccountID const& issuer) noexcept;
 
 Keylet
 mptIssuance(MPTID const& issuanceID) noexcept;

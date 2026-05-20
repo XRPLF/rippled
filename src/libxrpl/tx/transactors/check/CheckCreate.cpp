@@ -152,9 +152,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     return std::nullopt;
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
-                    if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    auto const issuance = MPTokenIssuance(ctx.view, issue);
+                    if (srcId != issuerId && issuance.isFrozen(srcId))
                         return tecLOCKED;
-                    if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    if (dstId != issuerId && issuance.isFrozen(dstId))
                         return tecLOCKED;
 
                     return std::nullopt;

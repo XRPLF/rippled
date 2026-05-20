@@ -306,8 +306,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
                 std::uint32_t flags = lsfMPTAMM;
-                if (auto const err =
-                        requireAuth(ctx.view(), mptIssue, ammAccountID, AuthType::WeakAuth);
+                if (auto const err = MPTokenIssuance(ctx.view(), mptIssue)
+                                         .requireAuth(ammAccountID, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
                     if (err == tecNO_AUTH)
@@ -320,7 +320,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
                     }
                 }
 
-                if (auto const err = createMPToken(sb, mptID, ammAccountID, flags);
+                if (auto const err =
+                        WMPTokenIssuance(sb, mptID, ctx.journal).createMPToken(ammAccountID, flags);
                     !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.

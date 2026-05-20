@@ -15,6 +15,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -607,7 +608,8 @@ MPTTester::pay(
     else
     {
         STAmount const saAmount = {*id_, amount};
-        auto const actual = multiply(saAmount, transferRate(*env_.current(), *id_)).mpt().value();
+        auto const actual =
+            multiply(saAmount, MPTokenIssuance(*env_.current(), *id_).transferRate()).mpt().value();
         // Sender pays the transfer fee if any
         env_.require(MptBalance(*this, src, srcAmt - actual));
         env_.require(MptBalance(*this, dest, destAmt + amount));

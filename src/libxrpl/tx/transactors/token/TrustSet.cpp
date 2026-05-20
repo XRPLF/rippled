@@ -646,22 +646,22 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
         // Create a new ripple line.
-        terResult = trustCreate(
-            view(),
-            bHigh,
-            accountID_,
-            uDstAccountID,
-            k.key,
-            account_,
-            bSetAuth,
-            bSetNoRipple && !bClearNoRipple,
-            bSetFreeze && !bClearFreeze,
-            bSetDeepFreeze,
-            saBalance,
-            saLimitAllow,  // Limit for who is being charged.
-            uQualityIn,
-            uQualityOut,
-            viewJ);
+        terResult = WIOUIssuance(view(), accountID_, currency, viewJ)
+                        .trustCreate(
+                            bHigh,
+                            accountID_,
+                            uDstAccountID,
+                            k.key,
+                            account_,
+                            bSetAuth,
+                            bSetNoRipple && !bClearNoRipple,
+                            bSetFreeze && !bClearFreeze,
+                            bSetDeepFreeze,
+                            saBalance,
+                            saLimitAllow,  // Limit for who is being charged.
+                            uQualityIn,
+                            uQualityOut,
+                            viewJ);
     }
 
     return terResult;

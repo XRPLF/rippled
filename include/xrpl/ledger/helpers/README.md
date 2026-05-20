@@ -36,17 +36,17 @@ Both specializations share all domain read methods. Write methods on `WAccountRo
 
 ## Files in This Directory
 
-| File                   | Description                                                                                          |
-| ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| `SLEBase.h`            | Template base class `SLEBase<ViewT>` for read-only and writable SLE wrappers                         |
-| `AccountRootHelpers.h` | `AccountRoot<ViewT>` wrapper (`RAccountRoot`, `WAccountRoot`) and free functions for pseudo-accounts |
-| `CredentialHelpers.h`  | Free functions for Credential ledger entries                                                         |
-| `DirectoryHelpers.h`   | Free functions for directory traversal (`dirFirst`, `dirNext`, `forEachItem`, etc.)                  |
-| `MPTokenHelpers.h`     | Free functions for MPToken and MPTokenIssuance ledger entries                                        |
-| `OfferHelpers.h`       | Free function `offerDelete` for removing Offer entries                                               |
-| `RippleStateHelpers.h` | Free functions for RippleState (trust line) entries: credit, freeze, issuance, authorization         |
-| `TokenHelpers.h`       | Shared token helpers (freeze/auth checks used by both IOU and MPT paths)                             |
-| `VaultHelpers.h`       | Free functions for Vault ledger entries                                                              |
+| File                   | Description                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SLEBase.h`            | Template base class `SLEBase<ViewT>` for read-only and writable SLE wrappers                                                                                |
+| `AccountRootHelpers.h` | `AccountRoot<ViewT>` wrapper (`RAccountRoot`, `WAccountRoot`) and free functions for pseudo-accounts                                                        |
+| `CredentialHelpers.h`  | Free functions for Credential ledger entries                                                                                                                |
+| `DirectoryHelpers.h`   | Free functions for directory traversal (`dirFirst`, `dirNext`, `forEachItem`, etc.)                                                                         |
+| `MPTokenHelpers.h`     | Free functions for MPToken ledger entries and MPTokenIssuance<ViewT> wrapper (`RMPTokenIssuance`, `WMPTokenIssuance`) functions for MPTokenIssuance objects |
+| `OfferHelpers.h`       | Free function `offerDelete` for removing Offer entries                                                                                                      |
+| `RippleStateHelpers.h` | Free functions for RippleState (trust line) entries: credit, freeze, issuance, authorization                                                                |
+| `TokenHelpers.h`       | Shared token helpers (freeze/auth checks used by both IOU and MPT paths)                                                                                    |
+| `VaultHelpers.h`       | Free functions for Vault ledger entries                                                                                                                     |
 
 ## Migration Status
 

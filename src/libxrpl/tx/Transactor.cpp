@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>

@@ -124,7 +124,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
+        if (auto const ter = WMPTokenIssuance(view(), MPTIssue(shareMPTID), j_)
+                                 .removeEmptyHolding(accountID_, j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START

@@ -144,14 +144,8 @@ TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
-    return authorizeMPToken(
-        ctx_.view(),
-        preFeeBalance_,
-        tx[sfMPTokenIssuanceID],
-        accountID_,
-        ctx_.journal,
-        tx.getFlags(),
-        tx[~sfHolder]);
+    return WMPTokenIssuance(ctx_.view(), tx[sfMPTokenIssuanceID], ctx_.journal)
+        .authorizeMPToken(preFeeBalance_, accountID_, ctx_.journal, tx.getFlags(), tx[~sfHolder]);
 }
 
 void

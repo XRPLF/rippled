@@ -150,11 +150,12 @@ escrowFinishPreclaimHelper<Issue>(
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), dest); !isTesSuccess(ter))
+    auto const iouIssuance = IOUIssuance(ctx.view, amount.get<Issue>());
+    if (auto const ter = iouIssuance.requireAuth(dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.get<Issue>().currency, amount.getIssuer()))
+    if (iouIssuance.isDeepFrozen(dest))
         return tecFROZEN;
 
     return tesSUCCESS;
@@ -181,12 +182,12 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // If the issuer has requireAuth set, check if the destination is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
-        !isTesSuccess(ter))
+    auto const mptIssuance = MPTokenIssuance(ctx.view, mptIssue);
+    if (auto const ter = mptIssuance.requireAuth(dest, AuthType::WeakAuth); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has frozen the destination, return tecLOCKED
-    if (isFrozen(ctx.view, dest, mptIssue))
+    if (mptIssuance.isFrozen(dest))
         return tecLOCKED;
 
     return tesSUCCESS;

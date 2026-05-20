@@ -771,12 +771,12 @@ Pathfinder::getPathsOut(
     bool const bAuthRequired = [&]() {
         if (pathAsset.holds<Currency>())
             return acctRoot->isFlag(lsfRequireAuth);
-        return !isTesSuccess(requireAuth(*ledger_, asset.get<MPTIssue>(), account));
+        return !isTesSuccess(MPTokenIssuance(*ledger_, asset.get<MPTIssue>()).requireAuth(account));
     }();
     bool const bFrozen = [&]() {
         if (pathAsset.holds<Currency>())
             return acctRoot.isGlobalFrozen();
-        return isGlobalFrozen(*ledger_, asset.get<MPTIssue>());
+        return MPTokenIssuance(*ledger_, asset.get<MPTIssue>()).isGlobalFrozen();
     }();
 
     int count = 0;
@@ -1103,7 +1103,7 @@ Pathfinder::addLink(
                             if constexpr (kIsMpt)
                             {
                                 return asset.isZeroBalance() || asset.isMaxedOut() ||
-                                    requireAuth(*ledger_, MPTIssue{asset}, acct);
+                                    MPTokenIssuance(*ledger_, MPTIssue{asset}).requireAuth(acct);
                             }
                         };
 

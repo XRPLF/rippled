@@ -77,22 +77,22 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(issue);
         initialBalance.get<Issue>().account = noAccount();
 
-        if (TER const ter = trustCreate(
-                view,              // payment sandbox
-                recvLow,           // is dest low?
-                issuer,            // source
-                receiver,          // destination
-                trustLineKey.key,  // ledger index
-                wrappedDest,       // Account to add to
-                false,             // authorize account
-                !wrappedDest->isFlag(lsfDefaultRipple),
-                false,                      // freeze trust line
-                false,                      // deep freeze trust line
-                initialBalance,             // zero initial balance
-                Issue(currency, receiver),  // limit of zero
-                0,                          // quality in
-                0,                          // quality out
-                journal);                   // journal
+        if (TER const ter = WIOUIssuance(view, issue, journal)
+                                .trustCreate(
+                                    recvLow,           // is dest low?
+                                    issuer,            // source
+                                    receiver,          // destination
+                                    trustLineKey.key,  // ledger index
+                                    wrappedDest,       // Account to add to
+                                    false,             // authorize account
+                                    !wrappedDest->isFlag(lsfDefaultRipple),
+                                    false,                      // freeze trust line
+                                    false,                      // deep freeze trust line
+                                    initialBalance,             // zero initial balance
+                                    Issue(currency, receiver),  // limit of zero
+                                    0,                          // quality in
+                                    0,                          // quality out
+                                    journal);                   // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -199,7 +199,8 @@ escrowUnlockApplyHelper<MPTIssue>(
             return tecINSUFFICIENT_RESERVE;
         }
 
-        if (auto const ter = createMPToken(view, mptID, receiver, 0); !isTesSuccess(ter))
+        if (auto const ter = WMPTokenIssuance(view, mptID, journal).createMPToken(receiver, 0);
+            !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
@@ -233,13 +234,13 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-    return unlockEscrowMPT(
-        view,
-        sender,
-        receiver,
-        finalAmt,
-        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
-        journal);
+    return WMPTokenIssuance(view, amount.get<MPTIssue>(), journal)
+        .unlockEscrow(
+            sender,
+            receiver,
+            finalAmt,
+            view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+            journal);
 }
 
 }  // namespace xrpl

@@ -38,16 +38,14 @@ namespace xrpl {
 //
 //------------------------------------------------------------------------------
 
+template <typename ViewT>
 STAmount
-creditLimit(
-    ReadView const& view,
-    AccountID const& account,
-    AccountID const& issuer,
-    Currency const& currency)
+IOUIssuance<ViewT>::creditLimit(AccountID const& account) const
 {
-    STAmount result(Issue{currency, account});
+    auto const& issuer = this->id();
+    STAmount result(Issue{currency_, account});
 
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
+    auto sleRippleState = this->readView().read(keylet::line(account, issuer, currency_));
 
     if (sleRippleState)
     {
@@ -57,28 +55,27 @@ creditLimit(
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditLimit : result issuer match");
     XRPL_ASSERT(
-        result.get<Issue>().currency == currency,
+        result.get<Issue>().currency == currency_,
         "xrpl::creditLimit : result currency "
         "match");
     return result;
 }
 
+template <typename ViewT>
 IOUAmount
-creditLimit2(ReadView const& v, AccountID const& acc, AccountID const& iss, Currency const& cur)
+IOUIssuance<ViewT>::creditLimit2(AccountID const& account) const
 {
-    return toAmount<IOUAmount>(creditLimit(v, acc, iss, cur));
+    return toAmount<IOUAmount>(creditLimit(account));
 }
 
+template <typename ViewT>
 STAmount
-creditBalance(
-    ReadView const& view,
-    AccountID const& account,
-    AccountID const& issuer,
-    Currency const& currency)
+IOUIssuance<ViewT>::creditBalance(AccountID const& account) const
 {
-    STAmount result(Issue{currency, account});
+    auto const& issuer = this->id();
+    STAmount result(Issue{currency_, account});
 
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
+    auto sleRippleState = this->readView().read(keylet::line(account, issuer, currency_));
 
     if (sleRippleState)
     {
@@ -90,7 +87,7 @@ creditBalance(
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditBalance : result issuer match");
     XRPL_ASSERT(
-        result.get<Issue>().currency == currency,
+        result.get<Issue>().currency == currency_,
         "xrpl::creditBalance : result currency "
         "match");
     return result;
@@ -102,19 +99,35 @@ creditBalance(
 //
 //------------------------------------------------------------------------------
 
+template <typename ViewT>
 bool
-isIndividualFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer)
+IOUIssuance<ViewT>::requiresAuth() const
 {
-    if (isXRP(currency))
+    if (!this->exists())
         return false;
+    return this->sle_->isFlag(lsfRequireAuth);
+}
+
+template <typename ViewT>
+bool
+IOUIssuance<ViewT>::canClawback() const
+{
+    if (!this->exists())
+        return false;
+    return this->sle_->isFlag(lsfAllowTrustLineClawback);
+}
+
+template <typename ViewT>
+bool
+IOUIssuance<ViewT>::isIndividualFrozen(AccountID const& account) const
+{
+    if (isXRP(currency_))
+        return false;
+    auto const& issuer = this->id();
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sle = view.read(keylet::line(account, issuer, currency));
+        auto const sle = this->readView().read(keylet::line(account, issuer, currency_));
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
@@ -123,46 +136,41 @@ isIndividualFrozen(
 
 // Can the specified account spend the specified currency issued by
 // the specified issuer or does the freeze flag prohibit it?
+template <typename ViewT>
 bool
-isFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer)
+IOUIssuance<ViewT>::isFrozen(AccountID const& account, int /*depth*/) const
 {
-    if (isXRP(currency))
+    if (isXRP(currency_))
         return false;
-    auto const issuerRoot = AccountRoot(issuer, view);
-    if (issuerRoot.isGlobalFrozen())
+    if (this->isGlobalFrozen())
         return true;
+    auto const& issuer = this->id();
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sleLine = view.read(keylet::line(account, issuer, currency));
+        auto const sleLine = this->readView().read(keylet::line(account, issuer, currency_));
         if (sleLine && sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
     return false;
 }
 
+template <typename ViewT>
 bool
-isDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Currency const& currency,
-    AccountID const& issuer)
+IOUIssuance<ViewT>::isDeepFrozen(AccountID const& account) const
 {
-    if (isXRP(currency))
+    if (isXRP(currency_))
     {
         return false;
     }
 
+    auto const& issuer = this->id();
     if (issuer == account)
     {
         return false;
     }
 
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto const sle = this->readView().read(keylet::line(account, issuer, currency_));
     if (!sle)
     {
         return false;
@@ -177,9 +185,9 @@ isDeepFrozen(
 //
 //------------------------------------------------------------------------------
 
+template <typename ViewT>
 TER
-trustCreate(
-    ApplyView& view,
+IOUIssuance<ViewT>::trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
@@ -196,7 +204,9 @@ trustCreate(
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
     beast::Journal j)
+    requires kIsWritable
 {
+    ApplyView& view = this->applyView();
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
                     << to_string(uDstAccountID) << ", " << saBalance.getFullText();
 
@@ -247,7 +257,7 @@ trustCreate(
     sleRippleState->setFieldAmount(bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{saBalance.get<Issue>().currency, bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(Issue{currency_, bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn != 0u)
         sleRippleState->setFieldU32(bSetHigh ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
@@ -381,29 +391,27 @@ updateTrustLine(
     return false;
 }
 
+template <typename ViewT>
 TER
-issueIOU(
-    ApplyView& view,
-    AccountID const& account,
-    STAmount const& amount,
-    Issue const& issue,
-    beast::Journal j)
+IOUIssuance<ViewT>::issue(AccountID const& account, STAmount const& amount, beast::Journal j)
+    requires kIsWritable
 {
+    ApplyView& view = this->applyView();
+    auto const& issuerId = this->id();
     XRPL_ASSERT(
-        !isXRP(account) && !isXRP(issue.account),
-        "xrpl::issueIOU : neither account nor issuer is XRP");
+        !isXRP(account) && !isXRP(issuerId), "xrpl::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::issueIOU : matching issue");
+    XRPL_ASSERT(this->getIssue() == amount.get<Issue>(), "xrpl::issueIOU : matching issue");
 
     // Can't send to self!
-    XRPL_ASSERT(issue.account != account, "xrpl::issueIOU : not issuer account");
+    XRPL_ASSERT(issuerId != account, "xrpl::issueIOU : not issuer account");
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool const bSenderHigh = issue.account > account;
+    bool const bSenderHigh = issuerId > account;
 
-    auto const index = keylet::line(issue.account, account, issue.currency);
+    auto const index = keylet::line(issuerId, account, currency_);
 
     if (auto state = view.peek(index))
     {
@@ -417,9 +425,9 @@ issueIOU(
         finalBalance -= amount;
 
         auto const mustDelete =
-            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
+            updateTrustLine(view, state, bSenderHigh, issuerId, startBalance, finalBalance, j);
 
-        view.creditHookIOU(issue.account, account, amount, startBalance);
+        view.creditHookIOU(issuerId, account, amount, startBalance);
 
         if (bSenderHigh)
             finalBalance.negate();
@@ -431,11 +439,7 @@ issueIOU(
         if (mustDelete)
         {
             return trustDelete(
-                view,
-                state,
-                bSenderHigh ? account : issue.account,
-                bSenderHigh ? issue.account : account,
-                j);
+                view, state, bSenderHigh ? account : issuerId, bSenderHigh ? issuerId : account, j);
         }
 
         view.update(state);
@@ -446,7 +450,7 @@ issueIOU(
     // NIKB TODO: The limit uses the receiver's account as the issuer and
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
-    STAmount const limit(Issue{issue.currency, account});
+    STAmount const limit(Issue{currency_, account});
     STAmount finalBalance = amount;
 
     finalBalance.get<Issue>().account = noAccount();
@@ -458,9 +462,8 @@ issueIOU(
     bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
-        view,
         bSenderHigh,
-        issue.account,
+        issuerId,
         account,
         index.key,
         receiverAccount,
@@ -475,29 +478,27 @@ issueIOU(
         j);
 }
 
+template <typename ViewT>
 TER
-redeemIOU(
-    ApplyView& view,
-    AccountID const& account,
-    STAmount const& amount,
-    Issue const& issue,
-    beast::Journal j)
+IOUIssuance<ViewT>::redeem(AccountID const& account, STAmount const& amount, beast::Journal j)
+    requires kIsWritable
 {
+    ApplyView& view = this->applyView();
+    auto const& issuerId = this->id();
     XRPL_ASSERT(
-        !isXRP(account) && !isXRP(issue.account),
-        "xrpl::redeemIOU : neither account nor issuer is XRP");
+        !isXRP(account) && !isXRP(issuerId), "xrpl::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::redeemIOU : matching issue");
+    XRPL_ASSERT(this->getIssue() == amount.get<Issue>(), "xrpl::redeemIOU : matching issue");
 
     // Can't send to self!
-    XRPL_ASSERT(issue.account != account, "xrpl::redeemIOU : not issuer account");
+    XRPL_ASSERT(issuerId != account, "xrpl::redeemIOU : not issuer account");
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool const bSenderHigh = account > issue.account;
+    bool const bSenderHigh = account > issuerId;
 
-    if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
+    if (auto state = view.peek(keylet::line(account, issuerId, currency_)))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -511,7 +512,7 @@ redeemIOU(
         auto const mustDelete =
             updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
 
-        view.creditHookIOU(account, issue.account, amount, startBalance);
+        view.creditHookIOU(account, issuerId, amount, startBalance);
 
         if (bSenderHigh)
             finalBalance.negate();
@@ -524,11 +525,7 @@ redeemIOU(
         if (mustDelete)
         {
             return trustDelete(
-                view,
-                state,
-                bSenderHigh ? issue.account : account,
-                bSenderHigh ? account : issue.account,
-                j);
+                view, state, bSenderHigh ? issuerId : account, bSenderHigh ? account : issuerId, j);
         }
 
         view.update(state);
@@ -552,26 +549,26 @@ redeemIOU(
 //
 //------------------------------------------------------------------------------
 
+template <typename ViewT>
 TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, AuthType authType)
+IOUIssuance<ViewT>::requireAuth(AccountID const& account, AuthType authType, int /*depth*/) const
 {
-    if (isXRP(issue) || issue.account == account)
+    auto const& issuer = this->id();
+    if (isXRP(currency_) || issuer == account)
         return tesSUCCESS;
 
-    auto const trustLine = view.read(keylet::line(account, issue.account, issue.currency));
+    auto const trustLine = this->readView().read(keylet::line(account, issuer, currency_));
     // If account has no line, and this is a strong check, fail
     if (!trustLine && authType == AuthType::StrongAuth)
         return tecNO_LINE;
 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
-    auto const issuerAccount = AccountRoot(issue.account, view);
-    if (issuerAccount.exists() &&
-        (static_cast<unsigned int>(issuerAccount->isFlag(lsfRequireAuth)) != 0u))
+    if (this->exists() && (static_cast<unsigned int>(this->sle_->isFlag(lsfRequireAuth)) != 0u))
     {
         if (trustLine)
         {
-            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
+            return trustLine->isFlag((account > issuer) ? lsfLowAuth : lsfHighAuth)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -581,29 +578,29 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     return tesSUCCESS;
 }
 
+template <typename ViewT>
 TER
-canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, AccountID const& to)
+IOUIssuance<ViewT>::canTransfer(AccountID const& from, AccountID const& to) const
 {
-    if (issue.native())
+    if (isXRP(currency_))
         return tesSUCCESS;
 
-    auto const& issuerId = issue.getIssuer();
+    auto const& issuerId = this->id();
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
-    auto const issuer = AccountRoot(issuerId, view);
-    if (!issuer.exists())
+    if (!this->exists())
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {
         // Line might not exist, but some transfers can create it. If this
         // is the case, just check the default ripple on the issuer account.
-        auto const line = view.read(keylet::line(account, issue));
+        auto const line = this->readView().read(keylet::line(account, issuerId, currency_));
         if (line)
         {
             bool const issuerHigh = issuerId > account;
             return line->isFlag(issuerHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
-        return !issuer->isFlag(lsfDefaultRipple);
+        return !this->sle_->isFlag(lsfDefaultRipple);
     };
 
     // Fail if rippling disabled on both trust lines
@@ -619,28 +616,27 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //
 //------------------------------------------------------------------------------
 
+template <typename ViewT>
 TER
-addEmptyHolding(
-    ApplyView& view,
+IOUIssuance<ViewT>::addEmptyHolding(
     AccountID const& accountID,
     XRPAmount priorBalance,
-    Issue const& issue,
     beast::Journal journal)
+    requires kIsWritable
 {
-    // Every account can hold XRP. An issuer can issue directly.
-    if (issue.native() || accountID == issue.getIssuer())
+    ApplyView& view = this->applyView();
+    auto const& issuerId = this->id();
+    // The issuer can issue directly.
+    if (accountID == issuerId)
         return tesSUCCESS;
 
-    auto const& issuerId = issue.getIssuer();
-    auto const& currency = issue.currency;
-    WAccountRoot const wrappedIssuer(issuerId, view, journal);
-    if (wrappedIssuer.isGlobalFrozen())
+    if (this->isGlobalFrozen())
         return tecFROZEN;  // LCOV_EXCL_LINE
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
-    auto const index = keylet::line(srcId, dstId, currency);
+    auto const index = keylet::line(srcId, dstId, currency_);
     WAccountRoot wrappedSrc(srcId, view, journal);
     WAccountRoot wrappedDst(dstId, view, journal);
     if (!wrappedDst || !wrappedSrc)
@@ -657,7 +653,6 @@ addEmptyHolding(
         return tecNO_LINE_INSUF_RESERVE;
 
     return trustCreate(
-        view,
         high,
         srcId,
         dstId,
@@ -667,38 +662,25 @@ addEmptyHolding(
         /*bNoRipple=*/true,
         /*bFreeze=*/false,
         /*deepFreeze*/ false,
-        /*saBalance=*/STAmount{Issue{currency, noAccount()}},
-        /*saLimit=*/STAmount{Issue{currency, dstId}},
+        /*saBalance=*/STAmount{Issue{currency_, noAccount()}},
+        /*saLimit=*/STAmount{Issue{currency_, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
         journal);
 }
 
+template <typename ViewT>
 TER
-removeEmptyHolding(
-    ApplyView& view,
-    AccountID const& accountID,
-    Issue const& issue,
-    beast::Journal journal)
+IOUIssuance<ViewT>::removeEmptyHolding(AccountID const& accountID, beast::Journal journal)
+    requires kIsWritable
 {
-    if (issue.native())
-    {
-        auto const account = AccountRoot(accountID, view, journal);
-        if (!account.exists())
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const balance = account->getFieldAmount(sfBalance);
-        if (balance.xrp() != 0)
-            return tecHAS_OBLIGATIONS;
-
-        return tesSUCCESS;
-    }
-
+    ApplyView& view = this->applyView();
+    auto const& issuerId = this->id();
     // `asset` is an IOU.
     // If the account is the issuer, then no line should exist. Check anyway.
     // If a line does exist, it will get deleted. If not, return success.
-    bool const accountIsIssuer = accountID == issue.account;
-    auto const line = view.peek(keylet::line(accountID, issue));
+    bool const accountIsIssuer = accountID == issuerId;
+    auto const line = view.peek(keylet::line(accountID, this->getIssue()));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
@@ -786,20 +768,8 @@ deleteAMMTrustLine(
     return tesSUCCESS;
 }
 
-TER
-deleteAMMMPToken(
-    ApplyView& view,
-    std::shared_ptr<SLE> sleMpt,
-    AccountID const& ammAccountID,
-    beast::Journal j)
-{
-    if (!view.dirRemove(
-            keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    view.erase(sleMpt);
-
-    return tesSUCCESS;
-}
+// Explicit template instantiations
+template class IOUIssuance<ReadView>;
+template class IOUIssuance<ApplyView>;
 
 }  // namespace xrpl
