@@ -5657,7 +5657,7 @@ private:
             TAmounts<XRPAmount, MPTAmount> const pool{
                 XRPAmount{1'000'000}, MPTAmount{1'000'000'125}};
             TAmounts<XRPAmount, MPTAmount> const clobOffer{
-                kDROPS_PER_XRP, MPTAmount{static_cast<std::int64_t>(mptUnitsPerXRP)}};
+                kDropsPerXrp, MPTAmount{static_cast<std::int64_t>(mptUnitsPerXRP)}};
             Quality const clobQuality{clobOffer};
 
             auto const expectedAmounts = generatedFirst == GeneratedFirst::TakerGets
@@ -5687,7 +5687,7 @@ private:
             env.close();
 
             MPTTester const token(
-                {.env = env, .issuer = gw, .holders = {lp, maker, dst}, .flags = kMPT_DEX_FLAGS});
+                {.env = env, .issuer = gw, .holders = {lp, maker, dst}, .flags = kMptDexFlags});
             env(pay(gw, lp, token(pool.out.value())));
             env(pay(gw, maker, token(10'000'000)));
             env.close();
@@ -5712,17 +5712,17 @@ private:
         // CLOB price: 10'000'000 MPT per 1 XRP, so one raw MPT unit is worth
         // 0.1 drops. One drop is the economically coarser unit and the AMM
         // offer is generated from takerPays.
-        check(10 * kDROPS_PER_XRP.drops(), GeneratedFirst::TakerPays);
+        check(10 * kDropsPerXrp.drops(), GeneratedFirst::TakerPays);
 
         // CLOB price: 1'000'000 MPT per 1 XRP, so one raw MPT unit is worth
         // one drop. Ties use takerGets to preserve the historical XRP-output
         // behavior.
-        check(kDROPS_PER_XRP.drops(), GeneratedFirst::TakerGets);
+        check(kDropsPerXrp.drops(), GeneratedFirst::TakerGets);
 
         // CLOB price: 100'000 MPT per 1 XRP, so one raw MPT unit is worth
         // 10 drops. MPT is the economically coarser unit and the AMM offer is
         // generated from takerGets.
-        check(kDROPS_PER_XRP.drops() / 10, GeneratedFirst::TakerGets);
+        check(kDropsPerXrp.drops() / 10, GeneratedFirst::TakerGets);
     }
 
     void

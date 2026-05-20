@@ -1,6 +1,8 @@
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
@@ -1052,10 +1054,10 @@ public:
         auto rules = [](bool const mptV2) {
             // Rules keeps a reference to the presets set, so use static
             // storage here rather than a local temporary.
-            static std::unordered_set<uint256, beast::Uhash<>> const kNO_FEATURES;
-            static std::unordered_set<uint256, beast::Uhash<>> const kMPT_V2_FEATURES{
+            static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
                 featureMPTokensV2};
-            return Rules{mptV2 ? kMPT_V2_FEATURES : kNO_FEATURES};
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
         auto throwsOverflow = [&](auto&& f) {

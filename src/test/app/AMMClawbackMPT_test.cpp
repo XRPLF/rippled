@@ -1353,7 +1353,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 1'000,
-                 .flags = tfMPTCanClawback | tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .flags = tfMPTCanClawback | tfMPTRequireAuth | kMptDexFlags,
                  .authHolder = true});
 
             AMM ammAlice(env, alice, token(1'000), XRP(1'000));

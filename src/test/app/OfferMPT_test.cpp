@@ -3189,7 +3189,7 @@ public:
                  .holders = {taker},
                  .transferFee = 50'000,
                  .pay = takerFunds,
-                 .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+                 .maxAmt = kMaxMpTokenAmount}};
 
             // Covers OfferCreate::flowCross() sendMax calculation. A large
             // non-issuer MPT offer with a transfer fee used to overflow in
@@ -3280,7 +3280,7 @@ public:
             env.close();
 
             MPTTester const token{
-                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMaxMpTokenAmount}};
 
             // Covers BookStep::revImp() output reduction. The issuer's offer
             // is fully funded and has no transfer fee, so offer preparation
@@ -3317,7 +3317,7 @@ public:
                 {.env = env,
                  .issuer = issuer,
                  .holders = {poisonMaker, taker},
-                 .maxAmt = kMAX_MP_TOKEN_AMOUNT}};
+                 .maxAmt = kMaxMpTokenAmount}};
 
             // Covers OfferStream::step() filtering. The offer is mostly
             // funded, but reducing it to the actual owner funds inside

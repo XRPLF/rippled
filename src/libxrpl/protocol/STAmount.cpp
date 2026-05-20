@@ -1562,7 +1562,7 @@ roundNumberResult(
         // too small to represent in the target asset.
         if (asset.integral())
             return STAmount{asset, 1};
-        return STAmount{asset, STAmount::kMIN_VALUE, STAmount::kMIN_OFFSET, false};
+        return STAmount{asset, STAmount::kMinValue, STAmount::kMinOffset, false};
     }
 
     return result;
