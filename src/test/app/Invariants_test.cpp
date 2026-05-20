@@ -1783,7 +1783,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (std::size_t n = 0; n < numCreds; ++n)
         {
             auto credType = "cred_type" + std::to_string(n);
-            credentials.push_back({a2, credType});
+            credentials.push_back({.issuer = a2, .credType = credType});
         }
 
         std::uint32_t const seq = env.seq(a1);

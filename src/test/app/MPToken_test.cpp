@@ -1794,7 +1794,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.close();
 
             // Bob authorize credentials
-            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
             env.close();
 
             // alice try to send 100 MPT to bob, not authorized
