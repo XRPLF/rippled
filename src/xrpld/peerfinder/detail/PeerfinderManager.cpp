@@ -1,8 +1,6 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
 #include <xrpld/peerfinder/detail/Checker.h>
-#include <xrpld/peerfinder/detail/Logic.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 
@@ -17,6 +15,8 @@
 #include <xrpl/peerfinder/PeerfinderManager.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Logic.h>
+#include <xrpl/peerfinder/detail/SlotImp.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <boost/asio/executor_work_guard.hpp>

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <xrpld/core/Config.h>
-#include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 namespace xrpl {
