@@ -1403,14 +1403,19 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
         TER const expectedExpiredCredTer = cleanup320Enabled ? tecEXPIRED : tecNO_PERMISSION;
 
-        auto const fundDevin = [](Env& env, Account const& gw, IOU const& usd) {
+        auto const fundAccount =
+            [](Env& env, Account const& account, Account const& gw, IOU const& usd) {
+                env.fund(XRP(1000), account);
+                env.close();
+                env.trust(usd(1000), account);
+                env.close();
+                env(pay(gw, account, usd(100)));
+                env.close();
+            };
+
+        auto const fundDevin = [&](Env& env, Account const& gw, IOU const& usd) {
             Account const devin("devin");
-            env.fund(XRP(1000), devin);
-            env.close();
-            env.trust(usd(1000), devin);
-            env.close();
-            env(pay(gw, devin, usd(100)));
-            env.close();
+            fundAccount(env, devin, gw, usd);
             return devin;
         };
 
@@ -1540,6 +1545,45 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             expectExpiredCredentialState(env, credKey);
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+
+        // Payment where both sender and destination credentials are expired.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            Account const devin = fundDevin(env, gw, USD);
+            Account const erin("erin");
+            fundAccount(env, erin, gw, USD);
+
+            auto const devinCredKey = createExpiringCredential(env, devin, domainOwner, credType);
+            auto const erinCredKey = createExpiringCredential(env, erin, domainOwner, credType);
+
+            auto const bobOfferSeq{env.seq(bob)};
+            auto const bobCredKey =
+                keylet::credential(bob.id(), domainOwner.id(), makeSlice(credType));
+            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+            env.close();
+
+            BEAST_EXPECT(env.le(devinCredKey));
+            BEAST_EXPECT(env.le(erinCredKey));
+            BEAST_EXPECT(env.le(bobCredKey));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+
+            env.close(std::chrono::seconds(20));
+
+            env(pay(devin, erin, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(expectedExpiredCredTer));
+            env.close();
+
+            expectExpiredCredentialState(env, devinCredKey);
+            expectExpiredCredentialState(env, erinCredKey);
             BEAST_EXPECT(env.le(bobCredKey));
             BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
         }

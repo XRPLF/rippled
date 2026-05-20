@@ -448,10 +448,14 @@ Payment::doApply()
             return verifyValidDomain(ctx_.view(), acct, domainID, j_);
         };
 
-        if (auto const err = cleanupFor(account_); !isTesSuccess(err))
-            return err;
-        if (auto const err = cleanupFor(ctx_.tx[sfDestination]); !isTesSuccess(err))
-            return err;
+        auto const destination = ctx_.tx[sfDestination];
+        auto const senderErr = cleanupFor(account_);
+        auto const destinationErr = account_ == destination ? senderErr : cleanupFor(destination);
+
+        if (!isTesSuccess(senderErr))
+            return senderErr;
+        if (!isTesSuccess(destinationErr))
+            return destinationErr;
     }
 
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
