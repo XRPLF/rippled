@@ -19,13 +19,13 @@ AccountStateSF::gotNode(
     Blob&& nodeData,
     SHAMapNodeType) const
 {
-    db_.store(NodeObjectType::AccountNode, std::move(nodeData), nodeHash.asUint256(), ledgerSeq);
+    db_.store(NodeObjectType::AccountNode, std::move(nodeData), nodeHash.asUInt256(), ledgerSeq);
 }
 
 std::optional<Blob>
 AccountStateSF::getNode(SHAMapHash const& nodeHash) const
 {
-    return fp_.getFetchPack(nodeHash.asUint256());
+    return fp_.getFetchPack(nodeHash.asUInt256());
 }
 
 }  // namespace xrpl

@@ -12,7 +12,7 @@ namespace xrpl {
     Values should not be duplicated.
     @see getNextLedgerTimeResolution
 */
-std::chrono::seconds constexpr kLEDGER_POSSIBLE_TIME_RESOLUTIONS[] = {
+constexpr std::chrono::seconds kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{10},
     std::chrono::seconds{20},
     std::chrono::seconds{30},
@@ -21,16 +21,16 @@ std::chrono::seconds constexpr kLEDGER_POSSIBLE_TIME_RESOLUTIONS[] = {
     std::chrono::seconds{120}};
 
 //! Initial resolution of ledger close time.
-auto constexpr kLEDGER_DEFAULT_TIME_RESOLUTION = kLEDGER_POSSIBLE_TIME_RESOLUTIONS[2];
+constexpr auto kLedgerDefaultTimeResolution = kLedgerPossibleTimeResolutions[2];
 
 //! Close time resolution in genesis ledger
-auto constexpr kLEDGER_GENESIS_TIME_RESOLUTION = kLEDGER_POSSIBLE_TIME_RESOLUTIONS[0];
+constexpr auto kLedgerGenesisTimeResolution = kLedgerPossibleTimeResolutions[0];
 
 //! How often we increase the close time resolution (in numbers of ledgers)
-auto constexpr kINCREASE_LEDGER_TIME_RESOLUTION_EVERY = 8;
+constexpr auto kIncreaseLedgerTimeResolutionEvery = 8;
 
 //! How often we decrease the close time resolution (in numbers of ledgers)
-auto constexpr kDECREASE_LEDGER_TIME_RESOLUTION_EVERY = 1;
+constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
 
 /** Calculates the close time resolution for the specified ledger.
 
@@ -46,7 +46,7 @@ auto constexpr kDECREASE_LEDGER_TIME_RESOLUTION_EVERY = 1;
     @param ledgerSeq the sequence number of the new ledger
 
     @pre previousResolution must be a valid bin
-         from @ref kLEDGER_POSSIBLE_TIME_RESOLUTIONS
+         from @ref kLedgerPossibleTimeResolutions
 
     @tparam Rep Type representing number of ticks in std::chrono::duration
     @tparam Period An std::ratio representing tick period in
@@ -67,30 +67,30 @@ getNextLedgerTimeResolution(
     using namespace std::chrono;
     // Find the current resolution:
     auto iter = std::find(
-        std::begin(kLEDGER_POSSIBLE_TIME_RESOLUTIONS),
-        std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS),
+        std::begin(kLedgerPossibleTimeResolutions),
+        std::end(kLedgerPossibleTimeResolutions),
         previousResolution);
     XRPL_ASSERT(
-        iter != std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS),
+        iter != std::end(kLedgerPossibleTimeResolutions),
         "xrpl::getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
-    if (iter == std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS))
+    if (iter == std::end(kLedgerPossibleTimeResolutions))
         return previousResolution;
 
     // If we did not previously agree, we try to decrease the resolution to
     // improve the chance that we will agree now.
-    if (!previousAgree && (ledgerSeq % Seq{kDECREASE_LEDGER_TIME_RESOLUTION_EVERY} == Seq{0}))
+    if (!previousAgree && (ledgerSeq % Seq{kDecreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
-        if (++iter != std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS))
+        if (++iter != std::end(kLedgerPossibleTimeResolutions))
             return *iter;
     }
 
     // If we previously agreed, we try to increase the resolution to determine
     // if we can continue to agree.
-    if (previousAgree && (ledgerSeq % Seq{kINCREASE_LEDGER_TIME_RESOLUTION_EVERY} == Seq{0}))
+    if (previousAgree && (ledgerSeq % Seq{kIncreaseLedgerTimeResolutionEvery} == Seq{0}))
     {
-        if (iter-- != std::begin(kLEDGER_POSSIBLE_TIME_RESOLUTIONS))
+        if (iter-- != std::begin(kLedgerPossibleTimeResolutions))
             return *iter;
     }
 
