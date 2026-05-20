@@ -2001,7 +2001,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request by account.
             json::Value jvParams;
-            jvParams[jss::signer_list] = J=json::objectValue;
+            jvParams[jss::signer_list] = J = json::objectValue;
             jvParams[jss::signer_list][jss::account] = alice.human();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
