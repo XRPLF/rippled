@@ -1335,7 +1335,7 @@ Transactor::operator()()
 
                 if (doWasmData && before && after && (before->getType() == ltESCROW))
                 {
-                    modifiedWasmObjects.push_back(std::make_pair(index, after->getFieldVL(sfData)));
+                    modifiedWasmObjects.emplace_back(index, after->getFieldVL(sfData));
                 }
             });
         }
@@ -1375,8 +1375,10 @@ Transactor::operator()()
         }
 
         if (result == tecWASM_REJECTED)
+        {
             modifyWasmDataFields(
                 view(), modifiedWasmObjects, ctx_.registry.get().getJournal("View"));
+        }
 
         applied = isTecClaim(result);
     }

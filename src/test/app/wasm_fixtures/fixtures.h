@@ -10,7 +10,7 @@
 namespace wasm_constants {
 
 // Magic + version header
-uint8_t const WASM_HEADER[] = {
+uint8_t const kWasmHeader[] = {
     0x00,
     0x61,
     0x73,
@@ -22,39 +22,39 @@ uint8_t const WASM_HEADER[] = {
 };
 
 // Type section: () -> ()
-uint8_t const TYPE_EMPTY_FUNC[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
+uint8_t const kTypeEmptyFunc[] = {0x01, 0x04, 0x01, 0x60, 0x00, 0x00};
 
 // Function section: one function using type 0
-uint8_t const FUNC_TYPE0[] = {0x03, 0x02, 0x01, 0x00};
+uint8_t const kFuncTypE0[] = {0x03, 0x02, 0x01, 0x00};
 
 // Export section: export func 0 as "finish"
-uint8_t const EXPORT_FINISH[] = {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
+uint8_t const kExportFinish[] = {0x07, 0x0a, 0x01, 0x06, 'f', 'i', 'n', 'i', 's', 'h', 0x00, 0x00};
 
 // Empty function body: 0 locals, end
-uint8_t const EMPTY_BODY[] = {0x00, 0x0b};
+uint8_t const kEmptyBody[] = {0x00, 0x0b};
 
 // Data segment offset: i32.const 0, end
-uint8_t const DATA_OFFSET_ZERO[] = {0x41, 0x00, 0x0b};
+uint8_t const kDataOffsetZero[] = {0x41, 0x00, 0x0b};
 
 // Section IDs
-uint8_t const SECTION_MEMORY = 0x05;
-uint8_t const SECTION_CODE = 0x0a;
-uint8_t const SECTION_DATA = 0x0b;
+uint8_t const kSectionMemory = 0x05;
+uint8_t const kSectionCode = 0x0a;
+uint8_t const kSectionData = 0x0b;
 
 // Instructions
-uint8_t const INSTR_NOP = 0x01;
-uint8_t const INSTR_END = 0x0b;
+uint8_t const kInstrNop = 0x01;
+uint8_t const kInstrEnd = 0x0b;
 
 // Fill byte for data section bloat
-uint8_t const DATA_FILL_BYTE = 0xEE;
+uint8_t const kDataFillByte = 0xEE;
 
 // Generator for WASM module with large code section (many NOPs)
 std::vector<uint8_t>
-generateCodeBlob(uint32_t num_instructions);
+generateCodeBlob(uint32_t numInstructions);
 
 // Generator for WASM module with large data section
 std::vector<uint8_t>
-generateDataBlob(uint32_t data_size);
+generateDataBlob(uint32_t dataSize);
 
 }  // namespace wasm_constants
 
@@ -135,4 +135,4 @@ extern std::string const kFunctions5kHex;
 extern std::string const kOpcReservedHex;
 
 extern std::string const kImpExpHex;
-extern std::string const updateDataWasmHex;
+extern std::string const kUpdateDataWasmHex;

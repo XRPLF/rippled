@@ -116,7 +116,7 @@ public:
         gasUsed_ = gasUsed;
     }
 
-    std::optional<std::uint32_t> const&
+    [[nodiscard]] std::optional<std::uint32_t> const&
     getGasUsed() const
     {
         return gasUsed_;
@@ -128,7 +128,7 @@ public:
         wasmReturnCode_ = wasmReturnCode;
     }
 
-    std::optional<std::int32_t> const&
+    [[nodiscard]] std::optional<std::int32_t> const&
     getWasmReturnCode() const
     {
         return wasmReturnCode_;

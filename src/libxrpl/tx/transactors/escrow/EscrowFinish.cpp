@@ -21,6 +21,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -29,13 +30,16 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/escrow/EscrowFinish.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <cstdint>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <system_error>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -164,7 +168,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
         uint64_t const allowanceFee =
-            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1 = 0;
         extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
@@ -326,7 +330,7 @@ EscrowFinish::doApply()
             return tecNO_DST;
 
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -404,7 +408,7 @@ EscrowFinish::doApply()
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
-        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
+        WasmHostFunctionsImpl const ledgerDataProvider(ctx_, k);
 
         if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
         {

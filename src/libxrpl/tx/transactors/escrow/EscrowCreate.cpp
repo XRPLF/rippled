@@ -6,6 +6,7 @@
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -32,7 +33,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
@@ -133,11 +133,9 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 bool
 EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if ((ctx.tx.isFieldPresent(sfFinishFunction) || ctx.tx.isFieldPresent(sfData)) &&
-        !ctx.rules.enabled(featureSmartEscrow))
-        return false;
-
-    return true;
+    return !(
+        (ctx.tx.isFieldPresent(sfFinishFunction) || ctx.tx.isFieldPresent(sfData)) &&
+        !ctx.rules.enabled(featureSmartEscrow));
 }
 
 NotTEC
@@ -224,7 +222,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
 
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.size() == 0 || code.size() > fees.extensionSizeLimit)
+        if (code.empty() || code.size() > fees.extensionSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
@@ -244,7 +242,7 @@ EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
         // basic checks happen in `preflight`
 
-        HostFunctions mock(ctx.j);
+        HostFunctions const mock(ctx.j);
         auto const re = preflightEscrowWasm(code, mock, ESCROW_FUNCTION_NAME);
         if (!isTesSuccess(re))
         {

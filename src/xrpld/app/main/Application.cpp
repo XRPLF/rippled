@@ -817,7 +817,7 @@ public:
         return *walletDB_;
     }
 
-    virtual Fees
+    Fees
     getFees() const override
     {
         XRPL_ASSERT(config_, "xrpl::ApplicationImp::getFees : non-null config");

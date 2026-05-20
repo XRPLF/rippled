@@ -239,7 +239,7 @@ public:
     virtual DatabaseCon&
     getWalletDB() = 0;
 
-    virtual Fees
+    [[nodiscard]] virtual Fees
     getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't

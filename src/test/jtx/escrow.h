@@ -8,6 +8,8 @@
 
 #include <xrpl/protocol/Indexes.h>
 
+#include <utility>
+
 /** Escrow operations. */
 namespace xrpl::test::jtx::escrow {
 
@@ -75,22 +77,22 @@ auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFulfillment = JTxFieldWrapper<BlobField>(sfFulfillment);
 
-struct finish_function
+struct FinishFunction
 {
 private:
     std::string value_;
 
 public:
-    explicit finish_function(std::string func) : value_(func)
+    explicit FinishFunction(std::string func) : value_(std::move(func))
     {
     }
 
-    explicit finish_function(Slice const& func) : value_(strHex(func))
+    explicit FinishFunction(Slice const& func) : value_(strHex(func))
     {
     }
 
     template <size_t N>
-    explicit finish_function(std::array<std::uint8_t, N> const& f) : finish_function(makeSlice(f))
+    explicit FinishFunction(std::array<std::uint8_t, N> const& f) : FinishFunction(makeSlice(f))
     {
     }
 
@@ -101,22 +103,22 @@ public:
     }
 };
 
-struct data
+struct Data
 {
 private:
     std::string value_;
 
 public:
-    explicit data(std::string func) : value_(func)
+    explicit Data(std::string func) : value_(std::move(func))
     {
     }
 
-    explicit data(Slice const& func) : value_(strHex(func))
+    explicit Data(Slice const& func) : value_(strHex(func))
     {
     }
 
     template <size_t N>
-    explicit data(std::array<std::uint8_t, N> const& f) : data(makeSlice(f))
+    explicit Data(std::array<std::uint8_t, N> const& f) : Data(makeSlice(f))
     {
     }
 
@@ -127,13 +129,13 @@ public:
     }
 };
 
-struct comp_allowance
+struct CompAllowance
 {
 private:
     std::uint32_t value_;
 
 public:
-    explicit comp_allowance(std::uint32_t const& value) : value_(value)
+    explicit CompAllowance(std::uint32_t const& value) : value_(value)
     {
     }
 
