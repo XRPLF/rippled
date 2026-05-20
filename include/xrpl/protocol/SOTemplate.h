@@ -30,6 +30,7 @@ enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 enum SOEConstant {
     SoeImmutable,
     SoeMutable,
+    SoeImmutableSetOnce,
 };
 
 //------------------------------------------------------------------------------
@@ -54,6 +55,14 @@ private:
                 nm += ": '" + fieldName.getName() + "'";
             Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
+
+        XRPL_ASSERT(
+            constant_ != SoeImmutableSetOnce || style_ == SoeOptional,
+            "xrpl::SOElement::init : set-once fields must be optional");
+        XRPL_ASSERT(
+            constant_ != SoeMutable || style_ == SoeRequired || style_ == SoeOptional ||
+                style_ == SoeDefault,
+            "xrpl::SOElement::init : mutable fields must have a valid style");
     }
 
 public:

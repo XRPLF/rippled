@@ -146,7 +146,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfNFTokenMinter,        SoeOptional, SoeMutable},
     {sfMintedNFTokens,       SoeDefault,  SoeMutable},
     {sfBurnedNFTokens,       SoeDefault,  SoeMutable},
-    {sfFirstNFTokenSequence, SoeOptional, SoeImmutable},
+    {sfFirstNFTokenSequence, SoeOptional, SoeImmutableSetOnce},
     {sfAMMID,                SoeOptional, SoeImmutable}, // pseudo-account designator
     {sfVaultID,              SoeOptional, SoeImmutable}, // pseudo-account designator
     {sfLoanBrokerID,         SoeOptional, SoeImmutable}, // pseudo-account designator
@@ -280,10 +280,10 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
     {sfHighLimit,            SoeRequired, SoeMutable},
     {sfPreviousTxnID,        SoeRequired, SoeMutable},
     {sfPreviousTxnLgrSeq,    SoeRequired, SoeMutable},
-    {sfLowNode,              SoeOptional, SoeMutable},
+    {sfLowNode,              SoeOptional, SoeImmutable},
     {sfLowQualityIn,         SoeOptional, SoeMutable},
     {sfLowQualityOut,        SoeOptional, SoeMutable},
-    {sfHighNode,             SoeOptional, SoeMutable},
+    {sfHighNode,             SoeOptional, SoeImmutable},
     {sfHighQualityIn,        SoeOptional, SoeMutable},
     {sfHighQualityOut,       SoeOptional, SoeMutable},
 }))
