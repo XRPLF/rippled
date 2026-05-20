@@ -123,7 +123,7 @@ private:
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");
+                throw std::runtime_error("Unknown mantissa scale"); //LCOV_EXCL_LINE
         }
     }
 
@@ -140,7 +140,7 @@ private:
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");
+                throw std::runtime_error("Unknown mantissa scale"); //LCOV_EXCL_LINE
         }
     }
 
