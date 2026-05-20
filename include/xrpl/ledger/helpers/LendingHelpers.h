@@ -179,6 +179,8 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 inline Number
 minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
 {
+    XRPL_ASSERT(
+        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
     return roundToAsset(
         vaultSle->at(sfAsset),
