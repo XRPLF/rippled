@@ -25,7 +25,7 @@ namespace {
 
 using FixType = LedgerStateFix::FixType;
 
-std::array<std::pair<FixType, SField const*>, 2> const kLEDGER_FIX_FIELDS = {{
+std::array<std::pair<FixType, SField const*>, 2> const kLedgerFixFields = {{
     {FixType::NfTokenPageLink, &sfOwner},
     {FixType::BookExchangeRate, &sfBookDirectory},
 }};
@@ -34,9 +34,9 @@ std::array<std::pair<FixType, SField const*>, 2> const kLEDGER_FIX_FIELDS = {{
 fixField(FixType const fixType)
 {
     auto const iter = std::ranges::find_if(
-        kLEDGER_FIX_FIELDS, [fixType](auto const& entry) { return entry.first == fixType; });
+        kLedgerFixFields, [fixType](auto const& entry) { return entry.first == fixType; });
 
-    if (iter == kLEDGER_FIX_FIELDS.end())
+    if (iter == kLedgerFixFields.end())
         return nullptr;  // LCOV_EXCL_LINE
 
     return iter->second;
@@ -45,7 +45,7 @@ fixField(FixType const fixType)
 [[nodiscard]] bool
 hasUnexpectedFixField(STTx const& tx, SField const& expected)
 {
-    return std::ranges::any_of(kLEDGER_FIX_FIELDS, [&tx, &expected](auto const& entry) {
+    return std::ranges::any_of(kLedgerFixFields, [&tx, &expected](auto const& entry) {
         auto const field = entry.second;
         return field != &expected && tx.isFieldPresent(*field);
     });
