@@ -1,10 +1,17 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/json/JsonPropertyStream.h>
 #include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Bootcache.h>
 #include <xrpl/peerfinder/detail/Counts.h>
 #include <xrpl/peerfinder/detail/Logic.h>
+#include <xrpl/peerfinder/detail/SlotImp.h>
 #include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -48,6 +55,36 @@ public:
     MOCK_METHOD(std::size_t, load, (Store::load_callback const& cb), (override));
     MOCK_METHOD(void, save, (std::vector<Store::Entry> const& entries), (override));
 };
+
+class CapturingStore : public Store
+{
+public:
+    std::vector<Store::Entry> entriesToLoad;
+    std::vector<std::vector<Store::Entry>> saves;
+
+    std::size_t
+    load(Store::load_callback const& cb) override
+    {
+        for (auto const& entry : entriesToLoad)
+            cb(entry.endpoint, entry.valence);
+        return entriesToLoad.size();
+    }
+
+    void
+    save(std::vector<Store::Entry> const& entries) override
+    {
+        saves.push_back(entries);
+    }
+};
+
+Store::Entry
+storeEntry(beast::IP::Endpoint const& endpoint, int valence)
+{
+    Store::Entry entry;
+    entry.endpoint = endpoint;
+    entry.valence = valence;
+    return entry;
+}
 
 void
 allowEmptyStore(MockStore& store)
@@ -96,6 +133,19 @@ protected:
     TestStopwatch clock_;
     Logic<NiceMock<MockChecker>> logic_{clock_, store_, checker_, journal()};
 };
+
+int
+savedValence(std::vector<Store::Entry> const& entries, beast::IP::Endpoint const& endpoint)
+{
+    for (auto const& entry : entries)
+    {
+        if (entry.endpoint == endpoint)
+            return entry.valence;
+    }
+
+    ADD_FAILURE() << "missing saved endpoint " << endpoint.toString();
+    return 0;
+}
 
 TEST_F(PeerFinderTest, backoff_limits_repeated_connection_attempts)
 {
@@ -298,6 +348,245 @@ TEST_F(PeerFinderTest, on_connected_rejects_self_connection)
 
     EXPECT_FALSE(logic_.onConnected(slot, local));
     logic_.onClosed(slot);
+}
+
+TEST(PeerFinderBootcache, loads_unique_entries_and_clears_cache)
+{
+    CapturingStore store;
+    TestStopwatch clock;
+    auto const ep1 = endpoint("65.0.0.1:10001");
+    auto const ep2 = endpoint("65.0.0.2:10002");
+    store.entriesToLoad = {storeEntry(ep1, 3), storeEntry(ep2, -2), storeEntry(ep1, 4)};
+
+    Bootcache cache(store, clock, journal());
+    cache.load();
+
+    EXPECT_FALSE(cache.empty());
+    EXPECT_EQ(cache.size(), 2u);
+    EXPECT_EQ(*cache.begin(), ep1);
+    EXPECT_EQ(*cache.cbegin(), ep1);
+    EXPECT_NE(cache.begin(), cache.end());
+    EXPECT_NE(cache.cbegin(), cache.cend());
+
+    cache.clear();
+    EXPECT_TRUE(cache.empty());
+    EXPECT_EQ(cache.begin(), cache.end());
+}
+
+TEST(PeerFinderBootcache, records_connection_outcomes_and_persists_pending_updates)
+{
+    CapturingStore store;
+    TestStopwatch clock;
+    auto const ep1 = endpoint("65.0.0.1:10001");
+    auto const ep2 = endpoint("65.0.0.2:10002");
+    auto const ep3 = endpoint("65.0.0.3:10003");
+    auto const ep4 = endpoint("65.0.0.4:10004");
+
+    {
+        Bootcache cache(store, clock, journal());
+
+        EXPECT_TRUE(cache.insert(ep1));
+        EXPECT_FALSE(cache.insert(ep1));
+
+        cache.onSuccess(ep1);
+        EXPECT_TRUE(cache.insertStatic(ep1));
+        EXPECT_FALSE(cache.insertStatic(ep1));
+
+        EXPECT_TRUE(cache.insertStatic(ep2));
+        cache.onSuccess(ep3);
+        cache.onFailure(ep3);
+        cache.onFailure(ep4);
+
+        EXPECT_EQ(cache.size(), 4u);
+
+        JsonPropertyStream stream;
+        {
+            beast::PropertyStream::Map map(stream);
+            cache.onWrite(map);
+        }
+        EXPECT_TRUE(stream.top().isMember("entries"));
+        EXPECT_EQ(stream.top()["entries"].size(), 4u);
+    }
+
+    ASSERT_EQ(store.saves.size(), 1u);
+    auto const& saved = store.saves.front();
+    ASSERT_EQ(saved.size(), 4u);
+    EXPECT_EQ(savedValence(saved, ep1), Bootcache::kStaticValence);
+    EXPECT_EQ(savedValence(saved, ep2), Bootcache::kStaticValence);
+    EXPECT_EQ(savedValence(saved, ep3), -1);
+    EXPECT_EQ(savedValence(saved, ep4), -1);
+}
+
+TEST(PeerFinderBootcache, periodic_activity_saves_after_cooldown)
+{
+    using namespace std::chrono_literals;
+
+    CapturingStore store;
+    TestStopwatch clock;
+
+    {
+        Bootcache cache(store, clock, journal());
+        EXPECT_TRUE(cache.insert(endpoint("65.0.0.1:10001")));
+
+        cache.periodicActivity();
+        EXPECT_TRUE(store.saves.empty());
+
+        clock.advance(Tuning::kBootcacheCooldownTime + 1s);
+        cache.periodicActivity();
+        ASSERT_EQ(store.saves.size(), 1u);
+
+        cache.periodicActivity();
+        EXPECT_EQ(store.saves.size(), 1u);
+    }
+
+    EXPECT_EQ(store.saves.size(), 1u);
+}
+
+TEST(PeerFinderBootcache, prunes_when_cache_exceeds_limit)
+{
+    CapturingStore store;
+    TestStopwatch clock;
+    Bootcache cache(store, clock, journal());
+
+    for (std::uint16_t i = 0; i <= Tuning::kBootcacheSize; ++i)
+    {
+        EXPECT_TRUE(cache.insert(endpoint(
+            "65.0." + std::to_string((i / 256) % 256) + "." + std::to_string(i % 256) + ":" +
+            std::to_string(10000 + i))));
+    }
+
+    EXPECT_LE(cache.size(), Tuning::kBootcacheSize);
+}
+
+TEST(PeerFinderEndpoint, clamps_hops_to_overflow_bucket)
+{
+    auto const address = endpoint("65.0.0.1:10001");
+    Endpoint const ep(address, Tuning::kMaxHops + 10);
+
+    EXPECT_EQ(ep.address, address);
+    EXPECT_EQ(ep.hops, Tuning::kMaxHops + 1);
+}
+
+TEST(PeerFinderSlotImp, tracks_state_and_recent_endpoints)
+{
+    using State = Slot::State;
+    using namespace std::chrono_literals;
+
+    TestStopwatch clock;
+    auto const local = endpoint("65.0.0.1:10000");
+    auto const remote = endpoint("65.0.0.2:10001");
+    SlotImp inbound(local, remote, true, clock);
+
+    EXPECT_TRUE(inbound.inbound());
+    EXPECT_TRUE(inbound.fixed());
+    EXPECT_FALSE(inbound.reserved());
+    EXPECT_EQ(inbound.state(), State::Accept);
+    EXPECT_EQ(inbound.remoteEndpoint(), remote);
+    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::IP::Endpoint>{local});
+    EXPECT_FALSE(inbound.publicKey());
+    EXPECT_FALSE(inbound.listeningPort());
+    EXPECT_FALSE(inbound.checked);
+    EXPECT_FALSE(inbound.canAccept);
+    EXPECT_FALSE(inbound.connectivityCheckInProgress);
+
+    auto const newLocal = endpoint("65.0.0.3:10002");
+    auto const newRemote = endpoint("65.0.0.4:10003");
+    PublicKey const publicKey(randomKeyPair(KeyType::Secp256k1).first);
+
+    inbound.localEndpoint(newLocal);
+    inbound.remoteEndpoint(newRemote);
+    inbound.publicKey(publicKey);
+    inbound.reserved(true);
+    inbound.setListeningPort(2459);
+
+    EXPECT_EQ(inbound.localEndpoint(), std::optional<beast::IP::Endpoint>{newLocal});
+    EXPECT_EQ(inbound.remoteEndpoint(), newRemote);
+    EXPECT_EQ(inbound.publicKey(), std::optional<PublicKey>{publicKey});
+    EXPECT_TRUE(inbound.reserved());
+    EXPECT_EQ(inbound.listeningPort(), std::optional<std::uint16_t>{2459});
+    EXPECT_FALSE(inbound.prefix().empty());
+
+    inbound.state(State::Closing);
+    EXPECT_EQ(inbound.state(), State::Closing);
+
+    SlotImp outbound(remote, false, clock);
+    EXPECT_FALSE(outbound.inbound());
+    EXPECT_FALSE(outbound.fixed());
+    EXPECT_EQ(outbound.state(), State::Connect);
+    EXPECT_TRUE(outbound.checked);
+    EXPECT_TRUE(outbound.canAccept);
+
+    outbound.state(State::Connected);
+    outbound.activate(clock.now());
+    EXPECT_EQ(outbound.state(), State::Active);
+    EXPECT_EQ(outbound.whenAcceptEndpoints, clock.now());
+
+    auto const recent = endpoint("65.0.0.5:10004");
+    EXPECT_FALSE(outbound.recent.filter(recent, 2));
+
+    outbound.recent.insert(recent, 2);
+    EXPECT_TRUE(outbound.recent.filter(recent, 2));
+    EXPECT_TRUE(outbound.recent.filter(recent, 3));
+    EXPECT_FALSE(outbound.recent.filter(recent, 1));
+
+    outbound.recent.insert(recent, 4);
+    EXPECT_FALSE(outbound.recent.filter(recent, 1));
+
+    outbound.recent.insert(recent, 1);
+    EXPECT_TRUE(outbound.recent.filter(recent, 1));
+    EXPECT_FALSE(outbound.recent.filter(recent, 0));
+
+    clock.advance(Tuning::kLiveCacheSecondsToLive + 1s);
+    outbound.expire();
+    EXPECT_FALSE(outbound.recent.filter(recent, 1));
+}
+
+TEST(PeerFinderConfig, writes_property_stream_and_compares_verify_endpoints)
+{
+    Config config;
+    config.maxPeers = 42;
+    config.outPeers = 12;
+    config.inPeers = 30;
+    config.peerPrivate = false;
+    config.wantIncoming = true;
+    config.autoConnect = false;
+    config.listeningPort = 2459;
+    config.features = "feature";
+    config.ipLimit = 4;
+    config.verifyEndpoints = false;
+
+    JsonPropertyStream stream;
+    {
+        beast::PropertyStream::Map map(stream);
+        config.onWrite(map);
+    }
+
+    auto const& json = stream.top();
+    EXPECT_EQ(json["max_peers"].asUInt(), config.maxPeers);
+    EXPECT_EQ(json["out_peers"].asUInt(), config.outPeers);
+    EXPECT_TRUE(json.isMember("want_incoming"));
+    EXPECT_TRUE(json.isMember("auto_connect"));
+    EXPECT_EQ(json["port"].asUInt(), config.listeningPort);
+    EXPECT_EQ(json["features"].asString(), config.features);
+    EXPECT_EQ(json["ip_limit"].asInt(), config.ipLimit);
+    EXPECT_TRUE(json.isMember("verify_endpoints"));
+
+    Config same = config;
+    EXPECT_EQ(config, same);
+    same.verifyEndpoints = true;
+    EXPECT_NE(config, same);
+}
+
+TEST(PeerFinderConfig, validator_and_standalone_settings_disable_auto_connect)
+{
+    PeerLimitConfig const limits{.maxPeers = 50, .inPeers = {}, .outPeers = {}};
+
+    Config const config = Config::makeConfig(false, true, limits, 2459, true, 7, false);
+
+    EXPECT_TRUE(config.peerPrivate);
+    EXPECT_FALSE(config.autoConnect);
+    EXPECT_FALSE(config.verifyEndpoints);
+    EXPECT_EQ(config.ipLimit, 7);
 }
 
 TEST(PeerFinderConfig, applies_legacy_and_explicit_peer_limits)
