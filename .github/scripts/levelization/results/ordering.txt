@@ -1,3 +1,5 @@
+benchmarks.nodestore > xrpl.basics
+benchmarks.nodestore > xrpl.nodestore
 libxrpl.basics > xrpl.basics
 libxrpl.conditions > xrpl.basics
 libxrpl.conditions > xrpl.conditions
