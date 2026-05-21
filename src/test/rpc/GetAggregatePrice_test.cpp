@@ -345,21 +345,7 @@ public:
         // metadata to find the XRP/USD price.
         oracle.set(UpdateArg{.series = {{"XRP", "EUR", 850, 1}}, .fee = baseFee});
 
-        // Build the request once; reused for the precondition and the
-        // post-corruption assertion so both exercise the same path.
-        auto const buildRequest = [&]() {
-            json::Value jv;
-            jv[jss::base_asset] = "XRP";
-            jv[jss::quote_asset] = "USD";
-            jv[jss::ledger_index] = "current";
-            json::Value jvOracles(json::arrayValue);
-            json::Value jvOracle;
-            jvOracle[jss::account] = to_string(owner.id());
-            jvOracle[jss::oracle_document_id] = oracle.documentID();
-            jvOracles.append(jvOracle);
-            jv[jss::oracles] = jvOracles;
-            return jv;
-        };
+        OraclesData const oracles{{owner, oracle.documentID()}};
 
         // Precondition: with an uncorrupted oracle, the historical
         // traversal must succeed and produce a price for XRP/USD.
@@ -369,9 +355,9 @@ public:
         // pass (objectNotFound is reachable from many unrelated
         // code paths).
         {
-            auto const jr = env.rpc("json", "get_aggregate_price", to_string(buildRequest()));
-            BEAST_EXPECT(!jr[jss::result].isMember(jss::error));
-            BEAST_EXPECT(jr[jss::result].isMember(jss::median));
+            auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+            BEAST_EXPECT(!ret.isMember(jss::error));
+            BEAST_EXPECT(ret.isMember(jss::median));
         }
 
         // Simulate data corruption: modify the oracle SLE in the open
@@ -405,8 +391,8 @@ public:
         // history. txRead returns null for the bogus hash, and the
         // null check should cause a graceful early return instead of
         // a nullptr dereference.
-        auto const jr = env.rpc("json", "get_aggregate_price", to_string(buildRequest()));
-        BEAST_EXPECT(jr[jss::result][jss::error].asString() == "objectNotFound");
+        auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
+        BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
     }
 
     void
