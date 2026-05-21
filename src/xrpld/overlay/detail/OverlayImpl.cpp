@@ -112,7 +112,7 @@ OverlayImpl::Child::~Child()
 
 //------------------------------------------------------------------------------
 
-OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_.io_context_)
+OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_.ioContext_)
 {
 }
 
@@ -150,10 +150,10 @@ OverlayImpl::Timer::onTimer(error_code ec)
     overlay_.peerFinder_->oncePerSecond();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
-    if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
+    if (overlay_.app_.config().txReduceRelayEnable)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timer_count_ % Tuning::kCheckIdlePeers) == 0)
+    if ((++overlay_.timerCount_ % Tuning::kCheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -171,9 +171,9 @@ OverlayImpl::OverlayImpl(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
     : app_(app)
-    , io_context_(ioContext)
-    , work_(std::in_place, boost::asio::make_work_guard(io_context_))
-    , strand_(boost::asio::make_strand(io_context_))
+    , ioContext_(ioContext)
+    , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
+    , strand_(boost::asio::make_strand(ioContext_))
     , setup_(std::move(setup))
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
@@ -186,7 +186,7 @@ OverlayImpl::OverlayImpl(
               config,
               collector))
     , resolver_(resolver)
-    , next_id_(1)
+    , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
           std::bind(&OverlayImpl::collectMetrics, this),
@@ -209,7 +209,7 @@ OverlayImpl::onHandoff(
     http_request_type&& request,
     endpoint_type remoteEndpoint)
 {
-    auto const id = next_id_++;
+    auto const id = nextId_++;
     auto peerJournal = app_.getJournal("Peer");
     beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
     beast::Journal const journal(sink);
@@ -259,7 +259,7 @@ OverlayImpl::onHandoff(
         {
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
-            handoff.keep_alive = beast::rfc2616::isKeepAlive(request);
+            handoff.keepAlive = beast::rfc2616::isKeepAlive(request);
             return handoff;
         }
     }
@@ -271,7 +271,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response = makeErrorResponse(
             slot, request, remoteEndpoint.address(), "Unable to agree on a protocol version");
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 
@@ -282,7 +282,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response =
             makeErrorResponse(slot, request, remoteEndpoint.address(), "Incorrect security cookie");
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 
@@ -311,7 +311,7 @@ OverlayImpl::onHandoff(
                     << "Peer " << remoteEndpoint << " redirected, " << to_string(result);
                 handoff.moved = false;
                 handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
-                handoff.keep_alive = false;
+                handoff.keepAlive = false;
                 return handoff;
             }
         }
@@ -351,7 +351,7 @@ OverlayImpl::onHandoff(
         peerFinder_->onClosed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remoteEndpoint.address(), e.what());
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 }
@@ -444,11 +444,11 @@ OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 
     auto const p = std::make_shared<ConnectAttempt>(
         app_,
-        io_context_,
+        ioContext_,
         beast::IPAddressConversion::toAsioEndpoint(remoteEndpoint),
         usage,
         setup_.context,
-        next_id_++,
+        nextId_++,
         slot,
         app_.getJournal("Peer"),
         *this);
@@ -516,7 +516,7 @@ OverlayImpl::start()
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
-    auto bootstrapIps = app_.config().IPS.empty() ? app_.config().IPS_FIXED : app_.config().IPS;
+    auto bootstrapIps = app_.config().ips.empty() ? app_.config().ipsFixed : app_.config().ips;
 
     // If nothing is specified, default to several well-known high-capacity
     // servers to serve as bootstrap:
@@ -558,10 +558,10 @@ OverlayImpl::start()
         });
 
     // Add the ips_fixed from the xrpld.cfg file
-    if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
+    if (!app_.config().standalone() && !app_.config().ipsFixed.empty())
     {
         resolver_.resolve(
-            app_.config().IPS_FIXED,
+            app_.config().ipsFixed,
             [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
                 std::vector<beast::IP::Endpoint> ips;
                 ips.reserve(addresses.size());
@@ -1257,7 +1257,7 @@ OverlayImpl::relay(
 
     if (!relay)
     {
-        if (!app_.config().TX_REDUCE_RELAY_ENABLE)
+        if (!app_.config().txReduceRelayEnable)
             return;
 
         peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
@@ -1270,13 +1270,13 @@ OverlayImpl::relay(
     auto& txn = tx->get();
     auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
     peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    auto const minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    auto const minRelay = app_.config().txReduceRelayMinPeers + disabled;
 
-    if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
+    if (!app_.config().txReduceRelayEnable || total <= minRelay)
     {
         for (auto const& p : peers)
             p->send(sm);
-        if (app_.config().TX_REDUCE_RELAY_ENABLE || app_.config().TX_REDUCE_RELAY_METRICS)
+        if (app_.config().txReduceRelayEnable || app_.config().txReduceRelayMetrics)
             txMetrics_.addMetrics(total, toSkip.size(), 0);
         return;
     }
@@ -1284,8 +1284,8 @@ OverlayImpl::relay(
     // We have more peers than the minimum (disabled + minimum enabled),
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
-    auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-        ((total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100);
+    auto const enabledTarget = app_.config().txReduceRelayMinPeers +
+        ((total - minRelay) * app_.config().txRelayPercentage / 100);
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 

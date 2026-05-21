@@ -209,8 +209,8 @@ buildHandshake(
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
 
-    if (!app.config().SERVER_DOMAIN.empty())
-        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+    if (!app.config().serverDomain.empty())
+        h.insert("Server-Domain", app.config().serverDomain);
 
     if (beast::IP::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
@@ -408,10 +408,10 @@ makeResponse(
         "X-Protocol-Ctl",
         makeFeaturesResponseHeader(
             req,
-            app.config().COMPRESSION,
-            app.config().LEDGER_REPLAY,
-            app.config().TX_REDUCE_RELAY_ENABLE,
-            app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
+            app.config().compression,
+            app.config().ledgerReplay,
+            app.config().txReduceRelayEnable,
+            app.config().vpReduceRelayBaseSquelchEnable));
 
     buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 
