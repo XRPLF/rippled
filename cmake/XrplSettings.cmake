@@ -30,6 +30,11 @@ if(tests)
     endif()
 endif()
 
+# Benchmarks are slow and depend on Google Benchmark, so they are off by
+# default and excluded from every default/CI build. When built via Conan the
+# toolchain cache variable set from the `benchmark` Conan option wins.
+option(benchmark "Build benchmarks" OFF)
+
 option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
     if(NOT is_ci)

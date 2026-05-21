@@ -15,6 +15,7 @@ class Xrpl(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "assertions": [True, False],
+        "benchmark": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
         "jemalloc": [True, False],
@@ -47,6 +48,7 @@ class Xrpl(ConanFile):
 
     default_options = {
         "assertions": False,
+        "benchmark": False,
         "coverage": False,
         "fPIC": True,
         "jemalloc": False,
@@ -139,6 +141,8 @@ class Xrpl(ConanFile):
             self.requires("jemalloc/5.3.1")
         if self.options.rocksdb:
             self.requires("rocksdb/10.5.1")
+        if self.options.benchmark:
+            self.requires("benchmark/1.9.5")
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
@@ -161,6 +165,7 @@ class Xrpl(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables["tests"] = self.options.tests
+        tc.variables["benchmark"] = self.options.benchmark
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
         tc.variables["jemalloc"] = self.options.jemalloc
