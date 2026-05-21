@@ -43,47 +43,65 @@ backendTypes()
 
 class BackendTypeTest : public ::testing::TestWithParam<std::string>
 {
+protected:
+    void
+    SetUp() override
+    {
+        params_.set("type", GetParam());
+        params_.set("path", tempDir_.path());
+
+        beast::xor_shift_engine rng(kSeedValue);
+        batch_ = createPredictableBatch(kNumObjects, rng());
+    }
+
+    std::unique_ptr<Backend>
+    makeOpenBackend()
+    {
+        auto backend = Manager::instance().makeBackend(params_, megabytes(4), scheduler_, journal_);
+        backend->open();
+        return backend;
+    }
+
+    DummyScheduler scheduler_;
+    beast::TempDir const tempDir_;
+    beast::Journal const journal_{TestSink::instance()};
+    Section params_;
+    Batch batch_;
 };
 
-TEST_P(BackendTypeTest, RoundTrip)
+TEST_P(BackendTypeTest, store_and_fetch)
 {
-    auto const type = GetParam();
-
-    DummyScheduler scheduler;
-    beast::TempDir const tempDir;
-    Section params;
-    params.set("type", type);
-    params.set("path", tempDir.path());
-
-    beast::xor_shift_engine rng(kSeedValue);
-    auto batch = createPredictableBatch(kNumObjects, rng());
-
-    beast::Journal const journal(TestSink::instance());
+    auto backend = makeOpenBackend();
+    storeBatch(*backend, batch_);
 
     {
-        SCOPED_TRACE("write then read in order");
-        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-        backend->open();
-        storeBatch(*backend, batch);
-
-        auto const copy = fetchCopyOfBatch(*backend, batch);
-        EXPECT_TRUE(areBatchesEqual(batch, copy));
-
-        std::shuffle(batch.begin(), batch.end(), rng);
-        auto const shuffledCopy = fetchCopyOfBatch(*backend, batch);
-        EXPECT_TRUE(areBatchesEqual(batch, shuffledCopy));
+        SCOPED_TRACE("read in original order");
+        auto const copy = fetchCopyOfBatch(*backend, batch_);
+        EXPECT_TRUE(areBatchesEqual(batch_, copy));
     }
 
     {
-        SCOPED_TRACE("re-open and verify persistence");
-        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-        backend->open();
-
-        auto copy = fetchCopyOfBatch(*backend, batch);
-        std::ranges::sort(batch, LessThan{});
-        std::ranges::sort(copy, LessThan{});
-        EXPECT_TRUE(areBatchesEqual(batch, copy));
+        SCOPED_TRACE("read in shuffled order");
+        beast::xor_shift_engine rng(kSeedValue);
+        std::shuffle(batch_.begin(), batch_.end(), rng);
+        auto const copy = fetchCopyOfBatch(*backend, batch_);
+        EXPECT_TRUE(areBatchesEqual(batch_, copy));
     }
+}
+
+TEST_P(BackendTypeTest, persists_after_reopen)
+{
+    {
+        auto backend = makeOpenBackend();
+        storeBatch(*backend, batch_);
+    }
+
+    // re-open a fresh backend instance over the same path
+    auto backend = makeOpenBackend();
+    auto copy = fetchCopyOfBatch(*backend, batch_);
+    std::ranges::sort(batch_, LessThan{});
+    std::ranges::sort(copy, LessThan{});
+    EXPECT_TRUE(areBatchesEqual(batch_, copy));
 }
 
 INSTANTIATE_TEST_SUITE_P(
