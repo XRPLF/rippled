@@ -37,11 +37,13 @@
 #include <boost/lexical_cast.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <regex>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -584,13 +586,24 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(!ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>> clients;
-        int connectionCount{1};  // starts at 1 because the Env already has one
-                                 // for JSONRPCCLient
+        int connectionCount = 0;
 
-        // for nonzero limits, go one past the limit, although failures happen
-        // at the limit, so this really leads to the last two clients failing.
-        // for zero limit, pick an arbitrary nonzero number of clients - all
-        // should connect fine.
+        // Env owns a persistent JSON-RPC HTTP client connection to port_rpc as
+        // part of startup. This test wants a known starting occupancy of zero,
+        // so for nonzero limits it first waits for that hidden loopback client
+        // to expire under the server's short localhost idle timeout.
+        //
+        // Starting from zero is important because the port limit rejects once
+        // the incremented connection count reaches the configured limit. With a
+        // zero baseline and N = limit + 1 test-owned clients, exactly the last
+        // two requests should be rejected.
+        if (limit != 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(3500));
+
+        // For nonzero limits, go one past the limit. The port rejects at the
+        // limit, not only above it, so this yields the last two clients
+        // failing. For zero limit, pick an arbitrary nonzero number of clients
+        // and expect them all to succeed.
 
         int const testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
@@ -604,15 +617,38 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             ++connectionCount;
         }
 
-        int readCount = 0;
+        int successfulReads = 0;
+        int failedReads = 0;
         for (auto& [soc, buf] : clients)
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             async_read(soc, buf, resp, yield[ec]);
-            ++readCount;
-            // expect the reads to fail for the clients that connected at or
-            // above the limit. If limit is 0, all reads should succeed
-            BEAST_EXPECT((limit == 0 || readCount < limit - 1) ? (!ec) : bool(ec));
+            if (ec)
+            {
+                ++failedReads;
+            }
+            else
+            {
+                ++successfulReads;
+            }
+        }
+
+        // This test cares about the exact number of accepted vs rejected
+        // requests, not which specific client observed the rejection. The
+        // server rejects once the incremented connection count reaches the
+        // configured limit. After the hidden Env client has timed out:
+        //   limit == 0: all test-owned clients should succeed
+        //   limit > 0: exactly limit - 1 test-owned clients should succeed
+        //               and the remaining 2 should fail
+        if (limit == 0)
+        {
+            BEAST_EXPECT(successfulReads == static_cast<int>(clients.size()));
+            BEAST_EXPECT(failedReads == 0);
+        }
+        else
+        {
+            BEAST_EXPECT(successfulReads == limit - 1);
+            BEAST_EXPECT(failedReads == static_cast<int>(clients.size()) - (limit - 1));
         }
     }
 
