@@ -100,6 +100,9 @@ private:
     std::chrono::milliseconds accept_delay_{kInitialAcceptDelay};
     boost::asio::steady_timer backoff_timer_;
     static constexpr std::uint64_t kMaxUsedFdPercent = 70;
+    static constexpr std::chrono::milliseconds kFdSampleInterval{250};
+    clock_type::time_point fd_sample_at_;
+    bool last_throttle_decision_{false};
 
     struct FDStats
     {
@@ -280,6 +283,7 @@ Door<Handler>::Door(
     , acceptor_(ioContext)
     , strand_(boost::asio::make_strand(ioContext))
     , backoff_timer_(ioContext)
+    , fd_sample_at_(clock_type::now() - kFdSampleInterval)
 {
     reOpen();
 }
@@ -428,12 +432,18 @@ Door<Handler>::shouldThrottleForFds()
 #if BOOST_OS_WINDOWS
     return false;
 #else
-    auto const stats = queryFdStats();
-    if (!stats || stats->limit == 0)
+    auto const now = clock_type::now();
+    if (!last_throttle_decision_ && now - fd_sample_at_ < kFdSampleInterval)
         return false;
 
-    auto const& s = *stats;
-    return s.used * 100 > s.limit * kMaxUsedFdPercent;
+    fd_sample_at_ = now;
+    auto const stats = queryFdStats();
+    bool const measurable = stats && stats->limit != 0;
+    bool const overThreshold =
+        measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+
+    last_throttle_decision_ = overThreshold;
+    return last_throttle_decision_;
 #endif
 }
 
