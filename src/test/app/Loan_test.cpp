@@ -14,6 +14,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/seq.h>
@@ -68,6 +69,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <map>
 #include <optional>
@@ -89,7 +91,24 @@ class Loan_test : public beast::unit_test::Suite
 protected:
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
+
     FeatureBitset const all_{jtx::testableAmendments()};
+
+    // All 2^N permutations of `all_` with each subset of the given features
+    // excluded. The first entry is always `all_` itself (empty exclusion);
+    // the last excludes every feature in the list.
+    std::vector<FeatureBitset>
+    amendmentCombinations(std::initializer_list<uint256> features) const
+    {
+        std::vector<FeatureBitset> result{all_};
+        for (auto const& f : features)
+        {
+            auto const n = result.size();
+            for (std::size_t i = 0; i < n; ++i)
+                result.push_back(result[i] - f);
+        }
+        return result;
+    }
 
     std::string const iouCurrency_{"IOU"};
 
@@ -1200,7 +1219,8 @@ protected:
     runLoan(
         AssetType assetType,
         BrokerParameters const& brokerParams,
-        LoanParameters const& loanParams)
+        LoanParameters const& loanParams,
+        FeatureBitset features)
     {
         using namespace jtx;
 
@@ -1208,7 +1228,7 @@ protected:
         Account const lender("lender");
         Account const borrower("borrower");
 
-        Env env(*this, all_);
+        Env env(*this, features);
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -2895,7 +2915,7 @@ protected:
     }
 
     void
-    testLoanSet()
+    testLoanSet(FeatureBitset features)
     {
         using namespace jtx;
 
@@ -2914,7 +2934,7 @@ protected:
                                   std::function<void(Env&, BrokerInfo const&, MPTTester&)> mptTest,
                                   std::function<void(Env&, BrokerInfo const&)> iouTest,
                                   CaseArgs args = {}) {
-            Env env(*this, all_);
+            Env env(*this, features);
             env.fund(XRP(args.initialXRP), issuer, lender, borrower);
             env.close();
             if (args.requireAuth)
@@ -3452,14 +3472,14 @@ protected:
     }
 
     void
-    testLifecycle()
+    testLifecycle(FeatureBitset features)
     {
         testcase("Lifecycle");
         using namespace jtx;
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3546,7 +3566,7 @@ protected:
     }
 
     void
-    testSelfLoan()
+    testSelfLoan(FeatureBitset features)
     {
         testcase << "Self Loan";
 
@@ -3554,7 +3574,7 @@ protected:
         using namespace std::chrono_literals;
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for
         // an MPT. That'll require three corresponding SAVs.
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -3681,7 +3701,7 @@ protected:
     }
 
     void
-    testBatchBypassCounterparty()
+    testBatchBypassCounterparty(FeatureBitset features)
     {
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
@@ -3692,7 +3712,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -3748,14 +3768,14 @@ protected:
     }
 
     void
-    testWrongMaxDebtBehavior()
+    testWrongMaxDebtBehavior(FeatureBitset features)
     {
         // From FIND-003
         testcase << "Wrong Max Debt Behavior";
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3794,7 +3814,7 @@ protected:
     }
 
     void
-    testLoanPayComputePeriodicPaymentValidRateInvariant()
+    testLoanPayComputePeriodicPaymentValidRateInvariant(FeatureBitset features)
     {
         // From FIND-012
         testcase << "LoanPay xrpl::detail::computePeriodicPayment : "
@@ -3802,7 +3822,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -3862,7 +3882,7 @@ protected:
     }
 
     void
-    testRPC()
+    testRPC(FeatureBitset features)
     {
         // This will expand as more test cases are added. Some functionality
         // is tested in other test functions.
@@ -3870,7 +3890,7 @@ protected:
 
         using namespace jtx;
 
-        Env env(*this, all_);
+        Env env(*this, features);
 
         auto lowerFee = [&]() {
             // Run the local fee back down.
@@ -4541,7 +4561,7 @@ protected:
     }
 
     void
-    testAccountSendMptMinAmountInvariant()
+    testAccountSendMptMinAmountInvariant(FeatureBitset features)
     {
         // (From FIND-006)
         testcase << "LoanSet trigger xrpl::accountSendMPT : minimum amount "
@@ -4549,7 +4569,7 @@ protected:
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4601,7 +4621,7 @@ protected:
     }
 
     void
-    testLoanPayDebtDecreaseInvariant()
+    testLoanPayDebtDecreaseInvariant(FeatureBitset features)
     {
         // From FIND-007
         testcase << "LoanPay xrpl::LoanPay::doApply : debtDecrease "
@@ -4610,7 +4630,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4694,14 +4714,14 @@ protected:
     }
 
     void
-    testLoanPayComputePeriodicPaymentValidTotalInterestInvariant()
+    testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(FeatureBitset features)
     {
         // From FIND-010
         testcase << "xrpl::loanComputePaymentParts : valid total interest";
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -4901,7 +4921,7 @@ protected:
     }
 
     void
-    testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant()
+    testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(FeatureBitset features)
     {
         // From FIND-009
         testcase << "xrpl::loanComputePaymentParts : totalPrincipalPaid "
@@ -4910,7 +4930,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5003,7 +5023,7 @@ protected:
     }
 
     void
-    testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant()
+    testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(FeatureBitset features)
     {
         // From FIND-008
         testcase << "xrpl::loanComputePaymentParts : loanValueChange rounded";
@@ -5011,7 +5031,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5088,7 +5108,7 @@ protected:
     }
 
     void
-    testLoanNextPaymentDueDateOverflow()
+    testLoanNextPaymentDueDateOverflow(FeatureBitset features)
     {
         // For FIND-013
         testcase << "Prevent nextPaymentDueDate overflow";
@@ -5096,7 +5116,7 @@ protected:
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all_);
+        Env env{*this, features};
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5254,7 +5274,7 @@ protected:
             auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
             auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
-            auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
+            auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
             auto const interval = kMaxTime - closeStartDate - grace;
             auto const total = 1;
@@ -5283,7 +5303,7 @@ protected:
             env(pay(issuer, borrower, iouAsset(Number{1'055'524'81, -2})));
 
             // Start date when the ledger is closed will be larger
-            auto const closeStartDate = (parentCloseTime() / 10 + 1) * 10;
+            auto const closeStartDate = ((parentCloseTime() / 10) + 1) * 10;
             auto const grace = 5'000;
             auto const maxLoanTime = kMaxTime - closeStartDate - grace;
             auto const total = [&]() {
@@ -5397,7 +5417,7 @@ protected:
     void
     testCoverDepositWithdrawNonTransferableMPT(FeatureBitset feature)
     {
-        testcase("CoverDeposit and CoverWithdraw reject MPT without CanTransfer");
+        testcase("CoverDeposit blocked, CoverWithdraw allowed when CanTransfer cleared");
         using namespace jtx;
         using namespace loanBroker;
 
@@ -5409,19 +5429,14 @@ protected:
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 
-        MPTTester mpt{env, issuer, kMptInitNoFund};
-
-        mpt.create({.flags = tfMPTCanTransfer, .mutableFlags = tmfMPTCanMutateCanTransfer});
-
-        env.close();
-
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {alice},
+             .pay = 100,
+             .flags = tfMPTCanTransfer,
+             .mutableFlags = tmfMPTCanMutateCanTransfer});
         PrettyAsset const asset = mpt["MPT"];
-        mpt.authorize({.account = alice});
-        env.close();
-
-        // Issuer can fund the holder even if CanTransfer is not set.
-        env(pay(issuer, alice, asset(100)));
-        env.close();
 
         Vault const vault{env};
         auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
@@ -5438,30 +5453,9 @@ protected:
 
         Account const pseudoAccount{"Loan Broker pseudo-account", brokerSle->at(sfAccount)};
 
-        // Remove CanTransfer after the broker is set up.
-        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
-        env.close();
-
-        // Standard Payment path should forbid third-party transfers.
-        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
-        env(pay(alice, pseudoAccount, asset(1)), Ter(err));
-        env.close();
-
-        // Cover cannot be transferred to broker account
+        // First, deposit some cover while CanTransfer is set so we have an
+        // existing position to withdraw from after the governance action.
         auto const depositAmount = asset(1);
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
-        env.close();
-
-        if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-        {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
-            env.require(Balance(pseudoAccount, asset(0)));
-        }
-
-        // Set CanTransfer again and transfer some deposit
-        mpt.set({.mutableFlags = tmfMPTSetCanTransfer});
-        env.close();
-
         env(coverDeposit(alice, brokerKeylet.key, depositAmount));
         env.close();
 
@@ -5471,38 +5465,189 @@ protected:
             env.require(Balance(pseudoAccount, depositAmount));
         }
 
-        // Remove CanTransfer after the deposit
+        // Issuer governance: clear CanTransfer.
         mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
         env.close();
 
-        // Cover cannot be transferred from broker account
-        env(coverWithdraw(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
+        // Standard Payment path still forbids third-party transfers.
+        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
+        env(pay(alice, pseudoAccount, asset(1)), Ter(err));
         env.close();
 
-        // Set CanTransfer again and withdraw
-        mpt.set({.mutableFlags = tmfMPTSetCanTransfer});
-        env.close();
-
-        env(coverWithdraw(alice, brokerKeylet.key, depositAmount));
+        // New cover deposits are blocked - this would create new exposure.
+        env(coverDeposit(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
         env.close();
 
         if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
         {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
-            env.require(Balance(pseudoAccount, asset(0)));
+            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
+            env.require(Balance(pseudoAccount, depositAmount));
         }
+
+        bool const postAmendment = feature[fixCleanup3_2_0];
+        if (postAmendment)
+        {
+            // Post-fixCleanup3_2_0: existing cover can always be withdrawn
+            // even when CanTransfer is cleared, so the broker is not trapped.
+            env(coverWithdraw(alice, brokerKeylet.key, depositAmount));
+            env.close();
+
+            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
+            {
+                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
+                env.require(Balance(pseudoAccount, asset(0)));
+            }
+        }
+        else
+        {
+            // Pre-fixCleanup3_2_0 regression: cover withdraw was blocked,
+            // trapping the broker's first-loss capital.
+            env(coverWithdraw(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
+            env.close();
+
+            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
+            {
+                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
+                env.require(Balance(pseudoAccount, depositAmount));
+            }
+        }
+    }
+
+    void
+    testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared()
+    {
+        testcase("LoanSet blocked, LoanPay allowed when CanTransfer cleared");
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender, borrower},
+             .flags = tfMPTCanTransfer | tfMPTCanLock,
+             .mutableFlags = tmfMPTCanMutateCanTransfer});
+        PrettyAsset const asset = mpt.issuanceID();
+        env(pay(issuer, lender, asset(10'000'000)));
+        // Fund the borrower with enough to cover principal+interest+fees
+        env(pay(issuer, borrower, asset(100'000)));
+        env.close();
+
+        // Create vault and broker while CanTransfer is set.
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+
+        // Create an existing loan while CanTransfer is set.
+        env(set(borrower, broker.brokerID, 1'000),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        BEAST_EXPECT(env.le(loanKeylet));
+
+        // Issuer governance: clear CanTransfer.
+        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
+        env.close();
+
+        // Issuing a NEW loan is blocked - it would create new exposure into
+        // a pool the issuer is restricting.
+        env(set(borrower, broker.brokerID, 1'000),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee,
+            Ter{tecNO_AUTH});
+        env.close();
+
+        // Repaying an existing loan is always allowed - blocking it would
+        // create irrecoverable bad debt and trap SAV depositor principal.
+        env(pay(borrower, loanKeylet.key, asset(1'000)));
+        env.close();
+    }
+
+    void
+    testLendingCanTradeClearedNoImpact()
+    {
+        testcase("Lending: CanTrade cleared has no impact");
+        using namespace jtx;
+        using namespace loan;
+        using namespace loanBroker;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {lender, borrower},
+             .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+             .mutableFlags = tmfMPTCanMutateCanTrade});
+        PrettyAsset const asset = mpt.issuanceID();
+        env(pay(issuer, lender, asset(10'000'000)));
+        env(pay(issuer, borrower, asset(100'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(env, asset, lender);
+
+        // Sanity: while CanTrade is set, the asset can be placed on the DEX.
+        env(offer(lender, XRP(1), asset(10)));
+        env.close();
+
+        // Issuer governance: clear CanTrade. Loan origination and repayment
+        // are not trades: nothing in the Lending Protocol should be impacted.
+        mpt.set({.mutableFlags = tmfMPTClearCanTrade});
+        env.close();
+
+        // Control: clearing CanTrade is observable on the DEX path.
+        env(offer(lender, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+        env.close();
+
+        auto const loanSetFee = Fee(env.current()->fees().base * 2);
+
+        // New cover deposits still work.
+        env(coverDeposit(lender, broker.brokerID, asset(100)));
+        env.close();
+
+        // New loan issuance still works.
+        env(loan::set(borrower, broker.brokerID, 1'000),
+            Sig(sfCounterpartySignature, lender),
+            loanSetFee);
+        env.close();
+        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
+        BEAST_EXPECT(env.le(loanKeylet));
+
+        // Repayment still works.
+        env(pay(borrower, loanKeylet.key, asset(1'000)));
+        env.close();
+
+        // Cover withdrawal still works.
+        env(coverWithdraw(lender, broker.brokerID, asset(100)));
+        env.close();
     }
 
 #if LOAN_TODO
     void
-    testLoanPayLateFullPaymentBypassesPenalties()
+    testLoanPayLateFullPaymentBypassesPenalties(FeatureBitset features)
     {
         testcase("LoanPay full payment skips late penalties");
         using namespace jtx;
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env(*this, all);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5648,7 +5793,7 @@ protected:
     }
 
     void
-    testLoanCoverMinimumRoundingExploit()
+    testLoanCoverMinimumRoundingExploit(FeatureBitset features)
     {
         auto testLoanCoverMinimumRoundingExploit = [&, this](Number const& principalRequest) {
             testcase << "LoanBrokerCoverClawback drains cover via rounding"
@@ -5658,7 +5803,7 @@ protected:
             using namespace loan;
             using namespace loanBroker;
 
-            Env env(*this, all);
+            Env env(*this, features);
 
             Account const issuer{"issuer"};
             Account const lender{"lender"};
@@ -5734,7 +5879,7 @@ protected:
 #endif
 
     void
-    testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic()
+    testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(FeatureBitset features)
     {
         // --- PoC Summary ----------------------------------------------------
         // Scenario: Borrower makes one periodic payment early (before next due)
@@ -5756,7 +5901,7 @@ protected:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         Account const lender{"poc_lender4"};
         Account const borrower{"poc_borrower4"};
@@ -5959,13 +6104,13 @@ protected:
     }
 
     void
-    testDustManipulation()
+    testDustManipulation(FeatureBitset features)
     {
         testcase("Dust manipulation");
 
         using namespace jtx;
         using namespace std::chrono_literals;
-        Env env(*this, all_);
+        Env env{*this, features};
 
         // Setup: Create accounts
         Account const issuer{"issuer"};
@@ -6099,7 +6244,7 @@ protected:
     }
 
     void
-    testRIPD3831()
+    testRIPD3831(FeatureBitset features)
     {
         using namespace jtx;
 
@@ -6126,7 +6271,7 @@ protected:
 
         auto const assetType = AssetType::XRP;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6172,7 +6317,7 @@ protected:
     }
 
     void
-    testRIPD3459()
+    testRIPD3459(FeatureBitset features)
     {
         testcase("RIPD-3459 - LoanBroker incorrect debt total");
 
@@ -6197,7 +6342,7 @@ protected:
 
         auto const assetType = AssetType::MPT;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6297,14 +6442,14 @@ protected:
     }
 
     void
-    testRoundingAllowsUndercoverage()
+    testRoundingAllowsUndercoverage(FeatureBitset features)
     {
         testcase("Minimum cover rounding allows undercoverage (XRP)");
 
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -6376,7 +6521,7 @@ protected:
     }
 
     void
-    testRIPD3902()
+    testRIPD3902(FeatureBitset features)
     {
         testcase("RIPD-3902 - 1 IOU loan payments");
 
@@ -6403,7 +6548,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -6547,7 +6692,7 @@ protected:
     }
 
     void
-    testIssuerIsBorrower()
+    testIssuerIsBorrower(FeatureBitset features)
     {
         testcase("RIPD-4096 - Issuer as borrower");
 
@@ -6567,7 +6712,7 @@ protected:
 
         auto const assetType = AssetType::IOU;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, issuer);
@@ -6664,14 +6809,14 @@ protected:
     }
 
     void
-    testOverpaymentManagementFee()
+    testOverpaymentManagementFee(FeatureBitset features)
     {
         testcase("testOverpaymentManagementFee");
 
         using namespace jtx;
         using namespace loan;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         Account const lender{"lender"}, borrower{"borrower"};
 
@@ -6717,7 +6862,7 @@ protected:
     }
 
     void
-    testLoanPayBrokerOwnerMissingTrustline()
+    testLoanPayBrokerOwnerMissingTrustline(FeatureBitset features)
     {
         testcase << "LoanPay Broker Owner Missing Trustline (PoC)";
         using namespace jtx;
@@ -6726,7 +6871,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
         auto const iou = issuer["IOU"];
-        Env env(*this, all_);
+        Env env(*this, features);
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
         // Set up trustlines and fund accounts
@@ -6785,7 +6930,7 @@ protected:
     }
 
     void
-    testLoanPayBrokerOwnerUnauthorizedMPT()
+    testLoanPayBrokerOwnerUnauthorizedMPT(FeatureBitset features)
     {
         testcase << "LoanPay Broker Owner MPT unauthorized";
         using namespace jtx;
@@ -6795,7 +6940,7 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all_);
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
@@ -6866,7 +7011,7 @@ protected:
     }
 
     void
-    testLoanPayBrokerOwnerNoPermissionedDomainMPT()
+    testLoanPayBrokerOwnerNoPermissionedDomainMPT(FeatureBitset features)
     {
         testcase << "LoanPay Broker Owner without permissioned domain of the MPT";
         using namespace jtx;
@@ -6876,13 +7021,13 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all_);
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{issuer, credType}};
+        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -6969,7 +7114,7 @@ protected:
     }
 
     void
-    testLoanSetBrokerOwnerNoPermissionedDomainMPT()
+    testLoanSetBrokerOwnerNoPermissionedDomainMPT(FeatureBitset features)
     {
         testcase << "LoanSet Broker Owner without permissioned domain of the MPT";
         using namespace jtx;
@@ -6979,13 +7124,13 @@ protected:
         Account const borrower("borrower");
         Account const broker("broker");
 
-        Env env(*this, all_);
+        Env env{*this, features};
         env.fund(XRP(20'000), issuer, broker, borrower);
         env.close();
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{issuer, credType}};
+        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -7041,7 +7186,7 @@ protected:
     }
 
     void
-    testSequentialFLCDepletion()
+    testSequentialFLCDepletion(FeatureBitset features)
     {
         testcase << "First-Loss Capital Depletion on Sequential Defaults";
 
@@ -7049,7 +7194,7 @@ protected:
         using namespace loan;
         using namespace loanBroker;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -7301,7 +7446,7 @@ protected:
     // loss from an impaired loan, ensuring the invariant check properly
     // accounts for the loss.
     void
-    testWithdrawReflectsUnrealizedLoss()
+    testWithdrawReflectsUnrealizedLoss(FeatureBitset features)
     {
         using namespace jtx;
         using namespace loan;
@@ -7320,7 +7465,7 @@ protected:
         static constexpr std::uint32_t kLocalPaymentInterval = 600;
         static constexpr std::uint32_t kLocalPaymentTotal = 2;
 
-        Env env(*this, all_);
+        Env env{*this, features};
 
         // Setup accounts
         Account const issuer{"issuer"};
@@ -7425,6 +7570,110 @@ protected:
         // when unrealized loss exists.
         attemptWithdrawShares(depositorA, sharesLpA, tesSUCCESS);
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
+    }
+
+    // Regression for the dual-rounding fix at coarse (integer-MPT) scale.
+    //
+    // Loan: P=1, r=50% (50000 tenth-bips), n=3, yearly interval. The
+    // amortization schedule produces a fractional principal
+    // (~0.47) which under round-to-nearest collapses to 0 in a single
+    // step, causing `doPayment`'s strict `>` assertion on principal to
+    // fire mid-loan. With fixCleanup3_2_0 enabled, principal is rounded
+    // upward (sticks at 1 across the first two periods) and only clears
+    // in the final payment.
+    //
+    // The test pays one period at a time across three LoanPay
+    // transactions and verifies the loan completes (paymentRemaining=0)
+    // with totals matching the loan's economics (1 principal + 2 interest).
+    void
+    testIntegerScalePrincipalSticks(FeatureBitset features)
+    {
+        // Without fixCleanup3_2_0, this behavior will abort the server, so
+        // don't run without it.
+        if (!features[fixCleanup3_2_0])
+            return;
+
+        testcase("edge: integer MPT principal stuck mid-loan completes via final");
+
+        using namespace jtx;
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
+        PrettyAsset const asset{mptt.issuanceID()};
+
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+
+        env(pay(issuer, lender, asset(10'000)));
+        env(pay(issuer, borrower, asset(10'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        env(loanBroker::set(lender, vaultKeylet.key),
+            loanBroker::kDebtMaximum(Number{100}),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerStateBefore))
+            return;
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        env(loan::set(borrower, brokerKeylet.key, Number{1}),
+            Sig(sfCounterpartySignature, lender),
+            loan::kInterestRate(TenthBips32{50'000}),
+            loan::kPaymentTotal(3),
+            loan::kPaymentInterval(31'536'000),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const borrowerStart = env.balance(borrower, asset).value();
+
+        // Three separate periodic payments of 1 each. Expected per-period
+        // evolution at integer MPT scale (TVO = PO + interestDue +
+        // managementFeeDue):
+        //   start:        PO=1, TVO=3, paymentRemaining=3
+        //   after pay #1: PO=1, TVO=2, paymentRemaining=2  (principal sticks)
+        //   after pay #2: PO=1, TVO=1, paymentRemaining=1  (principal sticks)
+        //   after pay #3: PO=0, TVO=0, paymentRemaining=0  (final clears)
+        std::array<Number, 3> const expectedPO{Number{1}, Number{1}, Number{0}};
+        std::array<Number, 3> const expectedTVO{Number{2}, Number{1}, Number{0}};
+        std::array<std::uint32_t, 3> const expectedRemaining{2, 1, 0};
+
+        for (int i = 0; i < 3; ++i)
+        {
+            env(loan::pay(borrower, loanKeylet.key, asset(1)), Ter(tesSUCCESS));
+            env.close();
+
+            auto const sle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->at(sfPrincipalOutstanding) == expectedPO[i]);
+            BEAST_EXPECT(sle->at(sfTotalValueOutstanding) == expectedTVO[i]);
+            BEAST_EXPECT(sle->at(sfPaymentRemaining) == expectedRemaining[i]);
+        }
+
+        // Borrower paid 3 total regardless of fee split (1 principal + 2
+        // interest+fee, matching loan economics).
+        auto const borrowerEnd = env.balance(borrower, asset).value();
+        BEAST_EXPECT(borrowerStart - borrowerEnd == asset(3).value());
     }
 
     // A near-zero interest rate on a 100 USD loan
@@ -7609,71 +7858,91 @@ protected:
                 to_string(tolerance));
     }
 
+    void
+    runAmendmentIndependent()
+    {
+        testDisabled();
+        testInvalidLoanSet();
+        testInvalidLoanDelete();
+        testInvalidLoanManage();
+        testInvalidLoanPay();
+        testIssuerLoan();
+        testServiceFeeOnBrokerDeepFreeze();
+        testRequireAuth();
+        testRIPD3901();
+        testBorrowerIsBroker();
+        testLimitExceeded();
+
+        for (auto const flags : {0u, tfLoanOverpayment})
+            testYieldTheftRounding(flags);
+        testBugInterestDueDeltaCrash();
+        testFullLifecycleVaultPnLNearZeroRate();
+    }
+
+    // Tests run under each entry in amendmentCombinations().
+    void
+    runAmendmentSensitive(FeatureBitset features)
+    {
+#if LOAN_TODO
+        testLoanPayLateFullPaymentBypassesPenalties(features);
+        testLoanCoverMinimumRoundingExploit(features);
+#endif
+
+        // Lifecycle
+        testSelfLoan(features);
+        testLoanSet(features);
+        testLifecycle(features);
+
+        // Payment paths
+        testWithdrawReflectsUnrealizedLoss(features);
+        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
+        testBatchBypassCounterparty(features);
+        testLoanNextPaymentDueDateOverflow(features);
+        testCoverDepositWithdrawNonTransferableMPT(features);
+        testSequentialFLCDepletion(features);
+
+        // Invariants
+        testLoanPayComputePeriodicPaymentValidRateInvariant(features);
+        testAccountSendMptMinAmountInvariant(features);
+        testLoanPayDebtDecreaseInvariant(features);
+        testWrongMaxDebtBehavior(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant(features);
+        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant(features);
+
+        // RPC
+        testRPC(features);
+
+        // Edge / rounding
+        testDustManipulation(features);
+        testRoundingAllowsUndercoverage(features);
+        testOverpaymentManagementFee(features);
+        testIssuerIsBorrower(features);
+        testIntegerScalePrincipalSticks(features);
+
+        // RIPD regressions
+        testRIPD3831(features);
+        testRIPD3459(features);
+        testRIPD3902(features);
+
+        // Broker-owner permissions
+        testLoanPayBrokerOwnerMissingTrustline(features);
+        testLoanPayBrokerOwnerUnauthorizedMPT(features);
+        testLoanPayBrokerOwnerNoPermissionedDomainMPT(features);
+        testLoanSetBrokerOwnerNoPermissionedDomainMPT(features);
+    }
+
 public:
     void
     run() override
     {
-#if LOAN_TODO
-        testLoanPayLateFullPaymentBypassesPenalties();
-        testLoanCoverMinimumRoundingExploit();
-#endif
-        for (auto const flags : {0u, tfLoanOverpayment})
-        {
-            testYieldTheftRounding(flags);
-        }
-
-        testBugInterestDueDeltaCrash();
-        testFullLifecycleVaultPnLNearZeroRate();
-
-        testWithdrawReflectsUnrealizedLoss();
-        testInvalidLoanSet();
-
-        auto const all = jtx::testableAmendments();
-        testCoverDepositWithdrawNonTransferableMPT(all);
-        testCoverDepositWithdrawNonTransferableMPT(all - featureMPTokensV2);
-        testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic();
-
-        testDisabled();
-        testSelfLoan();
-        testIssuerLoan();
-        testLoanSet();
-        testLifecycle();
-        testServiceFeeOnBrokerDeepFreeze();
-
-        testRPC();
-        testInvalidLoanDelete();
-        testInvalidLoanManage();
-        testInvalidLoanPay();
-
-        testBatchBypassCounterparty();
-        testLoanPayComputePeriodicPaymentValidRateInvariant();
-        testAccountSendMptMinAmountInvariant();
-        testLoanPayDebtDecreaseInvariant();
-        testWrongMaxDebtBehavior();
-        testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        testDosLoanPay(all | fixCleanup3_1_3);
-        testDosLoanPay(all - fixCleanup3_1_3);
-        testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
-        testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
-        testLoanNextPaymentDueDateOverflow();
-
-        testRequireAuth();
-        testDustManipulation();
-
-        testRIPD3831();
-        testRIPD3459();
-        testRIPD3901();
-        testRIPD3902();
-        testRoundingAllowsUndercoverage();
-        testBorrowerIsBroker();
-        testIssuerIsBorrower();
-        testLimitExceeded();
-        testOverpaymentManagementFee();
-        testLoanPayBrokerOwnerMissingTrustline();
-        testLoanPayBrokerOwnerUnauthorizedMPT();
-        testLoanPayBrokerOwnerNoPermissionedDomainMPT();
-        testLoanSetBrokerOwnerNoPermissionedDomainMPT();
-        testSequentialFLCDepletion();
+        runAmendmentIndependent();
+        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
+        testLendingCanTradeClearedNoImpact();
+        testDosLoanPay(all_ | fixCleanup3_1_3);
+        testDosLoanPay(all_ - fixCleanup3_1_3);
+        for (auto const& features : amendmentCombinations({fixCleanup3_2_0, featureMPTokensV2}))
+            runAmendmentSensitive(features);
     }
 };
 
@@ -7738,7 +8007,7 @@ protected:
             .payInterval = payInterval,
         };
 
-        runLoan(assetType, brokerParams, loanParams);
+        runLoan(assetType, brokerParams, loanParams, all_);
     }
 
 public:
@@ -7797,7 +8066,7 @@ class LoanArbitrary_test : public LoanBatch_test
             .payTotal = 2,
             .payInterval = 200};
 
-        runLoan(AssetType::XRP, brokerParams, loanParams);
+        runLoan(AssetType::XRP, brokerParams, loanParams, all_);
     }
 };
 

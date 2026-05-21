@@ -515,7 +515,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 // Removing the last token from the last page deletes the
                 // _previous_ page because we need to preserve that last
-                // page an an anchor.  The contents of the next-to-last page
+                // page as an anchor.  The contents of the next-to-last page
                 // are moved into the last page.
                 lastNFTokenPage = env.le(keylet::nftpageMax(alice));
                 BEAST_EXPECT(lastNFTokenPage);
@@ -694,7 +694,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 // Removing the last token from the last page deletes the
                 // _previous_ page because we need to preserve that last
-                // page an an anchor.  The contents of the next-to-last page
+                // page as an anchor.  The contents of the next-to-last page
                 // are moved into the last page.
                 lastNFTokenPage = env.le(keylet::nftpageMax(alice));
                 BEAST_EXPECT(lastNFTokenPage);

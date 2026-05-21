@@ -32,6 +32,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -197,6 +198,22 @@ class MPToken_test : public beast::unit_test::Suite
                  .transferFee = 0,
                  .metadata = "test",
                  .err = temMALFORMED});
+        }
+
+        // sfReferenceHolding is populated internally only by VaultCreate.
+        // A user-submitted MPTokenIssuanceCreate carrying the field must be
+        // rejected at preflight under fixCleanup3_2_0.
+        if (features[fixCleanup3_2_0])
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), alice);
+            env.close();
+
+            json::Value jv;
+            jv[sfAccount] = alice.human();
+            jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
+            jv[sfReferenceHolding] = to_string(uint256{1});
+            env(jv, Ter(temMALFORMED));
         }
     }
 
@@ -1784,7 +1801,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.close();
 
             // Bob authorize credentials
-            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
             env.close();
 
             // alice try to send 100 MPT to bob, not authorized
@@ -2973,7 +2990,7 @@ class MPToken_test : public beast::unit_test::Suite
         Account const alice{"alice"};
 
         auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env{*this, std::move(cfg), features};
         MPTTester mptAlice(env, alice);
 
