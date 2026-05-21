@@ -195,7 +195,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    STObject o{kSfGeneric};
+    STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
     o[sfAmount] = sendingAmount;
@@ -332,7 +332,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    STObject o{kSfGeneric};
+    STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = sendingAmount;

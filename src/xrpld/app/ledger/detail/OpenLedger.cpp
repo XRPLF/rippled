@@ -48,26 +48,26 @@ OpenLedger::OpenLedger(
 bool
 OpenLedger::empty() const
 {
-    std::scoped_lock const lock(modify_mutex_);
+    std::scoped_lock const lock(modifyMutex_);
     return current_->txCount() == 0;
 }
 
 std::shared_ptr<OpenView const>
 OpenLedger::current() const
 {
-    std::scoped_lock const lock(current_mutex_);
+    std::scoped_lock const lock(currentMutex_);
     return current_;
 }
 
 bool
 OpenLedger::modify(modify_type const& f)
 {
-    std::scoped_lock const lock1(modify_mutex_);
+    std::scoped_lock const lock1(modifyMutex_);
     auto next = std::make_shared<OpenView>(*current_);
     auto const changed = f(*next, j_);
     if (changed)
     {
-        std::scoped_lock const lock2(current_mutex_);
+        std::scoped_lock const lock2(currentMutex_);
         current_ = std::move(next);
     }
     return changed;
@@ -96,7 +96,7 @@ OpenLedger::accept(
     // Block calls to modify, otherwise
     // new tx going into the open ledger
     // would get lost.
-    std::scoped_lock const lock1(modify_mutex_);
+    std::scoped_lock const lock1(modifyMutex_);
     // Apply tx from the current open view
     if (!current_->txs.empty())
     {
@@ -154,7 +154,7 @@ OpenLedger::accept(
     }
 
     // Switch to the new open view
-    std::scoped_lock const lock2(current_mutex_);
+    std::scoped_lock const lock2(currentMutex_);
     current_ = std::move(next);
 }
 

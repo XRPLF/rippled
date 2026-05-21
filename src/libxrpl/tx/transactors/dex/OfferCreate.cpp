@@ -547,6 +547,7 @@ OfferCreate::applyHybrid(
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
+    std::uint64_t openRate,
     std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
@@ -558,7 +559,7 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::kBook(book), getRate(saTakerGets, saTakerPays));
+    auto dir = keylet::quality(keylet::kBook(book), openRate);
     bool const bookExists = sb.exists(dir);
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
@@ -924,8 +925,16 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
+        // Pre-fixCleanup3_2_0: the open-book directory quality was computed
+        // from post-crossing amounts, which may differ from the original rate
+        // due to rounding in rate preservation. Post-fixCleanup3_2_0: use the
+        // original placement rate so the open-book directory quality matches
+        // the domain-book directory.
+        auto const openRate = ctx_.view().rules().enabled(fixCleanup3_2_0)
+            ? uRate
+            : getRate(saTakerGets, saTakerPays);
         auto const res =
-            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, setBookDir);
+            applyHybrid(sb, sleOffer, offerIndex, saTakerPays, saTakerGets, openRate, setBookDir);
         if (!isTesSuccess(res))
             return {res, true};  // LCOV_EXCL_LINE
     }

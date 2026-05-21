@@ -839,25 +839,23 @@ PeerImp::PeerImp(
     , response_(std::move(response))
     , headers_(response_)
     , compressionEnabled_(
-          peerFeatureEnabled(headers_, kFeatureCompr, "lz4", app_.config().COMPRESSION)
+          peerFeatureEnabled(headers_, kFeatureCompr, "lz4", app_.config().compression)
               ? Compressed::On
               : Compressed::Off)
     , txReduceRelayEnabled_(
-          peerFeatureEnabled(headers_, kFeatureTxrr, app_.config().TX_REDUCE_RELAY_ENABLE))
+          peerFeatureEnabled(headers_, kFeatureTxrr, app_.config().txReduceRelayEnable))
     , ledgerReplayEnabled_(
-          peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().ledgerReplay))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     readBuffer_.commit(
         boost::asio::buffer_copy(readBuffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
-                          << " vp reduce-relay base squelch enabled "
-                          << peerFeatureEnabled(
-                                 headers_,
-                                 kFeatureVprr,
-                                 app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-                          << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-                          << remoteAddress_ << " " << id_;
+    JLOG(journal_.info())
+        << "compression enabled " << (compressionEnabled_ == Compressed::On)
+        << " vp reduce-relay base squelch enabled "
+        << peerFeatureEnabled(headers_, kFeatureVprr, app_.config().vpReduceRelayBaseSquelchEnable)
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on " << remoteAddress_ << " "
+        << id_;
 }
 
 template <class FwdIt, class>
