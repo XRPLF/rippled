@@ -954,22 +954,24 @@ checkMPTTxAllowed(
 }
 
 static bool
-hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth, beast::Journal j)
+hasInvalidMPTAmount(STBase const& field, int depth, beast::Journal j);
+
+static bool
+hasInvalidMPTAmount(STObject const& object, int depth, beast::Journal j)
 {
     return std::ranges::any_of(
-        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth, j); });
+        object, [&](STBase const& field) { return hasInvalidMPTAmount(field, depth, j); });
 }
 
 static bool
-hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth, beast::Journal j)
+hasInvalidMPTAmount(STArray const& array, int depth, beast::Journal j)
 {
-    return std::ranges::any_of(array, [&](STObject const& object) {
-        return hasInvalidMPTAmount(rules, object, depth, j);
-    });
+    return std::ranges::any_of(
+        array, [&](STObject const& object) { return hasInvalidMPTAmount(object, depth, j); });
 }
 
-bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j)
+static bool
+hasInvalidMPTAmount(STBase const& field, int depth, beast::Journal j)
 {
     if (depth > 10)
     {
@@ -978,15 +980,21 @@ hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::J
     }
 
     if (auto const amount = dynamic_cast<STAmount const*>(&field))
-        return !isLegalMPT(rules, *amount);
+        return !isLegalMPT(*amount);
 
     if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidMPTAmount(rules, *object, depth + 1, j);
+        return hasInvalidMPTAmount(*object, depth + 1, j);
 
     if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidMPTAmount(rules, *array, depth + 1, j);
+        return hasInvalidMPTAmount(*array, depth + 1, j);
 
     return false;
+}
+
+bool
+hasInvalidMPTAmount(STBase const& field, beast::Journal j)
+{
+    return hasInvalidMPTAmount(field, 0, j);
 }
 
 }  // namespace xrpl

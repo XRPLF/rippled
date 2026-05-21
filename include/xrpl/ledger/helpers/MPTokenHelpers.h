@@ -244,6 +244,6 @@ checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID co
  * Valid MPTAmount is in range {0, 2**63-1}
  */
 bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j);
+hasInvalidMPTAmount(STBase const& field, beast::Journal j);
 
 }  // namespace xrpl

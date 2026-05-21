@@ -5,12 +5,10 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -578,18 +576,15 @@ STAmount::value() const noexcept
     return *this;
 }
 
-inline bool
+[[nodiscard]] inline bool
 isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
 }
 
-inline bool
-isLegalMPT(Rules const& rules, STAmount const& value)
+[[nodiscard]] inline bool
+isLegalMPT(STAmount const& value)
 {
-    if (!rules.enabled(fixCleanup3_2_0))
-        return true;
-
     return !value.holds<MPTIssue>() ||
         (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
 }

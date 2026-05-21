@@ -260,7 +260,7 @@ Transactor::preflight2(PreflightContext const& ctx)
 NotTEC
 Transactor::preflightUniversal(PreflightContext const& ctx)
 {
-    if (hasInvalidMPTAmount(ctx.rules, ctx.tx, 0, ctx.j))
+    if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidMPTAmount(ctx.tx, ctx.j))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

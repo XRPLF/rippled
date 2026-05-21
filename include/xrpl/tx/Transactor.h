@@ -399,7 +399,7 @@ private:
     preflight2(PreflightContext const& ctx);
 
     /** Universal validations
-     * - MPTAmount : {0, 2**63 - 1}
+       - MPTAmount : {0, 2**63 - 1}
 
         Do not try to call preflightUniversal from preflight() in derived classes. See
         the description of invokePreflight for details.

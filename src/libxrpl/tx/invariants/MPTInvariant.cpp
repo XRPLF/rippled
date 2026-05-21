@@ -42,15 +42,13 @@ ValidMPTAmounts::finalize(
     ReadView const& view,
     beast::Journal const& j) const
 {
-    auto const& rules = view.rules();
-
     bool const badLedgerEntry = std::ranges::any_of(
-        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(rules, *sle, 0, j); });
+        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(*sle, j); });
 
     if (badLedgerEntry)
     {
         JLOG(j.fatal()) << "Invariant failed: ledger entry contains non-canonical MPT amount";
-        return !rules.enabled(fixCleanup3_2_0);
+        return !view.rules().enabled(fixCleanup3_2_0);
     }
 
     return true;
