@@ -183,15 +183,35 @@ json::Value
 AMM::ammRpcInfo(
     std::optional<AccountID> const& account,
     std::optional<std::string> const& ledgerIndex,
-    std::optional<Asset> asset1,
-    std::optional<Asset> asset2,
+    std::optional<Asset> const& asset1,
+    std::optional<Asset> const& asset2,
     std::optional<AccountID> const& ammAccount,
+    bool ignoreParams,
+    unsigned apiVersion) const
+{
+    return ammRpcInfo(
+        account ? json::Value{to_string(*account)} : std::optional<json::Value>{},
+        ledgerIndex,
+        asset1,
+        asset2,
+        ammAccount ? json::Value{to_string(*ammAccount)} : std::optional<json::Value>{},
+        ignoreParams,
+        apiVersion);
+}
+
+json::Value
+AMM::ammRpcInfo(
+    std::optional<json::Value> const& account,
+    std::optional<std::string> const& ledgerIndex,
+    std::optional<Asset> const& asset1,
+    std::optional<Asset> const& asset2,
+    std::optional<json::Value> const& ammAccount,
     bool ignoreParams,
     unsigned apiVersion) const
 {
     json::Value jv;
     if (account)
-        jv[jss::account] = to_string(*account);
+        jv[jss::account] = *account;
     if (ledgerIndex)
         jv[jss::ledger_index] = *ledgerIndex;
     if (!ignoreParams)
@@ -209,7 +229,7 @@ AMM::ammRpcInfo(
             jv[jss::asset2] = STIssue(sfAsset2, asset2_.asset()).getJson(JsonOptions::Values::None);
         }
         if (ammAccount)
-            jv[jss::amm_account] = to_string(*ammAccount);
+            jv[jss::amm_account] = *ammAccount;
     }
     auto jr =
         (apiVersion == RPC::kApiInvalidVersion
