@@ -342,11 +342,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
     {
         if (shouldThrottleForFds())
         {
+            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
             backoff_timer_.expires_after(accept_delay_);
             boost::system::error_code tec;
             backoff_timer_.async_wait(doYield[tec]);
             accept_delay_ = std::min(accept_delay_ * 2, kMaxAcceptDelay);
-            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
             continue;
         }
 
