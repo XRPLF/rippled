@@ -7,8 +7,7 @@
 
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** Test implementation of Family for unit tests.
 
@@ -49,7 +48,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -107,5 +106,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
