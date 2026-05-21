@@ -48,6 +48,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
