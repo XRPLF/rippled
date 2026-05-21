@@ -3,8 +3,11 @@
 #include <test/jtx/Oracle.h>
 #include <test/jtx/amount.h>
 
+#include <xrpld/app/ledger/OpenLedger.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -314,10 +317,75 @@ public:
     }
 
     void
+    testNullTxReadMeta()
+    {
+        testcase("Null txRead metadata");
+        using namespace jtx;
+
+        // Verify that iteratePriceData handles a null txRead result
+        // gracefully (returns early) rather than crashing with a
+        // nullptr dereference. This simulates local data corruption
+        // where a transaction referenced by sfPreviousTxnID is missing
+        // from the ledger's transaction map.
+        Env env(*this);
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+
+        Account const owner{"owner"};
+        env.fund(XRP(1'000), owner);
+
+        // Create oracle with XRP/USD and XRP/EUR
+        Oracle oracle(
+            env,
+            {.owner = owner,
+             .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
+             .fee = baseFee});
+
+        // Update oracle to only have XRP/EUR, pushing XRP/USD into
+        // history. iteratePriceData will need to read historical tx
+        // metadata to find the XRP/USD price.
+        oracle.set(UpdateArg{.series = {{"XRP", "EUR", 850, 1}}, .fee = baseFee});
+
+        // Simulate data corruption: modify the oracle SLE in the open
+        // ledger to have a bogus sfPreviousTxnID that doesn't exist in
+        // any ledger. sfPreviousTxnLgrSeq still points to a valid closed
+        // ledger, so getLedgerBySeq succeeds but txRead returns null.
+        auto const oracleKeylet = keylet::oracle(owner, oracle.documentID());
+        env.app().getOpenLedger().modify([&oracleKeylet](OpenView& view, beast::Journal) -> bool {
+            auto const sle = view.read(oracleKeylet);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            replacement->setFieldH256(sfPreviousTxnID, uint256{0xABCABCAB});
+            view.rawReplace(replacement);
+            return true;
+        });
+
+        // Query for XRP/USD using the "current" (open) ledger.
+        // The oracle SLE now has a bogus sfPreviousTxnID. The current
+        // oracle only has EUR, so iteratePriceData will try to read
+        // history. txRead returns null for the bogus hash, and the
+        // null check should cause a graceful early return instead of
+        // a nullptr dereference.
+        Json::Value jv;
+        jv[jss::base_asset] = "XRP";
+        jv[jss::quote_asset] = "USD";
+        jv[jss::ledger_index] = "current";
+        Json::Value jvOracles(Json::arrayValue);
+        Json::Value jvOracle;
+        jvOracle[jss::account] = to_string(owner.id());
+        jvOracle[jss::oracle_document_id] = oracle.documentID();
+        jvOracles.append(jvOracle);
+        jv[jss::oracles] = jvOracles;
+        auto jr = env.rpc("json", "get_aggregate_price", to_string(jv));
+        BEAST_EXPECT(jr[jss::result][jss::error].asString() == "objectNotFound");
+    }
+
+    void
     run() override
     {
         testErrors();
         testRpc();
+        testNullTxReadMeta();
     }
 };
 
