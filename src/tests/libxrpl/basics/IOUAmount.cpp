@@ -83,7 +83,8 @@ TEST(IOUAmountTest, comparisons)
     IOUAmount const n(-2, 0);
     IOUAmount const z(0, 0);
     IOUAmount const p(2, 0);
-
+    // For code readability, we want to use general
+    // EXPECT_TRUE instead of specific EXPECT_EQ etc.
     EXPECT_TRUE(z == z);
     EXPECT_TRUE(z >= z);
     EXPECT_TRUE(z <= z);

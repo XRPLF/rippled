@@ -54,7 +54,9 @@ TEST_F(BufferTest, buffer)
     EXPECT_EQ(b3.size(), sizeof(data));
     EXPECT_EQ(std::memcmp(b3.data(), data, b3.size()), 0);
 
-    // Check equality and inequality comparisons
+    // Check equality and inequality comparisons.
+    // For code readability, we want to use general
+    // EXPECT_TRUE instead of specific EXPECT_EQ etc.
     EXPECT_TRUE(b0 == b0);
     EXPECT_TRUE(b0 != b1);
     EXPECT_TRUE(b1 == b1);

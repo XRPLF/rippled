@@ -70,6 +70,8 @@ struct BaseUintTest : public ::testing::Test
             for (auto const& arg : kTestArgs)
             {
                 xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
+                // For code readability, we want to use general
+                // EXPECT_TRUE instead of specific EXPECT_LT etc.
                 EXPECT_TRUE(u < v);
                 EXPECT_TRUE(u <= v);
                 EXPECT_TRUE(u != v);
