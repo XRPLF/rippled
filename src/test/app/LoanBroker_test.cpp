@@ -55,6 +55,7 @@
 #include <optional>
 #include <string_view>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -1823,10 +1824,221 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
+    // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
+    // or clawback whose amount rounds to zero at sfCoverAvailable's precision
+    // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
+    // and must silently succeed without changing sfCoverAvailable when off.
+    void
+    testCoverPrecisionGuard()
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        // sfCoverAvailable = 10 IOU → STAmount exponent = -14.
+        // Anything < 5e-15 rounds to zero at that scale.
+        // 1e-16 is the representative sub-ULP probe amount.
+
+        // Shared setup: funds accounts, creates a vault + broker with 10 IOU
+        // cover, and returns {brokerKeylet, iou}.
+        auto const setup = [&](Env& env) -> std::pair<Keylet, PrettyAsset> {
+            Vault const vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const iou = issuer["IOU"];
+            env(trust(alice, iou(1'000'000)));
+            env.close();
+            env(pay(issuer, alice, iou(1'000)));
+            env.close();
+
+            auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = iou});
+            env(createTx);
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            env(coverDeposit(alice, brokerKeylet.key, iou(10)));
+            env.close();
+
+            return {brokerKeylet, iou};
+        };
+
+        auto runTestCases = [&](FeatureBitset features) {
+            TER const expected =
+                features[fixCleanup3_2_0] ? TER{tecPRECISION_LOSS} : TER{tesSUCCESS};
+
+            {
+                testcase("Cover precision guard: Deposit zero-at-scale");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverDeposit(alice, brokerKeylet.key, subUlpAmt), Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                }
+            }
+
+            {
+                testcase("Cover precision guard: Deposit rounds down");
+                // Both cases succeed; post-fix the amount is rounded DOWN to
+                // cover scale first, so the delta differs from pre-fix
+                // Input: 1.8e-14 IOU (sub-scale at cover scale -14)
+                //   Pre-fix:  10 + 1.8e-14 → round-to-nearest →
+                //             10.00000000000002 → delta 2e-14
+                //   Post-fix: roundToScale(1.8e-14, -14, Downward) = 1e-14;
+                //             10 + 1e-14 = 10.00000000000001 → delta 1e-14
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{18, -15});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverDeposit(alice, brokerKeylet.key, subUlpAmt), Ter(tesSUCCESS));
+                env.close();
+                auto const brokerAfter = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerAfter))
+                    return;
+
+                Number const delta = features[fixCleanup3_2_0] ? Number{1, -14} : Number{2, -14};
+                BEAST_EXPECT(brokerAfter->at(sfCoverAvailable) - coverBefore == delta);
+            }
+
+            // Property: post-fix, when the user deposits `x` and cover
+            // gains `x'`, we always have 0 <= x - x' < 1 ULP at cover
+            // scale (cover holds 10 IOU → ULP = 1e-14). Pre-fix uses
+            // STAmount's default round-to-nearest during `+=`, which can
+            // over-deposit (x' > x), so the property only holds with
+            // fixCleanup3_2_0 enabled.
+            if (features[fixCleanup3_2_0])
+            {
+                testcase("Cover precision guard: Deposit rounding bound");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                Number const oneUlp{1, -14};
+                // Each requested amount lies strictly between 1·ULP and
+                // 2·ULP at cover scale; post-fix `roundDown` credits
+                // exactly `oneUlp` and leaves a strictly-positive,
+                // strictly-sub-ULP residual.
+                for (Number const requested : {Number{11, -15}, Number{15, -15}, Number{19, -15}})
+                {
+                    auto const broker = env.le(brokerKeylet);
+                    if (!BEAST_EXPECT(broker))
+                        return;
+                    Number const coverBefore = broker->at(sfCoverAvailable);
+                    env(coverDeposit(alice, brokerKeylet.key, iou(requested)), Ter(tesSUCCESS));
+                    env.close();
+                    auto const brokerAfter = env.le(brokerKeylet);
+                    if (!BEAST_EXPECT(brokerAfter))
+                        return;
+                    Number const coverAfter = brokerAfter->at(sfCoverAvailable);
+                    Number const actual = coverAfter - coverBefore;
+                    Number const lost = requested - actual;
+                    BEAST_EXPECT(lost >= Number{0});
+                    BEAST_EXPECT(lost < oneUlp);
+                }
+            }
+
+            {
+                testcase("Cover precision guard: Withdraw");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                auto const aliceBalanceBefore = env.balance(alice, iou);
+                env(coverWithdraw(alice, brokerKeylet.key, subUlpAmt), Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                    BEAST_EXPECT(env.balance(alice, iou) == aliceBalanceBefore);
+                }
+            }
+
+            {
+                testcase("Cover precision guard: Clawback");
+                Env env{*this, features};
+                auto const [brokerKeylet, iou] = setup(env);
+                PrettyAmount const subUlpAmt = iou(Number{1, -16});
+                auto const coverBefore = env.le(brokerKeylet)->at(sfCoverAvailable);
+                env(coverClawback(issuer),
+                    kLoanBrokerId(brokerKeylet.key),
+                    kAmount(subUlpAmt),
+                    Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    if (auto const broker = env.le(brokerKeylet); BEAST_EXPECT(broker))
+                        BEAST_EXPECT(broker->at(sfCoverAvailable) == coverBefore);
+                }
+            }
+
+            // MPT amounts are integers; scale is 0; the guard never rejects a
+            // positive integer amount. Verify all three callsites pass with amendment on.
+            {
+                testcase("Cover precision guard: MPT min amount passes");
+                Env env{*this, all_};
+
+                env.fund(XRP(100'000), issuer, alice);
+                env.close();
+
+                MPTTester mptt{env, issuer, kMptInitNoFund};
+                mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+                env.close();
+
+                PrettyAsset const mptAsset = mptt["MPT"];
+                mptt.authorize({.account = alice});
+                env.close();
+
+                env(pay(issuer, alice, mptAsset(100)));
+                env.close();
+
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = mptAsset});
+                env(createTx);
+                env.close();
+
+                auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                env(set(alice, vaultKeylet.key));
+                env.close();
+
+                env(coverDeposit(alice, brokerKeylet.key, mptAsset(10)));
+                env.close();
+
+                env(coverDeposit(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+                env.close();
+
+                env(coverWithdraw(alice, brokerKeylet.key, mptAsset(1)), Ter(tesSUCCESS));
+                env.close();
+
+                env(coverClawback(issuer),
+                    kLoanBrokerId(brokerKeylet.key),
+                    kAmount(mptAsset(1)),
+                    Ter(tesSUCCESS));
+                env.close();
+            }
+        };
+
+        runTestCases(all_);
+        runTestCases(all_ - fixCleanup3_2_0);
+    }
+
 public:
     void
     run() override
     {
+        testCoverPrecisionGuard();
+
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 

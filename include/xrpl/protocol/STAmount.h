@@ -184,6 +184,24 @@ public:
     [[nodiscard]] STAmount const&
     value() const noexcept;
 
+    /**
+     * Checks if this amount evaluates to zero when constrained to a specific
+     * accounting scale.
+     *
+     * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
+     * The `scale` argument is ignored in that case.
+     * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
+     * and the result is checked for zero; if `scale <= exponent()`, `roundToScale` short-circuits
+     * and returns the value unchanged, so this returns false for any non-zero amount.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount rounds to zero at the given scale, `false` otherwise.
+     *
+     * @see roundToScale
+     */
+    [[nodiscard]] bool
+    isZeroAtScale(int scale) const;
+
     //--------------------------------------------------------------------------
     //
     // Operators

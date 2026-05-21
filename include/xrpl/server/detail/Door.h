@@ -90,11 +90,11 @@ private:
     acceptor_type acceptor_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_{
-        port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
-        port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
+        port_.protocol.contains("https") || port_.protocol.contains("wss") ||
+        port_.protocol.contains("wss2") || port_.protocol.contains("peer")};
     bool plain_{
-        port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-        (port_.protocol.count("ws2") != 0u)};
+        port_.protocol.contains("http") || port_.protocol.contains("ws") ||
+        (port_.protocol.contains("ws2"))};
     static constexpr std::chrono::milliseconds kInitialAcceptDelay{50};
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
     std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};
