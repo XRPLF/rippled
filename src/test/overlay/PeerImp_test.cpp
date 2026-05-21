@@ -117,13 +117,13 @@ class PeerImp_test : public beast::unit_test::Suite
     config()
     {
         return jtx::envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->LEDGER_REPLAY = true;
-            cfg->TX_REDUCE_RELAY_ENABLE = true;
-            cfg->TX_REDUCE_RELAY_METRICS = true;
-            cfg->TX_REDUCE_RELAY_MIN_PEERS = 10;
-            cfg->TX_RELAY_PERCENTAGE = 10;
-            cfg->RELAY_UNTRUSTED_PROPOSALS = 1;
-            cfg->RELAY_UNTRUSTED_VALIDATIONS = 1;
+            cfg->ledgerReplay = true;
+            cfg->txReduceRelayEnable = true;
+            cfg->txReduceRelayMetrics = true;
+            cfg->txReduceRelayMinPeers = 10;
+            cfg->txRelayPercentage = 10;
+            cfg->relayUntrustedProposals = 1;
+            cfg->relayUntrustedValidations = 1;
             return cfg;
         });
     }

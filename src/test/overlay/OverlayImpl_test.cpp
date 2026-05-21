@@ -125,10 +125,10 @@ class OverlayImpl_test : public beast::unit_test::Suite
     config()
     {
         return jtx::envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->TX_REDUCE_RELAY_ENABLE = true;
-            cfg->TX_REDUCE_RELAY_METRICS = true;
-            cfg->TX_REDUCE_RELAY_MIN_PEERS = 1;
-            cfg->TX_RELAY_PERCENTAGE = 0;
+            cfg->txReduceRelayEnable = true;
+            cfg->txReduceRelayMetrics = true;
+            cfg->txReduceRelayMinPeers = 1;
+            cfg->txRelayPercentage = 0;
             return cfg;
         });
     }

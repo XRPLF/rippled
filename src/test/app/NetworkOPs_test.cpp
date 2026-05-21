@@ -98,7 +98,7 @@ class NetworkOPs_test : public beast::unit_test::Suite
         auto const master = randomKeyPair(KeyType::Ed25519);
         auto const signing = randomKeyPair(KeyType::Secp256k1);
 
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = 7;
         st[sfPublicKey] = master.first;
         st[sfSigningPubKey] = signing.first;
