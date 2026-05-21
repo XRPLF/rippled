@@ -427,15 +427,18 @@ install ccache --version 4.11.3 --allow-downgrade`.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . --parallel N
    ```
 
    Multi-config generators:
 
    ```
-   cmake --build . --config Release
-   cmake --build . --config Debug
+   cmake --build . --config Release --parallel N
+   cmake --build . --config Debug --parallel N
    ```
+
+   Replace the `--parallel` parameter N with the desired number of parallel jobs. A common starting point is half of the number of available CPU
+   cores.
 
 5. Test xrpld.
 
