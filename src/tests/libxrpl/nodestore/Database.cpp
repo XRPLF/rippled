@@ -56,7 +56,7 @@ importBackends()
     types.emplace_back("rocksdb");
 #endif
 #ifdef XRPL_ENABLE_SQLITE_BACKEND_TESTS
-    types.push_back("sqlite");
+    types.emplace_back("sqlite");
 #endif
     return types;
 }

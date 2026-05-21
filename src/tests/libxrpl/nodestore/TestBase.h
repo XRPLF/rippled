@@ -72,7 +72,7 @@ createPredictableBatch(int numObjects, std::uint64_t seed)
         Blob blob(randInt(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
         beast::rngfill(blob.data(), blob.size(), rng);
 
-        batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
+        batch.emplace_back(NodeObject::createObject(type, std::move(blob), hash));
     }
 
     return batch;
@@ -113,7 +113,7 @@ fetchCopyOfBatch(Backend& backend, Batch const& batch)
         if (status == Status::Ok)
         {
             EXPECT_NE(object, nullptr);
-            copy.push_back(object);
+            copy.emplace_back(object);
         }
     }
     return copy;
@@ -151,7 +151,7 @@ fetchCopyOfBatch(Database& db, Batch const& batch)
     {
         std::shared_ptr<NodeObject> const result = db.fetchNodeObject(obj->getHash(), 0);
         if (result != nullptr)
-            copy.push_back(result);
+            copy.emplace_back(result);
     }
     return copy;
 }
