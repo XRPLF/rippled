@@ -6,12 +6,18 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdlib>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
