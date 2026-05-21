@@ -3060,7 +3060,7 @@ class Vault_test : public beast::unit_test::Suite
                         env(tx);
                         env.close();
                     }
-                    // Behavioural shift introduced by share inheritance:
+                    // Behavioral shift introduced by share inheritance:
                     // before fixCleanup3_2_0 this share Payment succeeded
                     // and the underlying IOU's NoRipple restriction surfaced
                     // only later on Charlie's withdrawal (terNO_RIPPLE).
