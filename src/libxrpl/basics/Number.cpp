@@ -404,7 +404,6 @@ Number::Guard::doRoundUp(
                     safeToIncrement(mantissa),
                     "xrpl::Number::Guard::doRoundUp",
                     "can't recurse more than once");
-                // Here be dragons
                 doRoundUp(
                     negative,
                     mantissa,
