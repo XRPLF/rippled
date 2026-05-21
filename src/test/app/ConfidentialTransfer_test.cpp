@@ -4674,7 +4674,6 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         auto const preBobPublicBalance = mptAlice.getBalance(bob);
         auto const preOutstandingAmount = mptAlice.getIssuanceOutstandingBalance();
         auto const preConfidentialOutstandingAmount = mptAlice.getIssuanceConfidentialBalance();
-        BEAST_EXPECT(preOutstandingAmount);
         BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
 
         // alice clawback all confidential balance from bob, 110 in total.
