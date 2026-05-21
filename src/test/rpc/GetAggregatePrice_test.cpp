@@ -345,20 +345,59 @@ public:
         // metadata to find the XRP/USD price.
         oracle.set(UpdateArg{.series = {{"XRP", "EUR", 850, 1}}, .fee = baseFee});
 
+        // Build the request once; reused for the precondition and the
+        // post-corruption assertion so both exercise the same path.
+        auto const buildRequest = [&]() {
+            json::Value jv;
+            jv[jss::base_asset] = "XRP";
+            jv[jss::quote_asset] = "USD";
+            jv[jss::ledger_index] = "current";
+            json::Value jvOracles(json::arrayValue);
+            json::Value jvOracle;
+            jvOracle[jss::account] = to_string(owner.id());
+            jvOracle[jss::oracle_document_id] = oracle.documentID();
+            jvOracles.append(jvOracle);
+            jv[jss::oracles] = jvOracles;
+            return jv;
+        };
+
+        // Precondition: with an uncorrupted oracle, the historical
+        // traversal must succeed and produce a price for XRP/USD.
+        // This proves the test reaches iteratePriceData's history
+        // path; without it, a future change that breaks the setup
+        // could turn the post-corruption assertion into a vacuous
+        // pass (objectNotFound is reachable from many unrelated
+        // code paths).
+        {
+            auto const jr = env.rpc("json", "get_aggregate_price", to_string(buildRequest()));
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jr[jss::result].isMember(jss::median));
+        }
+
         // Simulate data corruption: modify the oracle SLE in the open
         // ledger to have a bogus sfPreviousTxnID that doesn't exist in
         // any ledger. sfPreviousTxnLgrSeq still points to a valid closed
         // ledger, so getLedgerBySeq succeeds but txRead returns null.
         auto const oracleKeylet = keylet::oracle(owner, oracle.documentID());
-        env.app().getOpenLedger().modify([&oracleKeylet](OpenView& view, beast::Journal) -> bool {
-            auto const sle = view.read(oracleKeylet);
-            if (!sle)
-                return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
-            replacement->setFieldH256(sfPreviousTxnID, uint256{0xABCABCAB});
-            view.rawReplace(replacement);
-            return true;
-        });
+        uint256 const bogusTxnID{0xABCABCAB};
+        bool const modified = env.app().getOpenLedger().modify(
+            [&oracleKeylet, &bogusTxnID](OpenView& view, beast::Journal) -> bool {
+                auto const sle = view.read(oracleKeylet);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                replacement->setFieldH256(sfPreviousTxnID, bogusTxnID);
+                view.rawReplace(replacement);
+                return true;
+            });
+
+        // Confirm the injection actually took effect: modify must
+        // report success, and re-reading the SLE must show the
+        // bogus hash. Otherwise the failure-mode assertion below
+        // would not be exercising the null-txRead path at all.
+        BEAST_EXPECT(modified);
+        if (auto const sle = env.current()->read(oracleKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->getFieldH256(sfPreviousTxnID) == bogusTxnID);
 
         // Query for XRP/USD using the "current" (open) ledger.
         // The oracle SLE now has a bogus sfPreviousTxnID. The current
@@ -366,17 +405,7 @@ public:
         // history. txRead returns null for the bogus hash, and the
         // null check should cause a graceful early return instead of
         // a nullptr dereference.
-        Json::Value jv;
-        jv[jss::base_asset] = "XRP";
-        jv[jss::quote_asset] = "USD";
-        jv[jss::ledger_index] = "current";
-        Json::Value jvOracles(Json::arrayValue);
-        Json::Value jvOracle;
-        jvOracle[jss::account] = to_string(owner.id());
-        jvOracle[jss::oracle_document_id] = oracle.documentID();
-        jvOracles.append(jvOracle);
-        jv[jss::oracles] = jvOracles;
-        auto jr = env.rpc("json", "get_aggregate_price", to_string(jv));
+        auto const jr = env.rpc("json", "get_aggregate_price", to_string(buildRequest()));
         BEAST_EXPECT(jr[jss::result][jss::error].asString() == "objectNotFound");
     }
 
