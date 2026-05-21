@@ -53,7 +53,7 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "high");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -82,7 +82,7 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "low");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -122,7 +122,7 @@ public:
             }();
 
             // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
+            // ledgerHistory is small
             BEAST_EXPECT(!found);
             auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
@@ -145,7 +145,7 @@ public:
                     section.set("synchronous", "extra");
                     section.set("temp_store", "default");
                 }
-                p->LEDGER_HISTORY = 50'000'000;
+                p->ledgerHistory = 50'000'000;
 
                 return Env(
                     *this,
@@ -155,7 +155,7 @@ public:
             }();
 
             // No warning, even though higher risk settings were used because
-            // LEDGER_HISTORY is small
+            // ledgerHistory is small
             BEAST_EXPECT(found);
             auto const s = setupDatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
