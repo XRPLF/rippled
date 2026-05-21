@@ -34,8 +34,8 @@ inline TaggedCache<
     , clock_(clock)
     , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
     , name_(name)
-    , target_size_(size)
-    , target_age_(expiration)
+    , targetSize_(size)
+    , targetAge_(expiration)
 {
 }
 
@@ -86,7 +86,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     getCacheSize() const
 {
     std::scoped_lock const lock(mutex_);
-    return cache_count_;
+    return cacheCount_;
 }
 
 template <
@@ -139,7 +139,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     std::scoped_lock const lock(mutex_);
     cache_.clear();
-    cache_count_ = 0;
+    cacheCount_ = 0;
 }
 
 template <
@@ -157,7 +157,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     std::scoped_lock const lock(mutex_);
     cache_.clear();
-    cache_count_ = 0;
+    cacheCount_ = 0;
     hits_ = 0;
     misses_ = 0;
 }
@@ -213,21 +213,21 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     {
         std::scoped_lock const lock(mutex_);
 
-        if (target_size_ == 0 || (static_cast<int>(cache_.size()) <= target_size_))
+        if (targetSize_ == 0 || (static_cast<int>(cache_.size()) <= targetSize_))
         {
-            whenExpire = now - target_age_;
+            whenExpire = now - targetAge_;
         }
         else
         {
-            whenExpire = now - (target_age_ * target_size_ / cache_.size());
+            whenExpire = now - (targetAge_ * targetSize_ / cache_.size());
 
             clock_type::duration const minimumAge(std::chrono::seconds(1));
             if (whenExpire > (now - minimumAge))
                 whenExpire = now - minimumAge;
 
             JLOG(journal_.trace())
-                << name_ << " is growing fast " << cache_.size() << " of " << target_size_
-                << " aging at " << (now - whenExpire).count() << " of " << target_age_.count();
+                << name_ << " is growing fast " << cache_.size() << " of " << targetSize_
+                << " aging at " << (now - whenExpire).count() << " of " << targetAge_.count();
         }
 
         std::vector<std::thread> workers;
@@ -242,7 +242,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         for (std::thread& worker : workers)
             worker.join();
 
-        cache_count_ -= allRemovals;
+        cacheCount_ -= allRemovals;
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
@@ -280,7 +280,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     if (entry.isCached())
     {
-        --cache_count_;
+        --cacheCount_;
         entry.ptr.convertToWeak();
         ret = true;
     }
@@ -317,7 +317,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             std::piecewise_construct,
             std::forward_as_tuple(key),
             std::forward_as_tuple(clock_.now(), data));
-        ++cache_count_;
+        ++cacheCount_;
         return false;
     }
 
@@ -366,12 +366,12 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             data = cachedData;
         }
 
-        ++cache_count_;
+        ++cacheCount_;
         return true;
     }
 
     entry.ptr = data;
-    ++cache_count_;
+    ++cacheCount_;
 
     return false;
 }
@@ -477,7 +477,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
     if (!inserted)
-        it->second.last_access = now;
+        it->second.lastAccess = now;
     return inserted;
 }
 
@@ -626,7 +626,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
-        ++cache_count_;
+        ++cacheCount_;
         entry.touch(clock_.now());
         return entry.ptr.getStrong();
     }
@@ -658,7 +658,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             if (total != 0)
                 hitRate = (hits_ * 100) / total;
         }
-        stats_.hit_rate.set(hitRate);
+        stats_.hitRate.set(hitRate);
     }
 }
 
@@ -706,7 +706,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                         ++cit;
                     }
                 }
-                else if (cit->second.last_access <= whenExpire)
+                else if (cit->second.lastAccess <= whenExpire)
                 {
                     // strong, expired
                     ++cacheRemovals;
@@ -773,12 +773,12 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             auto cit = partition.begin();
             while (cit != partition.end())
             {
-                if (cit->second.last_access > now)
+                if (cit->second.lastAccess > now)
                 {
-                    cit->second.last_access = now;
+                    cit->second.lastAccess = now;
                     ++cit;
                 }
-                else if (cit->second.last_access <= whenExpire)
+                else if (cit->second.lastAccess <= whenExpire)
                 {
                     cit = partition.erase(cit);
                 }

@@ -395,7 +395,7 @@ TxQ::canBeHeld(
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
-    // tapFAIL_HARD transactions are never held
+    // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;

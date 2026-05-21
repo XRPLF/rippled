@@ -61,7 +61,7 @@ private:
         boost::asio::io_context& ioc_;
         stream_type stream_;
         socket_type& socket_;
-        endpoint_type remote_address_;
+        endpoint_type remoteAddress_;
         boost::asio::strand<boost::asio::io_context::executor_type> strand_;
         beast::Journal const j_;
 
@@ -97,8 +97,8 @@ private:
         (port_.protocol.count("ws2") != 0u)};
     static constexpr std::chrono::milliseconds kInitialAcceptDelay{50};
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
-    std::chrono::milliseconds accept_delay_{kInitialAcceptDelay};
-    boost::asio::steady_timer backoff_timer_;
+    std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};
+    boost::asio::steady_timer backoffTimer_;
     static constexpr double kFreeFdThreshold = 0.70;
 
     struct FDStats
@@ -164,7 +164,7 @@ Door<Handler>::Detector::Detector(
     , ioc_(ioc)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
-    , remote_address_(std::move(remoteAddress))
+    , remoteAddress_(std::move(remoteAddress))
     , strand_(boost::asio::make_strand(ioc_))
     , j_(j)
 {
@@ -199,18 +199,18 @@ Door<Handler>::Detector::doDetect(boost::asio::yield_context doYield)
         if (ssl)
         {
             if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                    port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
+                    port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
         if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-                port_, handler_, ioc_, j_, remote_address_, buf.data(), std::move(stream_)))
+                port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
             sp->run();
         return;
     }
     if (ec != boost::asio::error::operation_aborted)
     {
-        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from " << remote_address_;
+        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from " << remoteAddress_;
     }
 }
 
@@ -279,7 +279,7 @@ Door<Handler>::Door(
     , ioc_(ioContext)
     , acceptor_(ioContext)
     , strand_(boost::asio::make_strand(ioContext))
-    , backoff_timer_(ioContext)
+    , backoffTimer_(ioContext)
 {
     reOpen();
 }
@@ -302,7 +302,7 @@ Door<Handler>::close()
         return boost::asio::post(
             strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
     }
-    backoff_timer_.cancel();
+    backoffTimer_.cancel();
     error_code ec;
     acceptor_.close(ec);
 }
@@ -338,11 +338,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
     {
         if (shouldThrottleForFds())
         {
-            backoff_timer_.expires_after(accept_delay_);
+            backoffTimer_.expires_after(acceptDelay_);
             boost::system::error_code tec;
-            backoff_timer_.async_wait(doYield[tec]);
-            accept_delay_ = std::min(accept_delay_ * 2, kMaxAcceptDelay);
-            JLOG(j_.warn()) << "Throttling do_accept for " << accept_delay_.count() << "ms.";
+            backoffTimer_.async_wait(doYield[tec]);
+            acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
+            JLOG(j_.warn()) << "Throttling do_accept for " << acceptDelay_.count() << "ms.";
             continue;
         }
 
@@ -360,13 +360,13 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
                 ec == boost::asio::error::no_buffer_space)
             {
                 JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << accept_delay_.count() << "ms.";
+                                << acceptDelay_.count() << "ms.";
 
-                backoff_timer_.expires_after(accept_delay_);
+                backoffTimer_.expires_after(acceptDelay_);
                 boost::system::error_code tec;
-                backoff_timer_.async_wait(doYield[tec]);
+                backoffTimer_.async_wait(doYield[tec]);
 
-                accept_delay_ = std::min(accept_delay_ * 2, kMaxAcceptDelay);
+                acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
             }
             else
             {
@@ -375,7 +375,7 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             continue;
         }
 
-        accept_delay_ = kInitialAcceptDelay;
+        acceptDelay_ = kInitialAcceptDelay;
 
         if (ssl_ && plain_)
         {

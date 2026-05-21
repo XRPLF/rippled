@@ -65,7 +65,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct); !isTesSuccess(ter))
+    // Post-fixCleanup3_2_0: withdraw is a recovery path that bypasses the
+    // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
+    // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
+    // apply.
+    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                 : WaiveMPTCanTransfer::No;
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
+        !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: vault assets are non-transferable.";
         return ter;
@@ -222,7 +229,7 @@ VaultWithdraw::doApply()
     }
 
     if (accountHolds(
-            view(), account_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+            view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
@@ -251,23 +258,23 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto const ter =
-            accountSend(view(), account_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), accountID_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
     // Try to remove MPToken for shares, if the account balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
     // Keep MPToken if holder is the vault owner.
-    if (account_ != vault->at(sfOwner))
+    if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
                 << "VaultWithdraw: removed empty MPToken for vault shares"
                 << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_);
+                << " account=" << toBase58(accountID_);
         }
         else if (ter != tecHAS_OBLIGATIONS)
         {
@@ -275,7 +282,7 @@ VaultWithdraw::doApply()
             JLOG(j_.error())  //
                 << "VaultWithdraw: failed to remove MPToken for vault shares"
                 << " MPTID=" << to_string(mptIssuanceID)  //
-                << " account=" << toBase58(account_)      //
+                << " account=" << toBase58(accountID_)    //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
@@ -283,12 +290,12 @@ VaultWithdraw::doApply()
         // else quietly ignore, account balance is not zero
     }
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(account_);
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
 
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, account_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 void
