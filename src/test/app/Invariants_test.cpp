@@ -2137,6 +2137,32 @@ class Invariants_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
         }
+
+        // Deleting a bad legacy root must not be reported as creating a bad
+        // root. The invariant receives an explicit isDelete marker, and the
+        // deleted SLE image may still be present in the callback.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
+            view.rawInsert(badRoot);
+            view.rawErase(badRoot);
+            BEAST_EXPECT(!view.exists(rootDir));
+
+            ValidBookDirectory invariant;
+            invariant.visitEntry(true, nullptr, badRoot);
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            BEAST_EXPECT(
+                invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+        }
     }
 
     Keylet

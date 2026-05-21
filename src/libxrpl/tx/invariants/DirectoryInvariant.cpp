@@ -40,7 +40,7 @@ badExchangeRate(SLE const& dir)
 
 void
 ValidBookDirectory::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -49,7 +49,7 @@ ValidBookDirectory::visitEntry(
 
     // Only validate newly-created directories; LedgerStateFix handles legacy
     // bad exchange-rate metadata.
-    if (badBookDirectory_ || before || !after || after->getType() != ltDIR_NODE)
+    if (badBookDirectory_ || isDelete || before || !after || after->getType() != ltDIR_NODE)
         return;
 
     auto const rootIndex = after->getFieldH256(sfRootIndex);
