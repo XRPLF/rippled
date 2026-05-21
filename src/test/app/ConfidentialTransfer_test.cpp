@@ -4674,6 +4674,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         auto const preBobPublicBalance = mptAlice.getBalance(bob);
         auto const preOutstandingAmount = mptAlice.getIssuanceOutstandingBalance();
         auto const preConfidentialOutstandingAmount = mptAlice.getIssuanceConfidentialBalance();
+        BEAST_EXPECT(preOutstandingAmount);
         BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
 
         // alice clawback all confidential balance from bob, 110 in total.
@@ -4686,7 +4687,10 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             .amt = 110,
         });
         BEAST_EXPECT(mptAlice.getBalance(bob) == preBobPublicBalance);
-        BEAST_EXPECT(mptAlice.getIssuanceOutstandingBalance() == preOutstandingAmount - 110);
+        auto const postOutstandingAmount = mptAlice.getIssuanceOutstandingBalance();
+        BEAST_EXPECT(
+            preOutstandingAmount && postOutstandingAmount &&
+            *postOutstandingAmount == *preOutstandingAmount - 110);
         BEAST_EXPECT(
             mptAlice.getIssuanceConfidentialBalance() == preConfidentialOutstandingAmount - 110);
         BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
@@ -8993,7 +8997,8 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         env.require(MptBalance(mpt, dave, 0));
         BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 0);
         BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
-        BEAST_EXPECT(mpt.getIssuanceOutstandingBalance() == 250);
+        auto const outstandingBalance = mpt.getIssuanceOutstandingBalance();
+        BEAST_EXPECT(outstandingBalance && *outstandingBalance == 250);
         BEAST_EXPECT(mpt.getIssuanceConfidentialBalance() == 175);
     }
 

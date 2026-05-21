@@ -554,7 +554,7 @@ public:
     [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
 
-    [[nodiscard]] std::int64_t
+    [[nodiscard]] std::optional<std::int64_t>
     getIssuanceOutstandingBalance() const;
 
     [[nodiscard]] std::optional<Buffer>
