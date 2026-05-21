@@ -183,12 +183,12 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
         return ter;
     }
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
         return ter;
     }
 

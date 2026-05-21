@@ -6893,7 +6893,7 @@ private:
             });
         }
 
-        // Deposit one asset, which is the frozen locked,
+        // Deposit one asset, which is the locked token,
         // then we should get tecLOCKED error.
         {
             Env env(*this);
