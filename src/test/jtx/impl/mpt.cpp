@@ -2188,7 +2188,7 @@ MPTTester::getIssuanceOutstandingBalance() const
 
     auto const sle = env_.current()->read(keylet::mptIssuance(*id_));
 
-    if (!sle || !sle->isFieldPresent(sfOutstandingAmount))
+    if (!sle)
         Throw<std::runtime_error>("Issuance object does not contain outstanding amount");
 
     return (*sle)[sfOutstandingAmount];
