@@ -48,15 +48,15 @@ public:
     class TestThread
     {
     private:
-        boost::asio::io_context io_context_;
+        boost::asio::io_context ioContext_;
         std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
             work_;
         std::thread thread_;
 
     public:
         TestThread()
-            : work_(std::in_place, boost::asio::make_work_guard(io_context_))
-            , thread_([&]() { this->io_context_.run(); })
+            : work_(std::in_place, boost::asio::make_work_guard(ioContext_))
+            , thread_([&]() { this->ioContext_.run(); })
         {
         }
 
@@ -69,7 +69,7 @@ public:
         boost::asio::io_context&
         getIoContext()
         {
-            return io_context_;
+            return ioContext_;
         }
     };
 

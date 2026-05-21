@@ -76,7 +76,7 @@ public:
                     auto& section = p->section(Sections::kSqlite);
                     section.set(Keys::kSafetyLevel, "high");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -105,7 +105,7 @@ public:
                     auto& section = p->section(Sections::kSqlite);
                     section.set(Keys::kSafetyLevel, "low");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -168,7 +168,7 @@ public:
                     section.set(Keys::kSynchronous, "extra");
                     section.set(Keys::kTempStore, "default");
                 }
-                p->LEDGER_HISTORY = 50'000'000;
+                p->ledgerHistory = 50'000'000;
 
                 return Env(
                     *this,

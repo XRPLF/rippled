@@ -117,7 +117,7 @@ SHAMapStoreImp::SHAMapStoreImp(
                 Keys::kCacheMb, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists(Keys::kFilterBits) && (config.NODE_SIZE >= 2))
+        if (!section.exists(Keys::kFilterBits) && (config.nodeSize >= 2))
             section.set(Keys::kFilterBits, "10");
     }
 
@@ -149,15 +149,15 @@ SHAMapStoreImp::SHAMapStoreImp(
                 "online_delete must be at least " + std::to_string(minInterval));
         }
 
-        if (config.LEDGER_HISTORY > deleteInterval_)
+        if (config.ledgerHistory > deleteInterval_)
         {
             Throw<std::runtime_error>(
                 "online_delete must not be less than ledger_history "
                 "(currently " +
-                std::to_string(config.LEDGER_HISTORY) + ")");
+                std::to_string(config.ledgerHistory) + ")");
         }
 
-        state_db_.init(config, dbName_);
+        stateDb_.init(config, dbName_);
         dbPaths();
     }
 }
@@ -170,14 +170,14 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
     if (deleteInterval_ != 0u)
     {
-        SavedState state = state_db_.getState();
+        SavedState state = stateDb_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
         if (state.writableDb.empty())
         {
             state.writableDb = writableBackend->getName();
             state.archiveDb = archiveBackend->getName();
-            state_db_.setState(state);
+            stateDb_.setState(state);
         }
 
         // Create NodeStore with two backends to allow online deletion of
@@ -252,12 +252,12 @@ void
 SHAMapStoreImp::run()
 {
     beast::setCurrentThreadName("SHAMapStore");
-    LedgerIndex lastRotated = state_db_.getState().lastRotated;
+    LedgerIndex lastRotated = stateDb_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
 
     if (advisoryDelete_)
-        canDelete_ = state_db_.getCanDelete();
+        canDelete_ = stateDb_.getCanDelete();
 
     while (true)
     {
@@ -287,7 +287,7 @@ SHAMapStoreImp::run()
         if (lastRotated == 0u)
         {
             lastRotated = validatedSeq;
-            state_db_.setLastRotated(lastRotated);
+            stateDb_.setLastRotated(lastRotated);
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
@@ -355,7 +355,7 @@ SHAMapStoreImp::run()
                     savedState.writableDb = writableName;
                     savedState.archiveDb = archiveName;
                     savedState.lastRotated = lastRotated;
-                    state_db_.setState(savedState);
+                    stateDb_.setState(savedState);
 
                     clearCaches(validatedSeq);
                 });
@@ -384,7 +384,7 @@ SHAMapStoreImp::dbPaths()
         boost::filesystem::create_directories(dbPath);
     }
 
-    SavedState state = state_db_.getState();
+    SavedState state = stateDb_.getState();
 
     {
         auto update = [&dbPath](std::string& sPath) {
@@ -404,7 +404,7 @@ SHAMapStoreImp::dbPaths()
         if (update(state.writableDb))
         {
             update(state.archiveDb);
-            state_db_.setState(state);
+            stateDb_.setState(state);
         }
     }
 

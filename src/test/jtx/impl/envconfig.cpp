@@ -21,12 +21,12 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
-    cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
-    cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
-    cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
+    cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
+    cfg.fees.accountReserve = XRP(200).value().xrp().drops();
+    cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
 
     // The Beta API (currently v2) is always available to tests
-    cfg.BETA_RPC_API = true;
+    cfg.betaRpcApi = true;
 
     cfg.overwrite(Sections::kNodeDatabase, Keys::kType, "memory");
     cfg.overwrite(Sections::kNodeDatabase, Keys::kPath, "main");
@@ -55,7 +55,7 @@ setupConfigForUnitTests(Config& cfg)
     cfg[Sections::kPortWs].set(Keys::kAdmin, getEnvLocalhostAddr());
     cfg[Sections::kPortWs].set(Keys::kPort, "0");
     cfg[Sections::kPortWs].set(Keys::kProtocol, "ws");
-    cfg.SSL_VERIFY = false;
+    cfg.sslVerify = false;
 }
 
 namespace jtx {
@@ -97,7 +97,7 @@ secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 std::unique_ptr<Config>
 singleThreadIo(std::unique_ptr<Config> cfg)
 {
-    cfg->IO_WORKERS = 1;
+    cfg->ioWorkers = 1;
     return cfg;
 }
 

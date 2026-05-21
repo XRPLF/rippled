@@ -1011,7 +1011,7 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1260,7 +1260,7 @@ public:
         testcase("tie breaking");
 
         auto cfg = makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "4"}});
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         auto alice = Account("alice");
@@ -1515,7 +1515,7 @@ public:
                     {{Keys::kMinimumTxnInLedgerStandalone, "2"},
                      {Keys::kMinimumTxnInLedger, "5"},
                      {Keys::kTargetTxnInLedger, "4"},
-                     {"maximum_txn_in_ledger", "5"}}));
+                     {Keys::kMaximumTxnInLedger, "5"}}));
             auto const baseFee = env.current()->fees().base.drops();
 
             auto alice = Account("alice");
@@ -1559,7 +1559,7 @@ public:
                     {{Keys::kMinimumTxnInLedger, "200"},
                      {Keys::kMinimumTxnInLedgerStandalone, "200"},
                      {Keys::kTargetTxnInLedger, "4"},
-                     {"maximum_txn_in_ledger", "5"}}));
+                     {Keys::kMaximumTxnInLedger, "5"}}));
             // should throw
             fail();
         }
@@ -1580,7 +1580,7 @@ public:
                     {{Keys::kMinimumTxnInLedger, "200"},
                      {Keys::kMinimumTxnInLedgerStandalone, "2"},
                      {Keys::kTargetTxnInLedger, "4"},
-                     {"maximum_txn_in_ledger", "5"}}));
+                     {Keys::kMaximumTxnInLedger, "5"}}));
             // should throw
             fail();
         }
@@ -1601,7 +1601,7 @@ public:
                     {{Keys::kMinimumTxnInLedger, "2"},
                      {Keys::kMinimumTxnInLedgerStandalone, "200"},
                      {Keys::kTargetTxnInLedger, "4"},
-                     {"maximum_txn_in_ledger", "5"}}));
+                     {Keys::kMaximumTxnInLedger, "5"}}));
             // should throw
             fail();
         }
@@ -1626,7 +1626,7 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{Keys::kAccountReserve, "200"}, {Keys::kAccountReserve, "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -1998,7 +1998,7 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{"account_reserve", "200"}, {"owner_reserve", "50"}}));
+                {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
         auto alice = Account("alice");
         auto charlie = Account("charlie");
@@ -2571,7 +2571,7 @@ public:
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "1"},
                  {Keys::kLedgersInQueue, "10"},
-                 {"maximum_txn_per_account", "20"}}));
+                 {Keys::kMaximumTxnPerAccount, "20"}}));
 
         auto const baseFee = env.current()->fees().base.drops();
 
@@ -2653,8 +2653,8 @@ public:
         auto cfg = makeConfig(
             {{Keys::kMinimumTxnInLedgerStandalone, "1"},
              {Keys::kLedgersInQueue, "10"},
-             {"maximum_txn_per_account", "11"}});
-        cfg->FEES.reference_fee = 10;
+             {Keys::kMaximumTxnPerAccount, "11"}});
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         auto const baseFee = env.current()->fees().base.drops();
@@ -3759,9 +3759,9 @@ public:
                 makeConfig(
                     {{Keys::kMinimumTxnInLedgerStandalone, "3"},
                      {Keys::kNormalConsensusIncreasePercent, "25"},
-                     {"slow_consensus_decrease_percent", "50"},
+                     {Keys::kSlowConsensusDecreasePercent, "50"},
                      {Keys::kTargetTxnInLedger, "10"},
-                     {"maximum_txn_per_account", "200"}}));
+                     {Keys::kMaximumTxnPerAccount, "200"}}));
             auto alice = Account("alice");
 
             checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -3845,9 +3845,9 @@ public:
                 makeConfig(
                     {{Keys::kMinimumTxnInLedgerStandalone, "3"},
                      {Keys::kNormalConsensusIncreasePercent, "150"},
-                     {"slow_consensus_decrease_percent", "150"},
+                     {Keys::kSlowConsensusDecreasePercent, "150"},
                      {Keys::kTargetTxnInLedger, "10"},
-                     {"maximum_txn_per_account", "200"}}));
+                     {Keys::kMaximumTxnPerAccount, "200"}}));
             auto alice = Account("alice");
 
             checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -4066,14 +4066,14 @@ public:
         auto cfg = makeConfig(
             {{Keys::kMinimumTxnInLedgerStandalone, "1"},
              {Keys::kLedgersInQueue, std::to_string(kLedgersInQueue)},
-             {"maximum_txn_per_account", "10"}},
-            {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
+             {Keys::kMaximumTxnPerAccount, "10"}},
+            {{Keys::kAccountReserve, "1000"}, {Keys::kOwnerReserve, "50"}});
 
         auto& votingSection = cfg->section(Sections::kVoting);
         votingSection.set(
-            Keys::kAccountReserve, std::to_string(cfg->FEES.reference_fee.drops() * 100));
+            Keys::kAccountReserve, std::to_string(cfg->fees.referenceFee.drops() * 100));
 
-        votingSection.set(Keys::kReferenceFee, std::to_string(cfg->FEES.reference_fee.drops()));
+        votingSection.set(Keys::kReferenceFee, std::to_string(cfg->fees.referenceFee.drops()));
 
         Env env(*this, std::move(cfg));
 
@@ -4232,7 +4232,7 @@ public:
         auto cfg = makeConfig(
             {{Keys::kMinimumTxnInLedgerStandalone, "5"},
              {Keys::kLedgersInQueue, "5"},
-             {"maximum_txn_per_account", "30"},
+             {Keys::kMaximumTxnPerAccount, "30"},
              {Keys::kMinimumQueueSize, "50"}});
 
         Env env(*this, std::move(cfg));
@@ -4441,7 +4441,7 @@ public:
         auto cfg = makeConfig(
             {{Keys::kMinimumTxnInLedgerStandalone, "5"},
              {Keys::kLedgersInQueue, "5"},
-             {"maximum_txn_per_account", "30"},
+             {Keys::kMaximumTxnPerAccount, "30"},
              {Keys::kMinimumQueueSize, "50"}});
 
         Env env(*this, std::move(cfg));
@@ -4540,7 +4540,9 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{"reference_fee", "0"}, {"account_reserve", "0"}, {"owner_reserve", "0"}}));
+                {{Keys::kReferenceFee, "0"},
+                 {Keys::kAccountReserve, "0"},
+                 {Keys::kOwnerReserve, "0"}}));
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 

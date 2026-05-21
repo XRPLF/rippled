@@ -194,34 +194,34 @@ public:
 
         for (auto& inboundEntry : inbound_)
         {
-            int const localBalance = inboundEntry.local_balance.value(now);
-            if ((localBalance + inboundEntry.remote_balance) >= threshold)
+            int const localBalance = inboundEntry.localBalance.value(now);
+            if ((localBalance + inboundEntry.remoteBalance) >= threshold)
             {
                 json::Value& entry = (ret[inboundEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = inboundEntry.remote_balance;
+                entry[jss::remote] = inboundEntry.remoteBalance;
                 entry[jss::type] = "inbound";
             }
         }
         for (auto& outboundEntry : outbound_)
         {
-            int const localBalance = outboundEntry.local_balance.value(now);
-            if ((localBalance + outboundEntry.remote_balance) >= threshold)
+            int const localBalance = outboundEntry.localBalance.value(now);
+            if ((localBalance + outboundEntry.remoteBalance) >= threshold)
             {
                 json::Value& entry = (ret[outboundEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = outboundEntry.remote_balance;
+                entry[jss::remote] = outboundEntry.remoteBalance;
                 entry[jss::type] = "outbound";
             }
         }
         for (auto& adminEntry : admin_)
         {
-            int const localBalance = adminEntry.local_balance.value(now);
-            if ((localBalance + adminEntry.remote_balance) >= threshold)
+            int const localBalance = adminEntry.localBalance.value(now);
+            if ((localBalance + adminEntry.remoteBalance) >= threshold)
             {
                 json::Value& entry = (ret[adminEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = adminEntry.remote_balance;
+                entry[jss::remote] = adminEntry.remoteBalance;
                 entry[jss::type] = "admin";
             }
         }
@@ -242,7 +242,7 @@ public:
         for (auto& inboundEntry : inbound_)
         {
             Gossip::Item item;
-            item.balance = inboundEntry.local_balance.value(now);
+            item.balance = inboundEntry.localBalance.value(now);
             if (item.balance >= kMinimumGossipBalance)
             {
                 item.address = inboundEntry.key->address;
@@ -278,7 +278,7 @@ public:
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remote_balance += item.balance;
+                    item.consumer.entry().remoteBalance += item.balance;
                     next.items.push_back(item);
                 }
             }
@@ -295,14 +295,14 @@ public:
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remote_balance += item.balance;
+                    item.consumer.entry().remoteBalance += item.balance;
                     next.items.push_back(item);
                 }
 
                 Import& prev(resultIt->second);
                 for (auto& item : prev.items)
                 {
-                    item.consumer.entry().remote_balance -= item.balance;
+                    item.consumer.entry().remoteBalance -= item.balance;
                 }
 
                 std::swap(next, prev);
@@ -345,7 +345,7 @@ public:
                 for (auto itemIter(import.items.begin()); itemIter != import.items.end();
                      ++itemIter)
                 {
-                    itemIter->consumer.entry().remote_balance -= itemIter->balance;
+                    itemIter->consumer.entry().remoteBalance -= itemIter->balance;
                 }
 
                 iter = importTable_.erase(iter);
@@ -520,8 +520,8 @@ public:
                 item["count"] = entry.refcount;
             item["name"] = entry.toString();
             item["balance"] = entry.balance(now);
-            if (entry.remote_balance != 0)
-                item["remote_balance"] = entry.remote_balance;
+            if (entry.remoteBalance != 0)
+                item["remote_balance"] = entry.remoteBalance;
         }
     }
 

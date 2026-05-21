@@ -627,7 +627,7 @@ run(int argc, char** argv)
                 {
                     throw std::runtime_error("Invalid force_ledger_present_range parameter");
                 }
-                config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
+                config->forcedLedgerRangePresent.emplace(r[0], r[1]);
             }
             else
             {
@@ -646,7 +646,7 @@ run(int argc, char** argv)
 
     if (vm.contains("start"))
     {
-        config->START_UP = StartUpType::Fresh;
+        config->startUp = StartUpType::Fresh;
     }
 
     if (vm.contains("import"))
@@ -654,17 +654,17 @@ run(int argc, char** argv)
 
     if (vm.contains("ledger"))
     {
-        config->START_LEDGER = vm["ledger"].as<std::string>();
+        config->startLedger = vm["ledger"].as<std::string>();
         if (vm.contains("replay"))
         {
-            config->START_UP = StartUpType::Replay;
+            config->startUp = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
-                    config->TRAP_TX_HASH = tmp;
+                    config->trapTxHash = tmp;
                 }
                 else
                 {
@@ -677,17 +677,17 @@ run(int argc, char** argv)
         }
         else
         {
-            config->START_UP = StartUpType::Load;
+            config->startUp = StartUpType::Load;
         }
     }
     else if (vm.contains("ledgerfile"))
     {
-        config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LoadFile;
+        config->startLedger = vm["ledgerfile"].as<std::string>();
+        config->startUp = StartUpType::LoadFile;
     }
-    else if (vm.contains("load") || config->FAST_LOAD)
+    else if (vm.contains("load") || config->fastLoad)
     {
-        config->START_UP = StartUpType::Load;
+        config->startUp = StartUpType::Load;
     }
 
     if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
@@ -696,20 +696,20 @@ run(int argc, char** argv)
         return -1;
     }
 
-    if (vm.contains("net") && !config->FAST_LOAD)
+    if (vm.contains("net") && !config->fastLoad)
     {
-        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
+        if ((config->startUp == StartUpType::Load) || (config->startUp == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = StartUpType::Network;
+        config->startUp = StartUpType::Network;
     }
 
     if (vm.contains("valid"))
     {
-        config->START_VALID = true;
+        config->startValid = true;
     }
 
     // Override the RPC destination IP address. This must
@@ -747,15 +747,15 @@ run(int argc, char** argv)
             }
         }
 
-        config->rpc_ip = std::move(*endpoint);
+        config->rpcIp = std::move(*endpoint);
     }
 
     if (vm.contains("quorum"))
     {
         try
         {
-            config->VALIDATION_QUORUM = vm["quorum"].as<std::size_t>();
-            if (config->VALIDATION_QUORUM == std::size_t{})
+            config->validationQuorum = vm["quorum"].as<std::size_t>();
+            if (config->validationQuorum == std::size_t{})
             {
                 throw std::domain_error("0");
             }

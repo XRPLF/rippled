@@ -20,7 +20,7 @@ namespace xrpl {
 
 void
 ValidPermissionedDEX::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -38,7 +38,9 @@ ValidPermissionedDEX::visitEntry(
         }
         else
         {
-            regularOffers_ = true;
+            regularOffersOld_ = true;
+            if (!isDelete)
+                regularOffers_ = true;
         }
 
         // pre-fixCleanup3_1_3: hybrid offer missing domain, missing
@@ -100,7 +102,9 @@ ValidPermissionedDEX::finalize(
         }
     }
 
-    if (regularOffers_)
+    bool const hasRegularOffers =
+        view.rules().enabled(fixCleanup3_2_0) ? regularOffers_ : regularOffersOld_;
+    if (hasRegularOffers)
     {
         JLOG(j.fatal()) << "Invariant failed: domain transaction"
                            " affected regular offers";

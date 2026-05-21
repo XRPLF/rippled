@@ -286,14 +286,14 @@ public:
         return 1;
 #else
 
-        if (config.IO_WORKERS > 0)
-            return config.IO_WORKERS;
+        if (config.ioWorkers > 0)
+            return config.ioWorkers;
 
         auto const cores = std::thread::hardware_concurrency();
 
         // Use a single thread when running on under-provisioned systems
         // or if we are configured to use minimal resources.
-        if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
+        if ((cores == 1) || ((config.nodeSize == 0) && (cores == 2)))
             return 1;
 
         // Otherwise, prefer six threads.
@@ -316,7 +316,7 @@ public:
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
               perf::makePerfLog(
-                  perf::setupPerfLog(config_->section(Sections::kPerf), config_->CONFIG_DIR),
+                  perf::setupPerfLog(config_->section(Sections::kPerf), config_->configDir),
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
@@ -327,22 +327,22 @@ public:
         , jobQueue_(
               std::make_unique<JobQueue>(
                   [](std::unique_ptr<Config> const& config) {
-                      if (config->standalone() && !config->FORCE_MULTI_THREAD)
+                      if (config->standalone() && !config->forceMultiThread)
                           return 1;
 
-                      if (config->WORKERS)
-                          return config->WORKERS;
+                      if (config->workers)
+                          return config->workers;
 
                       auto count = static_cast<int>(std::thread::hardware_concurrency());
 
                       // Be more aggressive about the number of threads to use
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
-                      if (config->NODE_SIZE >= 4 && count >= 16)
+                      if (config->nodeSize >= 4 && count >= 16)
                       {
                           count = 6 + std::min(count, 8);
                       }
-                      else if (config->NODE_SIZE >= 3 && count >= 8)
+                      else if (config->nodeSize >= 3 && count >= 8)
                       {
                           count = 4 + std::min(count, 6);
                       }
@@ -371,16 +371,16 @@ public:
               std::chrono::minutes(1),
               stopwatch(),
               logs_->journal("CachedSLEs"))
-        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
               Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
         , nodeStore_(shaMapStore_->makeNodeStore(
-              config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
+              config_->prefetchWorkers > 0 ? config_->prefetchWorkers : 4))
         , nodeFamily_(*this, *collectorManager_)
         , orderBookDB_(makeOrderBookDb(
               *this,
-              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
+              {.pathSearchMax = config_->pathSearchMax, .standalone = config_->standalone()}))
         , pathRequestManager_(
               std::make_unique<PathRequestManager>(
                   *this,
@@ -416,8 +416,8 @@ public:
               *this,
               stopwatch(),
               config_->standalone(),
-              config_->NETWORK_QUORUM,
-              config_->START_VALID,
+              config_->networkQuorum,
+              config_->startValid,
               *jobQueue_,
               *ledgerMaster_,
               validatorKeys_,
@@ -436,7 +436,7 @@ public:
                   *timeKeeper_,
                   config_->legacy("database_path"),
                   logs_->journal("ValidatorList"),
-                  config_->VALIDATION_QUORUM))
+                  config_->validationQuorum))
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
         , serverHandler_(makeServerHandler(
               *this,
@@ -919,7 +919,7 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_after(
-                seconds{config_->SWEEP_INTERVAL.value_or(
+                seconds{config_->sweepInterval.value_or(
                     config_->getValueFor(SizedItem::SweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
@@ -1227,7 +1227,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         amendmentTable_ = makeAmendmentTable(
             *this,
-            config().AMENDMENT_MAJORITY_TIME,
+            config().amendmentMajorityTime,
             supported,
             upVoted,
             downVoted,
@@ -1236,7 +1236,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     Pathfinder::initPathTable();
 
-    auto const startUp = config_->START_UP;
+    auto const startUp = config_->startUp;
     JLOG(journal_.debug()) << "startUp: " << startUp;
     if (startUp == StartUpType::Fresh)
     {
@@ -1251,13 +1251,13 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         JLOG(journal_.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
-                config_->START_LEDGER,
+                config_->startLedger,
                 startUp == StartUpType::Replay,
                 startUp == StartUpType::LoadFile,
-                config_->TRAP_TX_HASH))
+                config_->trapTxHash))
         {
             JLOG(journal_.error()) << "The specified ledger could not be loaded.";
-            if (config_->FAST_LOAD)
+            if (config_->fastLoad)
             {
                 // Fall back to syncing from the network, such as
                 // when there's no existing data.
@@ -1283,7 +1283,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         startGenesisLedger();
     }
 
-    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    if (auto const& forcedRange = config().forcedLedgerRangePresent)
     {
         ledgerMaster_->setLedgerRangePresent(forcedRange->first, forcedRange->second);
     }
@@ -1329,7 +1329,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 localSigningKey,
                 config().section(Sections::kValidators).values(),
                 config().section(Sections::kValidatorListKeys).values(),
-                config().VALIDATOR_LIST_THRESHOLD))
+                config().validatorListThreshold))
         {
             JLOG(journal_.fatal()) << "Invalid entry in validator configuration.";
             return false;
@@ -1400,7 +1400,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     {
         // Should this message be here, conceptually? In theory this sort
         // of message, if displayed, should be displayed from PeerFinder.
-        if (config_->PEER_PRIVATE && config_->IPS_FIXED.empty())
+        if (config_->peerPrivate && config_->ipsFixed.empty())
         {
             JLOG(journal_.warn()) << "No outbound peer connections will be made";
         }
@@ -1660,14 +1660,14 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::Fresh)
+    std::vector<uint256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
         : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
         kCreateGenesis,
         Rules{config_->features},
-        config_->FEES.toFees(),
+        config_->fees.toFees(),
         initialAmendments,
         nodeFamily_);
     ledgerMaster_->storeLedger(genesis);
@@ -1691,7 +1691,7 @@ ApplicationImp::getLastFullLedger()
     try
     {
         auto const [ledger, seq, hash] =
-            getLatestLedger(Rules{config_->features}, config_->FEES.toFees(), *this);
+            getLatestLedger(Rules{config_->features}, config_->fees.toFees(), *this);
 
         if (!ledger)
             return ledger;
@@ -1803,7 +1803,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         }
 
         auto loadLedger = std::make_shared<Ledger>(
-            seq, closeTime, Rules{config_->features}, config_->FEES.toFees(), nodeFamily_);
+            seq, closeTime, Rules{config_->features}, config_->fees.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
         for (json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1884,7 +1884,7 @@ ApplicationImp::loadOldLedger(
             if (hash.parseHex(ledgerID))
             {
                 loadLedger =
-                    loadByHash(hash, Rules{config_->features}, config_->FEES.toFees(), *this);
+                    loadByHash(hash, Rules{config_->features}, config_->fees.toFees(), *this);
 
                 if (!loadLedger)
                 {
@@ -1913,7 +1913,7 @@ ApplicationImp::loadOldLedger(
             if (beast::lexicalCastChecked(index, ledgerID))
             {
                 loadLedger =
-                    loadByIndex(index, Rules{config_->features}, config_->FEES.toFees(), *this);
+                    loadByIndex(index, Rules{config_->features}, config_->fees.toFees(), *this);
             }
         }
 
@@ -1932,7 +1932,7 @@ ApplicationImp::loadOldLedger(
             loadLedger = loadByHash(
                 replayLedger->header().parentHash,
                 Rules{config_->features},
-                config_->FEES.toFees(),
+                config_->fees.toFees(),
                 *this);
             if (!loadLedger)
             {
@@ -2079,7 +2079,7 @@ ApplicationImp::loadOldLedger(
 bool
 ApplicationImp::serverOkay(std::string& reason)
 {
-    if (!config().ELB_SUPPORT)
+    if (!config().elbSupport)
         return true;
 
     if (isStopping())

@@ -99,12 +99,15 @@ words:
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
   - enabled
+  - enablerepo
   - endmacro
   - exceptioned
+  - EXPECT_STREQ
   - Falco
   - fcontext
   - finalizers
@@ -162,6 +165,7 @@ words:
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
@@ -193,7 +197,9 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
+  - notifempty
   - nudb
   - nullptr
   - nunl
@@ -213,6 +219,7 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
@@ -247,12 +254,14 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -280,8 +289,8 @@ words:
   - txn
   - txns
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
   - umant
   - unacquired
   - unambiguity
@@ -318,7 +327,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl

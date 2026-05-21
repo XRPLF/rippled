@@ -121,7 +121,7 @@ class WSClientImpl : public WSClient
     std::condition_variable cv_;
     std::list<std::shared_ptr<Msg>> msgs_;
 
-    unsigned rpc_version_;
+    unsigned rpcVersion_;
 
     void
     cleanup()
@@ -158,7 +158,7 @@ public:
         , thread_([&] { ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
-        , rpc_version_(rpcVersion)
+        , rpcVersion_(rpcVersion)
     {
         try
         {
@@ -198,7 +198,7 @@ public:
             json::Value jp;
             if (params)
                 jp = params;
-            if (rpc_version_ == 2)
+            if (rpcVersion_ == 2)
             {
                 jp[jss::method] = cmd;
                 jp[jss::jsonrpc] = "2.0";
@@ -285,7 +285,7 @@ public:
     [[nodiscard]] unsigned
     version() const override
     {
-        return rpc_version_;
+        return rpcVersion_;
     }
 
 private:

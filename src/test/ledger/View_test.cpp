@@ -153,7 +153,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -421,7 +421,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -630,7 +630,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -1020,7 +1020,7 @@ class View_test : public beast::unit_test::Suite
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
+                config.fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             auto const ledger =
