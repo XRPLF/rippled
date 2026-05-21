@@ -363,7 +363,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-adjustReserveCount(
+reduceReserveCount(
     ApplyView& view,
     AccountID const& account,
     AccountID const& sponsor,
@@ -371,6 +371,9 @@ adjustReserveCount(
 {
     if (delta == 0)
         return tesSUCCESS;
+    if (delta > 0)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     auto const sponsorKeylet = keylet::sponsor(sponsor, account);
     auto const sponsorSle = view.peek(sponsorKeylet);
     if (!sponsorSle)
@@ -459,7 +462,7 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = adjustReserveCount(
+                if (auto const ter = reduceReserveCount(
                         view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
@@ -496,19 +499,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = adjustReserveCount(
+                if (auto const ter = reduceReserveCount(
                         view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
-                    !isTesSuccess(ter))
-                    return ter;
-            }
-
-            // payback the reserve count if ltSponsorship exists
-            if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
-                sponsorSle)
-            {
-                if (auto const ter = adjustReserveCount(
-                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -529,17 +521,6 @@ SponsorshipTransfer::doApply()
             // decrement old sponsoring count
             setSponsorFieldU32(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
             view().update(oldSponsorSle);
-
-            // payback the reserve count if ltSponsorship exists
-            if (auto const sponsorSle =
-                    view().exists(keylet::sponsor(oldSponsorAccountID, sponseeAccountID));
-                sponsorSle)
-            {
-                if (auto const ter = adjustReserveCount(
-                        view(), sponseeAccountID, oldSponsorAccountID, ownerCountDelta);
-                    !isTesSuccess(ter))
-                    return ter;
-            }
 
             // remove sponsor from object
             objSle->makeFieldAbsent(sponsorField);
