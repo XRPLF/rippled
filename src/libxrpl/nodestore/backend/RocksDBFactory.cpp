@@ -29,8 +29,6 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
-#include <utility>
-#include <vector>
 
 #if XRPL_ROCKSDB_AVAILABLE
 #include <xrpl/basics/ByteUtilities.h>
