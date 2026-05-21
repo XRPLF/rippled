@@ -103,9 +103,9 @@ protected:
         std::vector<FeatureBitset> result{all_};
         for (auto const& f : features)
         {
-            auto const previous = result;
-            for (auto const& combo : previous)
-                result.push_back(combo - f);
+            auto const n = result.size();
+            for (std::size_t i = 0; i < n; ++i)
+                result.push_back(result[i] - f);
         }
         return result;
     }
@@ -7858,7 +7858,6 @@ protected:
                 to_string(tolerance));
     }
 
-    // Tests that don't depend on lending amendments. Run once.
     void
     runAmendmentIndependent()
     {
