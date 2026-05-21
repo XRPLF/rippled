@@ -432,10 +432,10 @@ ConnectAttempt::onHandshake(error_code ec)
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
-        app_.config().COMPRESSION,
-        app_.config().LEDGER_REPLAY,
-        app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
+        app_.config().compression,
+        app_.config().ledgerReplay,
+        app_.config().txReduceRelayEnable,
+        app_.config().vpReduceRelayBaseSquelchEnable);
 
     buildHandshake(
         req_,

@@ -76,7 +76,7 @@ private:
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;
     txs_map txs_;
     Rules rules_;
     LedgerHeader header_;

@@ -24,7 +24,7 @@ public:
     STBlob(SField const& f, void const* data, std::size_t size);
     STBlob(SField const& f, Buffer&& b);
     STBlob(SField const& n);
-    STBlob(SerialIter&, SField const& name = kSfGeneric);
+    STBlob(SerialIter&, SField const& name = sfGeneric);
 
     [[nodiscard]] std::size_t
     size() const;

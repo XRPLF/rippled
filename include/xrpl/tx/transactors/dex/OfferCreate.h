@@ -85,6 +85,7 @@ private:
         Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
+        std::uint64_t openRate,
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 };
 
