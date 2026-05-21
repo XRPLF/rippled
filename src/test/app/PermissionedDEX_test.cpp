@@ -959,19 +959,16 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testAmmQualityNotLeaked(FeatureBitset features)
     {
-        bool const fixCleanup320Enabled = features[fixCleanup3_2_0];
+        bool const excludesAmmFromDomainQuality = features[fixCleanup3_2_0];
 
         testcase << "AMM quality not leaked into domain BookStep"
-                 << (fixCleanup320Enabled ? " (Cleanup3_2_0 enabled)" : " (Cleanup3_2_0 disabled)");
+                 << (excludesAmmFromDomainQuality ? " (Cleanup3_2_0 enabled)"
+                                                  : " (Cleanup3_2_0 disabled)");
 
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
         auto const eur = gw["EUR"];
-        auto const withDomain = [&](auto jv) {
-            jv[sfDomainID.jsonName] = to_string(domainID);
-            return jv;
-        };
 
         env.trust(eur(1000), bob, domainOwner);
         env.close();
@@ -987,15 +984,15 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         AMM const amm(env, alice, XRP(10), USD(500));
 
         auto const directOfferSeq{env.seq(bob)};
-        env(withDomain(offer(bob, XRP(10), USD(10))));
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
         env.close();
 
         auto const xrpEurOfferSeq{env.seq(bob)};
-        env(withDomain(offer(bob, XRP(10), eur(20))));
+        env(offer(bob, XRP(10), eur(20)), Domain(domainID));
         env.close();
 
         auto const eurUsdOfferSeq{env.seq(domainOwner)};
-        env(withDomain(offer(domainOwner, eur(20), USD(20))));
+        env(offer(domainOwner, eur(20), USD(20)), Domain(domainID));
         env.close();
 
         auto const carolBalBefore = env.balance(carol, USD);
@@ -1014,7 +1011,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close();
 
         auto const delivered = env.balance(carol, USD) - carolBalBefore;
-        if (fixCleanup320Enabled)
+        if (excludesAmmFromDomainQuality)
         {
             BEAST_EXPECT(delivered == USD(20));
 
