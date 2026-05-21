@@ -362,12 +362,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             if (ec == boost::asio::error::no_descriptors ||
                 ec == boost::asio::error::no_buffer_space)
             {
-                char const* const cause =
-                    (ec == boost::asio::error::no_descriptors)
+                char const* const cause = (ec == boost::asio::error::no_descriptors)
                     ? "too many open files"
                     : "kernel buffer space exhausted";
-                JLOG(j_.warn()) << "accept: " << cause << ". Pausing for "
-                                << acceptDelay_.count() << "ms.";
+                JLOG(j_.warn()) << "accept: " << cause << ". Pausing for " << acceptDelay_.count()
+                                << "ms.";
 
                 backoffTimer_.expires_after(acceptDelay_);
                 boost::system::error_code tec;
@@ -442,8 +441,7 @@ Door<Handler>::shouldThrottleForFds()
     fdSampleAt_ = now;
     auto const stats = queryFdStats();
     bool const measurable = stats && stats->limit != 0;
-    bool const overThreshold =
-        measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+    bool const overThreshold = measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
 
     lastThrottleDecision_ = overThreshold;
     return lastThrottleDecision_;
