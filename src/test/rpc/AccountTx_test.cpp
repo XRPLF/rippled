@@ -818,7 +818,7 @@ class AccountTx_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         auto cfg = makeConfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         Account const alice{"alice"};

@@ -2235,7 +2235,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::Fresh;
+                    cfg->startUp = StartUpType::Fresh;
                     return cfg;
                 })};
 
@@ -2428,7 +2428,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::Fresh;
+                    cfg->startUp = StartUpType::Fresh;
                     return cfg;
                 })};
 

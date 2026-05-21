@@ -4067,9 +4067,9 @@ public:
             {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
 
         auto& votingSection = cfg->section("voting");
-        votingSection.set("account_reserve", std::to_string(cfg->FEES.reference_fee.drops() * 100));
+        votingSection.set("account_reserve", std::to_string(cfg->fees.referenceFee.drops() * 100));
 
-        votingSection.set("reference_fee", std::to_string(cfg->FEES.reference_fee.drops()));
+        votingSection.set("reference_fee", std::to_string(cfg->fees.referenceFee.drops()));
 
         Env env(*this, std::move(cfg));
 

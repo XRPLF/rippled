@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -49,6 +50,11 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
+    // sfReferenceHolding is set only internally by VaultCreate. Reject
+    // any user-submitted MPTokenIssuanceCreate that attempts to carry it.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
+        return temMALFORMED;
+
     // If the mutable flags field is included, at least one flag must be
     // specified.
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
@@ -140,6 +146,22 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
 
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+
+        if (args.referenceHolding)
+        {
+            // Defensive: the holding must already exist and be of an
+            // expected type. Callers (currently only VaultCreate)
+            // populate this after the pseudo-account's MPToken /
+            // RippleState has been installed. A missing holding here
+            // would dangle the pointer and is a programmer error.
+            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            if (!sleHolding)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            auto const type = sleHolding->getType();
+            if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
+        }
 
         view.insert(mptIssuance);
     }

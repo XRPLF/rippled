@@ -301,7 +301,7 @@ public:
         Env env{
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->NODE_SIZE = 0;
+                cfg->nodeSize = 0;
                 return cfg;
             }),
             XRPAmount(10)};

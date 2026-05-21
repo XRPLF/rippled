@@ -2697,7 +2697,7 @@ public:
         testcase("autofill NetworkID");
         using namespace test::jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
 

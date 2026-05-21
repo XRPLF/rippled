@@ -27,7 +27,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }

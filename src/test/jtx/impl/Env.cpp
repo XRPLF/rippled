@@ -92,15 +92,15 @@ Env::AppBundle::AppBundle(
     timeKeeper = tk.get();
     if (referenceFee)
     {
-        config->FEES.reference_fee = *referenceFee;
+        config->fees.referenceFee = *referenceFee;
     }
     else if (auto const fee = suite.referenceFee())
     {
-        config->FEES.reference_fee = *fee;
+        config->fees.referenceFee = *fee;
     }
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
-        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
+        config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
     owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->getLogs().threshold(thresh);

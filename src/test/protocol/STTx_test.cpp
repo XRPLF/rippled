@@ -1390,7 +1390,7 @@ public:
         // Lambda that returns a Payment STObject.
         auto getPayment = [kp1, id1, id2]() {
             // Account id1 pays account id2 10,000 XRP.
-            STObject payment(kSfGeneric);
+            STObject payment(sfGeneric);
             payment.setFieldU16(sfTransactionType, ttPAYMENT);
             payment.setAccountID(sfAccount, id1);
             payment.setAccountID(sfDestination, id2);

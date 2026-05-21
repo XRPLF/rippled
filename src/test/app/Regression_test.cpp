@@ -87,7 +87,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto closed = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto expectedDrops = kInitialXrp;

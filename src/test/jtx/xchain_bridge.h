@@ -165,21 +165,21 @@ struct XChainBridgeObjects
 
     FeatureBitset const features;
     std::vector<Signer> const signers;
-    std::vector<Signer> const alt_signers;
+    std::vector<Signer> const altSigners;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
     std::uint32_t const quorum{kUtXchainDefaultQuorum};
 
-    STAmount const reward;                 // 1 xrp
-    STAmount const split_reward_quorum;    // 250,000 drops
-    STAmount const split_reward_everyone;  // 200,000 drops
+    STAmount const reward;               // 1 xrp
+    STAmount const splitRewardQuorum;    // 250,000 drops
+    STAmount const splitRewardEveryone;  // 200,000 drops
 
-    STAmount const tiny_reward;            // 37 drops
-    STAmount const tiny_reward_split;      // 9 drops
-    STAmount const tiny_reward_remainder;  // 1 drops
+    STAmount const tinyReward;           // 37 drops
+    STAmount const tinyRewardSplit;      // 9 drops
+    STAmount const tinyRewardRemainder;  // 1 drops
 
-    STAmount const one_xrp;
-    STAmount const xrp_dust;
+    STAmount const oneXrp;
+    STAmount const xrpDust;
 
     static constexpr int kDropPerXrp = 1000000;
 

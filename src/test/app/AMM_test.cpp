@@ -7078,7 +7078,7 @@ private:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.reference_fee = XRPAmount(1);
+                cfg->fees.referenceFee = XRPAmount(1);
                 return cfg;
             }),
             features);
