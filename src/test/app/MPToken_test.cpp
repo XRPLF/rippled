@@ -2367,7 +2367,7 @@ class MPToken_test : public beast::unit_test::Suite
 
             testcase("fixCleanup3_2_0 rejects non-canonical MPT Check amounts");
             {
-                Env env{*this, withoutFix};
+                Env env{*this, envconfig(), withoutFix, nullptr, beast::Severity::Disabled};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
                 auto const issue = makeIssue(env);
@@ -2395,7 +2395,7 @@ class MPToken_test : public beast::unit_test::Suite
                 }
             }
             {
-                Env env{*this, withoutFix};
+                Env env{*this, envconfig(), withoutFix, nullptr, beast::Severity::Disabled};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
                 auto const issue = makeIssue(env);
@@ -2423,7 +2423,7 @@ class MPToken_test : public beast::unit_test::Suite
                 }
             }
             {
-                Env env{*this, withoutFix};
+                Env env{*this, envconfig(), withoutFix, nullptr, beast::Severity::Disabled};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
                 auto const issue = makeIssue(env);
@@ -2454,7 +2454,7 @@ class MPToken_test : public beast::unit_test::Suite
                 }
             }
             {
-                Env env{*this, withoutFix};
+                Env env{*this, envconfig(), withoutFix, nullptr, beast::Severity::Disabled};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
                 auto const issue = makeIssue(env);
@@ -2478,7 +2478,7 @@ class MPToken_test : public beast::unit_test::Suite
                     env.close();
 
                     auto const cashAmount = STAmount{sfAmount, issue, std::uint64_t{1}, 0, false};
-                    env(env.jt(check::cash(bob, checkKeylet.key, cashAmount)), Ter{temBAD_AMOUNT});
+                    env(env.jt(check::cash(bob, checkKeylet.key, cashAmount)), Ter{tefBAD_LEDGER});
                     env.close();
                     BEAST_EXPECT(env.le(checkKeylet) != nullptr);
                 }
