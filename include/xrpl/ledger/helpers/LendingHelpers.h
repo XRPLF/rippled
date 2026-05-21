@@ -17,7 +17,7 @@ namespace xrpl {
  * identically absorb the rounded zero, resulting in a successful transaction
  * (tesSUCCESS) where no funds actually moved.
  *
- * @param view       Apply view (rules used for amendment gating).
+ * @param view       Read view (rules used for amendment gating).
  * @param sleBroker  The loan broker SLE (read-only).
  * @param vaultAsset The underlying vault asset (the broker's cover asset).
  * @param amount     The effective subtraction/addition amount.
@@ -25,8 +25,7 @@ namespace xrpl {
  * @param logPrefix  Transactor name for log diagnostics.
  *
  * @return `tecPRECISION_LOSS` if the request rounds to zero at cover scale.
- * `tesSUCCESS` if the amendment is disabled, the amount is true zero,
- * or the request is safely supra-ULP.
+ * `tesSUCCESS` if the amendment is disabled or the request is safely supra-ULP.
  */
 [[nodiscard]] TER
 canApplyToBrokerCover(

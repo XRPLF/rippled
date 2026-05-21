@@ -42,12 +42,13 @@ canApplyToBrokerCover(
     XRPL_ASSERT(
         sleBroker && sleBroker->getType() == ltLOAN_BROKER,
         "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
-    XRPL_ASSERT(
-        vaultAsset == amount.asset() && amount > beast::kZero,
-        "xrpl::canApplyToBrokerCover : valid amount for asset");
+    XRPL_ASSERT(vaultAsset == amount.asset(), "xrpl::canApplyToBrokerCover : valid asset");
 
     if (!view.rules().enabled(fixCleanup3_2_0))
         return tesSUCCESS;
+
+    if (amount == beast::kZero)
+        return tecPRECISION_LOSS;
 
     int const coverScale = scale(sleBroker->at(sfCoverAvailable), vaultAsset);
     if (amount.isZeroAtScale(coverScale))

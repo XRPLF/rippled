@@ -190,7 +190,7 @@ public:
      *
      * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
      * The `scale` argument is ignored in that case.
-     * For IOU, the amount is rounded to the given scale (using the current rounding mode)
+     * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
      * and the result is checked for zero; if `scale <= exponent()`, `roundToScale` short-circuits
      * and returns the value unchanged, so this returns false for any non-zero amount.
      *
