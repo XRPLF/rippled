@@ -91,16 +91,14 @@ TEST_P(NodeStoreDatabaseTest, StoreAndFetch)
 
     {
         SCOPED_TRACE("read in original order");
-        Batch copy;
-        fetchCopyOfBatch(*db, &copy, batch);
+        auto const copy = fetchCopyOfBatch(*db, batch);
         EXPECT_TRUE(areBatchesEqual(batch, copy));
     }
 
     {
         SCOPED_TRACE("read in shuffled order");
         std::shuffle(batch.begin(), batch.end(), rng);
-        Batch copy;
-        fetchCopyOfBatch(*db, &copy, batch);
+        auto const copy = fetchCopyOfBatch(*db, batch);
         EXPECT_TRUE(areBatchesEqual(batch, copy));
     }
 }
@@ -127,8 +125,7 @@ TEST_P(NodeStoreDatabasePersistenceTest, RoundTrip)
     // re-open without the ephemeral db
     auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
 
-    Batch copy;
-    fetchCopyOfBatch(*db, &copy, batch);
+    auto copy = fetchCopyOfBatch(*db, batch);
     std::ranges::sort(batch, LessThan{});
     std::ranges::sort(copy, LessThan{});
     EXPECT_TRUE(areBatchesEqual(batch, copy));
@@ -223,7 +220,7 @@ TEST_P(DatabaseImportTest, SameBackend)
             Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal);
 
         dest->importDatabase(*src);
-        fetchCopyOfBatch(*dest, &copy, batch);
+        copy = fetchCopyOfBatch(*dest, batch);
     }
 
     std::ranges::sort(batch, LessThan{});

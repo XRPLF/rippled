@@ -66,13 +66,11 @@ TEST_P(BackendTypeTest, RoundTrip)
         backend->open();
         storeBatch(*backend, batch);
 
-        Batch copy;
-        fetchCopyOfBatch(*backend, &copy, batch);
+        auto const copy = fetchCopyOfBatch(*backend, batch);
         EXPECT_TRUE(areBatchesEqual(batch, copy));
 
         std::shuffle(batch.begin(), batch.end(), rng);
-        Batch shuffledCopy;
-        fetchCopyOfBatch(*backend, &shuffledCopy, batch);
+        auto const shuffledCopy = fetchCopyOfBatch(*backend, batch);
         EXPECT_TRUE(areBatchesEqual(batch, shuffledCopy));
     }
 
@@ -81,8 +79,7 @@ TEST_P(BackendTypeTest, RoundTrip)
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
         backend->open();
 
-        Batch copy;
-        fetchCopyOfBatch(*backend, &copy, batch);
+        auto copy = fetchCopyOfBatch(*backend, batch);
         std::ranges::sort(batch, LessThan{});
         std::ranges::sort(copy, LessThan{});
         EXPECT_TRUE(areBatchesEqual(batch, copy));

@@ -33,34 +33,25 @@ makeSection(std::string const& path, std::string const& blockSize = "")
     return params;
 }
 
-bool
+void
 runRoundTrip(Section const& params, std::size_t expectedBlocksize)
 {
-    try
-    {
-        DummyScheduler scheduler;
-        beast::Journal const journal(TestSink::instance());
-        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    DummyScheduler scheduler;
+    beast::Journal const journal(TestSink::instance());
+    auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
-        if (!backend || backend->getBlockSize() != expectedBlocksize)
-            return false;
-        backend->open();
-        if (!backend->isOpen())
-            return false;
+    ASSERT_TRUE(backend);
+    ASSERT_EQ(backend->getBlockSize(), expectedBlocksize);
+    backend->open();
+    ASSERT_TRUE(backend->isOpen());
 
-        auto const batch = createPredictableBatch(10, 12345);
-        storeBatch(*backend, batch);
+    auto const batch = createPredictableBatch(10, 12345);
+    storeBatch(*backend, batch);
 
-        Batch copy;
-        fetchCopyOfBatch(*backend, &copy, batch);
+    auto const copy = fetchCopyOfBatch(*backend, batch);
 
-        backend->close();
-        return areBatchesEqual(batch, copy);
-    }
-    catch (...)
-    {
-        return false;
-    }
+    backend->close();
+    EXPECT_TRUE(areBatchesEqual(batch, copy));
 }
 
 }  // namespace
@@ -69,7 +60,7 @@ TEST(NuDBFactory, DefaultBlockSize)
 {
     beast::TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
-    EXPECT_TRUE(runRoundTrip(params, 4096));
+    ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
 }
 
 TEST(NuDBFactory, ValidBlockSizes)
@@ -80,14 +71,14 @@ TEST(NuDBFactory, ValidBlockSizes)
         SCOPED_TRACE("size=" + std::to_string(size));
         beast::TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), std::to_string(size));
-        EXPECT_TRUE(runRoundTrip(params, size));
+        ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, size));
     }
 
     // empty value is ignored by config parser; default (4096) is used
     {
         beast::TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), "");
-        EXPECT_TRUE(runRoundTrip(params, 4096));
+        ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
     }
 }
 
@@ -112,7 +103,7 @@ TEST(NuDBFactory, InvalidBlockSizes)
         SCOPED_TRACE("size='" + size + "'");
         beast::TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
-        EXPECT_FALSE(runRoundTrip(params, 4096));
+        EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
 
     // whitespace handling — lexical_cast may or may not strip; treat as invalid
@@ -122,7 +113,7 @@ TEST(NuDBFactory, InvalidBlockSizes)
         SCOPED_TRACE("size='" + size + "'");
         beast::TempDir const tempDir;
         auto const params = makeSection(tempDir.path(), size);
-        EXPECT_FALSE(runRoundTrip(params, 4096));
+        EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
 }
 
@@ -228,10 +219,12 @@ TEST(NuDBFactory, BothConstructorVariants)
 
     auto backend1 = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
     EXPECT_NE(backend1, nullptr);
-    EXPECT_TRUE(runRoundTrip(params, 16384));
+    ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 16384));
 
-    // second constructor (with nudb::context) requires extra setup; skipped
-    // here for the same reason the original beast test skipped it.
+    // Test second constructor (with nudb::context)
+    // Note: This would require access to nudb::context, which might not be
+    // easily testable without more complex setup. For now, we test that
+    // the factory can create backends with the first constructor.
 }
 
 TEST(NuDBFactory, ConfigurationParsing)
@@ -247,7 +240,7 @@ TEST(NuDBFactory, ConfigurationParsing)
         EXPECT_NE(sink.messages().str().find("Using custom NuDB block size"), std::string::npos);
     }
 
-    // whitespace formats fail
+    // Test whitespace handling separately since lexical_cast behavior may vary
     std::vector<std::string> const kWhitespaceFormats = {" 8192", "8192 "};
     for (auto const& format : kWhitespaceFormats)
     {
@@ -257,16 +250,7 @@ TEST(NuDBFactory, ConfigurationParsing)
         test::CaptureSink sink(beast::Severity::Debug);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
-        try
-        {
-            auto backend =
-                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-            FAIL() << "expected exception for whitespace block size '" << format << "'";
-        }
-        catch (...)
-        {
-            EXPECT_FALSE(runRoundTrip(params, 8192));
-        }
+        EXPECT_ANY_THROW(Manager::instance().makeBackend(params, megabytes(4), scheduler, journal));
     }
 }
 
@@ -281,9 +265,10 @@ TEST(NuDBFactory, DataPersistence)
         DummyScheduler scheduler;
         beast::Journal const journal(TestSink::instance());
 
+        // Create test data
         auto const batch = createPredictableBatch(50, 54321);
 
-        // store
+        // Store data
         {
             auto backend =
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
@@ -292,13 +277,12 @@ TEST(NuDBFactory, DataPersistence)
             backend->close();
         }
 
-        // retrieve from a fresh backend instance
+        // Retrieve data in new backend instance
         {
             auto backend =
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
-            Batch copy;
-            fetchCopyOfBatch(*backend, &copy, batch);
+            auto const copy = fetchCopyOfBatch(*backend, batch);
             EXPECT_TRUE(areBatchesEqual(batch, copy));
             backend->close();
         }

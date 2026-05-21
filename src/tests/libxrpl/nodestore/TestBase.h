@@ -98,11 +98,11 @@ storeBatch(Backend& backend, Batch const& batch)
         backend.store(obj);
 }
 
-inline void
-fetchCopyOfBatch(Backend& backend, Batch* pCopy, Batch const& batch)
+[[nodiscard]] inline Batch
+fetchCopyOfBatch(Backend& backend, Batch const& batch)
 {
-    pCopy->clear();
-    pCopy->reserve(batch.size());
+    Batch copy;
+    copy.reserve(batch.size());
 
     for (std::size_t i = 0; i < batch.size(); ++i)
     {
@@ -113,9 +113,10 @@ fetchCopyOfBatch(Backend& backend, Batch* pCopy, Batch const& batch)
         if (status == Status::Ok)
         {
             EXPECT_NE(object, nullptr);
-            pCopy->push_back(object);
+            copy.push_back(object);
         }
     }
+    return copy;
 }
 
 inline void
@@ -140,18 +141,19 @@ storeBatch(Database& db, Batch const& batch)
     }
 }
 
-inline void
-fetchCopyOfBatch(Database& db, Batch* pCopy, Batch const& batch)
+[[nodiscard]] inline Batch
+fetchCopyOfBatch(Database& db, Batch const& batch)
 {
-    pCopy->clear();
-    pCopy->reserve(batch.size());
+    Batch copy;
+    copy.reserve(batch.size());
 
     for (auto const& obj : batch)
     {
         std::shared_ptr<NodeObject> const result = db.fetchNodeObject(obj->getHash(), 0);
         if (result != nullptr)
-            pCopy->push_back(result);
+            copy.push_back(result);
     }
+    return copy;
 }
 
 }  // namespace xrpl::NodeStore
