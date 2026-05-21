@@ -23,7 +23,6 @@
 #include <sys/resource.h>
 
 #include <dirent.h>
-#include <unistd.h>
 #endif
 
 #include <algorithm>
@@ -363,7 +362,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             if (ec == boost::asio::error::no_descriptors ||
                 ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
+                char const* const cause =
+                    (ec == boost::asio::error::no_descriptors)
+                    ? "too many open files"
+                    : "kernel buffer space exhausted";
+                JLOG(j_.warn()) << "accept: " << cause << ". Pausing for "
                                 << accept_delay_.count() << "ms.";
 
                 backoff_timer_.expires_after(accept_delay_);
