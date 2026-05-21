@@ -205,6 +205,7 @@ TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
 TYPED_SFIELD(sfLoanBrokerID,             UINT256,   37,
     SField::kSmdPseudoAccount | SField::kSmdDefault)
 TYPED_SFIELD(sfLoanID,                   UINT256,   38)
+TYPED_SFIELD(sfReferenceHolding,         UINT256,   39)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)

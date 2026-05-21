@@ -843,7 +843,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
 
         // with ELB_SUPPORT, status still does not indicate a problem
-        env.app().config().ELB_SUPPORT = true;
+        env.app().config().elbSupport = true;
 
         doRequest(
             yield,
@@ -973,7 +973,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
         BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
 
-        env.app().config().ELB_SUPPORT = true;
+        env.app().config().elbSupport = true;
 
         doRequest(
             yield,
@@ -1111,7 +1111,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->ELB_SUPPORT = true;
+                    cfg->elbSupport = true;
                     return cfg;
                 })};
 
