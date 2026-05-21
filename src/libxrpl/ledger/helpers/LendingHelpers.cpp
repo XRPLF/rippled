@@ -1058,11 +1058,22 @@ computePaymentComponents(
         rules, periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
 
     // Round the target to the loan's scale to match how actual loan values
-    // are stored.
+    // are stored. With fixCleanup3_2_0 enabled, principal is rounded upward
+    // and interest downward so that at coarse scale principal sticks at the
+    // floor (until the final payment clears it) while interest absorbs each
+    // periodic payment. Without the amendment the pre-existing round-to-
+    // nearest behavior is preserved (which can hit the "Partial principal
+    // payment" assertion on degenerate integer-scale loans).
+    bool const fixCleanup320Enabled = rules.enabled(fixCleanup3_2_0);
+    Number::RoundingMode const principalRounding =
+        fixCleanup320Enabled ? Number::RoundingMode::Upward : Number::getround();
+    Number::RoundingMode const interestRounding =
+        fixCleanup320Enabled ? Number::RoundingMode::Downward : Number::getround();
     LoanState const roundedTarget = LoanState{
         .valueOutstanding = roundToAsset(asset, trueTarget.valueOutstanding, scale),
-        .principalOutstanding = roundToAsset(asset, trueTarget.principalOutstanding, scale),
-        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale),
+        .principalOutstanding =
+            roundToAsset(asset, trueTarget.principalOutstanding, scale, principalRounding),
+        .interestDue = roundToAsset(asset, trueTarget.interestDue, scale, interestRounding),
         .managementFeeDue = roundToAsset(asset, trueTarget.managementFeeDue, scale)};
 
     // Get the current actual loan state from the ledger values
