@@ -65,7 +65,7 @@ class Version_test : public beast::unit_test::Suite
             "{\"api_version\": " + std::to_string(RPC::kApiMinimumSupportedVersion - 1) + "}");
         BEAST_EXPECT(badVersion(re));
 
-        BEAST_EXPECT(env.app().config().BETA_RPC_API);
+        BEAST_EXPECT(env.app().config().betaRpcApi);
         re = env.rpc(
             "json",
             "version",
@@ -160,7 +160,7 @@ class Version_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
 
-        BEAST_EXPECT(env.app().config().BETA_RPC_API);
+        BEAST_EXPECT(env.app().config().betaRpcApi);
         auto const withoutApiVerion = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
             "\"ripplerpc\": \"2.0\", "
@@ -194,19 +194,19 @@ class Version_test : public beast::unit_test::Suite
         testcase("config test");
         {
             Config const c;
-            BEAST_EXPECT(c.BETA_RPC_API == false);
+            BEAST_EXPECT(c.betaRpcApi == false);
         }
 
         {
             Config c;
             c.loadFromString("\n[beta_rpc_api]\n1\n");
-            BEAST_EXPECT(c.BETA_RPC_API == true);
+            BEAST_EXPECT(c.betaRpcApi == true);
         }
 
         {
             Config c;
             c.loadFromString("\n[beta_rpc_api]\n0\n");
-            BEAST_EXPECT(c.BETA_RPC_API == false);
+            BEAST_EXPECT(c.betaRpcApi == false);
         }
     }
 
@@ -220,7 +220,7 @@ class Version_test : public beast::unit_test::Suite
                     c->loadFromString("\n[beta_rpc_api]\n1\n");
                     return c;
                 })};
-        if (!BEAST_EXPECT(env.app().config().BETA_RPC_API == true))
+        if (!BEAST_EXPECT(env.app().config().betaRpcApi == true))
             return;
 
         auto jrr = env.rpc(

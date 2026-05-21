@@ -48,7 +48,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , alice("permdex-alice")
     , bob("permdex-bob")
     , carol("permdex-carol")
-    , USD(gw["USD"])
+    , usd(gw["USD"])
     , credType("permdex-abcde")
 {
     // Fund accounts
@@ -59,10 +59,10 @@ PermissionedDEX::PermissionedDEX(Env& env)
 
     for (auto const& account : {alice, bob, carol, domainOwner})
     {
-        env.trust(USD(1000), account);
+        env.trust(usd(1000), account);
         env.close();
 
-        env(pay(gw, account, USD(100)));
+        env(pay(gw, account, usd(100)));
         env.close();
     }
 }
