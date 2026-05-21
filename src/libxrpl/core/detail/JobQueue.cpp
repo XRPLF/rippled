@@ -36,7 +36,7 @@ JobQueue::JobQueue(
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
     hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
-    job_count_ = collector_->makeGauge("job_count");
+    jobCount_ = collector_->makeGauge("job_count");
 
     {
         std::scoped_lock const lock(mutex_);
@@ -66,7 +66,7 @@ void
 JobQueue::collect()
 {
     std::scoped_lock const lock(mutex_);
-    job_count_ = jobSet_.size();
+    jobCount_ = jobSet_.size();
 }
 
 bool
