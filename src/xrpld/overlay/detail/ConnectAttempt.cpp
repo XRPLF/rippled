@@ -99,6 +99,8 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    setTimer();
+
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
@@ -113,20 +115,20 @@ ConnectAttempt::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(), "xrpl::ConnectAttempt::close : strand in this thread");
-    if (socket_.is_open())
-    {
-        try
-        {
-            timer_.cancel();
-            socket_.close();
-        }
-        catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
-        {
-            // ignored
-        }
+    if (!socket_.is_open())
+        return;
 
-        JLOG(journal_.debug()) << "Closed";
+    try
+    {
+        timer_.cancel();
+        socket_.close();
     }
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
+    {
+        // ignored
+    }
+
+    JLOG(journal_.debug()) << "Closed";
 }
 
 void
@@ -247,6 +249,11 @@ ConnectAttempt::onHandshake(error_code ec)
     }
 
     auto const localEndpoint = socket_.local_endpoint(ec);
+    if (ec)
+    {
+        fail("onHandshake", ec);
+        return;
+    }
 
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
@@ -290,6 +297,7 @@ void
 ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
+
     if (!socket_.is_open())
         return;
 
@@ -349,7 +357,6 @@ ConnectAttempt::onShutdown(error_code ec)
     cancelTimer();
     if (!ec)
     {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
         close();
         return;
     }

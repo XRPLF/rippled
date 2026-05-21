@@ -269,12 +269,6 @@ PeerImp::stop()
     if (!socket_.is_open())
         return;
 
-    // The rationale for using different severity levels is that
-    // outbound connections are under our control and may be logged
-    // at a higher level, but inbound connections are more numerous and
-    // uncontrolled so to prevent log flooding the severity is reduced.
-    //
-    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
     close();
 }
 

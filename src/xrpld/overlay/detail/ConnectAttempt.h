@@ -3,6 +3,8 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
+#include <sstream>
+
 namespace xrpl {
 
 /** Manages an outbound connection attempt. */
