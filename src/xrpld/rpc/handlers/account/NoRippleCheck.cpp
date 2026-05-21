@@ -58,25 +58,24 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missingFieldError(jss::account);
 
-    if (!params.isMember("role"))
-        return RPC::missingFieldError("role");
-
     if (!params[jss::account].isString())
         return RPC::invalidFieldError(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
     }
     auto const accountID{id.value()};
 
     // check role param
     if (!params.isMember(jss::role))
-        return RPC::missing_field_error(jss::role);
+        return RPC::missingFieldError("role");
 
     bool roleGateway = false;
     {
+        if (!params[jss::role].isString())
+            return RPC::expectedFieldError(jss::role, "string");
         std::string const role = params[jss::role].asString();
         if (role == jss::gateway)
         {
@@ -119,11 +118,11 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     std::uint32_t seq = sle->getFieldU32(sfSequence);
 
-    Json::Value& problems = (result[jss::problems] = json::ValueType::Array);
+    json::Value& problems = (result[jss::problems] = json::ValueType::Array);
 
     bool const defaultRipple = sle->isFlag(lsfDefaultRipple);
 
-    Json::Value jvTransactions = Json::arrayValue;
+    json::Value jvTransactions = json::ValueType::Array;
 
     if (defaultRipple && !roleGateway)
     {
@@ -150,7 +149,7 @@ doNoRippleCheck(RPC::JsonContext& context)
             {
                 bool const low = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
 
-                bool const noRipple = ownedItem->isFlag(bLow ? lsfLowNoRipple : lsfHighNoRipple);
+                bool const noRipple = ownedItem->isFlag(low ? lsfLowNoRipple : lsfHighNoRipple);
 
                 std::string problem;
                 bool needFix = false;
@@ -182,7 +181,7 @@ doNoRippleCheck(RPC::JsonContext& context)
                     {
                         json::Value& tx = jvTransactions.append(json::ValueType::Object);
                         tx[jss::TransactionType] = jss::TrustSet;
-                        tx[jss::LimitAmount] = limitAmount.getJson(JsonOptions::Values::None);
+                        tx[jss::LimitAmount] = limitAmount.getJson();
                         tx[jss::Flags] = noRipple ? tfClearNoRipple : tfSetNoRipple;
                         fillTransaction(context, tx, accountID, seq, *ledger);
                     }
