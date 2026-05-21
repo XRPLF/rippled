@@ -82,8 +82,7 @@ private:
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol -
-            fixCleanup3_2_0;
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
     void
@@ -5085,7 +5084,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -5143,7 +5142,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -7082,7 +7081,7 @@ private:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.reference_fee = XRPAmount(1);
+                cfg->fees.referenceFee = XRPAmount(1);
                 return cfg;
             }),
             features);

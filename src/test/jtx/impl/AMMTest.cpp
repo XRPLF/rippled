@@ -143,7 +143,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         // mantissas
         Env env{
             *this,
-            features - featureSingleAssetVault - featureLendingProtocol - fixCleanup3_2_0,
+            features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
         auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
@@ -213,9 +213,9 @@ AMMTest::pathTestEnv()
     // different from the current defaults. This function creates an env
     // with the search parameters that the tests were written for.
     return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-        cfg->PATH_SEARCH_OLD = 7;
-        cfg->PATH_SEARCH = 7;
-        cfg->PATH_SEARCH_MAX = 10;
+        cfg->pathSearchOld = 7;
+        cfg->pathSearch = 7;
+        cfg->pathSearchMax = 10;
         return cfg;
     }));
 }

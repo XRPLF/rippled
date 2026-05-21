@@ -92,7 +92,7 @@ isPowerOfTen(T value)
  * They have a min value of 2^63/10+1 (truncated), and a max value of 2^63-1.
  *
  * "LargeLegacy" is like "Large", but preserves a rounding error when
- * a computation results in a mantissa of Number::kMAX_REP that needs to
+ * a computation results in a mantissa of Number::kLargestMantissa that needs to
  * be rounded up, but rounds down instead. It will maintain consistent
  * behavior until the fixCleanup3_2_0 amendment is enabled.
  *
@@ -177,7 +177,7 @@ private:
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");
+                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
         }
     }
 
@@ -222,7 +222,7 @@ private:
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");
+                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
         }
     }
 

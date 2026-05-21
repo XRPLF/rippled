@@ -40,31 +40,23 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
 
-    // The improved accuracy that will come from enabling large
-    // mantissas is a goal separate from SAV and LP. It was originally
-    // only tied to those two amendments to avoid needing a new
-    // amendment of its own, and because they require that behavior.
-    // Because fixCleanup3_2_0 fixes a separate bug related to the large
-    // mantissas, that can take precedence and activate the large
-    // mantissas even in the absence of the other two amendments.
-    //
     // If any new conditions with new amendments are added, those amendments must also be added to
-    // createGuards.
+    // useRulesGuards.
+    bool const enableVaultNumbers =
+        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
-    bool const enableVaultNumbers = enableCuspRoundingFix ||
-        (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     XRPL_ASSERT(
         !r || useRulesGuards(*r) == (enableCuspRoundingFix || enableVaultNumbers),
         "setCurrentTransactionRules : rule decisions match");
 
     // Declare the range this way to keep clang-tidy from complaining
     auto const range = [enableCuspRoundingFix, enableVaultNumbers]() {
-        if (enableCuspRoundingFix)
-        {
-            return MantissaRange::MantissaScale::Large;
-        }
         if (enableVaultNumbers)
         {
+            if (enableCuspRoundingFix)
+            {
+                return MantissaRange::MantissaScale::Large;
+            }
             return MantissaRange::MantissaScale::LargeLegacy;
         }
         return MantissaRange::MantissaScale::Small;

@@ -175,8 +175,7 @@ public:
         // or time threshold
         {
             auto const all = testableAmendments();
-            for (auto const& feats :
-                 {all - featureSingleAssetVault - featureLendingProtocol - fixCleanup3_2_0, all})
+            for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
                 for (auto const mantissaSize : MantissaRange::getAllScales())
                 {
