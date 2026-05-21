@@ -121,7 +121,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         auto prev = std::make_shared<Ledger const>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
@@ -287,7 +287,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         auto prev = std::make_shared<Ledger const>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
