@@ -4,7 +4,6 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/Types.h>
 
 #include <gtest/gtest.h>
 #include <helpers/CaptureSink.h>
