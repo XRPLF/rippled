@@ -27,6 +27,7 @@ enum SOEStyle {
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEConstant {
     SoeImmutable,
     SoeMutable,
