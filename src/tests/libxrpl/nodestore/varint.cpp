@@ -36,11 +36,11 @@ TEST(varint, encode_decode)
         SCOPED_TRACE("value=" + std::to_string(v));
         std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
         auto const n0 = writeVarint(vi.data(), v);
-        EXPECT_GT(n0, 0u);
-        EXPECT_EQ(n0, sizeVarint(v));
+        EXPECT_GT(n0, 0u) << "write error";
+        EXPECT_EQ(n0, sizeVarint(v)) << "size error";
         std::size_t v1 = 0;
         auto const n1 = readVarint(vi.data(), n0, v1);
-        EXPECT_EQ(n1, n0);
-        EXPECT_EQ(v1, v);
+        EXPECT_EQ(n1, n0) << "read error";
+        EXPECT_EQ(v1, v) << "wrong value";
     }
 }
