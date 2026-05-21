@@ -178,7 +178,7 @@ private:
     /** The amount remaining from srcAccount_ after the default liquidity has
         been removed. */
     STAmount remainingAmount_;
-    bool convert_all_;
+    bool convertAll_;
     std::optional<uint256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;

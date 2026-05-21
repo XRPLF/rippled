@@ -9,6 +9,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/rate.h>
@@ -2241,7 +2242,7 @@ class Vault_test : public beast::unit_test::Suite
                      PrettyAsset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("MPT non-transferable");
+            testcase("MPT non-transferable: block deposit, allow withdraw");
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -2251,28 +2252,264 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            // Remove CanTransfer
+            // Issuer governance: clear CanTransfer. New exposure must be
+            // blocked, but recovery paths must remain open so existing
+            // depositors are not trapped.
             mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
             env.close();
 
+            // New deposit is blocked.
             env(tx, Ter{tecNO_AUTH});
             env.close();
 
+            // Existing depositor can always withdraw, even though the asset
+            // is no longer freely transferable.
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-
-            env(tx, Ter{tecNO_AUTH});
-            env.close();
-
-            // Restore CanTransfer
-            mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
-            env.close();
-
             env(tx);
             env.close();
 
             // Delete vault with zero balance
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 withdraw blocked");
+
+            // Regression: before fixCleanup3_2_0 a depositor was trapped if
+            // the issuer cleared lsfMPTCanTransfer. Verify that the legacy
+            // (broken) behavior is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: deposit blocked (matches new behavior).
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+
+            // Pre-amendment: withdraw is also blocked - this is the bug
+            // that fixCleanup3_2_0 fixes.
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+        }
+
+        {
+            testcase("MPT non-transferable: vault shares inherit restriction");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            // Bob also deposits so he has a share MPToken to receive into.
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTransfer is set on the underlying, peer-to-peer
+            // share transfers are allowed.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTransfer on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Vault shares inherit the restriction: third-party share-to-share
+            // payments are blocked.
+            env(pay(alice, bob, shares(1)), Ter{tecNO_AUTH});
+            env.close();
+
+            // Recovery path: existing share holders can still redeem shares
+            // for the underlying asset via VaultWithdraw.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = shares(1)}));
+            env.close();
+        }
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
+
+            // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
+            // succeeded even when the underlying asset's lsfMPTCanTransfer
+            // was cleared. Verify that the legacy (non-inheriting) behavior
+            // is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: share transfer leaks past underlying restriction.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+        }
+
+        {
+            testcase("MPT CanTrade governance: share inherits underlying on DEX and AMM");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(100'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTrade});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(10'000)));
+            env(pay(issuer, bob, asset(10'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Seed shares so we can later place them on trading venues.
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(5'000)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTrade is set on the underlying, both the asset
+            // and the vault share can be placed on the DEX.
+            env(offer(alice, XRP(1), asset(10)));
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTrade on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTrade});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is observable on
+            // the DEX path for that asset.
+            env(offer(alice, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is also observable
+            // on the AMM path for that asset.
+            AMM const ammUnderlyingFails(
+                env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying's
+            // CanTrade restriction on the DEX path (canTrade reads the
+            // share's sfReferenceHolding and dispatches to the underlying).
+            env(offer(bob, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // checkMPTAllowed mirrors the inheritance for AMM/Offer-
+            // crossing/Check paths, so a share AMM also cannot be created
+            // when the underlying CanTrade is cleared.
+            AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
+
+            // Deposit still works (canAddHolding does not consult the field).
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Peer-to-peer share transfers still work (CanTransfer is set on
+            // both layers).
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Withdraw still works.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+        }
 
         {
             testcase("MPT OutstandingAmount > MaximumAmount");
@@ -2744,16 +2981,17 @@ class Vault_test : public beast::unit_test::Suite
                         env(tx);
                         env.close();
                     }
-                    env(pay(owner, charlie, shares(100)));
-                    env.close();
-
-                    // Charlie cannot withdraw
-                    auto tx3 = vault.withdraw(
-                        {.depositor = charlie, .id = keylet.key, .amount = shares(100)});
-                    env(tx3, Ter{terNO_RIPPLE});
-                    env.close();
-
-                    env(pay(charlie, owner, shares(100)));
+                    // Behavioural shift introduced by share inheritance:
+                    // before fixCleanup3_2_0 this share Payment succeeded
+                    // and the underlying IOU's NoRipple restriction surfaced
+                    // only later on Charlie's withdrawal (terNO_RIPPLE).
+                    // Post-amendment, canTransfer reads the share's
+                    // sfReferenceHolding and dispatches to the underlying IOU;
+                    // rippling is disabled between owner and charlie so the
+                    // share payment itself is now blocked. tecPATH_DRY is
+                    // the path-find layer's translation of the underlying
+                    // terNO_RIPPLE under featureMPTokensV2.
+                    env(pay(owner, charlie, shares(100)), Ter{tecPATH_DRY});
                     env.close();
                 }
 
@@ -6140,6 +6378,406 @@ class Vault_test : public beast::unit_test::Suite
         runTest(amendments);
     }
 
+    void
+    testReferenceHolding()
+    {
+        using namespace test::jtx;
+
+        auto readReferenceHolding = [&](Env const& env,
+                                        Keylet const& vaultKeylet) -> std::optional<uint256> {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return std::nullopt;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return std::nullopt;
+            return sleIssuance->getFieldH256(sfReferenceHolding);
+        };
+
+        // Post-fixCleanup3_2_0: vault share carries sfReferenceHolding
+        // pointing to the vault pseudo's MPToken (for MPT-backed vaults)
+        // or RippleState (for IOU-backed vaults).
+        {
+            testcase("sfReferenceHolding: MPT-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::mptoken(mptt.issuanceID(), pseudoId).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to MPToken must actually exist.
+            BEAST_EXPECT(env.le(keylet::mptoken(mptt.issuanceID(), pseudoId)) != nullptr);
+        }
+
+        {
+            testcase("sfReferenceHolding: IOU-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to RippleState must actually exist.
+            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+        }
+
+        // XRP-backed vaults leave the field absent: XRP has no separate
+        // holding ledger entry and no transferability concept to inherit.
+        {
+            testcase("sfReferenceHolding: XRP-backed vault, field absent");
+            Env env{*this, testableAmendments()};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Pre-fixCleanup3_2_0: vault share has the field absent regardless
+        // of underlying type.
+        {
+            testcase("sfReferenceHolding: vault share, pre-amendment");
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Plain MPTokenIssuanceCreate (not a vault share) must never
+        // populate the field. Only the post-amendment case is
+        // interesting; pre-amendment nothing writes the field at all.
+        {
+            testcase("sfReferenceHolding: plain MPT issuance never set");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            env.fund(XRP(10'000), issuer);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+
+            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            if (BEAST_EXPECT(sleIssuance))
+                BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
+        }
+    }
+
+    // Probe every transactor surface that might delete the vault pseudo-
+    // account's underlying holding (the MPToken or RippleState pointed to
+    // by sfReferenceHolding). Each scenario asserts either that the
+    // existing pseudo-account guards stop the deletion at preclaim, or
+    // that the ledger leaves the holding intact afterwards. This is a
+    // regression guard: if any of these guards regresses, the share's
+    // sfReferenceHolding pointer would dangle and the new ValidMPTIssuance
+    // invariant would catch it - but we want to fail much earlier, at
+    // the transactor's preclaim / doApply, not at invariant time.
+    void
+    testHoldingDeletionBlocked()
+    {
+        using namespace test::jtx;
+
+        // Helper: read the share's referenced holding and confirm the
+        // pointed-to SLE still exists after the probe.
+        auto referencedHoldingExists = [&](Env const& env, Keylet const& vaultKeylet) -> bool {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return false;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return false;
+            auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
+            return env.le(keylet::unchecked(holdingKey)) != nullptr;
+        };
+
+        // ---- MPT-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo MPToken: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL underlying balance
+            // (500) directly from the vault pseudo-account. With the
+            // full amount, the doApply path would drain the pseudo's
+            // MPToken to zero and removeEmptyHolding would erase it -
+            // if doApply ever ran. SAV's pseudo-account guard at
+            // Clawback.cpp:201 refuses at preclaim with
+            // tecPSEUDO_ACCOUNT before any state change.
+            env(claw(issuer, asset(500), pseudoAccount), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo MPToken: Issuer cannot Unauthorize pseudo");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = issuer, .holder = owner});
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            // Issuer attempts MPTokenAuthorize against the pseudo with
+            // tfMPTUnauthorize. MPTokenAuthorize.cpp blocks pseudo
+            // accounts via isPseudoAccount; the pseudo's MPToken is
+            // preserved. Construct the tx manually since the pseudo
+            // lacks a signing key, and the issuer-driven flavour is
+            // expressed via sfHolder.
+            json::Value jv;
+            jv[sfAccount] = issuer.human();
+            jv[sfHolder] = toBase58(pseudoId);
+            jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
+            jv[sfFlags] = tfMPTUnauthorize;
+            jv[sfTransactionType] = jss::MPTokenAuthorize;
+            env(jv, Ter{tecNO_PERMISSION});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        {
+            testcase("vault pseudo MPToken: MPTokenIssuanceDestroy blocked while vault holds");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // While the vault holds outstanding underlying, the issuer
+            // cannot destroy the issuance. tecHAS_OBLIGATIONS confirms
+            // the protection - and as a side effect, the share's
+            // sfReferenceHolding pointer cannot be left pointing at a
+            // ghost issuance.
+            mptt.destroy({.id = mptt.issuanceID(), .err = tecHAS_OBLIGATIONS});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- IOU-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo trust line: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL IOU balance (500)
+            // directly from the vault pseudo. With the full amount, the
+            // doApply path would drain the trust line to zero and (if
+            // both reserve flags clear) trustDelete would erase it - if
+            // doApply ever ran. The same SAV pseudo-account guard
+            // refuses at preclaim with tecPSEUDO_ACCOUNT. The amount's
+            // STAmount issuer field is the holder, per IOU clawback
+            // convention.
+            env(claw(issuer, pseudoAccount["IOU"](500)), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo trust line: TrustSet limit=0 from issuer preserves line");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // Issuer submits TrustSet with limit=0 against the vault
+            // pseudo. The pseudo's side of the line still has the
+            // original (non-zero) limit and a non-zero balance, so the
+            // line is preserved - even though the issuer cleared its
+            // own side. trustDelete only fires when both limits clear
+            // and the balance is zero.
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            env(trust(issuer, pseudoAccount["IOU"](0)));
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- Positive control: VaultDelete is the only legitimate path
+        {
+            testcase("vault pseudo holding: VaultDelete is the legitimate cleanup path");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            auto const sharedMptId = env.le(keylet)->at(sfShareMPTID);
+            auto const holdingKeylet = keylet::mptoken(mptt.issuanceID(), pseudoId);
+
+            // VaultDelete tears down the vault pseudo's holding, the
+            // share issuance, and the pseudo-account itself. Invariant
+            // permits this because the tx is ttVAULT_DELETE.
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet) == nullptr);
+            BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+        }
+    }
+
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
     // shFULL_BALANCE), which for an IOU asset adds the counterparty's
     // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
@@ -6243,6 +6881,8 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testReferenceHolding();
+        testHoldingDeletionBlocked();
     }
 };
 

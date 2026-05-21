@@ -82,7 +82,7 @@ template <class Handler>
 void
 PlainHTTPPeer<Handler>::run()
 {
-    if (!this->handler_.onAccept(this->session(), this->remote_address_))
+    if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
         util::spawn(this->strand_, std::bind(&PlainHTTPPeer::doClose, this->shared_from_this()));
         return;
@@ -103,7 +103,7 @@ PlainHTTPPeer<Handler>::websocketUpgrade()
     auto ws = this->ios().template emplace<PlainWSPeer<Handler>>(
         this->port_,
         this->handler_,
-        this->remote_address_,
+        this->remoteAddress_,
         std::move(this->message_),
         std::move(stream_),
         this->journal_);
@@ -114,20 +114,20 @@ template <class Handler>
 void
 PlainHTTPPeer<Handler>::doRequest()
 {
-    ++this->request_count_;
+    ++this->requestCount_;
     auto const what =
-        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remote_address_);
+        this->handler_.onHandoff(this->session(), std::move(this->message_), this->remoteAddress_);
     if (what.moved)
         return;
     boost::system::error_code ec;
     if (what.response)
     {
         // half-close on Connection: close
-        if (!what.keep_alive)
+        if (!what.keepAlive)
             socket_.shutdown(socket_type::shutdown_receive, ec);
         if (ec)
             return this->fail(ec, "request");
-        return this->write(what.response, what.keep_alive);
+        return this->write(what.response, what.keepAlive);
     }
 
     // Perform half-close when Connection: close and not SSL
