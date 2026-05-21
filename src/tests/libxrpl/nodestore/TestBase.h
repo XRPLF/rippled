@@ -18,9 +18,9 @@
 
 namespace xrpl::NodeStore {
 
-constexpr std::size_t kMIN_PAYLOAD_BYTES = 1;
-constexpr std::size_t kMAX_PAYLOAD_BYTES = 2000;
-constexpr int kNUM_OBJECTS_TO_TEST = 2000;
+constexpr std::size_t kMinPayloadBytes = 1;
+constexpr std::size_t kMaxPayloadBytes = 2000;
+constexpr int kNumObjectsToTest = 2000;
 
 struct LessThan
 {
@@ -69,7 +69,7 @@ createPredictableBatch(int numObjects, std::uint64_t seed)
         uint256 hash;
         beast::rngfill(hash.begin(), hash.size(), rng);
 
-        Blob blob(randInt(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
+        Blob blob(randInt(rng, kMinPayloadBytes, kMaxPayloadBytes));
         beast::rngfill(blob.data(), blob.size(), rng);
 
         batch.emplace_back(NodeObject::createObject(type, std::move(blob), hash));

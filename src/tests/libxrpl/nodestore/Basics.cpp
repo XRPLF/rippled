@@ -16,17 +16,17 @@ constexpr std::uint64_t kSeedValue = 50;
 
 TEST(NodeStoreBasics, PredictableBatches)
 {
-    auto const batch1 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, kSeedValue);
-    auto const batch2 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, kSeedValue);
+    auto const batch1 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
+    auto const batch2 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
     EXPECT_TRUE(areBatchesEqual(batch1, batch2));
 
-    auto const batch3 = createPredictableBatch(kNUM_OBJECTS_TO_TEST, kSeedValue + 1);
+    auto const batch3 = createPredictableBatch(kNumObjectsToTest, kSeedValue + 1);
     EXPECT_FALSE(areBatchesEqual(batch1, batch3));
 }
 
 TEST(NodeStoreBasics, BlobEncoding)
 {
-    auto const batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, kSeedValue);
+    auto const batch = createPredictableBatch(kNumObjectsToTest, kSeedValue);
     for (std::size_t i = 0; i < batch.size(); ++i)
     {
         SCOPED_TRACE("blob index=" + std::to_string(i));
