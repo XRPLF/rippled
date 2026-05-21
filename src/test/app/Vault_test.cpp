@@ -9,6 +9,7 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/rate.h>
@@ -69,7 +70,7 @@ class Vault_test : public beast::unit_test::Suite
     using PrettyAsset = xrpl::test::jtx::PrettyAsset;
     using PrettyAmount = xrpl::test::jtx::PrettyAmount;
 
-    static auto constexpr kNEGATIVE_AMOUNT = [](PrettyAsset const& asset) -> PrettyAmount {
+    static constexpr auto kNegativeAmount = [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::Unchecked{}}, ""};
     };
 
@@ -206,7 +207,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 testcase(prefix + " fail to set domain on public vault");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{tecNO_PERMISSION});
                 env.close();
             }
@@ -570,7 +571,7 @@ class Vault_test : public beast::unit_test::Suite
         });
 
         testCases("MPT", [&](Env& env) -> Asset {
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = depositor});
@@ -634,7 +635,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, kDATA("test"), Ter{resultAfterCreate});
+                    env(tx, kData("test"), Ter{resultAfterCreate});
                 }
 
                 {
@@ -678,14 +679,14 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx);
 
                 tx[sfFlags] = tx[sfFlags].asUInt() | tfVaultPrivate;
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{temDISABLED});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, kDATA("Test"));
+                    env(tx, kData("Test"));
 
-                    tx[sfDomainID] = to_string(BaseUint<256>(13ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(13ul));
                     env(tx, Ter{temDISABLED});
                 }
             },
@@ -786,12 +787,12 @@ class Vault_test : public beast::unit_test::Suite
                 testcase("disabled permissioned domain");
 
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-                tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                 env(tx, Ter{temDISABLED});
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                     env(tx, Ter{temDISABLED});
                 }
 
@@ -815,33 +816,33 @@ class Vault_test : public beast::unit_test::Suite
             {
                 auto tx = vault.set({
                     .owner = owner,
-                    .id = beast::kZERO,
+                    .id = beast::kZero,
                 });
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx =
-                    vault.deposit({.depositor = owner, .id = beast::kZERO, .amount = asset(10)});
+                    vault.deposit({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
                 auto tx =
-                    vault.withdraw({.depositor = owner, .id = beast::kZERO, .amount = asset(10)});
+                    vault.withdraw({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx = vault.clawback(
-                    {.issuer = issuer, .id = beast::kZERO, .holder = owner, .amount = asset(10)});
+                    {.issuer = issuer, .id = beast::kZero, .holder = owner, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
                 auto tx = vault.del({
                     .owner = owner,
-                    .id = beast::kZERO,
+                    .id = beast::kZero,
                 });
                 env(tx, Ter{temMALFORMED});
             }
@@ -982,7 +983,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
+                    tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
                     env(tx, Ter{temMALFORMED});
                 }
             });
@@ -995,7 +996,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.deposit(
-                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
@@ -1027,7 +1028,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = vault.withdraw(
-                        {.depositor = owner, .id = keylet.key, .amount = kNEGATIVE_AMOUNT(asset)});
+                        {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
@@ -1060,7 +1061,7 @@ class Vault_test : public beast::unit_test::Suite
                     {.issuer = issuer,
                      .id = keylet.key,
                      .holder = owner,
-                     .amount = kNEGATIVE_AMOUNT(asset)});
+                     .amount = kNegativeAmount(asset)});
                 env(tx, Ter(temBAD_AMOUNT));
             }
         });
@@ -1079,13 +1080,13 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     auto tx = tx1;
-                    tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+                    tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
                     env(tx, Ter{temMALFORMED});
                 }
 
                 {
                     auto tx = tx1;
-                    tx[sfAssetsMaximum] = kNEGATIVE_AMOUNT(asset).number();
+                    tx[sfAssetsMaximum] = kNegativeAmount(asset).number();
                     env(tx, Ter{temMALFORMED});
                 }
 
@@ -1238,7 +1239,7 @@ class Vault_test : public beast::unit_test::Suite
                      Vault& vault) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             tx[sfFlags] = tfVaultPrivate;
-            tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+            tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
             testcase("non-existing domain");
             env(tx, Ter{tecOBJECT_NOT_FOUND});
         });
@@ -1415,7 +1416,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
             Vault vault{env};
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             // Locked because that is the default flag.
             mptt.create();
             Asset const asset = mptt.issuanceID();
@@ -1588,12 +1589,12 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
-            auto const kNONE = LedgerSpecificFlags(0);
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            auto const kNone = LedgerSpecificFlags(0);
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.enableClawback ? tfMPTCanClawback : kNONE) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNONE),
+                     (args.enableClawback ? tfMPTCanClawback : kNone) |
+                     (args.requireAuth ? tfMPTRequireAuth : kNone),
                  .mutableFlags = tmfMPTCanMutateCanTransfer});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -1872,8 +1873,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
-                env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
+                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
         testCase(
@@ -2211,7 +2212,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
             Vault const vault{env};
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock | lsfMPTCanClawback | tfMPTRequireAuth});
             mptt.authorize({.account = owner});
@@ -2241,7 +2242,7 @@ class Vault_test : public beast::unit_test::Suite
                      PrettyAsset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("MPT non-transferable");
+            testcase("MPT non-transferable: block deposit, allow withdraw");
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -2251,28 +2252,264 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            // Remove CanTransfer
+            // Issuer governance: clear CanTransfer. New exposure must be
+            // blocked, but recovery paths must remain open so existing
+            // depositors are not trapped.
             mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
             env.close();
 
+            // New deposit is blocked.
             env(tx, Ter{tecNO_AUTH});
             env.close();
 
+            // Existing depositor can always withdraw, even though the asset
+            // is no longer freely transferable.
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-
-            env(tx, Ter{tecNO_AUTH});
-            env.close();
-
-            // Restore CanTransfer
-            mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
-            env.close();
-
             env(tx);
             env.close();
 
             // Delete vault with zero balance
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 withdraw blocked");
+
+            // Regression: before fixCleanup3_2_0 a depositor was trapped if
+            // the issuer cleared lsfMPTCanTransfer. Verify that the legacy
+            // (broken) behavior is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: deposit blocked (matches new behavior).
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+
+            // Pre-amendment: withdraw is also blocked - this is the bug
+            // that fixCleanup3_2_0 fixes.
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+        }
+
+        {
+            testcase("MPT non-transferable: vault shares inherit restriction");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            // Bob also deposits so he has a share MPToken to receive into.
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTransfer is set on the underlying, peer-to-peer
+            // share transfers are allowed.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTransfer on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Vault shares inherit the restriction: third-party share-to-share
+            // payments are blocked.
+            env(pay(alice, bob, shares(1)), Ter{tecNO_AUTH});
+            env.close();
+
+            // Recovery path: existing share holders can still redeem shares
+            // for the underlying asset via VaultWithdraw.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = shares(1)}));
+            env.close();
+        }
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
+
+            // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
+            // succeeded even when the underlying asset's lsfMPTCanTransfer
+            // was cleared. Verify that the legacy (non-inheriting) behavior
+            // is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: share transfer leaks past underlying restriction.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+        }
+
+        {
+            testcase("MPT CanTrade governance: share inherits underlying on DEX and AMM");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(100'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTrade});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(10'000)));
+            env(pay(issuer, bob, asset(10'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Seed shares so we can later place them on trading venues.
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(5'000)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTrade is set on the underlying, both the asset
+            // and the vault share can be placed on the DEX.
+            env(offer(alice, XRP(1), asset(10)));
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTrade on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTrade});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is observable on
+            // the DEX path for that asset.
+            env(offer(alice, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is also observable
+            // on the AMM path for that asset.
+            AMM const ammUnderlyingFails(
+                env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying's
+            // CanTrade restriction on the DEX path (canTrade reads the
+            // share's sfReferenceHolding and dispatches to the underlying).
+            env(offer(bob, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // checkMPTAllowed mirrors the inheritance for AMM/Offer-
+            // crossing/Check paths, so a share AMM also cannot be created
+            // when the underlying CanTrade is cleared.
+            AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
+
+            // Deposit still works (canAddHolding does not consult the field).
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Peer-to-peer share transfers still work (CanTransfer is set on
+            // both layers).
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Withdraw still works.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+        }
 
         {
             testcase("MPT OutstandingAmount > MaximumAmount");
@@ -2400,7 +2637,7 @@ class Vault_test : public beast::unit_test::Suite
                     jv[jss::Account] = issuer.human();
                     {
                         auto& ja = jv[jss::LimitAmount] =
-                            foo(0).value().getJson(JsonOptions::KNone);
+                            foo(0).value().getJson(JsonOptions::Values::None);
                         ja[jss::issuer] = toBase58(account);
                     }
                     jv[jss::TransactionType] = jss::TrustSet;
@@ -2453,7 +2690,8 @@ class Vault_test : public beast::unit_test::Suite
                 json::Value jv;
                 jv[jss::Account] = issuer.human();
                 {
-                    auto& ja = jv[jss::LimitAmount] = asset(0).value().getJson(JsonOptions::KNone);
+                    auto& ja = jv[jss::LimitAmount] =
+                        asset(0).value().getJson(JsonOptions::Values::None);
                     ja[jss::issuer] = toBase58(account);
                 }
                 jv[jss::TransactionType] = jss::TrustSet;
@@ -2735,7 +2973,7 @@ class Vault_test : public beast::unit_test::Suite
 
                     {
                         // Create MPToken for shares held by Charlie
-                        json::Value tx{json::ObjectValue};
+                        json::Value tx{json::ValueType::Object};
                         tx[sfAccount] = charlie.human();
                         tx[sfMPTokenIssuanceID] =
                             to_string(shares.raw().get<MPTIssue>().getMptID());
@@ -2743,16 +2981,17 @@ class Vault_test : public beast::unit_test::Suite
                         env(tx);
                         env.close();
                     }
-                    env(pay(owner, charlie, shares(100)));
-                    env.close();
-
-                    // Charlie cannot withdraw
-                    auto tx3 = vault.withdraw(
-                        {.depositor = charlie, .id = keylet.key, .amount = shares(100)});
-                    env(tx3, Ter{terNO_RIPPLE});
-                    env.close();
-
-                    env(pay(charlie, owner, shares(100)));
+                    // Behavioural shift introduced by share inheritance:
+                    // before fixCleanup3_2_0 this share Payment succeeded
+                    // and the underlying IOU's NoRipple restriction surfaced
+                    // only later on Charlie's withdrawal (terNO_RIPPLE).
+                    // Post-amendment, canTransfer reads the share's
+                    // sfReferenceHolding and dispatches to the underlying IOU;
+                    // rippling is disabled between owner and charlie so the
+                    // share payment itself is now blocked. tecPATH_DRY is
+                    // the path-find layer's translation of the underlying
+                    // terNO_RIPPLE under featureMPTokensV2.
+                    env(pay(owner, charlie, shares(100)), Ter{tecPATH_DRY});
                     env.close();
                 }
 
@@ -2819,10 +3058,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
-                    BEAST_EXPECT(env.balance(vaultAccount(keylet), asset) == beast::kZERO);
+                    BEAST_EXPECT(env.balance(vaultAccount(keylet), asset) == beast::kZero);
                     auto const vault = env.le(keylet);
-                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::kZERO);
-                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::kZERO);
+                    BEAST_EXPECT(vault->at(sfAssetsAvailable) == beast::kZero);
+                    BEAST_EXPECT(vault->at(sfAssetsTotal) == beast::kZero);
                 }
 
                 env(vault.del({.owner = owner, .id = keylet.key}));
@@ -2833,8 +3072,8 @@ class Vault_test : public beast::unit_test::Suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDROPS_PER_XRP.drops(),
-                env.current()->fees().increment.drops() / kDROPS_PER_XRP.drops()};
+                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
         testCase(
@@ -3065,7 +3304,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("private vault cannot set non-existing domain");
             auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfDomainID] = to_string(BaseUint<256>(42ul));
+            tx[sfDomainID] = to_string(BaseUInt<256>(42ul));
             env(tx, Ter{tecOBJECT_NOT_FOUND});
         }
 
@@ -3078,7 +3317,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(pdOwner, credentials1));
                 auto const domainId1 = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -3099,7 +3338,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 env(pdomain::setTx(pdOwner, credentials));
                 auto const domainId = [&]() {
-                    auto tx = env.tx()->getJson(JsonOptions::KNone);
+                    auto tx = env.tx()->getJson(JsonOptions::Values::None);
                     return pdomain::getNewDomain(env.meta());
                 }();
 
@@ -3316,7 +3555,7 @@ class Vault_test : public beast::unit_test::Suite
 
             env(pdomain::setTx(owner, credentials));
             auto const domainId = [&]() {
-                auto tx = env.tx()->getJson(JsonOptions::KNone);
+                auto tx = env.tx()->getJson(JsonOptions::Values::None);
                 return pdomain::getNewDomain(env.meta());
             }();
 
@@ -3375,9 +3614,9 @@ class Vault_test : public beast::unit_test::Suite
             AccountID const accountId = xrpl::pseudoAccountAddress(*env.current(), keylet.key);
 
             env(pay(env.master.id(), accountId, XRP(1000)),
-                Seq(kAUTOFILL),
-                Fee(kAUTOFILL),
-                Sig(kAUTOFILL));
+                Seq(kAutofill),
+                Fee(kAutofill),
+                Sig(kAutofill));
         }
 
         auto [tx, keylet1] = vault.create({.owner = owner, .asset = xrpIssue()});
@@ -4197,10 +4436,10 @@ class Vault_test : public beast::unit_test::Suite
 
             // Borrow 40: assetsAvailable=60, assetsTotal=100
             env(set(d.depositor, brokerKeylet.key, STAmount(d.asset, Number(40, 0))),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, d.owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -4276,20 +4515,20 @@ class Vault_test : public beast::unit_test::Suite
 
         auto const check = [&, keylet = keylet, sle = sleVault, this](
                                json::Value const& vault,
-                               json::Value const& issuance = json::NullValue) {
+                               json::Value const& issuance = json::ValueType::Null) {
             BEAST_EXPECT(vault.isObject());
 
-            constexpr auto kCHECK_STRING =
+            static constexpr auto kCheckString =
                 [](auto& node, SField const& field, std::string v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isString() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCHECK_OBJECT =
+            static constexpr auto kCheckObject =
                 [](auto& node, SField const& field, json::Value v) -> bool {
                 return node.isMember(field.fieldName) && node[field.fieldName].isObject() &&
                     node[field.fieldName] == v;
             };
-            constexpr auto kCHECK_INT = [](auto& node, SField const& field, int v) -> bool {
+            static constexpr auto kCheckInt = [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
                     ((node[field.fieldName].isInt() && node[field.fieldName] == json::Int(v)) ||
                      (node[field.fieldName].isUInt() && node[field.fieldName] == json::UInt(v)));
@@ -4297,31 +4536,30 @@ class Vault_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(vault["LedgerEntryType"].asString() == "Vault");
             BEAST_EXPECT(vault[jss::index].asString() == strHex(keylet.key));
-            BEAST_EXPECT(kCHECK_INT(vault, sfFlags, 0));
+            BEAST_EXPECT(kCheckInt(vault, sfFlags, 0));
             // Ignore all other standard fields, this test doesn't care
 
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAccount, toBase58(sle->at(sfAccount))));
-            BEAST_EXPECT(kCHECK_OBJECT(vault, sfAsset, toJson(sle->at(sfAsset))));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsAvailable, "50"));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsMaximum, "1000"));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(kCheckString(vault, sfAccount, toBase58(sle->at(sfAccount))));
+            BEAST_EXPECT(kCheckObject(vault, sfAsset, toJson(sle->at(sfAsset))));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsAvailable, "50"));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsMaximum, "1000"));
+            BEAST_EXPECT(kCheckString(vault, sfAssetsTotal, "50"));
             BEAST_EXPECT(!vault.isMember(sfLossUnrealized.getJsonName()));
 
             auto const strShareID = strHex(sle->at(sfShareMPTID));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfShareMPTID, strShareID));
-            BEAST_EXPECT(kCHECK_STRING(vault, sfOwner, toBase58(owner.id())));
-            BEAST_EXPECT(kCHECK_INT(vault, sfSequence, sequence));
-            BEAST_EXPECT(
-                kCHECK_INT(vault, sfWithdrawalPolicy, kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE));
+            BEAST_EXPECT(kCheckString(vault, sfShareMPTID, strShareID));
+            BEAST_EXPECT(kCheckString(vault, sfOwner, toBase58(owner.id())));
+            BEAST_EXPECT(kCheckInt(vault, sfSequence, sequence));
+            BEAST_EXPECT(kCheckInt(vault, sfWithdrawalPolicy, kVaultStrategyFirstComeFirstServe));
 
             if (issuance.isObject())
             {
                 BEAST_EXPECT(issuance["LedgerEntryType"].asString() == "MPTokenIssuance");
                 BEAST_EXPECT(issuance[jss::mpt_issuance_id].asString() == strShareID);
-                BEAST_EXPECT(kCHECK_INT(issuance, sfSequence, 1));
-                BEAST_EXPECT(kCHECK_INT(
+                BEAST_EXPECT(kCheckInt(issuance, sfSequence, 1));
+                BEAST_EXPECT(kCheckInt(
                     issuance, sfFlags, int(lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer)));
-                BEAST_EXPECT(kCHECK_STRING(issuance, sfOutstandingAmount, "50000000"));
+                BEAST_EXPECT(kCheckString(issuance, sfOutstandingAmount, "50000000"));
             }
         };
 
@@ -4654,7 +4892,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace loanBroker;
         using namespace loan;
-        Env env(*this, beast::severities::KWarning);
+        Env env(*this, beast::Severity::Warning);
 
         auto const vaultAssetBalance = [&](Keylet const& vaultKeylet) {
             auto const sleVault = env.le(vaultKeylet);
@@ -4715,10 +4953,10 @@ class Vault_test : public beast::unit_test::Suite
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -4896,7 +5134,7 @@ class Vault_test : public beast::unit_test::Suite
         testCase(iou, "IOU (owner is issuer)", issuer, depositor);
 
         // Test MPT
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const mpt = mptt.issuanceID();
         mptt.authorize({.account = owner});
@@ -4915,7 +5153,7 @@ class Vault_test : public beast::unit_test::Suite
         using namespace loanBroker;
         using namespace loan;
         Env env(*this);
-        env.enableFeature(fixSecurity3_1_3);
+        env.enableFeature(fixCleanup3_1_3);
 
         auto const setupVault = [&](PrettyAsset const& asset,
                                     Account const& owner,
@@ -5106,10 +5344,10 @@ class Vault_test : public beast::unit_test::Suite
                 // Depositor borrows 40 units, reducing assetsAvailable to 60
                 // while assetsTotal stays at 100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5163,10 +5401,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5218,10 +5456,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5272,10 +5510,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5320,10 +5558,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor borrows all 100 units: assetsAvailable=0, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(100).value()),
-                    loan::kINTEREST_RATE(TenthBips32(0)),
-                    kGRACE_PERIOD(60),
-                    kPAYMENT_INTERVAL(120),
-                    kPAYMENT_TOTAL(10),
+                    loan::kInterestRate(TenthBips32(0)),
+                    kGracePeriod(60),
+                    kPaymentInterval(120),
+                    kPaymentTotal(10),
                     Sig(sfCounterpartySignature, owner),
                     Fee(env.current()->fees().base * 2),
                     Ter(tesSUCCESS));
@@ -5392,7 +5630,7 @@ class Vault_test : public beast::unit_test::Suite
         testCase(iou, "IOU", owner, depositor, issuer);
 
         // Test MPT
-        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+        MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
 
         PrettyAsset const mpt = mptt.issuanceID();
@@ -5402,14 +5640,14 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
         testCase(mpt, "MPT", owner, depositor, issuer);
 
-        // Test pre-fixSecurity3_1_3 legacy path: zero-amount clawback
+        // Test pre-fixCleanup3_1_3 legacy path: zero-amount clawback
         // returns early without clamping to assetsAvailable.
         {
             testcase(
-                "VaultClawback (asset) - IOU pre-fixSecurity3_1_3"
+                "VaultClawback (asset) - IOU pre-fixCleanup3_1_3"
                 " zero-amount clawback unclamped with outstanding loan");
 
-            env.disableFeature(fixSecurity3_1_3);
+            env.disableFeature(fixCleanup3_1_3);
 
             auto [vault, vaultKeylet] = setupVault(iou, owner, depositor, issuer);
 
@@ -5428,10 +5666,10 @@ class Vault_test : public beast::unit_test::Suite
             // Depositor borrows 40 units, reducing assetsAvailable to 60
             // while assetsTotal stays at 100
             env(set(depositor, brokerKeylet.key, iou(40).value()),
-                loan::kINTEREST_RATE(TenthBips32(0)),
-                kGRACE_PERIOD(60),
-                kPAYMENT_INTERVAL(120),
-                kPAYMENT_TOTAL(10),
+                loan::kInterestRate(TenthBips32(0)),
+                kGracePeriod(60),
+                kPaymentInterval(120),
+                kPaymentTotal(10),
                 Sig(sfCounterpartySignature, owner),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
@@ -5467,7 +5705,7 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(sharesAfter == sharesBefore);
             }
 
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
@@ -5494,10 +5732,10 @@ class Vault_test : public beast::unit_test::Suite
             static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1);
         BEAST_EXPECT(maxInt64Plus1 == "9223372036854775808");
 
-        auto const initialXRP = to_string(kINITIAL_XRP);
+        auto const initialXRP = to_string(kInitialXrp);
         BEAST_EXPECT(initialXRP == "100000000000000000");
 
-        auto const initialXRPPlus1 = to_string(kINITIAL_XRP + 1);
+        auto const initialXRPPlus1 = to_string(kInitialXrp + 1);
         BEAST_EXPECT(initialXRPPlus1 == "100000000000000001");
 
         {
@@ -5545,7 +5783,7 @@ class Vault_test : public beast::unit_test::Suite
             testcase("Assets Maximum: MPT");
 
             PrettyAsset const mptAsset = [&]() {
-                MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 env.close();
                 PrettyAsset const mptAsset = mptt["MPT"];
@@ -5685,7 +5923,7 @@ class Vault_test : public beast::unit_test::Suite
                 if (!BEAST_EXPECT(vaultSle))
                     return;
 
-                BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == kNUM_ZERO);
+                BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == kNumZero);
             }
 
             // What _can't_ IOUs do?
@@ -5737,7 +5975,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5750,8 +5988,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60 of 100 MPT tokens: sfMPTAmount drops to 40
             auto const escrowSeq = env.seq(depositor);
             env(escrow::create(depositor, bob, asset(60)),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5779,8 +6017,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // Clean up escrow
             env(escrow::finish(bob, depositor, escrowSeq),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFULFILLMENT(escrow::kFB1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5799,7 +6037,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5839,8 +6077,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60% of shares
             auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
             env(escrow::create(depositor, bob, escrowAmount),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5866,7 +6104,7 @@ class Vault_test : public beast::unit_test::Suite
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testableAmendments() | fixSecurity3_1_3};
+            Env env{*this, testableAmendments() | fixCleanup3_1_3};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -5876,7 +6114,7 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(10000), issuer, owner, depositor, bob);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
             mptt.authorize({.account = owner});
@@ -5916,8 +6154,8 @@ class Vault_test : public beast::unit_test::Suite
             // Escrow 60% of shares
             auto const escrowAmount = shares(Number{6, vaultSle->at(sfScale) + 1});
             env(escrow::create(depositor, bob, escrowAmount),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -5956,9 +6194,9 @@ class Vault_test : public beast::unit_test::Suite
 
         auto const allAmendments = testableAmendments() | featureSingleAssetVault;
 
-        for (auto const& features : {allAmendments, allAmendments - fixSecurity3_1_3})
+        for (auto const& features : {allAmendments, allAmendments - fixCleanup3_1_3})
         {
-            bool const withFix = features[fixSecurity3_1_3];
+            bool const withFix = features[fixCleanup3_1_3];
 
             Env env{*this, features};
             Account const owner{"owner"};
@@ -6065,7 +6303,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             // Create an MPT asset for the vault
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
@@ -6096,8 +6334,8 @@ class Vault_test : public beast::unit_test::Suite
 
             // Escrow 500 of those shares
             env(escrow::create(depositor, bob, STAmount{shareIssue, 500}),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFINISH_TIME(env.now() + 1s),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
             env.close();
@@ -6116,7 +6354,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const sleMptAfter = env.le(keylet::mptoken(shareMptID, depositor));
-            if (!f[fixSecurity3_1_3])
+            if (!f[fixCleanup3_1_3])
             {
                 // Without the fix, removeEmptyHolding deletes the MPToken
                 // even though sfLockedAmount > 0, leaving the escrow's locked
@@ -6136,14 +6374,494 @@ class Vault_test : public beast::unit_test::Suite
             }
         };
 
-        runTest(amendments - fixSecurity3_1_3);
+        runTest(amendments - fixCleanup3_1_3);
         runTest(amendments);
+    }
+
+    void
+    testReferenceHolding()
+    {
+        using namespace test::jtx;
+
+        auto readReferenceHolding = [&](Env const& env,
+                                        Keylet const& vaultKeylet) -> std::optional<uint256> {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return std::nullopt;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return std::nullopt;
+            return sleIssuance->getFieldH256(sfReferenceHolding);
+        };
+
+        // Post-fixCleanup3_2_0: vault share carries sfReferenceHolding
+        // pointing to the vault pseudo's MPToken (for MPT-backed vaults)
+        // or RippleState (for IOU-backed vaults).
+        {
+            testcase("sfReferenceHolding: MPT-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::mptoken(mptt.issuanceID(), pseudoId).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to MPToken must actually exist.
+            BEAST_EXPECT(env.le(keylet::mptoken(mptt.issuanceID(), pseudoId)) != nullptr);
+        }
+
+        {
+            testcase("sfReferenceHolding: IOU-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to RippleState must actually exist.
+            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+        }
+
+        // XRP-backed vaults leave the field absent: XRP has no separate
+        // holding ledger entry and no transferability concept to inherit.
+        {
+            testcase("sfReferenceHolding: XRP-backed vault, field absent");
+            Env env{*this, testableAmendments()};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Pre-fixCleanup3_2_0: vault share has the field absent regardless
+        // of underlying type.
+        {
+            testcase("sfReferenceHolding: vault share, pre-amendment");
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Plain MPTokenIssuanceCreate (not a vault share) must never
+        // populate the field. Only the post-amendment case is
+        // interesting; pre-amendment nothing writes the field at all.
+        {
+            testcase("sfReferenceHolding: plain MPT issuance never set");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            env.fund(XRP(10'000), issuer);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+
+            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            if (BEAST_EXPECT(sleIssuance))
+                BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
+        }
+    }
+
+    // Probe every transactor surface that might delete the vault pseudo-
+    // account's underlying holding (the MPToken or RippleState pointed to
+    // by sfReferenceHolding). Each scenario asserts either that the
+    // existing pseudo-account guards stop the deletion at preclaim, or
+    // that the ledger leaves the holding intact afterwards. This is a
+    // regression guard: if any of these guards regresses, the share's
+    // sfReferenceHolding pointer would dangle and the new ValidMPTIssuance
+    // invariant would catch it - but we want to fail much earlier, at
+    // the transactor's preclaim / doApply, not at invariant time.
+    void
+    testHoldingDeletionBlocked()
+    {
+        using namespace test::jtx;
+
+        // Helper: read the share's referenced holding and confirm the
+        // pointed-to SLE still exists after the probe.
+        auto referencedHoldingExists = [&](Env const& env, Keylet const& vaultKeylet) -> bool {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return false;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return false;
+            auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
+            return env.le(keylet::unchecked(holdingKey)) != nullptr;
+        };
+
+        // ---- MPT-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo MPToken: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL underlying balance
+            // (500) directly from the vault pseudo-account. With the
+            // full amount, the doApply path would drain the pseudo's
+            // MPToken to zero and removeEmptyHolding would erase it -
+            // if doApply ever ran. SAV's pseudo-account guard at
+            // Clawback.cpp:201 refuses at preclaim with
+            // tecPSEUDO_ACCOUNT before any state change.
+            env(claw(issuer, asset(500), pseudoAccount), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo MPToken: Issuer cannot Unauthorize pseudo");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = issuer, .holder = owner});
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            // Issuer attempts MPTokenAuthorize against the pseudo with
+            // tfMPTUnauthorize. MPTokenAuthorize.cpp blocks pseudo
+            // accounts via isPseudoAccount; the pseudo's MPToken is
+            // preserved. Construct the tx manually since the pseudo
+            // lacks a signing key, and the issuer-driven flavour is
+            // expressed via sfHolder.
+            json::Value jv;
+            jv[sfAccount] = issuer.human();
+            jv[sfHolder] = toBase58(pseudoId);
+            jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
+            jv[sfFlags] = tfMPTUnauthorize;
+            jv[sfTransactionType] = jss::MPTokenAuthorize;
+            env(jv, Ter{tecNO_PERMISSION});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        {
+            testcase("vault pseudo MPToken: MPTokenIssuanceDestroy blocked while vault holds");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // While the vault holds outstanding underlying, the issuer
+            // cannot destroy the issuance. tecHAS_OBLIGATIONS confirms
+            // the protection - and as a side effect, the share's
+            // sfReferenceHolding pointer cannot be left pointing at a
+            // ghost issuance.
+            mptt.destroy({.id = mptt.issuanceID(), .err = tecHAS_OBLIGATIONS});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- IOU-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo trust line: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL IOU balance (500)
+            // directly from the vault pseudo. With the full amount, the
+            // doApply path would drain the trust line to zero and (if
+            // both reserve flags clear) trustDelete would erase it - if
+            // doApply ever ran. The same SAV pseudo-account guard
+            // refuses at preclaim with tecPSEUDO_ACCOUNT. The amount's
+            // STAmount issuer field is the holder, per IOU clawback
+            // convention.
+            env(claw(issuer, pseudoAccount["IOU"](500)), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo trust line: TrustSet limit=0 from issuer preserves line");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // Issuer submits TrustSet with limit=0 against the vault
+            // pseudo. The pseudo's side of the line still has the
+            // original (non-zero) limit and a non-zero balance, so the
+            // line is preserved - even though the issuer cleared its
+            // own side. trustDelete only fires when both limits clear
+            // and the balance is zero.
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            env(trust(issuer, pseudoAccount["IOU"](0)));
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- Positive control: VaultDelete is the only legitimate path
+        {
+            testcase("vault pseudo holding: VaultDelete is the legitimate cleanup path");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            auto const sharedMptId = env.le(keylet)->at(sfShareMPTID);
+            auto const holdingKeylet = keylet::mptoken(mptt.issuanceID(), pseudoId);
+
+            // VaultDelete tears down the vault pseudo's holding, the
+            // share issuance, and the pseudo-account itself. Invariant
+            // permits this because the tx is ttVAULT_DELETE.
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet) == nullptr);
+            BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+        }
+    }
+
+    // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
+    // shFULL_BALANCE), which for an IOU asset adds the counterparty's
+    // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
+    // getTrustLineBalance with includeOppositeLimit=true). When the
+    // depositor's raw balance < deposit amount but raw + opposite limit >=
+    // amount, preclaim is satisfied. doApply then calls
+    // directSendNoFeeIOU, which unconditionally subtracts saAmount from
+    // saBalance — driving the trust line negative — and returns tesSUCCESS.
+    // The post-send sanity check uses the default shSIMPLE_BALANCE (no
+    // opposite-limit add), sees a negative balance, and returns tefINTERNAL.
+    void
+    testVaultDepositNegativeBalanceFromOppositeLimit()
+    {
+        auto runTest = [&](FeatureBitset f, TER expected) {
+            using namespace test::jtx;
+            using namespace std::literals;
+
+            Env env{*this, f};
+            Account const gw{"gateway"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+
+            env.fund(XRP(10000), gw, owner, depositor);
+            env.close();
+
+            // Gateway with DefaultRipple so vault creation on its IOU works.
+            env(fset(gw, asfDefaultRipple));
+            env.close();
+
+            // Depositor opens a trust line to gateway and receives a small
+            // balance.
+            PrettyAsset const usd = gw["USD"];
+            env.trust(usd(1000), depositor);
+            env(pay(gw, depositor, usd(100)));  // raw trust-line balance: 100
+            env.close();
+
+            // Key precondition: gateway sets a non-zero limit on the same
+            // RippleState — the "opposite field" from depositor's perspective.
+            // This is what inflates shFULL_BALANCE in preclaim above the raw
+            // balance.
+            env(trust(gw, depositor["USD"](1000)));
+            env.close();
+
+            // Create the IOU vault.
+            Vault const vault{env};
+            auto [vaultTx, keylet] = vault.create({.owner = owner, .asset = usd});
+            env(vaultTx);
+            env.close();
+
+            // Submit a deposit of 500 USD:
+            //   - raw balance:                100 USD
+            //   - opposite limit (gw's side): 1000 USD
+            //   - preclaim sees 100 + 1000 = 1100, passes (>= 500)
+            //   - doApply transfers 500, depositor's trust-line balance
+            //     becomes -400
+            //   - sanity check at VaultDeposit.cpp:256 fires
+            //   - tx returns tefINTERNAL (BUG — should be tesSUCCESS.
+            auto depositTx =
+                vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(500)});
+            env(depositTx, Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "IOU vault deposit exceeding depositor's balance but "
+                "within counterparty's trust limit, pre-fixCleanup3_2_0 "
+                "(tefINTERNAL)");
+            runTest(test::jtx::testableAmendments() - fixCleanup3_2_0, tefINTERNAL);
+        }
+        {
+            testcase(
+                "IOU vault deposit exceeding depositor's balance but "
+                "within counterparty's trust limit, post-fixCleanup3_2_0 "
+                "(tesSUCCESS)");
+            runTest(test::jtx::testableAmendments(), tesSUCCESS);
+        }
     }
 
 public:
     void
     run() override
     {
+        testVaultDepositNegativeBalanceFromOppositeLimit();
         testSequences();
         testPreflight();
         testCreateFailXRP();
@@ -6163,6 +6881,8 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testReferenceHolding();
+        testHoldingDeletionBlocked();
     }
 };
 

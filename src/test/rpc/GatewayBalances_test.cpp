@@ -190,7 +190,7 @@ public:
         auto usd = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(usd, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+        STAmount const maxUSD(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -259,7 +259,7 @@ public:
 
         // Bob creates an escrow of MPT to Alice.
         auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
-        env(escrow::create(bob, alice, MPT(100)), escrow::kFINISH_TIME(env.now() + 10s));
+        env(escrow::create(bob, alice, MPT(100)), escrow::kFinishTime(env.now() + 10s));
         env.close();
 
         // Query gateway_balances for Bob.

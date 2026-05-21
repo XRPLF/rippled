@@ -231,7 +231,7 @@ ConnectAttempt::setTimer(ConnectionStep step)
     {
         try
         {
-            timer_.expires_after(kCONNECT_TIMEOUT);
+            timer_.expires_after(kConnectTimeout);
             timer_.async_wait(
                 boost::asio::bind_executor(
                     strand_,
@@ -253,19 +253,19 @@ ConnectAttempt::setTimer(ConnectionStep step)
         switch (step)
         {
             case ConnectionStep::TcpConnect:
-                stepTimeout = StepTimeouts::kTCP_CONNECT;
+                stepTimeout = StepTimeouts::kTcpConnect;
                 break;
             case ConnectionStep::TlsHandshake:
-                stepTimeout = StepTimeouts::kTLS_HANDSHAKE;
+                stepTimeout = StepTimeouts::kTlsHandshake;
                 break;
             case ConnectionStep::HttpWrite:
-                stepTimeout = StepTimeouts::kHTTP_WRITE;
+                stepTimeout = StepTimeouts::kHttpWrite;
                 break;
             case ConnectionStep::HttpRead:
-                stepTimeout = StepTimeouts::kHTTP_READ;
+                stepTimeout = StepTimeouts::kHttpRead;
                 break;
             case ConnectionStep::ShutdownStarted:
-                stepTimeout = StepTimeouts::kTLS_SHUTDOWN;
+                stepTimeout = StepTimeouts::kTlsShutdown;
                 break;
             case ConnectionStep::Complete:
             case ConnectionStep::Init:
@@ -432,10 +432,10 @@ ConnectAttempt::onHandshake(error_code ec)
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
-        app_.config().COMPRESSION,
-        app_.config().LEDGER_REPLAY,
-        app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
+        app_.config().compression,
+        app_.config().ledgerReplay,
+        app_.config().txReduceRelayEnable,
+        app_.config().vpReduceRelayBaseSquelchEnable);
 
     buildHandshake(
         req_,

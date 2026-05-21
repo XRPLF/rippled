@@ -73,7 +73,8 @@ class CheckMPT_test : public beast::unit_test::Suite
     verifyDeliveredAmount(test::jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -85,8 +86,8 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::KNone));
-        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::KNone));
+        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::Values::None));
     }
 
     void
@@ -282,7 +283,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         STAmount const startBalance{XRP(1'000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
 
-        auto usdm = MPTTester({.env = env, .issuer = gw1, .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
+        auto usdm = MPTTester({.env = env, .issuer = gw1, .flags = kMptDexFlags | tfMPTCanLock});
         MPT const usd = usdm;
 
         // Bad fee.
@@ -348,7 +349,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Globally frozen asset.
             env.close();
             auto usfm =
-                MPTTester({.env = env, .issuer = gwF, .flags = kMPT_DEX_FLAGS | tfMPTCanLock});
+                MPTTester({.env = env, .issuer = gwF, .flags = kMptDexFlags | tfMPTCanLock});
             MPT const usf = usfm;
             usfm.set({.flags = tfMPTLock});
 
@@ -662,7 +663,7 @@ class CheckMPT_test : public beast::unit_test::Suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
-                 .flags = kMPT_DEX_FLAGS | tfMPTRequireAuth,
+                 .flags = kMptDexFlags | tfMPTRequireAuth,
                  .maxAmt = 20});
             MPT const usd = usdm;
             usdm.authorize({.holder = alice});
@@ -855,7 +856,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             {.env = env,
              .issuer = gw,
              .holders = {alice},
-             .flags = kMPT_DEX_FLAGS | tfMPTCanLock,
+             .flags = kMptDexFlags | tfMPTCanLock,
              .maxAmt = maxAmt});
         MPT const usd = usdm;
 
@@ -928,7 +929,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Both Amount and DeliverMin present.
             {
                 json::Value tx{check::cash(bob, chkId, amount)};
-                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::KNone);
+                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::Values::None);
                 env(tx, Ter(temMALFORMED));
                 env.close();
             }
@@ -1421,7 +1422,7 @@ class CheckMPT_test : public beast::unit_test::Suite
                     Throw<std::runtime_error>("AccountOwns: must be issuer");
                 if (auto const& it = mpts.find(s); it != mpts.end())
                     return it->second[s];
-                auto flags = kMPT_DEX_FLAGS | tfMPTCanLock;
+                auto flags = kMptDexFlags | tfMPTCanLock;
                 if (requireAuth)
                     flags |= tfMPTRequireAuth;
                 auto [it, _] =
