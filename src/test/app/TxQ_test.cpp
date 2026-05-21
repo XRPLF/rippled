@@ -1626,7 +1626,7 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{Keys::kAccountReserve, "200"}, {Keys::kAccountReserve, "50"}}));
+                {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
