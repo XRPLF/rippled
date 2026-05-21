@@ -23,12 +23,7 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCacheTest : public ::testing::Test
-{
-public:
-};
-
-TEST_F(TaggedCacheTest, tagged_cache)
+TEST(TaggedCacheTest, tagged_cache)
 {
     using namespace std::chrono_literals;
     beast::Journal const journal{TestSink::instance()};
