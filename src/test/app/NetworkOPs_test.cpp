@@ -402,6 +402,7 @@ public:
         env.fund(XRP(10000), alice, bob);
         env(pay(alice, bob, XRP(1)));
         env.close();
+        env.app().getJobQueue().rendezvous();
 
         auto& ops = env.app().getOPs();
 
