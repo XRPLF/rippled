@@ -974,7 +974,7 @@ hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::J
     if (depth > 10)
     {
         JLOG(j.error()) << "hasInvalidMPTAmount: depth exceeds 10";
-        return false;
+        return true;
     }
 
     if (auto const amount = dynamic_cast<STAmount const*>(&field))
