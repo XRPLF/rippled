@@ -266,6 +266,7 @@ xrpld.overlay > xrpld.core
 xrpld.overlay > xrpld.peerfinder
 xrpld.overlay > xrpl.json
 xrpld.overlay > xrpl.ledger
+xrpld.overlay > xrpl.peerfinder
 xrpld.overlay > xrpl.protocol
 xrpld.overlay > xrpl.resource
 xrpld.overlay > xrpl.server
