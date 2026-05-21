@@ -95,15 +95,12 @@ invalidAMMAssetPair(
 
 NotTEC
 invalidAMMAmount(
-    Rules const& rules,
     STAmount const& amount,
     std::optional<std::pair<Asset, Asset>> const& pair,
     bool validZero)
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (!isLegalMPT(rules, amount))
-        return temBAD_AMOUNT;
     if (amount < beast::kZero || (!validZero && amount == beast::kZero))
         return temBAD_AMOUNT;
     return tesSUCCESS;

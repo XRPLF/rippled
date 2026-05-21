@@ -63,7 +63,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 
     // Make sure the amount is valid.
     STAmount const value{optAmount ? *optAmount : *optDeliverMin};
-    if (!isLegalNet(ctx.rules, value) || value.signum() <= 0)
+    if (!isLegalNet(value) || value.signum() <= 0)
     {
         JLOG(ctx.j.warn()) << "Malformed transaction: bad amount: " << value.getFullText();
         return temBAD_AMOUNT;
@@ -139,6 +139,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
+        // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
+        // preflight only validates the CheckCash transaction, not the stored Check.
         if (!isLegalMPT(ctx.view.rules(), sendMax))
             return temBAD_AMOUNT;
 

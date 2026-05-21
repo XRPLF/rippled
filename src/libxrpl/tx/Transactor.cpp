@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -252,6 +253,15 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::preflightUniversal(PreflightContext const& ctx)
+{
+    if (hasInvalidMPTAmount(ctx.rules, ctx.tx, 0, ctx.j))
+        return temBAD_AMOUNT;
 
     return tesSUCCESS;
 }

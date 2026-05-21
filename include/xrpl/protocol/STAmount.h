@@ -594,12 +594,6 @@ isLegalMPT(Rules const& rules, STAmount const& value)
         (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
 }
 
-inline bool
-isLegalNet(Rules const& rules, STAmount const& value)
-{
-    return isLegalNet(value) && isLegalMPT(rules, value);
-}
-
 //------------------------------------------------------------------------------
 //
 // Operators

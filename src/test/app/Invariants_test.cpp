@@ -3981,17 +3981,6 @@ class Invariants_test : public beast::unit_test::Suite
                             tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
                         }};
         };
-        auto const negativeMPTPayment = [&]() {
-            return STTx{ttPAYMENT, [&](STObject& tx) {
-                            tx.setFieldAmount(sfAmount, negativeMPTAmount(sfAmount));
-                        }};
-        };
-
-        doInvariantCheck(
-            {{"transaction contains non-canonical MPT amount"}},
-            [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{},
-            nonCanonicalMPTPayment());
 
         doInvariantCheck(
             Env{*this, defaultAmendments() - fixCleanup3_2_0},
@@ -4015,12 +4004,6 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleNew);
                 return true;
             });
-
-        doInvariantCheck(
-            {{"transaction contains non-canonical MPT amount"}},
-            [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{},
-            negativeMPTPayment());
 
         doInvariantCheck(
             {{"ledger entry contains non-canonical MPT amount"}},

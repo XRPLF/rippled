@@ -64,13 +64,13 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_AMM_TOKENS;
     }
 
-    if (auto const err = invalidAMMAmount(ctx.rules, amount))
+    if (auto const err = invalidAMMAmount(amount))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset1 amount.";
         return err;
     }
 
-    if (auto const err = invalidAMMAmount(ctx.rules, amount2))
+    if (auto const err = invalidAMMAmount(amount2))
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid asset2 amount.";
         return err;

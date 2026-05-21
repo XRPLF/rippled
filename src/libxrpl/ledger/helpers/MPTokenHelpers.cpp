@@ -29,6 +29,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -950,6 +951,42 @@ checkMPTTxAllowed(
     // use isDEXAllowed for payment/offer crossing
     XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
     return checkMPTAllowed(view, txType, asset, accountID);
+}
+
+static bool
+hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth, beast::Journal j)
+{
+    return std::ranges::any_of(
+        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth, j); });
+}
+
+static bool
+hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth, beast::Journal j)
+{
+    return std::ranges::any_of(array, [&](STObject const& object) {
+        return hasInvalidMPTAmount(rules, object, depth, j);
+    });
+}
+
+bool
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j)
+{
+    if (depth > 10)
+    {
+        JLOG(j.error()) << "hasInvalidMPTAmount: depth exceeds 10";
+        return false;
+    }
+
+    if (auto const amount = dynamic_cast<STAmount const*>(&field))
+        return !isLegalMPT(rules, *amount);
+
+    if (auto const object = dynamic_cast<STObject const*>(&field))
+        return hasInvalidMPTAmount(rules, *object, depth + 1, j);
+
+    if (auto const array = dynamic_cast<STArray const*>(&field))
+        return hasInvalidMPTAmount(rules, *array, depth + 1, j);
+
+    return false;
 }
 
 }  // namespace xrpl

@@ -2647,7 +2647,9 @@ class MPToken_test : public beast::unit_test::Suite
                 env.submit(tx);
             }
             {
-                // sfTakerPays is MPT: both amendments active, expect temBAD_AMOUNT
+                // sfTakerPays is MPT: both amendments active. Negative offers
+                // fail in OfferCreate::preflight() before the universal check;
+                // positive non-canonical amounts fail in the universal check.
                 Env env{*this, withFix};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
@@ -2659,11 +2661,13 @@ class MPToken_test : public beast::unit_test::Suite
                     sfTakerPays,
                     badTakerPays,
                     alice);
-                tx.ter = temBAD_AMOUNT;
+                tx.ter = bad.negative ? TER{temBAD_OFFER} : TER{temBAD_AMOUNT};
                 env.submit(tx);
             }
             {
-                // sfTakerGets is MPT: both amendments active, expect temBAD_AMOUNT
+                // sfTakerGets is MPT: both amendments active. Negative offers
+                // fail in OfferCreate::preflight() before the universal check;
+                // positive non-canonical amounts fail in the universal check.
                 Env env{*this, withFix};
                 env.fund(XRP(100'000), alice, bob, gw);
                 env.close();
@@ -2675,7 +2679,7 @@ class MPToken_test : public beast::unit_test::Suite
                     sfTakerGets,
                     badTakerGets,
                     alice);
-                tx.ter = temBAD_AMOUNT;
+                tx.ter = bad.negative ? TER{temBAD_OFFER} : TER{temBAD_AMOUNT};
                 env.submit(tx);
             }
 

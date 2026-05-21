@@ -39,7 +39,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
-    if (!isLegalNet(ctx.rules, dstAmount))
+    if (!isLegalNet(dstAmount))
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination])

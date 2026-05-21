@@ -398,6 +398,15 @@ private:
     static NotTEC
     preflight2(PreflightContext const& ctx);
 
+    /** Universal validations
+     * - MPTAmount : {0, 2**63 - 1}
+
+        Do not try to call preflightUniversal from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflightUniversal(PreflightContext const& ctx);
+
     /** Check transaction-specific invariants only.
      *
      *  Walks every modified ledger entry via visitInvariantEntry, then
@@ -464,6 +473,9 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return ret;
 
     if (auto const ret = T::preflight(ctx))
+        return ret;
+
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
     if (auto const ret = preflight2(ctx))

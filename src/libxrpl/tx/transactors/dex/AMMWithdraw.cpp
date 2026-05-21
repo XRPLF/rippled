@@ -143,7 +143,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (amount)
     {
         if (auto const res = invalidAMMAmount(
-                ctx.rules,
                 *amount,
                 std::make_optional(std::make_pair(asset, asset2)),
                 ((flags & (tfOneAssetWithdrawAll | tfOneAssetLPToken)) != 0u) || ePrice))
@@ -155,8 +154,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     if (amount2)
     {
-        if (auto const res = invalidAMMAmount(
-                ctx.rules, *amount2, std::make_optional(std::make_pair(asset, asset2))))
+        if (auto const res =
+                invalidAMMAmount(*amount2, std::make_optional(std::make_pair(asset, asset2))))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw: invalid Asset2OutAmount";
             return res;
@@ -165,7 +164,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     if (ePrice)
     {
-        if (auto const res = invalidAMMAmount(ctx.rules, *ePrice))
+        if (auto const res = invalidAMMAmount(*ePrice))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice";
             return res;

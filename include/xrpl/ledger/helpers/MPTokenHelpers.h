@@ -240,4 +240,10 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 TER
 checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID const& accountID);
 
+/* Check recursively if an object has invalid MPTAmount in STAmount field.
+ * Valid MPTAmount is in range {0, 2**63-1}
+ */
+bool
+hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j);
+
 }  // namespace xrpl

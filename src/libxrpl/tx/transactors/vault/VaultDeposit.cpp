@@ -12,7 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -35,8 +34,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    auto const amount = ctx.tx[sfAmount];
-    if (amount <= beast::kZero || !isLegalMPT(ctx.rules, amount))
+    if (ctx.tx[sfAmount] <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

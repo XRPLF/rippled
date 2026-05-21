@@ -45,7 +45,6 @@ ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccoun
  */
 NotTEC
 invalidAMMAmount(
-    Rules const& rules,
     STAmount const& amount,
     std::optional<std::pair<Asset, Asset>> const& pair = std::nullopt,
     bool validZero = false);

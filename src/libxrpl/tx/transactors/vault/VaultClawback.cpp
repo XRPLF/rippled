@@ -49,10 +49,6 @@ VaultClawback::preflight(PreflightContext const& ctx)
         {
             return temBAD_AMOUNT;
         }
-        if (!isLegalMPT(ctx.rules, *amount))
-        {
-            return temBAD_AMOUNT;
-        }
         if (isXRP(amount->asset()))
         {
             JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";

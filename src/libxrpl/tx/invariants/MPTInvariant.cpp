@@ -11,66 +11,18 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 
 namespace xrpl {
-
-namespace {
-
-bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal);
-
-bool
-hasInvalidMPTAmount(Rules const& rules, STObject const& object, int depth, beast::Journal j)
-{
-    return std::ranges::any_of(
-        object, [&](STBase const& field) { return hasInvalidMPTAmount(rules, field, depth, j); });
-}
-
-bool
-hasInvalidMPTAmount(Rules const& rules, STArray const& array, int depth, beast::Journal j)
-{
-    return std::ranges::any_of(array, [&](STObject const& object) {
-        return hasInvalidMPTAmount(rules, object, depth, j);
-    });
-}
-
-bool
-hasInvalidMPTAmount(Rules const& rules, STBase const& field, int depth, beast::Journal j)
-{
-    if (depth > 10)
-    {
-        JLOG(j.error()) << "hasInvalidMPTAmount: depth exceeds 10";
-        return false;
-    }
-
-    if (auto const amount = dynamic_cast<STAmount const*>(&field))
-        return !isLegalMPT(rules, *amount);
-
-    if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidMPTAmount(rules, *object, depth + 1, j);
-
-    if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidMPTAmount(rules, *array, depth + 1, j);
-
-    return false;
-}
-
-}  // namespace
 
 void
 ValidMPTAmounts::visitEntry(
@@ -91,23 +43,17 @@ ValidMPTAmounts::finalize(
     beast::Journal const& j) const
 {
     auto const& rules = view.rules();
-    if (!rules.enabled(fixCleanup3_2_0))
-        return true;
 
-    bool const badTx = hasInvalidMPTAmount(rules, tx, 0, j);
     bool const badLedgerEntry = std::ranges::any_of(
         afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(rules, *sle, 0, j); });
 
-    if (badTx)
-    {
-        JLOG(j.fatal()) << "Invariant failed: transaction contains non-canonical MPT amount";
-    }
     if (badLedgerEntry)
     {
         JLOG(j.fatal()) << "Invariant failed: ledger entry contains non-canonical MPT amount";
+        return !rules.enabled(fixCleanup3_2_0);
     }
 
-    return !badTx && !badLedgerEntry;
+    return true;
 }
 
 void
