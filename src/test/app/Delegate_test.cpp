@@ -28,6 +28,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -1880,6 +1881,149 @@ class Delegate_test : public beast::unit_test::Suite
     }
 
     void
+    testMultiSignDelegatorAsSigner()
+    {
+        // checkMultiSign disallows the owner of the account to
+        // be part of the multisigner list. When it is a delegated transaction,
+        // the delegate account should not be part of the multisigner list.
+        testcase("test delegator as multisigner in delegate's signer list");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        env.fund(XRP(100000), alice, bob, carol, daria);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        // bob's signer list includes the delegator alice and daria
+        env(signers(bob, 2, {{alice, 1}, {daria, 1}}));
+        env.close();
+
+        auto aliceBalance = env.balance(alice);
+        auto bobBalance = env.balance(bob);
+        auto carolBalance = env.balance(carol);
+        auto const amt = 100;
+
+        // alice can sign as a multisigner for bob
+        env(pay(alice, carol, XRP(100)), Fee(XRP(10)), delegate::As(bob), Msig(alice, daria));
+        env.close();
+
+        BEAST_EXPECT(env.balance(alice) == aliceBalance - XRP(amt));
+        BEAST_EXPECT(env.balance(bob) == bobBalance - XRP(10));
+        BEAST_EXPECT(env.balance(carol) == carolBalance + XRP(amt));
+
+        // alice can not sign as a multisigner if she sent the transaction by herself.
+        env(pay(alice, carol, XRP(100)), Fee(XRP(10)), Msig(alice, daria), Ter(telENV_RPC_FAILED));
+        env.close();
+
+        // Get new balances
+        aliceBalance = env.balance(alice);
+        bobBalance = env.balance(bob);
+        carolBalance = env.balance(carol);
+
+        // bob (the delegate) should not appear as a multisigner in his transaction sent on behalf
+        // of alice. STTx::checkMultiSign catches this at the local-check stage, so the jtx
+        // framework returns telENV_RPC_FAILED.
+        env(pay(alice, carol, XRP(50)),
+            Fee(XRP(10)),
+            delegate::As(bob),
+            Msig(alice, bob),
+            Ter(telENV_RPC_FAILED));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == aliceBalance);
+        BEAST_EXPECT(env.balance(bob) == bobBalance);
+        BEAST_EXPECT(env.balance(carol) == carolBalance);
+    }
+
+    void
+    testSignForDelegated()
+    {
+        // In sortAndValidateSigners, if it is a delegated transaction, the delegate account is
+        // the forbidden account from appearing in its own Signers array.
+        testcase("test sign_for with delegated transaction");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        env.fund(XRP(100000), alice, bob, carol, daria);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        // bob's signer list includes the delegator alice and daria
+        env(signers(bob, 2, {{alice, 1}, {daria, 1}}));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        auto const sendAmt = 1'000'000;
+        auto makeDelegateTx = [&]() -> json::Value {
+            json::Value jv;
+            jv[jss::tx_json][jss::Account] = alice.human();
+            jv[jss::tx_json][sfDelegate.jsonName] = bob.human();
+            jv[jss::tx_json][jss::TransactionType] = jss::Payment;
+            jv[jss::tx_json][jss::Destination] = carol.human();
+            jv[jss::tx_json][jss::Amount] = sendAmt;
+            jv[jss::tx_json][jss::Fee] = std::to_string((10 * baseFee).drops());
+            jv[jss::tx_json][jss::Sequence] = env.seq(alice);
+            jv[jss::tx_json][jss::SigningPubKey] = "";
+            return jv;
+        };
+
+        // The delegator alice and daria both sign via sign_for, which is valid
+        {
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const dariaBalance = env.balance(daria);
+            auto const carolBalance = env.balance(carol);
+
+            json::Value jv = makeDelegateTx();
+            jv[jss::account] = alice.human();
+            jv[jss::secret] = alice.name();
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            json::Value jv2;
+            jv2[jss::tx_json] = jrr[jss::tx_json];
+            jv2[jss::account] = daria.human();
+            jv2[jss::secret] = daria.name();
+            jrr = env.rpc("json", "sign_for", to_string(jv2))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            json::Value jvSubmit;
+            jvSubmit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == aliceBalance - XRPAmount(sendAmt));
+            BEAST_EXPECT(env.balance(bob) == bobBalance - (10 * baseFee));
+            BEAST_EXPECT(env.balance(daria) == dariaBalance);
+            BEAST_EXPECT(env.balance(carol) == carolBalance + XRPAmount(sendAmt));
+        }
+
+        // The delegated account bob attempts sign_for, will be rejected.
+        {
+            json::Value jv = makeDelegateTx();
+            jv[jss::account] = bob.human();
+            jv[jss::secret] = bob.name();
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(
+                jrr[jss::error_message].asString().find(
+                    "A Signer may not be the transaction's Account") != std::string::npos);
+        }
+    }
+
+    void
     testPermissionValue(FeatureBitset features)
     {
         testcase("test permission value");
@@ -2086,6 +2230,8 @@ class Delegate_test : public beast::unit_test::Suite
         testSingleSignBadSecret();
         testMultiSign();
         testMultiSignQuorumNotMet();
+        testMultiSignDelegatorAsSigner();
+        testSignForDelegated();
         testPermissionValue(all);
         testTxRequireFeatures(all);
         testTxDelegableCount();

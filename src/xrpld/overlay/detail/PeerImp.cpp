@@ -158,22 +158,20 @@ PeerImp::PeerImp(
     , request_(std::move(request))
     , headers_(request_)
     , compressionEnabled_(
-          peerFeatureEnabled(headers_, kFeatureCompr, "lz4", app_.config().COMPRESSION)
+          peerFeatureEnabled(headers_, kFeatureCompr, "lz4", app_.config().compression)
               ? Compressed::On
               : Compressed::Off)
     , txReduceRelayEnabled_(
-          peerFeatureEnabled(headers_, kFeatureTxrr, app_.config().TX_REDUCE_RELAY_ENABLE))
+          peerFeatureEnabled(headers_, kFeatureTxrr, app_.config().txReduceRelayEnable))
     , ledgerReplayEnabled_(
-          peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().LEDGER_REPLAY))
+          peerFeatureEnabled(headers_, kFeatureLedgerReplay, app_.config().ledgerReplay))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    JLOG(journal_.info()) << "compression enabled " << (compressionEnabled_ == Compressed::On)
-                          << " vp reduce-relay base squelch enabled "
-                          << peerFeatureEnabled(
-                                 headers_,
-                                 kFeatureVprr,
-                                 app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-                          << " tx reduce-relay enabled " << txReduceRelayEnabled_;
+    JLOG(journal_.info())
+        << "compression enabled " << (compressionEnabled_ == Compressed::On)
+        << " vp reduce-relay base squelch enabled "
+        << peerFeatureEnabled(headers_, kFeatureVprr, app_.config().vpReduceRelayBaseSquelchEnable)
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_;
 }
 
 PeerImp::~PeerImp()
@@ -817,8 +815,8 @@ PeerImp::onTimer(error_code const& ec)
             duration = clock_type::now() - trackingTime_;
         }
 
-        if ((t == Tracking::Diverged && (duration > app_.config().MAX_DIVERGED_TIME)) ||
-            (t == Tracking::Unknown && (duration > app_.config().MAX_UNKNOWN_TIME)))
+        if ((t == Tracking::Diverged && (duration > app_.config().maxDivergedTime)) ||
+            (t == Tracking::Unknown && (duration > app_.config().maxUnknownTime)))
         {
             overlay_.peerFinder().onFailure(slot_);
             fail("Not useful");
@@ -1208,7 +1206,7 @@ PeerImp::onMessageBegin(
          // LEDGER_DATA
          category == TrafficCount::Category::GlTscShare ||
          category == TrafficCount::Category::GlTscGet) &&
-        (txReduceRelayEnabled() || app_.config().TX_REDUCE_RELAY_METRICS))
+        (txReduceRelayEnabled() || app_.config().txReduceRelayMetrics))
     {
         overlay_.addTxMetrics(static_cast<MessageType>(type), static_cast<std::uint64_t>(size));
     }
@@ -1518,7 +1516,7 @@ PeerImp::handleTransaction(
         {
             JLOG(pJournal_.trace()) << "No new transactions until synchronized";
         }
-        else if (app_.getJobQueue().getJobCount(JtTransaction) > app_.config().MAX_TRANSACTIONS)
+        else if (app_.getJobQueue().getJobCount(JtTransaction) > app_.config().maxTransactions)
         {
             overlay_.incJqTransOverflow();
             JLOG(pJournal_.info()) << "Transaction queue is full";
@@ -1889,7 +1887,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         overlay_.reportInboundTraffic(
             TrafficCount::Category::ProposalUntrusted, Message::messageSize(*m));
 
-        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+        if (app_.config().relayUntrustedProposals == -1)
             return;
     }
 
@@ -2496,7 +2494,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             overlay_.reportInboundTraffic(
                 TrafficCount::Category::ValidationUntrusted, Message::messageSize(*m));
 
-            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+            if (app_.config().relayUntrustedValidations == -1)
                 return;
         }
 
@@ -3093,7 +3091,7 @@ PeerImp::checkPropose(
     }
     else
     {
-        relay = app_.config().RELAY_UNTRUSTED_PROPOSALS == 1 || cluster();
+        relay = app_.config().relayUntrustedProposals == 1 || cluster();
     }
 
     if (relay)

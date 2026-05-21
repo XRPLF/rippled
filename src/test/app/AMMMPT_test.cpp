@@ -6299,9 +6299,9 @@ private:
 
         struct MPTList
         {
-            MPTTester const USD;
-            MPTTester const ETH;
-            MPTTester const CAN;
+            MPTTester const usd;
+            MPTTester const eth;
+            MPTTester const can;
         };
 
         auto prep = [&](Env& env, uint16_t gwTransferFee, uint16_t gw1TransferFee) -> MPTList {
@@ -6330,9 +6330,9 @@ private:
             env.close();
 
             return MPTList{
-                .USD = std::move(usd),
-                .ETH = std::move(eth),
-                .CAN = std::move(can),
+                .usd = std::move(usd),
+                .eth = std::move(eth),
+                .can = std::move(can),
             };
         };
 
@@ -6357,9 +6357,9 @@ private:
                 {
                     Env env(*this, features);
                     auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.USD;
-                    auto eth = mpts.ETH;
-                    auto can = mpts.CAN;
+                    auto usd = mpts.usd;
+                    auto eth = mpts.eth;
+                    auto can = mpts.can;
                     std::optional<AMM> amm;
 
                     if (i == 0 || i == 2)
@@ -6402,9 +6402,9 @@ private:
             {
                 Env env(*this, features);
                 auto mpts = prep(env, rates.first, rates.second);
-                auto usd = mpts.USD;
-                auto eth = mpts.ETH;
-                auto can = mpts.CAN;
+                auto usd = mpts.usd;
+                auto eth = mpts.eth;
+                auto can = mpts.can;
                 std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
@@ -6447,9 +6447,9 @@ private:
                 {
                     Env env(*this, features);
                     auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.USD;
-                    auto eth = mpts.ETH;
-                    auto can = mpts.CAN;
+                    auto usd = mpts.usd;
+                    auto eth = mpts.eth;
+                    auto can = mpts.can;
                     std::optional<AMM> amm;
                     if (i == 0 || i == 2)
                     {
@@ -6513,9 +6513,9 @@ private:
             {
                 Env env(*this, features);
                 auto mpts = prep(env, rates.first, rates.second);
-                auto usd = mpts.USD;
-                auto eth = mpts.ETH;
-                auto can = mpts.CAN;
+                auto usd = mpts.usd;
+                auto eth = mpts.eth;
+                auto can = mpts.can;
                 std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
@@ -6591,9 +6591,9 @@ private:
                 {
                     Env env(*this, features);
                     auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.USD;
-                    auto eth = mpts.ETH;
-                    auto can = mpts.CAN;
+                    auto usd = mpts.usd;
+                    auto eth = mpts.eth;
+                    auto can = mpts.can;
                     std::optional<AMM> amm;
 
                     if (i == 0 || i == 2)
@@ -6929,7 +6929,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -6983,7 +6983,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -7018,7 +7018,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -7042,7 +7042,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
