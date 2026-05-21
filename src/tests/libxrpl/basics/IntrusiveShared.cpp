@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <cassert>
 #include <chrono>  // IWYU pragma: keep
 #include <condition_variable>
 #include <cstddef>
@@ -18,6 +17,7 @@
 #include <mutex>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <variant>
@@ -89,17 +89,19 @@ class TIBase : public IntrusiveRefCounts
 public:
     static constexpr std::size_t kMaxStates = 128;
     static std::array<std::atomic<TrackedState>, kMaxStates> state;
-    static std::atomic<int> nextId;
+    static std::atomic<std::size_t> nextId;
     static TrackedState
-    getState(int id)
+    getState(std::size_t id)
     {
-        assert(id < state.size());
+        if (id >= state.size())
+            throw std::out_of_range("TIBase state id out of range");
+
         return state[id].load(std::memory_order_acquire);
     }
     static void
     resetStates(bool resetCallback)
     {
-        for (int i = 0; i < kMaxStates; ++i)
+        for (std::size_t i = 0; i < kMaxStates; ++i)
         {
             state[i].store(TrackedState::Uninitialized, std::memory_order_release);
         }
@@ -124,17 +126,14 @@ public:
 
     TIBase() : id{checkoutID()}
     {
-        assert(state.size() > id);
         state[id].store(TrackedState::Alive, std::memory_order_relaxed);
     }
     ~TIBase() override
     {
         using enum TrackedState;
 
-        assert(state.size() > id);
         tracingCallback(state[id].load(std::memory_order_relaxed), DeletedStarted);
 
-        assert(state.size() > id);
         // Use relaxed memory order to try to avoid atomic operations from
         // adding additional memory synchronizations that may hide threading
         // errors in the underlying shared pointer class.
@@ -142,7 +141,6 @@ public:
 
         tracingCallback(DeletedStarted, Deleted);
 
-        assert(state.size() > id);
         state[id].store(TrackedState::Deleted, std::memory_order_relaxed);
 
         tracingCallback(TrackedState::Deleted, std::nullopt);
@@ -153,15 +151,12 @@ public:
     {
         using enum TrackedState;
 
-        assert(state.size() > id);
         tracingCallback(state[id].load(std::memory_order_relaxed), PartiallyDeletedStarted);
 
-        assert(state.size() > id);
         state[id].store(PartiallyDeletedStarted, std::memory_order_relaxed);
 
         tracingCallback(PartiallyDeletedStarted, PartiallyDeleted);
 
-        assert(state.size() > id);
         state[id].store(PartiallyDeleted, std::memory_order_relaxed);
 
         tracingCallback(PartiallyDeleted, std::nullopt);
@@ -169,18 +164,22 @@ public:
 
     static std::function<void(TrackedState, std::optional<TrackedState>)> tracingCallback;
 
-    int id;
+    std::size_t const id;
 
 private:
-    static int
+    static std::size_t
     checkoutID()
     {
-        return nextId.fetch_add(1, std::memory_order_acq_rel);
+        auto const id = nextId.fetch_add(1, std::memory_order_acq_rel);
+        if (id >= state.size())
+            throw std::out_of_range("TIBase state capacity exceeded");
+
+        return id;
     }
 };
 
 std::array<std::atomic<TrackedState>, TIBase::kMaxStates> TIBase::state;
-std::atomic<int> TIBase::nextId{0};
+std::atomic<std::size_t> TIBase::nextId{0};
 
 std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCallback =
     [](TrackedState, std::optional<TrackedState>) {};
