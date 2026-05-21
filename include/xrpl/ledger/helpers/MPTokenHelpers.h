@@ -171,6 +171,15 @@ canTransfer(
 [[nodiscard]] TER
 canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth = 0);
 
+/** Convenience to combine canTrade/Transfer. Returns tesSUCCESS if Asset is Issue.
+ */
+[[nodiscard]] TER
+canMPTTradeAndTransfer(
+    ReadView const& v,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to);
+
 //------------------------------------------------------------------------------
 //
 // Empty holding operations (MPT-specific)
@@ -283,17 +292,10 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 //
 //------------------------------------------------------------------------------
 
-/* Return true if a transaction is allowed for the specified MPT/account. The
- * function checks MPTokenIssuance and MPToken objects flags to determine if the
- * transaction is allowed.
- */
-TER
-checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID const& accountID);
-
 /* Check recursively if an object has invalid MPTAmount in STAmount field.
  * Valid MPTAmount is in range {0, 2**63-1}
  */
-bool
+[[nodiscard]] bool
 hasInvalidMPTAmount(STBase const& field, beast::Journal j);
 
 }  // namespace xrpl
