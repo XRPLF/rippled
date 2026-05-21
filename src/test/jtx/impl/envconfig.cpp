@@ -22,12 +22,12 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
-    cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
-    cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
-    cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
+    cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
+    cfg.fees.accountReserve = XRP(200).value().xrp().drops();
+    cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
 
     // The Beta API (currently v2) is always available to tests
-    cfg.BETA_RPC_API = true;
+    cfg.betaRpcApi = true;
 
     cfg.overwrite(ConfigSection::nodeDatabase(), "type", "memory");
     cfg.overwrite(ConfigSection::nodeDatabase(), "path", "main");
@@ -56,7 +56,7 @@ setupConfigForUnitTests(Config& cfg)
     cfg[PORT_WS].set("admin", getEnvLocalhostAddr());
     cfg[PORT_WS].set("port", "0");
     cfg[PORT_WS].set("protocol", "ws");
-    cfg.SSL_VERIFY = false;
+    cfg.sslVerify = false;
 }
 
 namespace jtx {
@@ -64,7 +64,7 @@ namespace jtx {
 std::unique_ptr<Config>
 online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
 {
-    cfg->LEDGER_HISTORY = deleteInterval;
+    cfg->ledgerHistory = deleteInterval;
     auto& section = cfg->section(ConfigSection::nodeDatabase());
     section.set("online_delete", std::to_string(deleteInterval));
     return cfg;
@@ -107,7 +107,7 @@ secureGatewayLocalnet(std::unique_ptr<Config> cfg)
 std::unique_ptr<Config>
 singleThreadIo(std::unique_ptr<Config> cfg)
 {
-    cfg->IO_WORKERS = 1;
+    cfg->ioWorkers = 1;
     return cfg;
 }
 
