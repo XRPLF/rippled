@@ -52,7 +52,7 @@ public:
         std::string name_;
         bool running_{false};
         std::mutex mutex_;
-        std::mutex mutex_run_;
+        std::mutex mutexRun_;
         std::condition_variable cv_;
         boost::coroutines2::coroutine<void>::push_type* yield_{};
         boost::coroutines2::coroutine<void>::pull_type coro_;
@@ -246,7 +246,7 @@ private:
     // Statistics tracking
     perf::PerfLog& perfLog_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Gauge job_count_;
+    beast::insight::Gauge jobCount_;
     beast::insight::Hook hook_;
 
     std::condition_variable cv_;

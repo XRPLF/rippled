@@ -84,16 +84,16 @@ private:
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::discrete_distribution<std::uint32_t> d_type_;
-    std::uniform_int_distribution<std::uint32_t> d_size_;
+    std::discrete_distribution<std::uint32_t> dType_;
+    std::uniform_int_distribution<std::uint32_t> dSize_;
 
 public:
     explicit Sequence(std::uint8_t prefix)
         : prefix_(prefix)
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
-        , d_type_({1, 1, 0, 1, 1})
-        , d_size_(kMinSize, kMaxSize)
+        , dType_({1, 1, 0, 1, 1})
+        , dSize_(kMinSize, kMaxSize)
     {
     }
 
@@ -116,10 +116,10 @@ public:
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
-        Blob value(d_size_(gen_));
+        Blob value(dSize_(gen_));
         rngcpy(&value[0], value.size(), gen_);
         return NodeObject::createObject(
-            safeCast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+            safeCast<NodeObjectType>(dType_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -140,11 +140,11 @@ class Timing_test : public beast::unit_test::Suite
 public:
     static constexpr auto kMissingNodePercent = 20;  // percent of fetches for missing nodes
 
-    std::size_t const default_repeat = 3;
+    std::size_t const defaultRepeat = 3;
 #ifndef NDEBUG
-    std::size_t const default_items = 10000;
+    std::size_t const defaultItems = 10000;
 #else
-    std::size_t const default_items = 100000;  // release
+    std::size_t const defaultItems = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
@@ -639,7 +639,7 @@ public:
         {
             w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
         }
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << defaultItems
             << " Objects" << std::endl;
         {
             std::stringstream ss;
@@ -655,9 +655,9 @@ public:
         for (auto const& configString : configStrings)
         {
             Params params{};
-            params.items = default_items;
+            params.items = defaultItems;
             params.threads = threads;
-            for (auto i = default_repeat; (i--) != 0u;)
+            for (auto i = defaultRepeat; (i--) != 0u;)
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);

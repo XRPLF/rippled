@@ -80,7 +80,7 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
@@ -96,8 +96,8 @@ private:
     hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
-    std::atomic<Peer::id_t> next_id_;
-    int timer_count_{0};
+    std::atomic<Peer::id_t> nextId_;
+    int timerCount_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
