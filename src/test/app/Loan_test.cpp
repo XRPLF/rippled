@@ -7948,6 +7948,9 @@ protected:
         testRIPD3901();
         testBorrowerIsBroker();
         testLimitExceeded();
+        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
+        testLendingCanTradeClearedNoImpact();
+        testBugOverpayUnroundedAmount();
 
         for (auto const flags : {0u, tfLoanOverpayment})
             testYieldTheftRounding(flags);
@@ -8016,11 +8019,8 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
-        // testBugOverpayUnroundedAmount();
 
-        // runAmendmentIndependent();
-        // testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
-        // testLendingCanTradeClearedNoImpact();
+        runAmendmentIndependent();
         for (auto const& features :
              amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
             runAmendmentSensitive(features);
