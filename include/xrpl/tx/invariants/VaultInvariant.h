@@ -81,17 +81,6 @@ private:
     std::vector<Shares> beforeMPTs_;
     std::unordered_map<uint256, DeltaInfo> deltas_;
 
-public:
-    void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
-
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
-
-    // Compute the coarsest scale required to represent all numbers
-    [[nodiscard]] static std::int32_t
-    computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
-
     [[nodiscard]] std::int32_t
     computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const;
 
@@ -105,7 +94,18 @@ public:
     deltaShares(AccountID const& id) const;
 
     [[nodiscard]] static bool
-    vaultHoldsNoAssets(Vault const& vault);
+    isVaultEmpty(Vault const& vault);
+
+public:
+    // Compute the coarsest scale required to represent all numbers
+    [[nodiscard]] static std::int32_t
+    computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
+
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
 }  // namespace xrpl

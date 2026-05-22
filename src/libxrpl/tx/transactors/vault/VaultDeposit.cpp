@@ -124,6 +124,27 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
+    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    bool const isIOUDeposit = ctx.tx[sfAmount].holds<Issue>();
+
+    auto const roundedAmount = [&]() -> STAmount {
+        if (!fix320Enabled || !isIOUDeposit)
+            return ctx.tx[sfAmount];
+
+        STAmount const amt = ctx.tx[sfAmount];
+        return roundToScale(
+            amt,
+            scale(vault->at(sfAssetsTotal) + amt, vault->at(sfAsset)),
+            Number::RoundingMode::Downward);
+    }();
+
+    if (fix320Enabled && roundedAmount == beast::kZero)
+    {
+        JLOG(ctx.j.warn()) << "VaultDeposit: deposit amount: " << ctx.tx[sfAmount]
+                           << " is zero at vault scale";
+        return tecPRECISION_LOSS;
+    }
+
     auto const accountBalance = accountHolds(
         ctx.view,
         account,
@@ -133,11 +154,11 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         ctx.j,
         SpendableHandling::FullBalance);
 
-    if (accountBalance < amount)
+    if (accountBalance < roundedAmount)
         return tecINSUFFICIENT_FUNDS;
 
     // IOU precision checks
-    if (ctx.view.rules().enabled(fixCleanup3_2_0) && amount.holds<Issue>())
+    if (fix320Enabled && isIOUDeposit)
     {
         // reject deposits that would canonicalize to a no-op at the depositor's trustline scale.
         // Skipped for issuer-as-depositor: accountHolds returns (kMaxValue @ kMaxOffset) which
@@ -157,6 +178,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 TER
 VaultDeposit::doApply()
 {
+    bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -165,7 +187,7 @@ VaultDeposit::doApply()
     // Post-amendment IOU only: round Downward to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
     auto const amount = [&]() -> STAmount {
-        if (!view().rules().enabled(fixCleanup3_2_0) || !ctx_.tx[sfAmount].holds<Issue>())
+        if (!fix320Enabled || !ctx_.tx[sfAmount].holds<Issue>())
             return ctx_.tx[sfAmount];
 
         STAmount const amt = ctx_.tx[sfAmount];
@@ -175,11 +197,13 @@ VaultDeposit::doApply()
             Number::RoundingMode::Downward);
     }();
 
+    // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
     if (amount == beast::kZero)
     {
-        JLOG(j_.warn()) << "VaultDeposit: amount " << ctx_.tx[sfAmount]
-                        << " rounds to zero at vault scale";
-        return tecPRECISION_LOSS;
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDeposit: deposit amount: " << ctx_.tx[sfAmount] << " is zero";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Make sure the depositor can hold shares.
@@ -297,7 +321,7 @@ VaultDeposit::doApply()
     // trust line into debt the exact case preclaim authorizes via SpendableHandling::FullBalance.
     // The check thus converts a preclaim- authorized deposit into tefINTERNAL after the asset
     // transfer.
-    if (!view().rules().enabled(fixCleanup3_2_0))
+    if (!fix320Enabled)
     {
         // Sanity check
         if (accountHolds(

@@ -245,7 +245,7 @@ ValidVault::deltaShares(AccountID const& id) const
 }
 
 bool
-ValidVault::vaultHoldsNoAssets(Vault const& vault)
+ValidVault::isVaultEmpty(Vault const& vault)
 {
     return vault.assetsAvailable == 0 && vault.assetsTotal == 0;
 }
@@ -263,7 +263,10 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
     auto const& afterVault = afterVault_[0];
     auto const& vaultAsset = afterVault.asset;
     if (rules.enabled(fixCleanup3_2_0))
+    {
+        NumberRoundModeGuard const roundGuard(Number::RoundingMode::ToNearest);
         return scale(afterVault.assetsTotal, vaultAsset);
+    }
 
     auto const& beforeVault = beforeVault_[0];
     auto const totalDelta =
@@ -939,7 +942,7 @@ ValidVault::finalize(
                     // The owner can use clawback to force-burn shares when the
                     // vault is empty but there are outstanding shares
                     if (!(beforeShares && beforeShares->sharesTotal > 0 &&
-                          vaultHoldsNoAssets(beforeVault) && beforeVault.owner == tx[sfAccount]))
+                          isVaultEmpty(beforeVault) && beforeVault.owner == tx[sfAccount]))
                     {
                         JLOG(j.fatal()) << "Invariant failed: " <<  //
                             "clawback may only be performed by the asset issuer, or by the vault "
@@ -981,7 +984,7 @@ ValidVault::finalize(
                         result = false;
                     }
                 }
-                else if (!vaultHoldsNoAssets(beforeVault))
+                else if (!isVaultEmpty(beforeVault))
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault balance";
