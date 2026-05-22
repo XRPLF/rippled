@@ -132,12 +132,12 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     if (isNullBackend_)
     {
-        if (config.LEDGER_HISTORY == 0)
+        if (config.ledgerHistory == 0)
         {
             Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
         }
         JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
-                              << "retaining " << config.LEDGER_HISTORY << " ledgers in memory";
+                              << "retaining " << config.ledgerHistory << " ledgers in memory";
     }
 
     // For RWDB, default online_delete to ledger_history only if user did not
@@ -147,7 +147,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     {
         auto const minInterval =
             config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
-        deleteInterval_ = std::max(config.LEDGER_HISTORY, minInterval);
+        deleteInterval_ = std::max(config.ledgerHistory, minInterval);
     }
 
     if (deleteInterval_ != 0u)
@@ -359,7 +359,7 @@ SHAMapStoreImp::run()
                                       << validatedSeq;
 
                 lastRotated = validatedSeq;
-                state_db_.setLastRotated(lastRotated);
+                stateDb_.setLastRotated(lastRotated);
 
                 JLOG(journal_.warn()) << "finished null-mode cleanup " << validatedSeq;
             }

@@ -909,7 +909,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg = enableRWDB(std::move(cfg));
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
 
@@ -977,7 +977,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg = enableRWDB(std::move(cfg));
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
 

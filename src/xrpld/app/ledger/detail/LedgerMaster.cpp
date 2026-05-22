@@ -834,12 +834,12 @@ LedgerMaster::setFullLedger(
 
     // Pin a sliding window of recently validated current ledgers so their
     // SHAMap state trees stay resident via shared_ptr.
-    if (isCurrent && ledger_history_ > 0)
+    if (isCurrent && ledgerHistorySize_ > 0)
     {
         std::scoped_lock const ml(mutex_);
         bool const isFirst = retainedLedgers_.empty();
         retainedLedgers_.push_back(ledger);
-        while (retainedLedgers_.size() > ledger_history_)
+        while (retainedLedgers_.size() > ledgerHistorySize_)
             retainedLedgers_.pop_front();
 
         if (isFirst && !ledger->isFullyWired())
