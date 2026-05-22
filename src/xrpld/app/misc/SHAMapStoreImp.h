@@ -66,7 +66,7 @@ private:
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
-    SavedStateDB state_db_;
+    SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
@@ -114,7 +114,7 @@ public:
     {
         if (advisoryDelete_)
             canDelete_ = seq;
-        return state_db_.setCanDelete(seq);
+        return stateDb_.setCanDelete(seq);
     }
 
     bool
@@ -128,7 +128,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return state_db_.getState().lastRotated;
+        return stateDb_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected

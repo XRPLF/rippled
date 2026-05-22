@@ -258,7 +258,7 @@ parseUInt16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             TxFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSfGeneric)
+                    if (*name == sfGeneric)
                         name = &sfTransaction;
                 }
                 else if (field == sfLedgerEntryType)
@@ -268,7 +268,7 @@ parseUInt16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             LedgerFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSfGeneric)
+                    if (*name == sfGeneric)
                         name = &sfLedgerEntry;
                 }
                 else
@@ -361,7 +361,7 @@ parseLeaf(
     auto const& field = SField::getField(fieldName);
 
     // checked in parseObject
-    if (field == kSfInvalid)
+    if (field == sfInvalid)
     {
         // LCOV_EXCL_START
         error = unknownField(jsonName, fieldName);
@@ -1013,7 +1013,7 @@ parseObject(
             json::Value const& value = json[fieldName];
             auto const& field = SField::getField(fieldName);
 
-            if (field == kSfInvalid)
+            if (field == sfInvalid)
             {
                 error = unknownField(jsonName, fieldName);
                 return std::nullopt;
@@ -1144,7 +1144,7 @@ parseArray(
             std::string const memberName(json[i].getMemberNames()[0]);
             auto const& nameField(SField::getField(memberName));
 
-            if (nameField == kSfInvalid)
+            if (nameField == sfInvalid)
             {
                 error = unknownField(jsonName, memberName);
                 return std::nullopt;
@@ -1189,7 +1189,7 @@ parseArray(
 STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    object = parseObject(name, json, kSfGeneric, 0, error);
+    object = parseObject(name, json, sfGeneric, 0, error);
 }
 
 }  // namespace xrpl

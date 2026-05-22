@@ -74,7 +74,7 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "high");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -103,7 +103,7 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "low");
                 }
-                p->LEDGER_HISTORY = 100'000'000;
+                p->ledgerHistory = 100'000'000;
 
                 return Env(
                     *this,
@@ -166,7 +166,7 @@ public:
                     section.set("synchronous", "extra");
                     section.set("temp_store", "default");
                 }
-                p->LEDGER_HISTORY = 50'000'000;
+                p->ledgerHistory = 50'000'000;
 
                 return Env(
                     *this,

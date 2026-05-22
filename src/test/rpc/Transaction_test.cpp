@@ -49,7 +49,7 @@ class Transaction_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -774,7 +774,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -852,7 +852,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};

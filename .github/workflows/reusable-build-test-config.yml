@@ -181,7 +181,7 @@ jobs:
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
         env:
-          BUILD_NPROC: ${{ runner.os == 'Linux' && '16' || steps.nproc.outputs.nproc }}
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |

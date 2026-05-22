@@ -1068,7 +1068,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         testcase("config test");
         {
             Config const c;
-            BEAST_EXPECT(c.LEDGER_REPLAY == false);
+            BEAST_EXPECT(c.ledgerReplay == false);
         }
 
         {
@@ -1078,7 +1078,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 1
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.LEDGER_REPLAY == true);
+            BEAST_EXPECT(c.ledgerReplay == true);
         }
 
         {
@@ -1088,7 +1088,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 0
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.LEDGER_REPLAY == false);
+            BEAST_EXPECT(c.ledgerReplay == false);
         }
     }
 
@@ -1107,7 +1107,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 
             beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
-            serverEnv.app().config().LEDGER_REPLAY = server;
+            serverEnv.app().config().ledgerReplay = server;
             auto httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
             auto const clientResult = peerFeatureEnabled(httpResp, kFeatureLedgerReplay, client);
