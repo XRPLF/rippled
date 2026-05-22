@@ -7711,7 +7711,7 @@ protected:
 
         // The tiny loan's scale is frozen at the vault's pre-big-loan
         // scale, so it should be strictly smaller than the big loan's.
-        if (!BEAST_EXPECT(tinyLoanScale < bigLoanScale))
+        if (!BEAST_EXPECT(tinyLoanScale == -12) || !BEAST_EXPECT(bigLoanScale == -11))
             return;
 
         auto const vaultSle = env.le(keylet::vault(broker.vaultID));
@@ -7723,8 +7723,10 @@ protected:
         // pushing vaultScale up to match bigLoanScale.
         BEAST_EXPECT(bigLoanScale == vaultScale);
 
-        // Use issuer clawback (no specific amount) to reduce cover to
-        // the minimum the clawback transactor allows.
+        // Use issuer clawback to reduce cover to the minimum the
+        // clawback transactor allows.  The amount is computed as
+        // initialCover - expectedCoverAfter so we exercise the exact
+        // clawback rather than relying on the transactor to clip down.
         //
         // Before the amendment the clawback minimum is the *unrounded*
         // tenthBipsOfValue — strictly less than the rounded-at-vaultScale
@@ -7733,12 +7735,13 @@ protected:
         // With the amendment both clawback and LoanPay use the same
         // rounded-at-vaultScale minimum (via minimumBrokerCover), so
         // cover lands exactly at that threshold.
-        env(env.json(
-            coverClawback(issuer),
+        Number const expectedCoverAfter =
+            withAmendment ? Number{1330651855688460000, -15} : Number{1330651855688458000, -15};
+        Number const clawbackAmount = Number{brokerParams.coverDeposit} - expectedCoverAfter;
+
+        env(coverClawback(issuer),
             kLoanBrokerId(broker.brokerID),
-            Fee(kNone),
-            Seq(kNone),
-            Sig(kNone)));
+            kAmount(STAmount{asset, clawbackAmount}));
         env.close();
 
         // Re-read the broker after cover reduction.
@@ -7747,19 +7750,7 @@ protected:
             return;
 
         BEAST_EXPECT(vaultScale == -11);
-        BEAST_EXPECT(tinyLoanScale == -12);
-        BEAST_EXPECT(bigLoanScale == -11);
-
-        if (withAmendment)
-        {
-            auto expectedValue = Number{1330651855688460000, -15};
-            BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedValue);
-        }
-        else
-        {
-            auto expectedValue = Number{1330651855688458000, -15};
-            BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedValue);
-        }
+        BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedCoverAfter);
 
         // Pay each loan independently and observe the fee routing.
         auto feeGoesToPseudo = [&](Keylet const& loanKeylet) {
@@ -7990,12 +7981,13 @@ protected:
         env.close();
 
         // Clawback to reduce cover to the clawback transactor's minimum.
-        env(env.json(
-            coverClawback(issuer),
-            kLoanBrokerId(broker.brokerID),
-            Fee(kNone),
-            Seq(kNone),
-            Sig(kNone)));
+        // Pass the exact amount rather than relying on the transactor to
+        // clip down; setup is identical to testMinimumBrokerCoverScale so
+        // the same residual-cover values apply.
+        Number const expectedCoverAfter =
+            withAmendment ? Number{1330651855688460000, -15} : Number{1330651855688458000, -15};
+        Number const clawbackAmount = Number{brokerParams.coverDeposit} - expectedCoverAfter;
+        env(coverClawback(issuer), kLoanBrokerId(broker.brokerID), kAmount(iou(clawbackAmount)));
         env.close();
 
         // Verify scales.

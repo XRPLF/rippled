@@ -311,9 +311,6 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    // In the fixCleanup3_2_0 path, vault-related values (for example,
-    // DebtTotal) use vaultScale. The legacy path below intentionally retains
-    // its pre-amendment loanScale behavior.
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Send the broker fee to the owner if they have sufficient cover available,
@@ -325,6 +322,9 @@ LoanPay::doApply()
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
+        // In the fixCleanup3_2_0 path, vault-related values (for example,
+        // DebtTotal) use vaultScale. The legacy path below intentionally retains
+        // its pre-amendment loanScale behavior.
         auto const minCover = [&]() {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
