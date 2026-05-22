@@ -115,7 +115,7 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes)
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
