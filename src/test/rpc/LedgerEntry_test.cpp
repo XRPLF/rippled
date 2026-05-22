@@ -555,7 +555,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env{*this, std::move(cfg)};
 
         Account const alice{"alice"};
@@ -2237,7 +2237,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::Fresh;
+                    cfg->startUp = StartUpType::Fresh;
                     return cfg;
                 })};
 
@@ -2430,7 +2430,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob{"bob"};
 
         Env env{*this, envconfig([](auto cfg) {
-                    cfg->START_UP = StartUpType::Fresh;
+                    cfg->startUp = StartUpType::Fresh;
                     return cfg;
                 })};
 

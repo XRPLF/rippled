@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -57,19 +58,45 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth)
+    std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
     if (depth >= kMaxAssetCheckDepth)
-        return true;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
 
     auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying.
+    // Read it to derive the underlying asset and recurse, skipping the
+    // issuer-account-then-vault chain. Pre-amendment shares (no field)
+    // fall back to the chain lookup below.
+    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    {
+        auto const sleHolding =
+            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+        return isAnyFrozen(
+            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+    }
+
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {

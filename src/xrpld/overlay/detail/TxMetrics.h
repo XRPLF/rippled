@@ -29,7 +29,7 @@ struct SingleMetrics
     clock_type::time_point intervalStart{clock_type::now()};
     std::uint64_t accum{0};
     std::uint64_t rollingAvg{0};
-    std::uint32_t N{0};
+    std::uint32_t n{0};
     bool perTimeUnit{true};
     boost::circular_buffer<std::uint64_t> rollingAvgAggregate{30, 0ull};
     /** Add metrics value

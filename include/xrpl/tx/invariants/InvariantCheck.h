@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
@@ -393,13 +394,15 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
+    ValidBookDirectory,
     ValidAMM,
     NoModifiedUnmodifiableFields,
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
     ValidVault,
-    ValidMPTPayment>;
+    ValidMPTPayment,
+    ValidMPTTransfer>;
 
 /**
  * @brief get a tuple of all invariant checks

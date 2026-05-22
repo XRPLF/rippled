@@ -94,10 +94,20 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // Helper handles both IOU and MPT correctly without explicit branching.
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+        return ret;
+
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    // Cannot transfer a non-transferable Asset
-    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+    // Post-fixCleanup3_2_0: cover withdraw is a recovery path that bypasses
+    // the lsfMPTCanTransfer flag check, so an issuer cannot trap a broker's
+    // first-loss capital. Other transferability checks (IOU NoRipple, freeze,
+    // requireAuth) still apply.
+    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                 : WaiveMPTCanTransfer::No;
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct, waive))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
@@ -170,7 +180,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
-    auto const dstAcct = tx[~sfDestination].value_or(account_);
+    auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
@@ -190,7 +200,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return doWithdraw(view(), tx, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
 void

@@ -268,7 +268,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below
                                                           // assume no amendments
         env.fund(XRP(10000), "alice");
@@ -437,7 +437,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             return cfg;
         });
 
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         json::Value jv;

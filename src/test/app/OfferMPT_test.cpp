@@ -2764,7 +2764,7 @@ public:
                 // USD(125) was removed from his account due to the gateway fee.
                 //
                 // A comparable payment would look like this:
-                //   env (pay (bob, alice, USD(100)), sendmax(USD(125)))
+                //   env (pay (bob, alice, USD(100)), Sendmax(USD(125)))
                 env(offer(bob, XRP(1), usd(10'000)));
                 env.close();
 
@@ -3012,6 +3012,92 @@ public:
             }
         };
         testHelper2TokensMix(test);
+
+        // Payment trIn: MPT transfer fee must be charged when the payment
+        // destination is the MPT issuer and MPT crosses the DEX (1-hop).
+        // Bug: rate() returned parity because strandDst_ == MPT issuer.
+        // Fix: parity only when this asset IS the final delivered asset.
+        {
+            auto const gw = Account("gw_tr1");
+            auto const alice = Account("alice_tr1");
+            auto const bob = Account("bob_tr1");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPT const usd = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, bob}, .transferFee = 25'000});
+
+            // alice needs MPT(1250): MPT(1000) to bob's offer + MPT(250) transfer fee (25%)
+            env(pay(gw, alice, usd(1'250)));
+            // bob's offer: give XRP(1000), want MPT(1000)
+            env(offer(bob, usd(1'000), XRP(1'000)));
+            env.close();
+
+            // alice pays gw (MPT issuer) XRP(1000) using MPT as source
+            // strand: alice -> [MPT/XRP BookStep] -> gw
+            // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
+            // trIn = rate(MPT, gw): fix charges 25% (MPT != strandDeliver_)
+            env(pay(alice, gw, XRP(1'000)), Path(~XRP), Sendmax(usd(1'250)));
+            env.close();
+
+            // alice consumed all MPT(1250): MPT(1000) to bob + MPT(250) fee
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+            // bob received MPT(1000) net
+            BEAST_EXPECT(env.balance(bob, usd) == usd(1'000));
+        }
+
+        // Payment trIn (2-hop): MPT transfer fee must be charged when MPT is
+        // intermediate and the destination is the MPT issuer.
+        // BookStep2(MPT/XRP) prevStep=BookStep1 returns redeems direction
+        // (ownerPaysTransferFee_=false for Payment), so trIn applies.
+        // Bug: parity because strandDst_ == MPT issuer.
+        // Fix: 25% fee because MPT != strandDeliver_(XRP).
+        {
+            auto const gw = Account("gw_tr2");
+            auto const gw2 = Account("gw2_tr2");
+            auto const alice = Account("alice_tr2");
+            auto const bob = Account("bob_tr2");
+            auto const carol = Account("carol_tr2");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gw, gw2, alice, bob, carol);
+            env.close();
+
+            MPT const musd = MPTTester(
+                {.env = env, .issuer = gw, .holders = {bob, carol}, .transferFee = 25'000});
+            auto const gusd = gw2["USD"];
+
+            env(trust(alice, gusd(10'000)));
+            env(trust(bob, gusd(10'000)));
+            env.close();
+
+            env(pay(gw2, alice, gusd(1'000)));
+            env(pay(gw, bob, musd(1'000)));
+            env.close();
+
+            // bob's offer: give MPT(1000), want GUSD(1000)
+            env(offer(bob, gusd(1'000), musd(1'000)));
+            // carol's offer: give XRP(800), want MPT(800)
+            env(offer(carol, musd(800), XRP(800)));
+            env.close();
+
+            // Payment: alice GUSD -> [BookStep1: GUSD/MUSD] -> [BookStep2: MUSD/XRP] -> gw XRP
+            // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
+            // BookStep2 trIn: fix = 1.25 -> upstream needs MUSD(1000) for carol's MUSD(800) offer
+            // => alice must provide full GUSD(1000) to bob's offer; without fix alice only pays
+            // GUSD(800)
+            env(pay(alice, gw, XRP(800)), Path(~musd), Sendmax(gusd(1'000)));
+            env.close();
+
+            // alice spent all GUSD(1000); bug would leave GUSD(200) unspent
+            BEAST_EXPECT(env.balance(alice, gusd) == gusd(0));
+            // bob gave MPT(1000) and received GUSD(1000)
+            BEAST_EXPECT(env.balance(bob, musd) == musd(0));
+            // carol received MPT(800) net (MPT(200) went to gw as fee)
+            BEAST_EXPECT(env.balance(carol, musd) == musd(800));
+        }
     }
 
     void
@@ -4708,6 +4794,101 @@ public:
     }
 
     void
+    testAutoCreateReserve(FeatureBitset features)
+    {
+        // When an offer on the book is partially crossed, the payment engine
+        // auto-creates a new ledger object (MPToken or IOU trustline) for the
+        // offer owner to hold the incoming asset.  This happens inside
+        // BookStep::forEachOffer (MPT: checkCreateMPT) and BookStep::consumeOffer
+        // (IOU: directSendNoFeeIOU -> trustCreate) without a reserve sufficiency
+        // check.  The offer owner can therefore end up with more objects than
+        // their XRP balance can reserve for, consistent with IOU behavior.
+
+        testcase("Auto-Create Object Without Reserve Check During Partial Crossing");
+
+        using namespace jtx;
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const carol = Account{"carol"};
+        auto const bob = Account{"bob"};
+
+        auto test = [&](auto&& getToken, auto&& execTx) {
+            // MPT/IOU: carol's existing offer buys MPT/IOU by selling XRP.
+            // carol has no MPToken/Trustline for this issuance.  When alice partially crosses
+            // carol's offer, an MPToken/Trustline is auto-created for carol without checking
+            // that she can afford the extra reserve slot.
+            Env env{*this, features};
+
+            auto const f = env.current()->fees().base;
+            auto const r = reserve(env, 0);
+            auto const inc = reserve(env, 1) - r;
+
+            env.fund(XRP(10'000), gw, alice, bob);
+
+            // getToken:
+            //  - Create MPT with CanTransfer + CanTrade; authorize alice as holder.
+            //  - Create IOU trustline
+            auto const token = getToken(env);
+
+            // carol: reserve(0) + 1 increment + fee covers placing one offer.
+            // After the offer tx she has exactly reserve(1) + XRP(30).
+            // XRP(30) < inc (50 XRP), so receiving a second object will put her
+            // below reserve(2).
+            if (BEAST_EXPECT(inc > XRP(30)))
+                env.fund(r + inc + f + XRP(30), carol);
+
+            // carol's offer goes on the book (no counterpart yet).
+            // TakerPays=Token(30): carol will receive Token when crossed.
+            // TakerGets=XRP(30):  carol will give XRP when crossed.
+            env(offer(carol, token(30), XRP(30)));
+            env.require(Owners(carol, 1));
+
+            // Execute offer create or cross-currency payment
+            // alice partially crosses carol's offer.
+            // alice sends Token(15) to carol and receives XRP(15).
+            // Token:
+            // - MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve check).
+            // - IOU: directSendNoFeeIOU auto-creates an Trustline for carol (no reserve check).
+            execTx(env, token);
+
+            // Carol now owns 2 objects (remaining offer + new MPToken) even
+            // though her XRP balance is only reserve(1) + XRP(15), which is
+            // below reserve(2) = reserve(1) + inc.
+            auto const carolBalance = r + inc + XRP(15);
+            env.require(Owners(carol, 2), Balance(carol, token(15)), Balance(carol, carolBalance));
+            BEAST_EXPECT(carolBalance < r + 2 * inc);  // below reserve(2)
+        };
+        std::function<PrettyAsset(Env&)> const getIOU = [&](Env& env) -> PrettyAsset {
+            env.trust(gw["USD"](1'000), alice);
+            env(pay(gw, alice, gw["USD"](100)));
+            return gw["USD"];
+        };
+        std::function<PrettyAsset(Env&)> const getMPT = [&](Env& env) -> PrettyAsset {
+            MPT const mpT1 = MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 100});
+            return mpT1;
+        };
+        for (auto&& getToken : {getIOU, getMPT})
+        {
+            test(getToken, [&](Env& env, PrettyAsset const& token) {
+                // alice partially crosses carol's offer.
+                // alice sends Token(15) to carol and receives XRP(15).
+                // Token is MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve
+                // check). Token is IOU: directSendNoFeeIOU auto-creates a trustline for carol (no
+                // reserve check).
+                env(offer(alice, XRP(15), token(15)));
+            });
+            test(getToken, [&](Env& env, PrettyAsset const& token) {
+                // Similar to above but with cross-currency payment.
+                env(pay(alice, bob, XRP(15)),
+                    Sendmax(token(15)),
+                    Path(~XRP),
+                    Txflags(tfNoRippleDirect | tfPartialPayment));
+            });
+        }
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -4763,6 +4944,7 @@ public:
         testRmSmallIncreasedQOffersMPT(features);
         testFillOrKill(features);
         testTickSize(features);
+        testAutoCreateReserve(features);
     }
 
     void
