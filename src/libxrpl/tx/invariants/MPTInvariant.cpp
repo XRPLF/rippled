@@ -21,42 +21,11 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 
 namespace xrpl {
-
-void
-ValidMPTAmounts::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
-{
-    if (!isDelete && after)
-        afterEntries_.push_back(after);
-}
-
-bool
-ValidMPTAmounts::finalize(
-    STTx const& tx,
-    TER const,
-    XRPAmount const,
-    ReadView const& view,
-    beast::Journal const& j) const
-{
-    bool const badLedgerEntry = std::ranges::any_of(
-        afterEntries_, [&](auto const& sle) { return hasInvalidMPTAmount(*sle, j); });
-
-    if (badLedgerEntry)
-    {
-        JLOG(j.fatal()) << "Invariant failed: ledger entry contains non-canonical MPT amount";
-        return !view.rules().enabled(fixCleanup3_2_0);
-    }
-
-    return true;
-}
 
 void
 ValidMPTIssuance::visitEntry(

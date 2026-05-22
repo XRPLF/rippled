@@ -22,15 +22,12 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -1002,50 +999,6 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 {
     auto const available = availableMPTAmount(view, issue);
     view.issuerSelfDebitHookMPT(issue, amount, available);
-}
-
-static bool
-hasInvalidMPTAmount(STBase const& field, int depth, beast::Journal j);
-
-static bool
-hasInvalidMPTAmount(STObject const& object, int depth, beast::Journal j)
-{
-    return std::ranges::any_of(
-        object, [&](STBase const& field) { return hasInvalidMPTAmount(field, depth, j); });
-}
-
-static bool
-hasInvalidMPTAmount(STArray const& array, int depth, beast::Journal j)
-{
-    return std::ranges::any_of(
-        array, [&](STObject const& object) { return hasInvalidMPTAmount(object, depth, j); });
-}
-
-static bool
-hasInvalidMPTAmount(STBase const& field, int depth, beast::Journal j)
-{
-    if (depth > 10)
-    {
-        JLOG(j.error()) << "hasInvalidMPTAmount: depth exceeds 10";
-        return true;
-    }
-
-    if (auto const amount = dynamic_cast<STAmount const*>(&field))
-        return !isLegalMPT(*amount);
-
-    if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidMPTAmount(*object, depth + 1, j);
-
-    if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidMPTAmount(*array, depth + 1, j);
-
-    return false;
-}
-
-bool
-hasInvalidMPTAmount(STBase const& field, beast::Journal j)
-{
-    return hasInvalidMPTAmount(field, 0, j);
 }
 
 }  // namespace xrpl

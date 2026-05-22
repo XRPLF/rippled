@@ -2679,7 +2679,7 @@ class MPToken_test : public beast::unit_test::Suite
                     sfTakerPays,
                     badTakerPays,
                     alice);
-                tx.ter = bad.negative ? TER{temBAD_OFFER} : TER{temBAD_AMOUNT};
+                tx.ter = TER{temBAD_AMOUNT};
                 env.submit(tx);
             }
             {
@@ -2697,7 +2697,7 @@ class MPToken_test : public beast::unit_test::Suite
                     sfTakerGets,
                     badTakerGets,
                     alice);
-                tx.ter = bad.negative ? TER{temBAD_OFFER} : TER{temBAD_AMOUNT};
+                tx.ter = TER{temBAD_AMOUNT};
                 env.submit(tx);
             }
 

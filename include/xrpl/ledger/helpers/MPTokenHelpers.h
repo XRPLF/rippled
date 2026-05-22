@@ -286,17 +286,4 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);
 
-//------------------------------------------------------------------------------
-//
-// MPT DEX
-//
-//------------------------------------------------------------------------------
-
-/* Check recursively if an object has invalid MPTAmount in STAmount field.
- * A valid canonical MPTAmount must have a value in range {0, 2**63-1},
- * exponent == 0, and negative == false (including rejecting negative zero).
- */
-[[nodiscard]] bool
-hasInvalidMPTAmount(STBase const& field, beast::Journal j);
-
 }  // namespace xrpl

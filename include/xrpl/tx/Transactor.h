@@ -399,7 +399,7 @@ private:
     preflight2(PreflightContext const& ctx);
 
     /** Universal validations
-       - MPTAmount : {0, 2**63 - 1}
+       - Valid MPTAmount and XRPAmount
 
         Do not try to call preflightUniversal from preflight() in derived classes. See
         the description of invokePreflight for details.
@@ -472,10 +472,10 @@ Transactor::invokePreflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
 
-    if (auto const ret = T::preflight(ctx))
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
-    if (auto const ret = preflightUniversal(ctx))
+    if (auto const ret = T::preflight(ctx))
         return ret;
 
     if (auto const ret = preflight2(ctx))

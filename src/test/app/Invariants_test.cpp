@@ -4093,7 +4093,7 @@ class Invariants_test : public beast::unit_test::Suite
             {tesSUCCESS, tesSUCCESS});
 
         doInvariantCheck(
-            {{"ledger entry contains non-canonical MPT amount"}},
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
@@ -4108,7 +4108,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {{"ledger entry contains non-canonical MPT amount"}},
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)

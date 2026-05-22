@@ -43,21 +43,6 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
-/** Verify that MPT STAmounts are canonical in the applied transaction and in
- *  any ledger entries left after the transaction applies.
- */
-class ValidMPTAmounts
-{
-    std::vector<std::shared_ptr<SLE const>> afterEntries_;
-
-public:
-    void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
-
-    [[nodiscard]] bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
-};
-
 /** Verify:
  *    - OutstandingAmount <= MaximumAmount for any MPT
  *    - OutstandingAmount after = OutstandingAmount before +
