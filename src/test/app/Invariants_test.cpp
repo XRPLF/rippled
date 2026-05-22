@@ -2138,8 +2138,9 @@ class Invariants_test : public beast::unit_test::Suite
                 invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
         }
 
-        // A bad root is rejected when added, but ignored when a legacy bad
-        // root is modified without changing sfRootIndex or deleted.
+        // A bad root is rejected when added, ignored when a legacy bad root is
+        // modified without changing sfRootIndex or deleted, and checked when a
+        // modified directory changes sfRootIndex.
         {
             Env env{*this, defaultAmendments()};
             Account const a1{"A1"};
@@ -2149,6 +2150,7 @@ class Invariants_test : public beast::unit_test::Suite
             OpenView view{*env.current()};
             auto const directoryQuality = STAmount::kURateOne;
             auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const missingRootDir = getBookRootKey(a1, directoryQuality + 1);
             auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
             view.rawInsert(badRoot);
 
@@ -2170,6 +2172,23 @@ class Invariants_test : public beast::unit_test::Suite
 
                 BEAST_EXPECT(
                     invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (changing sfRootIndex to a missing root)
+                auto const childBefore = makeChildPage(rootDir);
+                auto const childAfter = std::make_shared<SLE>(*childBefore, childBefore->key());
+                childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, childBefore, childAfter);
+
+                test::StreamSink missingRootSink{beast::Severity::Warning};
+                beast::Journal const missingRootJlog{missingRootSink};
+                BEAST_EXPECT(!invariant.finalize(
+                    makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
+                BEAST_EXPECT(
+                    missingRootSink.messages().str().find("book directory root missing") !=
+                    std::string::npos);
             }
             {
                 view.rawErase(badRoot);
