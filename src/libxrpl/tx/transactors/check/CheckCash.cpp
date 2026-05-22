@@ -264,9 +264,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecLOCKED;
                     }
 
-                    if (auto const err = canTrade(ctx.view, value.asset()); !isTesSuccess(err))
+                    if (auto const err = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(err))
                     {
-                        JLOG(ctx.j.warn()) << "MPT DEX is not allowed.";
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
                         return err;
                     }
 

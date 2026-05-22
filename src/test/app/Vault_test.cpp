@@ -10,9 +10,11 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
@@ -2378,6 +2380,83 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         {
+            testcase("MPT locked: vault shares inherit underlying lock");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob, carol);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester asset{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {owner, alice, bob, carol},
+                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock}};
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            // Bob also deposits so he has a share MPToken to receive into.
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+            auto const shareMptID = shares.raw().get<MPTIssue>().getMptID();
+            auto const shareBalance = [&](Account const& account) {
+                auto const sle = env.le(keylet::mptoken(shareMptID, account));
+                return sle ? sle->at(sfMPTAmount) : 0;
+            };
+
+            // Sanity: before the underlying lock, peer-to-peer share
+            // transfers are allowed.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Create the offer while shares are spendable, then lock the
+            // underlying to test whether a stale offer can still be crossed.
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            // Lock the underlying after the vault and share balances exist.
+            asset.set({.account = issuer, .flags = tfMPTLock});
+            env.close();
+
+            // Direct vault share payment inherits the underlying lock via
+            // sfReferenceHolding.
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+            env(pay(alice, bob, shares(1)), Ter{tecLOCKED});
+            env.close();
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+
+            // The same inherited lock must also block DEX payment paths that
+            // would consume an offer selling vault shares.
+            env(pay(carol, bob, shares(1)),
+                Sendmax(XRP(1)),
+                Path(BookSpec{shares.raw()}),
+                Ter{tecPATH_PARTIAL});
+            env.close();
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+            BEAST_EXPECT(expectOffers(env, alice, 1));
+        }
+
+        {
             testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
 
             // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
@@ -2981,7 +3060,7 @@ class Vault_test : public beast::unit_test::Suite
                         env(tx);
                         env.close();
                     }
-                    // Behavioural shift introduced by share inheritance:
+                    // Behavioral shift introduced by share inheritance:
                     // before fixCleanup3_2_0 this share Payment succeeded
                     // and the underlying IOU's NoRipple restriction surfaced
                     // only later on Charlie's withdrawal (terNO_RIPPLE).

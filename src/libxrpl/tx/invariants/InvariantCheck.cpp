@@ -840,7 +840,7 @@ ValidClawback::finalize(
                 [&](MPTIssue const& issue) {
                     return accountHolds(
                         view,
-                        issuer,
+                        holder,
                         issue,
                         FreezeHandling::IgnoreFreeze,
                         AuthHandling::IgnoreAuth,
