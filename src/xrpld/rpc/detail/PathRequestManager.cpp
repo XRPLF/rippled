@@ -91,6 +91,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     do
     {
         JLOG(journal_.trace()) << "updateAll looping";
+
         for (auto const& wr : requests)
         {
             if (app_.getJobQueue().isStopping())
@@ -149,16 +150,18 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
-                    auto r = wl.lock();
+                auto ret = std::remove_if(
+                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
+                        auto r = wl.lock();
 
-                    if (r && r != request)
-                        return false;
-                    ++removed;
-                    return true;
-                });
+                        if (r && r != request)
+                            return false;
 
-                requests_.erase(ret.begin(), ret.end());
+                        ++removed;
+                        return true;
+                    });
+
+                requests_.erase(ret, requests_.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -168,6 +171,8 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
             if (mustBreak)
                 break;
         }
+
+        mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
 
         if (mustBreak)
         {  // a new request came in while we were working

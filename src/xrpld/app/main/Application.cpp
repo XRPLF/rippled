@@ -78,11 +78,9 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
@@ -301,6 +299,19 @@ public:
 #endif
     }
 
+    static int
+    jobQueueThreads(std::unique_ptr<Config> const& config)
+    {
+        return Config::computeEffectiveWorkers(
+            config->standalone(), config->FORCE_MULTI_THREAD, config->WORKERS, config->NODE_SIZE);
+    }
+
+    static int
+    maxUpdatePfLimit(std::unique_ptr<Config> const& config)
+    {
+        return std::max(2, (jobQueueThreads(config) * 3) / 4);
+    }
+
     //--------------------------------------------------------------------------
 
     ApplicationImp(
@@ -325,33 +336,8 @@ public:
               makeCollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
-                  [](std::unique_ptr<Config> const& config) {
-                      if (config->standalone() && !config->forceMultiThread)
-                          return 1;
-
-                      if (config->workers)
-                          return config->workers;
-
-                      auto count = static_cast<int>(std::thread::hardware_concurrency());
-
-                      // Be more aggressive about the number of threads to use
-                      // for the job queue if the server is configured as
-                      // "large" or "huge" if there are enough cores.
-                      if (config->nodeSize >= 4 && count >= 16)
-                      {
-                          count = 6 + std::min(count, 8);
-                      }
-                      else if (config->nodeSize >= 3 && count >= 8)
-                      {
-                          count = 4 + std::min(count, 6);
-                      }
-                      else
-                      {
-                          count = 2 + std::min(count, 4);
-                      }
-
-                      return count;
-                  }(config_),
+                  jobQueueThreads(config_),
+                  std::min(config_->PATH_WORKERS, maxUpdatePfLimit(config_)),
                   collectorManager_->group("jobq"),
                   logs_->journal("JobQueue"),
                   *logs_,

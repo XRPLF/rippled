@@ -128,6 +128,7 @@ public:
 
     JobQueue(
         int threadCount,
+        int updatePathsJobLimit,
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal,
         Logs& logs,
@@ -183,6 +184,12 @@ public:
      */
     int
     getJobCountGE(JobType t) const;
+
+    int
+    getUpdatePathsJobLimit() const
+    {
+        return updatePathsJobLimit_;
+    }
 
     /** Return a scoped LoadEvent.
      */
@@ -240,6 +247,8 @@ private:
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
+
+    int updatePathsJobLimit_;
 
     Workers workers_;
 
@@ -319,8 +328,8 @@ private:
     // Returns the limit of running jobs for the given job type.
     // For jobs with no limit, we return the largest int. Hopefully that
     // will be enough.
-    static int
-    getJobLimit(JobType type);
+    int
+    getJobLimit(JobType type) const;
 };
 
 /*

@@ -75,6 +75,16 @@ struct FeeSetup
 class Config : public BasicConfig
 {
 public:
+    /**
+     * Compute the effective number of job queue worker threads.
+     * This logic is shared between config validation and runtime.
+     */
+    static int
+    computeEffectiveWorkers(
+        bool standalone,
+        bool forceMultiThread,
+        int workers,
+        std::size_t nodeSize);
     // Settings related to the configuration file location and directories
     static char const* const kConfigFileName;
     static char const* const kConfigLegacyName;
@@ -182,6 +192,7 @@ public:
     int pathSearch = 2;
     int pathSearchFast = 2;
     int pathSearchMax = 3;
+    int PATH_WORKERS = 2;
 
     // Validation
     std::optional<std::size_t> validationQuorum;  // validations to consider ledger authoritative
