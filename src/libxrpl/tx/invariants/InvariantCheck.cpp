@@ -1092,7 +1092,7 @@ ValidAmounts::visitEntry(
 
 bool
 ValidAmounts::finalize(
-    STTx const& tx,
+    STTx const&,
     TER const,
     XRPAmount const,
     ReadView const& view,

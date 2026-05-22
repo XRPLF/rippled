@@ -84,7 +84,11 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 bool
 EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !ctx.rules.enabled(fixCleanup3_2_0) || ctx.rules.enabled(featureMPTokensV1);
+    // Only require featureMPTokensV1 when the escrow amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+        return ctx.rules.enabled(featureMPTokensV1);
+    return true;
 }
 
 template <ValidIssueType T>
