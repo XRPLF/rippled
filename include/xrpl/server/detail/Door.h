@@ -440,9 +440,8 @@ Door<Handler>::shouldThrottleForFds()
 
     fdSampleAt_ = now;
     auto const stats = queryFdStats();
-    bool const measurable = stats && stats->limit > 0;
     cachedThrottle_ =
-        measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+        stats && stats->limit > 0 && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
     return cachedThrottle_;
 #endif
 }
