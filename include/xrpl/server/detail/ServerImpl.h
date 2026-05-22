@@ -62,9 +62,7 @@ class ServerImpl : public Server
 private:
     using clock_type = std::chrono::system_clock;
 
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { HistorySize = 100 };
+    static constexpr auto kHistorySize = 100;
 
     Handler& handler_;
     beast::Journal const j_;
@@ -78,7 +76,7 @@ private:
     int high_ = 0;
     std::array<std::size_t, 64> hist_{};
 
-    IoList ios_;
+    IOList ios_;
 
 public:
     ServerImpl(Handler& handler, boost::asio::io_context& ioContext, beast::Journal journal);
@@ -97,7 +95,7 @@ public:
     void
     close() override;
 
-    IoList&
+    IOList&
     ios()
     {
         return ios_;

@@ -80,8 +80,8 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, account_, j_);
+    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
+        return deleteOracle(ctx_.view(), sle, accountID_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
@@ -92,6 +92,7 @@ OracleDelete::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -102,6 +103,7 @@ OracleDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

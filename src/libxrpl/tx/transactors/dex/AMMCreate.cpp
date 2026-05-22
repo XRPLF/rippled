@@ -77,7 +77,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return err;
     }
 
-    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
@@ -133,7 +133,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return false;
 
         if (auto const issuerAccount = view.read(keylet::account(asset.getIssuer())))
-            return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+            return !issuerAccount->isFlag(lsfDefaultRipple);
 
         return false;
     };
@@ -147,6 +147,9 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureSponsor))
     {
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+
         // Check the reserve for LPToken trustline
         // Insufficient reserve
         auto const accountSle = ctx.view.read(keylet::account(accountID));
@@ -155,7 +158,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 accountSle,
                 accountSle->getFieldAmount(sfBalance),
-                sponsorSle,
+                *sponsorSle,
                 1,
                 0,
                 ctx.j);
@@ -169,7 +172,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
         // Insufficient reserve
-        if (xrpBalance <= beast::kZERO)
+        if (xrpBalance <= beast::kZero)
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;
@@ -213,7 +216,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         if (auto const accountId =
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
-            accountId == beast::kZERO)
+            accountId == beast::kZero)
             return terADDRESS_COLLISION;
     }
 
@@ -316,8 +319,11 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto const sponsor = getTxReserveSponsorAccountID(ctx.tx);
-    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal, sponsor);
+    auto const sponsorSle = getTxReserveSponsor(sb, ctx.tx);
+    if (!sponsorSle)
+        return {sponsorSle.error(), false};  // LCOV_EXCL_LINE
+
+    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal, *sponsorSle);
     if (!isTesSuccess(res))
     {
         JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -346,7 +352,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     }
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, std::nullopt, flags);
+                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
                     !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
@@ -357,7 +363,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     accountId,
                     amount,
                     ctx.journal,
-                    std::nullopt,  // don't sponsor for AMM Trustline
+                    {},  // don't sponsor for AMM Trustline
                     WaiveTransferFee::Yes);
             },
             // Set AMM flag on AMM trustline
@@ -368,7 +374,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                         accountId,
                         amount,
                         ctx.journal,
-                        std::nullopt,  // don't sponsor for AMM Trustline
+                        {},  // don't sponsor for AMM Trustline
                         WaiveTransferFee::Yes))
                     return res;
                 // Set AMM flag on AMM trustline
@@ -408,7 +414,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
-        auto const dir = keylet::quality(keylet::kBOOK(book), uRate);
+        auto const dir = keylet::quality(keylet::kBook(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
             ctx.registry.get().getOrderBookDB().addOrderBook(book);
     };
@@ -425,7 +431,7 @@ AMMCreate::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyCreate(ctx_, sb, account_, j_);
+    auto const result = applyCreate(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 
@@ -438,11 +444,13 @@ AMMCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

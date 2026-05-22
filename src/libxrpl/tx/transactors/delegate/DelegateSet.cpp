@@ -26,7 +26,7 @@ NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
-    if (permissions.size() > kPERMISSION_MAX_SIZE)
+    if (permissions.size() > kPermissionMaxSize)
         return temARRAY_TOO_LARGE;
 
     // can not authorize self
@@ -69,12 +69,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(account_));
+    auto const sleOwner = ctx_.view().peek(keylet::account(accountID_));
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
-    auto const delegateKey = keylet::delegate(account_, authAccount);
+    auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
     auto sle = ctx_.view().peek(delegateKey);
     if (sle)
@@ -95,29 +95,31 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
     sle = std::make_shared<SLE>(delegateKey);
-    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
 
     // Add to delegating account's owner directory
-    auto const page =
-        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    auto const page = ctx_.view().dirInsert(
+        keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     (*sle)[sfOwnerNode] = *page;
 
-    // Add to authorized account's owner directory so the object can be found
-    // and cleaned up when the authorized account is deleted.
+    // Add to authorized account's owner directory so AccountDelete can find
+    // and clean up inbound delegations when the authorized account is deleted.
     auto const destPage = ctx_.view().dirInsert(
         keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
 
@@ -127,8 +129,8 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sle, sponsor);
+    adjustOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sle, *sponsorSle);
 
     return tesSUCCESS;
 }
@@ -181,11 +183,13 @@ DelegateSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

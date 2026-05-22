@@ -26,8 +26,8 @@ namespace xrpl {
 bool
 Port::secure() const
 {
-    return protocol.count("peer") > 0 || protocol.count("https") > 0 || protocol.count("wss") > 0 ||
-        protocol.count("wss2") > 0;
+    return protocol.contains("peer") || protocol.contains("https") || protocol.contains("wss") ||
+        protocol.contains("wss2");
 }
 
 std::string
@@ -61,7 +61,7 @@ operator<<(std::ostream& os, Port const& p)
 
     if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
     {
-        os << "secureGateway nets:";
+        os << "secure_gateway nets:";
         for (auto const& net : p.secure_gateway_nets_v4)
         {
             os << net.to_string();
@@ -287,7 +287,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 
     populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
     populate(
-        section, "secureGateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
 
     set(port.user, "user", section);
     set(port.password, "password", section);

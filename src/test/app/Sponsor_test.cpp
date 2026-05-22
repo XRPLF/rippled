@@ -22,16 +22,21 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -39,6 +44,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -47,6 +53,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -54,13 +61,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
-
-#include "test/jtx/seq.h"
-#include "test/jtx/txflags.h"
-#include "xrpl/basics/Slice.h"
-#include "xrpl/ledger/ApplyView.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpld/core/Config.h"
 
 #include <chrono>
 #include <cstdint>
@@ -419,13 +419,14 @@ public:
         using namespace test::jtx;
         Env env{*this, testableAmendments()};
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
         Account const invalid("invalid");
 
         Account const signer1("signer1");
         Account const signer2("signer2");
 
-        env.fund(XRP(10000), alice, sponsor);
+        env.fund(XRP(10000), alice, bob, sponsor);
         env.close();
 
         env(signers(sponsor, 1, {{signer1, 1}, {signer2, 1}}));
@@ -439,10 +440,10 @@ public:
         signers1[sfTxnSignature.jsonName] = "DEADBEEF";
         env(tx, Fee(XRP(1)), sponsor::As(sponsor, spfSponsorReserve), Ter(telENV_RPC_FAILED));
 
-        // Signer account doesn't exist
+        // bob is not a multi-signing account.
         env(noop(alice),
             Fee(XRP(1)),
-            sponsor::As(invalid, spfSponsorReserve),
+            sponsor::As(bob, spfSponsorReserve),
             Msig(sfSponsorSignature, {signer1}),
             Ter(tefNOT_MULTI_SIGNING));
 
@@ -491,7 +492,7 @@ public:
         env(noop(alice), Sig(sfSponsorSignature, sponsor), Ter(temMALFORMED));
 
         // Invalid Sponsor Account (Sponsor.Account doesn't exist)
-        env(noop(alice), sponsor::As(noFunded, spfSponsorReserve), Ter(terNO_SPONSORSHIP));
+        env(noop(alice), sponsor::As(noFunded, spfSponsorReserve), Ter(terNO_ACCOUNT));
         env(noop(alice),
             sponsor::As(noFunded, spfSponsorReserve),
             Sig(sfSponsorSignature, noFunded),
@@ -2177,8 +2178,8 @@ public:
             json::Value jv;
             jv[jss::TransactionType] = jss::AMMCreate;
             jv[jss::Account] = account.human();
-            jv[jss::Amount] = amount1.getJson(JsonOptions::KNone);
-            jv[jss::Amount2] = amount2.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount1.getJson(JsonOptions::Values::None);
+            jv[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
             jv[jss::TradingFee] = 0;
             jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             return jv;
@@ -2191,10 +2192,10 @@ public:
             json::Value jv;
             jv[jss::TransactionType] = jss::AMMDeposit;
             jv[jss::Account] = account.human();
-            jv[jss::Asset] = STIssue(sfAsset, amount1.asset()).getJson(JsonOptions::KNone);
-            jv[jss::Asset2] = STIssue(sfAsset, amount2.asset()).getJson(JsonOptions::KNone);
-            jv[jss::Amount] = amount1.value().getJson(JsonOptions::KNone);
-            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::KNone);
+            jv[jss::Asset] = STIssue(sfAsset, amount1.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, amount2.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Amount] = amount1.value().getJson(JsonOptions::Values::None);
+            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::Values::None);
             jv[jss::Flags] = tfTwoAsset;
             return jv;
         };
@@ -2367,9 +2368,9 @@ public:
                 json::Value jv;
                 jv[jss::TransactionType] = jss::AMMWithdraw;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Amount] = usd(100).value().getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
                 jv[jss::Flags] = tfSingleAsset;
 
                 env(ticket::create(sponsor, 1));  // adjust for free
@@ -2417,8 +2418,8 @@ public:
                 json::Value jv;
                 jv[jss::TransactionType] = jss::AMMWithdraw;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::KNone);
-                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::KNone);
+                jv[jss::Asset] = STIssue(sfAsset, usd.issue()).getJson(JsonOptions::Values::None);
+                jv[jss::Asset2] = STIssue(sfAsset, eur.issue()).getJson(JsonOptions::Values::None);
                 jv[jss::Flags] = tfWithdrawAll;
 
                 env(ticket::create(sponsor, 1));  // adjust for free trustline
@@ -2514,7 +2515,7 @@ public:
             env.close();
 
             AMM amm(env, gw, XRP(10'000), usd(10'000));
-            for (auto i = 0; i < (kMAX_DELETABLE_AMM_TRUST_LINES * 2) + 10; ++i)
+            for (auto i = 0; i < (kMaxDeletableAmmTrustLines * 2) + 10; ++i)
             {
                 Account const a{std::to_string(i)};
                 env.fund(XRP(1'000), a);
@@ -2536,7 +2537,7 @@ public:
             }
 
             BEAST_EXPECT(
-                sponsoringOwnerCount(env, sponsor) == ((kMAX_DELETABLE_AMM_TRUST_LINES * 2) + 10));
+                sponsoringOwnerCount(env, sponsor) == ((kMaxDeletableAmmTrustLines * 2) + 10));
 
             // The trustlines are partially deleted.
             amm.withdrawAll(gw);
@@ -3355,8 +3356,8 @@ public:
                     seq = env.seq(alice);
                     submit(
                         escrow::create(alice, bob, XRP(100)),
-                        escrow::kCONDITION(escrow::kCB1),
-                        escrow::kCANCEL_TIME(env.now() + 100s));
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
                 });
             BEAST_EXPECT(
                 env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
@@ -3389,8 +3390,8 @@ public:
 
             // EscrowFinish
             env(escrow::finish(bob, alice, seq),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFULFILLMENT(escrow::kFB1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
                 Fee(baseFee * 150));
             env.close();
 
@@ -3434,8 +3435,8 @@ public:
                     seq = env.seq(alice);
                     submit(
                         escrow::create(alice, bob, usd(100)),
-                        escrow::kCONDITION(escrow::kCB1),
-                        escrow::kCANCEL_TIME(env.now() + 100s));
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
                 });
 
             BEAST_EXPECT(
@@ -3453,8 +3454,8 @@ public:
                 [&](Env& env, auto const& submit) {
                     submit(
                         escrow::finish(bob, alice, seq),
-                        escrow::kCONDITION(escrow::kCB1),
-                        escrow::kFULFILLMENT(escrow::kFB1),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kFulfillment(escrow::kFb1),
                         Fee(baseFee * 150));
                 });
 
@@ -3483,8 +3484,8 @@ public:
             // create Escrow from alice to bob
             auto const seq = env.seq(alice);
             env(escrow::create(alice, bob, mpt(100)),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kCANCEL_TIME(env.now() + 100s));
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -3493,8 +3494,8 @@ public:
 
             // finish Escrow
             env(escrow::finish(bob, alice, seq),
-                escrow::kCONDITION(escrow::kCB1),
-                escrow::kFULFILLMENT(escrow::kFB1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(1)));
@@ -4207,7 +4208,7 @@ public:
 
         auto const oracleSet = [](Env& env, Account const& account, uint8_t dataSeriesSize) {
             auto const now = env.timeKeeper().now();
-            env.close(now + oracle::kTEST_START_TIME - kEPOCH_OFFSET);
+            env.close(now + oracle::kTestStartTime - kEpochOffset);
             json::Value jv;
             jv[jss::TransactionType] = jss::OracleSet;
             jv[jss::Account] = to_string(account);
@@ -4215,8 +4216,8 @@ public:
             jv[jss::LastUpdateTime] = to_string(
                 duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch())
                     .count() +
-                kEPOCH_OFFSET.count() + 100);
-            jv[jss::PriceDataSeries] = json::ArrayValue;
+                kEpochOffset.count() + 100);
+            jv[jss::PriceDataSeries] = json::ValueType::Array;
             jv[jss::Provider] = strHex(std::string{"provider"});
             jv[jss::AssetClass] = strHex(std::string{"currency"});
 
@@ -4235,7 +4236,7 @@ public:
 
             DataSeries const actualSeries(series.begin(), series.begin() + dataSeriesSize);
 
-            json::Value dataSeries(json::ArrayValue);
+            json::Value dataSeries(json::ValueType::Array);
             for (auto const& data : actualSeries)
             {
                 json::Value priceData;
@@ -5236,7 +5237,7 @@ public:
             env.fund(XRP(1000), alice, bob, issuer, sponsor);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
             PrettyAsset const asset = mptt["MPT"];
@@ -5298,8 +5299,8 @@ public:
             // LoanBrokerCoverClawback
             // doesn't sponsor anything
             env(loanBroker::coverClawback(issuer),
-                loanBroker::kLOAN_BROKER_ID(brokerKeylet.key),
-                kAMOUNT(asset(1)),
+                loanBroker::kLoanBrokerId(brokerKeylet.key),
+                kAmount(asset(1)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor));
             env.close();
@@ -5314,7 +5315,7 @@ public:
             env.fund(XRP(1000000), alice, bob, issuer, sponsor, sponsor2);
             env.close();
 
-            MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+            MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             env.close();
             PrettyAsset const asset = mptt["MPT"];

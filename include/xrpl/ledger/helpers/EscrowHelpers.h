@@ -59,12 +59,12 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
-        std::shared_ptr<SLE> sponsorSle = {};
-        if (sponsorAccountID)
-            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+
         if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -78,22 +78,22 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                view,                                           // payment sandbox
-                recvLow,                                        // is dest low?
-                issuer,                                         // source
-                receiver,                                       // destination
-                trustLineKey.key,                               // ledger index
-                sleDest,                                        // Account to add to
-                false,                                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
-                false,                                          // freeze trust line
-                false,                                          // deep freeze trust line
-                initialBalance,                                 // zero initial balance
-                Issue(currency, receiver),                      // limit of zero
-                0,                                              // quality in
-                0,                                              // quality out
-                sponsorAccountID,                               // sponsor
-                journal);                                       // journal
+                view,                                // payment sandbox
+                recvLow,                             // is dest low?
+                issuer,                              // source
+                receiver,                            // destination
+                trustLineKey.key,                    // ledger index
+                sleDest,                             // Account to add to
+                false,                               // authorize account
+                !sleDest->isFlag(lsfDefaultRipple),  //
+                false,                               // freeze trust line
+                false,                               // deep freeze trust line
+                initialBalance,                      // zero initial balance
+                Issue(currency, receiver),           // limit of zero
+                0,                                   // quality in
+                0,                                   // quality out
+                *sponsorSle,                         // sponsor
+                journal);                            // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -120,7 +120,7 @@ escrowUnlockApplyHelper<Issue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee =
@@ -189,25 +189,25 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorAccountID = getTxReserveSponsorAccountID(tx);
-        std::shared_ptr<SLE> sponsorSle = {};
-        if (sponsorAccountID)
-            sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+
         if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(view, mptID, receiver, sponsorAccountID, 0);
+        if (auto const ter = createMPToken(view, mptID, receiver, *sponsorSle, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, sponsorSle, 1, journal);
+        adjustOwnerCount(view, sleDest, *sponsorSle, 1, journal);
         auto mptSle = view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, sponsorSle);
+        addSponsorToLedgerEntry(mptSle, *sponsorSle);
     }
 
     if (!view.exists(mptKeylet) && !receiverIssuer)
@@ -228,7 +228,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);

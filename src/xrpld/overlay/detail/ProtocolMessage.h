@@ -159,7 +159,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = kHEADER_BYTES_COMPRESSED;
+        hdr.header_size = kHeaderBytesCompressed;
 
         // not enough bytes to parse the header
         if (size < hdr.header_size)
@@ -204,7 +204,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = kHEADER_BYTES;
+        hdr.header_size = kHeaderBytes;
 
         if (size < hdr.header_size)
         {
@@ -329,8 +329,8 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > kMAXIMUM_MESSAGE_SIZE ||
-        header->uncompressed_size > kMAXIMUM_MESSAGE_SIZE)
+    if (header->payload_wire_size > kMaximumMessageSize ||
+        header->uncompressed_size > kMaximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;

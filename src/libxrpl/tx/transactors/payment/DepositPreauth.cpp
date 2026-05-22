@@ -85,7 +85,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         if (auto err = credentials::checkArray(
                 ctx.tx.getFieldArray(
                     authArrPresent ? sfAuthorizeCredentials : sfUnauthorizeCredentials),
-                kMAX_CREDENTIALS_ARRAY_SIZE,
+                kMaxCredentialsArraySize,
                 ctx.j);
             !isTesSuccess(err))
             return err;
@@ -154,31 +154,33 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
+        auto const sleOwner = view().peek(keylet::account(accountID_));
         if (!sleOwner)
             return {tefINTERNAL};
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, j_);
+                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        Keylet const preauthKeylet = keylet::depositPreauth(account_, auth);
+        Keylet const preauthKeylet = keylet::depositPreauth(accountID_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->setAccountID(sfAuthorize, auth);
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
                          << to_string(preauthKeylet.key) << ": " << (page ? "success" : "failure");
@@ -189,27 +191,29 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
-        addSponsorToLedgerEntry(slePreauth, sponsor);
+        adjustOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
+        addSponsorToLedgerEntry(slePreauth, *sponsorSle);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
-        auto const preauth = keylet::depositPreauth(account_, ctx_.tx[sfUnauthorize]);
+        auto const preauth = keylet::depositPreauth(accountID_, ctx_.tx[sfUnauthorize]);
 
         return DepositPreauth::removeFromLedger(view(), preauth.key, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
+        auto const sleOwner = view().peek(keylet::account(accountID_));
         if (!sleOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, j_);
+                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -227,18 +231,18 @@ DepositPreauth::doApply()
             sortedLE.pushBack(std::move(cred));
         }
 
-        Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);
+        Keylet const preauthKey = keylet::depositPreauth(accountID_, sortedTX);
         auto slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
 
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKey, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory " << to_string(preauthKey.key)
                          << ": " << (page ? "success" : "failure");
@@ -249,13 +253,13 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
-        addSponsorToLedgerEntry(slePreauth, sponsor);
+        adjustOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
+        addSponsorToLedgerEntry(slePreauth, *sponsorSle);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         auto const preauthKey = keylet::depositPreauth(
-            account_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
+            accountID_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
         return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
 
@@ -301,6 +305,7 @@ DepositPreauth::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -311,6 +316,7 @@ DepositPreauth::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

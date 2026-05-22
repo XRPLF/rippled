@@ -286,7 +286,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
+        weight = ((yays_ * 100) + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         newPosition = weight > requiredPct;
     }
@@ -320,7 +320,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 {
     using std::to_string;
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret["yays"] = yays_;
     ret["nays"] = nays_;
@@ -328,7 +328,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 
     if (!votes_.empty())
     {
-        json::Value votes(json::ObjectValue);
+        json::Value votes(json::ValueType::Object);
         for (auto const& [nodeId, vote] : votes_)
             votes[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votes);

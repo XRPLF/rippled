@@ -81,7 +81,7 @@ private:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
 
@@ -104,7 +104,7 @@ private:
     static std::string
     makeRevocationString(PublicKey const& pk, SecretKey const& sk)
     {
-        STObject st(kSF_GENERIC);
+        STObject st(kSfGeneric);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
@@ -220,7 +220,7 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::severities::KDisabled);
+        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::Severity::Disabled);
         auto& app = env.app();
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
@@ -603,15 +603,15 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::map<std::size_t, std::vector<Validator>> const lists = []() {
-            auto constexpr kLIST_SIZE = 20;
-            auto constexpr kNUM_LISTS = 9;
+            static constexpr auto kListSize = 20;
+            static constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
             // 1-based to correspond with the individually named blobs below.
-            for (auto i = 1; i <= kNUM_LISTS; ++i)
+            for (auto i = 1; i <= kNumLists; ++i)
             {
                 auto& list = lists[i];
-                list.reserve(kLIST_SIZE);
-                while (list.size() < kLIST_SIZE)
+                list.reserve(kListSize);
+                while (list.size() < kListSize)
                     list.push_back(randomValidator());
             }
             return lists;
@@ -632,7 +632,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = expiredblob, .signature = expiredSig, .manifest = {}},
+                 {.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Expired,
             ListDisposition::Accepted);
@@ -665,7 +669,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                manifest1,
+                version2,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -697,7 +705,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob6a, .signature = sig6a, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -709,7 +721,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::KnownSequence,
             ListDisposition::KnownSequence);
@@ -720,7 +736,12 @@ private:
 
         // try empty or mangled manifest
         checkResult(
-            trustedKeys->applyLists("", version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+            trustedKeys->applyLists(
+                "",
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -729,7 +750,8 @@ private:
             trustedKeys->applyLists(
                 base64Encode("not a manifest"),
                 version,
-                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -740,7 +762,11 @@ private:
             randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         checkResult(
-            trustedKeys->applyLists(untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                untrustedManifest,
+                version,
+                {{.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -748,7 +774,11 @@ private:
         // do not use list with unhandled version
         auto const badVersion = 666;
         checkResult(
-            trustedKeys->applyLists(manifest1, badVersion, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1,
+                badVersion,
+                {{.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::UnsupportedVersion,
             ListDisposition::UnsupportedVersion);
@@ -759,7 +789,8 @@ private:
         auto const sig3 = signList(blob3, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob3, sig3, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{.blob = blob3, .signature = sig3, .manifest = {}}}, siteUri),
             publisherPublic,
             ListDisposition::Accepted,
             ListDisposition::Accepted);
@@ -780,7 +811,11 @@ private:
         // do not re-apply lists with past or current sequence numbers
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob2, .signature = sig2, .manifest = {}},
+                 {.blob = blob3, .signature = sig3, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Stale,
             ListDisposition::SameSequence);
@@ -799,7 +834,9 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}},
+                {{.blob = blob2, .signature = sig2, .manifest = manifest1},
+                 {.blob = blob3, .signature = sig3, .manifest = manifest1},
+                 {.blob = blob4, .signature = sig4, .manifest = {}}},
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -820,7 +857,11 @@ private:
         auto const blob5 = makeList(lists.at(5), sequence5, validUntil.time_since_epoch().count());
         auto const badSig = signList(blob5, pubSigningKeys1);
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob5, badSig, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1,
+                version,
+                {{.blob = blob5, .signature = badSig, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -833,7 +874,11 @@ private:
         // Reprocess the pending list, but the signature is no longer valid
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -884,7 +929,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig82, {}}}, siteUri),
+                manifest2,
+                version,
+                {{.blob = blob8, .signature = sig8, .manifest = manifest1},
+                 {.blob = blob8, .signature = sig82, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::SameSequence);
@@ -903,7 +952,11 @@ private:
         auto const sig9 = signList(blob9, signingKeysMax);
 
         checkResult(
-            trustedKeys->applyLists(maxManifest, version, {{blob9, sig9, {}}}, siteUri),
+            trustedKeys->applyLists(
+                maxManifest,
+                version,
+                {{.blob = blob9, .signature = sig9, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -949,10 +1002,10 @@ private:
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
         std::vector<Validator> const list = []() {
-            auto constexpr kLIST_SIZE = 20;
+            static constexpr auto kListSize = 20;
             std::vector<Validator> list;
-            list.reserve(kLIST_SIZE);
-            while (list.size() < kLIST_SIZE)
+            list.reserve(kListSize);
+            while (list.size() < kListSize)
                 list.push_back(randomValidator());
             return list;
         }();
@@ -1545,10 +1598,10 @@ private:
             // locals[0]: from 0 to maxKeys - 4
             // locals[1]: from 1 to maxKeys - 2
             // locals[2]: from 2 to maxKeys
-            constexpr static int kPUBLISHERS = 3;
+            static constexpr int kPublishers = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                kPUBLISHERS>
+                kPublishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1588,7 +1641,7 @@ private:
             };
 
             // Apply multiple published lists
-            for (auto i = 0; i < kPUBLISHERS; ++i)
+            for (auto i = 0; i < kPublishers; ++i)
                 addPublishedList(i);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 1);
 
@@ -1635,10 +1688,10 @@ private:
             // locals[2]: from 2 to maxKeys
             // intersection of at least 2: same as locals[1]
             // intersection when 1 is dropped: from 2 to maxKeys - 4
-            constexpr static int kPUBLISHERS = 3;
+            static constexpr int kPublishers = 3;
             std::array<
                 std::pair<decltype(valKeys)::const_iterator, decltype(valKeys)::const_iterator>,
-                kPUBLISHERS>
+                kPublishers>
                 locals = {
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
@@ -1703,7 +1756,7 @@ private:
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
             NetClock::time_point validUntil1, validUntil2;
-            for (auto i = 0; i < kPUBLISHERS; ++i)
+            for (auto i = 0; i < kPublishers; ++i)
                 addPublishedList(i, validUntil1, validUntil2);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
 
@@ -1900,7 +1953,9 @@ private:
                 return PreparedList{
                     .publisherPublic = publisherPublic,
                     .manifest = manifest,
-                    .blobs = {{blob1, sig1, {}}, {blob2, sig2, {}}},
+                    .blobs =
+                        {{.blob = blob1, .signature = sig1, .manifest = {}},
+                         {.blob = blob2, .signature = sig2, .manifest = {}}},
                     .version = version,
                     .expirations = {expiration1, expiration2}};
             };
@@ -2548,10 +2603,10 @@ private:
         jtx::Env env(*this);
         auto& app = env.app();
 
-        constexpr std::size_t kMAX_KEYS = 20;
+        static constexpr std::size_t kMaxKeys = 20;
         hash_set<NodeID> activeValidators;
         std::vector<Validator> valKeys;
-        while (valKeys.size() != kMAX_KEYS)
+        while (valKeys.size() != kMaxKeys)
         {
             valKeys.push_back(randomValidator());
             activeValidators.emplace(calcNodeID(valKeys.back().masterPublic));
@@ -2592,13 +2647,13 @@ private:
                 auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
                 cfgPublishers.push_back(strHex(publisherPublic));
 
-                constexpr auto kREVOKED = std::numeric_limits<std::uint32_t>::max();
+                constexpr auto kRevoked = std::numeric_limits<std::uint32_t>::max();
                 auto const manifest = base64Encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
                     pubSigningKeys.second,
-                    i < countRevoked ? kREVOKED : 1));
+                    i < countRevoked ? kRevoked : 1));
                 publishers.push_back(
                     Publisher{
                         .revoked = i < countRevoked,
@@ -2640,7 +2695,7 @@ private:
         };
 
         // Test cases use 5 publishers.
-        constexpr auto kQUORUM_DISABLED = std::numeric_limits<std::size_t>::max();
+        constexpr auto kQuorumDisabled = std::numeric_limits<std::size_t>::max();
         {
             // List threshold = 5 (same as number of trusted publishers)
             ManifestCache pubManifests;
@@ -2688,7 +2743,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2746,7 +2801,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
@@ -2811,7 +2866,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2881,7 +2936,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2947,7 +3002,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3014,7 +3069,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
@@ -3080,7 +3135,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3139,7 +3194,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3197,7 +3252,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
@@ -3253,7 +3308,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             for (auto const& val : valKeys)
@@ -3298,7 +3353,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3319,7 +3374,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3365,7 +3420,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3385,7 +3440,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3432,7 +3487,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
             hash_set<NodeID> added;
@@ -3452,7 +3507,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
@@ -3512,7 +3567,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3573,7 +3628,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3634,7 +3689,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().empty());
 
             hash_set<NodeID> removed;
@@ -3696,7 +3751,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3843,7 +3898,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -3911,7 +3966,7 @@ private:
                 env.app().getOPs(),
                 env.app().getOverlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == kQUORUM_DISABLED);
+            BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;

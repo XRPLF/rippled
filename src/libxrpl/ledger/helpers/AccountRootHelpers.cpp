@@ -193,7 +193,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 {
     auto const sle = view.read(keylet::account(id));
     if (sle == nullptr)
-        return beast::kZERO;
+        return beast::kZero;
 
     std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, false, j);
     std::uint32_t const reserveCount = reserveCountHlp(sle, 0, j);
@@ -222,7 +222,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};
 
-    return kPARITY_RATE;
+    return kParityRate;
 }
 
 static void
@@ -337,7 +337,7 @@ checkInsufficientReserve(
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
-    std::int32_t accountCountDelta,
+    std::int32_t reserveCountDelta,
     beast::Journal j)
 {
     if (sponsorSle)
@@ -353,14 +353,14 @@ checkInsufficientReserve(
 
         if (sle)
         {
-            auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
-            if (reserveCountAllowed < ownerCountDelta)
+            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
+            if (ownerCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
         STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountDelta, accountCountDelta);
+            accountReserve(view, sponsorSle, j, ownerCountDelta, reserveCountDelta);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
@@ -368,7 +368,7 @@ checkInsufficientReserve(
     else
     {
         STAmount const reserve =
-            accountReserve(view, accSle, j, ownerCountDelta, accountCountDelta);
+            accountReserve(view, accSle, j, ownerCountDelta, reserveCountDelta);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -381,17 +381,17 @@ AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
-    for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
+    static constexpr std::uint16_t kMaxAccountAttempts = 256;
+    for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
     {
         RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret{static_cast<RipeshaHasher::result_type>(rsh)};
+        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
         if (!view.read(keylet::account(ret)))
             return ret;
     }
-    return beast::kZERO;
+    return beast::kZero;
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
@@ -403,7 +403,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const kPSEUDO_FIELDS = []() {
+    static std::vector<SField const*> const kPseudoFields = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {
@@ -418,12 +418,12 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::SMdPseudoAccount))
+            if (field.sField().shouldMeta(SField::kSmdPseudoAccount))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;
     }();
-    return kPSEUDO_FIELDS;
+    return kPseudoFields;
 }
 
 [[nodiscard]] bool
@@ -454,7 +454,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
         "xrpl::createPseudoAccount : valid owner field");
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
-    if (accountId == beast::kZERO)
+    if (accountId == beast::kZero)
         return Unexpected(tecDUPLICATE);
 
     // Create pseudo-account.

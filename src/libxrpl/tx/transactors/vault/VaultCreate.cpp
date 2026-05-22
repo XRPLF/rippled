@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
@@ -8,6 +9,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -53,23 +55,23 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!validDataLength(ctx.tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
+    if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*withdrawalPolicy != kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE)
+        if (*withdrawalPolicy != kVaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZERO)
+        if (*domain == beast::kZero)
         {
             return temMALFORMED;
         }
-        if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+        if (!ctx.tx.isFlag(tfVaultPrivate))
         {
             return temMALFORMED;  // DomainID only allowed on private vaults
         }
@@ -77,13 +79,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::kZERO)
+        if (*assetMax < beast::kZero)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -93,7 +95,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        if (scale > kVAULT_MAXIMUM_IOU_SCALE)
+        if (scale > kVaultMaximumIouScale)
             return temMALFORMED;
     }
 
@@ -131,7 +133,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(ctx.view, keylet::vault(account, sequence).key);
-        accountId == beast::kZERO)
+        accountId == beast::kZero)
         return terADDRESS_COLLISION;
 
     return tesSUCCESS;
@@ -146,22 +148,24 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    auto const owner = view().peek(keylet::account(account_));
+    auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
+    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
-    if (auto ter = dirLink(view(), account_, vault))
+    if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    auto const sponsor = getTxReserveSponsor(view(), tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (!ctx_.view().rules().enabled(featureSponsor))
     {
-        adjustOwnerCount(view(), owner, sponsor, 2, j_);
-        addSponsorToLedgerEntry(vault, sponsor);
+        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
+        addSponsorToLedgerEntry(vault, *sponsorSle);
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0, 0, j_);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 0, 0, j_);
             !isTesSuccess(ret))
             return ret;
     }
@@ -169,19 +173,19 @@ VaultCreate::doApply()
     {
         // after Sponsor Amendment, check insufficient reserve first
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2, 0, j_);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 2, 0, j_);
             !isTesSuccess(ret))
             return ret;
-        adjustOwnerCount(view(), owner, sponsor, 2, j_);
-        addSponsorToLedgerEntry(vault, sponsor);
+        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
+        addSponsorToLedgerEntry(vault, *sponsorSle);
     }
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
-    auto& pseudo = *maybePseudo;
-    auto pseudoId = pseudo->at(sfAccount);
-    auto asset = tx[sfAsset];
+    auto const& pseudo = *maybePseudo;
+    AccountID const pseudoId = pseudo->at(sfAccount);
+    auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(view(), tx, pseudoId, preFeeBalance_, asset, j_);
         !isTesSuccess(ter))
@@ -189,26 +193,36 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(kVAULT_DEFAULT_IOU_SCALE);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
-    auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if ((txFlags & tfVaultShareNonTransferable) == 0)
+    if (!tx.isFlag(tfVaultShareNonTransferable))
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
         mptFlags |= lsfMPTRequireAuth;
 
     // Note, here we are **not** creating an MPToken for the assets held in
     // the vault. That MPToken or TrustLine/RippleState is created above, in
     // addEmptyHolding. Here we are creating MPTokenIssuance for the shares
-    // in the vault
-    auto maybeShare = MPTokenIssuanceCreate::create(
+    // in the vault.
+    //
+    // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
+    // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
+    // XRP underlyings leave it unset.
+    auto const referenceHolding = [&]() -> std::optional<uint256> {
+        if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
+            return std::nullopt;
+        return asset.holds<MPTIssue>()
+            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
+            : keylet::line(pseudoId, asset.get<Issue>()).key;
+    }();
+    auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
         tx,
         j_,
         {
             .priorBalance = std::nullopt,
-            .account = pseudoId->value(),
+            .account = pseudoId,
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
@@ -216,15 +230,16 @@ VaultCreate::doApply()
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
             .mutableFlags = std::nullopt,
+            .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = txFlags & tfVaultPrivate;
+    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
-    vault->at(sfOwner) = account_;
+    vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
@@ -242,7 +257,7 @@ VaultCreate::doApply()
     }
     else
     {
-        vault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+        vault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
@@ -250,15 +265,15 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), tx, preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), tx, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if ((txFlags & tfVaultPrivate) != 0u)
+    if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), tx, preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), tx, preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }
@@ -274,11 +289,13 @@ VaultCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

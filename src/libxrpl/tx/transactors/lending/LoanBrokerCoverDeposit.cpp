@@ -27,11 +27,11 @@ LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -122,7 +122,7 @@ LoanBrokerCoverDeposit::doApply()
 
     // Transfer assets from depositor to pseudo-account.
     if (auto ter =
-            accountSend(view(), account_, brokerPseudoID, amount, j_, {}, WaiveTransferFee::Yes))
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, {}, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
@@ -140,6 +140,7 @@ LoanBrokerCoverDeposit::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -150,6 +151,7 @@ LoanBrokerCoverDeposit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

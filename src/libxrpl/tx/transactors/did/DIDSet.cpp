@@ -56,9 +56,8 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, kMAX_DIDURI_LENGTH) ||
-        isTooLong(sfDIDDocument, kMAX_DID_DOCUMENT_LENGTH) ||
-        isTooLong(sfData, kMAX_DID_DATA_LENGTH))
+    if (isTooLong(sfURI, kMaxDidUriLength) || isTooLong(sfDIDDocument, kMaxDidDocumentLength) ||
+        isTooLong(sfData, kMaxDidDataLength))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -72,10 +71,12 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Check reserve availability for new object creation
-    auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx.view(), ctx.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
     if (auto const ret = checkInsufficientReserve(
-            ctx.view(), ctx.tx, sleAccount, balance, sponsor, 1, 0, ctx.journal);
+            ctx.view(), ctx.tx, sleAccount, balance, *sponsorSle, 1, 0, ctx.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -90,8 +91,8 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, sponsor, 1, ctx.journal);
-    addSponsorToLedgerEntry(sle, sponsor);
+    adjustOwnerCount(ctx.view(), sleAccount, *sponsorSle, 1, ctx.journal);
+    addSponsorToLedgerEntry(sle, *sponsorSle);
     ctx.view().update(sleAccount);
 
     return tesSUCCESS;
@@ -101,7 +102,7 @@ TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
-    Keylet const didKeylet = keylet::did(account_);
+    Keylet const didKeylet = keylet::did(accountID_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
         auto update = [&](auto const& sField) {
@@ -132,7 +133,7 @@ DIDSet::doApply()
 
     // Create new ledger object otherwise
     auto const sleDID = std::make_shared<SLE>(didKeylet);
-    (*sleDID)[sfAccount] = account_;
+    (*sleDID)[sfAccount] = accountID_;
 
     auto set = [&](auto const& sField) {
         if (auto const field = ctx_.tx[~sField]; field && !field->empty())
@@ -148,7 +149,7 @@ DIDSet::doApply()
         return tecEMPTY_DID;
     }
 
-    return addSLE(ctx_, sleDID, account_);
+    return addSLE(ctx_, sleDID, accountID_);
 }
 
 void
@@ -157,11 +158,13 @@ DIDSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

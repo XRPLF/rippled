@@ -253,7 +253,7 @@ std::map<std::string, std::string, boost::beast::iless>
 parseArgs(std::string const& s)
 {
     // <key> '=' <value>
-    static boost::regex const kRE1(
+    static boost::regex const kRe1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -269,7 +269,7 @@ parseArgs(std::string const& s)
     for (auto const& kv : v)
     {
         boost::smatch m;
-        if (!boost::regex_match(kv, m, kRE1))
+        if (!boost::regex_match(kv, m, kRe1))
             Throw<std::runtime_error>("invalid parameter " + kv);
         auto const result = map.emplace(m[1], m[2]);
         if (!result.second)
@@ -297,17 +297,17 @@ public:
         auto const args = parseArgs(arg());
         bool usage = args.empty();
 
-        if (!usage && args.find("from") == args.end())
+        if (!usage && !args.contains("from"))
         {
             log << "Missing parameter: from";
             usage = true;
         }
-        if (!usage && args.find("to") == args.end())
+        if (!usage && !args.contains("to"))
         {
             log << "Missing parameter: to";
             usage = true;
         }
-        if (!usage && args.find("buffer") == args.end())
+        if (!usage && !args.contains("buffer"))
         {
             log << "Missing parameter: buffer";
             usage = true;

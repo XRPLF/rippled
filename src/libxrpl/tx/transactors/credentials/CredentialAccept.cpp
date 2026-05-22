@@ -44,7 +44,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -74,7 +74,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
+    if (sleCred->isFlag(lsfAccepted))
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -90,23 +90,27 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(account_));
+    auto const sleSubject = view().peek(keylet::account(accountID_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleSubject, preFeeBalance_, newSponsor, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sleSubject, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    if (!sleCred)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(sleCred, view().header().parentCloseTime))
+    if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -119,8 +123,8 @@ CredentialAccept::doApply()
 
     adjustOwnerCountObj(view(), sleIssuer, sleCred, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
-    adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
-    addSponsorToLedgerEntry(sleCred, newSponsor);
+    adjustOwnerCount(view(), sleSubject, *sponsorSle, 1, j_);
+    addSponsorToLedgerEntry(sleCred, *sponsorSle);
 
     return tesSUCCESS;
 }
@@ -131,6 +135,7 @@ CredentialAccept::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -141,6 +146,7 @@ CredentialAccept::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

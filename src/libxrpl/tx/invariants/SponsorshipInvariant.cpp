@@ -40,11 +40,6 @@ SponsorshipOwnerCountsMatch::visitEntry(
             return sle->getFieldU32(sfOwnerCount);
         return 0;
     };
-    auto getSponsoredOwnerCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
-        if (sle && sle->getType() == ltACCOUNT_ROOT)
-            return sle->getFieldU32(sfSponsoredOwnerCount);
-        return 0;
-    };
 
     auto getSponsoredObjectOwnerCount =
         [&](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
@@ -97,7 +92,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
     deltaSponsoredObjectOwnerCount_ +=
         (afterSponsoredObjectOwnerCount - beforeSponsoredObjectOwnerCount);
 
-    if (getOwnerCount(after) < getSponsoredOwnerCount(after))
+    if (getOwnerCount(after) < getSponsored(after))
         invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
 }
 

@@ -55,9 +55,8 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 
     uint256 const nftokenID = ctx.tx[sfNFTokenID];
     std::uint32_t const txFlags = ctx.tx.getFlags();
-
     if (!nft::findToken(
-            ctx.view, ctx.tx[((txFlags & tfSellNFToken) != 0u) ? sfAccount : sfOwner], nftokenID))
+            ctx.view, ctx.tx[ctx.tx.isFlag(tfSellNFToken) ? sfAccount : sfOwner], nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint
@@ -98,6 +97,7 @@ NFTokenCreateOffer::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -108,6 +108,7 @@ NFTokenCreateOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

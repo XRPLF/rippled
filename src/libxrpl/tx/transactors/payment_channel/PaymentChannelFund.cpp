@@ -33,7 +33,7 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -84,9 +84,11 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0, 0, j_);
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 0, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -117,6 +119,7 @@ PaymentChannelFund::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -127,6 +130,7 @@ PaymentChannelFund::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

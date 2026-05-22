@@ -57,7 +57,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -80,14 +80,16 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     // Check reserve and funds availability
     {
         auto const balance = (*sle)[sfBalance];
-        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1, 0, ctx.j);
+                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, *sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1, 0, ctx.j);
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], *sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }
@@ -100,13 +102,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (!sled)
             return tecNO_DST;
 
-        auto const flags = sled->getFlags();
-
         // Check if they have disallowed incoming payment channels
-        if ((flags & lsfDisallowIncomingPayChan) != 0u)
+        if (sled->isFlag(lsfDisallowIncomingPayChan))
             return tecNO_PERMISSION;
 
-        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+        if (sled->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -184,9 +184,11 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
-    addSponsorToLedgerEntry(slep, sponsor);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, *sponsorSle);
     ctx_.view().update(sle);
 
     return tesSUCCESS;
@@ -198,6 +200,7 @@ PaymentChannelCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -208,6 +211,7 @@ PaymentChannelCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

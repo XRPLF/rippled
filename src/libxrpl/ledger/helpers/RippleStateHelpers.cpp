@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -185,19 +186,19 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    bool const bAuth,           // --> authorize account.
-    bool const bNoRipple,       // --> others cannot ripple through
-    bool const bFreeze,         // --> funds cannot leave
-    bool bDeepFreeze,           // --> can neither receive nor send funds
-    STAmount const& saBalance,  // --> balance of account being set.
+    uint256 const& uIndex,      // ripple state entry
+    SLE::ref sleAccount,        // the account being set.
+    bool const bAuth,           // authorize account.
+    bool const bNoRipple,       // others cannot ripple through
+    bool const bFreeze,         // funds cannot leave
+    bool bDeepFreeze,           // can neither receive nor send funds
+    STAmount const& saBalance,  // balance of account being set.
                                 // Issuer should be noAccount()
-    STAmount const& saLimit,    // --> limit for account being set.
+    STAmount const& saLimit,    // limit for account being set.
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    std::optional<AccountID> const& sponsorAccountID,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -277,15 +278,11 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
-    if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
+    if (!slePeer->isFlag(lsfDefaultRipple))
     {
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
-
-    std::shared_ptr<SLE> sponsorSle = {};
-    if (sponsorAccountID)
-        sponsorSle = view.peek(keylet::account(*sponsorAccountID));
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
     adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
@@ -353,22 +350,25 @@ updateTrustLine(
 {
     if (!state)
         return false;
-    std::uint32_t const flags(state->getFieldU32(sfFlags));
 
     auto sle = view.peek(keylet::account(sender));
     if (!sle)
         return false;
 
+    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
+    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
+    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
+    auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
+
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::kZERO
+    if (before > beast::kZero
         // Sender balance was positive.
-        && after <= beast::kZERO
+        && after <= beast::kZero
         // Sender is zero or negative.
-        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
+        && state->isFlag(senderReserveFlag)
         // Sender reserve is set.
-        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
-        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+        && state->isFlag(senderNoRippleFlag) != sle->isFlag(lsfDefaultRipple) &&
+        !state->isFlag(senderFreezeFlag) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
@@ -383,13 +383,12 @@ updateTrustLine(
         adjustOwnerCount(view, sle, currentSponsor, -1, j);
 
         // Clear reserve flag.
-        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+        state->clearFlag(senderReserveFlag);
 
         removeSponsorFromLedgerEntry(state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
         // Balance is zero, receiver reserve is clear.
-        if (!after  // Balance is zero.
-            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
+        if (!after && !state->isFlag(receiverReserveFlag))
             return true;
     }
     return false;
@@ -469,7 +468,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
 
     return trustCreate(
         view,
@@ -581,12 +580,11 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
+        issuerAccount && issuerAccount->isFlag(lsfRequireAuth))
     {
         if (trustLine)
         {
-            return (((*trustLine)[sfFlags] &
-                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
+            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -665,20 +663,19 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
-    auto const& sponsorAccountID =
-        !isPseudoAccount(sleDst) ? getTxReserveSponsorAccountID(tx) : std::nullopt;
+
+    SLE::pointer sponsorSle;
+    if (!isPseudoAccount(sleDst))
+    {
+        auto sle = getTxReserveSponsor(view, tx);
+        if (!sle)
+            return sle.error();  // LCOV_EXCL_LINE
+        sponsorSle = std::move(*sle);
+    }
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret = checkInsufficientReserve(
-            view,
-            tx,
-            sleDst,
-            priorBalance,
-            sponsorAccountID ? view.read(keylet::account(*sponsorAccountID))
-                             : std::shared_ptr<SLE>(),
-            1,
-            0,
-            journal);
+    if (auto const ret =
+            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
@@ -697,7 +694,7 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
-        sponsorAccountID,
+        sponsorSle,
         journal);
 }
 
@@ -728,7 +725,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -813,7 +810,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if ((sleState->getFlags() & uFlags) == 0u)
+    if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);

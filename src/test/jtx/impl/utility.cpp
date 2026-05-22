@@ -77,7 +77,7 @@ fillSeq(json::Value& jv, ReadView const& view)
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
-    json::Value jv = json::Value(json::ObjectValue);
+    json::Value jv = json::Value(json::ValueType::Object);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
@@ -89,7 +89,7 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = jv[jss::params] = json::ArrayValue;
+        auto& paramsArray = jv[jss::params] = json::ValueType::Array;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))

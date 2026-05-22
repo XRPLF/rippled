@@ -88,7 +88,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {
-        if (f > kMAX_TRANSFER_FEE)
+        if (f > kMaxTransferFee)
             return temBAD_NFTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -103,7 +103,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->empty() || uri->length() > kMAX_TOKEN_URI_LENGTH)
+        if (uri->empty() || uri->length() > kMaxTokenUriLength)
             return temMALFORMED;
     }
 
@@ -224,7 +224,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenMint::doApply()
 {
-    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
+    auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
@@ -281,7 +281,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+        view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -307,9 +307,12 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     if (TER const ret =
-            nft::insertToken(ctx_.view(), ctx_.tx, account_, sponsor, std::move(newToken));
+            nft::insertToken(ctx_.view(), ctx_.tx, accountID_, *sponsorSle, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -338,16 +341,15 @@ NFTokenMint::doApply()
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
     if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+            view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
                 ctx_.tx,
-                view().read(keylet::account(account_)),
+                view().read(keylet::account(accountID_)),
                 preFeeBalance_,
-                sponsor,
+                *sponsorSle,
                 0,
                 0,
                 j_);
@@ -363,11 +365,13 @@ NFTokenMint::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

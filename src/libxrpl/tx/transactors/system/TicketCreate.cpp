@@ -33,7 +33,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < kMIN_VALID_COUNT || count > kMAX_VALID_COUNT)
+        count < kMinValidCount || count > kMaxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -59,7 +59,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     //  o consumedTickets  <= 1
     // So in the worst case addedTickets == consumedTickets and the
     // computation yields curTicketCount.
-    if (curTicketCount + addedTickets - consumedTickets > kMAX_TICKET_THRESHOLD)
+    if (curTicketCount + addedTickets - consumedTickets > kMaxTicketThreshold)
         return tecDIR_FULL;
 
     return tesSUCCESS;
@@ -68,7 +68,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
+    SLE::pointer const sleAccountRoot = view().peek(keylet::account(accountID_));
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -76,9 +76,11 @@ TicketCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, sponsor, ticketCount, 0, j_);
+            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, *sponsorSle, ticketCount, 0, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -99,16 +101,16 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTICKET(account_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
-        sleTicket->setAccountID(sfAccount, account_);
+        sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
 
         view().insert(sleTicket);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
                          << (page ? "success" : "failure");
@@ -117,7 +119,7 @@ TicketCreate::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleTicket->setFieldU64(sfOwnerNode, *page);
-        addSponsorToLedgerEntry(sleTicket, sponsor);
+        addSponsorToLedgerEntry(sleTicket, *sponsorSle);
     }
 
     // Update the record of the number of Tickets this account owns.
@@ -126,7 +128,7 @@ TicketCreate::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, sponsor, ticketCount, viewJ);
+    adjustOwnerCount(view(), sleAccountRoot, *sponsorSle, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
@@ -141,6 +143,7 @@ TicketCreate::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -151,6 +154,7 @@ TicketCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 
