@@ -101,7 +101,7 @@ private:
     static constexpr std::uint64_t kMaxUsedFdPercent = 70;
     static constexpr std::chrono::milliseconds kFdSampleInterval{250};
     clock_type::time_point fdSampleAt_;
-    bool lastThrottleDecision_{false};
+    bool cachedThrottle_{false};
 
     struct FDStats
     {
@@ -435,16 +435,15 @@ Door<Handler>::shouldThrottleForFds()
     return false;
 #else
     auto const now = clock_type::now();
-    if (!lastThrottleDecision_ && now - fdSampleAt_ < kFdSampleInterval)
-        return false;
+    if (now - fdSampleAt_ < kFdSampleInterval)
+        return cachedThrottle_;
 
     fdSampleAt_ = now;
     auto const stats = queryFdStats();
-    bool const measurable = stats && stats->limit != 0;
-    bool const overThreshold = measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
-
-    lastThrottleDecision_ = overThreshold;
-    return lastThrottleDecision_;
+    bool const measurable = stats && stats->limit > 0;
+    cachedThrottle_ =
+        measurable && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+    return cachedThrottle_;
 #endif
 }
 
