@@ -293,7 +293,8 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 //------------------------------------------------------------------------------
 
 /* Check recursively if an object has invalid MPTAmount in STAmount field.
- * Valid MPTAmount is in range {0, 2**63-1}
+ * A valid canonical MPTAmount must have a value in range {0, 2**63-1},
+ * exponent == 0, and negative == false (including rejecting negative zero).
  */
 [[nodiscard]] bool
 hasInvalidMPTAmount(STBase const& field, beast::Journal j);
