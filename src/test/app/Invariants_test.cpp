@@ -2138,9 +2138,8 @@ class Invariants_test : public beast::unit_test::Suite
                 invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
         }
 
-        // Deleting a bad legacy root must not be reported as creating a bad
-        // root. The invariant receives an explicit isDelete marker, and the
-        // deleted SLE image may still be present in the callback.
+        // A bad root is rejected when added, but ignored when a legacy bad
+        // root is modified without changing sfRootIndex or deleted.
         {
             Env env{*this, defaultAmendments()};
             Account const a1{"A1"};
@@ -2152,16 +2151,36 @@ class Invariants_test : public beast::unit_test::Suite
             auto const rootDir = getBookRootKey(a1, directoryQuality);
             auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
             view.rawInsert(badRoot);
-            view.rawErase(badRoot);
-            BEAST_EXPECT(!view.exists(rootDir));
-
-            ValidBookDirectory invariant;
-            invariant.visitEntry(true, nullptr, badRoot);
 
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
-            BEAST_EXPECT(
-                invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+
+            {
+                // add
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, nullptr, badRoot);
+
+                BEAST_EXPECT(
+                    !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (without changing the sfRootIndex)
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, badRoot, badRoot);
+
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                view.rawErase(badRoot);
+                BEAST_EXPECT(!view.exists(rootDir));
+
+                // delete
+                ValidBookDirectory invariant;
+                invariant.visitEntry(true, badRoot, badRoot);
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
         }
     }
 
