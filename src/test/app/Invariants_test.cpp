@@ -4313,6 +4313,189 @@ class Invariants_test : public beast::unit_test::Suite
                     return true;
                 });
         }
+
+        // Invalid transfer
+        std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
+            std::make_pair(ttAMM_WITHDRAW, false),
+            std::make_pair(ttPAYMENT, false),
+            std::make_pair(ttPAYMENT, true)};
+        for (auto const enabled : {true, false})
+        {
+            for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
+            {
+                for (auto const flag :
+                     {static_cast<std::uint32_t>(lsfMPTLocked),
+                      ~lsfMPTCanTransfer,
+                      ~lsfMPTCanTrade,
+                      0u})
+                {
+                    MPTID id{};
+                    auto const isSuccess = !enabled || flag == 0 ||
+                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
+                        (tx == ttAMM_WITHDRAW &&
+                         (flag == ~lsfMPTCanTrade || flag == ~lsfMPTCanTransfer));
+                    std::pair<TER, TER> const error = isSuccess
+                        ? std::make_pair(TER(tesSUCCESS), TER(tesSUCCESS))
+                        : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
+                    doInvariantCheck(
+                        {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
+                        [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                            auto update = [&](AccountID const& a, std::uint64_t v) {
+                                auto sle = ac.view().peek(keylet::mptoken(id, a));
+                                if (!sle)
+                                    return false;
+                                sle->at(sfMPTAmount) = v;
+                                ac.view().update(sle);
+                                return true;
+                            };
+                            auto issuanceSle = ac.view().peek(keylet::mptIssuance(id));
+                            if (!issuanceSle)
+                                return false;
+                            auto const flags = issuanceSle->at(sfFlags);
+                            if (flag == lsfMPTLocked)
+                            {
+                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
+                            }
+                            else if (flag != 0u)
+                            {
+                                issuanceSle->at(sfFlags) = flags & flag;
+                            }
+                            issuanceSle->at(sfOutstandingAmount) = 200;
+                            ac.view().update(issuanceSle);
+                            return update(a1, 101) && update(a2, 99);
+                        },
+                        XRPAmount{},
+                        STTx{
+                            tx,
+                            [&](STObject& tx) {
+                                if (crossCurrencyPayment)
+                                {
+                                    tx.setFieldAmount(
+                                        sfSendMax, STAmount(MPTAmount{100}, MPTIssue{id}));
+                                }
+                            }},
+                        {error.first, error.second},
+                        [&](Account const& a1, Account const& a2, Env& env) {
+                            Account const gw("gw");
+                            env.fund(XRP(1'000), gw);
+                            MPTTester const usd(
+                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                            id = usd.issuanceID();
+                            if (!enabled)
+                            {
+                                env.disableFeature(featureMPTokensV2);
+                            }
+                            return true;
+                        });
+                }
+            }
+        }
+    }
+
+    void
+    testAMM()
+    {
+        testcase << "AMM";
+        using namespace jtx;
+
+        MPTID mptID{};
+        uint256 ammID{};
+        AccountID ammAccountID{};
+        Account const gw{"gw"};
+        Issue lptIssue{};
+        PrettyAsset poolAsset{xrpIssue()};
+
+        auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            ac.view().erase(sle);
+            return true;
+        };
+
+        auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
+            auto sle = ac.view().peek(keylet::amm(ammID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
+            ac.view().update(sle);
+            return true;
+        };
+        auto updateLPTokensBadAmount = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, -1);
+        };
+        auto updateLPTokensBadBalance = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, 200'000'000);
+        };
+        auto updateAMM = [&](ApplyContext& ac, bool) { return updateLPTokensBalance(ac, 10); };
+
+        auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
+            if (isMPT)
+            {
+                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                if (!sle)
+                    return false;
+                sle->setFieldU64(sfMPTAmount, 1);
+                ac.view().update(sle);
+                return true;
+            }
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfBalance, XRP(1));
+            ac.view().update(sle);
+            return true;
+        };
+
+        auto test = [&](auto const txType,
+                        auto&& update,
+                        bool isMPT,
+                        TER error = tecINVARIANT_FAILED) {
+            doInvariantCheck(
+                {{"AMM"}},
+                [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
+                XRPAmount{},
+                STTx{txType, [&](STObject& tx) {}},
+                {tecINVARIANT_FAILED, error},
+                [&](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    poolAsset = [&]() -> PrettyAsset {
+                        if (isMPT)
+                        {
+                            MPT const mpt = MPTTester({.env = env, .issuer = gw});
+                            mptID = mpt.issuanceID;
+                            return mpt;
+                        }
+                        return gw["USD"];
+                    }();
+                    AMM const amm(env, gw, XRP(100), poolAsset(100));
+                    ammAccountID = amm.ammAccount();
+                    ammID = amm.ammID();
+                    lptIssue = amm.lptIssue();
+                    return true;
+                });
+        };
+
+        for (bool const isMPT : {false, true})
+        {
+            auto const error = isMPT ? TER(tecINVARIANT_FAILED) : TER(tefINVARIANT_FAILED);
+            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            {
+                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            {
+                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            {
+                test(txType, updateAMM, isMPT);
+            }
+        }
     }
 
     // Test the invariant overwrite fix for both pre- and post-amendment
@@ -4600,6 +4783,7 @@ public:
         testInvariantOverwrite(defaultAmendments());
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
+        testAMM();
     }
 };
 

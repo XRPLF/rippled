@@ -135,8 +135,12 @@ build_rpm() {
 
     # RPM Version can't contain '-'. A pre-release goes in Release with a
     # leading "0." so 3.2.0-b1 sorts before the final 3.2.0-<pkg_release>.
+    # The order is "0.<pkg_release>.<suffix>" (e.g. 0.1.b6) — the Fedora/EPEL
+    # convention. Reversing to "0.<suffix>.<pkg_release>" (e.g. 0.b6.1) breaks
+    # rpmvercmp against the former because numeric segments outrank alphabetic
+    # ones, so "0.1.b5" would sort newer than "0.b6.1".
     local rpm_release="${PKG_RELEASE}"
-    [[ -n "${VER_SUFFIX}" ]] && rpm_release="0.${VER_SUFFIX}.${PKG_RELEASE}"
+    [[ -n "${VER_SUFFIX}" ]] && rpm_release="0.${PKG_RELEASE}.${VER_SUFFIX}"
 
     set -x
     rpmbuild -bb \
