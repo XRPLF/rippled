@@ -303,7 +303,7 @@ public:
     jobQueueThreads(std::unique_ptr<Config> const& config)
     {
         return Config::computeEffectiveWorkers(
-            config->standalone(), config->FORCE_MULTI_THREAD, config->WORKERS, config->NODE_SIZE);
+            config->standalone(), config->forceMultiThread, config->workers, config->nodeSize);
     }
 
     static int

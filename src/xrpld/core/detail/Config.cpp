@@ -762,7 +762,7 @@ Config::loadFromString(std::string const& fileContents)
     }
 
     auto const effectiveWorkers =
-        Config::computeEffectiveWorkers(standalone(), FORCE_MULTI_THREAD, WORKERS, NODE_SIZE);
+        Config::computeEffectiveWorkers(standalone(), forceMultiThread, workers, nodeSize);
 
     auto const maxUpdatePfLimit = std::max(2, (effectiveWorkers * 3) / 4);
     if (PATH_WORKERS > maxUpdatePfLimit)
