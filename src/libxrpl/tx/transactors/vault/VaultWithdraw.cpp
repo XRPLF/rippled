@@ -26,6 +26,18 @@
 
 namespace xrpl {
 
+WaiveUnrealizedLoss
+waveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+{
+    XRPL_ASSERT(
+        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::waveWithdrawal : valid issuance sle");
+
+    return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
+        ? WaiveUnrealizedLoss::Yes
+        : WaiveUnrealizedLoss::No;
+}
+
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {
@@ -102,15 +114,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
         // When the user is the sole-share holder they owe both the available and future value.
         // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of
         // their shares but keep future value in the vault.
-        auto const waiveUnrealizedLoss =
-            fix320Enabled && isSoleShareholder(ctx.view, account, sleIssuance)
-            ? WaiveUnrealizedLoss::Yes
-            : WaiveUnrealizedLoss::No;
-
+        auto const waiveUnrealizedLoss = waveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
             auto const maybeAssets =
@@ -193,16 +200,11 @@ VaultWithdraw::doApply()
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
 
-    bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     // When the user is the sole-share holder they owe both the available and future value.
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keep future value in the vault.
 
-    auto const waiveUnrealizedLoss =
-        fix320Enabled && isSoleShareholder(view(), accountID_, sleIssuance)
-        ? WaiveUnrealizedLoss::Yes
-        : WaiveUnrealizedLoss::No;
-
+    auto const waiveUnrealizedLoss = waveWithdrawal(view(), accountID_, sleIssuance);
     try
     {
         if (amount.asset() == vaultAsset)
@@ -284,7 +286,7 @@ VaultWithdraw::doApply()
     // worth logging.
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
-    if (fix320Enabled && isFinalWithdrawal)
+    if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
         // assetsWithdrawn == assetsTotal > assetsAvailable, which the
