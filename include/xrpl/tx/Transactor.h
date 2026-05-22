@@ -115,7 +115,7 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    AccountID const account_;
+    AccountID const accountID_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
 public:
@@ -123,9 +123,8 @@ public:
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
-    // 68 transactor subclass files
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum ConsequencesFactoryType { Normal, Blocker, Custom };
+
+    enum class ConsequencesFactoryType { Normal, Blocker, Custom };
 
     /** Process the transaction. */
     ApplyResult

@@ -1774,8 +1774,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 BEAST_EXPECT(env.balance(alice, usd) == usd(0));
                 BEAST_EXPECT(env.balance(carol, usd) == usd(0));
                 BEAST_EXPECT(env.balance(bob, usd) == usd(100 - d.expBobSellUSD));
-                BEAST_EXPECT(
-                    env.balance(gw) == XRPAmount{d.expGwXRP * kDROPS_PER_XRP - baseFee * 9});
+                BEAST_EXPECT(env.balance(gw) == XRPAmount{d.expGwXRP * kDropsPerXrp - baseFee * 9});
                 BEAST_EXPECT(expectOffers(env, john, 0));
                 BEAST_EXPECT(expectOffers(env, gw, d.expOffersGw));
                 BEAST_EXPECT(expectOffers(env, dan, d.expOffersDan()));
@@ -1901,8 +1900,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 BEAST_EXPECT(env.balance(bob, usd) == usd(d.expBobBuyUSD));
                 BEAST_EXPECT(env.balance(ed) == XRP(d.dstExpectXRP));
                 BEAST_EXPECT(env.balance(gw, usd) == usd(-d.outstandingUSD));
-                BEAST_EXPECT(
-                    env.balance(gw) == XRPAmount{d.expGwXRP * kDROPS_PER_XRP - baseFee * 3});
+                BEAST_EXPECT(env.balance(gw) == XRPAmount{d.expGwXRP * kDropsPerXrp - baseFee * 3});
                 BEAST_EXPECT(expectOffers(env, carol, 0));
                 BEAST_EXPECT(expectOffers(env, bob, d.expOffersBob()));
                 BEAST_EXPECT(expectOffers(env, gw, d.expOffersGw));
@@ -2007,7 +2005,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
 
                 auto const baseFee = env.current()->fees().base.drops();
                 BEAST_EXPECT(
-                    env.balance(alice) == XRPAmount{d.expAliceXRP * kDROPS_PER_XRP - baseFee});
+                    env.balance(alice) == XRPAmount{d.expAliceXRP * kDropsPerXrp - baseFee});
                 BEAST_EXPECT(env.balance(carol, usd) == usd(0));
                 BEAST_EXPECT(env.balance(bob, usd) == usd(100 - d.expBobSellUSD));
                 BEAST_EXPECT(env.balance(ed, usd) == usd(d.dstExpectUSD));
@@ -2015,7 +2013,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
                 BEAST_EXPECT(
                     env.balance(gw) ==
                     XRPAmount{
-                        d.expGwXRP * kDROPS_PER_XRP - baseFee * (4 + (d.initDst != 0 ? 1 : 0))});
+                        d.expGwXRP * kDropsPerXrp - baseFee * (4 + (d.initDst != 0 ? 1 : 0))});
                 BEAST_EXPECT(expectOffers(env, carol, 0));
                 BEAST_EXPECT(expectOffers(env, bob, d.expOffersBob()));
                 BEAST_EXPECT(expectOffers(env, gw, d.expOffersGw));

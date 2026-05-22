@@ -291,8 +291,8 @@ public:
     [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 const kHASH{};
-        return kHASH;
+        static uint256 const kHash{};
+        return kHash;
     }
     [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
@@ -445,8 +445,8 @@ struct TestPeerSet : public PeerSet
     [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> const kEMPTY_PEERS;
-        return kEMPTY_PEERS;
+        static std::set<Peer::id_t> const kEmptyPeers;
+        return kEmptyPeers;
     }
 
     LedgerReplayMsgHandler& local;
@@ -511,7 +511,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.getLogs().threshold(beast::severities::KWarning);
+        app.getLogs().threshold(beast::Severity::Warning);
     }
 
     /**
@@ -561,9 +561,9 @@ struct LedgerServer
                     accounts[toIdx],
                     jtx::drops(ledgerMaster.getClosedLedger()->fees().base) +
                         jtx::XRP(param.txAmount)),
-                jtx::Seq(jtx::kAUTOFILL),
-                jtx::Fee(jtx::kAUTOFILL),
-                jtx::Sig(jtx::kAUTOFILL));
+                jtx::Seq(jtx::kAutofill),
+                jtx::Fee(jtx::kAutofill),
+                jtx::Sig(jtx::kAutofill));
         }
         env.close();
     }
@@ -611,7 +611,7 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite, jtx::envconfig(), nullptr, beast::severities::KDisabled)
+        : env(suite, jtx::envconfig(), nullptr, beast::Severity::Disabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(server.app.getLedgerMaster(), ledgerMaster, inboundBhvr)
@@ -843,12 +843,9 @@ public:
     LedgerReplayer replayer;
 };
 
-using namespace beast::severities;
+using beast::Severity;
 void
-logAll(
-    LedgerServer& server,
-    LedgerReplayClient& client,
-    beast::severities::Severity level = Severity::KTrace)
+logAll(LedgerServer& server, LedgerReplayClient& client, beast::Severity level = Severity::Trace)
 {
     server.app.getLogs().threshold(level);
     client.app.getLogs().threshold(level);
@@ -1065,7 +1062,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
         testcase("config test");
         {
             Config const c;
-            BEAST_EXPECT(c.LEDGER_REPLAY == false);
+            BEAST_EXPECT(c.ledgerReplay == false);
         }
 
         {
@@ -1075,7 +1072,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 1
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.LEDGER_REPLAY == true);
+            BEAST_EXPECT(c.ledgerReplay == true);
         }
 
         {
@@ -1085,7 +1082,7 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 0
 )xrpldConfig");
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.LEDGER_REPLAY == false);
+            BEAST_EXPECT(c.ledgerReplay == false);
         }
     }
 
@@ -1098,17 +1095,16 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
-            bool const serverResult =
-                peerFeatureEnabled(httpRequest, kFEATURE_LEDGER_REPLAY, server);
+            bool const serverResult = peerFeatureEnabled(httpRequest, kFeatureLedgerReplay, server);
             if (serverResult != expecting)
                 return false;
 
             beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
             jtx::Env serverEnv(*this);
-            serverEnv.app().config().LEDGER_REPLAY = server;
+            serverEnv.app().config().ledgerReplay = server;
             auto httpResp = xrpl::makeResponse(
                 true, httpRequest, addr, addr, uint256{1}, 1, {1, 0}, serverEnv.app());
-            auto const clientResult = peerFeatureEnabled(httpResp, kFEATURE_LEDGER_REPLAY, client);
+            auto const clientResult = peerFeatureEnabled(httpResp, kFeatureLedgerReplay, client);
             return clientResult == expecting;
         };
 

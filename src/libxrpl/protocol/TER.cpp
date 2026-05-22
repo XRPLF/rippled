@@ -22,7 +22,7 @@ transResults()
     static
     std::unordered_map<
             TERUnderlyingType,
-            std::pair<char const* const, char const* const>> const kRESULTS
+            std::pair<char const* const, char const* const>> const kResults
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
@@ -223,7 +223,7 @@ transResults()
 
 #undef MAKE_ERROR
 
-    return kRESULTS;
+    return kResults;
 }
 
 bool
@@ -262,7 +262,7 @@ transHuman(TER code)
 std::optional<TER>
 transCode(std::string const& token)
 {
-    static auto const kRESULTS = [] {
+    static auto const kResults = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(
@@ -272,9 +272,9 @@ transCode(std::string const& token)
         return byToken;
     }();
 
-    auto const r = kRESULTS.find(token);
+    auto const r = kResults.find(token);
 
-    if (r == kRESULTS.end())
+    if (r == kResults.end())
         return std::nullopt;
 
     return TER::fromInt(r->second);

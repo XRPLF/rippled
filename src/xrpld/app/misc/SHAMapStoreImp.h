@@ -57,16 +57,16 @@ private:
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
-    static std::uint32_t const kMINIMUM_DELETION_INTERVAL = 256;
+    static std::uint32_t const kMinimumDeletionInterval = 256;
     // minimum # of ledgers required for standalone mode.
-    static std::uint32_t const kMINIMUM_DELETION_INTERVAL_SA = 8;
+    static std::uint32_t const kMinimumDeletionIntervalSa = 8;
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
-    SavedStateDB state_db_;
+    SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
@@ -94,7 +94,7 @@ private:
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
 
-    static constexpr auto kNODE_STORE_NAME = "NodeStore";
+    static constexpr auto kNodeStoreName = "NodeStore";
 
 public:
     SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
@@ -113,7 +113,7 @@ public:
     {
         if (advisoryDelete_)
             canDelete_ = seq;
-        return state_db_.setCanDelete(seq);
+        return stateDb_.setCanDelete(seq);
     }
 
     bool
@@ -127,7 +127,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return state_db_.getState().lastRotated;
+        return stateDb_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected

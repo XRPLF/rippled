@@ -56,10 +56,10 @@ private:
     {
         AccountID account;
         LineDirection direction;
-        std::size_t hash_value;
+        std::size_t hashValue;
 
         AccountKey(AccountID const& account, LineDirection direction, std::size_t hash)
-            : account(account), direction(direction), hash_value(hash)
+            : account(account), direction(direction), hashValue(hash)
         {
         }
 
@@ -71,14 +71,14 @@ private:
         bool
         operator==(AccountKey const& lhs) const
         {
-            return hash_value == lhs.hash_value && account == lhs.account &&
+            return hashValue == lhs.hashValue && account == lhs.account &&
                 direction == lhs.direction;
         }
 
         [[nodiscard]] std::size_t
         getHash() const
         {
-            return hash_value;
+            return hashValue;
         }
 
         struct Hash

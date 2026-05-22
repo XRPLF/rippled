@@ -39,7 +39,7 @@ public:
         std::string strPassword,
         ServiceRegistry& registry)
         : RPCSub(source)
-        , io_context_(ioContext)
+        , ioContext_(ioContext)
         , jobQueue_(jobQueue)
         , url_(strUrl)
         , username_(std::move(strUsername))
@@ -159,7 +159,7 @@ private:
                     JLOG(j_.info()) << "RPCCall::fromNetwork: " << ip_;
 
                     RPCCall::fromNetwork(
-                        io_context_,
+                        ioContext_,
                         ip_,
                         port_,
                         username_,
@@ -180,7 +180,7 @@ private:
     }
 
 private:
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     JobQueue& jobQueue_;
 
     std::string url_;
