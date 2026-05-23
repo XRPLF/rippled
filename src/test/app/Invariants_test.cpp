@@ -4065,6 +4065,63 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase << "MPT";
 
+        MPTIssue const nonCanonicalMPTIssue{makeMptID(1, AccountID(0x4985601))};
+        auto const nonCanonicalMPTAmount = [&](SField const& field) {
+            return STAmount{
+                field,
+                nonCanonicalMPTIssue,
+                kMaxMpTokenAmount + std::uint64_t{1},
+                0,
+                false,
+                STAmount::Unchecked{}};
+        };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
+        auto const nonCanonicalMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+
+        doInvariantCheck(
+            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            {},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            nonCanonicalMPTPayment(),
+            {tesSUCCESS, tesSUCCESS});
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
             {{"OutstandingAmount overflow"}},

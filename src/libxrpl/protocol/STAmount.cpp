@@ -19,8 +19,10 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -1220,6 +1222,50 @@ operator-(STAmount const& value)
         value.exponent(),
         !value.negative(),
         STAmount::Unchecked{});
+}
+
+static bool
+hasInvalidAmount(STBase const& field, int depth, beast::Journal j);
+
+static bool
+hasInvalidAmount(STObject const& object, int depth, beast::Journal j)
+{
+    return std::ranges::any_of(
+        object, [&](STBase const& field) { return hasInvalidAmount(field, depth, j); });
+}
+
+static bool
+hasInvalidAmount(STArray const& array, int depth, beast::Journal j)
+{
+    return std::ranges::any_of(
+        array, [&](STObject const& object) { return hasInvalidAmount(object, depth, j); });
+}
+
+static bool
+hasInvalidAmount(STBase const& field, int depth, beast::Journal j)
+{
+    if (depth > 10)
+    {
+        JLOG(j.error()) << "hasInvalidAmount: depth exceeds 10";
+        return true;
+    }
+
+    if (auto const amount = dynamic_cast<STAmount const*>(&field))
+        return !isLegalMPT(*amount) || !isLegalNet(*amount);
+
+    if (auto const object = dynamic_cast<STObject const*>(&field))
+        return hasInvalidAmount(*object, depth + 1, j);
+
+    if (auto const array = dynamic_cast<STArray const*>(&field))
+        return hasInvalidAmount(*array, depth + 1, j);
+
+    return false;
+}
+
+bool
+hasInvalidAmount(STBase const& field, beast::Journal j)
+{
+    return hasInvalidAmount(field, 0, j);
 }
 
 //------------------------------------------------------------------------------
