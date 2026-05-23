@@ -436,7 +436,7 @@ TEST(AccountSet, TransferRate)
         {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
         {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
         {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},  // > 2.0 is invalid
-        {.set = 0.0, .code = tesSUCCESS, .get = 1.0},  // 0 clears the rate (default = 1.0)
+        {.set = 0.0, .code = tesSUCCESS, .get = 1.0},            // 0 clears; default rate is 1.0
         {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
         {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0},  // < 1.0 is invalid
     };
