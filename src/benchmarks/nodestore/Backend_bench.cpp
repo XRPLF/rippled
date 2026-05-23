@@ -13,9 +13,9 @@
 
 // Backend-layer NodeStore benchmarks.
 //
-// Workloads (Insert / Fetch / Missing / Mixed / Work / StoreBatch /
-// FetchBatch) cover the throughput cases the retired Timing_test suite used
-// to. Correctness of the fetch and store paths is verified by
+// Workloads (Insert / Fetch / Missing / Mixed / Work / StoreBatch) cover the
+// throughput cases the retired Timing_test suite used to. Correctness of the
+// fetch and store paths is verified by
 // test/nodestore/Backend_test.cpp's round-trip assertions, so these
 // benchmarks are deliberately measurement-only: they do not check return
 // values, only DoNotOptimize them.
@@ -43,7 +43,7 @@ constexpr std::size_t kPoolSizes[] = {1000, 10000, 100000};
 // Thread counts for the thread axis, mirroring Timing_test's 1 / 4 / 8.
 constexpr int kThreadCounts[] = {1, 4, 8};
 
-// Objects per storeBatch / fetchBatch call. Owned by the benchmark - do not
+// Objects per storeBatch call. Owned by the benchmark - do not
 // couple this to libxrpl's kBatchWritePreallocationSize, which is documented
 // as a vector::reserve hint that does not affect the amount written.
 constexpr std::size_t kBatchSize = 256;
@@ -397,55 +397,6 @@ registerStoreBatch(BackendConfig const& bc)
     }
 }
 
-// --- FetchBatch --------------------------------------------------------------
-
-// One fetchBatch() of kBatchSize present keys per iteration.
-// Backend::fetchBatch has no documented concurrency restriction (NuDB's
-// implementation loops over per-key fetch()), so this workload runs at the
-// full thread axis just like BM_Backend_Fetch.
-void
-registerFetchBatch(BackendConfig const& bc)
-{
-    auto rs = std::make_shared<RunState>();
-    std::string const cfg = bc.config;
-    auto* b = benchmark::RegisterBenchmark(
-        std::string("BM_Backend_FetchBatch/") + bc.name, [rs, cfg](benchmark::State& state) {
-            auto const poolSize = static_cast<std::size_t>(state.range(0));
-            if (state.thread_index() == 0)
-            {
-                rs->harness = std::make_unique<BackendHarness>(cfg);
-                rs->present = makePool(1, poolSize);
-                rs->avgPayload = averagePayload(rs->present);
-                prepopulate(*rs->harness->backend, rs->present);
-            }
-            std::vector<std::vector<uint256>> const batches = sliceHashes(rs->present, kBatchSize);
-            if (batches.empty())
-            {
-                state.SkipWithError("pool smaller than one batch");
-                return;
-            }
-
-            std::size_t index = state.thread_index();
-            for (auto _ : state)
-            {
-                auto results = rs->harness->backend->fetchBatch(batches[index % batches.size()]);
-                benchmark::DoNotOptimize(results);
-                index += state.threads();
-            }
-            benchmark::ClobberMemory();
-
-            state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations() * kBatchSize));
-            state.SetBytesProcessed(
-                static_cast<std::int64_t>(state.iterations() * kBatchSize * rs->avgPayload));
-            if (state.thread_index() == 0)
-            {
-                rs->harness.reset();
-                releasePools(*rs);
-            }
-        });
-    applyReadAxes(b);
-}
-
 // Register every workload against every configured backend. Google Benchmark
 // collects benchmarks from static initializers, before main() runs.
 [[maybe_unused]] bool const kRegistered = [] {
@@ -457,7 +408,6 @@ registerFetchBatch(BackendConfig const& bc)
         registerMixed(bc);
         registerWork(bc);
         registerStoreBatch(bc);
-        registerFetchBatch(bc);
     }
     return true;
 }();

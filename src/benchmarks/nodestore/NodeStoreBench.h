@@ -233,25 +233,6 @@ sliceBatches(Batch const& pool, std::size_t batchSize)
     return batches;
 }
 
-// Like sliceBatches, but yields the hashes only - the input to fetchBatch.
-inline std::vector<std::vector<uint256>>
-sliceHashes(Batch const& pool, std::size_t batchSize)
-{
-    std::vector<std::vector<uint256>> batches;
-    if (batchSize == 0)
-        return batches;
-    batches.reserve(pool.size() / batchSize);
-    for (std::size_t i = 0; i + batchSize <= pool.size(); i += batchSize)
-    {
-        std::vector<uint256> hashes;
-        hashes.reserve(batchSize);
-        for (std::size_t j = i; j < i + batchSize; ++j)
-            hashes.push_back(pool[j]->getHash());
-        batches.push_back(std::move(hashes));
-    }
-    return batches;
-}
-
 /** RAII owner of a NodeStore Backend opened on a private temporary directory.
 
     Member declaration order matters: `tempDir` is declared first so it is
