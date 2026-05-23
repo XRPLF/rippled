@@ -6,10 +6,12 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <array>
 #include <cstdint>
+#include <iomanip>
 #include <limits>
 #include <map>
 #include <sstream>
@@ -37,6 +39,30 @@ class Number_test : public beast::unit_test::Suite
             ++count;
         }
         return out;
+    }
+
+    using dec = boost::multiprecision::cpp_dec_float_50;
+
+    template <class T = dec>
+    static T
+    pow10(int n)
+    {
+        T p = 1;
+        if (n >= 0)
+            for (int i = 0; i < n; ++i)
+                p *= 10;
+        else
+            for (int i = 0; i < -n; ++i)
+                p /= 10;
+        return p;
+    }
+
+    static std::string
+    fmt(dec const& v)
+    {
+        std::ostringstream os;
+        os << std::setprecision(40) << v;
+        return os.str();
     }
 
 public:
@@ -1588,40 +1614,99 @@ public:
     void
     testUpwardRoundsDown()
     {
-        testcase << "upward rounding produces a value below exact at kMaxRep cusp";
+        {
+            testcase << "upward rounding produces a value below exact at kMaxRep cusp";
 
-        NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
-        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+            NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
+            NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
-        constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
-        constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
+            constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+            constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
 
-        // Public conversion operator: STAmount::operator Number() const.
-        Number const a = kAValue;
-        Number const b = kBValue;
-        Number const product = a * b;
+            // Public conversion operator: STAmount::operator Number() const.
+            Number const a = kAValue;
+            Number const b = kBValue;
+            Number const product = a * b;
 
-        // Exact reference in BigInt.
-        BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
+            // Exact reference in BigInt.
+            BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
 
-        // What Number actually stored.
-        BigInt storedValue = BigInt(product.mantissa());
-        for (int i = 0; i < product.exponent(); ++i)
-            storedValue *= 10;
+            // What Number actually stored.
+            BigInt storedValue = BigInt(product.mantissa());
+            for (int i = 0; i < product.exponent(); ++i)
+                storedValue *= 10;
 
-        BigInt const signedDifference = storedValue - exactProduct;
+            BigInt const signedDifference = storedValue - exactProduct;
 
-        log << "\n"
-            << "  a              = " << fmt(BigInt(kAValue)) << "\n"
-            << "  b              = " << fmt(BigInt(kBValue)) << "\n"
-            << "  exact a*b      = " << fmt(exactProduct) << "\n"
-            << "  stored         = " << fmt(storedValue) << "\n"
-            << "  stored - exact = " << fmt(signedDifference) << "\n"
-            << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
+            log << "\n"
+                << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+                << "  b              = " << fmt(BigInt(kBValue)) << "\n"
+                << "  exact a*b      = " << fmt(exactProduct) << "\n"
+                << "  stored         = " << fmt(storedValue) << "\n"
+                << "  stored - exact = " << fmt(signedDifference) << "\n"
+                << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
 
-        BEAST_EXPECT(signedDifference >= 0);
-        BEAST_EXPECT(product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
-        BEAST_EXPECT(product.exponent() == 19);
+            BEAST_EXPECT(signedDifference >= 0);
+            BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
+            BEAST_EXPECT(product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+            BEAST_EXPECT(product.exponent() == 19);
+            log.flush();
+        }
+
+        {
+            /* Companion to NumberUpwardWrongDirection_test (which targets
+             * `operator*=` Upward at the kMaxRep cusp on LargeLegacy), but for
+             * `operator/=` on the cusp-fix-ENABLED `Large` scale.
+             *
+             * Under `Large` (`CuspRoundingFix::Enabled`), `operator/=` with Upward
+             * rounding can return a value STRICTLY LESS than the exact quotient,
+             * violating Upward's directional invariant.
+             *
+             * Mechanism (fix-enabled path):
+             *   1. `operator/=` computes `numerator = nm * 10^19` and
+             *      `zm = numerator / dm` (integer division, truncates remainder).
+             *   2. If `remainder != 0`, the correction block runs:
+             *        zm *= 1000
+             *        correction = (remainder * 1000) / dm    // also truncates
+             *        zm += correction
+             *        ze -= 3
+             *      The truncation in `correction` discards a sub-1/1000 residual.
+             *   3. `normalize`'s shift loop reduces zm to fit, but the discarded
+             *      residual is BELOW the Guard's visibility, so the Guard sees fraction = 0.
+             *   4. Under Upward + positive, `round()` returns -1 (no round-up), and
+             *      the algorithm returns the truncated zm
+             */
+            testcase << "operator/= Upward on Large returns value < truth ";
+
+            NumberMantissaScaleGuard const scaleGuard{MantissaRange::MantissaScale::Large};
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Upward};
+
+            constexpr std::int64_t aValue = 2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => Upward gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+
+            // Upward invariant: stored >= exact. Bug: stored < exact.
+            BEAST_EXPECT(stored >= exact);
+            BEAST_EXPECT(diff < pow10(quotient.exponent()));
+        }
     }
 
     void

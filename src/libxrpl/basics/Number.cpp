@@ -858,31 +858,51 @@ Number::operator/=(Number const& y)
     auto const& maxMantissa = range.max;
     auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
 
+    // Cache power of 10 computations to not waste time on subsequent calls
+    auto getPower10 = [](int exponent) {
+        static std::unordered_map<int, uint128_t> powersOf10;
+        if (!powersOf10.contains(exponent))
+        {
+            uint128_t result = 1;
+            for (int i = 0; i < exponent; ++i)
+                result *= 10;
+            powersOf10[exponent] = result;
+        }
+        return powersOf10.at(exponent);
+    };
+
     // Shift by 10^17 gives greatest precision while not overflowing
-    // uint128_t or the cast back to int64_t
-    // TODO: Can/should this be made bigger for largeRange?
-    // log(2^128,10) ~ 38.5
-    // largeRange.log = 18, fits in 10^19
-    // f can be up to 10^(38-19) = 10^19 safely
+    // uint128_t or the cast back to int64_t for small mantissas.
+    //
+    // For large mantissas:
+    // * log(2^128,10) ~ 38.5
+    // * largeRange.log = 18, fits in 10^19
+    // * The expanded numerator must fit in 10^38
+    // * f can be up to 10^(38-19) = 10^19 safely
     bool const small = Number::getMantissaScale() == MantissaRange::MantissaScale::Small;
-    uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
+    auto const factorExponent = small ? 17 : 19;
+
+    uint128_t const f = getPower10(factorExponent);
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
     // unsigned denominator
     auto const dmu = static_cast<uint128_t>(dm);
-    // correctionFactor can be anything between 10 and f, depending on how much
-    // extra precision we want to only use for rounding with the
-    // largeRange. Three digits seems like plenty, and is more than
-    // the smallRange uses.
-    uint128_t const correctionFactor = 1'000;
-
     auto const numerator = uint128_t(nm) * f;
 
     auto zm = numerator / dmu;
-    auto ze = ne - de - (small ? 17 : 19);
+    auto ze = ne - de - factorExponent;
     bool zn = (ns * ds) < 0;
     if (!small)
     {
+        // zm may now hold up to 20 digits.  The correctionFactor must be small enough to not cause
+        // overflow, but as large as possible otherwise
+        // * zm fits in 10^21
+        // * correctionFactor can be up to 10^(38-21) = 10^17 safely
+        bool const useBigCorrection =
+            cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled;
+        auto const correctionExponent = useBigCorrection ? 17 : 3;
+        uint128_t const correctionFactor = getPower10(correctionExponent);
+
         // Virtually multiply numerator by correctionFactor. Since that would
         // overflow in the existing uint128_t, we'll do that part separately.
         // The math for this would work for small mantissas, but we need to
@@ -906,11 +926,12 @@ Number::operator/=(Number const& y)
         if (remainder != 0)
         {
             zm *= correctionFactor;
-            auto const correction = remainder * correctionFactor / dmu;
-            zm += correction;
-            // divide by 1000 by moving the exponent, so we don't lose the
+            // divide by the correctionFactor by moving the exponent, so we don't lose the
             // integer value we just computed
-            ze -= 3;
+            ze -= correctionExponent;
+
+            auto const correction = (remainder * correctionFactor) / dmu;
+            zm += correction;
         }
     }
     normalize(zn, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled);
