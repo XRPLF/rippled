@@ -19,10 +19,12 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <utility>
@@ -30,10 +32,11 @@
 
 // Shared helpers for the NodeStore benchmarks.
 //
-// The deterministic data generators (`rngcpy`, `Sequence`) were moved here from
-// `src/test/nodestore/Timing_test.cpp`: this benchmark reaches parity with that
-// hand-rolled timing suite, which is then retired. There is deliberately no
-// shared header with the soon-to-be-deleted test.
+// The deterministic data generators (`rngcpy`, `Sequence`) were lifted from
+// `src/test/nodestore/Timing_test.cpp`. The duplication is intentional and
+// short-lived: Timing_test is scheduled for removal once this suite reaches
+// throughput parity, and introducing a shared header in the meantime is
+// pointless work.
 namespace xrpl::NodeStore {
 
 // Fill `bytes` of memory at `buffer` with random bits drawn from `g`.
@@ -91,12 +94,16 @@ public:
     }
 
     // Returns the n-th key. Used to generate keys that are never stored.
+    // The layout mirrors obj()'s: prefix at byte 0, RNG over the rest, so the
+    // two key spaces stay disjoint by construction (not by coincidence).
     uint256
     key(std::size_t n)
     {
         gen_.seed(n + 1);
         uint256 result;
-        rngcpy(&*result.begin(), result.size(), gen_);
+        auto const data = static_cast<std::uint8_t*>(&*result.begin());
+        *data = prefix_;
+        rngcpy(data + 1, result.size() - 1, gen_);
         return result;
     }
 
@@ -177,11 +184,39 @@ averagePayload(Batch const& pool)
 
 // Store every object and flush, so a following fetch exercises the real read
 // path rather than an in-memory write buffer.
+//
+// We chunk the write at kBatchWriteLimitSize because Types.h documents that as
+// the maximum allowed batch size. NuDB happens to tolerate larger batches
+// today, but the benchmark should not rely on that.
+//
+// sync() is a no-op for both NuDB and RocksDB at the moment (NuDB has a small
+// internal burst buffer that the timed loop will warm up). That is a contract
+// hint, not a guarantee; if either backend ever grows a real flush we get it
+// here for free.
 inline void
 prepopulate(Backend& backend, Batch const& objects)
 {
-    backend.storeBatch(objects);
+    for (std::size_t i = 0; i < objects.size(); i += kBatchWriteLimitSize)
+    {
+        auto const end = std::min(i + kBatchWriteLimitSize, objects.size());
+        backend.storeBatch(Batch(objects.begin() + i, objects.begin() + end));
+    }
     backend.sync();
+}
+
+// A deterministic permutation of [0, size). Lets the timed loop visit the
+// pre-generated pool in a random-like order with zero RNG cost per iteration -
+// the Timing_test workloads it replaces used uniform_int_distribution per
+// fetch, and a shuffle table reproduces that access pattern without paying for
+// the distribution inside the timed region.
+inline std::vector<std::size_t>
+makeShuffle(std::size_t size, std::uint64_t seed)
+{
+    std::vector<std::size_t> v(size);
+    std::iota(v.begin(), v.end(), std::size_t{0});
+    beast::xor_shift_engine gen(seed);
+    std::shuffle(v.begin(), v.end(), gen);
+    return v;
 }
 
 // Partition a pool into fixed-size batches. Any trailing remainder shorter than

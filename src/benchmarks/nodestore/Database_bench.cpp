@@ -25,6 +25,12 @@
 // They are single-threaded at the Google Benchmark level: the Database has its
 // own internal read-thread pool, sized by `kReadThreads`. That pool only serves
 // asyncFetch(); a benchmark that exercises it is a natural follow-up.
+//
+// Because every benchmark here is single-threaded, the per-run setup runs
+// unguarded at the top of each lambda. If a future workload calls
+// applyThreadAxis (or any Threads(N>1) variant), wrap the setup in
+// `if (state.thread_index() == 0) { ... }` to avoid racing on rs->harness and
+// double-spawning kReadThreads detached threads per concurrent assignment.
 namespace xrpl::NodeStore {
 namespace {
 
