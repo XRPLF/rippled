@@ -3,11 +3,13 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -593,11 +595,24 @@ STAmount::value() const noexcept
     return *this;
 }
 
-inline bool
+[[nodiscard]] inline bool
 isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
 }
+
+[[nodiscard]] inline bool
+isLegalMPT(STAmount const& value)
+{
+    return !value.holds<MPTIssue>() ||
+        (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
+}
+
+/* Check recursively if an object has invalid MPTAmount or XRPAmount in STAmount field.
+ * Calls isLegalNet() and isLegalMPT().
+ */
+[[nodiscard]] bool
+hasInvalidAmount(STBase const& field, beast::Journal j);
 
 //------------------------------------------------------------------------------
 //

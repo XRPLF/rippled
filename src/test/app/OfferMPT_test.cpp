@@ -973,7 +973,7 @@ public:
 
         // Offers with negative amounts
         {
-            env(offer(alice, -usd(1'000), XRP(1'000)), Ter(temBAD_OFFER));
+            env(offer(alice, -usd(1'000), XRP(1'000)), Ter(temBAD_AMOUNT));
             env.require(Owners(alice, 1), offers(alice, 0));
         }
 
