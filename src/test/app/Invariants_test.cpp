@@ -2191,10 +2191,10 @@ class Invariants_test : public beast::unit_test::Suite
                     std::string::npos);
             }
             {
+                // delete
                 view.rawErase(badRoot);
                 BEAST_EXPECT(!view.exists(rootDir));
 
-                // delete
                 ValidBookDirectory invariant;
                 invariant.visitEntry(true, badRoot, badRoot);
                 BEAST_EXPECT(
