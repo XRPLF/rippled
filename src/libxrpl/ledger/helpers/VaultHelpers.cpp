@@ -139,7 +139,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
         makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
     auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
     if (!sleToken)
-        return false;
+        return false;  // LCOV_EXCL_LINE
 
     return sleToken->getFieldU64(sfMPTAmount) == outstanding;
 }

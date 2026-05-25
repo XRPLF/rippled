@@ -29,11 +29,11 @@
 namespace xrpl {
 
 WaiveUnrealizedLoss
-waveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::waveWithdrawal : valid issuance sle");
+        "xrpl::shouldWaiveWithdrawal : valid issuance sle");
 
     return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
         ? WaiveUnrealizedLoss::Yes
@@ -116,10 +116,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        // When the user is the sole-share holder they owe both the available and future value.
+        // When the user is the sole shareholder they own both the available and future value.
         // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of
-        // their shares but keep future value in the vault.
-        auto const waiveUnrealizedLoss = waveWithdrawal(ctx.view, account, sleIssuance);
+        // their shares but keeping future value in the vault.
+        auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
             auto const maybeAssets =
@@ -202,11 +202,10 @@ VaultWithdraw::doApply()
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
 
-    // When the user is the sole-share holder they owe both the available and future value.
+    // When the user is the sole shareholder they own both the available and future value.
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
-    // shares but keep future value in the vault.
-
-    auto const waiveUnrealizedLoss = waveWithdrawal(view(), accountID_, sleIssuance);
+    // shares but keeping future value in the vault.
+    auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
     try
     {
         if (amount.asset() == vaultAsset)
@@ -296,6 +295,9 @@ VaultWithdraw::doApply()
         if (*lossUnrealized != beast::kZero)
         {
             // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::VaultWithdraw::doApply : final withdrawal with non-zero unrealized loss",
+                "must have been rejected by the insufficient-funds guard");
             JLOG(j_.fatal())
                 << "VaultWithdraw: "  //
                    "Cannot burn all outstanding shares while unrealized loss is non-zero";
