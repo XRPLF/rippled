@@ -181,11 +181,15 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.registry.get().getJournal("View");
 
-    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
-        isGlobalFrozen(ctx.view, saTakerGets.asset()))
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
+    }
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
     }
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
@@ -320,7 +324,13 @@ OfferCreate::checkAcceptAsset(
         [&](MPTIssue const& issue) -> TER {
             // WeakAuth - don't check if MPToken exists since it's created
             // if needed.
-            return requireAuth(view, issue, id, AuthType::WeakAuth);
+            if (auto const ter = requireAuth(view, issue, id, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+            {
+                return ter;
+            }
+
+            return checkFrozen(view, id, issue);
         });
 }
 
