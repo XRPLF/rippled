@@ -46,9 +46,6 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
     done
 done
 
-# Special case for NuDBFactory that has ripple twice in the test suite name.
-${SED_COMMAND} -i -E 's/(BEAST_DEFINE_TESTSUITE.+)ripple(.+)/\1xrpl\2/g' src/test/nodestore/NuDBFactory_test.cpp
-
 DIRECTORY=$1
 find "${DIRECTORY}" -type f -name "*.md" | while read -r FILE; do
     echo "Processing file: ${FILE}"
