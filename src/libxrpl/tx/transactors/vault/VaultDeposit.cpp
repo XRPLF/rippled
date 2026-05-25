@@ -36,7 +36,7 @@ roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
     XRPL_ASSERT(
         amount.asset() == vault->at(sfAsset), "xrpl::roundToVaultScale : valid vault asset");
 
-    if (!amount.holds<Issue>())
+    if (amount.integral())
         return amount;
 
     return roundToScale(
@@ -164,7 +164,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
 
     // IOU precision checks
-    if (fix320Enabled && roundedAmount.holds<Issue>())
+    if (fix320Enabled && !roundedAmount.integral())
     {
         // reject deposits that would canonicalize to a no-op at the depositor's trustline scale.
         // Skipped for issuer-as-depositor: accountHolds returns (kMaxValue @ kMaxOffset) which
