@@ -1578,6 +1578,210 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
+    testLoanBrokerDeleteLockedMPT(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - locked broker pseudo-account MPT";
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        auto const withFix = features[fixCleanup3_2_0];
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        // Create MPT with locking enabled
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+
+        PrettyAsset const mpt{mptt.issuanceID()};
+
+        // Fund alice
+        mptt.authorize({.account = alice});
+        env.close();
+        env(pay(issuer, alice, mpt(100'000)));
+        env.close();
+
+        // Create vault
+        Vault const vault{env};
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(10'000)}));
+        env.close();
+
+        // Create loan broker
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        // Deposit cover
+        env(coverDeposit(alice, brokerKeylet.key, mpt(5'000).value()));
+        env.close();
+
+        // Verify cover is deposited
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+        BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
+
+        // Get the broker pseudo-account ID
+        auto const brokerPseudoID = broker->at(sfAccount);
+
+        // Verify the broker pseudo-account has an MPToken
+        auto const pseudoMptKey = keylet::mptoken(mptt.issuanceID(), brokerPseudoID);
+        auto const pseudoMpt = env.le(pseudoMptKey);
+        if (!BEAST_EXPECT(pseudoMpt))
+            return;
+
+        // Issuer locks the broker pseudo-account's individual MPToken
+        {
+            json::Value jv;
+            jv[jss::Account] = issuer.human();
+            jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
+            jv[jss::Holder] = toBase58(brokerPseudoID);
+            jv[jss::TransactionType] = jss::MPTokenIssuanceSet;
+            jv[jss::Flags] = tfMPTLock;
+            env(jv);
+            env.close();
+        }
+
+        // Verify the pseudo-account's MPToken is now locked
+        {
+            auto const sle = env.le(pseudoMptKey);
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->isFlag(lsfMPTLocked));
+        }
+
+        // Record alice's balance before deletion
+        auto const aliceBalanceBefore = env.balance(alice, mpt);
+
+        // With fixCleanup3_2_0, preclaim() checks the broker pseudo-account's
+        // freeze/lock state via checkFrozen(), so deletion is blocked.
+        // Without the fix, the check is missing and the locked cover is
+        // returned to the owner.
+        if (withFix)
+        {
+            env(del(alice, brokerKeylet.key), Ter(tecLOCKED));
+            env.close();
+
+            // Verify the broker is not deleted
+            BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+
+            // Verify alice did not receive the cover despite the lock
+            auto const aliceBalanceAfter = env.balance(alice, mpt);
+            BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
+
+            // Verify the locked MPToken was not deleted
+            BEAST_EXPECT(env.le(pseudoMptKey) != nullptr);
+        }
+        else
+        {
+            env(del(alice, brokerKeylet.key), Ter(tesSUCCESS));
+            env.close();
+
+            // Verify the broker is deleted
+            BEAST_EXPECT(env.le(brokerKeylet) == nullptr);
+
+            // Verify alice received the cover despite the lock
+            auto const aliceBalanceAfter = env.balance(alice, mpt);
+            BEAST_EXPECT(aliceBalanceAfter > aliceBalanceBefore);
+
+            // Verify the locked MPToken was deleted
+            BEAST_EXPECT(env.le(pseudoMptKey) == nullptr);
+        }
+    }
+
+    void
+    testLoanBrokerDeleteFrozenIOU(FeatureBitset features)
+    {
+        testcase << "LoanBrokerDelete - frozen broker pseudo-account IOU";
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        auto const withFix = features[fixCleanup3_2_0];
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto const iou = issuer["IOU"];
+
+        // Set up trust lines and fund alice
+        env(trust(alice, iou(1'000'000)));
+        env.close();
+        env(pay(issuer, alice, iou(100'000)));
+        env.close();
+
+        // Create vault
+        Vault const vault{env};
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = iou.asset()});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(10'000)}));
+        env.close();
+
+        // Create loan broker
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        // Deposit cover
+        env(coverDeposit(alice, brokerKeylet.key, iou(5'000)));
+        env.close();
+
+        // Verify cover is deposited
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+        BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
+
+        // Get the broker pseudo-account
+        auto const brokerPseudoID = broker->at(sfAccount);
+        auto const brokerPseudo = Account("BrokerPseudo", brokerPseudoID);
+
+        // Issuer freezes the broker pseudo-account's trust line
+        env(trust(issuer, brokerPseudo["IOU"](0), tfSetFreeze));
+        env.close();
+
+        // Record alice's balance before deletion attempt
+        auto const aliceBalanceBefore = env.balance(alice, iou);
+
+        // With fixCleanup3_2_0, preclaim() checks the broker
+        // pseudo-account's freeze state via checkFrozen(), so
+        // deletion is blocked early with tecFROZEN.
+        // Without the fix, preclaim() does not check the pseudo-account,
+        // but the TransfersNotFrozen invariant catches the frozen transfer
+        // in doApply() and fails with tecINVARIANT_FAILED.
+        // Either way, the broker survives and alice's balance is unchanged.
+        if (withFix)
+        {
+            env(del(alice, brokerKeylet.key), Ter(tecFROZEN));
+        }
+        else
+        {
+            env(del(alice, brokerKeylet.key), Ter(tecINVARIANT_FAILED));
+        }
+        env.close();
+
+        // Broker still exists
+        BEAST_EXPECT(env.le(brokerKeylet) != nullptr);
+
+        // Alice's balance unchanged
+        auto const aliceBalanceAfter = env.balance(alice, iou);
+        BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
+    }
+
+    void
     testRIPD4274IOU()
     {
         using namespace jtx;
@@ -2055,6 +2259,12 @@ public:
         testAmB06VaultFreezeCheckMissing();
 
         testRIPD4274();
+
+        testLoanBrokerDeleteLockedMPT(all_);
+        testLoanBrokerDeleteLockedMPT(all_ - fixCleanup3_2_0);
+
+        testLoanBrokerDeleteFrozenIOU(all_);
+        testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
