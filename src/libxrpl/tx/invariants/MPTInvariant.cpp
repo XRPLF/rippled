@@ -17,6 +17,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
@@ -442,11 +443,11 @@ ValidMPTPayment::finalize(
 {
     if (isTesSuccess(result))
     {
-        bool const enforce = view.rules().enabled(featureMPTokensV2);
+        bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
-            return !enforce;
+            return invariantPasses;
         }
 
         auto const signedMax = static_cast<std::int64_t>(kMaxMpTokenAmount);
@@ -464,8 +465,151 @@ ValidMPTPayment::finalize(
                 JLOG(j.fatal()) << "Invariant failed: invalid OutstandingAmount balance "
                                 << data.outstanding[kIBefore] << " " << data.outstanding[kIAfter]
                                 << " " << data.mptAmount;
-                return !enforce;
+                return invariantPasses;
             }
+        }
+    }
+
+    return true;
+}
+
+void
+ValidMPTTransfer::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    // Record the before/after MPTAmount for each (issuanceID, account) pair
+    // so finalize() can determine whether a transfer actually occurred.
+    auto update = [&](SLE const& sle, bool isBefore) {
+        if (sle.getType() == ltMPTOKEN)
+        {
+            auto const issuanceID = sle[sfMPTokenIssuanceID];
+            auto const account = sle[sfAccount];
+            auto const amount = sle[sfMPTAmount];
+            if (isBefore)
+            {
+                amount_[issuanceID][account].amtBefore = amount;
+            }
+            else
+            {
+                amount_[issuanceID][account].amtAfter = amount;
+            }
+            if (isDelete && isBefore)
+            {
+                deletedAuthorized_[sle.key()] = sle.isFlag(lsfMPTAuthorized);
+            }
+        }
+    };
+
+    if (before)
+        update(*before, true);
+
+    if (after)
+        update(*after, false);
+}
+
+bool
+ValidMPTTransfer::isAuthorized(
+    ReadView const& view,
+    MPTID const& mptid,
+    AccountID const& holder,
+    bool reqAuth) const
+{
+    auto const key = keylet::mptoken(mptid, holder);
+    auto const it = deletedAuthorized_.find(key.key);
+    if (it != deletedAuthorized_.end())
+        return !reqAuth || it->second;
+    return isTesSuccess(requireAuth(view, MPTIssue{mptid}, holder));
+}
+
+bool
+ValidMPTTransfer::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (hasPrivilege(tx, OverrideFreeze))
+        return true;
+
+    // DEX transactions (AMM[Create,Deposit], cross-currency payments, offer creates) are
+    // subject to the MPTCanTrade flag in addition to the standard transfer rules.
+    // A payment is only DEX if it is a cross-currency payment.
+    auto const txnType = tx.getTxnType();
+    auto const isDEX = [&] {
+        if (txnType == ttPAYMENT)
+        {
+            // A payment is cross-currency (and thus DEX) only if SendMax is present
+            // and its asset differs from the destination asset.
+            auto const amount = tx[sfAmount];
+            return tx[~sfSendMax].value_or(amount).asset() != amount.asset();
+        }
+        return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttOFFER_CREATE;
+    }();
+
+    // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
+    // Log invariant failure error even if MPTokensV2 is disabled.
+    auto const invariantPasses = !view.rules().enabled(featureMPTokensV2);
+
+    for (auto const& [mptID, values] : amount_)
+    {
+        std::uint16_t senders = 0;
+        std::uint16_t receivers = 0;
+        bool invalidTransfer = false;
+        auto const sleIssuance = view.read(keylet::mptIssuance(mptID));
+        if (!sleIssuance)
+        {
+            continue;
+        }
+
+        // These transactions are recovery/settlement paths. They may move an
+        // existing MPT position even after the issuer clears CanTransfer, so
+        // holders are not trapped in AMM, vault, or loan protocol accounts.
+        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
+            (view.rules().enabled(fixCleanup3_2_0) &&
+             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
+              txnType == ttLOAN_PAY));
+        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
+        auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
+        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
+
+        for (auto const& [account, value] : values)
+        {
+            // Classify each account as a sender or receiver based on whether their MPTAmount
+            // decreased or increased. Count new MPToken holders (no amtBefore) as receivers.
+            // Skip deleted MPToken holders (amtAfter is nullopt); deletion requires zero balance.
+            if (value.amtAfter.has_value() && value.amtBefore.value_or(0) != *value.amtAfter)
+            {
+                if (!value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore)
+                {
+                    ++receivers;
+                }
+                else
+                {
+                    ++senders;
+                }
+
+                // Check once: if any involved account is frozen, the whole
+                // issuance transfer is considered frozen. Only need to check for
+                // frozen if there is a transfer of funds.
+                if (!invalidTransfer &&
+                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                     !isAuthorized(view, mptID, account, reqAuth)))
+                {
+                    invalidTransfer = true;
+                }
+            }
+        }
+        // A transfer between holders has occurred (senders > 0 && receivers > 0).
+        // Fail if the issuance is frozen, does not permit transfers, or — for
+        // DEX transactions — does not permit trading.
+        if ((invalidTransfer || !canTransfer || (isDEX && !canTrade)) && senders > 0 &&
+            receivers > 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
+            return invariantPasses;
         }
     }
 

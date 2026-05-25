@@ -373,6 +373,21 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+ * transaction applies.
+ */
+class ValidAmounts
+{
+    std::vector<std::shared_ptr<SLE const>> afterEntries_;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -401,7 +416,9 @@ using InvariantChecks = std::tuple<
     ValidLoanBroker,
     ValidLoan,
     ValidVault,
-    ValidMPTPayment>;
+    ValidMPTPayment,
+    ValidAmounts,
+    ValidMPTTransfer>;
 
 /**
  * @brief get a tuple of all invariant checks
