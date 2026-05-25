@@ -5,6 +5,7 @@
 #include <boost/json/value.hpp>
 #include <boost/version.hpp>
 
+#include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -27,7 +28,9 @@ TEST(ExpectedTest, non_error_const_construction)
     EXPECT_EQ(*expected, "Valid value");
     EXPECT_EQ(expected->at(0), 'V');
 
-    EXPECT_THROW({ [[maybe_unused]] TER const t = expected.error(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] TER const t = expected.error(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, non_error_non_const_construction)
@@ -41,7 +44,9 @@ TEST(ExpectedTest, non_error_non_const_construction)
     std::string const mv = std::move(*expected);
     EXPECT_EQ(mv, "Valid value");
 
-    EXPECT_THROW({ [[maybe_unused]] TER const t = expected.error(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] TER const t = expected.error(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, non_error_overlapping_type_construction)
@@ -51,8 +56,9 @@ TEST(ExpectedTest, non_error_overlapping_type_construction)
     EXPECT_TRUE(expected.has_value());
     EXPECT_EQ(expected.value(), 1);
     EXPECT_EQ(*expected, 1);
-    EXPECT_THROW(
-        { [[maybe_unused]] std::uint16_t const t = expected.error(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] std::uint16_t const t = expected.error(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, error_construction_from_rvalue)
@@ -64,7 +70,9 @@ TEST(ExpectedTest, error_construction_from_rvalue)
     EXPECT_TRUE(!expected.has_value());
     EXPECT_EQ(expected.error(), telLOCAL_ERROR);
 
-    EXPECT_THROW({ [[maybe_unused]] std::string const s = *expected; }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] std::string const s = *expected; },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, error_construction_from_lvalue)
@@ -74,7 +82,9 @@ TEST(ExpectedTest, error_construction_from_lvalue)
     EXPECT_TRUE(!expected);
     EXPECT_TRUE(!expected.has_value());
     EXPECT_EQ(expected.error(), telLOCAL_ERROR);
-    EXPECT_THROW({ [[maybe_unused]] std::size_t const s = expected->size(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] std::size_t const s = expected->size(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, error_construction_from_const_char)
@@ -104,8 +114,9 @@ TEST(ExpectedTest, non_error_const_void_construction)
     auto const expected = []() -> Expected<void, std::string> { return {}; }();
     EXPECT_TRUE(expected);
 
-    EXPECT_THROW(
-        { [[maybe_unused]] std::size_t const s = expected.error().size(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] std::size_t const s = expected.error().size(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, non_error_non_const_void_construction)
@@ -113,8 +124,9 @@ TEST(ExpectedTest, non_error_non_const_void_construction)
     auto expected = []() -> Expected<void, std::string> { return {}; }();
     EXPECT_TRUE(expected);
 
-    EXPECT_THROW(
-        { [[maybe_unused]] std::size_t const s = expected.error().size(); }, std::runtime_error);
+    EXPECT_THAT(
+        [&expected] { [[maybe_unused]] std::size_t const s = expected.error().size(); },
+        ::testing::ThrowsMessage<std::runtime_error>("bad expected access"));
 }
 
 TEST(ExpectedTest, error_const_void_construction)
