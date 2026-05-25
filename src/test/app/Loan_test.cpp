@@ -8015,11 +8015,6 @@ public:
     void
     run() override
     {
-#if LOAN_TODO
-        testLoanPayLateFullPaymentBypassesPenalties();
-        testLoanCoverMinimumRoundingExploit();
-#endif
-
         runAmendmentIndependent();
         for (auto const& features :
              amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
