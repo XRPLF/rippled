@@ -28,6 +28,23 @@
 
 namespace xrpl {
 
+[[nodiscard]]
+STAmount
+roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
+    XRPL_ASSERT(
+        amount.asset() == vault->at(sfAsset), "xrpl::roundToVaultScale : valid vault asset");
+
+    if (!amount.holds<Issue>())
+        return amount;
+
+    return roundToScale(
+        amount,
+        scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset)),
+        Number::RoundingMode::Downward);
+}
+
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {
@@ -125,18 +142,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return ter;
 
     bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
-    bool const isIOUDeposit = ctx.tx[sfAmount].holds<Issue>();
-
-    auto const roundedAmount = [&]() -> STAmount {
-        if (!fix320Enabled || !isIOUDeposit)
-            return ctx.tx[sfAmount];
-
-        STAmount const amt = ctx.tx[sfAmount];
-        return roundToScale(
-            amt,
-            scale(vault->at(sfAssetsTotal) + amt, vault->at(sfAsset)),
-            Number::RoundingMode::Downward);
-    }();
+    auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
     {
@@ -158,7 +164,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
 
     // IOU precision checks
-    if (fix320Enabled && isIOUDeposit)
+    if (fix320Enabled && roundedAmount.holds<Issue>())
     {
         // reject deposits that would canonicalize to a no-op at the depositor's trustline scale.
         // Skipped for issuer-as-depositor: accountHolds returns (kMaxValue @ kMaxOffset) which
@@ -186,16 +192,8 @@ VaultDeposit::doApply()
 
     // Post-amendment IOU only: round Downward to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
-    auto const amount = [&]() -> STAmount {
-        if (!fix320Enabled || !ctx_.tx[sfAmount].holds<Issue>())
-            return ctx_.tx[sfAmount];
-
-        STAmount const amt = ctx_.tx[sfAmount];
-        return roundToScale(
-            amt,
-            scale(vault->at(sfAssetsTotal) + amt, vault->at(sfAsset)),
-            Number::RoundingMode::Downward);
-    }();
+    auto const amount =
+        fix320Enabled ? roundToVaultScale(ctx_.tx[sfAmount], vault) : ctx_.tx[sfAmount];
 
     // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
     if (amount == beast::kZero)

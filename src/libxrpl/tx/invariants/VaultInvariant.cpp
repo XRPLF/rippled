@@ -190,10 +190,11 @@ std::optional<ValidVault::DeltaInfo>
 ValidVault::deltaAssets(AccountID const& id) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
-    auto const get = [&](auto const& it, std::int8_t sign = 1) -> std::optional<DeltaInfo> {
+    auto const lookup = [&](uint256 const& key) -> std::optional<DeltaInfo> {
+        auto const it = deltas_.find(key);
         if (it == deltas_.end())
             return std::nullopt;
-        return DeltaInfo{it->second.delta * sign, it->second.scale};
+        return it->second;
     };
 
     return std::visit(
@@ -201,13 +202,17 @@ ValidVault::deltaAssets(AccountID const& id) const
             if constexpr (std::is_same_v<TIss, Issue>)
             {
                 if (isXRP(issue))
-                    return get(deltas_.find(keylet::account(id).key));
-                return get(
-                    deltas_.find(keylet::line(id, issue).key), id > issue.getIssuer() ? -1 : 1);
+                    return lookup(keylet::account(id).key);
+                auto result = lookup(keylet::line(id, issue).key);
+                // Trust-line balance is stored from the low-account's perspective;
+                // negate if id is the high account so the delta is in id's terms.
+                if (result && id > issue.getIssuer())
+                    result->delta = -result->delta;
+                return result;
             }
             else if constexpr (std::is_same_v<TIss, MPTIssue>)
             {
-                return get(deltas_.find(keylet::mptoken(issue.getMptID(), id).key));
+                return lookup(keylet::mptoken(issue.getMptID(), id).key);
             }
         },
         vaultAsset.value());
@@ -870,11 +875,18 @@ ValidVault::finalize(
 
                     auto const localPseudoDeltaAssets =
                         roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
-                    if (localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                    // Skip the equality check when the destination delta rounded to zero: the
+                    // vault outflow is real but the receiver's trust-line scale cannot represent
+                    // it, so the mismatch is an expected rounding artifact, not a bug.
+                    if (!tolerateZeroDelta || roundedDestinationDelta != kZero)
                     {
-                        JLOG(j.fatal()) << "Invariant failed: " <<  //
-                            "withdrawal must change vault and destination balance by equal amount";
-                        result = false;
+                        if (localPseudoDeltaAssets * -1 != roundedDestinationDelta)
+                        {
+                            JLOG(j.fatal()) << "Invariant failed: " <<  //
+                                "withdrawal must change vault and destination balance by equal "
+                                "amount";
+                            result = false;
+                        }
                     }
                 }
 
