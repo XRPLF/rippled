@@ -879,7 +879,7 @@ Number::operator/=(Number const& y)
     // * largeRange.log = 18, fits in 10^19
     // * The expanded numerator must fit in 10^38
     // * f can be up to 10^(38-19) = 10^19 safely
-    bool const small = Number::getMantissaScale() == MantissaRange::MantissaScale::Small;
+    bool const small = range.scale == MantissaRange::MantissaScale::Small;
     auto const factorExponent = small ? 17 : 19;
 
     uint128_t const f = getPower10(factorExponent);
