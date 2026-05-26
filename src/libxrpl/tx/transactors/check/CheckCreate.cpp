@@ -111,10 +111,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, sendMax.asset()))
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -153,9 +153,21 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
 
                     return std::nullopt;
                 });
@@ -169,7 +181,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
+    return tesSUCCESS;
 }
 
 TER

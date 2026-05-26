@@ -628,21 +628,21 @@ notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
     std::size_t totalOffers = 0;
 
     {
-        Dir const buys(view, keylet::nft_buys(nftokenID));
+        Dir const buys(view, keylet::nftBuys(nftokenID));
         for (auto iter = buys.begin(); iter != buys.end(); iter.next_page())
         {
             totalOffers += iter.page_size();
-            if (totalOffers > maxDeletableTokenOfferEntries)
+            if (totalOffers > kMaxDeletableTokenOfferEntries)
                 return tefTOO_BIG;
         }
     }
 
     {
-        Dir const sells(view, keylet::nft_sells(nftokenID));
+        Dir const sells(view, keylet::nftSells(nftokenID));
         for (auto iter = sells.begin(); iter != sells.end(); iter.next_page())
         {
             totalOffers += iter.page_size();
-            if (totalOffers > maxDeletableTokenOfferEntries)
+            if (totalOffers > kMaxDeletableTokenOfferEntries)
                 return tefTOO_BIG;
         }
     }

@@ -101,16 +101,16 @@ PathRequest::~PathRequest()
         return;
 
     std::string fast, full;
-    if (quick_reply_ != steady_clock::time_point{})
+    if (quickReply_ != steady_clock::time_point{})
     {
         fast = " fast:";
-        fast += std::to_string(duration_cast<milliseconds>(quick_reply_ - created_).count());
+        fast += std::to_string(duration_cast<milliseconds>(quickReply_ - created_).count());
         fast += "ms";
     }
-    if (full_reply_ != steady_clock::time_point{})
+    if (fullReply_ != steady_clock::time_point{})
     {
         full = " full:";
-        full += std::to_string(duration_cast<milliseconds>(full_reply_ - created_).count());
+        full += std::to_string(duration_cast<milliseconds>(fullReply_ - created_).count());
         full += "ms";
     }
     stream << iIdentifier_ << " complete:" << fast << full
@@ -180,7 +180,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
 
-    if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZero))
+    if (!convertAll_ && (saSendMax_ || saDstAmount_ <= beast::kZero))
     {
         // If send max specified, dst amt must be -1.
         jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -210,7 +210,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
             return false;
         }
 
-        if (!convert_all_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
+        if (!convertAll_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
         {
             // Payment must meet reserve.
             jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -312,9 +312,9 @@ PathRequest::parseJson(json::Value const& jvParams)
         return PFR_PJ_INVALID;
     }
 
-    convert_all_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
+    convertAll_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
 
-    if (!validAsset(saDstAmount_.asset()) || (!convert_all_ && saDstAmount_ <= beast::kZero))
+    if (!validAsset(saDstAmount_.asset()) || (!convertAll_ && saDstAmount_ <= beast::kZero))
     {
         jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
@@ -323,7 +323,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     if (jvParams.isMember(jss::send_max))
     {
         // Send_max requires destination amount to be -1.
-        if (!convert_all_)
+        if (!convertAll_)
         {
             jvStatus_ = rpcError(RpcDstAmtMalformed);
             return PFR_PJ_INVALID;
@@ -577,7 +577,7 @@ PathRequest::findPaths(
         }
     }
 
-    auto const dstAmount = convertAmount(saDstAmount_, convert_all_);
+    auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
     hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
@@ -622,7 +622,7 @@ PathRequest::findPaths(
         JLOG(journal_.debug()) << iIdentifier_ << " Paths found, calling rippleCalc";
 
         path::RippleCalc::Input rcInput;
-        if (convert_all_)
+        if (convertAll_)
             rcInput.partialPaymentAllowed = true;
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
@@ -639,7 +639,7 @@ PathRequest::findPaths(
             app_,
             &rcInput);
 
-        if (!convert_all_ && !fullLiquidityPath.empty() &&
+        if (!convertAll_ && !fullLiquidityPath.empty() &&
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
             JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
@@ -679,7 +679,7 @@ PathRequest::findPaths(
             jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::Values::None);
             jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::Values::None);
 
-            if (convert_all_)
+            if (convertAll_)
             {
                 jvEntry[jss::destination_amount] =
                     rc.actualAmountOut.getJson(JsonOptions::Values::None);
@@ -754,33 +754,33 @@ PathRequest::doUpdate(
         // first pass
         if (loaded || fast)
         {
-            iLevel_ = app_.config().PATH_SEARCH_FAST;
+            iLevel_ = app_.config().pathSearchFast;
         }
         else
         {
-            iLevel_ = app_.config().PATH_SEARCH;
+            iLevel_ = app_.config().pathSearch;
         }
     }
-    else if ((iLevel_ == app_.config().PATH_SEARCH_FAST) && !fast)
+    else if ((iLevel_ == app_.config().pathSearchFast) && !fast)
     {
         // leaving fast pathfinding
-        iLevel_ = app_.config().PATH_SEARCH;
-        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
+        iLevel_ = app_.config().pathSearch;
+        if (loaded && (iLevel_ > app_.config().pathSearchFast))
             --iLevel_;
     }
     else if (bLastSuccess_)
     {
         // decrement, if possible
-        if (iLevel_ > app_.config().PATH_SEARCH ||
-            (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST)))
+        if (iLevel_ > app_.config().pathSearch ||
+            (loaded && (iLevel_ > app_.config().pathSearchFast)))
             --iLevel_;
     }
     else
     {
         // adjust as needed
-        if (!loaded && (iLevel_ < app_.config().PATH_SEARCH_MAX))
+        if (!loaded && (iLevel_ < app_.config().pathSearchMax))
             ++iLevel_;
-        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
+        if (loaded && (iLevel_ > app_.config().pathSearchFast))
             --iLevel_;
     }
 
@@ -798,15 +798,15 @@ PathRequest::doUpdate(
         newStatus = rpcError(RpcInternal);
     }
 
-    if (fast && quick_reply_ == steady_clock::time_point{})
+    if (fast && quickReply_ == steady_clock::time_point{})
     {
-        quick_reply_ = steady_clock::now();
-        owner_.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
+        quickReply_ = steady_clock::now();
+        owner_.reportFast(duration_cast<milliseconds>(quickReply_ - created_));
     }
-    else if (!fast && full_reply_ == steady_clock::time_point{})
+    else if (!fast && fullReply_ == steady_clock::time_point{})
     {
-        full_reply_ = steady_clock::now();
-        owner_.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
+        fullReply_ = steady_clock::now();
+        owner_.reportFull(duration_cast<milliseconds>(fullReply_ - created_));
     }
 
     {

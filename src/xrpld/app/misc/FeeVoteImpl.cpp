@@ -135,13 +135,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                     v[sfield] = target;
                 }
             };
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
+        vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
+        vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
         vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            "reserve increment",
-            sfReserveIncrementDrops);
+            lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
     }
     else
     {
@@ -162,11 +159,11 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        vote(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
-        vote(lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
+        vote(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
+        vote(lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
         vote(
             lastFees.increment,
-            target_.owner_reserve,
+            target_.ownerReserve,
             to32,
             "reserve increment",
             sfReserveIncrement);
@@ -184,11 +181,11 @@ FeeVoteImpl::doVoting(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
         "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
-    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.referenceFee);
 
-    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.account_reserve);
+    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.accountReserve);
 
-    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))

@@ -2,11 +2,16 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -70,7 +75,8 @@ assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets,
-    TruncateShares truncate)
+    TruncateShares truncate,
+    WaiveUnrealizedLoss waive)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
@@ -80,7 +86,8 @@ assetsToSharesWithdraw(
         return std::nullopt;  // LCOV_EXCL_LINE
 
     Number assetTotal = vault->at(sfAssetsTotal);
-    assetTotal -= vault->at(sfLossUnrealized);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
@@ -96,7 +103,8 @@ assetsToSharesWithdraw(
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares)
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
@@ -106,13 +114,34 @@ sharesToAssetsWithdraw(
         return std::nullopt;  // LCOV_EXCL_LINE
 
     Number assetTotal = vault->at(sfAssetsTotal);
-    assetTotal -= vault->at(sfLossUnrealized);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
+}
+
+[[nodiscard]] bool
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+{
+    XRPL_ASSERT(
+        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isSoleShareholder : valid issuance SLE");
+
+    std::uint64_t const outstanding = issuance->at(sfOutstandingAmount);
+    if (outstanding == 0)
+        return false;
+
+    auto const shareMPTID =
+        makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
+    auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
+    if (!sleToken)
+        return false;  // LCOV_EXCL_LINE
+
+    return sleToken->getFieldU64(sfMPTAmount) == outstanding;
 }
 
 }  // namespace xrpl

@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
@@ -388,6 +389,21 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+ * transaction applies.
+ */
+class ValidAmounts
+{
+    std::vector<std::shared_ptr<SLE const>> afterEntries_;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -409,6 +425,7 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
+    ValidBookDirectory,
     ValidAMM,
     NoModifiedUnmodifiableFields,
     ValidPseudoAccounts,
@@ -416,6 +433,8 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidMPTPayment,
+    ValidAmounts,
+    ValidMPTTransfer,
     NoEmptyDirectory>;
 
 /**

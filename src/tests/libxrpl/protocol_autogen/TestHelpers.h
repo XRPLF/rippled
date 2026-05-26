@@ -159,7 +159,7 @@ canonical_ARRAY()
 inline STObject
 canonical_OBJECT()
 {
-    return STObject{kSfGeneric};
+    return STObject{sfGeneric};
 }
 
 inline STPathSet

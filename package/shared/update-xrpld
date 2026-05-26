@@ -22,7 +22,7 @@ PATH=/usr/sbin:/usr/bin:/sbin:/bin
 PKG_NAME=${PKG_NAME:-xrpld}
 
 log() {
-# If running under systemd/journald, let it handle timestamps.
+    # If running under systemd/journald, let it handle timestamps.
     if [[ -n "${JOURNAL_STREAM:-}" ]]; then
         printf '%s\n' "$*"
     else
@@ -33,7 +33,7 @@ log() {
 require_root() {
     if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
         log "RESULT: failed reason=not-root"
-            exit 1
+        exit 1
     fi
 }
 

@@ -23,7 +23,7 @@ public:
 
         // This test relies on ledger hash so must lock it to fee 10.
         auto p = envconfig();
-        p->FEES.reference_fee = 10;
+        p->fees.referenceFee = 10;
         Env env{*this, std::move(p), FeatureBitset{}};
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
