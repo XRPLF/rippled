@@ -1183,12 +1183,28 @@ MPTTester::convert(MPTConvert const& arg)
             Throw<std::runtime_error>("Failed to get Pre-convert balance");
     }
 
+    auto const prevOutstanding = getIssuanceOutstandingBalance();
+
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
+        auto const postOutstanding = getIssuanceOutstandingBalance();
         env_.require(MptBalance(*this, *arg.account, holderAmt - *arg.amt));
         env_.require(RequireAny([&]() -> bool {
+            return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
+        }));
+        env_.require(RequireAny([&]() -> bool {
             return prevConfidentialOutstanding + *arg.amt == postConfidentialOutstanding;
+        }));
+
+        env_.require(RequireAny([&]() -> bool {
+            return getEncryptedBalance(*arg.account, HolderEncryptedInbox).has_value();
+        }));
+        env_.require(RequireAny([&]() -> bool {
+            return getEncryptedBalance(*arg.account, HolderEncryptedSpending).has_value();
+        }));
+        env_.require(RequireAny([&]() -> bool {
+            return getEncryptedBalance(*arg.account, IssuerEncryptedBalance).has_value();
         }));
 
         auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
@@ -1205,6 +1221,10 @@ MPTTester::convert(MPTConvert const& arg)
 
             if (!postAuditorBalance)
                 Throw<std::runtime_error>("Failed to get post-convert auditor balance");
+
+            env_.require(RequireAny([&]() -> bool {
+                return getEncryptedBalance(*arg.account, AuditorEncryptedBalance).has_value();
+            }));
 
             // auditor's encrypted balance is updated correctly
             env_.require(RequireAny(
@@ -1559,7 +1579,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         env_.require(MptBalance(*this, *arg.dest, destPubAmt));
 
         // OA and COA unchanged
-        env_.require(RequireAny([&]() -> bool { return prevOA == postOA; }));
+        env_.require(RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }));
         env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }));
 
         // Verify sender changes
@@ -1933,8 +1953,9 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         // Verify COA and OA are reduced correctly
         env_.require(RequireAny(
             [&]() -> bool { return prevCOA >= *arg.amt && postCOA == prevCOA - *arg.amt; }));
-        env_.require(RequireAny(
-            [&]() -> bool { return prevOA >= *arg.amt && postOA == prevOA - *arg.amt; }));
+        env_.require(RequireAny([&]() -> bool {
+            return prevOA && postOA && *prevOA >= *arg.amt && *postOA == *prevOA - *arg.amt;
+        }));
 
         // Verify holder's confidential balances are zeroed out
         env_.require(RequireAny(
@@ -2109,6 +2130,9 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     }
 
     jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
+    auto const holderPubAmt = getBalance(*arg.account);
+    auto const prevCOA = getIssuanceConfidentialBalance();
+    auto const prevOA = getIssuanceOutstandingBalance();
     auto const prevInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
     auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
     auto const prevIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
@@ -2118,12 +2142,18 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
 
     if (submit(arg, jv) == tesSUCCESS)
     {
+        auto const postCOA = getIssuanceConfidentialBalance();
+        auto const postOA = getIssuanceOutstandingBalance();
         auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
         auto const postSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
         auto const postIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
 
         if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance)
             Throw<std::runtime_error>("Failed to get post-mergeInbox balances");
+
+        env_.require(MptBalance(*this, *arg.account, holderPubAmt));
+        env_.require(RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }));
+        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }));
 
         env_.require(RequireAny([&]() -> bool {
             return *postSpendingBalance == *prevInboxBalance + *prevSpendingBalance &&
@@ -2139,16 +2169,16 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     }
 }
 
-std::int64_t
+std::optional<std::int64_t>
 MPTTester::getIssuanceOutstandingBalance() const
 {
     if (!id_)
-        Throw<std::runtime_error>("Issuance ID does not exist");
+        return std::nullopt;
 
     auto const sle = env_.current()->read(keylet::mptIssuance(*id_));
 
-    if (!sle || !sle->isFieldPresent(sfOutstandingAmount))
-        Throw<std::runtime_error>("Issuance object does not contain outstanding amount");
+    if (!sle)
+        return std::nullopt;
 
     return (*sle)[sfOutstandingAmount];
 }
@@ -2276,10 +2306,16 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
     }
 
+    auto const prevOutstanding = getIssuanceOutstandingBalance();
+
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
+        auto const postOutstanding = getIssuanceOutstandingBalance();
         env_.require(MptBalance(*this, *arg.account, holderAmt + *arg.amt));
+        env_.require(RequireAny([&]() -> bool {
+            return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
+        }));
         env_.require(RequireAny([&]() -> bool {
             return prevConfidentialOutstanding - *arg.amt == postConfidentialOutstanding;
         }));

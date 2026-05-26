@@ -1381,7 +1381,8 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
                 .ownerCount = 1,
@@ -1395,6 +1396,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
 
             mptAlice.generateKeyPair(alice);
             mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
 
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
@@ -1411,6 +1413,26 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
                 .amt = 10,
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .issuerEncryptedAmt = getTrivialCiphertext(),
+                .err = tecBAD_PROOF,
+            });
+
+            std::uint64_t const amount = 10;
+            Buffer const blindingFactor = generateBlindingFactor();
+            Buffer const holderCiphertext = mptAlice.encryptAmount(bob, amount, blindingFactor);
+
+            // Holder ciphertext is valid for the amount and
+            // blinding factor, but the issuer ciphertext is encrypted under a
+            // different public key than the registered issuer key.
+            Buffer const wrongIssuerCiphertext =
+                mptAlice.encryptAmount(carol, amount, blindingFactor);
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = amount,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCiphertext,
+                .issuerEncryptedAmt = wrongIssuerCiphertext,
+                .blindingFactor = blindingFactor,
                 .err = tecBAD_PROOF,
             });
         }
@@ -4664,7 +4686,10 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
             .amt = 110,
         });
         BEAST_EXPECT(mptAlice.getBalance(bob) == preBobPublicBalance);
-        BEAST_EXPECT(mptAlice.getIssuanceOutstandingBalance() == preOutstandingAmount - 110);
+        auto const postOutstandingAmount = mptAlice.getIssuanceOutstandingBalance();
+        BEAST_EXPECT(
+            preOutstandingAmount && postOutstandingAmount &&
+            *postOutstandingAmount == *preOutstandingAmount - 110);
         BEAST_EXPECT(
             mptAlice.getIssuanceConfidentialBalance() == preConfidentialOutstandingAmount - 110);
         BEAST_EXPECT(!env.le(keylet::mptoken(mptAlice.issuanceID(), alice.id())));
@@ -8971,7 +8996,8 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         env.require(MptBalance(mpt, dave, 0));
         BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 0);
         BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
-        BEAST_EXPECT(mpt.getIssuanceOutstandingBalance() == 250);
+        auto const outstandingBalance = mpt.getIssuanceOutstandingBalance();
+        BEAST_EXPECT(outstandingBalance && *outstandingBalance == 250);
         BEAST_EXPECT(mpt.getIssuanceConfidentialBalance() == 175);
     }
 
@@ -10628,6 +10654,7 @@ class ConfidentialTransfer_test : public beast::unit_test::Suite
         testSendPreflight(features);
         testSendPreclaim(features);
         testSendRangeProof(features);
+
         // testSendZeroAmount(features);
         testSendDepositPreauth(features);
         testSendCredentialValidation(features);
