@@ -10,6 +10,7 @@
 #include <boost/multiprecision/number.hpp>
 
 #include <array>
+#include <cctype>
 #include <cstdint>
 #include <iomanip>
 #include <limits>
