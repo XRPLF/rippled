@@ -171,7 +171,7 @@ protected:
         std::uint32_t flags = 0;
         // If set, the vault is created with this sfScale value. Useful for
         // tests that need finer loanScale to exercise rounding edge cases.
-        std::optional<std::uint32_t> vaultScale =
+        std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
 
         [[nodiscard]] Number
