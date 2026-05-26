@@ -148,7 +148,7 @@ public:
     }
 
     /**
-     * @brief Get sfComputationAllowance (soeOPTIONAL)
+     * @brief Get sfComputationAllowance (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -274,7 +274,7 @@ public:
     }
 
     /**
-     * @brief Set sfComputationAllowance (soeOPTIONAL)
+     * @brief Set sfComputationAllowance (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
