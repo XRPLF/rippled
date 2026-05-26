@@ -796,12 +796,12 @@ doOverpayment(
     //        trackedInterestPart()
     [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
         (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
-    [[maybe_unused]] Number const mfeeReleased =
+    [[maybe_unused]] Number const managementFeeReleased =
         managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
     [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
 
     XRPL_ASSERT_PARTS(
-        loanPaymentParts.valueChange == tvoChange + mfeeReleased + interestPart,
+        loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart,
         "xrpl::detail::doOverpayment",
         "interest paid agrees");
 
