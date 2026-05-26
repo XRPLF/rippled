@@ -27,7 +27,7 @@ enum class TxnSql : char {
 class STTx final : public STObject, public CountedObject<STTx>
 {
     uint256 tid_;
-    TxType tx_type_;
+    TxType txType_;
 
 public:
     static constexpr std::size_t kMinMultiSigners = 1;
@@ -187,7 +187,7 @@ inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-referenc
 inline TxType
 STTx::getTxnType() const
 {
-    return tx_type_;
+    return txType_;
 }
 
 inline Blob

@@ -27,7 +27,7 @@ protected:
 
     Port const& port_;
     Handler& handler_;
-    endpoint_type remote_address_;
+    endpoint_type remoteAddress_;
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
@@ -65,7 +65,7 @@ BasePeer<Handler, Impl>::BasePeer(
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(std::move(remoteAddress))
+    , remoteAddress_(std::move(remoteAddress))
     , sink_(
           journal.sink(),
           [] {

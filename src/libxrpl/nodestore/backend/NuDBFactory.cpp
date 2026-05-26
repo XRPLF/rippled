@@ -42,7 +42,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace xrpl::NodeStore {
 
@@ -230,28 +229,6 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
-        {
-            std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h, &nObj);
-            if (status != Status::Ok)
-            {
-                results.push_back({});
-            }
-            else
-            {
-                results.push_back(nObj);
-            }
-        }
-
-        return {results, Status::Ok};
     }
 
     void
