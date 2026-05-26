@@ -28,7 +28,7 @@
 
 namespace xrpl {
 
-WaiveUnrealizedLoss
+static WaiveUnrealizedLoss
 shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
 {
     XRPL_ASSERT(
