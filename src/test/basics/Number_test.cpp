@@ -31,7 +31,7 @@ class Number_test : public beast::unit_test::Suite
         int count = 0;
         for (auto it = s.rbegin(); it != s.rend(); ++it)
         {
-            if (count != 0 && count % 3 == 0 && isdigit(*it))
+            if (count != 0 && count % 3 == 0 && (isdigit(*it) != 0))
                 out.insert(out.begin(), '_');
             out.insert(out.begin(), *it);
             ++count;
