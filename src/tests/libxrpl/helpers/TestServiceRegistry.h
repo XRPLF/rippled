@@ -62,11 +62,22 @@ private:
 */
 class TestServiceRegistry : public ServiceRegistry
 {
+    static Fees
+    defaultFees()
+    {
+        Fees fees{XRPAmount{10}, XRPAmount{10 * kDropsPerXrp}, XRPAmount{2 * kDropsPerXrp}};
+        fees.extensionComputeLimit = 1'000'000;
+        fees.extensionSizeLimit = 100'000;
+        fees.gasPrice = 1'000'000;
+        return fees;
+    }
+
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context io_context_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
+    Fees fees_{defaultFees()};
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};
     NodeCache tempNodeCache_{
         "TempNodeCache",
@@ -363,6 +374,12 @@ public:
     getWalletDB() override
     {
         throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
+    }
+
+    Fees
+    getFees() const override
+    {
+        return fees_;
     }
 
     // Temporary: Get the underlying Application
