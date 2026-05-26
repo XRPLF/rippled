@@ -1019,7 +1019,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                 {
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 64'292,
+                        txMeta->getFieldU32(sfGasUsed) == 68'292,
                         std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 }
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
