@@ -6,19 +6,19 @@ struct NoneT
 {
     NoneT() = default;
 };
-static NoneT const kNONE;
+static NoneT const kNone;
 
 struct AutofillT
 {
     AutofillT() = default;
 };
-static AutofillT const kAUTOFILL;
+static AutofillT const kAutofill;
 
 struct DisabledT
 {
     DisabledT() = default;
 };
-static DisabledT const kDISABLED;
+static DisabledT const kDisabled;
 
 /** Used for Fee() calls that use an owner reserve increment */
 struct IncrementT
@@ -26,6 +26,6 @@ struct IncrementT
     IncrementT() = default;
 };
 
-static IncrementT const kINCREMENT;
+static IncrementT const kIncrement;
 
 }  // namespace xrpl::test::jtx

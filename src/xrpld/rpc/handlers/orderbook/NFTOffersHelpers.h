@@ -22,7 +22,7 @@ appendNftOfferJson(
     std::shared_ptr<SLE const> const& offer,
     json::Value& offers)
 {
-    json::Value& obj(offers.append(json::ObjectValue));
+    json::Value& obj(offers.append(json::ValueType::Object));
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
@@ -48,7 +48,7 @@ inline json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNFT_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNftOffers, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
@@ -62,7 +62,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     json::Value result;
     result[jss::nft_id] = to_string(nftId);
 
-    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
+    json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
 
     std::vector<std::shared_ptr<SLE const>> offers;
     unsigned int reserve(limit);
@@ -125,7 +125,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     for (auto const& offer : offers)
         appendNftOfferJson(context.app, offer, jsonOffers);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

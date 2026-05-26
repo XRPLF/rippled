@@ -23,7 +23,7 @@ public:
         While future versions of this code will never lower
         this limit, they may opt to raise it.
     */
-    static constexpr std::size_t kMAX_PREIMAGE_LENGTH = 128;
+    static constexpr std::size_t kMaxPreimageLength = 128;
 
     /** Parse the payload for a PreimageSha256 condition
 
@@ -65,7 +65,7 @@ public:
             return {};
         }
 
-        if (s.size() > kMAX_PREIMAGE_LENGTH)
+        if (s.size() > kMaxPreimageLength)
         {
             ec = Error::PreimageTooLong;
             return {};

@@ -75,9 +75,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::NullValue));
-            testInvalidAccountParam(json::Value(json::ObjectValue));
-            testInvalidAccountParam(json::Value(json::ArrayValue));
+            testInvalidAccountParam(json::Value(json::ValueType::Null));
+            testInvalidAccountParam(json::Value(json::ValueType::Object));
+            testInvalidAccountParam(json::Value(json::ValueType::Array));
         }
         Account const alice{"alice"};
         {
@@ -215,7 +215,7 @@ public:
             // Invalid index
             json::Value params;
             params[jss::account] = alice.human();
-            params[jss::ledger_index] = json::ObjectValue;
+            params[jss::ledger_index] = json::ValueType::Object;
             auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
             BEAST_EXPECT(lines[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -528,7 +528,7 @@ public:
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+            jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
             jv["SettleDelay"] = settleDelay.count();
             jv["PublicKey"] = strHex(pk.slice());
             return jv;
@@ -554,8 +554,8 @@ public:
         env.close();
 
         // Escrow, in each direction
-        env(escrow::create(alice, becky, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
-        env(escrow::create(becky, alice, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
+        env(escrow::create(alice, becky, XRP(1000)), escrow::kFinishTime(env.now() + 1s));
+        env(escrow::create(becky, alice, XRP(1000)), escrow::kFinishTime(env.now() + 1s));
 
         // Pay channels, in each direction
         env(payChan(alice, becky, XRP(1000), 100s, alice.pk()));
@@ -618,7 +618,7 @@ public:
             // the list will be empty for most calls.
             auto getNextLine =
                 [](Env& env, Account const& alice, std::optional<std::string> const marker) {
-                    json::Value params(json::ObjectValue);
+                    json::Value params(json::ValueType::Object);
                     params[jss::account] = alice.human();
                     params[jss::limit] = 1;
                     if (marker)
@@ -628,9 +628,9 @@ public:
                 };
 
             auto aliceLines = getNextLine(env, alice, std::nullopt);
-            constexpr std::size_t kEXPECTED_ITERATIONS = 16;
-            constexpr std::size_t kEXPECTED_LINES = 2;
-            constexpr std::size_t kEXPECTED_NF_TS = 1;
+            static constexpr std::size_t kExpectedIterations = 16;
+            static constexpr std::size_t kExpectedLines = 2;
+            static constexpr std::size_t kExpectedNfTs = 1;
             std::size_t foundLines = 0;
 
             auto hasMarker = [](auto const& aliceLines) {
@@ -661,7 +661,7 @@ public:
                 foundLines += aliceLines[jss::result][jss::lines].size();
                 ++iterations;
             }
-            BEAST_EXPECT(kEXPECTED_LINES == foundLines);
+            BEAST_EXPECT(kExpectedLines == foundLines);
 
             json::Value aliceObjectsParams2;
             aliceObjectsParams2[jss::account] = alice.human();
@@ -677,10 +677,10 @@ public:
             // this test will need to be updated.
             BEAST_EXPECT(
                 aliceObjects[jss::result][jss::account_objects].size() ==
-                iterations + kEXPECTED_NF_TS);
+                iterations + kExpectedNfTs);
             // If ledger object association ever changes, for whatever
             // reason, this test will need to be updated.
-            BEAST_EXPECTS(iterations == kEXPECTED_ITERATIONS, std::to_string(iterations));
+            BEAST_EXPECTS(iterations == kExpectedIterations, std::to_string(iterations));
 
             // Get becky's objects just to confirm that they're symmetrical
             json::Value beckyObjectsParams;

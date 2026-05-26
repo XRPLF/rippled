@@ -138,10 +138,10 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const kIN_IS_XRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const kOUT_IS_XRP = std::is_same_v<TTakerGets, XRPAmount>;
+    static constexpr bool kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
+    static constexpr bool kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
 
-    if constexpr (kOUT_IS_XRP)
+    if constexpr (kOutIsXrp)
     {
         // If `TakerGets` is XRP, the worst this offer's quality can change is
         // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
@@ -156,7 +156,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!kIN_IS_XRP && !kOUT_IS_XRP)
+    if constexpr (!kInIsXrp && !kOutIsXrp)
     {
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
@@ -271,7 +271,7 @@ TOfferStreamBase<TIn, TOut>::step()
             j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= beast::kZERO)
+        if (*ownerFunds_ <= beast::kZero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the

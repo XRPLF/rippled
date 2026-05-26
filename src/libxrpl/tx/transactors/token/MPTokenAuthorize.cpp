@@ -58,7 +58,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
+        if (ctx.tx.isFlag(tfMPTUnauthorize))
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -112,8 +112,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
-
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
     // 1. authorize an account
@@ -126,7 +124,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
+    if (!sleMptIssuance->isFlag(lsfMPTRequireAuth))
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
@@ -135,8 +133,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
     // always authorized. No need to amendment gate since Vault and LoanBroker
-    // can only be created if the Vault amendment is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
+    // can only be created if the Vault amendment is enabled; AMM with MPToken asset
+    // can only be created if MPTokensV2 is enabled.
+    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -150,7 +149,7 @@ MPTokenAuthorize::doApply()
         ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
-        account_,
+        accountID_,
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
