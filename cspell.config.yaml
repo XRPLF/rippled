@@ -199,11 +199,13 @@ words:
   - nonxrp
   - noreplace
   - noripple
+  - nostdinc
   - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -298,6 +300,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair

@@ -23,7 +23,6 @@
 #include <sys/resource.h>
 
 #include <dirent.h>
-#include <unistd.h>
 #endif
 
 #include <algorithm>
@@ -99,7 +98,10 @@ private:
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
     std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};
     boost::asio::steady_timer backoffTimer_;
-    static constexpr double kFreeFdThreshold = 0.70;
+    static constexpr std::uint64_t kMaxUsedFdPercent = 70;
+    static constexpr std::chrono::milliseconds kFdSampleInterval{250};
+    clock_type::time_point fdSampleAt_;
+    bool cachedThrottle_{false};
 
     struct FDStats
     {
@@ -280,6 +282,7 @@ Door<Handler>::Door(
     , acceptor_(ioContext)
     , strand_(boost::asio::make_strand(ioContext))
     , backoffTimer_(ioContext)
+    , fdSampleAt_(clock_type::now() - kFdSampleInterval)
 {
     reOpen();
 }
@@ -338,11 +341,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
     {
         if (shouldThrottleForFds())
         {
+            JLOG(j_.warn()) << "Throttling do_accept for " << acceptDelay_.count() << "ms.";
             backoffTimer_.expires_after(acceptDelay_);
             boost::system::error_code tec;
             backoffTimer_.async_wait(doYield[tec]);
             acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
-            JLOG(j_.warn()) << "Throttling do_accept for " << acceptDelay_.count() << "ms.";
             continue;
         }
 
@@ -359,8 +362,11 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
             if (ec == boost::asio::error::no_descriptors ||
                 ec == boost::asio::error::no_buffer_space)
             {
-                JLOG(j_.warn()) << "accept: Too many open files. Pausing for "
-                                << acceptDelay_.count() << "ms.";
+                char const* const cause = (ec == boost::asio::error::no_descriptors)
+                    ? "too many open files"
+                    : "kernel buffer space exhausted";
+                JLOG(j_.warn()) << "accept: " << cause << ". Pausing for " << acceptDelay_.count()
+                                << "ms.";
 
                 backoffTimer_.expires_after(acceptDelay_);
                 boost::system::error_code tec;
@@ -428,14 +434,15 @@ Door<Handler>::shouldThrottleForFds()
 #if BOOST_OS_WINDOWS
     return false;
 #else
-    auto const stats = queryFdStats();
-    if (!stats || stats->limit == 0)
-        return false;
+    auto const now = clock_type::now();
+    if (now - fdSampleAt_ < kFdSampleInterval)
+        return cachedThrottle_;
 
-    auto const& s = *stats;
-    auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
-    double const freeRatio = static_cast<double>(free) / static_cast<double>(s.limit);
-    return freeRatio < kFreeFdThreshold;
+    fdSampleAt_ = now;
+    auto const stats = queryFdStats();
+    cachedThrottle_ =
+        stats && stats->limit > 0 && stats->used * 100 > stats->limit * kMaxUsedFdPercent;
+    return cachedThrottle_;
 #endif
 }
 
