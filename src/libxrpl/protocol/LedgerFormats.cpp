@@ -1,21 +1,26 @@
 #include <xrpl/protocol/LedgerFormats.h>
+
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/jss.h>  // IWYU pragma: keep
 
-#include <initializer_list>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
+
+std::vector<SOElement> const&
+LedgerFormats::getCommonFields()
+{
+    static auto const kCommonFields = std::vector<SOElement>{
+        {sfLedgerIndex, SoeOptional},
+        {sfLedgerEntryType, SoeRequired},
+        {sfFlags, SoeRequired},
+    };
+    return kCommonFields;
+}
 
 LedgerFormats::LedgerFormats()
 {
-    // Fields shared by all ledger formats:
-    static std::initializer_list<SOElement> const commonFields{
-        {sfLedgerIndex, soeOPTIONAL},
-        {sfLedgerEntryType, soeREQUIRED},
-        {sfFlags, soeREQUIRED},
-    };
-
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("LEDGER_ENTRY")
@@ -23,7 +28,7 @@ LedgerFormats::LedgerFormats()
 
 #define UNWRAP(...) __VA_ARGS__
 #define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+    add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -36,8 +41,8 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
-    return instance;
+    static LedgerFormats const kInstance;
+    return kInstance;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,13 +1,11 @@
-#ifndef XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
-#define XRPL_APP_LEDGER_LOCALTXS_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
-
+#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 // Track transactions issued by local clients
 // Ensure we always apply them to our open ledger
@@ -19,13 +17,13 @@ public:
     // The number of ledgers to hold a transaction is essentially
     // arbitrary. It should be sufficient to allow the transaction to
     // get into a fully-validated ledger.
-    static constexpr int holdLedgers = 5;
+    static constexpr int kHoldLedgers = 5;
 
     virtual ~LocalTxs() = default;
 
     // Add a new local transaction
     virtual void
-    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
+    pushBack(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
 
     // Return the set of local transactions to a new open ledger
     virtual CanonicalTXSet
@@ -40,8 +38,6 @@ public:
 };
 
 std::unique_ptr<LocalTxs>
-make_LocalTxs();
+makeLocalTxs();
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

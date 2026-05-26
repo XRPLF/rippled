@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_PEERS_PEERSET_H_INCLUDED
-#define XRPL_APP_PEERS_PEERSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Supports data retrieval by managing a set of peers.
 
@@ -49,7 +48,7 @@ public:
         std::shared_ptr<Peer> const& peer) = 0;
 
     /** get the set of ids of previously added peers */
-    virtual std::set<Peer::id_t> const&
+    [[nodiscard]] virtual std::set<Peer::id_t> const&
     getPeerIds() const = 0;
 };
 
@@ -63,7 +62,7 @@ public:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app);
+makePeerSetBuilder(Application& app);
 
 /**
  * Make a dummy PeerSet that does not do anything.
@@ -71,8 +70,6 @@ make_PeerSetBuilder(Application& app);
  *       where a real PeerSet is not needed.
  */
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app);
+makeDummyPeerSet(Application& app);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,11 +1,10 @@
-#ifndef XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
-#define XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Average quality of a path as a function of `out`: q(out) = m * out + b,
  * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
@@ -38,10 +37,7 @@ public:
     };
     QualityFunction(Quality const& quality, CLOBLikeTag);
     template <typename TIn, typename TOut>
-    QualityFunction(
-        TAmounts<TIn, TOut> const& amounts,
-        std::uint32_t tfee,
-        AMMTag);
+    QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag);
 
     /** Combines QF with the next step QF
      */
@@ -57,13 +53,13 @@ public:
 
     /** Return true if the quality function is constant
      */
-    bool
+    [[nodiscard]] bool
     isConst() const
     {
         return quality_.has_value();
     }
 
-    std::optional<Quality> const&
+    [[nodiscard]] std::optional<Quality> const&
     quality() const
     {
         return quality_;
@@ -76,13 +72,11 @@ QualityFunction::QualityFunction(
     std::uint32_t tfee,
     QualityFunction::AMMTag)
 {
-    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
+    if (amounts.in <= beast::kZero || amounts.out <= beast::kZero)
         Throw<std::runtime_error>("QualityFunction amounts are 0.");
     Number const cfee = feeMult(tfee);
     m_ = -cfee / amounts.in;
     b_ = amounts.out * cfee / amounts.in;
 }
 
-}  // namespace ripple
-
-#endif  // XRPL_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+}  // namespace xrpl

@@ -1,15 +1,10 @@
-#ifndef XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
-#define XRPL_TEST_JTX_CREDENTIALS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-
-namespace credentials {
+namespace xrpl::test::jtx::credentials {
 
 inline Keylet
 keylet(
@@ -17,18 +12,17 @@ keylet(
     test::jtx::Account const& issuer,
     std::string_view credType)
 {
-    return keylet::credential(
-        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+    return keylet::credential(subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
 }
 
 // Sets the optional URI.
-class uri
+class Uri
 {
 private:
     std::string const uri_;
 
 public:
-    explicit uri(std::string_view u) : uri_(strHex(u))
+    explicit Uri(std::string_view u) : uri_(strHex(u))
     {
     }
 
@@ -40,57 +34,46 @@ public:
 };
 
 // Set credentialsIDs array
-class ids
+class Ids
 {
 private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> const& creds) : credentials_(creds)
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }
 };
 
-Json::Value
-create(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+json::Value
+create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
-accept(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType);
+json::Value
+accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 deleteCred(
     jtx::Account const& acc,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(
     jtx::Env& env,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
-}  // namespace credentials
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx::credentials

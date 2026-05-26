@@ -1,23 +1,36 @@
 #include <test/jtx/multisign.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <ostream>
+#include <vector>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-Json::Value
-signers(
-    Account const& account,
-    std::uint32_t quorum,
-    std::vector<signer> const& v)
+json::Value
+signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
@@ -34,10 +47,10 @@ signers(
     return jv;
 }
 
-Json::Value
-signers(Account const& account, none_t)
+json::Value
+signers(Account const& account, NoneT)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = 0;
@@ -47,7 +60,7 @@ signers(Account const& account, none_t)
 //------------------------------------------------------------------------------
 
 void
-msig::operator()(Env& env, JTx& jt) const
+Msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
     auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
@@ -56,18 +69,22 @@ msig::operator()(Env& env, JTx& jt) const
 
         // The signing pub key is only required at the top level.
         if (!subField)
+        {
             sigObject[sfSigningPubKey] = "";
+        }
         else if (sigObject.isNull())
-            sigObject = Json::Value(Json::objectValue);
+        {
+            sigObject = json::Value(json::ValueType::Object);
+        }
         std::optional<STObject> st;
         try
         {
             st = parse(jtx.jv);
         }
-        catch (parse_error const&)
+        catch (ParseError const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
-            Rethrow();
+            rethrow();
         }
         auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
@@ -77,19 +94,19 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
-            auto const sig = ripple::sign(
-                *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
-            jo[sfTxnSignature.getJsonName()] =
-                strHex(Slice{sig.data(), sig.size()});
+            Serializer const ss{buildMultiSigningData(*st, e.acct.id())};
+            auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
+            jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }
     };
-    if (!subField)
+    if (subField == nullptr)
+    {
         jt.mainSigners.emplace_back(callback);
+    }
     else
+    {
         jt.postSigners.emplace_back(callback);
+    }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

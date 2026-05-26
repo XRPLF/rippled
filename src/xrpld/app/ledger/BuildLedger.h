@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class CanonicalTXSet;
@@ -57,5 +56,4 @@ buildLedger(
     Application& app,
     beast::Journal j);
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

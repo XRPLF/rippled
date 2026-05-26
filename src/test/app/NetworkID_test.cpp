@@ -1,14 +1,29 @@
 // Copyright (c) 2020 Dev Null Productions
 
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/NetworkIDService.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
+#include <cstdint>
+#include <memory>
 
-class NetworkID_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class NetworkID_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -17,12 +32,12 @@ public:
         testNetworkID();
     }
 
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -37,33 +52,31 @@ public:
 
         auto const alice = Account{"alice"};
 
-        auto const runTx = [&](test::jtx::Env& env,
-                               Json::Value const& jv,
-                               TER expectedOutcome) {
+        auto const runTx = [&](test::jtx::Env& env, json::Value const& jv, TER expectedOutcome) {
             env.memoize(env.master);
             env.memoize(alice);
 
             // fund alice
             {
-                Json::Value jv;
+                json::Value jv;
                 jv[jss::Account] = env.master.human();
                 jv[jss::Destination] = alice.human();
                 jv[jss::TransactionType] = "Payment";
                 jv[jss::Amount] = "10000000000";
-                env(jv, fee(1000), sig(env.master));
+                env(jv, Fee(1000), Sig(env.master));
             }
 
-            env(jv, fee(1000), ter(expectedOutcome));
+            env(jv, Fee(1000), Ter(expectedOutcome));
             env.close();
         };
 
         // test mainnet
         {
             test::jtx::Env env{*this, makeNetworkConfig(0)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 0);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 0);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -83,10 +96,10 @@ public:
         // NetworkID
         {
             test::jtx::Env env{*this, makeNetworkConfig(1024)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 1024);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1024);
 
             // try to submit a txn without network id, this should work
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
             runTx(env, jv, tesSUCCESS);
@@ -103,28 +116,26 @@ public:
         // absent networkid
         {
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
-            BEAST_EXPECT(env.app().config().NETWORK_ID == 1025);
+            BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1025);
             {
                 env.fund(XRP(200), alice);
                 // try to submit a txn without network id, this should not work
-                Json::Value jvn;
+                json::Value jvn;
                 jvn[jss::Account] = alice.human();
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
                 jvn[jss::Sequence] = env.seq(alice);
-                jvn[jss::LastLedgerSequence] = env.current()->info().seq + 2;
+                jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
                 jt.stx->add(s);
                 BEAST_EXPECT(
-                    env.rpc(
-                        "submit",
-                        strHex(s.slice()))[jss::result][jss::engine_result] ==
+                    env.rpc("submit", strHex(s.slice()))[jss::result][jss::engine_result] ==
                     "telREQUIRES_NETWORK_ID");
                 env.close();
             }
 
-            Json::Value jv;
+            json::Value jv;
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = jss::AccountSet;
 
@@ -142,7 +153,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NetworkID, app, ripple);
+BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,18 +1,17 @@
-#ifndef XRPL_TEST_JTX_MEMO_H_INCLUDED
-#define XRPL_TEST_JTX_MEMO_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 /** Add a memo to a JTx.
 
     If a memo already exists, the new
     memo is appended to the array.
 */
-class memo
+class Memo
 {
 private:
     std::string data_;
@@ -20,11 +19,8 @@ private:
     std::string type_;
 
 public:
-    memo(
-        std::string const& data,
-        std::string const& format,
-        std::string const& type)
-        : data_(data), format_(format), type_(type)
+    Memo(std::string data, std::string format, std::string type)
+        : data_(std::move(data)), format_(std::move(format)), type_(std::move(type))
     {
     }
 
@@ -32,13 +28,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memodata
+class MemoData
 {
 private:
     std::string s_;
 
 public:
-    memodata(std::string const& s) : s_(s)
+    MemoData(std::string s) : s_(std::move(s))
     {
     }
 
@@ -46,13 +42,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memoformat
+class MemoFormat
 {
 private:
     std::string s_;
 
 public:
-    memoformat(std::string const& s) : s_(s)
+    MemoFormat(std::string s) : s_(std::move(s))
     {
     }
 
@@ -60,13 +56,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memotype
+class MemoType
 {
 private:
     std::string s_;
 
 public:
-    memotype(std::string const& s) : s_(s)
+    MemoType(std::string s) : s_(std::move(s))
     {
     }
 
@@ -74,56 +70,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memondata
-{
-private:
-    std::string format_;
-    std::string type_;
-
-public:
-    memondata(std::string const& format, std::string const& type)
-        : format_(format), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memonformat
-{
-private:
-    std::string data_;
-    std::string type_;
-
-public:
-    memonformat(std::string const& data, std::string const& type)
-        : data_(data), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memontype
-{
-private:
-    std::string data_;
-    std::string format_;
-
-public:
-    memontype(std::string const& data, std::string const& format)
-        : data_(data), format_(format)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

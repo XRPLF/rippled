@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_DATABASE_H_INCLUDED
-#define XRPL_NODESTORE_DATABASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
@@ -11,9 +10,7 @@
 
 #include <condition_variable>
 
-namespace ripple {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Persistency layer for NodeObject
 
@@ -40,11 +37,7 @@ public:
         @param config The configuration settings
         @param journal Destination for logging output.
     */
-    Database(
-        Scheduler& scheduler,
-        int readThreads,
-        Section const& config,
-        beast::Journal j);
+    Database(Scheduler& scheduler, int readThreads, Section const& config, beast::Journal j);
 
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
@@ -82,11 +75,7 @@ public:
         @return `true` if the object was stored?
     */
     virtual void
-    store(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        std::uint32_t ledgerSeq) = 0;
+    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t ledgerSeq) = 0;
 
     /* Check if two ledgers are in the same database
 
@@ -121,7 +110,7 @@ public:
     fetchNodeObject(
         uint256 const& hash,
         std::uint32_t ledgerSeq = 0,
-        FetchType fetchType = FetchType::synchronous,
+        FetchType fetchType = FetchType::Synchronous,
         bool duplicate = false);
 
     /** Fetch an object without waiting.
@@ -141,10 +130,6 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
-
-    /** Remove expired entries from the positive and negative caches. */
-    virtual void
-    sweep() = 0;
 
     /** Gather statistics pertaining to read and write activities.
      *
@@ -181,7 +166,7 @@ public:
     }
 
     void
-    getCountsJson(Json::Value& obj);
+    getCountsJson(json::Value& obj);
 
     /** Returns the number of file descriptors the database expects to need */
     int
@@ -228,9 +213,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(
-            count <= sz,
-            "ripple::NodeStore::Database::storeStats : valid inputs");
+        XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -260,9 +243,8 @@ private:
     // reads to do
     std::map<
         uint256,
-        std::vector<std::pair<
-            std::uint32_t,
-            std::function<void(std::shared_ptr<NodeObject> const&)>>>>
+        std::vector<
+            std::pair<std::uint32_t, std::function<void(std::shared_ptr<NodeObject> const&)>>>>
         read_;
 
     std::atomic<bool> readStopping_ = false;
@@ -284,13 +266,10 @@ private:
         @see import
     */
     virtual void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
     void
     threadEntry();
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

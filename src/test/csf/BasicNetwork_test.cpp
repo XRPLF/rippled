@@ -1,15 +1,14 @@
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/Scheduler.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <set>
 #include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-class BasicNetwork_test : public beast::unit_test::suite
+class BasicNetwork_test : public beast::unit_test::Suite
 {
 public:
     struct Peer
@@ -20,7 +19,7 @@ public:
         Peer(Peer const&) = default;
         Peer(Peer&&) = default;
 
-        explicit Peer(int id_) : id(id_)
+        explicit Peer(int id) : id(id)
         {
         }
 
@@ -33,9 +32,10 @@ public:
             if (id == 0)
             {
                 for (auto const link : net.links(this))
-                    net.send(this, link.target, [&, to = link.target] {
-                        to->receive(net, this, 1);
-                    });
+                {
+                    net.send(
+                        this, link.target, [&, to = link.target] { to->receive(net, this, 1); });
+                }
             }
             else
             {
@@ -52,9 +52,11 @@ public:
             if (m < 5)
             {
                 for (auto const link : net.links(this))
+                {
                     net.send(this, link.target, [&, mm = m, to = link.target] {
                         to->receive(net, this, mm);
                     });
+                }
             }
         }
     };
@@ -75,11 +77,11 @@ public:
         BEAST_EXPECT(!net.connect(&pv[0], &pv[1]));
         for (auto& peer : pv)
             peer.start(scheduler, net);
-        BEAST_EXPECT(scheduler.step_for(0s));
-        BEAST_EXPECT(scheduler.step_for(1s));
+        BEAST_EXPECT(scheduler.stepFor(0s));
+        BEAST_EXPECT(scheduler.stepFor(1s));
         BEAST_EXPECT(scheduler.step());
         BEAST_EXPECT(!scheduler.step());
-        BEAST_EXPECT(!scheduler.step_for(1s));
+        BEAST_EXPECT(!scheduler.stepFor(1s));
         net.send(&pv[0], &pv[1], [] {});
         net.send(&pv[1], &pv[0], [] {});
         BEAST_EXPECT(net.disconnect(&pv[0], &pv[1]));
@@ -127,7 +129,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, ripple);
+BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

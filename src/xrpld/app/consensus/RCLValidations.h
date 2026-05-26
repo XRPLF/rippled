@@ -1,9 +1,8 @@
-#ifndef XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
-#define XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>
@@ -11,11 +10,11 @@
 #include <optional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
-enum class BypassAccept : bool { no = false, yes };
+enum class BypassAccept : bool { No = false, Yes };
 
 /** Wrapper over STValidation for generic Validation code
 
@@ -26,8 +25,8 @@ class RCLValidation
     std::shared_ptr<STValidation> val_;
 
 public:
-    using NodeKey = ripple::PublicKey;
-    using NodeID = ripple::NodeID;
+    using NodeKey = xrpl::PublicKey;
+    using NodeID = xrpl::NodeID;
 
     /** Constructor
 
@@ -38,49 +37,49 @@ public:
     }
 
     /// Validated ledger's hash
-    uint256
+    [[nodiscard]] uint256
     ledgerID() const
     {
         return val_->getLedgerHash();
     }
 
     /// Validated ledger's sequence number (0 if none)
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     seq() const
     {
         return val_->getFieldU32(sfLedgerSequence);
     }
 
     /// Validation's signing time
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     signTime() const
     {
         return val_->getSignTime();
     }
 
     /// Validated ledger's first seen time
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     seenTime() const
     {
         return val_->getSeenTime();
     }
 
     /// Public key of validator that published the validation
-    PublicKey
+    [[nodiscard]] PublicKey
     key() const
     {
         return val_->getSignerPublic();
     }
 
     /// NodeID of validator that published the validation
-    NodeID
+    [[nodiscard]] NodeID
     nodeID() const
     {
         return val_->getNodeID();
     }
 
     /// Whether the validation is considered trusted.
-    bool
+    [[nodiscard]] bool
     trusted() const
     {
         return val_->isTrusted();
@@ -99,28 +98,28 @@ public:
     }
 
     /// Whether the validation is full (not-partial)
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return val_->isFull();
     }
 
     /// Get the load fee of the validation if it exists
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     loadFee() const
     {
         return ~(*val_)[~sfLoadFee];
     }
 
     /// Get the cookie specified in the validation (0 if not set)
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     cookie() const
     {
         return (*val_)[sfCookie];
     }
 
     /// Extract the underlying STValidation being wrapped
-    std::shared_ptr<STValidation>
+    [[nodiscard]] std::shared_ptr<STValidation>
     unwrap() const
     {
         return val_;
@@ -148,16 +147,14 @@ public:
 
     RCLValidatedLedger(MakeGenesis);
 
-    RCLValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        beast::Journal j);
+    RCLValidatedLedger(std::shared_ptr<Ledger const> const& ledger, beast::Journal j);
 
     /// The sequence (index) of the ledger
-    Seq
+    [[nodiscard]] Seq
     seq() const;
 
     /// The ID (hash) of the ledger
-    ID
+    [[nodiscard]] ID
     id() const;
 
     /** Lookup the ID of the ancestor ledger
@@ -173,7 +170,7 @@ public:
     friend Seq
     mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b);
 
-    Seq
+    [[nodiscard]] Seq
     minSeq() const;
 
 private:
@@ -200,14 +197,14 @@ public:
 
     /** Current time used to determine if validations are stale.
      */
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     now() const;
 
     /** Attempt to acquire the ledger with given id from the network */
     std::optional<RCLValidatedLedger>
     acquire(LedgerHash const& id);
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     journal() const
     {
         return j_;
@@ -235,9 +232,7 @@ handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
     std::string const& source,
-    BypassAccept const bypassAccept = BypassAccept::no,
+    BypassAccept const bypassAccept = BypassAccept::No,
     std::optional<beast::Journal> j = std::nullopt);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

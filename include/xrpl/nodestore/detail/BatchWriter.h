@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
-#define XRPL_NODESTORE_BATCHWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
@@ -8,8 +7,7 @@
 #include <condition_variable>
 #include <mutex>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Batch-writing assist logic.
 
@@ -42,7 +40,7 @@ public:
 
         Anything pending in the batch is written out before this returns.
     */
-    ~BatchWriter();
+    ~BatchWriter() override;
 
     /** Store the object.
 
@@ -68,16 +66,13 @@ private:
     using LockType = std::recursive_mutex;
     using CondvarType = std::condition_variable_any;
 
-    Callback& m_callback;
-    Scheduler& m_scheduler;
-    LockType mWriteMutex;
-    CondvarType mWriteCondition;
-    int mWriteLoad;
-    bool mWritePending;
-    Batch mWriteSet;
+    Callback& callback_;
+    Scheduler& scheduler_;
+    LockType writeMutex_;
+    CondvarType writeCondition_;
+    int writeLoad_{0};
+    bool writePending_{false};
+    Batch writeSet_;
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

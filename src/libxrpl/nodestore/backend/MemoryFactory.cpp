@@ -1,16 +1,29 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <boost/beast/core/string.hpp>
 #include <boost/core/ignore_unused.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 struct MemoryDB
 {
@@ -31,7 +44,7 @@ private:
 public:
     explicit MemoryFactory(Manager& manager);
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override;
 
     std::unique_ptr<Backend>
@@ -45,9 +58,9 @@ public:
     MemoryDB&
     open(std::string const& path)
     {
-        std::lock_guard _(mutex_);
-        auto const result = map_.emplace(
-            std::piecewise_construct, std::make_tuple(path), std::make_tuple());
+        std::scoped_lock const _(mutex_);
+        auto const result =
+            map_.emplace(std::piecewise_construct, std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
         if (db.open)
             Throw<std::runtime_error>("already open");
@@ -55,13 +68,13 @@ public:
     }
 };
 
-MemoryFactory* memoryFactory = nullptr;
+MemoryFactory* gMemoryFactory = nullptr;
 
 void
 registerMemoryFactory(Manager& manager)
 {
-    static MemoryFactory instance{manager};
-    memoryFactory = &instance;
+    static MemoryFactory kInstance{manager};
+    gMemoryFactory = &kInstance;
 }
 
 //------------------------------------------------------------------------------
@@ -76,10 +89,7 @@ private:
     MemoryDB* db_{nullptr};
 
 public:
-    MemoryBackend(
-        size_t keyBytes,
-        Section const& keyValues,
-        beast::Journal journal)
+    MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
         : name_(get(keyValues, "path")), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
@@ -101,7 +111,7 @@ public:
     void
     open(bool) override
     {
-        db_ = &memoryFactory->open(name_);
+        db_ = &gMemoryFactory->open(name_);
     }
 
     bool
@@ -119,48 +129,27 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::fetch : non-null database");
-        uint256 const hash(uint256::fromVoid(key));
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::fetch : non-null database");
 
-        std::lock_guard _(db_->mutex);
+        std::scoped_lock const _(db_->mutex);
 
-        Map::iterator iter = db_->table.find(hash);
+        Map::iterator const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();
-            return notFound;
+            return Status::NotFound;
         }
         *pObject = iter->second;
-        return ok;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
-    {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
-        {
-            std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
-            if (status != ok)
-                results.push_back({});
-            else
-                results.push_back(nObj);
-        }
-
-        return {results, ok};
+        return Status::Ok;
     }
 
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        XRPL_ASSERT(
-            db_, "ripple::NodeStore::MemoryBackend::store : non-null database");
-        std::lock_guard _(db_->mutex);
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::store : non-null database");
+        std::scoped_lock const _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
 
@@ -177,11 +166,9 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(
-            db_,
-            "ripple::NodeStore::MemoryBackend::for_each : non-null database");
+        XRPL_ASSERT(db_, "xrpl::NodeStore::MemoryBackend::forEach : non-null database");
         for (auto const& e : db_->table)
             f(e.second);
     }
@@ -197,7 +184,7 @@ public:
     {
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -228,5 +215,4 @@ MemoryFactory::createInstance(
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

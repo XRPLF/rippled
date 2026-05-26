@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_FACTORY_H_INCLUDED
-#define XRPL_NODESTORE_FACTORY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -8,9 +7,7 @@
 
 #include <nudb/store.hpp>
 
-namespace ripple {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Base class for backend factories. */
 class Factory
@@ -19,7 +16,7 @@ public:
     virtual ~Factory() = default;
 
     /** Retrieve the name of this factory. */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getName() const = 0;
 
     /** Create an instance of this factory's backend.
@@ -60,7 +57,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

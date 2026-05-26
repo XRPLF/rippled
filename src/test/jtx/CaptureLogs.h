@@ -1,10 +1,8 @@
-#ifndef XRPL_TEST_JTX_CAPTURELOGS_H_INCLUDED
-#define XRPL_TEST_JTX_CAPTURELOGS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 /**
  * @brief Log manager for CaptureSinks. This class holds the stream
@@ -27,36 +25,28 @@ class CaptureLogs : public Logs
         std::stringstream& strm_;
 
     public:
-        CaptureSink(
-            beast::severities::Severity threshold,
-            std::mutex& mutex,
-            std::stringstream& strm)
-            : beast::Journal::Sink(threshold, false)
-            , strmMutex_(mutex)
-            , strm_(strm)
+        CaptureSink(beast::Severity threshold, std::mutex& mutex, std::stringstream& strm)
+            : beast::Journal::Sink(threshold, false), strmMutex_(mutex), strm_(strm)
         {
         }
 
         void
-        write(beast::severities::Severity level, std::string const& text)
-            override
+        write(beast::Severity level, std::string const& text) override
         {
-            std::lock_guard lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
-            override
+        writeAlways(beast::Severity level, std::string const& text) override
         {
-            std::lock_guard lock(strmMutex_);
+            std::scoped_lock const lock(strmMutex_);
             strm_ << text;
         }
     };
 
 public:
-    explicit CaptureLogs(std::string* pResult)
-        : Logs(beast::severities::kInfo), pResult_(pResult)
+    explicit CaptureLogs(std::string* pResult) : Logs(beast::Severity::Info), pResult_(pResult)
     {
     }
 
@@ -66,15 +56,10 @@ public:
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(
-        std::string const& partition,
-        beast::severities::Severity threshold) override
+    makeSink(std::string const& partition, beast::Severity threshold) override
     {
         return std::make_unique<CaptureSink>(threshold, strmMutex_, strm_);
     }
 };
 
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test

@@ -1,10 +1,9 @@
-#ifndef XRPL_CRYPTO_RFC1751_H_INCLUDED
-#define XRPL_CRYPTO_RFC1751_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class RFC1751
 {
@@ -39,9 +38,7 @@ private:
     static int
     etob(std::string& strData, std::vector<std::string> vsHuman);
 
-    static char const* s_dictionary[];
+    static char const* dictionary[];
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

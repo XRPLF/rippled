@@ -1,15 +1,14 @@
-#ifndef XRPL_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERHISTORY_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO TODO Rename to OldLedgers ?
 
@@ -17,9 +16,7 @@ namespace ripple {
 class LedgerHistory
 {
 public:
-    LedgerHistory(
-        beast::insight::Collector::ptr const& collector,
-        Application& app);
+    LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app);
 
     /** Track a ledger
         @return `true` if the ledger was already tracked
@@ -33,7 +30,7 @@ public:
     float
     getCacheHitRate()
     {
-        return m_ledgers_by_hash.getHitRate();
+        return ledgersByHash_.getHitRate();
     }
 
     /** Get a ledger given its sequence number */
@@ -56,16 +53,13 @@ public:
     void
     sweep()
     {
-        m_ledgers_by_hash.sweep();
-        m_consensus_validated.sweep();
+        ledgersByHash_.sweep();
+        consensusValidated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
     void
-    builtLedger(
-        std::shared_ptr<Ledger const> const&,
-        uint256 const& consensusHash,
-        Json::Value);
+    builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, json::Value);
 
     /** Report that we have validated a particular ledger */
     void
@@ -101,19 +95,19 @@ private:
         LedgerHash const& valid,
         std::optional<uint256> const& builtConsensusHash,
         std::optional<uint256> const& validatedConsensusHash,
-        Json::Value const& consensus);
+        json::Value const& consensus);
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Counter mismatch_counter_;
+    beast::insight::Counter mismatchCounter_;
 
     using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash m_ledgers_by_hash;
+    LedgersByHash ledgersByHash_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    struct cv_entry
+    struct CvEntry
     {
         // Hash of locally built ledger
         std::optional<LedgerHash> built;
@@ -124,17 +118,15 @@ private:
         // Hash of validated consensus transaction set
         std::optional<uint256> validatedConsensusHash;
         // Consensus metadata of built ledger
-        std::optional<Json::Value> consensus;
+        std::optional<json::Value> consensus;
     };
-    using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
-    ConsensusValidated m_consensus_validated;
+    using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
+    ConsensusValidated consensusValidated_;
 
     // Maps ledger indexes to the corresponding hash.
-    std::map<LedgerIndex, LedgerHash> mLedgersByIndex;  // validated ledgers
+    std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers
 
     beast::Journal j_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

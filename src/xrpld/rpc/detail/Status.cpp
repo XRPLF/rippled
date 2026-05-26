@@ -1,9 +1,15 @@
 #include <xrpld/rpc/Status.h>
 
-#include <sstream>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace RPC {
+#include <sstream>
+#include <string>
+
+namespace xrpl::RPC {
 
 std::string
 Status::codeString() const
@@ -11,7 +17,7 @@ Status::codeString() const
     if (!*this)
         return "";
 
-    if (type_ == Type::none)
+    if (type_ == Type::None)
         return std::to_string(code_);
 
     if (type_ == Status::Type::TER)
@@ -19,27 +25,27 @@ Status::codeString() const
         std::string s1, s2;
 
         [[maybe_unused]] auto const success = transResultInfo(toTER(), s1, s2);
-        XRPL_ASSERT(success, "ripple::RPC::codeString : valid TER result");
+        XRPL_ASSERT(success, "xrpl::RPC::codeString : valid TER result");
 
         return s1 + ": " + s2;
     }
 
-    if (type_ == Status::Type::error_code_i)
+    if (type_ == Status::Type::ErrorCodeI)
     {
-        auto info = get_error_info(toErrorCode());
+        auto info = getErrorInfo(toErrorCode());
         std::ostringstream sStr;
-        sStr << info.token.c_str() << ": " << info.message.c_str();
+        sStr << info.token.cStr() << ": " << info.message.cStr();
         return sStr.str();
     }
 
     // LCOV_EXCL_START
-    UNREACHABLE("ripple::RPC::codeString : invalid type");
+    UNREACHABLE("xrpl::RPC::codeString : invalid type");
     return "";
     // LCOV_EXCL_STOP
 }
 
 void
-Status::fillJson(Json::Value& value)
+Status::fillJson(json::Value& value)
 {
     if (!*this)
         return;
@@ -79,5 +85,4 @@ Status::toString() const
     return "";
 }
 
-}  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl::RPC

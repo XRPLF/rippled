@@ -1,9 +1,10 @@
-#ifndef XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
-#define XRPL_APP_LEDGER_ACCEPTEDLEDGER_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/ledger/AcceptedLedgerTx.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AcceptedLedgerTx.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A ledger that has become irrevocable.
 
@@ -24,39 +25,35 @@ namespace ripple {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(
-        std::shared_ptr<ReadView const> const& ledger,
-        Application& app);
+    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
 
-    std::shared_ptr<ReadView const> const&
+    [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return transactions_.size();
     }
 
-    auto
+    [[nodiscard]] auto
     begin() const
     {
         return transactions_.begin();
     }
 
-    auto
+    [[nodiscard]] auto
     end() const
     {
         return transactions_.end();
     }
 
 private:
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

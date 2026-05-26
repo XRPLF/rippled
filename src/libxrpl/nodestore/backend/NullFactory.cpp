@@ -1,17 +1,26 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
+#include <functional>
 #include <memory>
+#include <string>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NullBackend : public Backend
 {
 public:
     NullBackend() = default;
 
-    ~NullBackend() = default;
+    ~NullBackend() override = default;
 
     std::string
     getName() override
@@ -36,15 +45,9 @@ public:
     }
 
     Status
-    fetch(void const*, std::shared_ptr<NodeObject>*) override
+    fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
-        return notFound;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
-    {
-        return {};
+        return Status::NotFound;
     }
 
     void
@@ -63,7 +66,7 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
     }
 
@@ -79,7 +82,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -101,19 +104,14 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";
     }
 
     std::unique_ptr<Backend>
-    createInstance(
-        size_t,
-        Section const&,
-        std::size_t,
-        Scheduler&,
-        beast::Journal) override
+    createInstance(size_t, Section const&, std::size_t, Scheduler&, beast::Journal) override
     {
         return std::make_unique<NullBackend>();
     }
@@ -122,8 +120,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory instance{manager};
+    static NullFactory const kInstance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

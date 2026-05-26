@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PATHS_H_INCLUDED
-#define XRPL_TEST_JTX_PATHS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -7,20 +6,21 @@
 
 #include <type_traits>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl {
+class STPath;
+
+namespace test::jtx {
 
 /** Set Paths, SendMax on a JTx. */
-class paths
+class Paths
 {
 private:
-    Issue in_;
+    Asset in_;
     int depth_;
     unsigned int limit_;
 
 public:
-    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+    Paths(Asset const& in, int depth = 7, unsigned int limit = 4)
         : in_(in), depth_(depth), limit_(limit)
     {
     }
@@ -35,42 +35,44 @@ public:
 
     If no paths are present, a new one is created.
 */
-class path
+class Path
 {
 private:
-    Json::Value jv_;
+    json::Value jv_;
 
 public:
-    path();
+    Path();
 
     template <class T, class... Args>
-    explicit path(T const& t, Args const&... args);
+    explicit Path(T const& t, Args const&... args);
+
+    Path(STPath const& p);
 
     void
     operator()(Env&, JTx& jt) const;
 
 private:
-    Json::Value&
+    json::Value&
     create();
 
     void
-    append_one(Account const& account);
+    appendOne(Account const& account);
 
     void
-    append_one(AccountID const& account);
+    appendOne(AccountID const& account);
 
     template <class T>
-    std::enable_if_t<std::is_constructible<Account, T>::value>
-    append_one(T const& t)
+    std::enable_if_t<std::is_constructible_v<Account, T>>
+    appendOne(T const& t)
     {
-        append_one(Account{t});
+        appendOne(Account{t});
     }
 
     void
-    append_one(IOU const& iou);
+    appendOne(IOU const& iou);
 
     void
-    append_one(BookSpec const& book);
+    appendOne(BookSpec const& book);
 
     template <class T, class... Args>
     void
@@ -78,22 +80,20 @@ private:
 };
 
 template <class T, class... Args>
-path::path(T const& t, Args const&... args) : jv_(Json::arrayValue)
+Path::Path(T const& t, Args const&... args) : jv_(json::ValueType::Array)
 {
     append(t, args...);
 }
 
 template <class T, class... Args>
 void
-path::append(T const& t, Args const&... args)
+Path::append(T const& t, Args const&... args)
 {
-    append_one(t);
+    appendOne(t);
     if constexpr (sizeof...(args) > 0)
         append(args...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace test::jtx
 
-#endif
+}  // namespace xrpl

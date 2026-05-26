@@ -1,11 +1,10 @@
-#ifndef XRPL_PROTOCOL_ISSUE_H_INCLUDED
-#define XRPL_PROTOCOL_ISSUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A currency issued by an account.
     @see Currency, AccountID, Issue, Book
@@ -13,8 +12,8 @@ namespace ripple {
 class Issue
 {
 public:
-    Currency currency{};
-    AccountID account{};
+    Currency currency;
+    AccountID account;
 
     Issue() = default;
 
@@ -22,20 +21,23 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const
     {
         return account;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
-    setJson(Json::Value& jv) const;
+    setJson(json::Value& jv) const;
 
-    bool
+    [[nodiscard]] bool
     native() const;
+
+    [[nodiscard]] bool
+    integral() const;
 
     friend constexpr std::weak_ordering
     operator<=>(Issue const& lhs, Issue const& rhs);
@@ -47,11 +49,11 @@ isConsistent(Issue const& ac);
 std::string
 to_string(Issue const& ac);
 
-Json::Value
-to_json(Issue const& is);
+json::Value
+toJson(Issue const& is);
 
 Issue
-issueFromJson(Json::Value const& v);
+issueFromJson(json::Value const& v);
 
 std::ostream&
 operator<<(std::ostream& os, Issue const& x);
@@ -66,11 +68,10 @@ hash_append(Hasher& h, Issue const& r)
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
-    return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+    return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 
@@ -95,16 +96,16 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 inline Issue const&
 xrpIssue()
 {
-    static Issue issue{xrpCurrency(), xrpAccount()};
-    return issue;
+    static Issue const kIssue{xrpCurrency(), xrpAccount()};
+    return kIssue;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
 inline Issue const&
 noIssue()
 {
-    static Issue issue{noCurrency(), noAccount()};
-    return issue;
+    static Issue const kIssue{noCurrency(), noAccount()};
+    return kIssue;
 }
 
 inline bool
@@ -113,6 +114,4 @@ isXRP(Issue const& issue)
     return issue.native();
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

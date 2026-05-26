@@ -1,17 +1,16 @@
-#ifndef XRPL_RPC_WSINFOSUB_H
-#define XRPL_RPC_WSINFOSUB_H
+#pragma once
 
-#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/WSSession.h>
 
 #include <memory>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class WSInfoSub : public InfoSub
 {
@@ -20,51 +19,46 @@ class WSInfoSub : public InfoSub
     std::string fwdfor_;
 
 public:
-    WSInfoSub(Source& source, std::shared_ptr<WSSession> const& ws)
-        : InfoSub(source), ws_(ws)
+    WSInfoSub(Source& source, std::shared_ptr<WSSession> const& ws) : InfoSub(source), ws_(ws)
     {
         auto const& h = ws->request();
         if (ipAllowed(
-                beast::IPAddressConversion::from_asio(ws->remote_endpoint())
-                    .address(),
-                ws->port().secure_gateway_nets_v4,
-                ws->port().secure_gateway_nets_v6))
+                beast::IPAddressConversion::fromAsio(ws->remoteEndpoint()).address(),
+                ws->port().secureGatewayNetsV4,
+                ws->port().secureGatewayNetsV6))
         {
             auto it = h.find("X-User");
             if (it != h.end())
                 user_ = it->value();
-            fwdfor_ = std::string(forwardedFor(h));
+            fwdfor_ = std::string(::xrpl::forwardedFor(h));
         }
     }
 
-    std::string_view
+    [[nodiscard]] std::string_view
     user() const
     {
         return user_;
     }
 
-    std::string_view
-    forwarded_for() const
+    [[nodiscard]] std::string_view
+    forwardedFor() const
     {
         return fwdfor_;
     }
 
     void
-    send(Json::Value const& jv, bool) override
+    send(json::Value const& jv, bool) override
     {
         auto sp = ws_.lock();
         if (!sp)
             return;
         boost::beast::multi_buffer sb;
-        Json::stream(jv, [&](void const* data, std::size_t n) {
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(data, n)));
+        json::stream(jv, [&](void const* data, std::size_t n) {
+            sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(data, n)));
         });
         auto m = std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb));
         sp->send(m);
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

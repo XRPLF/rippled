@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_RANGESET_H_INCLUDED
-#define XRPL_BASICS_RANGESET_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/LexicalCast.h>
 
@@ -11,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** A closed interval over the domain T.
 
@@ -85,7 +84,7 @@ to_string(RangeSet<T> const& rs)
 
     std::string s;
     for (auto const& interval : rs)
-        s += ripple::to_string(interval) + ",";
+        s += xrpl::to_string(interval) + ",";
     s.pop_back();
 
     return s;
@@ -102,7 +101,7 @@ to_string(RangeSet<T> const& rs)
 */
 template <class T>
 [[nodiscard]] bool
-from_string(RangeSet<T>& rs, std::string const& s)
+fromString(RangeSet<T>& rs, std::string const& s)
 {
     std::vector<std::string> intervals;
     std::vector<std::string> tokens;
@@ -118,22 +117,32 @@ from_string(RangeSet<T>& rs, std::string const& s)
             case 1: {
                 T front;
                 if (!beast::lexicalCastChecked(front, intervals.front()))
+                {
                     result = false;
+                }
                 else
+                {
                     rs.insert(front);
+                }
                 break;
             }
             case 2: {
                 T front;
                 if (!beast::lexicalCastChecked(front, intervals.front()))
+                {
                     result = false;
+                }
                 else
                 {
                     T back;
                     if (!beast::lexicalCastChecked(back, intervals.back()))
+                    {
                         result = false;
+                    }
                     else
+                    {
                         rs.insert(range(front, back));
+                    }
                 }
                 break;
             }
@@ -172,6 +181,4 @@ prevMissing(RangeSet<T> const& rs, T t, T minVal = 0)
     return boost::icl::last(tgt);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

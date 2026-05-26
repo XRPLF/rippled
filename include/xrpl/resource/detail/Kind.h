@@ -1,8 +1,6 @@
-#ifndef XRPL_RESOURCE_KIND_H_INCLUDED
-#define XRPL_RESOURCE_KIND_H_INCLUDED
+#pragma once
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 /**
  * Kind of consumer.
@@ -12,9 +10,6 @@ namespace Resource {
  *                subjected to administrative restrictions, such as
  *                use of some RPC commands like "stop".
  */
-enum Kind { kindInbound, kindOutbound, kindUnlimited };
+enum class Kind { Inbound, Outbound, Unlimited };
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

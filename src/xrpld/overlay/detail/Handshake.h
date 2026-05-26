@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
-#define XRPL_OVERLAY_HANDSHAKE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
@@ -17,16 +16,13 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
-using request_type =
-    boost::beast::http::request<boost::beast::http::empty_body>;
-using http_request_type =
-    boost::beast::http::request<boost::beast::http::dynamic_body>;
-using http_response_type =
-    boost::beast::http::response<boost::beast::http::dynamic_body>;
+using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+using http_request_type = boost::beast::http::request<boost::beast::http::dynamic_body>;
+using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /** Computes a shared value based on the SSL connection state.
 
@@ -47,8 +43,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app);
 
 /** Validate header fields necessary for upgrading the link to the peer
@@ -67,7 +63,7 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
+    beast::IP::Address publicIp,
     beast::IP::Address remote,
     Application& app);
 
@@ -94,8 +90,8 @@ makeRequest(
 
    @param crawlPublic if true then server's IP/Port are included in crawl
    @param req incoming http request
-   @param public_ip server's public IP
-   @param remote_ip peer's IP
+   @param publicIp server's public IP
+   @param remoteIp peer's IP
    @param sharedValue shared value based on the SSL connection state
    @param networkID specifies what network we intend to connect to
    @param version supported protocol version
@@ -106,8 +102,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion version,
@@ -119,15 +115,15 @@ makeResponse(
 // value: \S+
 
 // compression feature
-static constexpr char FEATURE_COMPR[] = "compr";
+static constexpr char kFeatureCompr[] = "compr";
 // validation/proposal reduce-relay base squelch feature
-static constexpr char FEATURE_VPRR[] = "vprr";
+static constexpr char kFeatureVprr[] = "vprr";
 // transaction reduce-relay feature
-static constexpr char FEATURE_TXRR[] = "txrr";
+static constexpr char kFeatureTxrr[] = "txrr";
 // ledger replay
-static constexpr char FEATURE_LEDGER_REPLAY[] = "ledgerreplay";
-static constexpr char DELIM_FEATURE[] = ";";
-static constexpr char DELIM_VALUE[] = ",";
+static constexpr char kFeatureLedgerReplay[] = "ledgerreplay";
+static constexpr char kDelimFeature[] = ";";
+static constexpr char kDelimValue[] = ",";
 
 /** Get feature's header value
    @param headers request/response header
@@ -136,9 +132,7 @@ static constexpr char DELIM_VALUE[] = ",";
       is found in the header, unseated optional otherwise
  */
 std::optional<std::string>
-getFeatureValue(
-    boost::beast::http::fields const& headers,
-    std::string const& feature);
+getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature);
 
 /** Check if a feature's value is equal to the specified value
    @param headers request/response header
@@ -160,9 +154,7 @@ isFeatureValue(
    @return true if enabled
  */
 bool
-featureEnabled(
-    boost::beast::http::fields const& headers,
-    std::string const& feature);
+featureEnabled(boost::beast::http::fields const& headers, std::string const& feature);
 
 /** Check if a feature should be enabled for a peer. The feature
     is enabled if its configured value is true and the http header
@@ -174,10 +166,10 @@ featureEnabled(
    @param value feature's value to check in the headers
    @return true if the feature is enabled
  */
-template <typename headers>
+template <typename Headers>
 bool
 peerFeatureEnabled(
-    headers const& request,
+    Headers const& request,
     std::string const& feature,
     std::string value,
     bool config)
@@ -186,12 +178,9 @@ peerFeatureEnabled(
 }
 
 /** Wrapper for enable(1)/disable type(0) of feature */
-template <typename headers>
+template <typename Headers>
 bool
-peerFeatureEnabled(
-    headers const& request,
-    std::string const& feature,
-    bool config)
+peerFeatureEnabled(Headers const& request, std::string const& feature, bool config)
 {
     return config && peerFeatureEnabled(request, feature, "1", config);
 }
@@ -233,6 +222,4 @@ makeFeaturesResponseHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

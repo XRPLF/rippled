@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_NFTOKENOFFERID_H_INCLUDED
-#define XRPL_PROTOCOL_NFTOKENOFFERID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -9,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /**
    Add an `offer_id` field to the `meta` output parameter.
@@ -28,11 +27,9 @@ getOfferIDFromCreatedOffer(TxMeta const& transactionMeta);
 
 void
 insertNFTokenOfferID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

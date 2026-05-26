@@ -1,16 +1,12 @@
-#ifndef XRPL_PEERFINDER_STORE_H_INCLUDED
-#define XRPL_PEERFINDER_STORE_H_INCLUDED
+#pragma once
 
-namespace ripple {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Abstract persistence for PeerFinder data. */
 class Store
 {
 public:
-    virtual ~Store()
-    {
-    }
+    virtual ~Store() = default;
 
     // load the bootstrap cache
     using load_callback = std::function<void(beast::IP::Endpoint, int)>;
@@ -23,13 +19,10 @@ public:
         explicit Entry() = default;
 
         beast::IP::Endpoint endpoint;
-        int valence;
+        int valence{};
     };
     virtual void
     save(std::vector<Entry> const& v) = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

@@ -1,5 +1,4 @@
-#ifndef XRPL_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
-#define XRPL_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -9,7 +8,7 @@
 #include <map>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Consensus algorithm parameters
 
@@ -29,7 +28,7 @@ struct ConsensusParms
         This is a safety to protect against very old validations and the time
         it takes to adjust the close time accuracy window.
     */
-    std::chrono::seconds const validationVALID_WALL = std::chrono::minutes{5};
+    std::chrono::seconds const validationValidWall = std::chrono::minutes{5};
 
     /** Duration a validation remains current after first observed.
 
@@ -37,14 +36,14 @@ struct ConsensusParms
        first saw it. This provides faster recovery in very rare cases where the
        number of validations produced by the network is lower than normal
     */
-    std::chrono::seconds const validationVALID_LOCAL = std::chrono::minutes{3};
+    std::chrono::seconds const validationValidLocal = std::chrono::minutes{3};
 
     /**  Duration pre-close in which validations are acceptable.
 
         The number of seconds before a close time that we consider a validation
         acceptable. This protects against extreme clock errors
     */
-    std::chrono::seconds const validationVALID_EARLY = std::chrono::minutes{3};
+    std::chrono::seconds const validationValidEarly = std::chrono::minutes{3};
 
     //! How long we consider a proposal fresh
     std::chrono::seconds const proposeFRESHNESS = std::chrono::seconds{20};
@@ -57,15 +56,13 @@ struct ConsensusParms
     // millisecond resolution.
 
     //! The percentage threshold above which we can declare consensus.
-    std::size_t const minCONSENSUS_PCT = 80;
+    std::size_t const minConsensusPct = 80;
 
     //! The duration a ledger may remain idle before closing
-    std::chrono::milliseconds const ledgerIDLE_INTERVAL =
-        std::chrono::seconds{15};
+    std::chrono::milliseconds const ledgerIdleInterval = std::chrono::seconds{15};
 
     //! The number of seconds we wait minimum to ensure participation
-    std::chrono::milliseconds const ledgerMIN_CONSENSUS =
-        std::chrono::milliseconds{1950};
+    std::chrono::milliseconds const ledgerMinConsensus = std::chrono::milliseconds{1950};
 
     /** The maximum amount of time to spend pausing for laggards.
      *
@@ -73,17 +70,16 @@ struct ConsensusParms
      *  validators don't appear to be offline that are merely waiting for
      *  laggards.
      */
-    std::chrono::milliseconds const ledgerMAX_CONSENSUS =
-        std::chrono::seconds{15};
+    std::chrono::milliseconds const ledgerMaxConsensus = std::chrono::seconds{15};
 
     //! Minimum number of seconds to wait to ensure others have computed the LCL
-    std::chrono::milliseconds const ledgerMIN_CLOSE = std::chrono::seconds{2};
+    std::chrono::milliseconds const ledgerMinClose = std::chrono::seconds{2};
 
     //! How often we check state or change positions
     std::chrono::milliseconds const ledgerGRANULARITY = std::chrono::seconds{1};
 
     //! How long to wait before completely abandoning consensus
-    std::size_t const ledgerABANDON_CONSENSUS_FACTOR = 10;
+    std::size_t const ledgerAbandonConsensusFactor = 10;
 
     /**
      * Maximum amount of time to give a consensus round
@@ -91,8 +87,7 @@ struct ConsensusParms
      * Does not include the time to build the LCL, so there is no reason for a
      * round to go this long, regardless of how big the ledger is.
      */
-    std::chrono::milliseconds const ledgerABANDON_CONSENSUS =
-        std::chrono::seconds{120};
+    std::chrono::milliseconds const ledgerAbandonConsensus = std::chrono::seconds{120};
 
     /** The minimum amount of time to consider the previous round
         to have taken.
@@ -104,15 +99,14 @@ struct ConsensusParms
         twice the interval between proposals (0.7s) divided by
         the interval between mid and late consensus ([85-50]/100).
     */
-    std::chrono::milliseconds const avMIN_CONSENSUS_TIME =
-        std::chrono::seconds{5};
+    std::chrono::milliseconds const avMinConsensusTime = std::chrono::seconds{5};
 
     //------------------------------------------------------------------------------
     // Avalanche tuning
     // As a function of the percent this round's duration is of the prior round,
     // we increase the threshold for yes votes to add a transaction to our
     // position.
-    enum AvalancheState { init, mid, late, stuck };
+    enum class AvalancheState { Init, Mid, Late, Stuck };
     struct AvalancheCutoff
     {
         int const consensusTime;
@@ -127,27 +121,31 @@ struct ConsensusParms
     std::map<AvalancheState, AvalancheCutoff> const avalancheCutoffs{
         // {state, {time, percent, nextState}},
         // Initial state: 50% of nodes must vote yes
-        {init, {0, 50, mid}},
+        {AvalancheState::Init,
+         {.consensusTime = 0, .consensusPct = 50, .next = AvalancheState::Mid}},
         // mid-consensus starts after 50% of the previous round time, and
         // requires 65% yes
-        {mid, {50, 65, late}},
+        {AvalancheState::Mid,
+         {.consensusTime = 50, .consensusPct = 65, .next = AvalancheState::Late}},
         // late consensus starts after 85% time, and requires 70% yes
-        {late, {85, 70, stuck}},
+        {AvalancheState::Late,
+         {.consensusTime = 85, .consensusPct = 70, .next = AvalancheState::Stuck}},
         // we're stuck after 2x time, requires 95% yes votes
-        {stuck, {200, 95, stuck}},
+        {AvalancheState::Stuck,
+         {.consensusTime = 200, .consensusPct = 95, .next = AvalancheState::Stuck}},
     };
 
     //! Percentage of nodes required to reach agreement on ledger close time
-    std::size_t const avCT_CONSENSUS_PCT = 75;
+    std::size_t const avCtConsensusPct = 75;
 
     //! Number of rounds before certain actions can happen.
     // (Moving to the next avalanche level, considering that votes are stalled
     // without consensus.)
-    std::size_t const avMIN_ROUNDS = 2;
+    std::size_t const avMinRounds = 2;
 
     //! Number of rounds before a stuck vote is considered unlikely to change
     //! because voting stalled
-    std::size_t const avSTALLED_ROUNDS = 4;
+    std::size_t const avStalledRounds = 4;
 };
 
 inline std::pair<std::size_t, std::optional<ConsensusParms::AvalancheState>>
@@ -170,7 +168,7 @@ getNeededWeight(
         // See if enough time has passed to move on to the next.
         XRPL_ASSERT(
             nextCutoff.consensusTime >= currentCutoff.consensusTime,
-            "ripple::getNeededWeight : next state valid");
+            "xrpl::getNeededWeight : next state valid");
         if (percentTime >= nextCutoff.consensusTime)
         {
             return {nextCutoff.consensusPct, currentCutoff.next};
@@ -179,5 +177,4 @@ getNeededWeight(
     return {currentCutoff.consensusPct, {}};
 }
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

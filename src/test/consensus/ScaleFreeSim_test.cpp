@@ -1,14 +1,23 @@
 #include <test/csf.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/collectors.h>
 #include <test/csf/random.h>
+#include <test/csf/submitters.h>
+#include <test/csf/timers.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/consensus/ConsensusParms.h>
 
-#include <utility>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
-namespace test {
+#include <chrono>
+#include <ostream>
+#include <random>
+#include <vector>
 
-class ScaleFreeSim_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class ScaleFreeSim_test : public beast::unit_test::Suite
 {
     void
     run() override
@@ -19,14 +28,14 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Generate a quasi-random scale free network and simulate consensus
         // as we vary transaction submission rates
 
-        int const N = 100;  // Peers
+        int const n = 100;  // Peers
 
         int const numUNLs = 15;  //  UNL lists
-        int const minUNLSize = N / 4, maxUNLSize = N / 2;
+        int const minUNLSize = n / 4, maxUNLSize = n / 2;
 
         ConsensusParms const parms{};
         Sim sim;
-        PeerGroup network = sim.createGroup(N);
+        PeerGroup network = sim.createGroup(n);
 
         // generate trust ranks
         std::vector<double> const ranks =
@@ -41,8 +50,7 @@ class ScaleFreeSim_test : public beast::unit_test::suite
             sim.rng);
 
         // nodes with a trust line in either direction are network-connected
-        network.connectFromTrust(
-            round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
+        network.connectFromTrust(round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;
@@ -56,14 +64,13 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler, seconds(10s));
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
-        Rate const rate{100, 1000ms};
+        Rate const rate{.count = 100, .duration = 1000ms};
 
         // txs, start/stop/step, target
-        auto peerSelector =
-            makeSelector(network.begin(), network.end(), ranks, sim.rng);
+        auto peerSelector = makeSelector(network.begin(), network.end(), ranks, sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now() + quiet,
@@ -82,12 +89,10 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // TODO: Clean up this formatting mess!!
 
         log << "Peers: " << network.size() << std::endl;
-        log << "Simulated Duration: "
-            << duration_cast<milliseconds>(simDuration).count() << " ms"
+        log << "Simulated Duration: " << duration_cast<milliseconds>(simDuration).count() << " ms"
             << std::endl;
         log << "Branches: " << sim.branches() << std::endl;
-        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N")
-            << std::endl;
+        log << "Synchronized: " << (sim.synchronized() ? "Y" : "N") << std::endl;
         log << std::endl;
 
         txCollector.report(simDuration, log);
@@ -100,7 +105,6 @@ class ScaleFreeSim_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, ripple, 80);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(ScaleFreeSim, consensus, xrpl, 80);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,5 +1,4 @@
-#ifndef XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
-#define XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
@@ -7,15 +6,15 @@
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
-namespace ripple {
+namespace xrpl {
 
 /** The types of node objects. */
-enum NodeObjectType : std::uint32_t {
-    hotUNKNOWN = 0,
-    hotLEDGER = 1,
-    hotACCOUNT_NODE = 3,
-    hotTRANSACTION_NODE = 4,
-    hotDUMMY = 512  // an invalid or missing object
+enum class NodeObjectType : std::uint32_t {
+    Unknown = 0,
+    Ledger = 1,
+    AccountNode = 3,
+    TransactionNode = 4,
+    Dummy = 512  // an invalid or missing object
 };
 
 /** A simple object that the Ledger uses to store entries.
@@ -30,7 +29,7 @@ enum NodeObjectType : std::uint32_t {
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
-    static constexpr std::size_t keyBytes = 32;
+    static constexpr std::size_t kKeyBytes = 32;
 
 private:
     // This hack is used to make the constructor effectively private
@@ -43,11 +42,7 @@ private:
 
 public:
     // This constructor is private, use createObject instead.
-    NodeObject(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        PrivateAccess);
+    NodeObject(NodeObjectType type, Blob&& data, uint256 const& hash, PrivateAccess);
 
     /** Create an object from fields.
 
@@ -64,23 +59,21 @@ public:
     createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
 
     /** Returns the type of this object. */
-    NodeObjectType
+    [[nodiscard]] NodeObjectType
     getType() const;
 
     /** Returns the hash of the data. */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getHash() const;
 
     /** Returns the underlying data. */
-    Blob const&
+    [[nodiscard]] Blob const&
     getData() const;
 
 private:
-    NodeObjectType const mType;
-    uint256 const mHash;
-    Blob const mData;
+    NodeObjectType const type_;
+    uint256 const hash_;
+    Blob const data_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

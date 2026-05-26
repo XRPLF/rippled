@@ -1,9 +1,8 @@
-#ifndef XRPL_NET_RPCCALL_H_INCLUDED
-#define XRPL_NET_RPCCALL_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio/io_context.hpp>
@@ -13,7 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 // This a trusted interface, the user is expected to provide valid input to
 // perform valid requests. Error catching and reporting is not a requirement of
@@ -21,44 +20,41 @@ namespace ripple {
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
 
-/** Processes Ripple RPC calls. */
+/** Processes XRPL RPC calls. */
 namespace RPCCall {
 
 int
-fromCommandLine(
-    Config const& config,
-    std::vector<std::string> const& vCmd,
-    Logs& logs);
+fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
 
 void
 fromNetwork(
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
-    Json::Value const& jvParams,
+    json::Value const& jvParams,
     bool const bSSL,
     bool quiet,
     Logs& logs,
-    std::function<void(Json::Value const& jvInput)> callbackFuncP =
-        std::function<void(Json::Value const& jvInput)>(),
+    std::function<void(json::Value const& jvInput)> callbackFuncP =
+        std::function<void(json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
-Json::Value
+json::Value
 rpcCmdToJson(
     std::vector<std::string> const& args,
-    Json::Value& retParams,
+    json::Value& retParams,
     unsigned int apiVersion,
     beast::Journal j);
 
 /** Internal invocation of RPC client.
- *  Used by both rippled command line as well as rippled unit tests
+ *  Used by both xrpld command line as well as xrpld unit tests
  */
-std::pair<int, Json::Value>
+std::pair<int, json::Value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
@@ -66,6 +62,4 @@ rpcClient(
     unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers = {});
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

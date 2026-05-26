@@ -1,35 +1,32 @@
-#ifndef XRPL_TEST_JTX_JSON_H_INCLUDED
-#define XRPL_TEST_JTX_JSON_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Inject raw JSON. */
-class json
+class Json
 {
 private:
-    Json::Value jv_;
+    ::json::Value jv_;
 
 public:
-    explicit json(std::string const&);
+    explicit Json(std::string const&);
 
-    explicit json(char const*);
+    explicit Json(char const*);
 
-    explicit json(Json::Value);
+    explicit Json(::json::Value);
 
     template <class T>
-    json(Json::StaticString const& key, T const& value)
+    Json(::json::StaticString const& key, T const& value)
     {
         jv_[key] = value;
     }
 
     template <class T>
-    json(std::string const& key, T const& value)
+    Json(std::string const& key, T const& value)
     {
         jv_[key] = value;
     }
@@ -38,8 +35,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

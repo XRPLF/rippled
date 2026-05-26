@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
-#define XRPL_PEERFINDER_BOOTCACHE_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
@@ -13,8 +12,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace ripple {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
 
@@ -37,76 +35,71 @@ private:
     class Entry
     {
     public:
-        Entry(int valence) : m_valence(valence)
+        Entry(int valence) : valence_(valence)
         {
         }
 
         int&
         valence()
         {
-            return m_valence;
+            return valence_;
         }
 
-        int
+        [[nodiscard]] int
         valence() const
         {
-            return m_valence;
+            return valence_;
         }
 
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            if (lhs.valence() > rhs.valence())
-                return true;
-            return false;
+            return lhs.valence() > rhs.valence();
         }
 
     private:
-        int m_valence;
+        int valence_;
     };
 
     using left_t = boost::bimaps::unordered_set_of<
         beast::IP::Endpoint,
         boost::hash<beast::IP::Endpoint>,
-        ripple::equal_to<beast::IP::Endpoint>>;
-    using right_t = boost::bimaps::multiset_of<Entry, ripple::less<Entry>>;
+        xrpl::equal_to<beast::IP::Endpoint>>;
+    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
     struct Transform
     {
-        using first_argument_type =
-            map_type::right_map::const_iterator::value_type const&;
+        using first_argument_type = map_type::right_map::const_iterator::value_type const&;
         using result_type = beast::IP::Endpoint const&;
 
         explicit Transform() = default;
 
         beast::IP::Endpoint const&
-        operator()(
-            map_type::right_map::const_iterator::value_type const& v) const
+        operator()(map_type::right_map::const_iterator::value_type const& v) const
         {
             return v.get_left();
         }
     };
 
 private:
-    map_type m_map;
+    map_type map_;
 
-    Store& m_store;
-    clock_type& m_clock;
-    beast::Journal m_journal;
+    Store& store_;
+    clock_type& clock_;
+    beast::Journal journal_;
 
     // Time after which we can update the database again
-    clock_type::time_point m_whenUpdate;
+    clock_type::time_point whenUpdate_;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool needsUpdate_{false};
 
 public:
-    static constexpr int staticValence = 32;
+    static constexpr int kStaticValence = 32;
 
-    using iterator = boost::
-        transform_iterator<Transform, map_type::right_map::const_iterator>;
+    using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
     using const_iterator = iterator;
 
@@ -115,22 +108,22 @@ public:
     ~Bootcache();
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     /** Returns the number of entries in the cache. */
-    map_type::size_type
+    [[nodiscard]] map_type::size_type
     size() const;
 
     /** IP::Endpoint iterators that traverse in decreasing valence. */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const;
     void
     clear();
@@ -150,11 +143,11 @@ public:
 
     /** Called when an outbound connection handshake completes. */
     void
-    on_success(beast::IP::Endpoint const& endpoint);
+    onSuccess(beast::IP::Endpoint const& endpoint);
 
     /** Called when an outbound connection attempt fails to handshake. */
     void
-    on_failure(beast::IP::Endpoint const& endpoint);
+    onFailure(beast::IP::Endpoint const& endpoint);
 
     /** Stores the cache in the persistent database on a timer. */
     void
@@ -175,7 +168,4 @@ private:
     flagForUpdate();
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

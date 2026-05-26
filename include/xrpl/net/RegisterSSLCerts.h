@@ -1,11 +1,10 @@
-#ifndef XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
-#define XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 
 #include <boost/asio/ssl/context.hpp>
 
-namespace ripple {
+namespace xrpl {
 /** Register default SSL certificates.
 
     Register the system default SSL root certificates. On linux/mac,
@@ -14,11 +13,6 @@ namespace ripple {
     store accessible via CryptoAPI.
 */
 void
-registerSSLCerts(
-    boost::asio::ssl::context&,
-    boost::system::error_code&,
-    beast::Journal j);
+registerSSLCerts(boost::asio::ssl::context&, boost::system::error_code&, beast::Journal j);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

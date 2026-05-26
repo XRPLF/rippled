@@ -1,36 +1,34 @@
-#ifndef XRPL_LEDGER_BOOK_DIRS_H_INCLUDED
-#define XRPL_LEDGER_BOOK_DIRS_H_INCLUDED
+#pragma once
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
 class BookDirs
 {
 private:
     ReadView const* view_ = nullptr;
     uint256 const root_;
-    uint256 const next_quality_;
+    uint256 const nextQuality_;
     uint256 const key_;
     std::shared_ptr<SLE const> sle_ = nullptr;
     unsigned int entry_ = 0;
     uint256 index_;
 
 public:
-    class const_iterator;
+    class const_iterator;  // NOLINT(readability-identifier-naming)
     using value_type = std::shared_ptr<SLE const>;
 
     BookDirs(ReadView const&, Book const&);
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 };
 
-class BookDirs::const_iterator
+class BookDirs::const_iterator  // NOLINT(readability-identifier-naming)
 {
 public:
     using value_type = BookDirs::value_type;
@@ -68,27 +66,20 @@ public:
 private:
     friend class BookDirs;
 
-    const_iterator(
-        ReadView const& view,
-        uint256 const& root,
-        uint256 const& dir_key)
-        : view_(&view), root_(root), key_(dir_key), cur_key_(dir_key)
+    const_iterator(ReadView const& view, uint256 const& root, uint256 const& dirKey)
+        : view_(&view), root_(root), key_(dirKey), curKey_(dirKey)
     {
     }
 
     ReadView const* view_ = nullptr;
     uint256 root_;
-    uint256 next_quality_;
+    uint256 nextQuality_;
     uint256 key_;
-    uint256 cur_key_;
+    uint256 curKey_;
     std::shared_ptr<SLE const> sle_;
     unsigned int entry_ = 0;
     uint256 index_;
     std::optional<value_type> mutable cache_;
-
-    static beast::Journal j_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

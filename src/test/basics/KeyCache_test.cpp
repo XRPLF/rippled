@@ -1,13 +1,16 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Protocol.h>
 
-namespace ripple {
+#include <string>
 
-class KeyCache_test : public beast::unit_test::suite
+namespace xrpl {
+
+class KeyCache_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -30,14 +33,14 @@ public:
             BEAST_EXPECT(c.insert("one"));
             BEAST_EXPECT(!c.insert("one"));
             BEAST_EXPECT(c.size() == 1);
-            BEAST_EXPECT(c.touch_if_exists("one"));
+            BEAST_EXPECT(c.touchIfExists("one"));
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 1);
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 0);
-            BEAST_EXPECT(!c.touch_if_exists("one"));
+            BEAST_EXPECT(!c.touchIfExists("one"));
         }
 
         // Insert two items, have one expire
@@ -51,7 +54,7 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 2);
-            BEAST_EXPECT(c.touch_if_exists("two"));
+            BEAST_EXPECT(c.touchIfExists("two"));
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.size() == 1);
@@ -74,6 +77,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(KeyCache, basics, ripple);
+BEAST_DEFINE_TESTSUITE(KeyCache, basics, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

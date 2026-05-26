@@ -1,12 +1,11 @@
-#ifndef XRPL_LEDGER_APPLYVIEWIMPL_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEWIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Editable, discardable view that can build metadata for one tx.
 
@@ -75,6 +74,4 @@ private:
     std::optional<STAmount> deliver_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

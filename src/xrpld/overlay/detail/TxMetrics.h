@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_TXMETRICS_H_INCLUDED
-#define XRPL_OVERLAY_TXMETRICS_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/messages.h>
@@ -9,9 +8,7 @@
 #include <chrono>
 #include <mutex>
 
-namespace ripple {
-
-namespace metrics {
+namespace xrpl::metrics {
 
 /** Run single metrics rolling average. Can be either average of a value
     per second or average of a value's sample per second. For instance,
@@ -32,9 +29,9 @@ struct SingleMetrics
     clock_type::time_point intervalStart{clock_type::now()};
     std::uint64_t accum{0};
     std::uint64_t rollingAvg{0};
-    std::uint32_t N{0};
+    std::uint32_t n{0};
     bool perTimeUnit{true};
-    boost::circular_buffer<std::uint64_t> rollingAvgAggreg{30, 0ull};
+    boost::circular_buffer<std::uint64_t> rollingAvgAggregate{30, 0ull};
     /** Add metrics value
      * @param val metrics value, either bytes or count
      */
@@ -99,10 +96,7 @@ struct TxMetrics
        @param notEnabled number of peers with tx reduce-relay featured disabled
      */
     void
-    addMetrics(
-        std::uint32_t selected,
-        std::uint32_t suppressed,
-        std::uint32_t notEnabled);
+    addMetrics(std::uint32_t selected, std::uint32_t suppressed, std::uint32_t notEnabled);
     /** Add number of missing transactions that a node requested
        @param missing number of missing transactions
      */
@@ -111,12 +105,8 @@ struct TxMetrics
     /** Get json representation of the metrics
        @return json object
      */
-    Json::Value
+    json::Value
     json() const;
 };
 
-}  // namespace metrics
-
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::metrics

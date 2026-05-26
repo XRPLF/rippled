@@ -1,9 +1,8 @@
-#ifndef XRPL_CORE_CONFIGSECTIONS_H_INCLUDED
-#define XRPL_CORE_CONFIGSECTIONS_H_INCLUDED
+#pragma once
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO DEPRECATED in favor of the BasicConfig interface
 struct ConfigSection
@@ -78,6 +77,4 @@ struct ConfigSection
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

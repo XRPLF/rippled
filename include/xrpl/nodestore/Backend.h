@@ -1,12 +1,10 @@
-#ifndef XRPL_NODESTORE_BACKEND_H_INCLUDED
-#define XRPL_NODESTORE_BACKEND_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Types.h>
 
 #include <cstdint>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** A backend used for the NodeStore.
 
@@ -36,7 +34,7 @@ public:
 
     /** Get the block size for backends that support it
      */
-    virtual std::optional<std::size_t>
+    [[nodiscard]] virtual std::optional<std::size_t>
     getBlockSize() const
     {
         return std::nullopt;
@@ -65,8 +63,7 @@ public:
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
     {
         Throw<std::runtime_error>(
-            "Deterministic appType/uid/salt not supported by backend " +
-            getName());
+            "Deterministic appType/uid/salt not supported by backend " + getName());
     }
 
     /** Close the backend.
@@ -79,16 +76,12 @@ public:
         If the object is not found or an error is encountered, the
         result will indicate the condition.
         @note This will be called concurrently.
-        @param key A pointer to the key data.
+        @param hash The hash of the object.
         @param pObject [out] The created object if successful.
         @return The result of the operation.
     */
     virtual Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
-
-    /** Fetch a batch synchronously. */
-    virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) = 0;
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
 
     /** Store a single object.
         Depending on the implementation this may happen immediately
@@ -116,7 +109,7 @@ public:
         @see import
     */
     virtual void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
     /** Estimate the number of write operations pending. */
     virtual int
@@ -138,11 +131,8 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need. */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

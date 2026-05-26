@@ -1,3 +1,5 @@
+#include <xrpl/protocol/Seed.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
@@ -20,24 +21,24 @@
 #include <iterator>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 Seed::~Seed()
 {
-    secure_erase(buf_.data(), buf_.size());
+    secureErase(buf_.data(), buf_.size());
 }
 
 Seed::Seed(Slice const& slice)
 {
     if (slice.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
+        logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), slice.data(), buf_.size());
 }
 
 Seed::Seed(uint128 const& seed)
 {
     if (seed.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
+        logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), seed.data(), buf_.size());
 }
 
@@ -46,10 +47,10 @@ Seed::Seed(uint128 const& seed)
 Seed
 randomSeed()
 {
-    std::array<std::uint8_t, 16> buffer;
-    beast::rngfill(buffer.data(), buffer.size(), crypto_prng());
-    Seed seed(makeSlice(buffer));
-    secure_erase(buffer.data(), buffer.size());
+    std::array<std::uint8_t, 16> buffer{};
+    beast::rngfill(buffer.data(), buffer.size(), cryptoPrng());
+    Seed const seed(makeSlice(buffer));
+    secureErase(buffer.data(), buffer.size());
     return seed;
 }
 
@@ -80,8 +81,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
     if (str.empty())
         return std::nullopt;
 
-    if (parseBase58<AccountID>(str) ||
-        parseBase58<PublicKey>(TokenType::NodePublic, str) ||
+    if (parseBase58<AccountID>(str) || parseBase58<PublicKey>(TokenType::NodePublic, str) ||
         parseBase58<PublicKey>(TokenType::AccountPublic, str) ||
         parseBase58<SecretKey>(TokenType::NodePrivate, str) ||
         parseBase58<SecretKey>(TokenType::AccountSecret, str))
@@ -105,7 +105,7 @@ parseGenericSeed(std::string const& str, bool rfc1751)
         if (RFC1751::getKeyFromEnglish(key, str) == 1)
         {
             Blob const blob(key.rbegin(), key.rend());
-            return Seed{uint128{blob}};
+            return Seed{uint128::fromRaw(blob)};
         }
     }
 
@@ -124,4 +124,4 @@ seedAs1751(Seed const& seed)
     return encodedKey;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

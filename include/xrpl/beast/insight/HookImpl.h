@@ -1,11 +1,9 @@
-#ifndef BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
-#define BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
+#pragma once
 
 #include <functional>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class HookImpl : public std::enable_shared_from_this<HookImpl>
 {
@@ -15,7 +13,4 @@ public:
     virtual ~HookImpl() = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

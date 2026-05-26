@@ -1,9 +1,11 @@
-#ifndef XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
-#define XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
+#pragma once
 
+#include <xrpld/app/main/CollectorManager.h>
+
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -28,7 +30,7 @@ public:
         return db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return db_;
@@ -83,6 +85,4 @@ private:
     acquire(uint256 const& hash, std::uint32_t seq);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

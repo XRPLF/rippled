@@ -1,10 +1,9 @@
-#ifndef XRPL_PROTOCOL_KEYLET_H_INCLUDED
-#define XRPL_PROTOCOL_KEYLET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
-namespace ripple {
+namespace xrpl {
 
 class STLedgerEntry;
 
@@ -21,15 +20,13 @@ struct Keylet
     uint256 key;
     LedgerEntryType type;
 
-    Keylet(LedgerEntryType type_, uint256 const& key_) : key(key_), type(type_)
+    Keylet(LedgerEntryType type, uint256 const& key) : key(key), type(type)
     {
     }
 
     /** Returns true if the SLE matches the type */
-    bool
+    [[nodiscard]] bool
     check(STLedgerEntry const&) const;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

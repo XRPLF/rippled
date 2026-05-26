@@ -1,22 +1,20 @@
-#ifndef XRPL_TEST_MANUALTIMEKEEPER_H_INCLUDED
-#define XRPL_TEST_MANUALTIMEKEEPER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/TimeKeeper.h>
 
 #include <atomic>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 class ManualTimeKeeper : public TimeKeeper
 {
 private:
-    std::atomic<time_point> now_{};
+    std::atomic<time_point> now_;
 
 public:
     ManualTimeKeeper() = default;
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return now_.load();
@@ -29,7 +27,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test

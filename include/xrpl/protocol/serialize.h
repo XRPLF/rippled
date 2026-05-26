@@ -1,11 +1,10 @@
-#ifndef XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
-#define XRPL_PROTOCOL_SERIALIZE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Serialize an object to a blob. */
 template <class Object>
@@ -24,6 +23,4 @@ serializeHex(STObject const& o)
     return strHex(serializeBlob(o));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

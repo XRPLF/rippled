@@ -1,32 +1,31 @@
 #include <xrpl/json/Output.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_writer.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <string>
 
-using namespace ripple;
-using namespace Json;
-
-TEST_SUITE_BEGIN("JsonOutput");
+using namespace xrpl;
+using namespace json;
 
 static void
 checkOutput(std::string const& valueDesc)
 {
     std::string output;
-    Json::Value value;
-    REQUIRE(Json::Reader().parse(valueDesc, value));
+    json::Value value;
+    ASSERT_TRUE(json::Reader().parse(valueDesc, value));
     auto out = stringOutput(output);
     outputJson(value, out);
 
-    auto expected = Json::FastWriter().write(value);
-    CHECK(output == expected);
-    CHECK(output == valueDesc);
-    CHECK(output == jsonAsString(value));
+    auto expected = json::FastWriter().write(value);
+    EXPECT_EQ(output, expected);
+    EXPECT_EQ(output, valueDesc);
+    EXPECT_EQ(output, jsonAsString(value));
 }
 
-TEST_CASE("output cases")
+TEST(JsonOutput, output_cases)
 {
     checkOutput("{}");
     checkOutput("[]");
@@ -36,5 +35,3 @@ TEST_CASE("output cases")
     checkOutput("[[]]");
     checkOutput(R"({"array":[{"12":23},{},null,false,0.5]})");
 }
-
-TEST_SUITE_END();

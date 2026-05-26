@@ -1,12 +1,10 @@
-#ifndef BEAST_INSIGHT_STATSDCOLLECTOR_H_INCLUDED
-#define BEAST_INSIGHT_STATSDCOLLECTOR_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A Collector that reports metrics to a StatsD server.
     Reference:
@@ -23,12 +21,7 @@ public:
         @param journal Destination for logging output.
     */
     static std::shared_ptr<StatsDCollector>
-    New(IP::Endpoint const& address,
-        std::string const& prefix,
-        Journal journal);
+    make(IP::Endpoint const& address, std::string const& prefix, Journal journal);
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

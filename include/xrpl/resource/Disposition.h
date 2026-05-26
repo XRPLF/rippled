@@ -1,24 +1,19 @@
-#ifndef XRPL_RESOURCE_DISPOSITION_H_INCLUDED
-#define XRPL_RESOURCE_DISPOSITION_H_INCLUDED
+#pragma once
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** The disposition of a consumer after applying a load charge. */
-enum Disposition {
+enum class Disposition {
     /** No action required. */
-    ok
+    Ok
 
     /** Consumer should be warned that consumption is high. */
     ,
-    warn
+    Warn
 
     /** Consumer should be disconnected for excess consumption. */
     ,
-    drop
+    Drop
 };
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

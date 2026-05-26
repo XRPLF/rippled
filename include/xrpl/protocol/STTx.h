@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_STTX_H_INCLUDED
-#define XRPL_PROTOCOL_STTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
@@ -14,34 +13,25 @@
 
 #include <functional>
 
-namespace ripple {
+namespace xrpl {
 
-enum TxnSql : char {
-    txnSqlNew = 'N',
-    txnSqlConflict = 'C',
-    txnSqlHeld = 'H',
-    txnSqlValidated = 'V',
-    txnSqlIncluded = 'I',
-    txnSqlUnknown = 'U'
+enum class TxnSql : char {
+    New = 'N',
+    Conflict = 'C',
+    Held = 'H',
+    Validated = 'V',
+    Included = 'I',
+    Unknown = 'U'
 };
 
 class STTx final : public STObject, public CountedObject<STTx>
 {
     uint256 tid_;
-    TxType tx_type_;
+    TxType txType_;
 
 public:
-    static std::size_t const minMultiSigners = 1;
-
-    // if rules are not supplied then the largest possible value is returned
-    static std::size_t
-    maxMultiSigners(Rules const* rules = 0)
-    {
-        if (rules && !rules->enabled(featureExpandedSignerList))
-            return 8;
-
-        return 32;
-    }
+    static constexpr std::size_t kMinMultiSigners = 1;
+    static constexpr std::size_t kMaxMultiSigners = 32;
 
     STTx() = delete;
     STTx(STTx const& other) = default;
@@ -93,55 +83,49 @@ public:
     std::uint32_t
     getSeqValue() const;
 
+    AccountID
+    getFeePayer() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
     uint256
     getTransactionID() const;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary) const;
 
     void
     sign(
         PublicKey const& publicKey,
         SecretKey const& secretKey,
-        std::optional<std::reference_wrapper<SField const>> signatureTarget =
-            {});
-
-    enum class RequireFullyCanonicalSig : bool { no, yes };
+        std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
 
     /** Check the signature.
-        @param requireCanonicalSig If `true`, check that the signature is fully
-            canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
-    checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
-        const;
+    checkSign(Rules const& rules) const;
 
     Expected<void, std::string>
-    checkBatchSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
+    checkBatchSign(Rules const& rules) const;
 
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();
 
     std::string
-    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData)
-        const;
+    getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
 
     std::string
     getMetaSQL(
         Serializer rawTxn,
         std::uint32_t inLedger,
-        char status,
+        TxnSql status,
         std::string const& escapedMetaData) const;
 
     std::vector<uint256> const&
@@ -149,40 +133,25 @@ public:
 
 private:
     /** Check the signature.
-        @param requireCanonicalSig If `true`, check that the signature is fully
-            canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
         @param sigObject Reference to object that contains the signature fields.
             Will be *this more often than not.
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
-    checkSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules,
-        STObject const& sigObject) const;
+    checkSign(Rules const& rules, STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkSingleSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        STObject const& sigObject) const;
+    checkSingleSign(STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkMultiSign(
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules,
-        STObject const& sigObject) const;
+    checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
     Expected<void, std::string>
-    checkBatchSingleSign(
-        STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig) const;
+    checkBatchSingleSign(STObject const& batchSigner) const;
 
     Expected<void, std::string>
-    checkBatchMultiSign(
-        STObject const& batchSigner,
-        RequireFullyCanonicalSig requireCanonicalSig,
-        Rules const& rules) const;
+    checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
     STBase*
     copy(std::size_t n, void* buf) const override;
@@ -210,14 +179,15 @@ sterilize(STTx const& stx);
 bool
 isPseudoTx(STObject const& tx);
 
-inline STTx::STTx(SerialIter&& sit) : STTx(sit)
+inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    : STTx(sit)
 {
 }
 
 inline TxType
 STTx::getTxnType() const
 {
-    return tx_type_;
+    return txType_;
 }
 
 inline Blob
@@ -232,6 +202,4 @@ STTx::getTransactionID() const
     return tid_;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

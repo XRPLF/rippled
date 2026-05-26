@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_ATTESTER_H_INCLUDED
-#define XRPL_TEST_JTX_ATTESTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/protocol/AccountID.h>
@@ -7,18 +6,17 @@
 #include <cstdint>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class PublicKey;
 class SecretKey;
 class STXChainBridge;
 class STAmount;
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 Buffer
-sign_claim_attestation(
+signClaimAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -30,7 +28,7 @@ sign_claim_attestation(
     std::optional<AccountID> const& dst);
 
 Buffer
-sign_create_account_attestation(
+signCreateAccountAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -41,8 +39,6 @@ sign_create_account_attestation(
     bool wasLockingChainSend,
     std::uint64_t createCount,
     AccountID const& dst);
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace test::jtx
 
-#endif
+}  // namespace xrpl

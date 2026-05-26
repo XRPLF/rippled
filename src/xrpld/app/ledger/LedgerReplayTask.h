@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
@@ -7,7 +6,7 @@
 
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class Ledger;
 class LedgerDeltaAcquire;
@@ -17,26 +16,25 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-class LedgerReplayTask final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<LedgerReplayTask>,
-      public CountedObject<LedgerReplayTask>
+class LedgerReplayTask final : public TimeoutCounter,
+                               public std::enable_shared_from_this<LedgerReplayTask>,
+                               public CountedObject<LedgerReplayTask>
 {
 public:
     class TaskParameter
     {
     public:
         // set on construct
-        InboundLedger::Reason reason_;
-        uint256 finishHash_;
-        std::uint32_t totalLedgers_;  // including the start and the finish
+        InboundLedger::Reason reason;
+        uint256 finishHash;
+        std::uint32_t totalLedgers;  // including the start and the finish
 
         // to be updated
-        std::uint32_t finishSeq_ = 0;
-        std::vector<uint256> skipList_ = {};  // including the finishHash
-        uint256 startHash_ = {};
-        std::uint32_t startSeq_ = 0;
-        bool full_ = false;
+        std::uint32_t finishSeq = 0;
+        std::vector<uint256> skipList;  // including the finishHash
+        uint256 startHash;
+        std::uint32_t startSeq = 0;
+        bool full = false;
 
         /**
          * constructor
@@ -59,13 +57,10 @@ public:
          *         true on success
          */
         bool
-        update(
-            uint256 const& hash,
-            std::uint32_t seq,
-            std::vector<uint256> const& sList);
+        update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
         /** check if this task can be merged into an existing task */
-        bool
+        [[nodiscard]] bool
         canMergeInto(TaskParameter const& existingTask) const;
     };
 
@@ -83,9 +78,9 @@ public:
         InboundLedgers& inboundLedgers,
         LedgerReplayer& replayer,
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-        TaskParameter&& parameter);
+        TaskParameter const& parameter);
 
-    ~LedgerReplayTask();
+    ~LedgerReplayTask() override;
 
     /** Start the task */
     void
@@ -123,10 +118,7 @@ private:
      * @param sList  skip list
      */
     void
-    updateSkipList(
-        uint256 const& hash,
-        std::uint32_t seq,
-        std::vector<uint256> const& sList);
+    updateSkipList(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
     /**
      * Notify this task (by a LedgerDeltaAcquire subtask) that a delta is ready
@@ -154,13 +146,11 @@ private:
     TaskParameter parameter_;
     uint32_t maxTimeouts_;
     std::shared_ptr<SkipListAcquire> skipListAcquirer_;
-    std::shared_ptr<Ledger const> parent_ = {};
+    std::shared_ptr<Ledger const> parent_;
     uint32_t deltaToBuild_ = 0;  // should not build until have parent
     std::vector<std::shared_ptr<LedgerDeltaAcquire>> deltas_;
 
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

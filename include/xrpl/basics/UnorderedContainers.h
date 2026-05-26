@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
-#define XRPL_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
@@ -22,14 +21,14 @@
  * what container it is.
  */
 
-namespace ripple {
+namespace xrpl {
 
 // hash containers
 
 template <
     class Key,
     class Value,
-    class Hash = beast::uhash<>,
+    class Hash = beast::Uhash<>,
     class Pred = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, Value>>>
 using hash_map = std::unordered_map<Key, Value, Hash, Pred, Allocator>;
@@ -37,34 +36,33 @@ using hash_map = std::unordered_map<Key, Value, Hash, Pred, Allocator>;
 template <
     class Key,
     class Value,
-    class Hash = beast::uhash<>,
+    class Hash = beast::Uhash<>,
     class Pred = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, Value>>>
-using hash_multimap =
-    std::unordered_multimap<Key, Value, Hash, Pred, Allocator>;
+using hash_multimap = std::unordered_multimap<Key, Value, Hash, Pred, Allocator>;
 
 template <
     class Value,
-    class Hash = beast::uhash<>,
+    class Hash = beast::Uhash<>,
     class Pred = std::equal_to<Value>,
     class Allocator = std::allocator<Value>>
 using hash_set = std::unordered_set<Value, Hash, Pred, Allocator>;
 
 template <
     class Value,
-    class Hash = beast::uhash<>,
+    class Hash = beast::Uhash<>,
     class Pred = std::equal_to<Value>,
     class Allocator = std::allocator<Value>>
 using hash_multiset = std::unordered_multiset<Value, Hash, Pred, Allocator>;
 
 // hardened_hash containers
 
-using strong_hash = beast::xxhasher;
+using strong_hash = beast::Xxhasher;
 
 template <
     class Key,
     class Value,
-    class Hash = hardened_hash<strong_hash>,
+    class Hash = HardenedHash<strong_hash>,
     class Pred = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, Value>>>
 using hardened_hash_map = std::unordered_map<Key, Value, Hash, Pred, Allocator>;
@@ -72,36 +70,31 @@ using hardened_hash_map = std::unordered_map<Key, Value, Hash, Pred, Allocator>;
 template <
     class Key,
     class Value,
-    class Hash = hardened_hash<strong_hash>,
+    class Hash = HardenedHash<strong_hash>,
     class Pred = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, Value>>>
-using hardened_partitioned_hash_map =
-    partitioned_unordered_map<Key, Value, Hash, Pred, Allocator>;
+using hardened_partitioned_hash_map = PartitionedUnorderedMap<Key, Value, Hash, Pred, Allocator>;
 
 template <
     class Key,
     class Value,
-    class Hash = hardened_hash<strong_hash>,
+    class Hash = HardenedHash<strong_hash>,
     class Pred = std::equal_to<Key>,
     class Allocator = std::allocator<std::pair<Key const, Value>>>
-using hardened_hash_multimap =
-    std::unordered_multimap<Key, Value, Hash, Pred, Allocator>;
+using hardened_hash_multimap = std::unordered_multimap<Key, Value, Hash, Pred, Allocator>;
 
 template <
     class Value,
-    class Hash = hardened_hash<strong_hash>,
+    class Hash = HardenedHash<strong_hash>,
     class Pred = std::equal_to<Value>,
     class Allocator = std::allocator<Value>>
 using hardened_hash_set = std::unordered_set<Value, Hash, Pred, Allocator>;
 
 template <
     class Value,
-    class Hash = hardened_hash<strong_hash>,
+    class Hash = HardenedHash<strong_hash>,
     class Pred = std::equal_to<Value>,
     class Allocator = std::allocator<Value>>
-using hardened_hash_multiset =
-    std::unordered_multiset<Value, Hash, Pred, Allocator>;
+using hardened_hash_multiset = std::unordered_multiset<Value, Hash, Pred, Allocator>;
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

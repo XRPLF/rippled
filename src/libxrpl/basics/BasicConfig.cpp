@@ -1,9 +1,9 @@
 #include <xrpl/basics/BasicConfig.h>
+
 #include <xrpl/basics/StringUtilities.h>
 
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <ostream>
@@ -12,9 +12,9 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-Section::Section(std::string const& name) : name_(name)
+Section::Section(std::string name) : name_(std::move(name))
 {
 }
 
@@ -28,7 +28,7 @@ void
 Section::append(std::vector<std::string> const& lines)
 {
     // <key> '=' <value>
-    static boost::regex const re1(
+    static boost::regex const kRe1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
@@ -43,8 +43,8 @@ Section::append(std::vector<std::string> const& lines)
     lines_.reserve(lines_.size() + lines.size());
     for (auto line : lines)
     {
-        auto remove_comment = [](std::string& val) -> bool {
-            bool removed_trailing = false;
+        auto removeComment = [](std::string& val) -> bool {
+            bool removedTrailing = false;
             auto comment = val.find('#');
             while (comment != std::string::npos)
             {
@@ -55,7 +55,7 @@ Section::append(std::vector<std::string> const& lines)
                     val = "";
                     break;
                 }
-                else if (val.at(comment - 1) == '\\')
+                if (val.at(comment - 1) == '\\')
                 {
                     // we have an escaped comment char. Erase the escape char
                     // and keep looking
@@ -65,27 +65,31 @@ Section::append(std::vector<std::string> const& lines)
                 {
                     // this must be a real comment. Extract the value
                     // as a substring and stop looking.
-                    val = trim_whitespace(val.substr(0, comment));
-                    removed_trailing = true;
+                    val = trimWhitespace(val.substr(0, comment));
+                    removedTrailing = true;
                     break;
                 }
 
                 comment = val.find('#', comment);
             }
-            return removed_trailing;
+            return removedTrailing;
         };
 
-        if (remove_comment(line) && !line.empty())
-            had_trailing_comments_ = true;
+        if (removeComment(line) && !line.empty())
+            hadTrailingComments_ = true;
 
         if (line.empty())
             continue;
 
         boost::smatch match;
-        if (boost::regex_match(line, match, re1))
+        if (boost::regex_match(line, match, kRe1))
+        {
             set(match[1], match[2]);
+        }
         else
+        {
             values_.push_back(line);
+        }
 
         lines_.push_back(std::move(line));
     }
@@ -122,23 +126,18 @@ BasicConfig::section(std::string const& name)
 Section const&
 BasicConfig::section(std::string const& name) const
 {
-    static Section none("");
+    static Section const kNone("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
-        return none;
+        return kNone;
     return iter->second;
 }
 
 void
-BasicConfig::overwrite(
-    std::string const& section,
-    std::string const& key,
-    std::string const& value)
+BasicConfig::overwrite(std::string const& section, std::string const& key, std::string const& value)
 {
-    auto const result = map_.emplace(
-        std::piecewise_construct,
-        std::make_tuple(section),
-        std::make_tuple(section));
+    auto const result =
+        map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
     result.first->second.set(key, value);
 }
 
@@ -168,9 +167,7 @@ BasicConfig::build(IniFileSections const& ifs)
     for (auto const& entry : ifs)
     {
         auto const result = map_.emplace(
-            std::piecewise_construct,
-            std::make_tuple(entry.first),
-            std::make_tuple(entry.first));
+            std::piecewise_construct, std::make_tuple(entry.first), std::make_tuple(entry.first));
         result.first->second.append(entry.second);
     }
 }
@@ -183,4 +180,4 @@ operator<<(std::ostream& ss, BasicConfig const& c)
     return ss;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

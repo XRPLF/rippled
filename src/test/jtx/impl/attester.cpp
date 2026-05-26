@@ -1,16 +1,19 @@
 #include <test/jtx/attester.h>
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <cstdint>
+#include <optional>
+
+namespace xrpl::test::jtx {
 
 Buffer
-sign_claim_attestation(
+signClaimAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -22,18 +25,12 @@ sign_claim_attestation(
     std::optional<AccountID> const& dst)
 {
     auto const toSign = Attestations::AttestationClaim::message(
-        bridge,
-        sendingAccount,
-        sendingAmount,
-        rewardAccount,
-        wasLockingChainSend,
-        claimID,
-        dst);
+        bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
     return sign(pk, sk, makeSlice(toSign));
 }
 
 Buffer
-sign_create_account_attestation(
+signCreateAccountAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -57,6 +54,4 @@ sign_create_account_attestation(
     return sign(pk, sk, makeSlice(toSign));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

@@ -1,21 +1,17 @@
-#ifndef XRPL_TEST_JTX_TAG_H_INCLUDED
-#define XRPL_TEST_JTX_TAG_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
-namespace test {
-
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the destination tag on a JTx*/
-struct dtag
+struct Dtag
 {
 private:
     std::uint32_t value_;
 
 public:
-    explicit dtag(std::uint32_t value) : value_(value)
+    explicit Dtag(std::uint32_t value) : value_(value)
     {
     }
 
@@ -24,13 +20,13 @@ public:
 };
 
 /** Set the source tag on a JTx*/
-struct stag
+struct Stag
 {
 private:
     std::uint32_t value_;
 
 public:
-    explicit stag(std::uint32_t value) : value_(value)
+    explicit Stag(std::uint32_t value) : value_(value)
     {
     }
 
@@ -38,9 +34,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

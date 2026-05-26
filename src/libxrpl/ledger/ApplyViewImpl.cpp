@@ -1,9 +1,24 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 
-namespace ripple {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/detail/ApplyViewBase.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
 
-ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
-    : ApplyViewBase(base, flags)
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <optional>
+
+namespace xrpl {
+
+ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
 {
 }
 
@@ -37,4 +52,4 @@ ApplyViewImpl::visit(
     items_.visit(to, func);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

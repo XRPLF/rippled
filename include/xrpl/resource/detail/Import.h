@@ -1,11 +1,9 @@
-#ifndef XRPL_RESOURCE_IMPORT_H_INCLUDED
-#define XRPL_RESOURCE_IMPORT_H_INCLUDED
+#pragma once
 
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** A set of imported consumer data from a gossip origin. */
 struct Import
@@ -14,12 +12,12 @@ struct Import
     {
         explicit Item() = default;
 
-        int balance;
+        int balance{};
         Consumer consumer;
     };
 
     // Dummy argument required for zero-copy construction
-    Import(int = 0) : whenExpires()
+    Import(int = 0)
     {
     }
 
@@ -30,7 +28,4 @@ struct Import
     std::vector<Item> items;
 };
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

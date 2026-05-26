@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_JSON_BODY_H
-#define XRPL_RPC_JSON_BODY_H
+#pragma once
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -7,34 +6,32 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 /// Body that holds JSON
-struct json_body
+struct JsonBody
 {
-    explicit json_body() = default;
+    explicit JsonBody() = default;
 
-    using value_type = Json::Value;
+    using value_type = json::Value;
 
-    class reader
+    class reader  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
     {
         using dynamic_buffer_type = boost::beast::multi_buffer;
 
         dynamic_buffer_type buffer_;
 
     public:
-        using const_buffers_type =
-            typename dynamic_buffer_type::const_buffers_type;
+        using const_buffers_type = typename dynamic_buffer_type::const_buffers_type;
 
         using is_deferred = std::false_type;
 
-        template <bool isRequest, class Fields>
-        explicit reader(
-            boost::beast::http::message<isRequest, json_body, Fields> const& m)
+        template <bool IsRequest, class Fields>
+        explicit reader(boost::beast::http::message<IsRequest, JsonBody, Fields> const& m)
         {
             stream(m.body, [&](void const* data, std::size_t n) {
-                buffer_.commit(boost::asio::buffer_copy(
-                    buffer_.prepare(n), boost::asio::buffer(data, n)));
+                buffer_.commit(
+                    boost::asio::buffer_copy(buffer_.prepare(n), boost::asio::buffer(data, n)));
             });
         }
 
@@ -57,22 +54,22 @@ struct json_body
         }
     };
 
-    class writer
+    class writer  // NOLINT(readability-identifier-naming) -- Boost.Beast body concept name
     {
-        std::string body_string_;
+        std::string bodyString_;
 
     public:
         using const_buffers_type = boost::asio::const_buffer;
 
-        template <bool isRequest, class Fields>
+        template <bool IsRequest, class Fields>
         explicit writer(
-            boost::beast::http::header<isRequest, Fields> const& fields,
+            boost::beast::http::header<IsRequest, Fields> const& fields,
             value_type const& value)
-            : body_string_(to_string(value))
+            : bodyString_(to_string(value))
         {
         }
 
-        void
+        static void
         init(boost::beast::error_code& ec)
         {
             ec.assign(0, ec.category());
@@ -84,13 +81,9 @@ struct json_body
         get(boost::beast::error_code& ec)
         {
             ec.assign(0, ec.category());
-            return {
-                {const_buffers_type{body_string_.data(), body_string_.size()},
-                 false}};
+            return {{const_buffers_type{bodyString_.data(), bodyString_.size()}, false}};
         }
     };
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

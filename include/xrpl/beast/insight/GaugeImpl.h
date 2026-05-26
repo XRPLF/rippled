@@ -1,11 +1,9 @@
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class Gauge;
 
@@ -22,7 +20,4 @@ public:
     increment(difference_type amount) = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

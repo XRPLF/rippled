@@ -1,26 +1,20 @@
-#ifndef XRPL_TEST_JTX_ACCOUNT_TXN_ID_H_INCLUDED
-#define XRPL_TEST_JTX_ACCOUNT_TXN_ID_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-struct account_txn_id
+struct AccountTxnId
 {
 private:
     uint256 hash_;
 
 public:
-    explicit account_txn_id(uint256 const& hash) : hash_(hash)
+    explicit AccountTxnId(uint256 const& hash) : hash_(hash)
     {
     }
 
     void
     operator()(Env&, JTx& jt) const;
 };
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-#endif
+}  // namespace xrpl::test::jtx

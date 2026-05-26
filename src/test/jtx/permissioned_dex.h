@@ -3,9 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 uint256
 setupDomain(
@@ -22,13 +20,11 @@ public:
     Account alice;
     Account bob;
     Account carol;
-    IOU USD;
+    IOU usd;
     uint256 domainID;
     std::string credType;
 
     PermissionedDEX(Env& env);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

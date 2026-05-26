@@ -1,11 +1,10 @@
-#ifndef XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
-#define XRPL_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
 
 #include <xrpl/protocol/RippleLedgerHash.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages the lifetime of inbound ledgers.
 
@@ -14,7 +13,7 @@ namespace ripple {
 class InboundLedgers
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     virtual ~InboundLedgers() = default;
 
@@ -27,10 +26,7 @@ public:
     // Queue. TODO review whether all callers of acquire() can use this
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) = 0;
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;
@@ -55,7 +51,7 @@ public:
     virtual void
     clearFailures() = 0;
 
-    virtual Json::Value
+    virtual json::Value
     getInfo() = 0;
 
     /** Returns the rate of historical ledger fetches per minute. */
@@ -79,11 +75,9 @@ public:
 };
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers(
+makeInboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

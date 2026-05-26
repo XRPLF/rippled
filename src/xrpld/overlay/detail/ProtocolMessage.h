@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
-#define XRPL_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
@@ -16,7 +15,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 inline protocol::MessageType
 protocolMessageType(protocol::TMGetLedger const&)
@@ -63,9 +62,9 @@ protocolMessageName(int type)
             return "status";
         case protocol::mtHAVE_SET:
             return "have_set";
-        case protocol::mtVALIDATORLIST:
+        case protocol::mtVALIDATOR_LIST:
             return "validator_list";
-        case protocol::mtVALIDATORLISTCOLLECTION:
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
             return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
@@ -99,22 +98,22 @@ struct MessageHeader
 
         @note This is the sum of sizes of the header and the payload.
     */
-    std::uint32_t total_wire_size = 0;
+    std::uint32_t totalWireSize = 0;
 
     /** The size of the header associated with this message. */
-    std::uint32_t header_size = 0;
+    std::uint32_t headerSize = 0;
 
     /** The size of the payload on the wire. */
-    std::uint32_t payload_wire_size = 0;
+    std::uint32_t payloadWireSize = 0;
 
     /** Uncompressed message size if the message is compressed. */
-    std::uint32_t uncompressed_size = 0;
+    std::uint32_t uncompressedSize = 0;
 
     /** The type of the message. */
-    std::uint16_t message_type = 0;
+    std::uint16_t messageType = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
-     * Currenly only lz4 is supported. If None then the message is not
+     * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
@@ -124,16 +123,14 @@ template <typename BufferSequence>
 auto
 buffersBegin(BufferSequence const& bufs)
 {
-    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(
-        bufs);
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
 }
 
 template <typename BufferSequence>
 auto
 buffersEnd(BufferSequence const& bufs)
 {
-    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(
-        bufs);
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
 /** Parse a message header
@@ -147,18 +144,13 @@ buffersEnd(BufferSequence const& bufs)
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
-parseMessageHeader(
-    boost::system::error_code& ec,
-    BufferSequence const& bufs,
-    std::size_t size)
+parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, std::size_t size)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
-    XRPL_ASSERT(
-        iter != buffersEnd(bufs),
-        "ripple::detail::parseMessageHeader : non-empty buffer");
+    XRPL_ASSERT(iter != buffersEnd(bufs), "xrpl::detail::parseMessageHeader : non-empty buffer");
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1
@@ -167,10 +159,10 @@ parseMessageHeader(
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = headerBytesCompressed;
+        hdr.headerSize = kHeaderBytesCompressed;
 
         // not enough bytes to parse the header
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -191,18 +183,18 @@ parseMessageHeader(
         }
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
         // clear the top four bits (the compression bits).
-        hdr.payload_wire_size &= 0x0FFFFFFF;
+        hdr.payloadWireSize &= 0x0FFFFFFF;
 
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         for (int i = 0; i != 4; ++i)
-            hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
+            hdr.uncompressedSize = (hdr.uncompressedSize << 8) + *iter++;
 
         return hdr;
     }
@@ -212,9 +204,9 @@ parseMessageHeader(
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = headerBytes;
+        hdr.headerSize = kHeaderBytes;
 
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -223,13 +215,13 @@ parseMessageHeader(
         hdr.algorithm = Algorithm::None;
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
-        hdr.uncompressed_size = hdr.payload_wire_size;
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.uncompressedSize = hdr.payloadWireSize;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         return hdr;
     }
@@ -241,33 +233,34 @@ parseMessageHeader(
 template <
     class T,
     class Buffers,
-    class = std::enable_if_t<
-        std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
-    auto const m = std::make_shared<T>();
+    auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
-    stream.Skip(header.header_size);
+    stream.Skip(header.headerSize);
 
     if (header.algorithm != compression::Algorithm::None)
     {
         std::vector<std::uint8_t> payload;
-        payload.resize(header.uncompressed_size);
+        payload.resize(header.uncompressedSize);
 
-        auto const payloadSize = ripple::compression::decompress(
+        auto const payloadSize = xrpl::compression::decompress(
             stream,
-            header.payload_wire_size,
+            header.payloadWireSize,
             payload.data(),
-            header.uncompressed_size,
+            header.uncompressedSize,
             header.algorithm);
 
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }
@@ -276,8 +269,7 @@ template <
     class T,
     class Buffers,
     class Handler,
-    class = std::enable_if_t<
-        std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
@@ -285,15 +277,15 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     if (!m)
         return false;
 
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
     handler.onMessageBegin(
-        header.message_type,
+        header.messageType,
         m,
-        header.payload_wire_size,
-        header.uncompressed_size,
+        header.payloadWireSize,
+        header.uncompressedSize,
         header.algorithm != Algorithm::None);
     handler.onMessage(m);
-    handler.onMessageEnd(header.message_type, m);
+    handler.onMessageEnd(header.messageType, m);
 
     return true;
 }
@@ -314,10 +306,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
-invokeProtocolMessage(
-    Buffers const& buffers,
-    Handler& handler,
-    std::size_t& hint)
+invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)
 {
     std::pair<std::size_t, boost::system::error_code> result = {0, {}};
 
@@ -340,16 +329,15 @@ invokeProtocolMessage(
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximiumMessageSize ||
-        header->uncompressed_size > maximiumMessageSize)
+    if (header->payloadWireSize > kMaximumMessageSize ||
+        header->uncompressedSize > kMaximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
     }
 
     // We requested uncompressed messages from the peer but received compressed.
-    if (!handler.compressionEnabled() &&
-        header->algorithm != compression::Algorithm::None)
+    if (!handler.compressionEnabled() && header->algorithm != compression::Algorithm::None)
     {
         result.second = make_error_code(boost::system::errc::protocol_error);
         return result;
@@ -357,107 +345,87 @@ invokeProtocolMessage(
 
     // We don't have the whole message yet. This isn't an error but we have
     // nothing to do.
-    if (header->total_wire_size > size)
+    if (header->totalWireSize > size)
     {
-        hint = header->total_wire_size - size;
+        hint = header->totalWireSize - size;
         return result;
     }
 
-    bool success;
+    bool success = false;
 
-    switch (header->message_type)
+    switch (header->messageType)
     {
         case protocol::mtMANIFESTS:
-            success = detail::invoke<protocol::TMManifests>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
             break;
         case protocol::mtPING:
-            success =
-                detail::invoke<protocol::TMPing>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMPing>(*header, buffers, handler);
             break;
         case protocol::mtCLUSTER:
-            success =
-                detail::invoke<protocol::TMCluster>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMCluster>(*header, buffers, handler);
             break;
         case protocol::mtENDPOINTS:
-            success = detail::invoke<protocol::TMEndpoints>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMEndpoints>(*header, buffers, handler);
             break;
         case protocol::mtTRANSACTION:
-            success = detail::invoke<protocol::TMTransaction>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMTransaction>(*header, buffers, handler);
             break;
         case protocol::mtGET_LEDGER:
-            success = detail::invoke<protocol::TMGetLedger>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMGetLedger>(*header, buffers, handler);
             break;
         case protocol::mtLEDGER_DATA:
-            success = detail::invoke<protocol::TMLedgerData>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMLedgerData>(*header, buffers, handler);
             break;
         case protocol::mtPROPOSE_LEDGER:
-            success = detail::invoke<protocol::TMProposeSet>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProposeSet>(*header, buffers, handler);
             break;
         case protocol::mtSTATUS_CHANGE:
-            success = detail::invoke<protocol::TMStatusChange>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMStatusChange>(*header, buffers, handler);
             break;
         case protocol::mtHAVE_SET:
-            success = detail::invoke<protocol::TMHaveTransactionSet>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMHaveTransactionSet>(*header, buffers, handler);
             break;
         case protocol::mtVALIDATION:
-            success = detail::invoke<protocol::TMValidation>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMValidation>(*header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLIST:
-            success = detail::invoke<protocol::TMValidatorList>(
-                *header, buffers, handler);
+        case protocol::mtVALIDATOR_LIST:
+            success = detail::invoke<protocol::TMValidatorList>(*header, buffers, handler);
             break;
-        case protocol::mtVALIDATORLISTCOLLECTION:
-            success = detail::invoke<protocol::TMValidatorListCollection>(
-                *header, buffers, handler);
+        case protocol::mtVALIDATOR_LIST_COLLECTION:
+            success =
+                detail::invoke<protocol::TMValidatorListCollection>(*header, buffers, handler);
             break;
         case protocol::mtGET_OBJECTS:
-            success = detail::invoke<protocol::TMGetObjectByHash>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMGetObjectByHash>(*header, buffers, handler);
             break;
         case protocol::mtHAVE_TRANSACTIONS:
-            success = detail::invoke<protocol::TMHaveTransactions>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMHaveTransactions>(*header, buffers, handler);
             break;
         case protocol::mtTRANSACTIONS:
-            success = detail::invoke<protocol::TMTransactions>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMTransactions>(*header, buffers, handler);
             break;
         case protocol::mtSQUELCH:
-            success =
-                detail::invoke<protocol::TMSquelch>(*header, buffers, handler);
+            success = detail::invoke<protocol::TMSquelch>(*header, buffers, handler);
             break;
         case protocol::mtPROOF_PATH_REQ:
-            success = detail::invoke<protocol::TMProofPathRequest>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProofPathRequest>(*header, buffers, handler);
             break;
         case protocol::mtPROOF_PATH_RESPONSE:
-            success = detail::invoke<protocol::TMProofPathResponse>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMProofPathResponse>(*header, buffers, handler);
             break;
         case protocol::mtREPLAY_DELTA_REQ:
-            success = detail::invoke<protocol::TMReplayDeltaRequest>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMReplayDeltaRequest>(*header, buffers, handler);
             break;
         case protocol::mtREPLAY_DELTA_RESPONSE:
-            success = detail::invoke<protocol::TMReplayDeltaResponse>(
-                *header, buffers, handler);
+            success = detail::invoke<protocol::TMReplayDeltaResponse>(*header, buffers, handler);
             break;
         default:
-            handler.onMessageUnknown(header->message_type);
+            handler.onMessageUnknown(header->messageType);
             success = true;
             break;
     }
 
-    result.first = header->total_wire_size;
+    result.first = header->totalWireSize;
 
     if (!success)
         result.second = make_error_code(boost::system::errc::bad_message);
@@ -465,6 +433,4 @@ invokeProtocolMessage(
     return result;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,0 +1,148 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress UBSan errors in external code by source file path
+# This matches any source file under the external/ directory
+alignment:external
+bool:external
+bounds:external
+cfi:external
+enum:external
+float-cast-overflow:external
+float-divide-by-zero:external
+function:external
+implicit-integer-sign-change:external
+implicit-signed-integer-truncation:external
+implicit-unsigned-integer-truncation:external
+integer-divide-by-zero:external
+invalid-builtin-use:external
+invalid-objc-cast:external
+nonnull-attribute:external
+null:external
+nullability-arg:external
+nullability-assign:external
+nullability-return:external
+object-size:external
+pointer-overflow:external
+return:external
+returns-nonnull-attribute:external
+shift-base:external
+shift-exponent:external
+signed-integer-overflow:external
+undefined:external
+unreachable:external
+unsigned-integer-overflow:external
+vla-bound:external
+vptr_check:external
+vptr:external
+
+# Suppress all UBSan errors in Boost libraries
+# This matches any files containing "boost" in its path or name
+alignment:boost
+bool:boost
+bounds:boost
+cfi:boost
+enum:boost
+float-cast-overflow:boost
+float-divide-by-zero:boost
+function:boost
+implicit-integer-sign-change:boost
+implicit-signed-integer-truncation:boost
+implicit-unsigned-integer-truncation:boost
+integer-divide-by-zero:boost
+invalid-builtin-use:boost
+invalid-objc-cast:boost
+nonnull-attribute:boost
+null:boost
+nullability-arg:boost
+nullability-assign:boost
+nullability-return:boost
+object-size:boost
+pointer-overflow:boost
+return:boost
+returns-nonnull-attribute:boost
+shift-base:boost
+shift-exponent:boost
+signed-integer-overflow:boost
+undefined:boost
+unreachable:boost
+unsigned-integer-overflow:boost
+vla-bound:boost
+vptr_check:boost
+vptr:boost
+
+# Google protobuf - intentional overflows in hash functions
+undefined:protobuf
+unsigned-integer-overflow:google/protobuf/stubs/stringpiece.h
+
+# gRPC intentional overflows in timer calculations
+unsigned-integer-overflow:grpc
+unsigned-integer-overflow:timer_manager.cc
+
+# RocksDB intentional unsigned integer overflows in hash functions and CRC calculations
+unsigned-integer-overflow:rocks*/*/util/xxhash.h
+unsigned-integer-overflow:rocks*/*/util/xxph3.h
+unsigned-integer-overflow:rocks*/*/util/hash.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.h
+unsigned-integer-overflow:rocks*/*/include/rocksdb/utilities/options_type.h
+unsigned-integer-overflow:rocks*/*/table/format.h
+unsigned-integer-overflow:rocks*/*/table/format.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/block_based_table_builder.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/reader_common.cc
+unsigned-integer-overflow:rocks*/*/db/version_set.cc
+alignment:rocks*/*/util/crc32c_arm64.cc
+undefined:rocks*/*/util/crc32c_arm64.cc
+undefined:rocks*/*/util/xxhash.h
+
+# nudb intentional overflows in hash functions
+unsigned-integer-overflow:nudb/detail/xxhash.hpp
+alignment:nudb/detail/xxhash.hpp
+undefined:nudb
+
+# Snappy compression library intentional overflows
+unsigned-integer-overflow:snappy.cc
+
+# Abseil intentional overflows
+unsigned-integer-overflow:absl/strings/numbers.cc
+unsigned-integer-overflow:absl/strings/internal/cord_rep_flat.h
+unsigned-integer-overflow:absl/base/internal/low_level_alloc.cc
+unsigned-integer-overflow:absl/hash/internal/hash.h
+unsigned-integer-overflow:absl/container/internal/raw_hash_set.h
+
+# Standard library intentional overflows
+unsigned-integer-overflow:basic_string.h
+unsigned-integer-overflow:bits/chrono.h
+unsigned-integer-overflow:bits/random.h
+unsigned-integer-overflow:bits/random.tcc
+unsigned-integer-overflow:bits/stl_algobase.h
+unsigned-integer-overflow:bits/uniform_int_dist.h
+unsigned-integer-overflow:string_view
+unsigned-integer-overflow:__random/seed_seq.h
+unsigned-integer-overflow:__charconv/traits.h
+unsigned-integer-overflow:__chrono/duration.h
+
+# =============================================================================
+# Rippled code suppressions
+# =============================================================================
+
+# Signed integer negation (-value) in amount types.
+# INT64_MIN cannot occur in practice due to domain invariants (mantissa ranges
+# are well within int64_t bounds), but UBSan flags the pattern as potential
+# signed overflow. Narrowed to operator- to avoid suppressing unrelated
+# overflows anywhere in a stack trace containing these type names.
+signed-integer-overflow:operator-*IOUAmount*
+signed-integer-overflow:operator-*XRPAmount*
+signed-integer-overflow:operator-*MPTAmount*
+signed-integer-overflow:operator-*STAmount*
+
+# STAmount::operator+ signed addition — operands are bounded by total supply
+# (~10^17 for XRP, ~10^18 for MPT) so overflow cannot occur in practice.
+signed-integer-overflow:operator+*STAmount*
+
+# STAmount::getRate uses unsigned shift and addition
+unsigned-integer-overflow:*STAmount*getRate*
+# STAmount::serialize uses unsigned bitwise operations
+unsigned-integer-overflow:*STAmount*serialize*
+
+# nft::cipheredTaxon uses intentional uint32 wraparound (LCG permutation)
+unsigned-integer-overflow:cipheredTaxon

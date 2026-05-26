@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_SEED_H_INCLUDED
-#define XRPL_PROTOCOL_SEED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,13 +7,13 @@
 #include <array>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Seeds are used to generate deterministic secret keys. */
 class Seed
 {
 private:
-    std::array<uint8_t, 16> buf_;
+    std::array<uint8_t, 16> buf_{};
 
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;
@@ -36,37 +35,37 @@ public:
     explicit Seed(uint128 const& seed);
     /** @} */
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const
     {
         return buf_.data();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return buf_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_.end();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_.cend();
@@ -81,7 +80,7 @@ randomSeed();
 
 /** Generate a seed deterministically.
 
-    The algorithm is specific to Ripple:
+    The algorithm is specific to the XRPL:
 
         The seed is calculated as the first 128 bits
         of the SHA512-Half of the string text excluding
@@ -117,6 +116,4 @@ toBase58(Seed const& seed)
     return encodeBase58Token(TokenType::FamilySeed, seed.data(), seed.size());
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

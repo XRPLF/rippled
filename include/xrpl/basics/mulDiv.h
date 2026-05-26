@@ -1,12 +1,11 @@
-#ifndef XRPL_BASICS_MULDIV_H_INCLUDED
-#define XRPL_BASICS_MULDIV_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <limits>
 #include <optional>
 
-namespace ripple {
-auto constexpr muldiv_max = std::numeric_limits<std::uint64_t>::max();
+namespace xrpl {
+constexpr auto kMuldivMax = std::numeric_limits<std::uint64_t>::max();
 
 /** Return value*mul/div accurately.
     Computes the result of the multiplication and division in
@@ -21,6 +20,4 @@ auto constexpr muldiv_max = std::numeric_limits<std::uint64_t>::max();
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

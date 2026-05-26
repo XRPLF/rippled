@@ -6,7 +6,7 @@ By default, an RPC handler runs as an uninterrupted task on the JobQueue. This
 is fine for commands that are fast to compute but might not be acceptable for
 tasks that require multiple parts or are large, like a full ledger.
 
-For this purpose, the rippled RPC handler allows _suspension with continuation_
+For this purpose, the xrpld RPC handler allows _suspension with continuation_
 
 - a request to suspend execution of the RPC response and to continue it after
   some function or job has been executed. A default continuation is supplied
@@ -15,7 +15,7 @@ For this purpose, the rippled RPC handler allows _suspension with continuation_
 
 ## The classes.
 
-Suspension with continuation uses four `std::function`s in the `ripple::RPC`
+Suspension with continuation uses four `std::function`s in the `xrpl::RPC`
 namespace:
 
     using Callback = std::function <void ()>;

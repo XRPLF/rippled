@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_CLUSTER_H_INCLUDED
-#define XRPL_OVERLAY_CLUSTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/ClusterNode.h>
 
@@ -12,7 +11,7 @@
 #include <mutex>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 class Cluster
 {
@@ -78,7 +77,7 @@ public:
               within the callback.
     */
     void
-    for_each(std::function<void(ClusterNode const&)> func) const;
+    forEach(std::function<void(ClusterNode const&)> func) const;
 
     /** Load the list of cluster nodes.
 
@@ -94,6 +93,4 @@ public:
     load(Section const& nodes);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

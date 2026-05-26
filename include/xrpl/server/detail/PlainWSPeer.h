@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_PLAINWSPEER_H_INCLUDED
-#define XRPL_SERVER_PLAINWSPEER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/detail/BaseWSPeer.h>
 
@@ -7,7 +6,7 @@
 
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
@@ -29,7 +28,7 @@ public:
     PlainWSPeer(
         Port const& port,
         Handler& handler,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         boost::beast::http::request<Body, Headers>&& request,
         socket_type&& socket,
         beast::Journal journal);
@@ -42,7 +41,7 @@ template <class Body, class Headers>
 PlainWSPeer<Handler>::PlainWSPeer(
     Port const& port,
     Handler& handler,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     boost::beast::http::request<Body, Headers>&& request,
     socket_type&& socket,
     beast::Journal journal)
@@ -51,13 +50,11 @@ PlainWSPeer<Handler>::PlainWSPeer(
           handler,
           socket.get_executor(),
           waitable_timer{socket.get_executor()},
-          remote_address,
+          remoteAddress,
           std::move(request),
           journal)
     , ws_(std::move(socket))
 {
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -17,8 +17,8 @@ guideline is to maintain the standards that are used in those libraries.
 ## Guidelines
 
 If you want to do something contrary to these guidelines, understand
-why you're doing it. Think, use common sense, and consider that this
-your changes will probably need to be maintained long after you've
+why you're doing it. Think, use common sense, and consider that these
+changes will probably need to be maintained long after you've
 moved on to other projects.
 
 - Use white space and blank lines to guide the eye and keep your intent clear.

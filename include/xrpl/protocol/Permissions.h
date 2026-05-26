@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PERMISSION_H_INCLUDED
-#define XRPL_PROTOCOL_PERMISSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
@@ -9,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 /**
  * We have both transaction type permissions and granular type permissions.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -17,11 +16,13 @@ namespace ripple {
  * conflicts with TxType, the GranularPermissionType is always set to a value
  * greater than the maximum value of uint16.
  */
+// Macro-generated, complex
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
-#define PERMISSION(type, txType, value) type = value,
+#define PERMISSION(type, txType, value) type = (value),
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -29,7 +30,10 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
-enum Delegation { delegatable, notDelegatable };
+// Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
+// tricks in tests and macro-generated code; enum class would break that.
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum Delegation { Delegable, NotDelegable };
 
 class Permission
 {
@@ -38,10 +42,9 @@ private:
 
     std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
 
-    std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
+    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
-    std::unordered_map<std::string, GranularPermissionType>
-        granularPermissionMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
 
     std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
 
@@ -55,34 +58,31 @@ public:
     Permission&
     operator=(Permission const&) = delete;
 
-    std::optional<std::string>
+    [[nodiscard]] std::optional<std::string>
     getPermissionName(std::uint32_t const value) const;
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
-    std::optional<std::string>
+    [[nodiscard]] std::optional<std::string>
     getGranularName(GranularPermissionType const& value) const;
 
-    std::optional<TxType>
+    [[nodiscard]] std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    std::optional<std::reference_wrapper<uint256 const>> const
+    [[nodiscard]] std::optional<std::reference_wrapper<uint256 const>>
     getTxFeature(TxType txType) const;
 
-    bool
-    isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
-        const;
+    [[nodiscard]] bool
+    isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
-    uint32_t
-    txToPermissionType(TxType const& type) const;
+    static uint32_t
+    txToPermissionType(TxType const& type);
 
     // tx type value is permission value minus one
-    TxType
-    permissionToTxType(uint32_t const& value) const;
+    static TxType
+    permissionToTxType(uint32_t const& value);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

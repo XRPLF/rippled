@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_MAKE_OVERLAY_H_INCLUDED
-#define XRPL_OVERLAY_MAKE_OVERLAY_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/ServerHandler.h>
@@ -8,23 +7,21 @@
 
 #include <boost/asio/io_context.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config);
+setupOverlay(BasicConfig const& config, beast::Journal j);
 
 /** Creates the implementation of Overlay. */
 std::unique_ptr<Overlay>
-make_Overlay(
+makeOverlay(
     Application& app,
     Overlay::Setup const& setup,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

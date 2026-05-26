@@ -1,9 +1,8 @@
-#ifndef JOIN_H_INCLUDED
-#define JOIN_H_INCLUDED
+#pragma once
 
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Stream, class Iter>
 Stream&
@@ -33,11 +32,7 @@ public:
     friend Stream&
     operator<<(Stream& s, CollectionAndDelimiter const& cd)
     {
-        return join(
-            s,
-            std::begin(cd.collection),
-            std::end(cd.collection),
-            cd.delimiter);
+        return join(s, std::begin(cd.collection), std::end(cd.collection), cd.delimiter);
     }
 };
 
@@ -85,6 +80,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

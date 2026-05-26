@@ -1,20 +1,19 @@
+#include <xrpl/protocol/QualityFunction.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/QualityFunction.h>
 
 #include <optional>
 #include <stdexcept>
 
-namespace ripple {
+namespace xrpl {
 
-QualityFunction::QualityFunction(
-    Quality const& quality,
-    QualityFunction::CLOBLikeTag)
+QualityFunction::QualityFunction(Quality const& quality, QualityFunction::CLOBLikeTag)
     : m_(0), b_(0), quality_(quality)
 {
-    if (quality.rate() <= beast::zero)
+    if (quality.rate() <= beast::kZero)
         Throw<std::runtime_error>("QualityFunction quality rate is 0.");
     b_ = 1 / quality.rate();
 }
@@ -31,9 +30,9 @@ QualityFunction::combine(QualityFunction const& qf)
 std::optional<Number>
 QualityFunction::outFromAvgQ(Quality const& quality)
 {
-    if (m_ != 0 && quality.rate() != beast::zero)
+    if (m_ != 0 && quality.rate() != beast::kZero)
     {
-        saveNumberRoundMode rm(Number::setround(Number::rounding_mode::upward));
+        SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Upward));
         auto const out = (1 / quality.rate() - b_) / m_;
         if (out <= 0)
             return std::nullopt;
@@ -42,4 +41,4 @@ QualityFunction::outFromAvgQ(Quality const& quality)
     return std::nullopt;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

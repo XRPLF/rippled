@@ -1,10 +1,9 @@
-#ifndef XRPL_BASICS_TOSTRING_H_INCLUDED
-#define XRPL_BASICS_TOSTRING_H_INCLUDED
+#pragma once
 
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 /** to_string() generalizes std::to_string to handle bools, chars, and strings.
 
@@ -13,36 +12,34 @@ namespace ripple {
  */
 
 template <class T>
-typename std::enable_if<std::is_arithmetic<T>::value, std::string>::type
-to_string(T t)
+std::enable_if_t<std::is_arithmetic_v<T>, std::string>
+to_string(T t)  // NOLINT(readability-identifier-naming)
 {
     return std::to_string(t);
 }
 
 inline std::string
-to_string(bool b)
+to_string(bool b)  // NOLINT(readability-identifier-naming)
 {
     return b ? "true" : "false";
 }
 
 inline std::string
-to_string(char c)
+to_string(char c)  // NOLINT(readability-identifier-naming)
 {
     return std::string(1, c);
 }
 
 inline std::string
-to_string(std::string s)
+to_string(std::string s)  // NOLINT(readability-identifier-naming)
 {
     return s;
 }
 
 inline std::string
-to_string(char const* s)
+to_string(char const* s)  // NOLINT(readability-identifier-naming)
 {
     return s;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

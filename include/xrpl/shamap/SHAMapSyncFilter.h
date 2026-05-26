@@ -1,12 +1,11 @@
-#ifndef XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <optional>
 
 /** Callback for filtering SHAMap during sync. */
-namespace ripple {
+namespace xrpl {
 
 class SHAMapSyncFilter
 {
@@ -26,10 +25,8 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const = 0;
 
-    virtual std::optional<Blob>
+    [[nodiscard]] virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

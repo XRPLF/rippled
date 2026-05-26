@@ -1,9 +1,9 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/BuildInfo.h>
 
-namespace ripple {
+namespace xrpl {
 
-class BuildInfo_test : public beast::unit_test::suite
+class BuildInfo_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -14,29 +14,22 @@ public:
         auto encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b7");
 
         // the first two bytes identify the particular implementation, 0x183B
-        BEAST_EXPECT(
-            (encodedVersion & 0xFFFF'0000'0000'0000LLU) ==
-            0x183B'0000'0000'0000LLU);
+        BEAST_EXPECT((encodedVersion & 0xFFFF'0000'0000'0000LLU) == 0x183B'0000'0000'0000LLU);
 
         // the next three bytes: major version, minor version, patch version,
         // 0x010203
-        BEAST_EXPECT(
-            (encodedVersion & 0x0000'FFFF'FF00'0000LLU) ==
-            0x0000'0102'0300'0000LLU);
+        BEAST_EXPECT((encodedVersion & 0x0000'FFFF'FF00'0000LLU) == 0x0000'0102'0300'0000LLU);
 
         // the next two bits:
         {
             // 01 if a beta
-            BEAST_EXPECT(
-                (encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b01);
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b01);
             // 10 if an RC
             encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.4-rc7");
-            BEAST_EXPECT(
-                (encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b10);
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b10);
             // 11 if neither an RC nor a beta
             encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.5");
-            BEAST_EXPECT(
-                (encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b11);
+            BEAST_EXPECT((encodedVersion & 0x0000'0000'00C0'0000LLU) >> 22 == 0b11);
         }
 
         // the next six bits: rc/beta number (1-63)
@@ -60,13 +53,13 @@ public:
     }
 
     void
-    testIsRippledVersion()
+    testIsXrpldVersion()
     {
-        testcase("IsRippledVersion");
+        testcase("IsXrpldVersion");
         auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
-        BEAST_EXPECT(!BuildInfo::isRippledVersion(vFF));
-        auto vRippled = 0x183B'0000'0000'0000LLU;
-        BEAST_EXPECT(BuildInfo::isRippledVersion(vRippled));
+        BEAST_EXPECT(!BuildInfo::isXrpldVersion(vFF));
+        auto vXrpld = 0x183B'0000'0000'0000LLU;
+        BEAST_EXPECT(BuildInfo::isXrpldVersion(vXrpld));
     }
 
     void
@@ -90,10 +83,10 @@ public:
     run() override
     {
         testEncodeSoftwareVersion();
-        testIsRippledVersion();
+        testIsXrpldVersion();
         testIsNewerVersion();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, ripple);
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(BuildInfo, protocol, xrpl);
+}  // namespace xrpl

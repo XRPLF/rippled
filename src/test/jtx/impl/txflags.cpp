@@ -1,17 +1,16 @@
 #include <test/jtx/txflags.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
-txflags::operator()(Env&, JTx& jt) const
+Txflags::operator()(Env&, JTx& jt) const
 {
     jt[jss::Flags] = v_ /*| tfFullyCanonicalSig*/;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

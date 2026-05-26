@@ -1,9 +1,8 @@
-#ifndef XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
-#define XRPL_RPC_LEGACYPATHFIND_H_INCLUDED
+#pragma once
 
 #include <atomic>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 
@@ -15,19 +14,17 @@ public:
     LegacyPathFind(bool isAdmin, Application& app);
     ~LegacyPathFind();
 
-    bool
+    [[nodiscard]] bool
     isOk() const
     {
-        return m_isOk;
+        return isOk_;
     }
 
 private:
     static std::atomic<int> inProgress;
 
-    bool m_isOk;
+    bool isOk_{false};
 };
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

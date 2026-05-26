@@ -1,26 +1,25 @@
-#ifndef XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
-#define XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/TestSuite.h>
 
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 
 class TestOutputSuite : public TestSuite
 {
 protected:
     std::string output_;
-    std::unique_ptr<Json::Writer> writer_;
+    std::unique_ptr<json::Writer> writer_;
 
     void
     setup(std::string const& testName)
     {
         testcase(testName);
         output_.clear();
-        writer_ = std::make_unique<Json::Writer>(Json::stringOutput(output_));
+        writer_ = std::make_unique<json::Writer>(json::stringOutput(output_));
     }
 
     // Test the result and report values.
@@ -34,6 +33,4 @@ protected:
 };
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

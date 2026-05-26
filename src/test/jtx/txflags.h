@@ -1,20 +1,17 @@
-#ifndef XRPL_TEST_JTX_TXFLAGS_H_INCLUDED
-#define XRPL_TEST_JTX_TXFLAGS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the flags on a JTx. */
-class txflags
+class Txflags
 {
 private:
     std::uint32_t v_;
 
 public:
-    explicit txflags(std::uint32_t v) : v_(v)
+    explicit Txflags(std::uint32_t v) : v_(v)
     {
     }
 
@@ -22,8 +19,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCONSENSUS_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
@@ -8,9 +7,9 @@
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/consensus/Consensus.h>
-#include <xrpld/core/JobQueue.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
 
@@ -21,7 +20,7 @@
 #include <sstream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class InboundTransactions;
 class LocalTxs;
@@ -34,7 +33,7 @@ class RCLConsensus
 {
     /** Warn for transactions that haven't been included every so many ledgers.
      */
-    constexpr static unsigned int censorshipWarnInternal = 15;
+    static constexpr unsigned int kCensorshipWarnInternal = 15;
 
     // Implements the Adaptor template interface required by Consensus.
     class Adaptor
@@ -59,13 +58,12 @@ class RCLConsensus
         // The timestamp of the last validation we used
         NetClock::time_point lastValidationTime_;
 
-        // These members are queried via public accesors and are atomic for
+        // These members are queried via public accessors and are atomic for
         // thread safety.
         std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
-        std::atomic<std::chrono::milliseconds> prevRoundTime_{
-            std::chrono::milliseconds{0}};
-        std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
+        std::atomic<std::chrono::milliseconds> prevRoundTime_{std::chrono::milliseconds{0}};
+        std::atomic<ConsensusMode> mode_{ConsensusMode::Observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
@@ -119,9 +117,7 @@ class RCLConsensus
             @return Whether we enter the round proposing
         */
         bool
-        preStartRound(
-            RCLCxLedger const& prevLedger,
-            hash_set<NodeID> const& nowTrusted);
+        preStartRound(RCLCxLedger const& prevLedger, hash_set<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -133,8 +129,7 @@ class RCLConsensus
         getQuorumKeys() const;
 
         std::size_t
-        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
-            const;
+        laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys) const;
 
         /** Whether I am a validator.
          *
@@ -262,10 +257,7 @@ class RCLConsensus
                   the ledger matching ledgerID from the network
          */
         uint256
-        getPrevLedger(
-            uint256 ledgerID,
-            RCLCxLedger const& ledger,
-            ConsensusMode mode);
+        getPrevLedger(uint256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);
 
         /** Notified of change in consensus mode
 
@@ -308,7 +300,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson,
+            json::Value&& consensusJson,
             bool const validating);
 
         /** Process the accepted ledger that was a result of simulation/force
@@ -323,7 +315,7 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            json::Value&& consensusJson);
 
         /** Notify peers of a consensus state change
 
@@ -332,10 +324,7 @@ class RCLConsensus
             @param haveCorrectLCL Whether we believe we have the correct LCL.
         */
         void
-        notify(
-            protocol::NodeEvent ne,
-            RCLCxLedger const& ledger,
-            bool haveCorrectLCL);
+        notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
         /** Accept a new ledger based on the given transactions.
 
@@ -348,7 +337,7 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            json::Value&& consensusJson);
 
         /** Build the new last closed ledger.
 
@@ -392,10 +381,7 @@ class RCLConsensus
                              but are still around and trying to catch up.
         */
         void
-        validate(
-            RCLCxLedger const& ledger,
-            RCLTxSet const& txns,
-            bool proposing);
+        validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing);
     };
 
 public:
@@ -457,7 +443,7 @@ public:
     }
 
     //! @see Consensus::getJson
-    Json::Value
+    json::Value
     getJson(bool full) const;
 
     /** Adjust the set of trusted validators and kick-off the next round of
@@ -486,7 +472,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
-        std::lock_guard _{mutex_};
+        std::scoped_lock const _{mutex_};
         return consensus_.prevLedgerID();
     }
 
@@ -498,9 +484,7 @@ public:
 
     //! @see Consensus::proposal
     bool
-    peerProposal(
-        NetClock::time_point const& now,
-        RCLCxPeerPos const& newProposal);
+    peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal);
 
     ConsensusParms const&
     parms() const
@@ -536,10 +520,7 @@ class RclConsensusLogger
     std::chrono::steady_clock::time_point start_;
 
 public:
-    explicit RclConsensusLogger(
-        char const* label,
-        bool validating,
-        beast::Journal j);
+    explicit RclConsensusLogger(char const* label, bool validating, beast::Journal j);
     ~RclConsensusLogger();
 
     std::unique_ptr<std::stringstream> const&
@@ -548,6 +529,4 @@ public:
         return ss_;
     }
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

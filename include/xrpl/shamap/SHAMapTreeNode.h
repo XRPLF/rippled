@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTREENODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
@@ -8,24 +7,28 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
-static constexpr unsigned char const wireTypeTransaction = 0;
-static constexpr unsigned char const wireTypeAccountState = 1;
-static constexpr unsigned char const wireTypeInner = 2;
-static constexpr unsigned char const wireTypeCompressedInner = 3;
-static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
+static constexpr unsigned char const kWireTypeTransaction = 0;
+static constexpr unsigned char const kWireTypeAccountState = 1;
+static constexpr unsigned char const kWireTypeInner = 2;
+static constexpr unsigned char const kWireTypeCompressedInner = 3;
+static constexpr unsigned char const kWireTypeTransactionWithMeta = 4;
+
+// Lower bound on SHAMap leaf item payload size, in bytes.
+inline constexpr std::size_t kMinShaMapItemBytes = 12;
 
 enum class SHAMapNodeType {
-    tnINNER = 1,
-    tnTRANSACTION_NM = 2,  // transaction, no metadata
-    tnTRANSACTION_MD = 3,  // transaction, with metadata
-    tnACCOUNT_STATE = 4
+    TnInner = 1,
+    TnTransactionNm = 2,  // transaction, no metadata
+    TnTransactionMd = 3,  // transaction, with metadata
+    TnAccountState = 4
 };
 
 class SHAMapTreeNode : public IntrusiveRefCounts
@@ -41,11 +44,6 @@ protected:
      */
     std::uint32_t cowid_;
 
-protected:
-    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
-    SHAMapTreeNode&
-    operator=(SHAMapTreeNode const&) = delete;
-
     /** Construct a node
 
         @param cowid The identifier of a SHAMap. For more, see #cowid_
@@ -56,16 +54,18 @@ protected:
     {
     }
 
-    explicit SHAMapTreeNode(
-        std::uint32_t cowid,
-        SHAMapHash const& hash) noexcept
+    explicit SHAMapTreeNode(std::uint32_t cowid, SHAMapHash const& hash) noexcept
         : hash_(hash), cowid_(cowid)
     {
     }
     /** @} */
 
 public:
-    virtual ~SHAMapTreeNode() noexcept = default;
+    ~SHAMapTreeNode() noexcept override = default;
+
+    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
+    SHAMapTreeNode&
+    operator=(SHAMapTreeNode const&) = delete;
 
     // Needed to support weak intrusive pointers
     virtual void
@@ -151,7 +151,7 @@ public:
     getString(SHAMapNodeID const&) const;
 
     virtual void
-    invariants(bool is_root = false) const = 0;
+    invariants(bool isRoot = false) const = 0;
 
     static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
@@ -170,6 +170,4 @@ private:
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

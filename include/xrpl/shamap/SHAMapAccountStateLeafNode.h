@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPACCOUNTSTATELEAFNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPACCOUNTSTATELEAFNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -7,17 +6,14 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A leaf node for a state object. */
-class SHAMapAccountStateLeafNode final
-    : public SHAMapLeafNode,
-      public CountedObject<SHAMapAccountStateLeafNode>
+class SHAMapAccountStateLeafNode final : public SHAMapLeafNode,
+                                         public CountedObject<SHAMapAccountStateLeafNode>
 {
 public:
-    SHAMapAccountStateLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid)
+    SHAMapAccountStateLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
         : SHAMapLeafNode(std::move(item), cowid)
     {
         updateHash();
@@ -32,42 +28,38 @@ public:
     }
 
     intr_ptr::SharedPtr<SHAMapTreeNode>
-    clone(std::uint32_t cowid) const final override
+    clone(std::uint32_t cowid) const final
     {
-        return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(
-            item_, cowid, hash_);
+        return intr_ptr::makeShared<SHAMapAccountStateLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
-    getType() const final override
+    getType() const final
     {
-        return SHAMapNodeType::tnACCOUNT_STATE;
+        return SHAMapNodeType::TnAccountState;
     }
 
     void
-    updateHash() final override
+    updateHash() final
     {
-        hash_ = SHAMapHash{
-            sha512Half(HashPrefix::leafNode, item_->slice(), item_->key())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::LeafNode, item_->slice(), item_->key())};
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
-        s.add8(wireTypeAccountState);
+        s.add8(kWireTypeAccountState);
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(Serializer& s) const final
     {
-        s.add32(HashPrefix::leafNode);
+        s.add32(HashPrefix::LeafNode);
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

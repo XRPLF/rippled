@@ -112,7 +112,7 @@ When a `SHAMap` decides that it is safe to share a node of its own, it sets the
 node's sequence number to 0 (a `SHAMap` never has a sequence number of 0). This
 is done for every node in the trie when `SHAMap::walkSubTree` is executed.
 
-Note that other objects in rippled also have sequence numbers (e.g. ledgers).
+Note that other objects in xrpld also have sequence numbers (e.g. ledgers).
 The `SHAMap` and node sequence numbers should not be confused with these other
 sequence numbers (no relation).
 
@@ -226,12 +226,12 @@ The `fetchNodeNT()` method goes through three phases:
 
     Any SHAMapLeafNode that is immutable has a sequence number of zero
     (sharable). When a mutable `SHAMap` is created then its SHAMapTreeNodes are
-    given non-zero sequence numbers (unsharable). But all nodes in the
+    given non-zero sequence numbers (unshareable). But all nodes in the
     TreeNodeCache are immutable, so if one is found here, its sequence number
     will be 0.
 
 2.  If the node is not in the TreeNodeCache, we attempt to locate the node
-    in the historic data stored by the data base. The call to to
+    in the historic data stored by the data base. The call to
     `fetchNodeFromDB(hash)` does that work for us.
 
 3.  Finally if a filter exists, we check if it can supply the node. This is

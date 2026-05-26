@@ -1,5 +1,4 @@
-#ifndef PROTOCOL_UNITS_H_INCLUDED
-#define PROTOCOL_UNITS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -13,7 +12,7 @@
 #include <limits>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unit {
 
@@ -22,7 +21,7 @@ namespace unit {
 struct dropTag;
 /** "fee levels" are used by the transaction queue to compare the relative
     cost of transactions that require different levels of effort to process.
-    See also: src/ripple/app/misc/FeeEscalation.md#fee-level */
+    See also: src/xrpld/app/misc/FeeEscalation.md#fee-level */
 struct feelevelTag;
 /** unitless values are plain scalars wrapped in a ValueUnit. They are
     used for calculations in this header. */
@@ -55,8 +54,8 @@ concept Usable = Valid<T> &&
      std::is_same_v<typename T::unit_type, TenthBipsTag>);
 
 template <class Other, class VU>
-concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> &&
-    std::is_arithmetic_v<typename VU::value_type> &&
+concept Compatible =
+    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
 template <class T>
@@ -118,7 +117,7 @@ public:
     template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
         requires SafeToCast<Other, value_type>
-        : ValueUnit(safe_cast<value_type>(value.value()))
+        : ValueUnit(safeCast<value_type>(value.value()))
     {
     }
 
@@ -210,7 +209,7 @@ public:
         return *this;
     }
 
-    template <Integral transparent = value_type>
+    template <Integral Transparent = value_type>
     ValueUnit&
     operator%=(value_type const& rhs)
     {
@@ -221,8 +220,7 @@ public:
     ValueUnit
     operator-() const
     {
-        static_assert(
-            std::is_signed_v<T>, "- operator illegal on unsigned value types");
+        static_assert(std::is_signed_v<T>, "- operator illegal on unsigned value types");
         return ValueUnit{-value_};
     }
 
@@ -266,22 +264,24 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
-        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+        if (value_ < 0)
+            return -1;
+        return value_ ? 1 : 0;
     }
 
     /** Returns the number of drops */
     // TODO: Move this to a new class, maybe with the old "TaggedFee" name
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     fee() const
     {
         return value_;
     }
 
     template <class Other>
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalFromReference(ValueUnit<unit_type, Other> reference) const
     {
         return static_cast<double>(value_) / reference.value();
@@ -291,24 +291,22 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
-            using jsontype = std::conditional_t<
-                std::is_signed_v<value_type>,
-                Json::Int,
-                Json::UInt>;
+            using jsontype =
+                std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto min = std::numeric_limits<jsontype>::min();
-            constexpr auto max = std::numeric_limits<jsontype>::max();
+            constexpr auto kMin = std::numeric_limits<jsontype>::min();
+            constexpr auto kMax = std::numeric_limits<jsontype>::max();
 
-            if (value_ < min)
-                return min;
-            if (value_ > max)
-                return max;
+            if (value_ < kMin)
+                return kMin;
+            if (value_ > kMax)
+                return kMax;
             return static_cast<jsontype>(value_);
         }
         else
@@ -321,7 +319,7 @@ public:
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return value_;
@@ -351,8 +349,8 @@ to_string(ValueUnit<UnitTag, T> const& amount)
 }
 
 template <class Source>
-concept muldivSource = Valid<Source> &&
-    std::is_convertible_v<typename Source::value_type, std::uint64_t>;
+concept muldivSource =
+    Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
@@ -387,24 +385,21 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        XRPL_ASSERT(
-            value.value() >= 0, "ripple::unit::mulDivU : minimum value input");
-        XRPL_ASSERT(
-            mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
-        XRPL_ASSERT(
-            div.value() > 0, "ripple::unit::mulDivU : minimum div input");
+        XRPL_ASSERT(value.value() >= 0, "xrpl::unit::mulDivU : minimum value input");
+        XRPL_ASSERT(mul.value() >= 0, "xrpl::unit::mulDivU : minimum mul input");
+        XRPL_ASSERT(div.value() > 0, "xrpl::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
     using desttype = typename Dest::value_type;
-    constexpr auto max = std::numeric_limits<desttype>::max();
+    constexpr auto kMax = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
         return mul;
     if (mul.value() == div.value())
     {
-        if (value.value() > max)
+        if (value.value() > kMax)
             return std::nullopt;
         return Dest{static_cast<desttype>(value.value())};
     }
@@ -419,7 +414,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     auto quotient = product / div.value();
 
-    if (quotient > max)
+    if (quotient > kMax)
         return std::nullopt;
 
     return Dest{static_cast<desttype>(quotient)};
@@ -450,10 +445,7 @@ mulDiv(Source1 value, Dest mul, Source2 div)
     return unit::mulDivU(value, mul, div);
 }
 
-template <
-    class Source1,
-    class Source2,
-    unit::muldivCommutable<Source1, Source2> Dest>
+template <class Source1, class Source2, unit::muldivCommutable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
@@ -502,36 +494,34 @@ mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s.value())};
+    return Dest{safeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-safe_cast(Src s) noexcept
+safeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{safe_cast<typename Dest::value_type>(s)};
+    return Dest{safeCast<typename Dest::value_type>(s)};
 }
 
 template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
+    return Dest{unsafeCast<typename Dest::value_type>(s.value())};
 }
 
 template <unit::IntegralValue Dest, unit::Integral Src>
 constexpr Dest
-unsafe_cast(Src s) noexcept
+unsafeCast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
-    return Dest{unsafe_cast<typename Dest::value_type>(s)};
+    return Dest{unsafeCast<typename Dest::value_type>(s)};
 }
 
-}  // namespace ripple
-
-#endif  // PROTOCOL_UNITS_H_INCLUDED
+}  // namespace xrpl

@@ -1,32 +1,29 @@
-#ifndef XRPL_TEST_JTX_SEQ_H_INCLUDED
-#define XRPL_TEST_JTX_SEQ_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
 
 #include <optional>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the sequence number on a JTx. */
-struct seq
+struct Seq
 {
 private:
     bool manual_ = true;
     std::optional<std::uint32_t> num_;
 
 public:
-    explicit seq(autofill_t) : manual_(false)
+    explicit Seq(AutofillT) : manual_(false)
     {
     }
 
-    explicit seq(none_t)
+    explicit Seq(NoneT)
     {
     }
 
-    explicit seq(std::uint32_t num) : num_(num)
+    explicit Seq(std::uint32_t num) : num_(num)
     {
     }
 
@@ -34,8 +31,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

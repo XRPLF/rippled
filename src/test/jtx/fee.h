@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_FEE_H_INCLUDED
-#define XRPL_TEST_JTX_FEE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
@@ -9,12 +8,10 @@
 
 #include <optional>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the fee on a JTx. */
-class fee
+class Fee
 {
 private:
     bool manual_ = true;
@@ -22,26 +19,25 @@ private:
     std::optional<STAmount> amount_;
 
 public:
-    explicit fee(autofill_t) : manual_(false)
+    explicit Fee(AutofillT) : manual_(false)
     {
     }
 
-    explicit fee(increment_t) : increment_(true)
+    explicit Fee(IncrementT) : increment_(true)
     {
     }
 
-    explicit fee(none_t)
+    explicit Fee(NoneT)
     {
     }
 
-    explicit fee(STAmount const& amount) : amount_(amount)
+    explicit Fee(STAmount const& amount) : amount_(amount)
     {
         if (!isXRP(*amount_))
             Throw<std::runtime_error>("fee: not XRP");
     }
 
-    explicit fee(std::uint64_t amount, bool negative = false)
-        : fee{STAmount{amount, negative}}
+    explicit Fee(std::uint64_t amount, bool negative = false) : Fee{STAmount{amount, negative}}
     {
     }
 
@@ -49,8 +45,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

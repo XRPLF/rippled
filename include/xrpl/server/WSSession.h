@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_WSSESSION_H_INCLUDED
-#define XRPL_SERVER_WSSESSION_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
@@ -17,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class WSMsg
 {
@@ -78,8 +77,7 @@ public:
             done = true;
         }
         auto const pb = boost::beast::buffers_prefix(n_, sb_.data());
-        std::vector<boost::asio::const_buffer> vb(
-            std::distance(pb.begin(), pb.end()));
+        std::vector<boost::asio::const_buffer> vb(std::distance(pb.begin(), pb.end()));
         std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
         return {done, vb};
     }
@@ -98,14 +96,14 @@ struct WSSession
     virtual void
     run() = 0;
 
-    virtual Port const&
+    [[nodiscard]] virtual Port const&
     port() const = 0;
 
-    virtual http_request_type const&
+    [[nodiscard]] virtual http_request_type const&
     request() const = 0;
 
-    virtual boost::asio::ip::tcp::endpoint const&
-    remote_endpoint() const = 0;
+    [[nodiscard]] virtual boost::asio::ip::tcp::endpoint const&
+    remoteEndpoint() const = 0;
 
     /** Send a WebSockets message. */
     virtual void
@@ -125,6 +123,4 @@ struct WSSession
     complete() = 0;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

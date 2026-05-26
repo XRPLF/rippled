@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/Transaction.h>
 
@@ -9,7 +8,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 class Application;
 class STTx;
@@ -25,12 +24,10 @@ public:
     operator=(TransactionMaster const&) = delete;
 
     std::shared_ptr<Transaction>
-    fetch_from_cache(uint256 const&);
+    fetchFromCache(uint256 const&);
 
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    fetch(uint256 const&, error_code_i& ec);
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    fetch(uint256 const&, ErrorCodeI& ec);
 
     /**
      * Fetch transaction from the cache or database.
@@ -41,13 +38,8 @@ public:
      *         the all ledgers in the provided range were present in
      *         the database while the search was conducted.
      */
-    std::variant<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearched>
-    fetch(
-        uint256 const&,
-        ClosedInterval<uint32_t> const& range,
-        error_code_i& ec);
+    std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
+    fetch(uint256 const&, ClosedInterval<uint32_t> const& range, ErrorCodeI& ec);
 
     std::shared_ptr<STTx const>
     fetch(
@@ -73,10 +65,8 @@ public:
     getCache();
 
 private:
-    Application& mApp;
-    TaggedCache<uint256, Transaction> mCache;
+    Application& app_;
+    TaggedCache<uint256, Transaction> cache_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

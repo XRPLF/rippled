@@ -1,12 +1,11 @@
-#ifndef XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 // Can std::atomic<std::shared_ptr>> make this lock free?
 
@@ -26,33 +25,31 @@ public:
     set(std::shared_ptr<Ledger const> ledger)
     {
         if (!ledger)
-            LogicError("LedgerHolder::set with nullptr");
+            logicError("LedgerHolder::set with nullptr");
         if (!ledger->isImmutable())
-            LogicError("LedgerHolder::set with mutable Ledger");
-        std::lock_guard sl(m_lock);
-        m_heldLedger = std::move(ledger);
+            logicError("LedgerHolder::set with mutable Ledger");
+        std::scoped_lock const sl(lock_);
+        heldLedger_ = std::move(ledger);
     }
 
     // Return the (immutable) held ledger
     std::shared_ptr<Ledger const>
     get()
     {
-        std::lock_guard sl(m_lock);
-        return m_heldLedger;
+        std::scoped_lock const sl(lock_);
+        return heldLedger_;
     }
 
     bool
     empty()
     {
-        std::lock_guard sl(m_lock);
-        return m_heldLedger == nullptr;
+        std::scoped_lock const sl(lock_);
+        return heldLedger_ == nullptr;
     }
 
 private:
-    std::mutex m_lock;
-    std::shared_ptr<Ledger const> m_heldLedger;
+    std::mutex lock_;
+    std::shared_ptr<Ledger const> heldLedger_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

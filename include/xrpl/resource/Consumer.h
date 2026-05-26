@@ -1,13 +1,11 @@
-#ifndef XRPL_RESOURCE_CONSUMER_H_INCLUDED
-#define XRPL_RESOURCE_CONSUMER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Disposition.h>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 struct Entry;
 class Logic;
@@ -27,11 +25,11 @@ public:
     operator=(Consumer const& other);
 
     /** Return a human readable string uniquely identifying this consumer. */
-    std::string
-    to_string() const;
+    [[nodiscard]] std::string
+    toString() const;
 
     /** Returns `true` if this is a privileged endpoint. */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const;
 
     /** Raise the Consumer's privilege level to a Named endpoint.
@@ -44,7 +42,7 @@ public:
         This should be checked upon creation to determine if the consumer
         should be disconnected immediately.
     */
-    Disposition
+    [[nodiscard]] Disposition
     disposition() const;
 
     /** Apply a load charge to the consumer. */
@@ -73,14 +71,11 @@ public:
     setPublicKey(PublicKey const& publicKey);
 
 private:
-    Logic* m_logic;
-    Entry* m_entry;
+    Logic* logic_;
+    Entry* entry_;
 };
 
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v);
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

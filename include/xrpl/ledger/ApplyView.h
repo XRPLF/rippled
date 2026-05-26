@@ -1,71 +1,65 @@
-#ifndef XRPL_LEDGER_APPLYVIEW_H_INCLUDED
-#define XRPL_LEDGER_APPLYVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 
-namespace ripple {
+namespace xrpl {
 
+// Bitwise flag enum with existing operator overloads
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ApplyFlags : std::uint32_t {
-    tapNONE = 0x00,
+    TapNone = 0x00,
 
     // This is a local transaction with the
     // fail_hard flag set.
-    tapFAIL_HARD = 0x10,
+    TapFailHard = 0x10,
 
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
-    tapRETRY = 0x20,
+    TapRetry = 0x20,
 
     // Transaction came from a privileged source
-    tapUNLIMITED = 0x400,
+    TapUnlimited = 0x400,
 
     // Transaction is executing as part of a batch
-    tapBATCH = 0x800,
+    TapBatch = 0x800,
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked
-    tapDRY_RUN = 0x1000
+    TapDryRun = 0x1000
 };
 
 constexpr ApplyFlags
 operator|(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
-    return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) |
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+    return safeCast<ApplyFlags>(
+        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) |
+        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert(
-    (tapFAIL_HARD | tapRETRY) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
-static_assert(
-    (tapRETRY | tapFAIL_HARD) == safe_cast<ApplyFlags>(0x30u),
-    "ApplyFlags operator |");
+static_assert((TapFailHard | TapRetry) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
+static_assert((TapRetry | TapFailHard) == safeCast<ApplyFlags>(0x30u), "ApplyFlags operator |");
 
 constexpr ApplyFlags
 operator&(ApplyFlags const& lhs, ApplyFlags const& rhs)
 {
-    return safe_cast<ApplyFlags>(
-        safe_cast<std::underlying_type_t<ApplyFlags>>(lhs) &
-        safe_cast<std::underlying_type_t<ApplyFlags>>(rhs));
+    return safeCast<ApplyFlags>(
+        safeCast<std::underlying_type_t<ApplyFlags>>(lhs) &
+        safeCast<std::underlying_type_t<ApplyFlags>>(rhs));
 }
 
-static_assert((tapFAIL_HARD & tapRETRY) == tapNONE, "ApplyFlags operator &");
-static_assert((tapRETRY & tapFAIL_HARD) == tapNONE, "ApplyFlags operator &");
+static_assert((TapFailHard & TapRetry) == TapNone, "ApplyFlags operator &");
+static_assert((TapRetry & TapFailHard) == TapNone, "ApplyFlags operator &");
 
 constexpr ApplyFlags
 operator~(ApplyFlags const& flags)
 {
-    return safe_cast<ApplyFlags>(
-        ~safe_cast<std::underlying_type_t<ApplyFlags>>(flags));
+    return safeCast<ApplyFlags>(~safeCast<std::underlying_type_t<ApplyFlags>>(flags));
 }
 
-static_assert(
-    ~tapRETRY == safe_cast<ApplyFlags>(0xFFFFFFDFu),
-    "ApplyFlags operator ~");
+static_assert(~TapRetry == safeCast<ApplyFlags>(0xFFFFFFDFu), "ApplyFlags operator ~");
 
 inline ApplyFlags
 operator|=(ApplyFlags& lhs, ApplyFlags const& rhs)
@@ -142,7 +136,7 @@ public:
         while transactions applied to the consensus
         ledger produce hard failures (and claim a fee).
     */
-    virtual ApplyFlags
+    [[nodiscard]] virtual ApplyFlags
     flags() const = 0;
 
     /** Prepare to modify the SLE associated with key.
@@ -221,21 +215,67 @@ public:
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
     virtual void
-    creditHook(
+    creditHookIOU(
         AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
         STAmount const& preCreditBalance)
+    {
+        XRPL_ASSERT(amount.holds<Issue>(), "creditHookIOU: amount is for Issue");
+    }
+
+    virtual void
+    creditHookMPT(
+        AccountID const& from,
+        AccountID const& to,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer)
+    {
+        XRPL_ASSERT(amount.holds<MPTIssue>(), "creditHookMPT: amount is for MPTIssue");
+    }
+
+    /** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+     * Unlike IOU, MPT doesn't have bi-directional relationship with an issuer,
+     * where a trustline limits an amount that can be issued to a holder.
+     * Consequently, the credit step (last MPTEndpointStep or
+     * BookStep buying MPT) might temporarily overflow OutstandingAmount.
+     * Limiting of a step's output amount in this case is delegated to
+     * the next step (in rev order). The next step always redeems when a holder
+     * account sells MPT (first MPTEndpointStep or BookStep selling MPT).
+     * In this case the holder account is only limited by the step's output
+     * and it's available funds since it's transferring the funds from one
+     * account to another account and doesn't change OutstandingAmount.
+     * This doesn't apply to an offer owned by an issuer.
+     * In this case the issuer sells or self debits and is increasing
+     * OutstandingAmount. Ability to issue is limited by the issuer
+     * originally available funds less already self sold MPT amounts (MPT sell
+     * offer).
+     * Consider an example:
+     * - GW creates MPT(USD) with 1,000USD MaximumAmount.
+     * - GW pays 950USD to A1.
+     * - A1 creates an offer 100XRP(buy)/100USD(sell).
+     * - GW creates an offer 100XRP(buy)/100USD(sell).
+     * - A2 pays 200USD to A3 with sendMax of 200XRP.
+     * Since the payment engine executes payments in reverse,
+     * OutstandingAmount overflows in MPTEndpointStep: 950 + 200 = 1,150USD.
+     * BookStep first consumes A1 offer. This reduces OutstandingAmount
+     * by 100USD: 1,150 - 100 = 1,050USD. GW offer can only be partially
+     * consumed because the initial available amount is 50USD = 1,000 - 950.
+     * BookStep limits it's output to 150USD. This in turn limits A3's send
+     * amount to 150XRP: A1 buys 100XRP and sells 100USD to A3. This doesn't
+     * change OutstandingAmount. GW buys 50XRP and sells 50USD to A3. This
+     * changes OutstandingAmount to 1,000USD.
+     */
+    virtual void
+    issuerSelfDebitHookMPT(MPTIssue const& issue, std::uint64_t amount, std::int64_t origBalance)
     {
     }
 
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
     {
     }
 
@@ -267,7 +307,7 @@ public:
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "ripple::ApplyView::dirAppend : only Offers are appended to "
+                "xrpl::ApplyView::dirAppend : only Offers are appended to "
                 "book directories");
             // Only Offers are appended to book directories. Call dirInsert()
             // instead
@@ -332,18 +372,10 @@ public:
     */
     /** @{ */
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        uint256 const& key,
-        bool keepRoot);
+    dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
 
     bool
-    dirRemove(
-        Keylet const& directory,
-        std::uint64_t page,
-        Keylet const& key,
-        bool keepRoot)
+    dirRemove(Keylet const& directory, std::uint64_t page, Keylet const& key, bool keepRoot)
     {
         return dirRemove(directory, page, key.key, keepRoot);
     }
@@ -351,9 +383,7 @@ public:
 
     /** Remove the specified directory, invoking the callback for every node. */
     bool
-    dirDelete(
-        Keylet const& directory,
-        std::function<void(uint256 const&)> const&);
+    dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const&);
 
     /** Remove the specified directory, if it is empty.
 
@@ -368,6 +398,43 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
-}  // namespace ripple
+namespace directory {
+/** Helper functions for managing low-level directory operations.
+    These are not part of the ApplyView interface.
 
-#endif
+    Don't use them unless you really, really know what you're doing.
+    Instead use dirAdd, dirInsert, etc.
+ */
+
+std::uint64_t
+createRoot(
+    ApplyView& view,
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+
+auto
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start);
+
+std::uint64_t
+insertKey(
+    ApplyView& view,
+    SLE::ref node,
+    std::uint64_t page,
+    bool preserveOrder,
+    STVector256& indexes,
+    uint256 const& key);
+
+std::optional<std::uint64_t>
+insertPage(
+    ApplyView& view,
+    std::uint64_t page,
+    SLE::pointer node,
+    std::uint64_t nextPage,
+    SLE::ref next,
+    uint256 const& key,
+    Keylet const& directory,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+
+}  // namespace directory
+}  // namespace xrpl

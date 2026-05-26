@@ -1,16 +1,15 @@
-#ifndef XRPL_APP_LEDGER_LEDGERDELTAACQUIRE_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERDELTAACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <map>
 
-namespace ripple {
+namespace xrpl {
 class InboundLedgers;
 class PeerSet;
 namespace test {
@@ -22,10 +21,9 @@ class LedgerReplayClient;
  * from the network. Before asking peers, always check if the local
  * node has the ledger.
  */
-class LedgerDeltaAcquire final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<LedgerDeltaAcquire>,
-      public CountedObject<LedgerDeltaAcquire>
+class LedgerDeltaAcquire final : public TimeoutCounter,
+                                 public std::enable_shared_from_this<LedgerDeltaAcquire>,
+                                 public CountedObject<LedgerDeltaAcquire>
 {
 public:
     /**
@@ -33,8 +31,7 @@ public:
      * @param successful  if the ledger delta data was acquired successfully
      * @param hash  hash of the ledger to build
      */
-    using OnDeltaDataCB =
-        std::function<void(bool successful, uint256 const& hash)>;
+    using OnDeltaDataCB = std::function<void(bool successful, uint256 const& hash)>;
 
     /**
      * Constructor
@@ -69,7 +66,7 @@ public:
      */
     void
     processData(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
 
     /**
@@ -116,9 +113,7 @@ private:
      *       is added.
      */
     void
-    onLedgerBuilt(
-        ScopedLockType& sl,
-        std::optional<InboundLedger::Reason> reason = {});
+    onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedger::Reason> reason = {});
 
     /**
      * Call the OnDeltaDataCB callbacks
@@ -130,18 +125,16 @@ private:
     InboundLedgers& inboundLedgers_;
     std::uint32_t const ledgerSeq_;
     std::unique_ptr<PeerSet> peerSet_;
-    std::shared_ptr<Ledger const> replayTemp_ = {};
-    std::shared_ptr<Ledger const> fullLedger_ = {};
+    std::shared_ptr<Ledger const> replayTemp_;
+    std::shared_ptr<Ledger const> fullLedger_;
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns_;
     std::vector<OnDeltaDataCB> dataReadyCallbacks_;
     std::set<InboundLedger::Reason> reasons_;
-    std::uint32_t noFeaturePeerCount = 0;
+    std::uint32_t noFeaturePeerCount_ = 0;
     bool fallBack_ = false;
 
     friend class LedgerReplayTask;  // for asserts only
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

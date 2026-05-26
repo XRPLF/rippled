@@ -1,17 +1,15 @@
-#ifndef XRPL_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
-#define XRPL_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
-/** Simple NodeStore Scheduler that just peforms the tasks synchronously. */
+/** Simple NodeStore Scheduler that just performs the tasks synchronously. */
 class DummyScheduler : public Scheduler
 {
 public:
     DummyScheduler() = default;
-    ~DummyScheduler() = default;
+    ~DummyScheduler() override = default;
     void
     scheduleTask(Task& task) override;
     void
@@ -20,7 +18,4 @@ public:
     onBatchWrite(BatchWriteReport const& report) override;
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

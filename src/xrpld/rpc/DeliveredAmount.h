@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_DELIVEREDAMOUNT_H_INCLUDED
-#define XRPL_RPC_DELIVEREDAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
@@ -7,11 +6,11 @@
 #include <functional>
 #include <memory>
 
-namespace Json {
+namespace json {
 class Value;
-}
+}  // namespace json
 
-namespace ripple {
+namespace xrpl {
 
 class ReadView;
 class Transaction;
@@ -35,20 +34,20 @@ struct Context;
  */
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     ReadView const&,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const&);
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const&,
     std::shared_ptr<Transaction> const&,
     TxMeta const&);
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
@@ -62,6 +61,4 @@ getDeliveredAmount(
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

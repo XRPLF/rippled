@@ -1,9 +1,26 @@
-#include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
-namespace ripple {
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
 
 class PeerSetImpl : public PeerSet
 {
@@ -23,12 +40,12 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override;
 
 private:
     // Used in this class for access to boost::asio::io_context and
-    // ripple::Overlay.
+    // xrpl::Overlay.
     Application& app_;
     beast::Journal journal_;
 
@@ -36,8 +53,7 @@ private:
     std::set<Peer::id_t> peers_;
 };
 
-PeerSetImpl::PeerSetImpl(Application& app)
-    : app_(app), journal_(app.journal("PeerSet"))
+PeerSetImpl::PeerSetImpl(Application& app) : app_(app), journal_(app.getJournal("PeerSet"))
 {
 }
 
@@ -49,7 +65,7 @@ PeerSetImpl::addPeers(
 {
     using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
 
-    auto const& overlay = app_.overlay();
+    auto const& overlay = app_.getOverlay();
 
     std::vector<ScoredPeer> pairs;
     pairs.reserve(overlay.size());
@@ -59,12 +75,8 @@ PeerSetImpl::addPeers(
         pairs.emplace_back(score, std::move(peer));
     });
 
-    std::sort(
-        pairs.begin(),
-        pairs.end(),
-        [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
-            return lhs.first > rhs.first;
-        });
+    std::ranges::sort(
+        pairs, [](ScoredPeer const& lhs, ScoredPeer const& rhs) { return lhs.first > rhs.first; });
 
     std::size_t accepted = 0;
     for (auto const& pair : pairs)
@@ -93,7 +105,7 @@ PeerSetImpl::sendRequest(
 
     for (auto id : peers_)
     {
-        if (auto p = app_.overlay().findPeerByShortID(id))
+        if (auto p = app_.getOverlay().findPeerByShortID(id))
             p->send(packet);
     }
 }
@@ -111,7 +123,7 @@ public:
     {
     }
 
-    virtual std::unique_ptr<PeerSet>
+    std::unique_ptr<PeerSet>
     build() override
     {
         return std::make_unique<PeerSetImpl>(app_);
@@ -122,7 +134,7 @@ private:
 };
 
 std::unique_ptr<PeerSetBuilder>
-make_PeerSetBuilder(Application& app)
+makePeerSetBuilder(Application& app)
 {
     return std::make_unique<PeerSetBuilderImpl>(app);
 }
@@ -130,7 +142,7 @@ make_PeerSetBuilder(Application& app)
 class DummyPeerSet : public PeerSet
 {
 public:
-    DummyPeerSet(Application& app) : j_(app.journal("DummyPeerSet"))
+    DummyPeerSet(Application& app) : j_(app.getJournal("DummyPeerSet"))
     {
     }
 
@@ -152,12 +164,12 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> emptyPeers;
+        static std::set<Peer::id_t> const kEmptyPeers;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
-        return emptyPeers;
+        return kEmptyPeers;
     }
 
 private:
@@ -165,9 +177,9 @@ private:
 };
 
 std::unique_ptr<PeerSet>
-make_DummyPeerSet(Application& app)
+makeDummyPeerSet(Application& app)
 {
     return std::make_unique<DummyPeerSet>(app);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

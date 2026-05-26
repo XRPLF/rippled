@@ -1,9 +1,8 @@
-#ifndef XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
-#define XRPL_APP_CONSENSUS_RCLCXTX_H_INCLUDED
+#pragma once
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a transaction in RCLConsensus.
 
@@ -20,19 +19,19 @@ public:
 
         @param txn The transaction to wrap
     */
-    RCLCxTx(boost::intrusive_ptr<SHAMapItem const> txn) : tx_(std::move(txn))
+    RCLCxTx(boost::intrusive_ptr<SHAMapItem const> txn) : tx(std::move(txn))
     {
     }
 
     //! The unique identifier/hash of the transaction
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
-        return tx_->key();
+        return tx->key();
     }
 
     //! The SHAMapItem that represents the transaction.
-    boost::intrusive_ptr<SHAMapItem const> tx_;
+    boost::intrusive_ptr<SHAMapItem const> tx;
 };
 
 /** Represents a set of transactions in RCLConsensus.
@@ -56,7 +55,7 @@ public:
         std::shared_ptr<SHAMap> map_;
 
     public:
-        MutableTxSet(RCLTxSet const& src) : map_{src.map_->snapShot(true)}
+        MutableTxSet(RCLTxSet const& src) : map_{src.map->snapShot(true)}
         {
         }
 
@@ -68,7 +67,7 @@ public:
         bool
         insert(Tx const& t)
         {
-            return map_->addItem(SHAMapNodeType::tnTRANSACTION_NM, t.tx_);
+            return map_->addItem(SHAMapNodeType::TnTransactionNm, t.tx);
         }
 
         /** Remove a transaction from the set.
@@ -87,17 +86,16 @@ public:
 
         @param m SHAMap to wrap
     */
-    RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
+    RCLTxSet(std::shared_ptr<SHAMap> m) : map{std::move(m)}
     {
-        XRPL_ASSERT(
-            map_, "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
+        XRPL_ASSERT(map, "xrpl::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
     }
 
     /** Constructor from a previously created MutableTxSet
 
         @param m MutableTxSet that will become fixed
      */
-    RCLTxSet(MutableTxSet const& m) : map_{m.map_->snapShot(false)}
+    RCLTxSet(MutableTxSet const& m) : map{m.map_->snapShot(false)}
     {
     }
 
@@ -106,10 +104,10 @@ public:
         @param entry The ID of transaction to test.
         @return Whether the transaction is in the set.
     */
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const& entry) const
     {
-        return map_->hasItem(entry);
+        return map->hasItem(entry);
     }
 
     /** Lookup a transaction.
@@ -123,17 +121,17 @@ public:
               code uses the shared_ptr semantics to know whether the find
               was successful and properly creates a Tx as needed.
     */
-    boost::intrusive_ptr<SHAMapItem const> const&
+    [[nodiscard]] boost::intrusive_ptr<SHAMapItem const> const&
     find(Tx::ID const& entry) const
     {
-        return map_->peekItem(entry);
+        return map->peekItem(entry);
     }
 
     //! The unique ID/hash of the transaction set
-    ID
+    [[nodiscard]] ID
     id() const
     {
-        return map_->getHash().as_uint256();
+        return map->getHash().asUInt256();
     }
 
     /** Find transactions not in common between this and another transaction
@@ -144,21 +142,21 @@ public:
                 is the transaction ID and the value is a bool of the transaction
                 exists in this set.
     */
-    std::map<Tx::ID, bool>
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(RCLTxSet const& j) const
     {
         SHAMap::Delta delta;
 
         // Bound the work we do in case of a malicious
-        // map_ from a trusted validator
-        map_->compare(*(j.map_), delta, 65536);
+        // map from a trusted validator
+        map->compare(*(j.map), delta, 65536);
 
         std::map<uint256, bool> ret;
         for (auto const& [k, v] : delta)
         {
             XRPL_ASSERT(
                 (v.first && !v.second) || (v.second && !v.first),
-                "ripple::RCLTxSet::compare : either side is set");
+                "xrpl::RCLTxSet::compare : either side is set");
 
             ret[k] = static_cast<bool>(v.first);
         }
@@ -166,7 +164,6 @@ public:
     }
 
     //! The SHAMap representing the transactions.
-    std::shared_ptr<SHAMap> map_;
+    std::shared_ptr<SHAMap> map;
 };
-}  // namespace ripple
-#endif
+}  // namespace xrpl

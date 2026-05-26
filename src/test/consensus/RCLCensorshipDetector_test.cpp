@@ -1,14 +1,14 @@
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-class RCLCensorshipDetector_test : public beast::unit_test::suite
+class RCLCensorshipDetector_test : public beast::unit_test::Suite
 {
     void
     test(
@@ -79,6 +79,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, ripple);
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
+}  // namespace xrpl::test

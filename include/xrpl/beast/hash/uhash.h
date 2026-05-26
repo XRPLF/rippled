@@ -1,5 +1,4 @@
-#ifndef BEAST_HASH_UHASH_H_INCLUDED
-#define BEAST_HASH_UHASH_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
@@ -7,10 +6,10 @@
 namespace beast {
 
 // Universal hash function
-template <class Hasher = xxhasher>
-struct uhash
+template <class Hasher = Xxhasher>
+struct Uhash
 {
-    uhash() = default;
+    Uhash() = default;
 
     using result_type = typename Hasher::result_type;
 
@@ -25,5 +24,3 @@ struct uhash
 };
 
 }  // namespace beast
-
-#endif

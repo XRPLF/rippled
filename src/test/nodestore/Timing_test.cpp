@@ -2,42 +2,53 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/unit_test/thread.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <iterator>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <ios>
+#include <memory>
+#include <ostream>
 #include <random>
 #include <sstream>
-#include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <utility>
+#include <vector>
 
 #ifndef NODESTORE_TIMING_DO_VERIFY
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
-make_Backend(
-    Section const& config,
-    Scheduler& scheduler,
-    beast::Journal journal)
+makeBackend(Section const& config, Scheduler& scheduler, beast::Journal journal)
 {
-    return Manager::instance().make_Backend(
-        config, megabytes(4), scheduler, journal);
+    return Manager::instance().makeBackend(config, megabytes(4), scheduler, journal);
 }
 
 // Fill memory with random bits
@@ -66,20 +77,23 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
+    static constexpr auto kMinLedger = 1;
+    static constexpr auto kMaxLedger = 1000000;
+    static constexpr auto kMinSize = 250;
+    static constexpr auto kMaxSize = 1250;
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::discrete_distribution<std::uint32_t> d_type_;
-    std::uniform_int_distribution<std::uint32_t> d_size_;
+    std::discrete_distribution<std::uint32_t> dType_;
+    std::uniform_int_distribution<std::uint32_t> dSize_;
 
 public:
     explicit Sequence(std::uint8_t prefix)
         : prefix_(prefix)
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
-        , d_type_({1, 1, 0, 1, 1})
-        , d_size_(minSize, maxSize)
+        , dType_({1, 1, 0, 1, 1})
+        , dSize_(kMinSize, kMaxSize)
     {
     }
 
@@ -102,10 +116,10 @@ public:
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
-        Blob value(d_size_(gen_));
+        Blob value(dSize_(gen_));
         rngcpy(&value[0], value.size(), gen_);
         return NodeObject::createObject(
-            safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+            safeCast<NodeObjectType>(dType_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -114,26 +128,23 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
 
 //----------------------------------------------------------------------------------
 
-class Timing_test : public beast::unit_test::suite
+class Timing_test : public beast::unit_test::Suite
 {
 public:
-    enum {
-        // percent of fetches for missing nodes
-        missingNodePercent = 20
-    };
+    static constexpr auto kMissingNodePercent = 20;  // percent of fetches for missing nodes
 
-    std::size_t const default_repeat = 3;
+    std::size_t const defaultRepeat = 3;
 #ifndef NDEBUG
-    std::size_t const default_items = 10000;
+    std::size_t const defaultItems = 10000;
 #else
-    std::size_t const default_items = 100000;  // release
+    std::size_t const defaultItems = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
@@ -146,17 +157,16 @@ public:
     };
 
     static std::string
-    to_string(Section const& config)
+    toString(Section const& config)
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
-            s += (iter != config.begin() ? "," : "") + iter->first + "=" +
-                iter->second;
+            s += (iter != config.begin() ? "," : "") + iter->first + "=" + iter->second;
         return s;
     }
 
     static std::string
-    to_string(duration_type const& d)
+    toString(duration_type const& d)
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(3) << (d.count() / 1000.) << "s";
@@ -178,15 +188,14 @@ public:
     // Workaround for GCC's parameter pack expansion in lambdas
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=47226
     template <class Body>
-    class parallel_for_lambda
+    class ParallelForLambda
     {
     private:
         std::size_t const n_;
         std::atomic<std::size_t>& c_;
 
     public:
-        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c)
-            : n_(n), c_(c)
+        ParallelForLambda(std::size_t n, std::atomic<std::size_t>& c) : n_(n), c_(c)
         {
         }
 
@@ -213,32 +222,26 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallelFor(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
-        t.reserve(number_of_threads);
-        for (std::size_t id = 0; id < number_of_threads; ++id)
-            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
+        std::vector<beast::unit_test::Thread> t;
+        t.reserve(numberOfThreads);
+        for (std::size_t id = 0; id < numberOfThreads; ++id)
+            t.emplace_back(*this, ParallelForLambda<Body>(n, c), args...);
         for (auto& _ : t)
             _.join();
     }
 
     template <class Body, class... Args>
     void
-    parallel_for_id(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallelForId(std::size_t const n, std::size_t numberOfThreads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
-        t.reserve(number_of_threads);
-        for (std::size_t id = 0; id < number_of_threads; ++id)
-            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
+        std::vector<beast::unit_test::Thread> t;
+        t.reserve(numberOfThreads);
+        for (std::size_t id = 0; id < numberOfThreads; ++id)
+            t.emplace_back(*this, ParallelForLambda<Body>(n, c), id, args...);
         for (auto& _ : t)
             _.join();
     }
@@ -247,26 +250,22 @@ public:
 
     // Insert only
     void
-    do_insert(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    doInsert(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Backend& backend_;
             Sequence seq_;
 
         public:
-            explicit Body(suite& s, Backend& backend)
-                : suite_(s), backend_(backend), seq_(1)
+            explicit Body(Suite& s, Backend& backend) : suite_(s), backend_(backend), seq_(1)
             {
             }
 
@@ -286,54 +285,39 @@ public:
 
         try
         {
-            parallel_for<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(*backend));
+            parallelFor<Body>(params.items, params.threads, std::ref(*this), std::ref(*backend));
         }
         catch (std::exception const&)
         {
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
 
     // Fetch existing keys
     void
-    do_fetch(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    doFetch(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Backend& backend_;
             Sequence seq1_;
             beast::xor_shift_engine gen_;
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
-                : suite_(s)
-                , backend_(backend)
-                , seq1_(1)
-                , gen_(id + 1)
-                , dist_(0, params.items - 1)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
+                : suite_(s), backend_(backend), seq1_(1), gen_(id + 1), dist_(0, params.items - 1)
             {
             }
 
@@ -345,7 +329,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash().data(), &result);
+                    backend_.fetch(obj->getHash(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -356,7 +340,7 @@ public:
         };
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -368,27 +352,24 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
 
     // Perform lookups of non-existent keys
     void
-    do_missing(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    doMissing(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             // Params const& params_;
             Backend& backend_;
             Sequence seq2_;
@@ -396,11 +377,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -415,9 +392,9 @@ public:
             {
                 try
                 {
-                    auto const key = seq2_.key(i);
+                    auto const hash = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(key.data(), &result);
+                    backend_.fetch(hash, &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -429,7 +406,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -441,27 +418,24 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
 
     // Fetch with present and missing keys
     void
-    do_mixed(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    doMixed(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             // Params const& params_;
             Backend& backend_;
             Sequence seq1_;
@@ -471,11 +445,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -492,11 +462,11 @@ public:
             {
                 try
                 {
-                    if (rand_(gen_) < missingNodePercent)
+                    if (rand_(gen_) < kMissingNodePercent)
                     {
-                        auto const key = seq2_.key(dist_(gen_));
+                        auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(key.data(), &result);
+                        backend_.fetch(hash, &result);
                         suite_.expect(!result);
                     }
                     else
@@ -504,7 +474,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -517,7 +487,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -529,21 +499,21 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
     //      fetches recent, possibly non existent data
     void
-    do_work(Section const& config, Params const& params, beast::Journal journal)
+    doWork(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = makeBackend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->setDeletePath();
         backend->open();
@@ -551,7 +521,7 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Params const& params_;
             Backend& backend_;
             Sequence seq1_;
@@ -561,18 +531,14 @@ public:
             std::uniform_int_distribution<std::size_t> older_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 , params_(params)
                 , backend_(backend)
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }
@@ -589,8 +555,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -600,6 +565,7 @@ public:
                     p[1] = 1 - p[0];
                     for (int q = 0; q < 2; ++q)
                     {
+                        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
                         switch (p[q])
                         {
                             case 0: {
@@ -608,7 +574,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash().data(), &result);
+                                backend_.fetch(obj->getHash(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
@@ -631,7 +597,7 @@ public:
 
         try
         {
-            parallel_for_id<Body>(
+            parallelForId<Body>(
                 params.items,
                 params.threads,
                 std::ref(*this),
@@ -643,43 +609,38 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
 
     //--------------------------------------------------------------------------
 
-    using test_func =
-        void (Timing_test::*)(Section const&, Params const&, beast::Journal);
+    using test_func = void (Timing_test::*)(Section const&, Params const&, beast::Journal);
     using test_list = std::vector<std::pair<std::string, test_func>>;
 
     duration_type
-    do_test(
-        test_func f,
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    doTest(test_func f, Section const& config, Params const& params, beast::Journal journal)
     {
         auto const start = clock_type::now();
         (this->*f)(config, params, journal);
-        return std::chrono::duration_cast<duration_type>(
-            clock_type::now() - start);
+        return std::chrono::duration_cast<duration_type>(clock_type::now() - start);
     }
 
     void
-    do_tests(
+    doTests(
         std::size_t threads,
         test_list const& tests,
-        std::vector<std::string> const& config_strings)
+        std::vector<std::string> const& configStrings)
     {
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
-            if (w < test.first.size())
-                w = test.first.size();
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", "
-            << default_items << " Objects" << std::endl;
+        {
+            w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
+        }
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << defaultItems
+            << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
@@ -688,27 +649,26 @@ public:
             log << ss.str() << std::endl;
         }
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Timing_test", *this);
 
-        for (auto const& config_string : config_strings)
+        for (auto const& configString : configStrings)
         {
-            Params params;
-            params.items = default_items;
+            Params params{};
+            params.items = defaultItems;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = defaultRepeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
-                Section config = parse(config_string);
+                beast::TempDir const tempDir;
+                Section config = parse(configString);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10)
-                   << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
-                    ss << " " << setw(w)
-                       << to_string(
-                              do_test(test.second, config, params, journal));
-                ss << "   " << to_string(config);
+                {
+                    ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));
+                }
+                ss << "   " << toString(config);
                 log << ss.str() << std::endl;
             }
         }
@@ -717,7 +677,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::abort_on_fail);
+        testcase("Timing", beast::unit_test::AbortT::AbortOnFail);
 
         /*  Parameters:
 
@@ -725,7 +685,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const defaultArgs =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
@@ -737,29 +697,34 @@ public:
             ;
 
         test_list const tests = {
-            {"Insert", &Timing_test::do_insert},
-            {"Fetch", &Timing_test::do_fetch},
-            {"Missing", &Timing_test::do_missing},
-            {"Mixed", &Timing_test::do_mixed},
-            {"Work", &Timing_test::do_work}};
+            {"Insert", &Timing_test::doInsert},
+            {"Fetch", &Timing_test::doFetch},
+            {"Missing", &Timing_test::doMissing},
+            {"Mixed", &Timing_test::doMixed},
+            {"Work", &Timing_test::doWork}};
 
-        auto args = arg().empty() ? default_args : arg();
-        std::vector<std::string> config_strings;
-        boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
-        for (auto iter = config_strings.begin(); iter != config_strings.end();)
+        auto args = arg().empty() ? defaultArgs : arg();
+        std::vector<std::string> configStrings;
+        boost::split(configStrings, args, boost::algorithm::is_any_of(";"));
+        for (auto iter = configStrings.begin(); iter != configStrings.end();)
+        {
             if (iter->empty())
-                iter = config_strings.erase(iter);
+            {
+                iter = configStrings.erase(iter);
+            }
             else
+            {
                 ++iter;
+            }
+        }
 
-        do_tests(1, tests, config_strings);
-        do_tests(4, tests, config_strings);
-        do_tests(8, tests, config_strings);
+        doTests(1, tests, configStrings);
+        doTests(4, tests, configStrings);
+        doTests(8, tests, configStrings);
         // do_tests (16, tests, config_strings);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

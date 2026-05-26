@@ -1,5 +1,4 @@
-#ifndef BEAST_INSIGHT_H_INCLUDED
-#define BEAST_INSIGHT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
@@ -14,5 +13,3 @@
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/insight/StatsDCollector.h>
-
-#endif

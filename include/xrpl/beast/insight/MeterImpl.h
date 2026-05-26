@@ -1,11 +1,9 @@
-#ifndef BEAST_INSIGHT_METERIMPL_H_INCLUDED
-#define BEAST_INSIGHT_METERIMPL_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class Meter;
 
@@ -19,7 +17,4 @@ public:
     increment(value_type amount) = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPITEM_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/CountedObject.h>
@@ -10,7 +9,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
-namespace ripple {
+namespace xrpl {
 
 // an item stored in a SHAMap
 class SHAMapItem : public CountedObject<SHAMapItem>
@@ -26,7 +25,7 @@ class SHAMapItem : public CountedObject<SHAMapItem>
 
     // This is the interface for creating new instances of this class.
     friend boost::intrusive_ptr<SHAMapItem>
-    make_shamapitem(uint256 const& tag, Slice data);
+    makeShamapitem(uint256 const& tag, Slice data);
 
 private:
     uint256 const tag_;
@@ -47,9 +46,7 @@ private:
         : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
     {
         std::memcpy(
-            reinterpret_cast<std::uint8_t*>(this) + sizeof(*this),
-            data.data(),
-            data.size());
+            reinterpret_cast<std::uint8_t*>(this) + sizeof(*this), data.data(), data.size());
     }
 
 public:
@@ -96,7 +93,7 @@ namespace detail {
 // The slab cutoffs and the number of megabytes per allocation are customized
 // based on the number of objects of each size we expect to need at any point
 // in time and with an eye to minimize the number of slack bytes in a block.
-inline SlabAllocatorSet<SHAMapItem> slabber({
+inline SlabAllocatorSet<SHAMapItem> gSlabber({
     {  128, megabytes(std::size_t(60)) },
     {  192, megabytes(std::size_t(46)) },
     {  272, megabytes(std::size_t(60)) },
@@ -115,7 +112,7 @@ intrusive_ptr_add_ref(SHAMapItem const* x)
     // This can only happen if someone releases the last reference to the
     // item while we were trying to increment the refcount.
     if (x->refcount_++ == 0)
-        LogicError("SHAMapItem: the reference count is 0!");
+        logicError("SHAMapItem: the reference count is 0!");
 }
 
 inline void
@@ -125,27 +122,27 @@ intrusive_ptr_release(SHAMapItem const* x)
     {
         auto p = reinterpret_cast<std::uint8_t const*>(x);
 
-        // The SHAMapItem constuctor isn't trivial (because the destructor
+        // The SHAMapItem constructor isn't trivial (because the destructor
         // for CountedObject isn't) so we can't avoid calling it here, but
         // plan for a future where we might not need to.
         if constexpr (!std::is_trivially_destructible_v<SHAMapItem>)
             std::destroy_at(x);
 
-        // If the slabber doens't claim this pointer, it was allocated
+        // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
-        if (!detail::slabber.deallocate(const_cast<std::uint8_t*>(p)))
+        if (!detail::gSlabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;
     }
 }
 
 inline boost::intrusive_ptr<SHAMapItem>
-make_shamapitem(uint256 const& tag, Slice data)
+makeShamapitem(uint256 const& tag, Slice data)
 {
     XRPL_ASSERT(
-        data.size() <= megabytes<std::size_t>(16),
-        "ripple::make_shamapitem : maximum input size");
+        data.size() <= megabytes<std::size_t>(16), "xrpl::makeShamapitem : maximum input size");
 
-    std::uint8_t* raw = detail::slabber.allocate(data.size());
+    // NOLINTNEXTLINE(misc-const-correctness)
+    std::uint8_t* raw = detail::gSlabber.allocate(data.size());
 
     // If we can't grab memory from the slab allocators, we fall back to
     // the standard library and try to grab a precisely-sized memory block:
@@ -163,11 +160,9 @@ static_assert(alignof(SHAMapItem) != 40);
 static_assert(alignof(SHAMapItem) == 8 || alignof(SHAMapItem) == 4);
 
 inline boost::intrusive_ptr<SHAMapItem>
-make_shamapitem(SHAMapItem const& other)
+makeShamapitem(SHAMapItem const& other)
 {
-    return make_shamapitem(other.key(), other.slice());
+    return makeShamapitem(other.key(), other.slice());
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

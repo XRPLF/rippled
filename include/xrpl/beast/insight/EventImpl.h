@@ -1,11 +1,9 @@
-#ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
-#define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
+#pragma once
 
 #include <chrono>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class Event;
 
@@ -19,7 +17,4 @@ public:
     notify(value_type const& value) = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
-
-#endif
+}  // namespace beast::insight

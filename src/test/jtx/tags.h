@@ -1,48 +1,31 @@
-#ifndef XRPL_TEST_JTX_TAGS_H_INCLUDED
-#define XRPL_TEST_JTX_TAGS_H_INCLUDED
+#pragma once
 
-namespace ripple {
-namespace test {
+namespace xrpl::test::jtx {
 
-namespace jtx {
-
-struct none_t
+struct NoneT
 {
-    none_t()
-    {
-    }
+    NoneT() = default;
 };
-static none_t const none;
+static NoneT const kNone;
 
-struct autofill_t
+struct AutofillT
 {
-    autofill_t()
-    {
-    }
+    AutofillT() = default;
 };
-static autofill_t const autofill;
+static AutofillT const kAutofill;
 
-struct disabled_t
+struct DisabledT
 {
-    disabled_t()
-    {
-    }
+    DisabledT() = default;
 };
-static disabled_t const disabled;
+static DisabledT const kDisabled;
 
-/** Used for fee() calls that use an owner reserve increment */
-struct increment_t
+/** Used for Fee() calls that use an owner reserve increment */
+struct IncrementT
 {
-    increment_t()
-    {
-    }
+    IncrementT() = default;
 };
 
-static increment_t const increment;
+static IncrementT const kIncrement;
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

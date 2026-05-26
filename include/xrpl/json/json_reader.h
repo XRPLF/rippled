@@ -1,7 +1,4 @@
-#ifndef XRPL_JSON_JSON_READER_H_INCLUDED
-#define XRPL_JSON_JSON_READER_H_INCLUDED
-
-#define CPPTL_JSON_READER_H_INCLUDED
+#pragma once
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -10,7 +7,7 @@
 
 #include <stack>
 
-namespace Json {
+namespace json {
 
 /** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
@@ -48,7 +45,7 @@ public:
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
     /// \brief Parse from input stream.
-    /// \see Json::operator>>(std::istream&, Json::Value&).
+    /// \see json::operator>>(std::istream&, json::Value&).
     bool
     parse(std::istream& is, Value& root);
 
@@ -67,28 +64,28 @@ public:
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
      */
-    std::string
-    getFormatedErrorMessages() const;
+    [[nodiscard]] std::string
+    getFormattedErrorMessages() const;
 
-    static constexpr unsigned nest_limit{25};
+    static constexpr unsigned kNestLimit{25};
 
 private:
-    enum TokenType {
-        tokenEndOfStream = 0,
-        tokenObjectBegin,
-        tokenObjectEnd,
-        tokenArrayBegin,
-        tokenArrayEnd,
-        tokenString,
-        tokenInteger,
-        tokenDouble,
-        tokenTrue,
-        tokenFalse,
-        tokenNull,
-        tokenArraySeparator,
-        tokenMemberSeparator,
-        tokenComment,
-        tokenError
+    enum class TokenType {
+        EndOfStream = 0,
+        ObjectBegin,
+        ObjectEnd,
+        ArrayBegin,
+        ArrayEnd,
+        String,
+        Integer,
+        Double,
+        True,
+        False,
+        Null,
+        ArraySeparator,
+        MemberSeparator,
+        Comment,
+        Error
     };
 
     class Token
@@ -96,9 +93,9 @@ private:
     public:
         explicit Token() = default;
 
-        TokenType type_;
-        Location start_;
-        Location end_;
+        TokenType type;
+        Location start;
+        Location end;
     };
 
     class ErrorInfo
@@ -106,9 +103,9 @@ private:
     public:
         explicit ErrorInfo() = default;
 
-        Token token_;
-        std::string message_;
-        Location extra_;
+        Token token{};
+        std::string message;
+        Location extra{};
     };
 
     using Errors = std::deque<ErrorInfo>;
@@ -146,11 +143,7 @@ private:
     bool
     decodeDouble(Token& token);
     bool
-    decodeUnicodeCodePoint(
-        Token& token,
-        Location& current,
-        Location end,
-        unsigned int& unicode);
+    decodeUnicodeCodePoint(Token& token, Location& current, Location end, unsigned int& unicode);
     bool
     decodeUnicodeEscapeSequence(
         Token& token,
@@ -162,10 +155,7 @@ private:
     bool
     recoverFromError(TokenType skipUntilToken);
     bool
-    addErrorAndRecover(
-        std::string const& message,
-        Token& token,
-        TokenType skipUntilToken);
+    addErrorAndRecover(std::string const& message, Token& token, TokenType skipUntilToken);
     void
     skipUntilSpace();
     Value&
@@ -183,11 +173,11 @@ private:
     Nodes nodes_;
     Errors errors_;
     std::string document_;
-    Location begin_;
-    Location end_;
-    Location current_;
-    Location lastValueEnd_;
-    Value* lastValue_;
+    Location begin_{};
+    Location end_{};
+    Location current_{};
+    Location lastValueEnd_{};
+    Value* lastValue_{};
 };
 
 template <class BufferSequence>
@@ -209,7 +199,7 @@ Reader::parse(Value& root, BufferSequence const& bs)
  This can be used to read a file into a particular sub-object.
  For example:
  \code
- Json::Value root;
+ json::Value root;
  cin >> root["dir"]["file"];
  cout << root;
  \endcode
@@ -224,11 +214,9 @@ Reader::parse(Value& root, BufferSequence const& bs)
  }
  \endverbatim
  \throw std::exception on parse error.
- \see Json::operator<<()
+ \see json::operator<<()
 */
 std::istream&
 operator>>(std::istream&, Value&);
 
-}  // namespace Json
-
-#endif  // CPPTL_JSON_READER_H_INCLUDED
+}  // namespace json

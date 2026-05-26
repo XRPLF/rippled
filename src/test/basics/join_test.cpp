@@ -1,12 +1,19 @@
 #include <test/jtx/Account.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
-namespace test {
+#include <array>
+#include <cstddef>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+#include <vector>
 
-struct join_test : beast::unit_test::suite
+namespace xrpl::test {
+
+struct join_test : beast::unit_test::Suite
 {
     void
     run() override
@@ -23,13 +30,9 @@ struct join_test : beast::unit_test::suite
         };
 
         // C++ array
-        test(
-            CollectionAndDelimiter(std::array<int, 4>{2, -1, 5, 10}, "/"),
-            "2/-1/5/10");
+        test(CollectionAndDelimiter(std::array<int, 4>{2, -1, 5, 10}, "/"), "2/-1/5/10");
         // One item C++ array edge case
-        test(
-            CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "),
-            "test");
+        test(CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "), "test");
         // Empty C++ array edge case
         test(CollectionAndDelimiter(std::array<int, 0>{}, ","), "");
         {
@@ -48,20 +51,15 @@ struct join_test : beast::unit_test::suite
             test(CollectionAndDelimiter(words, "\n"), "thing");
         }
         // Initializer list
-        test(
-            CollectionAndDelimiter(std::initializer_list<size_t>{19, 25}, "+"),
-            "19+25");
+        test(CollectionAndDelimiter(std::initializer_list<size_t>{19, 25}, "+"), "19+25");
         // vector
-        test(
-            CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)),
-            "09942");
+        test(CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)), "09942");
         {
             // vector with one item edge case
             using namespace jtx;
             test(
-                CollectionAndDelimiter(
-                    std::vector<Account>{Account::master}, "xxx"),
-                Account::master.human());
+                CollectionAndDelimiter(std::vector<Account>{Account::kMaster}, "xxx"),
+                Account::kMaster.human());
         }
         // empty vector edge case
         test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
@@ -80,7 +78,6 @@ struct join_test : beast::unit_test::suite
     }
 };  // namespace test
 
-BEAST_DEFINE_TESTSUITE(join, basics, ripple);
+BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

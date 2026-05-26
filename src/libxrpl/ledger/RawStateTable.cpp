@@ -1,28 +1,41 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace ripple {
-namespace detail {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::detail {
+
+class RawStateTable::SlesIterImpl : public ReadView::SlesType::iter_base
 {
 private:
     std::shared_ptr<SLE const> sle0_;
-    ReadView::sles_type::iterator iter0_;
-    ReadView::sles_type::iterator end0_;
+    ReadView::SlesType::Iterator iter0_;
+    ReadView::SlesType::Iterator end0_;
     std::shared_ptr<SLE const> sle1_;
     items_t::const_iterator iter1_;
     items_t::const_iterator end1_;
 
 public:
-    sles_iter_impl(sles_iter_impl const&) = default;
+    SlesIterImpl(SlesIterImpl const&) = default;
 
-    sles_iter_impl(
+    SlesIterImpl(
         items_t::const_iterator iter1,
         items_t::const_iterator end1,
-        ReadView::sles_type::iterator iter0,
-        ReadView::sles_type::iterator end0)
-        : iter0_(iter0), end0_(end0), iter1_(iter1), end1_(end1)
+        ReadView::SlesType::Iterator iter0,
+        ReadView::SlesType::Iterator end0)
+        : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
     {
         if (iter0_ != end0_)
             sle0_ = *iter0_;
@@ -36,17 +49,17 @@ public:
     std::unique_ptr<base_type>
     copy() const override
     {
-        return std::make_unique<sles_iter_impl>(*this);
+        return std::make_unique<SlesIterImpl>(*this);
     }
 
     bool
     equal(base_type const& impl) const override
     {
-        if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
+        if (auto const p = dynamic_cast<SlesIterImpl const*>(&impl))
         {
             XRPL_ASSERT(
                 end1_ == p->end1_ && end0_ == p->end0_,
-                "ripple::detail::RawStateTable::equal : matching end "
+                "xrpl::detail::RawStateTable::equal : matching end "
                 "iterators");
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
@@ -59,7 +72,7 @@ public:
     {
         XRPL_ASSERT(
             sle1_ || sle0_,
-            "ripple::detail::RawStateTable::increment : either SLE is "
+            "xrpl::detail::RawStateTable::increment : either SLE is "
             "non-null");
 
         if (sle1_ && !sle0_)
@@ -94,9 +107,13 @@ public:
     dereference() const override
     {
         if (!sle1_)
+        {
             return sle0_;
-        else if (!sle0_)
+        }
+        if (!sle0_)
+        {
             return sle1_;
+        }
         if (sle1_->key() <= sle0_->key())
             return sle1_;
         return sle0_;
@@ -108,9 +125,13 @@ private:
     {
         ++iter0_;
         if (iter0_ == end0_)
+        {
             sle0_ = nullptr;
+        }
         else
+        {
             sle0_ = *iter0_;
+        }
     }
 
     void
@@ -118,15 +139,19 @@ private:
     {
         ++iter1_;
         if (iter1_ == end1_)
+        {
             sle1_ = nullptr;
+        }
         else
+        {
             sle1_ = iter1_->second.sle;
+        }
     }
 
     void
     skip()
     {
-        while (iter1_ != end1_ && iter1_->second.action == Action::erase &&
+        while (iter1_ != end1_ && iter1_->second.action == Action::Erase &&
                sle0_->key() == sle1_->key())
         {
             inc1();
@@ -150,13 +175,13 @@ RawStateTable::apply(RawView& to) const
         auto const& item = elem.second;
         switch (item.action)
         {
-            case Action::erase:
+            case Action::Erase:
                 to.rawErase(item.sle);
                 break;
-            case Action::insert:
+            case Action::Insert:
                 to.rawInsert(item.sle);
                 break;
-            case Action::replace:
+            case Action::Replace:
                 to.rawReplace(item.sle);
                 break;
         }
@@ -166,14 +191,12 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
-    XRPL_ASSERT(
-        k.key.isNonZero(),
-        "ripple::detail::RawStateTable::exists : nonzero key");
+    XRPL_ASSERT(k.key.isNonZero(), "xrpl::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
     auto const& item = iter->second;
-    if (item.action == Action::erase)
+    if (item.action == Action::Erase)
         return false;
     if (!k.check(*item.sle))
         return false;
@@ -185,10 +208,8 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     the lower of the two.
 */
 auto
-RawStateTable::succ(
-    ReadView const& base,
-    key_type const& key,
-    std::optional<key_type> const& last) const -> std::optional<key_type>
+RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last)
+    const -> std::optional<key_type>
 {
     std::optional<key_type> next = key;
     items_t::const_iterator iter;
@@ -200,11 +221,11 @@ RawStateTable::succ(
         if (!next)
             break;
         iter = items_.find(*next);
-    } while (iter != items_.end() && iter->second.action == Action::erase);
+    } while (iter != items_.end() && iter->second.action == Action::Erase);
     // Find non-deleted successor in our list
     for (iter = items_.upper_bound(key); iter != items_.end(); ++iter)
     {
-        if (iter->second.action != Action::erase)
+        if (iter->second.action != Action::Erase)
         {
             // Found both, return the lower key
             if (!next || next > iter->first)
@@ -226,20 +247,20 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
     auto const result = items_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::erase, sle));
+        std::forward_as_tuple(Action::Erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
     switch (item.action)
     {
-        case Action::erase:
-            LogicError("RawStateTable::erase: already erased");
+        case Action::Erase:
+            Throw<std::logic_error>("RawStateTable::erase: already erased");
             break;
-        case Action::insert:
+        case Action::Insert:
             items_.erase(result.first);
             break;
-        case Action::replace:
-            item.action = Action::erase;
+        case Action::Replace:
+            item.action = Action::Erase;
             item.sle = sle;
             break;
     }
@@ -251,21 +272,21 @@ RawStateTable::insert(std::shared_ptr<SLE> const& sle)
     auto const result = items_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::insert, sle));
+        std::forward_as_tuple(Action::Insert, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
     switch (item.action)
     {
-        case Action::erase:
-            item.action = Action::replace;
+        case Action::Erase:
+            item.action = Action::Replace;
             item.sle = sle;
             break;
-        case Action::insert:
-            LogicError("RawStateTable::insert: already inserted");
+        case Action::Insert:
+            Throw<std::logic_error>("RawStateTable::insert: already inserted");
             break;
-        case Action::replace:
-            LogicError("RawStateTable::insert: already exists");
+        case Action::Replace:
+            Throw<std::logic_error>("RawStateTable::insert: already exists");
             break;
     }
 }
@@ -276,17 +297,17 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
     auto const result = items_.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(sle->key()),
-        std::forward_as_tuple(Action::replace, sle));
+        std::forward_as_tuple(Action::Replace, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
     switch (item.action)
     {
-        case Action::erase:
-            LogicError("RawStateTable::replace: was erased");
+        case Action::Erase:
+            Throw<std::logic_error>("RawStateTable::replace: was erased");
             break;
-        case Action::insert:
-        case Action::replace:
+        case Action::Insert:
+        case Action::Replace:
             item.sle = sle;
             break;
     }
@@ -299,7 +320,7 @@ RawStateTable::read(ReadView const& base, Keylet const& k) const
     if (iter == items_.end())
         return base.read(k);
     auto const& item = iter->second;
-    if (item.action == Action::erase)
+    if (item.action == Action::Erase)
         return nullptr;
     // Convert to SLE const
     std::shared_ptr<SLE const> sle = item.sle;
@@ -314,29 +335,25 @@ RawStateTable::destroyXRP(XRPAmount const& fee)
     dropsDestroyed_ += fee;
 }
 
-std::unique_ptr<ReadView::sles_type::iter_base>
+std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesBegin(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(
+    return std::make_unique<SlesIterImpl>(
         items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
 
-std::unique_ptr<ReadView::sles_type::iter_base>
+std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesEnd(ReadView const& base) const
 {
-    return std::make_unique<sles_iter_impl>(
+    return std::make_unique<SlesIterImpl>(
         items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
 
-std::unique_ptr<ReadView::sles_type::iter_base>
+std::unique_ptr<ReadView::SlesType::iter_base>
 RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 {
-    return std::make_unique<sles_iter_impl>(
-        items_.upper_bound(key),
-        items_.end(),
-        base.sles.upper_bound(key),
-        base.sles.end());
+    return std::make_unique<SlesIterImpl>(
+        items_.upper_bound(key), items_.end(), base.sles.upperBound(key), base.sles.end());
 }
 
-}  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl::detail

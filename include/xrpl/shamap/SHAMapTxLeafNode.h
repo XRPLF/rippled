@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPTXLEAFNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPTXLEAFNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -7,16 +6,13 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** A leaf node for a transaction. No metadata is included. */
-class SHAMapTxLeafNode final : public SHAMapLeafNode,
-                               public CountedObject<SHAMapTxLeafNode>
+class SHAMapTxLeafNode final : public SHAMapLeafNode, public CountedObject<SHAMapTxLeafNode>
 {
 public:
-    SHAMapTxLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid)
+    SHAMapTxLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
         : SHAMapLeafNode(std::move(item), cowid)
     {
         updateHash();
@@ -31,39 +27,36 @@ public:
     }
 
     intr_ptr::SharedPtr<SHAMapTreeNode>
-    clone(std::uint32_t cowid) const final override
+    clone(std::uint32_t cowid) const final
     {
-        return intr_ptr::make_shared<SHAMapTxLeafNode>(item_, cowid, hash_);
+        return intr_ptr::makeShared<SHAMapTxLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType
-    getType() const final override
+    getType() const final
     {
-        return SHAMapNodeType::tnTRANSACTION_NM;
+        return SHAMapNodeType::TnTransactionNm;
     }
 
     void
-    updateHash() final override
+    updateHash() final
     {
-        hash_ =
-            SHAMapHash{sha512Half(HashPrefix::transactionID, item_->slice())};
+        hash_ = SHAMapHash{sha512Half(HashPrefix::TransactionId, item_->slice())};
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
-        s.add8(wireTypeTransaction);
+        s.add8(kWireTypeTransaction);
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(Serializer& s) const final
     {
-        s.add32(HashPrefix::transactionID);
+        s.add32(HashPrefix::TransactionId);
         s.addRaw(item_->slice());
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

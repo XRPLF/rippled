@@ -1,5 +1,4 @@
-#ifndef XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
-#define XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -10,14 +9,13 @@
 #include <optional>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
-class SHAMapInnerNode final : public SHAMapTreeNode,
-                              public CountedObject<SHAMapInnerNode>
+class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMapInnerNode>
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
-    static inline constexpr unsigned int branchFactor = 16;
+    static constexpr unsigned int kBranchFactor = 16;
 
 private:
     /** Opaque type that contains the `hashes` array (array of type
@@ -78,14 +76,12 @@ private:
     iterNonEmptyChildIndexes(F&& f) const;
 
 public:
-    explicit SHAMapInnerNode(
-        std::uint32_t cowid,
-        std::uint8_t numAllocatedChildren = 2);
+    explicit SHAMapInnerNode(std::uint32_t cowid, std::uint8_t numAllocatedChildren = 2);
 
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
     operator=(SHAMapInnerNode const&) = delete;
-    ~SHAMapInnerNode();
+    ~SHAMapInnerNode() override;
 
     // Needed to support intrusive weak pointers
     void
@@ -97,7 +93,7 @@ public:
     SHAMapNodeType
     getType() const override
     {
-        return SHAMapNodeType::tnINNER;
+        return SHAMapNodeType::TnInner;
     }
 
     bool
@@ -163,7 +159,7 @@ public:
     getString(SHAMapNodeID const&) const override;
 
     void
-    invariants(bool is_root = false) const override;
+    invariants(bool isRoot = false) const override;
 
     static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid);
@@ -202,5 +198,4 @@ SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
     fullBelowGen_ = gen;
 }
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

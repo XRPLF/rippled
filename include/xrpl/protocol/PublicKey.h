@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_PUBLICKEY_H_INCLUDED
-#define XRPL_PROTOCOL_PUBLICKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -15,14 +14,14 @@
 #include <optional>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** A public key.
 
     Public keys are used in the public-key cryptography
     system used to verify signatures attached to messages.
 
-    The format of the public key is Ripple specific,
+    The format of the public key is XRPL specific,
     information needed to determine the cryptosystem
     parameters used is stored inside the key.
 
@@ -44,8 +43,8 @@ class PublicKey
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
-    static constexpr std::size_t size_ = 33;
-    std::uint8_t buf_[size_];  // should be large enough
+    static constexpr std::size_t kSize = 33;
+    std::uint8_t buf_[kSize]{};  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -64,46 +63,46 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return buf_;
     }
 
-    std::size_t
-    size() const noexcept
+    static std::size_t
+    size() noexcept
     {
-        return size_;
+        return kSize;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSize;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + size_;
+        return buf_ + kSize;
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, size_};
+        return {buf_, kSize};
     }
 
     operator Slice() const noexcept
@@ -127,10 +126,7 @@ inline bool
 operator<(PublicKey const& lhs, PublicKey const& rhs)
 {
     return std::lexicographical_compare(
-        lhs.data(),
-        lhs.data() + lhs.size(),
-        rhs.data(),
-        rhs.data() + rhs.size());
+        lhs.data(), lhs.data() + lhs.size(), rhs.data(), rhs.data() + rhs.size());
 }
 
 template <class Hasher>
@@ -172,7 +168,7 @@ template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s);
 
-enum class ECDSACanonicality { canonical, fullyCanonical };
+enum class ECDSACanonicality { Canonical, FullyCanonical };
 
 /** Determines the canonicality of a signature.
 
@@ -231,11 +227,7 @@ verifyDigest(
     SHA512-Half, and the resulting digest is signed.
 */
 [[nodiscard]] bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical = true) noexcept;
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept;
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID
@@ -264,29 +256,27 @@ getFingerprint(
     }
     return ss.str();
 }
-}  // namespace ripple
+}  // namespace xrpl
 
 //------------------------------------------------------------------------------
 
-namespace Json {
+namespace json {
 template <>
-inline ripple::PublicKey
-getOrThrow(Json::Value const& v, ripple::SField const& field)
+inline xrpl::PublicKey
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
-    using namespace ripple;
+    using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
-    if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
+    if (auto pubKeyBlob = strUnHex(b58);
+        pubKeyBlob.has_value() && publicKeyType(makeSlice(*pubKeyBlob)))
     {
         return PublicKey{makeSlice(*pubKeyBlob)};
     }
-    for (auto const tokenType :
-         {TokenType::NodePublic, TokenType::AccountPublic})
+    for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {
         if (auto const pk = parseBase58<PublicKey>(tokenType, b58))
             return *pk;
     }
     Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
 }
-}  // namespace Json
-
-#endif
+}  // namespace json

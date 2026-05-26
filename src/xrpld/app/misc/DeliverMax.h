@@ -1,15 +1,12 @@
-#ifndef XRPL_APP_MISC_DELIVERMAX_H_INCLUDED
-#define XRPL_APP_MISC_DELIVERMAX_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/TxFormats.h>
 
-namespace Json {
+namespace json {
 class Value;
-}
+}  // namespace json
 
-namespace ripple {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 /**
    Copy `Amount` field to `DeliverMax` field in transaction output JSON.
@@ -21,11 +18,8 @@ namespace RPC {
  */
 
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
+insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion);
 
 /** @} */
 
-}  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::RPC

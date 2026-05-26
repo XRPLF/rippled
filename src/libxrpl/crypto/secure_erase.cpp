@@ -4,12 +4,12 @@
 
 #include <cstddef>
 
-namespace ripple {
+namespace xrpl {
 
 void
-secure_erase(void* dest, std::size_t bytes)
+secureErase(void* dest, std::size_t bytes)
 {
     OPENSSL_cleanse(dest, bytes);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

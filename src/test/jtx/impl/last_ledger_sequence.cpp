@@ -1,15 +1,14 @@
 #include <test/jtx/last_ledger_sequence.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+namespace xrpl::test::jtx {
 
 void
-last_ledger_seq::operator()(Env&, JTx& jt) const
+LastLedgerSeq::operator()(Env&, JTx& jt) const
 {
     jt["LastLedgerSequence"] = num_;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

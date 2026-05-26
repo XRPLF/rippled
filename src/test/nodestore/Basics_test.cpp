@@ -1,10 +1,14 @@
 #include <test/nodestore/TestBase.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-namespace ripple {
-namespace NodeStore {
+#include <cstdint>
+#include <memory>
+
+namespace xrpl::NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
@@ -17,13 +21,13 @@ public:
     {
         testcase("batch");
 
-        auto batch1 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch1 = createPredictableBatch(kNumObjectsToTest, seedValue);
 
-        auto batch2 = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch2 = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         BEAST_EXPECT(areBatchesEqual(batch1, batch2));
 
-        auto batch3 = createPredictableBatch(numObjectsToTest, seedValue + 1);
+        auto batch3 = createPredictableBatch(kNumObjectsToTest, seedValue + 1);
 
         BEAST_EXPECT(!areBatchesEqual(batch1, batch3));
     }
@@ -34,21 +38,19 @@ public:
     {
         testcase("encoding");
 
-        auto batch = createPredictableBatch(numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            EncodedBlob encoded(batch[i]);
+            EncodedBlob const encoded(batch[i]);
 
-            DecodedBlob decoded(
-                encoded.getKey(), encoded.getData(), encoded.getSize());
+            DecodedBlob decoded(encoded.getKey(), encoded.getData(), encoded.getSize());
 
             BEAST_EXPECT(decoded.wasOk());
 
             if (decoded.wasOk())
             {
-                std::shared_ptr<NodeObject> const object(
-                    decoded.createObject());
+                std::shared_ptr<NodeObject> const object(decoded.createObject());
 
                 BEAST_EXPECT(isSame(batch[i], object));
             }
@@ -66,7 +68,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, ripple);
+BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

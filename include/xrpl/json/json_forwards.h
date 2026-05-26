@@ -1,7 +1,6 @@
-#ifndef XRPL_JSON_JSON_FORWARDS_H_INCLUDED
-#define XRPL_JSON_JSON_FORWARDS_H_INCLUDED
+#pragma once
 
-namespace Json {
+namespace json {
 
 // value.h
 using Int = int;
@@ -12,6 +11,4 @@ class ValueIteratorBase;
 class ValueIterator;
 class ValueConstIterator;
 
-}  // namespace Json
-
-#endif  // JSON_FORWARDS_H_INCLUDED
+}  // namespace json

@@ -1,0 +1,5 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress leaks detected by asan in boost code.
+leak:boost::asio
+leak:boost/asio

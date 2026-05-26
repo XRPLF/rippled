@@ -1,5 +1,4 @@
-#ifndef XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
-#define XRPL_PROTOCOL_XRPAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -15,7 +14,7 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount>,
@@ -147,30 +146,31 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
-        return (drops_ < 0) ? -1 : (drops_ ? 1 : 0);
+        if (drops_ < 0)
+            return -1;
+        return (drops_ != 0) ? 1 : 0;
     }
 
     /** Returns the number of drops */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     drops() const
     {
         return drops_;
     }
 
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalXRP() const;
 
     template <class Dest>
-    std::optional<Dest>
+    [[nodiscard]] std::optional<Dest>
     dropsAs() const
     {
         if ((drops_ > std::numeric_limits<Dest>::max()) ||
             (!std::numeric_limits<Dest>::is_signed && drops_ < 0) ||
-            (std::numeric_limits<Dest>::is_signed &&
-             drops_ < std::numeric_limits<Dest>::lowest()))
+            (std::numeric_limits<Dest>::is_signed && drops_ < std::numeric_limits<Dest>::lowest()))
         {
             return std::nullopt;
         }
@@ -185,7 +185,7 @@ public:
     }
 
     template <class Dest>
-    Dest
+    [[nodiscard]] Dest
     dropsAs(XRPAmount defaultValue) const
     {
         return dropsAs<Dest>().value_or(defaultValue.drops());
@@ -195,28 +195,28 @@ public:
      * in contexts that don't expect the value to ever approach
      * the 32-bit limits (i.e. fees and reserves).
      */
-    Json::Value
+    [[nodiscard]] json::Value
     jsonClipped() const
     {
         static_assert(
             std::is_signed_v<value_type> && std::is_integral_v<value_type>,
             "Expected XRPAmount to be a signed integral type");
 
-        constexpr auto min = std::numeric_limits<Json::Int>::min();
-        constexpr auto max = std::numeric_limits<Json::Int>::max();
+        constexpr auto kMin = std::numeric_limits<json::Int>::min();
+        constexpr auto kMax = std::numeric_limits<json::Int>::max();
 
-        if (drops_ < min)
-            return min;
-        if (drops_ > max)
-            return max;
-        return static_cast<Json::Int>(drops_);
+        if (drops_ < kMin)
+            return kMin;
+        if (drops_ > kMax)
+            return kMax;
+        return static_cast<json::Int>(drops_);
     }
 
     /** Returns the underlying value. Code SHOULD NOT call this
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return drops_;
@@ -237,12 +237,12 @@ public:
 };
 
 /** Number of drops per 1 XRP */
-constexpr XRPAmount DROPS_PER_XRP{1'000'000};
+constexpr XRPAmount kDropsPerXrp{1'000'000};
 
 constexpr double
 XRPAmount::decimalXRP() const
 {
-    return static_cast<double>(drops_) / DROPS_PER_XRP.drops();
+    return static_cast<double>(drops_) / kDropsPerXrp.drops();
 }
 
 // Output XRPAmount as just the drops value.
@@ -260,15 +260,11 @@ to_string(XRPAmount const& amount)
 }
 
 inline XRPAmount
-mulRatio(
-    XRPAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(XRPAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     int128_t const amt128(amt.drops());
@@ -287,6 +283,4 @@ mulRatio(
     return XRPAmount(r.convert_to<XRPAmount::value_type>());
 }
 
-}  // namespace ripple
-
-#endif  // XRPL_BASICS_XRPAMOUNT_H_INCLUDED
+}  // namespace xrpl

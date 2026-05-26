@@ -1,12 +1,38 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/detail/ApplyStateTable.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/st.h>
 
-namespace ripple {
-namespace detail {
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::detail {
 
 void
 ApplyStateTable::apply(RawView& to) const
@@ -17,15 +43,15 @@ ApplyStateTable::apply(RawView& to) const
         auto const& sle = item.second.second;
         switch (item.second.first)
         {
-            case Action::cache:
+            case Action::Cache:
                 break;
-            case Action::erase:
+            case Action::Erase:
                 to.rawErase(sle);
                 break;
-            case Action::insert:
+            case Action::Insert:
                 to.rawInsert(sle);
                 break;
-            case Action::modify:
+            case Action::Modify:
                 to.rawReplace(sle);
                 break;
         };
@@ -40,9 +66,9 @@ ApplyStateTable::size() const
     {
         switch (item.second.first)
         {
-            case Action::erase:
-            case Action::insert:
-            case Action::modify:
+            case Action::Erase:
+            case Action::Insert:
+            case Action::Modify:
                 ++ret;
             default:
                 break;
@@ -64,24 +90,16 @@ ApplyStateTable::visit(
     {
         switch (item.second.first)
         {
-            case Action::erase:
-                func(
-                    item.first,
-                    true,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+            case Action::Erase:
+                func(item.first, true, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
-            case Action::insert:
+            case Action::Insert:
                 func(item.first, false, nullptr, item.second.second);
                 break;
 
-            case Action::modify:
-                func(
-                    item.first,
-                    false,
-                    to.read(keylet::unchecked(item.first)),
-                    item.second.second);
+            case Action::Modify:
+                func(item.first, false, to.read(keylet::unchecked(item.first)), item.second.second);
                 break;
 
             default:
@@ -115,19 +133,19 @@ ApplyStateTable::apply(
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
-                case Action::cache:
+                case Action::Cache:
                     continue;
-                case Action::erase:
+                case Action::Erase:
                     type = &sfDeletedNode;
                     break;
-                case Action::insert:
+                case Action::Insert:
                     type = &sfCreatedNode;
                     break;
-                case Action::modify:
+                case Action::Modify:
                     type = &sfModifiedNode;
                     break;
             }
@@ -135,15 +153,14 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode
-                ? curNode->getFieldU16(sfLedgerEntryType)
-                : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                                   : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
                 XRPL_ASSERT(
                     origNode && curNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "deletion");
                 threadOwners(to, meta, origNode, newMod, j);
 
@@ -152,76 +169,70 @@ ApplyStateTable::apply(
                 {
                     // go through the original node for
                     // modified  fields saved on modification
-                    if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
-                        prevs.emplace_back(obj);
+                        prevs.emplaceBack(obj);
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplaceBack(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_DeleteFinal))
-                        finals.emplace_back(obj);
+                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdDeleteFinal))
+                        finals.emplaceBack(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplaceBack(std::move(finals));
             }
             else if (type == &sfModifiedNode)
             {
                 XRPL_ASSERT(
                     curNode && origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // thread transaction to node
-                                      // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
                 {
                     // search the original node for values saved on modify
-                    if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
-                        prevs.emplace_back(obj);
+                        prevs.emplaceBack(obj);
                 }
 
                 if (!prevs.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(prevs));
+                    meta.getAffectedNode(item.first).emplaceBack(std::move(prevs));
 
                 STObject finals(sfFinalFields);
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(
-                            SField::sMD_Always | SField::sMD_ChangeNew))
-                        finals.emplace_back(obj);
+                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdChangeNew))
+                        finals.emplaceBack(obj);
                 }
 
                 if (!finals.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(finals));
+                    meta.getAffectedNode(item.first).emplaceBack(std::move(finals));
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
                 XRPL_ASSERT(
                     curNode && !origNode,
-                    "ripple::detail::ApplyStateTable::apply : valid nodes for "
+                    "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType(
-                        to.rules()))  // always thread to self
+                if (curNode->isThreadedType(to.rules()))  // always thread to self
                     threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
@@ -229,20 +240,18 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(
-                            SField::sMD_Create | SField::sMD_Always))
-                        news.emplace_back(obj);
+                        obj.getFName().shouldMeta(SField::kSmdCreate | SField::kSmdAlways))
+                        news.emplaceBack(obj);
                 }
 
                 if (!news.empty())
-                    meta.getAffectedNode(item.first)
-                        .emplace_back(std::move(news));
+                    meta.getAffectedNode(item.first).emplaceBack(std::move(news));
             }
             else
             {
                 // LCOV_EXCL_START
                 UNREACHABLE(
-                    "ripple::detail::ApplyStateTable::apply : unsupported "
+                    "xrpl::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
                 // LCOV_EXCL_STOP
             }
@@ -260,7 +269,7 @@ ApplyStateTable::apply(
 
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
-        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::none);
+        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::Values::None);
 
         metadata = meta;
     }
@@ -285,16 +294,14 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
     auto const& sle = item.second;
     switch (item.first)
     {
-        case Action::erase:
+        case Action::Erase:
             return false;
-        case Action::cache:
-        case Action::insert:
-        case Action::modify:
+        case Action::Cache:
+        case Action::Insert:
+        case Action::Modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto
@@ -313,11 +320,11 @@ ApplyStateTable::succ(
         if (!next)
             break;
         iter = items_.find(*next);
-    } while (iter != items_.end() && iter->second.first == Action::erase);
+    } while (iter != items_.end() && iter->second.first == Action::Erase);
     // Find non-deleted successor in our list
     for (iter = items_.upper_bound(key); iter != items_.end(); ++iter)
     {
-        if (iter->second.first != Action::erase)
+        if (iter->second.first != Action::Erase)
         {
             // Found both, return the lower key
             if (!next || next > iter->first)
@@ -342,11 +349,11 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
     auto const& sle = item.second;
     switch (item.first)
     {
-        case Action::erase:
+        case Action::Erase:
             return nullptr;
-        case Action::cache:
-        case Action::insert:
-        case Action::modify:
+        case Action::Cache:
+        case Action::Insert:
+        case Action::Modify:
             break;
     };
     if (!k.check(*sle))
@@ -369,18 +376,18 @@ ApplyStateTable::peek(ReadView const& base, Keylet const& k)
             iter,
             piecewise_construct,
             forward_as_tuple(sle->key()),
-            forward_as_tuple(Action::cache, make_shared<SLE>(*sle)));
+            forward_as_tuple(Action::Cache, make_shared<SLE>(*sle)));
         return iter->second.second;
     }
     auto const& item = iter->second;
     auto const& sle = item.second;
     switch (item.first)
     {
-        case Action::erase:
+        case Action::Erase:
             return nullptr;
-        case Action::cache:
-        case Action::insert:
-        case Action::modify:
+        case Action::Cache:
+        case Action::Insert:
+        case Action::Modify:
             break;
     };
     if (!k.check(*sle))
@@ -393,21 +400,21 @@ ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::erase: missing key");
+        Throw<std::logic_error>("ApplyStateTable::erase: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::erase: unknown SLE");
+        Throw<std::logic_error>("ApplyStateTable::erase: unknown SLE");
     switch (item.first)
     {
-        case Action::erase:
-            LogicError("ApplyStateTable::erase: double erase");
+        case Action::Erase:
+            Throw<std::logic_error>("ApplyStateTable::erase: double erase");
             break;
-        case Action::insert:
+        case Action::Insert:
             items_.erase(iter);
             break;
-        case Action::cache:
-        case Action::modify:
-            item.first = Action::erase;
+        case Action::Cache:
+        case Action::Modify:
+            item.first = Action::Erase;
             break;
     }
 }
@@ -417,23 +424,21 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     using namespace std;
     auto const result = items_.emplace(
-        piecewise_construct,
-        forward_as_tuple(sle->key()),
-        forward_as_tuple(Action::erase, sle));
+        piecewise_construct, forward_as_tuple(sle->key()), forward_as_tuple(Action::Erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
     switch (item.first)
     {
-        case Action::erase:
-            LogicError("ApplyStateTable::rawErase: double erase");
+        case Action::Erase:
+            Throw<std::logic_error>("ApplyStateTable::rawErase: double erase");
             break;
-        case Action::insert:
+        case Action::Insert:
             items_.erase(result.first);
             break;
-        case Action::cache:
-        case Action::modify:
-            item.first = Action::erase;
+        case Action::Cache:
+        case Action::Modify:
+            item.first = Action::Erase;
             item.second = sle;
             break;
     }
@@ -450,22 +455,22 @@ ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
             iter,
             piecewise_construct,
             forward_as_tuple(sle->key()),
-            forward_as_tuple(Action::insert, sle));
+            forward_as_tuple(Action::Insert, sle));
         return;
     }
     auto& item = iter->second;
     switch (item.first)
     {
-        case Action::cache:
-            LogicError("ApplyStateTable::insert: already cached");
-        case Action::insert:
-            LogicError("ApplyStateTable::insert: already inserted");
-        case Action::modify:
-            LogicError("ApplyStateTable::insert: already modified");
-        case Action::erase:
+        case Action::Cache:
+            Throw<std::logic_error>("ApplyStateTable::insert: already cached");
+        case Action::Insert:
+            Throw<std::logic_error>("ApplyStateTable::insert: already inserted");
+        case Action::Modify:
+            Throw<std::logic_error>("ApplyStateTable::insert: already modified");
+        case Action::Erase:
             break;
     }
-    item.first = Action::modify;
+    item.first = Action::Modify;
     item.second = sle;
 }
 
@@ -480,19 +485,19 @@ ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
             iter,
             piecewise_construct,
             forward_as_tuple(sle->key()),
-            forward_as_tuple(Action::modify, sle));
+            forward_as_tuple(Action::Modify, sle));
         return;
     }
     auto& item = iter->second;
     switch (item.first)
     {
-        case Action::erase:
-            LogicError("ApplyStateTable::replace: already erased");
-        case Action::cache:
-            item.first = Action::modify;
+        case Action::Erase:
+            Throw<std::logic_error>("ApplyStateTable::replace: already erased");
+        case Action::Cache:
+            item.first = Action::Modify;
             break;
-        case Action::insert:
-        case Action::modify:
+        case Action::Insert:
+        case Action::Modify:
             break;
     }
     item.second = sle;
@@ -503,20 +508,20 @@ ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::update: missing key");
+        Throw<std::logic_error>("ApplyStateTable::update: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::update: unknown SLE");
+        Throw<std::logic_error>("ApplyStateTable::update: unknown SLE");
     switch (item.first)
     {
-        case Action::erase:
-            LogicError("ApplyStateTable::update: erased");
+        case Action::Erase:
+            Throw<std::logic_error>("ApplyStateTable::update: erased");
             break;
-        case Action::cache:
-            item.first = Action::modify;
+        case Action::Cache:
+            item.first = Action::Modify;
             break;
-        case Action::insert:
-        case Action::modify:
+        case Action::Insert:
+        case Action::Modify:
             break;
     };
 }
@@ -534,7 +539,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
@@ -547,7 +552,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
         {
             XRPL_ASSERT(
                 node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
-                "ripple::ApplyStateTable::threadItem : previous ledger is not "
+                "xrpl::ApplyStateTable::threadItem : previous ledger is not "
                 "set");
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
@@ -555,28 +560,22 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         XRPL_ASSERT(
             node.getFieldH256(sfPreviousTxnID) == prevTxID,
-            "ripple::ApplyStateTable::threadItem : previous transaction is a "
+            "xrpl::ApplyStateTable::threadItem : previous transaction is a "
             "match");
         XRPL_ASSERT(
             node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
-            "ripple::ApplyStateTable::threadItem : previous ledger is a match");
+            "xrpl::ApplyStateTable::threadItem : previous ledger is a match");
     }
 }
 
 std::shared_ptr<SLE>
-ApplyStateTable::getForMod(
-    ReadView const& base,
-    key_type const& key,
-    Mods& mods,
-    beast::Journal j)
+ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
     {
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            XRPL_ASSERT(
-                miter->second,
-                "ripple::ApplyStateTable::getForMod : non-null result");
+            XRPL_ASSERT(miter->second, "xrpl::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -585,7 +584,7 @@ ApplyStateTable::getForMod(
         if (iter != items_.end())
         {
             auto const& item = iter->second;
-            if (item.first == Action::erase)
+            if (item.first == Action::Erase)
             {
                 // The Destination of an Escrow or a PayChannel may have been
                 // deleted.  In that case the account we're threading to will
@@ -593,7 +592,7 @@ ApplyStateTable::getForMod(
                 JLOG(j.warn()) << "Trying to thread to deleted node";
                 return nullptr;
             }
-            if (item.first != Action::cache)
+            if (item.first != Action::Cache)
                 return item.second;
 
             // If it's only cached, then the node is being modified only by
@@ -633,8 +632,7 @@ ApplyStateTable::threadTx(
     }
     // threadItem only applied to AccountRoot
     XRPL_ASSERT(
-        sle->isThreadedType(base.rules()),
-        "ripple::ApplyStateTable::threadTx : SLE is threaded");
+        sle->isThreadedType(base.rules()), "xrpl::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 
@@ -670,5 +668,4 @@ ApplyStateTable::threadOwners(
     }
 }
 
-}  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl::detail

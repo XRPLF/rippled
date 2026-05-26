@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEW_H_INCLUDED
-#define XRPL_LEDGER_READVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -18,7 +17,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -31,32 +30,31 @@ namespace ripple {
 class ReadView
 {
 public:
-    using tx_type =
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
     using mapped_type = std::shared_ptr<SLE const>;
 
-    struct sles_type : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
+    struct SlesType : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
     {
-        explicit sles_type(ReadView const& view);
-        iterator
+        explicit SlesType(ReadView const& view);
+        [[nodiscard]] Iterator
         begin() const;
-        iterator
+        [[nodiscard]] Iterator
         end() const;
-        iterator
-        upper_bound(key_type const& key) const;
+        [[nodiscard]] Iterator
+        upperBound(key_type const& key) const;
     };
 
-    struct txs_type : detail::ReadViewFwdRange<tx_type>
+    struct TxsType : detail::ReadViewFwdRange<tx_type>
     {
-        explicit txs_type(ReadView const& view);
-        bool
+        explicit TxsType(ReadView const& view);
+        [[nodiscard]] bool
         empty() const;
-        iterator
+        [[nodiscard]] Iterator
         begin() const;
-        iterator
+        [[nodiscard]] Iterator
         end() const;
     };
 
@@ -80,33 +78,33 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
-    info() const = 0;
+    [[nodiscard]] virtual LedgerHeader const&
+    header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
-    virtual bool
+    [[nodiscard]] virtual bool
     open() const = 0;
 
     /** Returns the close time of the previous ledger. */
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
-    LedgerIndex
+    [[nodiscard]] LedgerIndex
     seq() const
     {
-        return info().seq;
+        return header().seq;
     }
 
     /** Returns the fees for the base ledger. */
-    virtual Fees const&
+    [[nodiscard]] virtual Fees const&
     fees() const = 0;
 
     /** Returns the tx processing rules. */
-    virtual Rules const&
+    [[nodiscard]] virtual Rules const&
     rules() const = 0;
 
     /** Determine if a state item exists.
@@ -116,7 +114,7 @@ public:
         @return `true` if a SLE is associated with the
                 specified key.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     exists(Keylet const& k) const = 0;
 
     /** Return the key of the next state item.
@@ -129,10 +127,8 @@ public:
         the key returned would be outside the open
         interval (key, last).
     */
-    virtual std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const = 0;
+    [[nodiscard]] virtual std::optional<key_type>
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -147,21 +143,38 @@ public:
         @return `nullptr` if the key is not present or
                 if the type does not match.
     */
-    virtual std::shared_ptr<SLE const>
+    [[nodiscard]] virtual std::shared_ptr<SLE const>
     read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count
-    // changes that accounts make during a payment. `balanceHook` adjusts
+    // changes that accounts make during a payment. `balanceHookIOU` adjusts
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
-    virtual STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const
+    [[nodiscard]] virtual STAmount
+    balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
+        XRPL_ASSERT(amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
+
         return amount;
+    }
+
+    // balanceHookMPT adjusts balances so newly acquired assets are not counted
+    // toward the balance.
+    [[nodiscard]] virtual STAmount
+    balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
+    }
+
+    // An offer owned by an issuer and selling MPT is limited by the issuer's
+    // funds available to issue, which are originally available funds less
+    // already self sold MPT amounts (MPT sell offer). This hook is used
+    // by issuerFundsToSelfIssue() function.
+    [[nodiscard]] virtual STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
     }
 
     // Accounts in a payment are not allowed to use assets acquired during that
@@ -169,30 +182,30 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     ownerCountHook(AccountID const& account, std::uint32_t count) const
     {
         return count;
     }
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesBegin() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesEnd() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<SlesType::iter_base>
     slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
     txsBegin() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<TxsType::iter_base>
     txsEnd() const = 0;
 
     /** Returns `true` if a tx exists in the tx map.
@@ -200,7 +213,7 @@ public:
         A tx exists in the map if it is part of the
         base ledger, or if it is a newly inserted tx.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     txExists(key_type const& key) const = 0;
 
     /** Read a transaction from the tx map.
@@ -211,7 +224,7 @@ public:
         @return A pair of nullptr if the
                 key is not found in the tx map.
     */
-    virtual tx_type
+    [[nodiscard]] virtual tx_type
     txRead(key_type const& key) const = 0;
 
     //
@@ -223,10 +236,10 @@ public:
         @note Visiting each state entry in the ledger can
               become quite expensive as the ledger grows.
     */
-    sles_type sles;
+    SlesType sles;
 
     // The range of transactions
-    txs_type txs;
+    TxsType txs;
 };
 
 //------------------------------------------------------------------------------
@@ -244,7 +257,7 @@ public:
 
         @return std::nullopt if the item does not exist.
     */
-    virtual std::optional<digest_type>
+    [[nodiscard]] virtual std::optional<digest_type>
     digest(key_type const& key) const = 0;
 };
 
@@ -256,10 +269,8 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current);
 Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets);
+    std::unordered_set<uint256, beast::Uhash<>> const& presets);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
-
-#endif

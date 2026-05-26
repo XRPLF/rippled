@@ -1,15 +1,26 @@
 #include <xrpl/shamap/SHAMapLeafNode.h>
 
-namespace ripple {
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid)
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cstdint>
+#include <string>
+#include <utility>
+
+namespace xrpl {
+
+SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
     XRPL_ASSERT(
-        item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        item_->size() >= kMinShaMapItemBytes,
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
@@ -20,8 +31,8 @@ SHAMapLeafNode::SHAMapLeafNode(
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(
-        item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        item_->size() >= kMinShaMapItemBytes,
+        "xrpl::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
         "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
         "size");
 }
@@ -35,7 +46,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
+    XRPL_ASSERT(cowid_, "xrpl::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -52,14 +63,22 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 
     auto const type = getType();
 
-    if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    if (type == SHAMapNodeType::TnTransactionNm)
+    {
         ret += ",txn\n";
-    else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    }
+    else if (type == SHAMapNodeType::TnTransactionMd)
+    {
         ret += ",txn+md\n";
-    else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    }
+    else if (type == SHAMapNodeType::TnAccountState)
+    {
         ret += ",as\n";
+    }
     else
+    {
         ret += ",leaf\n";
+    }
 
     ret += "  Tag=";
     ret += to_string(item_->key());
@@ -73,9 +92,8 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    XRPL_ASSERT(
-        hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
-    XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
+    XRPL_ASSERT(hash_.isNonZero(), "xrpl::SHAMapLeafNode::invariants : nonzero hash");
+    XRPL_ASSERT(item_, "xrpl::SHAMapLeafNode::invariants : non-null item");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

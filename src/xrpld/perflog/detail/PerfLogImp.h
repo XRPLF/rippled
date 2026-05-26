@@ -1,10 +1,9 @@
-#ifndef XRPL_BASICS_PERFLOGIMP_H
-#define XRPL_BASICS_PERFLOGIMP_H
+#pragma once
 
-#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/PerfLog.h>
 
 #include <boost/asio/ip/host_name.hpp>
 
@@ -17,8 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
-namespace perf {
+namespace xrpl::perf {
 
 /** A box coupling data with a mutex for locking access to it. */
 template <typename T>
@@ -83,19 +81,19 @@ class PerfLogImp : public PerfLog
             microseconds runningDuration{0};
         };
 
-        // rpc_ and jq_ do not need mutex protection because all
+        // rpc and jq do not need mutex protection because all
         // keys and values are created before more threads are started.
-        std::unordered_map<std::string, Locked<Rpc>> rpc_;
-        std::unordered_map<JobType, Locked<Jq>> jq_;
-        std::vector<std::pair<JobType, steady_time_point>> jobs_;
-        mutable std::mutex jobsMutex_;
-        std::unordered_map<std::uint64_t, MethodStart> methods_;
-        mutable std::mutex methodsMutex_;
+        std::unordered_map<std::string, Locked<Rpc>> rpc;
+        std::unordered_map<JobType, Locked<Jq>> jq;
+        std::vector<std::pair<JobType, steady_time_point>> jobs;
+        mutable std::mutex jobsMutex;
+        std::unordered_map<std::uint64_t, MethodStart> methods;
+        mutable std::mutex methodsMutex;
 
         Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
-        Json::Value
+        json::Value
         countersJson() const;
-        Json::Value
+        json::Value
         currentJson() const;
     };
 
@@ -103,7 +101,7 @@ class PerfLogImp : public PerfLog
     Application& app_;
     beast::Journal const j_;
     std::function<void()> const signalStop_;
-    Counters counters_{ripple::RPC::getHandlerNames(), JobTypes::instance()};
+    Counters counters_{xrpl::RPC::getHandlerNames(), JobTypes::instance()};
     std::ofstream logFile_;
     std::thread thread_;
     std::mutex mutex_;
@@ -120,14 +118,11 @@ class PerfLogImp : public PerfLog
     void
     report();
     void
-    rpcEnd(
-        std::string const& method,
-        std::uint64_t const requestId,
-        bool finish);
+    rpcEnd(std::string const& method, std::uint64_t const requestId, bool finish);
 
 public:
     PerfLogImp(
-        Setup const& setup,
+        Setup setup,
         Application& app,
         beast::Journal journal,
         std::function<void()>&& signalStop);
@@ -152,21 +147,18 @@ public:
     void
     jobQueue(JobType const type) override;
     void
-    jobStart(
-        JobType const type,
-        microseconds dur,
-        steady_time_point startTime,
-        int instance) override;
+    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance)
+        override;
     void
     jobFinish(JobType const type, microseconds dur, int instance) override;
 
-    Json::Value
+    json::Value
     countersJson() const override
     {
         return counters_.countersJson();
     }
 
-    Json::Value
+    json::Value
     currentJson() const override
     {
         return counters_.currentJson();
@@ -184,7 +176,4 @@ public:
     stop() override;
 };
 
-}  // namespace perf
-}  // namespace ripple
-
-#endif  // XRPL_BASICS_PERFLOGIMP_H
+}  // namespace xrpl::perf

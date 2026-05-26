@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_AMMTEST_H_INCLUDED
-#define XRPL_TEST_JTX_AMMTEST_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
@@ -8,24 +7,32 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class AMM;
 
-enum class Fund { All, Acct, Gw, IOUOnly };
+enum class Fund { All, Acct, Gw, TokenOnly };
 
 struct TestAMMArg
 {
     std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
     std::uint16_t tfee = 0;
-    std::optional<jtx::ter> ter = std::nullopt;
-    std::vector<FeatureBitset> features = {testable_amendments()};
+    std::optional<jtx::Ter> ter = std::nullopt;
+    std::vector<FeatureBitset> features = {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
+
     bool noLog = false;
 };
 
-void
+// A hint to testAMM() or fund() to create/fund MPT.
+// A distinct MPT is created if both AMM assets
+// are MPT. The actual MPT asset can be accessed
+// via AMM::operator[](0|1).
+inline static auto gAmmmpt = MPT("AMM");
+
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -33,7 +40,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -42,29 +49,46 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts = {},
-    Fund how = Fund::All);
+    Fund how = Fund::All,
+    std::optional<Account> const& mptIssuer = std::nullopt);
 
-class AMMTestBase : public beast::unit_test::suite
+struct TestAMMArgs
+{
+    std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::Ter> const& ter = std::nullopt;
+    std::vector<FeatureBitset> const& features = {testableAmendments()};
+};
+
+class AMMTestBase : public beast::unit_test::Suite
 {
 protected:
-    jtx::Account const gw;
-    jtx::Account const carol;
-    jtx::Account const alice;
-    jtx::Account const bob;
-    jtx::IOU const USD;
-    jtx::IOU const EUR;
-    jtx::IOU const GBP;
-    jtx::IOU const BTC;
-    jtx::IOU const BAD;
+    jtx::Account const gw_;
+    jtx::Account const carol_;
+    jtx::Account const alice_;
+    jtx::Account const bob_;
+    jtx::IOU const USD;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const EUR;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const GBP;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BTC;  // NOLINT(readability-identifier-naming)
+    jtx::IOU const BAD;  // NOLINT(readability-identifier-naming)
 
 public:
     AMMTestBase();
+
+    static FeatureBitset
+    testableAmendments()
+    {
+        // For now, just disable SAV entirely, which locks in the small Number
+        // mantissas
+        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+    }
 
 protected:
     /** testAMM() funds 30,000XRP and 30,000IOU
@@ -72,30 +96,28 @@ protected:
      */
     void
     testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        std::function<void(jtx::AMM&, jtx::Env&)> const& cb,
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint16_t tfee = 0,
-        std::optional<jtx::ter> const& ter = std::nullopt,
-        std::vector<FeatureBitset> const& features = {testable_amendments()});
+        std::optional<jtx::Ter> const& ter = std::nullopt,
+        std::vector<FeatureBitset> const& features = {testableAmendments()});
 
     void
-    testAMM(
-        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
-        TestAMMArg const& arg);
+    testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase
 {
 protected:
-    XRPAmount
-    reserve(jtx::Env& env, std::uint32_t count) const;
+    static XRPAmount
+    reserve(jtx::Env& env, std::uint32_t count);
 
-    XRPAmount
-    ammCrtFee(jtx::Env& env) const;
+    static XRPAmount
+    ammCrtFee(jtx::Env& env);
 
     /* Path_test */
     /************************************************/
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -107,10 +129,10 @@ protected:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -118,7 +140,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::scoped_lock const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -126,28 +148,6 @@ protected:
 
     jtx::Env
     pathTestEnv();
-
-    Json::Value
-    find_paths_request(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
-
-    std::tuple<STPathSet, STAmount, STAmount>
-    find_paths(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif  // XRPL_TEST_JTX_AMMTEST_H_INCLUDED
+}  // namespace xrpl::test::jtx

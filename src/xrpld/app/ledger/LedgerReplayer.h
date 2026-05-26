@@ -1,5 +1,4 @@
-#ifndef XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
-#define XRPL_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -10,7 +9,7 @@
 #include <mutex>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace test {
 class LedgerReplayClient;
@@ -18,33 +17,33 @@ class LedgerReplayClient;
 
 namespace LedgerReplayParameters {
 // timeout value for LedgerReplayTask
-auto constexpr TASK_TIMEOUT = std::chrono::milliseconds{500};
+constexpr auto kTaskTimeout = std::chrono::milliseconds{500};
 
 // for LedgerReplayTask to calculate max allowed timeouts
-// = max( TASK_MAX_TIMEOUTS_MINIMUM,
-//        (# of ledger to replay) * TASK_MAX_TIMEOUTS_MULTIPLIER)
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MULTIPLIER = 2;
-std::uint32_t constexpr TASK_MAX_TIMEOUTS_MINIMUM = 10;
+// = max( kTaskMaxTimeoutsMinimum,
+//        (# of ledger to replay) * kTaskMaxTimeoutsMultiplier)
+constexpr std::uint32_t kTaskMaxTimeoutsMultiplier = 2;
+constexpr std::uint32_t kTaskMaxTimeoutsMinimum = 10;
 
 // timeout value for subtasks: LedgerDeltaAcquire and SkipListAcquire
-auto constexpr SUB_TASK_TIMEOUT = std::chrono::milliseconds{250};
+constexpr auto kSubTaskTimeout = std::chrono::milliseconds{250};
 // max of allowed subtask timeouts
-std::uint32_t constexpr SUB_TASK_MAX_TIMEOUTS = 10;
+constexpr std::uint32_t kSubTaskMaxTimeouts = 10;
 
 // max number of peers that do not support the ledger replay feature
 // returned by the PeerSet before switch to fallback
-auto constexpr MAX_NO_FEATURE_PEER_COUNT = 2;
+constexpr auto kMaxNoFeaturePeerCount = 2;
 // subtask timeout value after fallback
-auto constexpr SUB_TASK_FALLBACK_TIMEOUT = std::chrono::milliseconds{1000};
+constexpr auto kSubTaskFallbackTimeout = std::chrono::milliseconds{1000};
 
 // for LedgerReplayer to limit the number of LedgerReplayTask
-std::uint32_t constexpr MAX_TASKS = 10;
+constexpr std::uint32_t kMaxTasks = 10;
 
 // for LedgerReplayer to limit the number of ledgers to replay in one task
-std::uint32_t constexpr MAX_TASK_SIZE = 256;
+constexpr std::uint32_t kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
-std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
+constexpr std::uint32_t kMaxQueuedTasks = 100;
 }  // namespace LedgerReplayParameters
 
 /**
@@ -68,10 +67,7 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(
-        InboundLedger::Reason r,
-        uint256 const& finishLedgerHash,
-        std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
     /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
     void
@@ -84,9 +80,7 @@ public:
      * @note  info and data must have been verified against the ledger hash
      */
     void
-    gotSkipList(
-        LedgerInfo const& info,
-        boost::intrusive_ptr<SHAMapItem const> const& data);
+    gotSkipList(LedgerHeader const& info, boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -96,7 +90,7 @@ public:
      */
     void
     gotReplayDelta(
-        LedgerInfo const& info,
+        LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
@@ -109,21 +103,21 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::scoped_lock const lock(mtx_);
         return skipLists_.size();
     }
 
@@ -141,6 +135,4 @@ private:
     friend class test::LedgerReplayClient;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

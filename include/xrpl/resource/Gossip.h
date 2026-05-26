@@ -1,12 +1,10 @@
-#ifndef XRPL_RESOURCE_GOSSIP_H_INCLUDED
-#define XRPL_RESOURCE_GOSSIP_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <vector>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** Data format for exchanging consumption information across peers. */
 struct Gossip
@@ -18,14 +16,11 @@ struct Gossip
     {
         explicit Item() = default;
 
-        int balance;
+        int balance{};
         beast::IP::Endpoint address;
     };
 
     std::vector<Item> items;
 };
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

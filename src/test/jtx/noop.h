@@ -1,21 +1,14 @@
-#ifndef XRPL_TEST_JTX_NOOP_H_INCLUDED
-#define XRPL_TEST_JTX_NOOP_H_INCLUDED
+#pragma once
 
 #include <test/jtx/flags.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** The null transaction. */
-inline Json::Value
+inline json::Value
 noop(Account const& account)
 {
     return fset(account, 0);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

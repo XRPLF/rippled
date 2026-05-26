@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_TIMERS_H_INCLUDED
-#define XRPL_TEST_CSF_TIMERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
@@ -7,9 +6,7 @@
 #include <chrono>
 #include <ostream>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 // Timers are classes that schedule repeated events and are mostly independent
 // of simulation-specific details.
@@ -48,23 +45,17 @@ public:
     beat(SimTime when)
     {
         using namespace std::chrono;
-        RealTime realTime = RealClock::now();
-        SimTime simTime = when;
+        RealTime const realTime = RealClock::now();
+        SimTime const simTime = when;
 
-        RealDuration realDuration = realTime - startRealTime_;
-        SimDuration simDuration = simTime - startSimTime_;
-        out_ << "Heartbeat. Time Elapsed: {sim: "
-             << duration_cast<seconds>(simDuration).count()
-             << "s | real: " << duration_cast<seconds>(realDuration).count()
-             << "s}\n"
+        RealDuration const realDuration = realTime - startRealTime_;
+        SimDuration const simDuration = simTime - startSimTime_;
+        out_ << "Heartbeat. Time Elapsed: {sim: " << duration_cast<seconds>(simDuration).count()
+             << "s | real: " << duration_cast<seconds>(realDuration).count() << "s}\n"
              << std::flush;
 
         scheduler_.in(interval_, [this]() { beat(scheduler_.now()); });
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

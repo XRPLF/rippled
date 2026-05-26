@@ -1,23 +1,21 @@
-#ifndef XRPL_NODESTORE_SCHEDULER_H_INCLUDED
-#define XRPL_NODESTORE_SCHEDULER_H_INCLUDED
+#pragma once
 
 #include <xrpl/nodestore/Task.h>
 
 #include <chrono>
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
-enum class FetchType { synchronous, async };
+enum class FetchType { Synchronous, Async };
 
 /** Contains information about a fetch operation. */
 struct FetchReport
 {
-    explicit FetchReport(FetchType fetchType_) : fetchType(fetchType_)
+    explicit FetchReport(FetchType fetchType) : fetchType(fetchType)
     {
     }
 
-    std::chrono::milliseconds elapsed;
+    std::chrono::milliseconds elapsed{};
     FetchType const fetchType;
     bool wasFound = false;
 };
@@ -65,7 +63,4 @@ public:
     onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::NodeStore

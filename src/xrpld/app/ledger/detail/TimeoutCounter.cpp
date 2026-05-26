@@ -1,7 +1,20 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
-#include <xrpld/core/JobQueue.h>
 
-namespace ripple {
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/JobQueue.h>
+
+#include <boost/asio/error.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <chrono>
+#include <utility>
+
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -14,17 +27,13 @@ TimeoutCounter::TimeoutCounter(
     : app_(app)
     , journal_(journal)
     , hash_(hash)
-    , timeouts_(0)
-    , complete_(false)
-    , failed_(false)
-    , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOContext())
 {
     XRPL_ASSERT(
         (timerInterval_ > 10ms) && (timerInterval_ < 30s),
-        "ripple::TimeoutCounter::TimeoutCounter : interval input inside range");
+        "xrpl::TimeoutCounter::TimeoutCounter : interval input inside range");
 }
 
 void
@@ -33,17 +42,16 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
     if (isDone())
         return;
     timer_.expires_after(timerInterval_);
-    timer_.async_wait(
-        [wptr = pmDowncast()](boost::system::error_code const& ec) {
-            if (ec == boost::asio::error::operation_aborted)
-                return;
+    timer_.async_wait([wptr = pmDowncast()](boost::system::error_code const& ec) {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
 
-            if (auto ptr = wptr.lock())
-            {
-                ScopedLockType sl(ptr->mtx_);
-                ptr->queueJob(sl);
-            }
-        });
+        if (auto ptr = wptr.lock())
+        {
+            ScopedLockType sl(ptr->mtx_);
+            ptr->queueJob(sl);
+        }
+    });
 }
 
 void
@@ -62,9 +70,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     }
 
     app_.getJobQueue().addJob(
-        queueJobParameter_.jobType,
-        queueJobParameter_.jobName,
-        [wptr = pmDowncast()]() {
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
             if (auto sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });
@@ -98,7 +104,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         failed_ = true;
@@ -106,4 +112,4 @@ TimeoutCounter::cancel()
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

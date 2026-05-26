@@ -1,9 +1,12 @@
-#ifndef XRPL_PROTOCOL_FEES_H_INCLUDED
-#define XRPL_PROTOCOL_FEES_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace ripple {
+namespace xrpl {
+
+// Deprecated constant for backwards compatibility with pre-XRPFees amendment.
+// This was the reference fee units used in the old fee calculation.
+inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 /** Reflects the fee settings for a particular ledger.
 
@@ -12,27 +15,35 @@ namespace ripple {
 */
 struct Fees
 {
-    XRPAmount base{0};       // Reference tx cost (drops)
-    XRPAmount reserve{0};    // Reserve base (drops)
-    XRPAmount increment{0};  // Reserve increment (drops)
+    /** @brief Cost of a reference transaction in drops. */
+    XRPAmount base{0};
+
+    /** @brief Minimum XRP an account must hold to exist on the ledger. */
+    XRPAmount reserve{0};
+
+    /** @brief Additional XRP reserve required per owned ledger object. */
+    XRPAmount increment{0};
 
     explicit Fees() = default;
     Fees(Fees const&) = default;
     Fees&
     operator=(Fees const&) = default;
 
+    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
+        : base(base), reserve(reserve), increment(increment)
+    {
+    }
+
     /** Returns the account reserve given the owner count, in drops.
 
         The reserve is calculated as the reserve base plus
         the reserve increment times the number of increments.
     */
-    XRPAmount
+    [[nodiscard]] XRPAmount
     accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_RESOURCE_MANAGER_H_INCLUDED
-#define XRPL_RESOURCE_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -11,8 +10,7 @@
 
 #include <boost/utility/string_view.hpp>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** Tracks load and resource consumption. */
 class Manager : public beast::PropertyStream::Source
@@ -21,7 +19,7 @@ protected:
     Manager();
 
 public:
-    virtual ~Manager() = 0;
+    ~Manager() override = 0;
 
     /** Create a new endpoint keyed by inbound IP address or the forwarded
      * IP if proxied. */
@@ -46,9 +44,9 @@ public:
     exportConsumers() = 0;
 
     /** Extract consumer information for reporting. */
-    virtual Json::Value
+    virtual json::Value
     getJson() = 0;
-    virtual Json::Value
+    virtual json::Value
     getJson(int threshold) = 0;
 
     /** Import packaged consumer information.
@@ -61,11 +59,6 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(
-    beast::insight::Collector::ptr const& collector,
-    beast::Journal journal);
+makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
-}  // namespace Resource
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::Resource

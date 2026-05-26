@@ -1,9 +1,8 @@
-#ifndef XRPL_RPC_OUTPUT_H_INCLUDED
-#define XRPL_RPC_OUTPUT_H_INCLUDED
+#pragma once
 
 #include <boost/utility/string_ref.hpp>
 
-namespace ripple {
+namespace xrpl {
 namespace RPC {
 
 using Output = std::function<void(boost::string_ref const&)>;
@@ -15,6 +14,4 @@ stringOutput(std::string& s)
 }
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

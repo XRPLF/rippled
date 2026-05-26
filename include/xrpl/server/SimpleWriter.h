@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
-#define XRPL_SERVER_SIMPLEWRITER_H_INCLUDED
+#pragma once
 
 #include <xrpl/server/Writer.h>
 
@@ -10,7 +9,7 @@
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Deprecated: Writer that serializes a HTTP/1 message
 class SimpleWriter : public Writer
@@ -18,9 +17,8 @@ class SimpleWriter : public Writer
     boost::beast::multi_buffer sb_;
 
 public:
-    template <bool isRequest, class Body, class Fields>
-    explicit SimpleWriter(
-        boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    template <bool IsRequest, class Body, class Fields>
+    explicit SimpleWriter(boost::beast::http::message<IsRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }
@@ -50,11 +48,9 @@ public:
         std::vector<boost::asio::const_buffer> result;
         result.reserve(std::distance(buf.begin(), buf.end()));
         for (auto const b : buf)
-            result.push_back(b);
+            result.emplace_back(b);
         return result;
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

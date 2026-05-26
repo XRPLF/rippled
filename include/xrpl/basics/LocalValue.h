@@ -1,12 +1,12 @@
-#ifndef XRPL_BASICS_LOCALVALUE_H_INCLUDED
-#define XRPL_BASICS_LOCALVALUE_H_INCLUDED
+#pragma once
 
 #include <boost/thread/tss.hpp>
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -26,27 +26,27 @@ struct LocalValues
     template <class T>
     struct Value : BasicValue
     {
-        T t_;
+        T t;
 
         Value() = default;
-        explicit Value(T const& t) : t_(t)
+        explicit Value(T t) : t(std::move(t))
         {
         }
 
         void*
         get() override
         {
-            return &t_;
+            return &t;
         }
     };
 
     // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
-    static inline void
+    static void
     cleanup(LocalValues* lvs)
     {
-        if (lvs && !lvs->onCoro)
+        if ((lvs != nullptr) && !lvs->onCoro)
             delete lvs;
     }
 };
@@ -55,9 +55,8 @@ template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<detail::LocalValues> tsp(
-        &detail::LocalValues::cleanup);
-    return tsp;
+    static boost::thread_specific_ptr<detail::LocalValues> kTsp(&detail::LocalValues::cleanup);
+    return kTsp;
 }
 
 }  // namespace detail
@@ -91,7 +90,7 @@ T&
 LocalValue<T>::operator*()
 {
     auto lvs = detail::getLocalValues().get();
-    if (!lvs)
+    if (lvs == nullptr)
     {
         lvs = new detail::LocalValues();
         lvs->onCoro = false;
@@ -105,10 +104,7 @@ LocalValue<T>::operator*()
     }
 
     return *reinterpret_cast<T*>(
-        lvs->values
-            .emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
+        lvs->values.emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
             .first->second->get());
 }
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

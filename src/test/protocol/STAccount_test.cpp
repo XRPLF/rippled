@@ -1,9 +1,16 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/Serializer.h>
 
-namespace ripple {
+#include <cstdint>
+#include <stdexcept>
 
-struct STAccount_test : public beast::unit_test::suite
+namespace xrpl {
+
+struct STAccount_test : public beast::unit_test::Suite
 {
     void
     testSTAccount()
@@ -12,7 +19,7 @@ struct STAccount_test : public beast::unit_test::suite
             // Test default constructor.
             STAccount const defaultAcct;
             BEAST_EXPECT(defaultAcct.getSType() == STI_ACCOUNT);
-            BEAST_EXPECT(defaultAcct.getText() == "");
+            BEAST_EXPECT(defaultAcct.getText().empty());
             BEAST_EXPECT(defaultAcct.isDefault() == true);
             BEAST_EXPECT(defaultAcct.value() == AccountID{});
             {
@@ -38,7 +45,7 @@ struct STAccount_test : public beast::unit_test::suite
             // Test constructor from SField.
             STAccount const sfAcct{sfAccount};
             BEAST_EXPECT(sfAcct.getSType() == STI_ACCOUNT);
-            BEAST_EXPECT(sfAcct.getText() == "");
+            BEAST_EXPECT(sfAcct.getText().empty());
             BEAST_EXPECT(sfAcct.isDefault());
             BEAST_EXPECT(sfAcct.value() == AccountID{});
             BEAST_EXPECT(sfAcct.isEquivalent(defaultAcct));
@@ -63,8 +70,7 @@ struct STAccount_test : public beast::unit_test::suite
                 Serializer s;
                 zeroAcct.add(s);
                 BEAST_EXPECT(s.size() == 21);
-                BEAST_EXPECT(
-                    strHex(s) == "140000000000000000000000000000000000000000");
+                BEAST_EXPECT(strHex(s) == "140000000000000000000000000000000000000000");
                 SerialIter sit(s.slice());
                 STAccount const deserializedZero(sit, sfAccount);
                 BEAST_EXPECT(deserializedZero.isEquivalent(zeroAcct));
@@ -72,8 +78,7 @@ struct STAccount_test : public beast::unit_test::suite
             {
                 // Construct from a VL that is not exactly 160 bits.
                 Serializer s;
-                std::uint8_t const bits128[]{
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                std::uint8_t const bits128[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                 s.addVL(bits128, sizeof(bits128));
                 SerialIter sit(s.slice());
                 try
@@ -83,8 +88,7 @@ struct STAccount_test : public beast::unit_test::suite
                 }
                 catch (std::runtime_error const& ex)
                 {
-                    BEAST_EXPECT(
-                        ex.what() == std::string("Invalid STAccount size"));
+                    BEAST_EXPECT(ex.what() == std::string("Invalid STAccount size"));
                 }
             }
 
@@ -109,12 +113,11 @@ struct STAccount_test : public beast::unit_test::suite
         auto const s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
         if (auto const parsed = parseBase58<AccountID>(s); BEAST_EXPECT(parsed))
         {
-            BEAST_EXPECT(toBase58(*parsed) == s);
+            BEAST_EXPECT(toBase58(*parsed) == s);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         {
-            auto const s =
-                "âabcd1rNxp4h8apvRis6mJf9Sh8C6iRxfrDWNâabcdAVâ\xc2\x80\xc2\x8f";
+            auto const s = "âabcd1rNxp4h8apvRis6mJf9Sh8C6iRxfrDWNâabcdAVâ\xc2\x80\xc2\x8f";
             BEAST_EXPECT(!parseBase58<AccountID>(s));
         }
     }
@@ -127,6 +130,6 @@ struct STAccount_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAccount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STAccount, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

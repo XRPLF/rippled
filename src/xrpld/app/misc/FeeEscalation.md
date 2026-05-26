@@ -1,6 +1,6 @@
 # Fees
 
-Rippled's fee mechanism consists of several interrelated processes:
+Xrpld's fee mechanism consists of several interrelated processes:
 
 1. [Rapid Fee escalation](#fee-escalation)
 2. [The Transaction Queue](#transaction-queue)
@@ -184,7 +184,7 @@ than a more complex transaction paying more XRP.
 
 ### Load Fee
 
-Each rippled server maintains a minimum cost threshold based on its current load. If you submit a transaction with a fee that is lower than the current load-based transaction cost of the rippled server, the server neither applies nor relays the transaction to its peers. A transaction is very unlikely to survive the consensus process unless its transaction fee value meets the requirements of a majority of servers.
+Each xrpld server maintains a minimum cost threshold based on its current load. If you submit a transaction with a fee that is lower than the current load-based transaction cost of the xrpld server, the server neither applies nor relays the transaction to its peers. A transaction is very unlikely to survive the consensus process unless its transaction fee value meets the requirements of a majority of servers.
 
 ### Reference Transaction
 
@@ -193,7 +193,7 @@ single-signed transaction (eg. Payment, Account Set, Offer Create, etc)
 that requires a fee.
 
 In the future, there may be other transaction types that require
-more (or less) work for rippled to process. Those transactions may have
+more (or less) work for xrpld to process. Those transactions may have
 a higher (or lower) base fee, requiring a correspondingly higher (or
 lower) fee to get into the same position as a reference transaction.
 
@@ -211,7 +211,7 @@ Another factor to consider is
 the duration of the consensus process itself. This generally takes
 under 5 seconds on the main network under low volume. This is based on
 historical observations. However factors such as transaction volume
-can increase consensus duration. This is because rippled performs
+can increase consensus duration. This is because xrpld performs
 more work as transaction volume increases. Under sufficient load this
 tends to increase consensus duration. It's possible that relatively high
 consensus duration indicates a problem, but it is not appropriate to
@@ -237,7 +237,7 @@ often coincides with new ledgers with zero transactions.
   recover if the problem is temporary. These exact values were chosen
   experimentally, and can easily change in the future.
 - _Minimum `lastLedgerMedianFeeLevel`_. The value of 500 was chosen to
-  ensure that the first escalated fee was more significant and noticable
+  ensure that the first escalated fee was more significant and noticeable
   than what the default would allow. This exact value was chosen
   experimentally, and can easily change in the future.
 - _Transaction queue size limit_. The limit is computed based on the
@@ -291,9 +291,9 @@ single-singed reference transaction. It is up to the user to compute the
 necessary fees for other types of transactions. (E.g. multiply all drop
 values by 5 for a multi-signed transaction with 4 signatures.)
 
-The `fee` result is always instantanteous, and relates to the open
+The `fee` result is always instantaneous, and relates to the open
 ledger. It includes the sequence number of the current open ledger,
-but may not make sense if rippled is not synced to the network.
+but may not make sense if xrpld is not synced to the network.
 
 Result format:
 

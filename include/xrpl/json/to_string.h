@@ -1,25 +1,17 @@
-#ifndef XRPL_JSON_TO_STRING_H_INCLUDED
-#define XRPL_JSON_TO_STRING_H_INCLUDED
+#pragma once
 
-#include <ostream>
+#include <xrpl/json/json_writer.h>
+
 #include <string>
 
-namespace Json {
+namespace json {
 
-class Value;
-
-/** Writes a Json::Value to an std::string. */
+/** Writes a json::Value to an std::string. */
 std::string
 to_string(Value const&);
 
-/** Writes a Json::Value to an std::string. */
+/** Writes a json::Value to an std::string. */
 std::string
 pretty(Value const&);
 
-/** Output using the StyledStreamWriter. @see Json::operator>>(). */
-std::ostream&
-operator<<(std::ostream&, Value const& root);
-
-}  // namespace Json
-
-#endif  // JSON_TO_STRING_H_INCLUDED
+}  // namespace json

@@ -1,5 +1,4 @@
-#ifndef XRPL_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
-#define XRPL_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -7,7 +6,7 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Implements ZeroCopyInputStream around a buffer sequence.
     @tparam Buffers A type meeting the requirements of ConstBufferSequence.
@@ -38,7 +37,7 @@ public:
     bool
     Skip(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;
@@ -125,7 +124,7 @@ private:
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
-    ~ZeroCopyOutputStream();
+    ~ZeroCopyOutputStream() override;
 
     bool
     Next(void** data, int* size) override;
@@ -133,7 +132,7 @@ public:
     void
     BackUp(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;
@@ -143,9 +142,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Streambuf>
-ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
-    Streambuf& streambuf,
-    std::size_t blockSize)
+ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize)
     : streambuf_(streambuf)
     , blockSize_(blockSize)
     , buffers_(streambuf_.prepare(blockSize_))
@@ -187,14 +184,11 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    XRPL_ASSERT(
-        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
+    XRPL_ASSERT(count <= commit_, "xrpl::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;
     commit_ = 0;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

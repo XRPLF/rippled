@@ -1,14 +1,26 @@
 include(XrplAddTest)
 
 # Test requirements.
-find_package(doctest REQUIRED)
+find_package(GTest REQUIRED)
 
 # Custom target for all tests defined in this file
 add_custom_target(xrpl.tests)
 
+# Test helpers
+add_library(xrpl.helpers.test STATIC)
+target_sources(
+    xrpl.helpers.test
+    PRIVATE helpers/Account.cpp helpers/TestSink.cpp helpers/TxTest.cpp
+)
+target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(xrpl.helpers.test PUBLIC xrpl.libxrpl gtest::gtest)
+
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(xrpl.imports.test INTERFACE doctest::doctest xrpl.libxrpl)
+target_link_libraries(
+    xrpl.imports.test
+    INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test
+)
 
 # One test for each module.
 xrpl_add_test(basics)
@@ -23,9 +35,17 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(tx)
+target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.tx)
+
+xrpl_add_test(protocol_autogen)
+target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.protocol_autogen)
+
 # Network unit tests are currently not supported on Windows
 if(NOT WIN32)
-  xrpl_add_test(net)
-  target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
-  add_dependencies(xrpl.tests xrpl.test.net)
+    xrpl_add_test(net)
+    target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
+    add_dependencies(xrpl.tests xrpl.test.net)
 endif()

@@ -1,11 +1,10 @@
 #include <test/csf/Histogram.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
-class Histogram_test : public beast::unit_test::suite
+class Histogram_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -62,7 +61,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Histogram, csf, ripple);
+BEAST_DEFINE_TESTSUITE(Histogram, csf, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

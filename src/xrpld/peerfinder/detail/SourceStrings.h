@@ -1,12 +1,10 @@
-#ifndef XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
-#define XRPL_PEERFINDER_SOURCESTRINGS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/Source.h>
 
 #include <memory>
 
-namespace ripple {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Provides addresses from a static set of strings. */
 class SourceStrings : public Source
@@ -17,10 +15,7 @@ public:
     using Strings = std::vector<std::string>;
 
     static std::shared_ptr<Source>
-    New(std::string const& name, Strings const& strings);
+    make(std::string const& name, Strings const& strings);
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

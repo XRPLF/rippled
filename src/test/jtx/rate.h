@@ -1,20 +1,13 @@
-#ifndef XRPL_TEST_JTX_RATE_H_INCLUDED
-#define XRPL_TEST_JTX_RATE_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
 #include <xrpl/json/json_value.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set a transfer rate. */
-Json::Value
+json::Value
 rate(Account const& account, double multiplier);
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::jtx

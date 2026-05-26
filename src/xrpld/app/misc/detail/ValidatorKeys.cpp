@@ -1,16 +1,23 @@
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
+
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/server/Manifest.h>
 
-namespace ripple {
+#include <utility>
+
+namespace xrpl {
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 {
-    if (config.exists(SECTION_VALIDATOR_TOKEN) &&
-        config.exists(SECTION_VALIDATION_SEED))
+    if (config.exists(SECTION_VALIDATOR_TOKEN) && config.exists(SECTION_VALIDATION_SEED))
     {
         configInvalid_ = true;
         JLOG(j.fatal()) << "Cannot specify both [" SECTION_VALIDATION_SEED
@@ -21,19 +28,15 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
     if (config.exists(SECTION_VALIDATOR_TOKEN))
     {
         // token is non-const so it can be moved from
-        if (auto token = loadValidatorToken(
-                config.section(SECTION_VALIDATOR_TOKEN).lines()))
+        if (auto token = loadValidatorToken(config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
-            auto const pk =
-                derivePublicKey(KeyType::secp256k1, token->validationSecret);
-            auto const m = deserializeManifest(base64_decode(token->manifest));
+            auto const pk = derivePublicKey(KeyType::Secp256k1, token->validationSecret);
+            auto const m = deserializeManifest(base64Decode(token->manifest));
 
             if (!m || pk != m->signingKey)
             {
                 configInvalid_ = true;
-                JLOG(j.fatal())
-                    << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN
-                       "]";
+                JLOG(j.fatal()) << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
             }
             else
             {
@@ -46,28 +49,26 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         else
         {
             configInvalid_ = true;
-            JLOG(j.fatal())
-                << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
+            JLOG(j.fatal()) << "Invalid token specified in [" SECTION_VALIDATOR_TOKEN "]";
         }
     }
     else if (config.exists(SECTION_VALIDATION_SEED))
     {
-        auto const seed = parseBase58<Seed>(
-            config.section(SECTION_VALIDATION_SEED).lines().front());
+        auto const seed =
+            parseBase58<Seed>(config.section(SECTION_VALIDATION_SEED).lines().front());
         if (!seed)
         {
             configInvalid_ = true;
-            JLOG(j.fatal())
-                << "Invalid seed specified in [" SECTION_VALIDATION_SEED "]";
+            JLOG(j.fatal()) << "Invalid seed specified in [" SECTION_VALIDATION_SEED "]";
         }
         else
         {
-            SecretKey const sk = generateSecretKey(KeyType::secp256k1, *seed);
-            PublicKey const pk = derivePublicKey(KeyType::secp256k1, sk);
+            SecretKey const sk = generateSecretKey(KeyType::Secp256k1, *seed);
+            PublicKey const pk = derivePublicKey(KeyType::Secp256k1, sk);
             keys.emplace(pk, pk, sk);
             nodeID = calcNodeID(pk);
             sequence = 0;
         }
     }
 }
-}  // namespace ripple
+}  // namespace xrpl

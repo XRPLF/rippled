@@ -1,5 +1,4 @@
-#ifndef XRPL_SERVER_ROLE_H_INCLUDED
-#define XRPL_SERVER_ROLE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/json/json_value.h>
@@ -14,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** Indicates the level of administrative permission to grant.
  * IDENTIFIED role has unlimited resources but cannot perform some
@@ -30,13 +29,13 @@ enum class Role { GUEST, USER, IDENTIFIED, ADMIN, PROXY, FORBID };
     which is an array with at least one object. Inside this object
     are the optional keys 'admin_user' and 'admin_password' used to
     validate the credentials. If user is non-blank, it's username
-    passed in the HTTP header by a secure_gateway proxy.
+    passed in the HTTP header by a secureGateway proxy.
 */
 Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string_view user);
 
@@ -70,6 +69,4 @@ ipAllowed(
 std::string_view
 forwardedFor(http_request_type const& request);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

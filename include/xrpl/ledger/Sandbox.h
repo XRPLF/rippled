@@ -1,10 +1,9 @@
-#ifndef XRPL_LEDGER_SANDBOX_H_INCLUDED
-#define XRPL_LEDGER_SANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-namespace ripple {
+namespace xrpl {
 
 /** Discardable, editable view to a ledger.
 
@@ -39,6 +38,4 @@ public:
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

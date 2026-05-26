@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_BUFFER_H_INCLUDED
-#define XRPL_BASICS_BUFFER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -8,7 +7,7 @@
 #include <cstring>
 #include <memory>
 
-namespace ripple {
+namespace xrpl {
 
 /** Like std::vector<char> but better.
     Meets the requirements of BufferFactory.
@@ -26,7 +25,7 @@ public:
 
     /** Create an uninitialized buffer with the given size. */
     explicit Buffer(std::size_t size)
-        : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
+        : p_((size != 0u) ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
@@ -38,7 +37,7 @@ public:
     */
     Buffer(void const* data, std::size_t size) : Buffer(size)
     {
-        if (size)
+        if (size != 0u)
             std::memcpy(p_.get(), data, size);
     }
 
@@ -62,8 +61,7 @@ public:
     /** Move-construct.
         The other buffer is reset.
     */
-    Buffer(Buffer&& other) noexcept
-        : p_(std::move(other.p_)), size_(other.size_)
+    Buffer(Buffer&& other) noexcept : p_(std::move(other.p_)), size_(other.size_)
     {
         other.size_ = 0;
     }
@@ -94,9 +92,8 @@ public:
     {
         // Ensure the slice isn't a subset of the buffer.
         XRPL_ASSERT(
-            s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-                s.data() >= p_.get() + size_,
-            "ripple::Buffer::operator=(Slice) : input not a subset");
+            s.empty() || size_ == 0 || s.data() < p_.get() || s.data() >= p_.get() + size_,
+            "xrpl::Buffer::operator=(Slice) : input not a subset");
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());
@@ -104,13 +101,13 @@ public:
     }
 
     /** Returns the number of bytes in the buffer. */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return size_;
     }
 
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return 0 == size_;
@@ -118,7 +115,7 @@ public:
 
     operator Slice() const noexcept
     {
-        if (!size_)
+        if (size_ == 0u)
             return Slice{};
         return Slice{p_.get(), size_};
     }
@@ -128,7 +125,7 @@ public:
               to a single byte, to facilitate pointer arithmetic.
     */
     /** @{ */
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return p_.get();
@@ -159,7 +156,7 @@ public:
     {
         if (n != size_)
         {
-            p_.reset(n ? new std::uint8_t[n] : nullptr);
+            p_.reset((n != 0u) ? new std::uint8_t[n] : nullptr);
             size_ = n;
         }
         return p_.get();
@@ -172,25 +169,25 @@ public:
         return alloc(n);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return p_.get();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return p_.get();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return p_.get() + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return p_.get() + size_;
@@ -203,7 +200,7 @@ operator==(Buffer const& lhs, Buffer const& rhs) noexcept
     if (lhs.size() != rhs.size())
         return false;
 
-    if (lhs.size() == 0)
+    if (lhs.empty())
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
@@ -215,6 +212,4 @@ operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
     return !(lhs == rhs);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

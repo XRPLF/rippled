@@ -1,7 +1,9 @@
 #include <xrpl/nodestore/DummyScheduler.h>
 
-namespace ripple {
-namespace NodeStore {
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
+
+namespace xrpl::NodeStore {
 
 void
 DummyScheduler::scheduleTask(Task& task)
@@ -20,5 +22,4 @@ DummyScheduler::onBatchWrite(BatchWriteReport const& report)
 {
 }
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

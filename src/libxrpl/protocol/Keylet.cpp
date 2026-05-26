@@ -1,16 +1,17 @@
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Keylet.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-namespace ripple {
+namespace xrpl {
 
 bool
 Keylet::check(STLedgerEntry const& sle) const
 {
     XRPL_ASSERT(
-        sle.getType() != ltANY || sle.getType() != ltCHILD,
-        "ripple::Keylet::check : valid input type");
+        sle.getType() != ltANY && sle.getType() != ltCHILD,
+        "xrpl::Keylet::check : valid input type");
 
     if (type == ltANY)
         return true;
@@ -21,4 +22,4 @@ Keylet::check(STLedgerEntry const& sle) const
     return sle.getType() == type && sle.key() == key;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

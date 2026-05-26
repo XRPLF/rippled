@@ -1,18 +1,20 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/address.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <string>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl::test {
 
-namespace test {
-
-class Roles_test : public beast::unit_test::suite
+class Roles_test : public beast::unit_test::Suite
 {
-    bool
+    static bool
     isValidIpAddress(std::string const& addr)
     {
         boost::system::error_code ec;
@@ -23,36 +25,33 @@ class Roles_test : public beast::unit_test::suite
     void
     testRoles()
     {
+        testcase("Roles");
         using namespace test::jtx;
 
         {
             Env env(*this);
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
-            BEAST_EXPECT(makeWSClient(env.app().config())
-                             ->invoke("ping")["result"]["unlimited"]
-                             .asBool());
+            BEAST_EXPECT(
+                makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(no_admin)};
+            Env env{*this, envconfig(noAdmin)};
 
             BEAST_EXPECT(!env.rpc("ping")["result"].isMember("role"));
-            auto wsRes =
-                makeWSClient(env.app().config())->invoke("ping")["result"];
-            BEAST_EXPECT(
-                !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
+            auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
+            BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
         }
         {
-            Env env{*this, envconfig(secure_gateway)};
+            Env env{*this, envconfig(secureGateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
-            auto wsRes =
-                makeWSClient(env.app().config())->invoke("ping")["result"];
-            BEAST_EXPECT(
-                !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
+            BEAST_EXPECT(!env.rpc("ping")["result"].isMember("ip"));
+            auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
+            BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // IPv4 tests.
             headers["X-Forwarded-For"] = "12.34.56.78";
@@ -112,10 +111,8 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["ip"] == "99.88.77.66");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
-            wsRes = makeWSClient(env.app().config(), true, 2, headers)
-                        ->invoke("ping")["result"];
-            BEAST_EXPECT(
-                !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
+            wsRes = makeWSClient(env.app().config(), true, 2, headers)->invoke("ping")["result"];
+            BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::string const name = "xrposhi";
             headers["X-User"] = name;
@@ -124,18 +121,15 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["username"] == name);
             BEAST_EXPECT(rpcRes["ip"] == "99.88.77.66");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
-            wsRes = makeWSClient(env.app().config(), true, 2, headers)
-                        ->invoke("ping")["result"];
+            wsRes = makeWSClient(env.app().config(), true, 2, headers)->invoke("ping")["result"];
             BEAST_EXPECT(wsRes["unlimited"].asBool());
 
             // IPv6 tests.
             headers = {};
-            headers["X-Forwarded-For"] =
-                "2001:db8:3333:4444:5555:6666:7777:8888";
+            headers["X-Forwarded-For"] = "2001:db8:3333:4444:5555:6666:7777:8888";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:8888");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:8888");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers["X-Forwarded-For"] =
@@ -143,16 +137,13 @@ class Roles_test : public beast::unit_test::suite
                 "g:h:i:j:k:l";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:9999");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:9999");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
-            headers["X-Forwarded-For"] =
-                "[2001:db8:3333:4444:5555:6666:7777:8888]";
+            headers["X-Forwarded-For"] = "[2001:db8:3333:4444:5555:6666:7777:8888]";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:8888");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:8888");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers["X-Forwarded-For"] =
@@ -160,21 +151,17 @@ class Roles_test : public beast::unit_test::suite
                 "[g:h:i:j:k:l]";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:9999");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:9999");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers = {};
-            headers["Forwarded"] =
-                "for=\"[2001:db8:3333:4444:5555:6666:7777:aaaa]\"";
+            headers["Forwarded"] = "for=\"[2001:db8:3333:4444:5555:6666:7777:aaaa]\"";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:aaaa");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:7777:aaaa");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
-            headers["Forwarded"] =
-                "For=\"[2001:db8:bb:cc:dd:ee:ff::]:2345\", for=99.00.11.22";
+            headers["Forwarded"] = "For=\"[2001:db8:bb:cc:dd:ee:ff::]:2345\", for=99.00.11.22";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "2001:db8:bb:cc:dd:ee:ff::");
@@ -193,8 +180,7 @@ class Roles_test : public beast::unit_test::suite
             headers["X-Forwarded-For"] = "2001:db8:3333:4444:5555:6666:1.2.3.4";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:1.2.3.4");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:1.2.3.4");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers["X-Forwarded-For"] =
@@ -202,16 +188,13 @@ class Roles_test : public beast::unit_test::suite
                 "g:h:i:j:k:l";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:5.6.7.8");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:5.6.7.8");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
-            headers["X-Forwarded-For"] =
-                "[2001:db8:3333:4444:5555:6666:9.10.11.12]";
+            headers["X-Forwarded-For"] = "[2001:db8:3333:4444:5555:6666:9.10.11.12]";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:9.10.11.12");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:9.10.11.12");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers["X-Forwarded-For"] =
@@ -219,21 +202,17 @@ class Roles_test : public beast::unit_test::suite
                 "[g:h:i:j:k:l]";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:13.14.15.16");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:13.14.15.16");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
             headers = {};
-            headers["Forwarded"] =
-                "for=\"[2001:db8:3333:4444:5555:6666:20.19.18.17]\"";
+            headers["Forwarded"] = "for=\"[2001:db8:3333:4444:5555:6666:20.19.18.17]\"";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
-            BEAST_EXPECT(
-                rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:20.19.18.17");
+            BEAST_EXPECT(rpcRes["ip"] == "2001:db8:3333:4444:5555:6666:20.19.18.17");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
 
-            headers["Forwarded"] =
-                "For=\"[2001:db8:bb:cc::24.23.22.21]\", for=99.00.11.22";
+            headers["Forwarded"] = "For=\"[2001:db8:bb:cc::24.23.22.21]\", for=99.00.11.22";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "2001:db8:bb:cc::24.23.22.21");
@@ -246,27 +225,39 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "::11:22:33:44:45.55.65.75");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            // Test: "for=" not at the beginning AND no trailing delimiter.
+            // This exercises the fix for the buffer over-read bug where
+            // the remaining length was incorrectly calculated.
+            headers["Forwarded"] = "by=203.0.113.43;for=1.2.3.4";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "1.2.3.4");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
+
+            headers["Forwarded"] = "proto=https;by=proxy.example.com;for=5.6.7.8";
+            rpcRes = env.rpc(headers, "ping")["result"];
+            BEAST_EXPECT(rpcRes["role"] == "proxied");
+            BEAST_EXPECT(rpcRes["ip"] == "5.6.7.8");
+            BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
         }
 
         {
-            Env env{*this, envconfig(admin_localnet)};
+            Env env{*this, envconfig(adminLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
-            BEAST_EXPECT(makeWSClient(env.app().config())
-                             ->invoke("ping")["result"]["unlimited"]
-                             .asBool());
+            BEAST_EXPECT(
+                makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
 
         {
-            Env env{*this, envconfig(secure_gateway_localnet)};
+            Env env{*this, envconfig(secureGatewayLocalnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
-            auto wsRes =
-                makeWSClient(env.app().config())->invoke("ping")["result"];
-            BEAST_EXPECT(
-                !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
+            auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
+            BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
             std::unordered_map<std::string, std::string> headers;
             headers["X-Forwarded-For"] = "12.34.56.78";
-            Json::Value rpcRes = env.rpc(headers, "ping")["result"];
+            json::Value rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["role"] == "proxied");
             BEAST_EXPECT(rpcRes["ip"] == "12.34.56.78");
             BEAST_EXPECT(isValidIpAddress(rpcRes["ip"].asString()));
@@ -277,12 +268,13 @@ class Roles_test : public beast::unit_test::suite
     testInvalidIpAddresses()
     {
         using namespace test::jtx;
+        testcase("Invalid IP addresses");
 
         {
             Env env(*this);
 
             std::unordered_map<std::string, std::string> headers;
-            Json::Value rpcRes;
+            json::Value rpcRes;
 
             // No "for=" in Forwarded.
             headers["Forwarded"] = "for 88.77.66.55";
@@ -370,8 +362,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Roles, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Roles, rpc, xrpl);
 
-}  // namespace test
-
-}  // namespace ripple
+}  // namespace xrpl::test

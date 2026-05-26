@@ -1,5 +1,4 @@
-#ifndef XRPL_BASICS_BASICCONFIG_H_INCLUDED
-#define XRPL_BASICS_BASICCONFIG_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -12,10 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-using IniFileSections =
-    std::unordered_map<std::string, std::vector<std::string>>;
+using IniFileSections = std::unordered_map<std::string, std::vector<std::string>>;
 
 //------------------------------------------------------------------------------
 
@@ -29,16 +27,16 @@ private:
     std::unordered_map<std::string, std::string> lookup_;
     std::vector<std::string> lines_;
     std::vector<std::string> values_;
-    bool had_trailing_comments_ = false;
+    bool hadTrailingComments_ = false;
 
     using const_iterator = decltype(lookup_)::const_iterator;
 
 public:
     /** Create an empty section. */
-    explicit Section(std::string const& name = "");
+    explicit Section(std::string name = "");
 
     /** Returns the name of this section. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
@@ -47,7 +45,7 @@ public:
     /** Returns all the lines in the section.
         This includes everything.
     */
-    std::vector<std::string> const&
+    [[nodiscard]] std::vector<std::string> const&
     lines() const
     {
         return lines_;
@@ -56,7 +54,7 @@ public:
     /** Returns all the values in the section.
         Values are non-empty lines which are not key/value pairs.
     */
-    std::vector<std::string> const&
+    [[nodiscard]] std::vector<std::string> const&
     values() const
     {
         return values_;
@@ -69,9 +67,13 @@ public:
     legacy(std::string value)
     {
         if (lines_.empty())
+        {
             lines_.emplace_back(std::move(value));
+        }
         else
+        {
             lines_[0] = std::move(value);
+        }
     }
 
     /**
@@ -80,14 +82,16 @@ public:
      * @return The retrieved value. A section with an empty legacy value returns
                an empty string.
      */
-    std::string
+    [[nodiscard]] std::string
     legacy() const
     {
         if (lines_.empty())
             return "";
         if (lines_.size() > 1)
+        {
             Throw<std::runtime_error>(
                 "A legacy value must have exactly one line. Section: " + name_);
+        }
         return lines_[0];
     }
 
@@ -113,11 +117,11 @@ public:
     }
 
     /** Returns `true` if a key with the given name exists. */
-    bool
+    [[nodiscard]] bool
     exists(std::string const& name) const;
 
     template <class T = std::string>
-    std::optional<T>
+    [[nodiscard]] std::optional<T>
     get(std::string const& name) const
     {
         auto const iter = lookup_.find(name);
@@ -128,8 +132,8 @@ public:
 
     /// Returns a value if present, else another value.
     template <class T>
-    T
-    value_or(std::string const& name, T const& other) const
+    [[nodiscard]] T
+    valueOr(std::string const& name, T const& other) const
     {
         auto const v = get<T>(name);
         return v.has_value() ? *v : other;
@@ -137,52 +141,52 @@ public:
 
     // indicates if trailing comments were seen
     // during the appending of any lines/values
-    bool
-    had_trailing_comments() const
+    [[nodiscard]] bool
+    hadTrailingComments() const
     {
-        return had_trailing_comments_;
+        return hadTrailingComments_;
     }
 
     friend std::ostream&
     operator<<(std::ostream&, Section const& section);
 
     // Returns `true` if there are no key/value pairs.
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return lookup_.empty();
     }
 
     // Returns the number of key/value pairs.
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return lookup_.size();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return lookup_.cend();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return lookup_.cend();
@@ -202,7 +206,7 @@ private:
 
 public:
     /** Returns `true` if a section with the given name exists. */
-    bool
+    [[nodiscard]] bool
     exists(std::string const& name) const;
 
     /** Returns the section with the given name.
@@ -212,7 +216,7 @@ public:
     Section&
     section(std::string const& name);
 
-    Section const&
+    [[nodiscard]] Section const&
     section(std::string const& name) const;
 
     Section const&
@@ -233,10 +237,7 @@ public:
         The previous value, if any, is overwritten.
     */
     void
-    overwrite(
-        std::string const& section,
-        std::string const& key,
-        std::string const& value);
+    overwrite(std::string const& section, std::string const& key, std::string const& value);
 
     /** Remove all the key/value pairs from the section.
      */
@@ -263,7 +264,7 @@ public:
      *         legacy value.
      *  @return Contents of the legacy value.
      */
-    std::string
+    [[nodiscard]] std::string
     legacy(std::string const& sectionName) const;
 
     friend std::ostream&
@@ -271,12 +272,10 @@ public:
 
     // indicates if trailing comments were seen
     // in any loaded Sections
-    bool
-    had_trailing_comments() const
+    [[nodiscard]] bool
+    hadTrailingComments() const
     {
-        return std::any_of(map_.cbegin(), map_.cend(), [](auto s) {
-            return s.second.had_trailing_comments();
-        });
+        return std::ranges::any_of(map_, [](auto s) { return s.second.hadTrailingComments(); });
     }
 
 protected:
@@ -295,17 +294,17 @@ template <class T>
 bool
 set(T& target, std::string const& name, Section const& section)
 {
-    bool found_and_valid = false;
+    bool foundAndValid = false;
     try
     {
         auto const val = section.get<T>(name);
-        if ((found_and_valid = val.has_value()))
+        if ((foundAndValid = val.has_value()))
             target = *val;
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
-    return found_and_valid;
+    return foundAndValid;
 }
 
 /** Set a value from a configuration Section
@@ -315,15 +314,12 @@ set(T& target, std::string const& name, Section const& section)
 */
 template <class T>
 bool
-set(T& target,
-    T const& defaultValue,
-    std::string const& name,
-    Section const& section)
+set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
-    bool found_and_valid = set<T>(target, name, section);
-    if (!found_and_valid)
+    bool const foundAndValid = set<T>(target, name, section);
+    if (!foundAndValid)
         target = defaultValue;
-    return found_and_valid;
+    return foundAndValid;
 }
 
 /** Retrieve a key/value pair from a section.
@@ -333,15 +329,13 @@ set(T& target,
 // NOTE This routine might be more clumsy than the previous two
 template <class T = std::string>
 T
-get(Section const& section,
-    std::string const& name,
-    T const& defaultValue = T{})
+get(Section const& section, std::string const& name, T const& defaultValue = T{})
 {
     try
     {
-        return section.value_or<T>(name, defaultValue);
+        return section.valueOr<T>(name, defaultValue);
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return defaultValue;
@@ -356,7 +350,7 @@ get(Section const& section, std::string const& name, char const* defaultValue)
         if (val.has_value())
             return *val;
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return defaultValue;
@@ -364,22 +358,20 @@ get(Section const& section, std::string const& name, char const* defaultValue)
 
 template <class T>
 bool
-get_if_exists(Section const& section, std::string const& name, T& v)
+getIfExists(Section const& section, std::string const& name, T& v)
 {
     return set<T>(v, name, section);
 }
 
 template <>
 inline bool
-get_if_exists<bool>(Section const& section, std::string const& name, bool& v)
+getIfExists<bool>(Section const& section, std::string const& name, bool& v)
 {
     int intVal = 0;
-    auto stat = get_if_exists(section, name, intVal);
+    auto stat = getIfExists(section, name, intVal);
     if (stat)
         v = bool(intVal);
     return stat;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

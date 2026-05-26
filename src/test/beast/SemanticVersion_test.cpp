@@ -1,9 +1,11 @@
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <string>
 
 namespace beast {
 
-class SemanticVersion_test : public unit_test::suite
+class SemanticVersion_test : public unit_test::Suite
 {
     using identifier_list = SemanticVersion::identifier_list;
 
@@ -196,8 +198,7 @@ public:
         checkValues("1.2.3-rc1.debug.asm", 1, 2, 3, ids("rc1", "debug", "asm"));
         checkValues("1.2.3+full", 1, 2, 3, ids(), ids("full"));
         checkValues("1.2.3+full.prod", 1, 2, 3, ids(), ids("full", "prod"));
-        checkValues(
-            "1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
+        checkValues("1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
         checkValues(
             "1.2.3-rc1.debug.asm+full.prod.x86",
             1,

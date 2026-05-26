@@ -1,5 +1,4 @@
-#ifndef XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
-#define XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
@@ -10,9 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace ripple {
-
-namespace compression_algorithms {
+namespace xrpl::compression_algorithms {
 
 /** LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
@@ -69,12 +66,15 @@ lz4Decompress(
     if (decompressedSize <= 0)
         Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(decompressed),
             inSize,
             decompressedSize) != decompressedSize)
+    {
         Throw<std::runtime_error>("lz4Decompress: failed");
+    }
 
     return decompressedSize;
 }
@@ -116,9 +116,7 @@ lz4Decompress(
             compressed.resize(inSize);
         }
 
-        chunkSize = chunkSize < (inSize - copiedInSize)
-            ? chunkSize
-            : (inSize - copiedInSize);
+        chunkSize = chunkSize < (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);
 
         std::copy(chunk, chunk + chunkSize, compressed.data() + copiedInSize);
 
@@ -135,15 +133,10 @@ lz4Decompress(
     if (in.ByteCount() > (currentBytes + copiedInSize))
         in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
 
-    if ((copiedInSize == 0 && chunkSize < inSize) ||
-        (copiedInSize > 0 && copiedInSize != inSize))
+    if ((copiedInSize == 0 && chunkSize < inSize) || (copiedInSize > 0 && copiedInSize != inSize))
         Throw<std::runtime_error>("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
 
-}  // namespace compression_algorithms
-
-}  // namespace ripple
-
-#endif  // XRPL_COMPRESSIONALGORITHMS_H_INCLUDED
+}  // namespace xrpl::compression_algorithms

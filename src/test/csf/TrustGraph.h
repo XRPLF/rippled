@@ -1,6 +1,6 @@
-#ifndef XRPL_TEST_CSF_UNL_H_INCLUDED
-#define XRPL_TEST_CSF_UNL_H_INCLUDED
+#pragma once
 
+#include <test/csf/Digraph.h>
 #include <test/csf/random.h>
 
 #include <boost/container/flat_set.hpp>
@@ -10,9 +10,7 @@
 #include <random>
 #include <vector>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Trust graph
 
@@ -69,7 +67,7 @@ public:
     }
 
     //< Whether from trusts to
-    bool
+    [[nodiscard]] bool
     trusts(Peer const& from, Peer const& to) const
     {
         return graph_.connected(from, to);
@@ -81,7 +79,7 @@ public:
         @return boost transformed range over nodes `a` trusts, i.e. the nodes
                 in its UNL
     */
-    auto
+    [[nodiscard]] auto
     trustedPeers(Peer const& a) const
     {
         return graph_.outVertices(a);
@@ -98,7 +96,7 @@ public:
     };
 
     //< Return nodes that fail the white-paper no-forking condition
-    std::vector<ForkInfo>
+    [[nodiscard]] std::vector<ForkInfo>
     forkablePairs(double quorum) const
     {
         // Check the forking condition by looking at intersection
@@ -110,8 +108,7 @@ public:
         std::set<UNL> unique;
         for (Peer const peer : graph_.outVertices())
         {
-            unique.emplace(
-                std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));
+            unique.emplace(std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));
         }
 
         std::vector<UNL> uniqueUNLs(unique.begin(), unique.end());
@@ -124,18 +121,14 @@ public:
             {
                 auto const& unlA = uniqueUNLs[i];
                 auto const& unlB = uniqueUNLs[j];
-                double rhs =
-                    2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
+                double const rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
-                int intersectionSize =
-                    std::count_if(unlA.begin(), unlA.end(), [&](Peer p) {
-                        return unlB.find(p) != unlB.end();
-                    });
+                int const intersectionSize = std::count_if(
+                    unlA.begin(), unlA.end(), [&](Peer p) { return unlB.find(p) != unlB.end(); });
 
                 if (intersectionSize < rhs)
                 {
-                    res.emplace_back(
-                        ForkInfo{unlA, unlB, intersectionSize, rhs});
+                    res.emplace_back(ForkInfo{unlA, unlB, intersectionSize, rhs});
                 }
             }
         }
@@ -145,15 +138,11 @@ public:
     /** Check whether this trust graph satisfies the whitepaper no-forking
         condition
     */
-    bool
+    [[nodiscard]] bool
     canFork(double quorum) const
     {
         return !forkablePairs(quorum).empty();
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf
