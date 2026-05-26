@@ -169,6 +169,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // If set, the vault is created with this sfScale value. Useful for
+        // tests that need finer loanScale to exercise rounding edge cases.
+        std::optional<std::uint8_t> vaultScale =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -522,6 +526,8 @@ protected:
         auto const coverRateMinValue = params.coverRateMin;
 
         auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        if (params.vaultScale)
+            tx[sfScale] = *params.vaultScale;
         env(tx);
         env.close();
         BEAST_EXPECT(env.le(vaultKeylet));
@@ -2157,21 +2163,23 @@ protected:
                 // If the loan does not allow overpayments, send a payment that
                 // tries to make an overpayment. Do not include `txFlags`, so we
                 // don't end up duplicating the next test transaction.
-                env(pay(borrower,
-                        loanKeylet.key,
-                        STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
-                        tfLoanOverpayment),
-                    Fee(XRPAmount{baseFee * (Number{15, -1} / kLoanPaymentsPerFeeIncrement + 1)}),
-                    Ter(tecNO_PERMISSION));
+                //
+                // fixCleanup3_1_3 gates tfLoanOverpayment as a valid flag:
+                // with fix on → preflight passes, apply returns tecNO_PERMISSION;
+                // with fix off → preflight rejects the flag, returns temINVALID_FLAG.
+                bool const hasFix313 = env.current()->rules().enabled(fixCleanup3_1_3);
+                STAmount const overpayAmount{broker.asset, state.periodicPayment * Number{15, -1}};
+                XRPAmount const overpayFee{
+                    baseFee * (Number{15, -1} / kLoanPaymentsPerFeeIncrement + 1)};
+                env(pay(borrower, loanKeylet.key, overpayAmount, tfLoanOverpayment),
+                    Fee(overpayFee),
+                    Ter(hasFix313 ? TER{tecNO_PERMISSION} : TER{temINVALID_FLAG}));
 
+                if (hasFix313)
                 {
                     env.disableFeature(fixCleanup3_1_3);
-                    env(pay(borrower,
-                            loanKeylet.key,
-                            STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
-                            tfLoanOverpayment),
-                        Fee(XRPAmount{
-                            baseFee * (Number{15, -1} / kLoanPaymentsPerFeeIncrement + 1)}),
+                    env(pay(borrower, loanKeylet.key, overpayAmount, tfLoanOverpayment),
+                        Fee(overpayFee),
                         Ter(temINVALID_FLAG));
                     env.enableFeature(fixCleanup3_1_3);
                 }
@@ -7027,7 +7035,7 @@ protected:
 
         auto credType = "credential1";
 
-        pdomain::Credentials const credentials1{{.issuer = issuer, .credType = credType}};
+        pdomain::Credentials const credentials1 = {{.issuer = issuer, .credType = credType}};
         env(pdomain::setTx(issuer, credentials1));
         env.close();
 
@@ -7570,6 +7578,74 @@ protected:
         // when unrealized loss exists.
         attemptWithdrawShares(depositorA, sharesLpA, tesSUCCESS);
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
+    }
+
+    // An overpayment whose residual amount has more precision than loanScale
+    // fires the isRounded(asset, overpayment, loanScale) assertion in
+    // computeOverpaymentComponents (and a downstream "interest paid agrees"
+    // assertion in doOverpayment). fixCleanup3_2_0 rounds the residual down
+    // to loanScale before passing it in. The pre-amendment path can't be
+    // tested here because the assertion fires in Debug builds and aborts
+    // the test process — see the PR description for context.
+    void
+    testBugOverpayUnroundedAmount()
+    {
+        testcase("bug: computeOverpaymentComponents isRounded assertion");
+
+        using namespace jtx;
+        using namespace loan;
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const lender{"vaultOwner"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(lender, iouLimit));
+        env(trust(borrower, iouLimit));
+        env(pay(issuer, lender, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(
+            env,
+            iouAsset,
+            lender,
+            {.vaultDeposit = 100'000,
+             .debtMax = 5000,
+             .managementFeeRate = TenthBips16{1000},
+             .vaultScale = 1});
+
+        auto const sleBroker = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanSequence = sleBroker->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+        using namespace loan;
+        env(set(borrower, broker.brokerID, Number{1000}, tfLoanOverpayment),
+            Sig(sfCounterpartySignature, lender),
+            kInterestRate(TenthBips32{10000}),
+            kPaymentTotal(12),
+            kPaymentInterval(60),
+            kGracePeriod(60),
+            kOverpaymentFee(TenthBips32{1000}),
+            kOverpaymentInterestRate(TenthBips32{1000}),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // periodic * 1.5 at 15-sig-digit precision: 125.000154585042. This
+        // has too many digits to round cleanly to loanScale=-10, so the
+        // overpayment residual fails the isRounded check.
+        STAmount const payAmount{iouAsset.raw(), Number{125'000'154'585'042LL, -12}};
+        env(pay(borrower, loanKeylet.key, payAmount), Txflags(tfLoanOverpayment), Ter(tesSUCCESS));
+        env.close();
     }
 
     // Regression for the dual-rounding fix at coarse (integer-MPT) scale.
@@ -8280,6 +8356,9 @@ protected:
         testRIPD3901();
         testBorrowerIsBroker();
         testLimitExceeded();
+        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
+        testLendingCanTradeClearedNoImpact();
+        testBugOverpayUnroundedAmount();
 
         for (auto const flags : {0u, tfLoanOverpayment})
             testYieldTheftRounding(flags);
@@ -8295,11 +8374,11 @@ protected:
         testLoanPayLateFullPaymentBypassesPenalties(features);
         testLoanCoverMinimumRoundingExploit(features);
 #endif
-
         // Lifecycle
-        testSelfLoan(features);
-        testLoanSet(features);
         testLifecycle(features);
+        testLoanSet(features);
+        testDosLoanPay(features);
+        testSelfLoan(features);
 
         // Payment paths
         testWithdrawReflectsUnrealizedLoss(features);
@@ -8346,11 +8425,8 @@ public:
     run() override
     {
         runAmendmentIndependent();
-        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
-        testLendingCanTradeClearedNoImpact();
-        testDosLoanPay(all_ | fixCleanup3_1_3);
-        testDosLoanPay(all_ - fixCleanup3_1_3);
-        for (auto const& features : amendmentCombinations({fixCleanup3_2_0, featureMPTokensV2}))
+        for (auto const& features :
+             amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
             runAmendmentSensitive(features);
     }
 };
