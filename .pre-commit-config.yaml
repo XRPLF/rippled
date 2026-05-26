@@ -37,37 +37,37 @@ repos:
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
+    rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5
     hooks:
       - id: clang-format
         args: [--style=file]
         "types_or": [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
-  - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.26.0
+  - repo: https://github.com/BlankSpruce/gersemi-pre-commit
+    rev: faadd6a9d852369ca94f4d15b2404c967ba8cb01 # frozen: 0.27.6
     hooks:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
+    rev: 515f543f5718ebfd6ce22e16708bb32c68ff96e1 # frozen: v3.8.3
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0
+    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
     hooks:
       - id: black
 
-  - repo: https://github.com/openstack/bashate
-    rev: 5798d24d571676fc407e81df574c1ef57b520f23 # frozen: 2.1.1
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
     hooks:
-      - id: bashate
-        args: ["--ignore=E006"]
+      - id: shfmt
+        args: [--write, --indent=4, --case-indent=true]
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
+    rev: 4643f154907327ee0a2c7038f0296e0dd77d9776 # frozen: v10.0.0
     hooks:
       - id: cspell # Spell check changed files
         exclude: |
