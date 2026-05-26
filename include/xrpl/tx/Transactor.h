@@ -398,6 +398,15 @@ private:
     static NotTEC
     preflight2(PreflightContext const& ctx);
 
+    /** Universal validations
+       - Valid MPTAmount and XRPAmount
+
+        Do not try to call preflightUniversal from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflightUniversal(PreflightContext const& ctx);
+
     /** Check transaction-specific invariants only.
      *
      *  Walks every modified ledger entry via visitInvariantEntry, then
@@ -461,6 +470,9 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
     if (auto const ret = T::preflight(ctx))

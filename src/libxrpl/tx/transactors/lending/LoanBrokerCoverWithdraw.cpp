@@ -142,6 +142,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        {
+            return minimumBrokerCover(
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+        }
+
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);

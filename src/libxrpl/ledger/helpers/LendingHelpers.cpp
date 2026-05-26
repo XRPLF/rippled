@@ -769,9 +769,6 @@ doOverpayment(
         "xrpl::detail::doOverpayment",
         "principal change agrees");
 
-    // I'm not 100% sure the following asserts are correct. If in doubt, and
-    // everything else works, remove any that cause trouble.
-
     JLOG(j.debug()) << "valueChange: " << loanPaymentParts.valueChange
                     << ", totalValue before: " << *totalValueOutstandingProxy
                     << ", totalValue after: " << newRoundedLoanState.valueOutstanding
@@ -783,11 +780,28 @@ doOverpayment(
                     << overpaymentComponents.trackedPrincipalDelta -
             (totalValueOutstandingProxy - newRoundedLoanState.valueOutstanding);
 
+    // The valueChange returned by tryOverpayment satisfies
+    //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
+    // Using the loan-state identity v = p + i + m and the adjacent
+    // `principal change agrees` assertion (dp = oldP - newP), this
+    // rearranges into three independently-computable terms:
+    //
+    //   1. TVO change beyond what principal repayment alone explains:
+    //        newTVO - (oldTVO - dp)
+    //   2. Management fee released by re-amortization (positive when
+    //      mfee decreased; zero when managementFeeRate == 0):
+    //        oldMfee - newMfee
+    //   3. The overpayment's penalty interest part (= untrackedInterest
+    //      for the overpayment path; see computeOverpaymentComponents):
+    //        trackedInterestPart()
+    [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
+        (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+    [[maybe_unused]] Number const managementFeeReleased =
+        managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+    [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
+
     XRPL_ASSERT_PARTS(
-        loanPaymentParts.valueChange ==
-            newRoundedLoanState.valueOutstanding -
-                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta) +
-                overpaymentComponents.trackedInterestPart(),
+        loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart,
         "xrpl::detail::doOverpayment",
         "interest paid agrees");
 
@@ -2027,51 +2041,62 @@ loanMakePayment(
         // It shouldn't be possible for the overpayment to be greater than
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
-        Number const overpayment = std::min(roundedAmount - totalPaid, *totalValueOutstandingProxy);
+        Number const overpaymentRaw =
+            std::min(roundedAmount - totalPaid, *totalValueOutstandingProxy);
 
-        detail::ExtendedPaymentComponents const overpaymentComponents =
-            detail::computeOverpaymentComponents(
-                asset,
-                loanScale,
-                overpayment,
-                overpaymentInterestRate,
-                overpaymentFeeRate,
-                managementFeeRate);
+        bool const fixEnabled = view.rules().enabled(fixCleanup3_2_0);
+        Number const overpayment = fixEnabled
+            ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
+            : overpaymentRaw;
 
-        // Don't process an overpayment if the whole amount (or more!)
-        // gets eaten by fees and interest.
-        if (overpaymentComponents.trackedPrincipalDelta > 0)
+        // Post-amendment, the rounded overpayment can be zero; pre-amendment
+        // it's always positive given the surrounding guards.
+        if (!fixEnabled || overpayment > 0)
         {
-            XRPL_ASSERT_PARTS(
-                overpaymentComponents.untrackedInterest >= beast::kZero,
-                "xrpl::loanMakePayment",
-                "overpayment penalty did not reduce value of loan");
-            // Can't just use `periodicPayment` here, because it might
-            // change
-            auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
-            if (auto const overResult = detail::doOverpayment(
-                    view.rules(),
+            detail::ExtendedPaymentComponents const overpaymentComponents =
+                detail::computeOverpaymentComponents(
                     asset,
                     loanScale,
-                    overpaymentComponents,
-                    totalValueOutstandingProxy,
-                    principalOutstandingProxy,
-                    managementFeeOutstandingProxy,
-                    periodicPaymentProxy,
-                    periodicRate,
-                    paymentRemainingProxy,
-                    managementFeeRate,
-                    j))
+                    overpayment,
+                    overpaymentInterestRate,
+                    overpaymentFeeRate,
+                    managementFeeRate);
+
+            // Don't process an overpayment if the whole amount (or more!)
+            // gets eaten by fees and interest.
+            if (overpaymentComponents.trackedPrincipalDelta > 0)
             {
-                totalParts += *overResult;
-            }
-            else if (overResult.error())
-            {
-                // error() will be the TER returned if a payment is not
-                // made. It will only evaluate to true if it's unsuccessful.
-                // Otherwise, tesSUCCESS means nothing was done, so
-                // continue.
-                return Unexpected(overResult.error());
+                XRPL_ASSERT_PARTS(
+                    overpaymentComponents.untrackedInterest >= beast::kZero,
+                    "xrpl::loanMakePayment",
+                    "overpayment penalty did not reduce value of loan");
+                // Can't just use `periodicPayment` here, because it might
+                // change
+                auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
+                if (auto const overResult = detail::doOverpayment(
+                        view.rules(),
+                        asset,
+                        loanScale,
+                        overpaymentComponents,
+                        totalValueOutstandingProxy,
+                        principalOutstandingProxy,
+                        managementFeeOutstandingProxy,
+                        periodicPaymentProxy,
+                        periodicRate,
+                        paymentRemainingProxy,
+                        managementFeeRate,
+                        j))
+                {
+                    totalParts += *overResult;
+                }
+                else if (overResult.error())
+                {
+                    // error() will be the TER returned if a payment is not
+                    // made. It will only evaluate to true if it's unsuccessful.
+                    // Otherwise, tesSUCCESS means nothing was done, so
+                    // continue.
+                    return Unexpected(overResult.error());
+                }
             }
         }
     }

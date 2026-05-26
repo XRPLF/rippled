@@ -2137,6 +2137,70 @@ class Invariants_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
         }
+
+        // A bad root is rejected when added, ignored when a legacy bad root is
+        // modified without changing sfRootIndex or deleted, and checked when a
+        // modified directory changes sfRootIndex.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const missingRootDir = getBookRootKey(a1, directoryQuality + 1);
+            auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
+            view.rawInsert(badRoot);
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+
+            {
+                // add
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, nullptr, badRoot);
+
+                BEAST_EXPECT(
+                    !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (without changing the sfRootIndex)
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, badRoot, badRoot);
+
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (changing sfRootIndex to a missing root)
+                auto const childBefore = makeChildPage(rootDir);
+                auto const childAfter = std::make_shared<SLE>(*childBefore, childBefore->key());
+                childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, childBefore, childAfter);
+
+                test::StreamSink missingRootSink{beast::Severity::Warning};
+                beast::Journal const missingRootJlog{missingRootSink};
+                BEAST_EXPECT(!invariant.finalize(
+                    makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
+                BEAST_EXPECT(
+                    missingRootSink.messages().str().find("book directory root missing") !=
+                    std::string::npos);
+            }
+            {
+                // delete
+                view.rawErase(badRoot);
+                BEAST_EXPECT(!view.exists(rootDir));
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(true, badRoot, badRoot);
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+        }
     }
 
     Keylet
@@ -4064,6 +4128,63 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         testcase << "MPT";
+
+        MPTIssue const nonCanonicalMPTIssue{makeMptID(1, AccountID(0x4985601))};
+        auto const nonCanonicalMPTAmount = [&](SField const& field) {
+            return STAmount{
+                field,
+                nonCanonicalMPTIssue,
+                kMaxMpTokenAmount + std::uint64_t{1},
+                0,
+                false,
+                STAmount::Unchecked{}};
+        };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
+        auto const nonCanonicalMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+
+        doInvariantCheck(
+            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            {},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            nonCanonicalMPTPayment(),
+            {tesSUCCESS, tesSUCCESS});
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
 
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
