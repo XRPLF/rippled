@@ -94,8 +94,8 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
     /** Access the test clock for time manipulation in tests. */
