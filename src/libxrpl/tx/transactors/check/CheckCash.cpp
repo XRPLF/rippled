@@ -139,6 +139,11 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
+        // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
+        // preflight only validates the CheckCash transaction, not the stored Check.
+        if (ctx.view.rules().enabled(fixCleanup3_2_0) && !isLegalMPT(sendMax))
+            return tefBAD_LEDGER;
+
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
             JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
