@@ -31,7 +31,7 @@ class Number_test : public beast::unit_test::Suite
         int count = 0;
         for (auto it = s.rbegin(); it != s.rend(); ++it)
         {
-            if (count != 0 && count % 3 == 0)
+            if (count != 0 && count % 3 == 0 && isdigit(*it))
                 out.insert(out.begin(), '_');
             out.insert(out.begin(), *it);
             ++count;
@@ -1596,7 +1596,6 @@ public:
         constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
         constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
 
-        // Public conversion operator: STAmount::operator Number() const.
         Number const a = kAValue;
         Number const b = kBValue;
         Number const product = a * b;
