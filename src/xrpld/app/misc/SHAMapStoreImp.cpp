@@ -368,8 +368,12 @@ void
 SHAMapStoreImp::dbPaths()
 {
     Section const section{app_.config().section(ConfigSection::nodeDatabase())};
-    boost::filesystem::path dbPath = get(section, "path");
 
+    // Skip creating the directory when an in-memory database is used.
+    if (boost::iequals(get(section, "type"), "memory"))
+        return;
+
+    boost::filesystem::path dbPath = get(section, "path");
     if (boost::filesystem::exists(dbPath))
     {
         if (!boost::filesystem::is_directory(dbPath))
